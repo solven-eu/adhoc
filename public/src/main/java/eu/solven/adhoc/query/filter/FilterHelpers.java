@@ -299,8 +299,9 @@ public class FilterHelpers {
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
-	private static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
-		return AndFilter.and(stricter, laxer).equals(stricter);
+	static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
+		// return AndFilter.and(stricter, laxer).equals(stricter);
+		return OrFilter.or(stricter, laxer).equals(laxer);
 	}
 
 	/**

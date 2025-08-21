@@ -47,6 +47,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -134,12 +135,19 @@ public class AndFilter implements IAndFilter {
 	}
 
 	public static ISliceFilter and(Collection<? extends ISliceFilter> filters) {
-		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
-			return MATCH_NONE;
-		}
+		return and(filters, false);
+	}
 
+	/**
+	 * 
+	 * @param filters
+	 * @param willBeNegated
+	 *            true if this expression will be negated (e.g. when being called by `OR`)
+	 * @return
+	 */
+	protected static ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
-		ISliceFilter flatten = andNotOptimized(filters);
+		ISliceFilter flatten = andNotOptimized(filters, willBeNegated);
 
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
 		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
@@ -152,7 +160,7 @@ public class AndFilter implements IAndFilter {
 			Collection<? extends ISliceFilter> packedColumns = packColumnFilters(andFilter.getOperands());
 
 			// Then simplify the AND (e.g. `AND(a=a1)` to `a=a1`)
-			return andNotOptimized(packedColumns);
+			return andNotOptimized(packedColumns, willBeNegated);
 		} else {
 			return flatten;
 		}
@@ -169,12 +177,12 @@ public class AndFilter implements IAndFilter {
 
 		// TODO Manage `Not(Or(...))` and `Column(In(...))`
 		Map<Boolean, List<ISliceFilter>> orNotOr =
-				operands.stream().collect(Collectors.partitioningBy(o -> o instanceof OrFilter));
+				operands.stream().collect(Collectors.partitioningBy(o -> o instanceof IOrFilter));
 
 		if (!orNotOr.get(true).isEmpty() && !orNotOr.get(false).isEmpty()) {
 			List<List<ISliceFilter>> orFilters = orNotOr.get(true)
 					.stream()
-					.map(f -> (OrFilter) f)
+					.map(f -> (IOrFilter) f)
 					.map(f -> f.getOperands().stream().toList())
 					.toList();
 
@@ -221,6 +229,13 @@ public class AndFilter implements IAndFilter {
 		return operands.stream().mapToInt(AndFilter::costFunction).sum();
 	}
 
+	/**
+	 * Given a formula, the cost can be evaluated manually by counting the number of each operators. `AND` is free, `OR`
+	 * cost `2`, `!` cost 3, any value matcher costs `1`.
+	 * 
+	 * @param f
+	 * @return
+	 */
 	// factors are additive (hence not multiplicative) as we prefer a high `Not` (counting once) than multiple deep Not
 	@SuppressWarnings("checkstyle:MagicNumber")
 	static int costFunction(ISliceFilter f) {
@@ -228,26 +243,34 @@ public class AndFilter implements IAndFilter {
 			return costFunction(andFilter.getOperands());
 		} else if (f instanceof INotFilter notFilter) {
 			// `Not` costs 3: we prefer one OR than one NOT
-			return 3 + costFunction(notFilter.getNegated());
-		} else if (f instanceof IColumnFilter columnFilter && columnFilter.getValueMatcher() instanceof NotMatcher) {
+			return 2 + costFunction(notFilter.getNegated());
+		} else if (f instanceof IColumnFilter columnFilter) {
 			// `Not` costs 3: we prefer one OR than one NOT
-			return 3;
+			return costFunction(columnFilter.getValueMatcher());
 		} else if (f instanceof IOrFilter orFilter) {
 			return 2 + costFunction(orFilter.getOperands());
 		} else {
-			// ColumnFilter
+			throw new NotYetImplementedException("Not managed: %s".formatted(f));
+		}
+	}
+
+	static int costFunction(IValueMatcher m) {
+		if (m instanceof NotMatcher notMatcher) {
+			// `Not(c=c1)` will cost `3`
+			return 2 + costFunction(notMatcher.getNegated());
+		} else {
 			return 1;
 		}
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
-	private static ISliceFilter andNotOptimized(Collection<? extends ISliceFilter> filters) {
+	private static ISliceFilter andNotOptimized(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
 		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
 			return MATCH_NONE;
 		}
 
 		// Skipping matchAll is useful on `.edit`
-		List<? extends ISliceFilter> notMatchAll = filters.stream().filter(f -> !f.isMatchAll()).flatMap(operand -> {
+		Set<? extends ISliceFilter> notMatchAll = filters.stream().filter(f -> !f.isMatchAll()).flatMap(operand -> {
 			if (operand instanceof IAndFilter operandIsAnd) {
 				// AND of ANDs
 				return operandIsAnd.getOperands().stream();
@@ -258,18 +281,19 @@ public class AndFilter implements IAndFilter {
 			} else {
 				return Stream.of(operand);
 			}
-		}).collect(Collectors.toList());
+		}).collect(Collectors.toCollection(LinkedHashSet::new));
 
 		if (notMatchAll.isEmpty()) {
 			return MATCH_ALL;
 		} else if (notMatchAll.size() == 1) {
-			return notMatchAll.getFirst();
+			return notMatchAll.iterator().next();
 		}
 
 		ISliceFilter orCandidate =
 				OrFilter.builder().filters(notMatchAll.stream().map(NotFilter::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
-		if (costFunction(notOrCandidate) < costFunction(notMatchAll)) {
+		int costOrCandidate = willBeNegated ? costFunction(orCandidate) : costFunction(notOrCandidate);
+		if (costOrCandidate < costFunction(notMatchAll)) {
 			return notOrCandidate;
 		}
 

@@ -20,8 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,12 +34,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -238,6 +234,39 @@ public class TestFilterHelpers {
 						notA_and_notB))
 				.isEqualTo(AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
 						NotFilter.not(ColumnFilter.isEqualTo("c", "c1"))));
+	}
+
+	// This case may underline a subtle edge-case:
+	// In this process, we will try each FILTER operator with the WHERE, to see if they are part of the WHERE or not.
+	// This process may fail due to optimizations, and and `AND(...)` may be turned into a `!OR(...)`, which are then
+	// considered not equals
+	@Test
+	public void testStripFilterFromWhere_NotAnd() {
+		List<ISliceFilter> baseConditions =
+				List.of(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
+
+		// Add more and more negated conditions to push `AND(...)` to be turned into a `NOT(OR(...))`
+		for (int nbNegated = 1; nbNegated < 8; nbNegated++) {
+			List<ISliceFilter> allConditions = new ArrayList<>();
+
+			allConditions.addAll(baseConditions);
+
+			for (int j = 0; j < nbNegated; j++) {
+				allConditions.add(NotFilter.not(ColumnFilter.isEqualTo("k" + j, "v" + j)));
+			}
+
+			ISliceFilter notA_and_notB = AndFilter.and(allConditions);
+
+			// Ensure the given filter is still an AND
+			Assertions.assertThat(notA_and_notB).isInstanceOf(AndFilter.class);
+
+			// Ensure that even with many negated filters, the AND may turn an NOT(OR), but this algorithm does not fail
+			Assertions
+					.assertThat(FilterHelpers.isStricterThan(notA_and_notB,
+							NotFilter.not(ColumnFilter.isEqualTo("k" + 0, "v" + 0))))
+					.describedAs("nbNegated == %s", nbNegated)
+					.isTrue();
+		}
 	}
 
 }

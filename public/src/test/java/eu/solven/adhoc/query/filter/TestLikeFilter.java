@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.query.filter;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;

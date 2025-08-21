@@ -64,9 +64,9 @@ public class AdhocUnsafe {
 	}
 
 	public static void reloadProperties() {
-		// Customize with `-Dadhoc.limitOrdinalToString=15`
-		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.limitColumnSize=15`
+		// Customize with `-Dadhoc.limitOrdinalToString=32`
+		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 16);
+		// Customize with `-Dadhoc.limitColumnSize=10000`
 		limitColumnSize = safeLoadIntegerProperty("adhoc.limitColumnSize", 1_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);

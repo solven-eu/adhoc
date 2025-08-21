@@ -90,6 +90,10 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			});
 		});
 
+		if (hasOptions.isDebugOrExplain()) {
+			log.info("[EXPLAIN] About to show the inducing steps");
+		}
+
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
 			// groupBy number of groupedBy columns, in order to filter the candidate tableQueries

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.query.filter;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,9 +34,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
@@ -74,7 +71,7 @@ public class TestOrFilter {
 
 		Assertions.assertThat(OrFilter.or(filters).toString())
 				.contains("#0=k==0", "#1=k==1")
-				.doesNotContain("7")
+				.doesNotContain("64")
 				.hasSizeLessThan(512);
 	}
 
@@ -105,6 +102,13 @@ public class TestOrFilter {
 	@Test
 	public void testOr_oneMatchNone() {
 		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"));
+
+		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
+	}
+
+	@Test
+	public void test_twiceSame() {
+		ISliceFilter filterAllAndA = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a1"));
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}

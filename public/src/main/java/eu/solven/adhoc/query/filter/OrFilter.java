@@ -106,30 +106,15 @@ public class OrFilter implements IOrFilter {
 	}
 
 	public static ISliceFilter or(Collection<? extends ISliceFilter> filters) {
-		if (filters.stream().anyMatch(ISliceFilter::isMatchAll)) {
-			return MATCH_ALL;
-		}
+		// OR relies on AND optimizations
+		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
 
-		List<? extends ISliceFilter> notMatchNone = filters.stream().filter(f -> !f.isMatchNone()).flatMap(operand -> {
-			if (operand instanceof IOrFilter operandIsOr) {
-				// OR of ORs
-				return operandIsOr.getOperands().stream();
-			} else if (operand instanceof INotFilter notFilter
-					&& notFilter.getNegated() instanceof IAndFilter andFilter) {
-				// NOT of ANDs is OR of NOTs
-				return andFilter.getOperands().stream().map(NotFilter::not);
-			} else {
-				return Stream.of(operand);
-			}
-		}).collect(Collectors.toList());
+		ISliceFilter negatedOptimized = AndFilter.and(negated, true);
 
-		if (notMatchNone.isEmpty()) {
-			return MATCH_NONE;
-		} else if (notMatchNone.size() == 1) {
-			return notMatchNone.getFirst();
+		if (negatedOptimized instanceof INotFilter notFilter) {
+			return notFilter.getNegated();
 		} else {
-			// TODO Rely on `Not` and `And` for optimizations
-			return OrFilter.builder().filters(notMatchNone).build();
+			return NotFilter.not(negatedOptimized);
 		}
 	}
 
