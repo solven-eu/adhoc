@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.filter;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -202,5 +203,12 @@ public class TestOrFilter {
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
 			Assertions.assertThat(orFilter.getOperands()).hasSize(3);
 		});
+	}
+
+	@Test
+	public void testIncluded() {
+		Assertions
+				.assertThat(OrFilter.or(AndFilter.and(Map.of("a", "a1", "b", "b1")), AndFilter.and(Map.of("b", "b1"))))
+				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
 	}
 }

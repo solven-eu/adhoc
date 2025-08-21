@@ -56,12 +56,12 @@ public class NotFilter implements INotFilter {
 			return MATCH_NONE;
 		} else if (filter.isMatchNone()) {
 			return MATCH_ALL;
-		} else if (filter.isNot() && filter instanceof NotFilter notFilter) {
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
 			return notFilter.getNegated();
 		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
 			// Prefer `c!=c1` over `!(c==c1)`
 			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
-		} else if (filter instanceof OrFilter orFilter) {
+		} else if (filter instanceof IOrFilter orFilter) {
 			// Plays optimizations given a And of Not.
 			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
 			return AndFilter.and(orFilter.getOperands().stream().map(NotFilter::not).toList());

@@ -300,8 +300,9 @@ public class FilterHelpers {
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
 	static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
-		// return AndFilter.and(stricter, laxer).equals(stricter);
-		return OrFilter.or(stricter, laxer).equals(laxer);
+		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
+		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
+		return AndFilter.and(stricter, laxer).equals(stricter);
 	}
 
 	/**

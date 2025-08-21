@@ -25,7 +25,6 @@ package eu.solven.adhoc.query.filter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -405,13 +404,13 @@ public class TestAndFilter {
 
 	@Test
 	public void testCostFunction() {
-		Assertions.assertThat(AndFilter.costFunction(Set.of(OrFilter.or(Map.of("a", "a1"))))).isEqualTo(1);
-		Assertions.assertThat(AndFilter.costFunction(Set.of(AndFilter.and(Map.of("a", "a1"))))).isEqualTo(1);
+		Assertions.assertThat(AndFilter.costFunction(OrFilter.or(Map.of("a", "a1")))).isEqualTo(1);
+		Assertions.assertThat(AndFilter.costFunction(AndFilter.and(Map.of("a", "a1")))).isEqualTo(1);
 
 		Assertions
 				.assertThat(OrFilter.or(AndFilter.and(ImmutableMap.of("a", "a1")),
 						AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1"))))
-				.hasToString("a==a1|b==b1&c==c1")
+				.hasToString("b==b1&c==c1|a==a1")
 				.satisfies(f -> {
 					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
 				});

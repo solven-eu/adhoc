@@ -73,6 +73,13 @@ public class AndFilter implements IAndFilter {
 	@NonNull
 	final ImmutableSet<ISliceFilter> filters;
 
+	// This constructor helps not copying ImmutableSet, as `@Singular` always generates a builder, preventing `.copyOf`
+	// optimization
+	@Deprecated(since = "Legit API?")
+	public AndFilter(Collection<? extends ISliceFilter> filters) {
+		this.filters = ImmutableSet.copyOf(filters);
+	}
+
 	@Override
 	public boolean isNot() {
 		return false;
@@ -152,7 +159,10 @@ public class AndFilter implements IAndFilter {
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
 		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
 		if (flatten instanceof IAndFilter andFilter) {
-			flatten = optimizeAndOfOr(andFilter);
+			flatten = optimizeAndOfOr(andFilter.getOperands());
+		} else if (flatten instanceof INotFilter notFilter && notFilter.getNegated() instanceof IOrFilter orFilter) {
+			// This is a AND optimized as a `Not(Or(...))`
+			flatten = optimizeAndOfOr(orFilter.getOperands().stream().map(NotFilter::not).toList());
 		}
 
 		if (flatten instanceof IAndFilter andFilter) {
@@ -166,32 +176,44 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
+	/**
+	 * Dedicated to turn `(a==a1|b==b1)&(a==a1)` to `(a==a1)`.
+	 * 
+	 * TODO turn `!(a==a1&b==b1)&(a!=a1)` to `(a==a1)`.
+	 * 
+	 * @param operands
+	 * @return
+	 */
 	// https://en.m.wikipedia.org/wiki/Logic_optimization
 	// https://en.m.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
 	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	private static ISliceFilter optimizeAndOfOr(IAndFilter andFilter) {
-		Set<ISliceFilter> operands = andFilter.getOperands();
+	private static ISliceFilter optimizeAndOfOr(Collection<ISliceFilter> operands) {
+		// Set<ISliceFilter> operands = andFilter.getOperands();
 
 		// TODO Manage `Not(Or(...))` and `Column(In(...))`
-		Map<Boolean, List<ISliceFilter>> orNotOr =
-				operands.stream().collect(Collectors.partitioningBy(o -> o instanceof IOrFilter));
+		Map<Boolean, List<ISliceFilter>> orNotOr = operands.stream()
+				.collect(Collectors.partitioningBy(o -> o instanceof IOrFilter
+						|| o instanceof INotFilter notFilter && notFilter.getNegated() instanceof IAndFilter));
 
 		if (!orNotOr.get(true).isEmpty() && !orNotOr.get(false).isEmpty()) {
-			List<List<ISliceFilter>> orFilters = orNotOr.get(true)
-					.stream()
-					.map(f -> (IOrFilter) f)
-					.map(f -> f.getOperands().stream().toList())
-					.toList();
+			List<List<ISliceFilter>> orFilters = orNotOr.get(true).stream().map(AndFilter::getOrOperands).toList();
 
-			ISliceFilter and = and(orNotOr.get(false));
-			Set<ISliceFilter> ors = Lists.cartesianProduct(orFilters).stream().map(entry -> {
-				ISliceFilter and2 = and(entry);
-				return and(and2, and);
+			// Holds all AND operands which are not ORs.
+			ISliceFilter simpleAnd = and(orNotOr.get(false));
+
+			// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
+			Set<ISliceFilter> ors = Lists.cartesianProduct(orFilters).stream().map(orEntry -> {
+				ISliceFilter and2 = and(orEntry);
+
+				// Combine the simple AND (based on not OR oeprands) with the orEntry.
+				// Keep the simple AND on the left, as they are common to all entries, hence easier to be read if first
+				return and(simpleAnd, and2);
 			})
-					// We hope a bunch of entry are filtered out
+					// Some entries would be filtered out
+					// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
 					.filter(f -> !f.isMatchNone())
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 
@@ -199,8 +221,8 @@ public class AndFilter implements IAndFilter {
 
 			ors.stream().forEach(inducer -> {
 				ors.stream()
-						// filter is induced is stricter than inducer
-						.filter(induced -> induced != inducer && and(induced, inducer).equals(induced))
+						// filter induced is stricter than inducer
+						.filter(induced -> induced != inducer && FilterHelpers.isStricterThan(induced, inducer))
 						.forEach(induced -> {
 							// BEWARE an induced may have multiple inducer
 							inducedToInducer.put(induced, inducer);
@@ -218,13 +240,28 @@ public class AndFilter implements IAndFilter {
 			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
 			// better/simpler/faster. Generally speaking, we prefer AND over OR.
 			ISliceFilter orCandidate = OrFilter.or(ors);
-			if (costFunction(orCandidate) < costFunction(andFilter)) {
+			if (costFunction(orCandidate) < costFunction(operands)) {
 				return orCandidate;
 			}
 		}
-		return andFilter;
+		return new AndFilter(operands);
 	}
 
+	private static List<ISliceFilter> getOrOperands(ISliceFilter f) {
+		if (f instanceof IOrFilter orFilter) {
+			return ImmutableList.copyOf(orFilter.getOperands());
+		} else {
+			return ImmutableList.copyOf(
+					((IAndFilter) ((INotFilter) f).getNegated()).getOperands().stream().map(NotFilter::not).toList());
+		}
+	}
+
+	/**
+	 * Evaluate the cost of an `AND` given its operands
+	 * 
+	 * @param operands
+	 * @return the cost of given operands, considered as being AND together.
+	 */
 	static int costFunction(Collection<? extends ISliceFilter> operands) {
 		return operands.stream().mapToInt(AndFilter::costFunction).sum();
 	}
@@ -274,14 +311,19 @@ public class AndFilter implements IAndFilter {
 			if (operand instanceof IAndFilter operandIsAnd) {
 				// AND of ANDs
 				return operandIsAnd.getOperands().stream();
-			} else if (operand instanceof INotFilter notFilter
-					&& notFilter.getNegated() instanceof IOrFilter orFilter) {
-				// NOT of ORs is AND of NOTs
-				return orFilter.getOperands().stream().map(NotFilter::not);
+			} else if (operand instanceof INotFilter notFilter) {
+				if (notFilter.getNegated() instanceof IOrFilter orFilter) {
+					// NOT of ORs is AND of NOTs
+					return orFilter.getOperands().stream().map(NotFilter::not);
+					// } else if (notFilter.getNegated() instanceof IAndFilter andFilter) {
+					// NOT of ANDs is AND of NOTs
+					// return andFilter.getOperands().stream().map(NotFilter::not);
+				}
+				return Stream.of(operand);
 			} else {
 				return Stream.of(operand);
 			}
-		}).collect(Collectors.toCollection(LinkedHashSet::new));
+		}).collect(ImmutableSet.toImmutableSet());
 
 		if (notMatchAll.isEmpty()) {
 			return MATCH_ALL;
@@ -292,12 +334,17 @@ public class AndFilter implements IAndFilter {
 		ISliceFilter orCandidate =
 				OrFilter.builder().filters(notMatchAll.stream().map(NotFilter::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
-		int costOrCandidate = willBeNegated ? costFunction(orCandidate) : costFunction(notOrCandidate);
+		int costOrCandidate;
+		if (willBeNegated) {
+			costOrCandidate = costFunction(orCandidate);
+		} else {
+			costOrCandidate = costFunction(notOrCandidate);
+		}
 		if (costOrCandidate < costFunction(notMatchAll)) {
 			return notOrCandidate;
 		}
 
-		return builder().filters(notMatchAll).build();
+		return new AndFilter(notMatchAll);
 	}
 
 	/**

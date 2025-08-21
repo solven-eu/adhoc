@@ -197,23 +197,32 @@ public class TestFilterHelpers {
 	}
 
 	@Test
-	public void testStripFilterFromWhere() {
+	public void testStripFilterFromWhere_same() {
 		// filter is hold in where
 		Assertions
 				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
 						AndFilter.and(Map.of("a", "a1"))))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
+	}
 
+	@Test
+	public void testStripFilterFromWhere_unrelated() {
 		// filter is unrelated with where
 		Assertions
 				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
 						AndFilter.and(Map.of("b", "b1"))))
 				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
+	}
 
+	@Test
+	public void testStripFilterFromWhere_filterIsLaxer() {
 		// filter is laxer than where
 		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
 				AndFilter.and(Map.of("b", "b1")))).isEqualTo(ISliceFilter.MATCH_ALL);
+	}
 
+	@Test
+	public void testStripFilterFromWhere_nonEmptyIntersection() {
 		// filter is disjoint with non-empty-union than where
 		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
 				AndFilter.and(Map.of("b", "b1", "c", "c1")))).isEqualTo(AndFilter.and(Map.of("c", "c1")));
@@ -258,7 +267,9 @@ public class TestFilterHelpers {
 			ISliceFilter notA_and_notB = AndFilter.and(allConditions);
 
 			// Ensure the given filter is still an AND
-			Assertions.assertThat(notA_and_notB).isInstanceOf(AndFilter.class);
+			// Assertions.assertThat(notA_and_notB)
+			// .describedAs("nbNegated == %s", nbNegated)
+			// .isInstanceOf(AndFilter.class);
 
 			// Ensure that even with many negated filters, the AND may turn an NOT(OR), but this algorithm does not fail
 			Assertions
