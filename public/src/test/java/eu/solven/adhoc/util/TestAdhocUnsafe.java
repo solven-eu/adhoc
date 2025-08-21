@@ -38,7 +38,7 @@ public class TestAdhocUnsafe {
 	@Test
 	public void testDefaults() {
 		Assertions.assertThat(AdhocUnsafe.limitColumnSize).isEqualTo(1_000_000);
-		Assertions.assertThat(AdhocUnsafe.limitOrdinalToString).isEqualTo(5);
+		Assertions.assertThat(AdhocUnsafe.limitOrdinalToString).isEqualTo(16);
 		Assertions.assertThat(AdhocUnsafe.limitCoordinates).isEqualTo(100);
 		Assertions.assertThat(AdhocUnsafe.isFailFast()).isEqualTo(true);
 		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(1_000_000);

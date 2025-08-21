@@ -50,7 +50,10 @@ public class AdhocUnsafe {
 	public static void resetProperties() {
 		log.info("Resetting AdhocUnsafe configuration");
 
-		limitOrdinalToString = 5;
+		// This default should be big enough to show all informations in most cases, without printing huge information
+		// on edge-cases
+		// Typically, 5 is too small as many projects generates more than 5 filtered columns
+		limitOrdinalToString = 16;
 		limitColumnSize = 1_000_000;
 		limitCoordinates = 100;
 		failFast = true;
@@ -61,9 +64,9 @@ public class AdhocUnsafe {
 	}
 
 	public static void reloadProperties() {
-		// Customize with `-Dadhoc.limitOrdinalToString=15`
-		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 5);
-		// Customize with `-Dadhoc.limitColumnSize=15`
+		// Customize with `-Dadhoc.limitOrdinalToString=32`
+		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 16);
+		// Customize with `-Dadhoc.limitColumnSize=10000`
 		limitColumnSize = safeLoadIntegerProperty("adhoc.limitColumnSize", 1_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
 		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);

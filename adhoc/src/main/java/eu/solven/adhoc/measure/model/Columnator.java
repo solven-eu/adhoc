@@ -45,8 +45,8 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed. More
- * specifically, it requires given columns to have a simple `EqualsMatcher` (i.e. to be mono-selected).
+ * A {@link Columnator} is a {@link IMeasure} which applies its logic only if given columns are expressed. A column is
+ * expressed if it groupedBy, or if it is mono-selected (e.g. with a simple `EqualsMatcher`).
  * 
  * If the flag `required` is turned to `false`, this turns into a `rejected` behavior: given columns must not be
  * filtered at all.

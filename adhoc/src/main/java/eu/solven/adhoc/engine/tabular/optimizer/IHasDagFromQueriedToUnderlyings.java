@@ -34,7 +34,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 
 /**
- * For data-structure holding a tree-like representing tasks and dependant tasks.
+ * For data-structure holding a tree-like representing tasks and dependent tasks.
  * 
  * @author Benoit Lacelle
  */

@@ -25,7 +25,6 @@ package eu.solven.adhoc.query.filter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -38,7 +37,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
@@ -69,7 +70,7 @@ public class TestAndFilter {
 
 		Assertions.assertThat(AndFilter.and(filters).toString())
 				.contains("#0=k0==0", "#1=k1==1")
-				.doesNotContain("7")
+				.doesNotContain("32")
 				.hasSizeLessThan(512);
 	}
 
@@ -353,13 +354,13 @@ public class TestAndFilter {
 		Assertions
 				.assertThat(AndFilter
 						.costFunction(NotFilter.builder().negated(OrFilter.builder().filters(likes).build()).build()))
-				.isEqualTo(3 + 2 + 1 + 1 + 1);
+				.isEqualTo(2 + 2 + 1 + 1 + 1);
 
 		ISliceFilter notA1AndNotA2 = AndFilter.and(nots);
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
-			// cost==5, which is cheaper than 8
-			Assertions.assertThat(AndFilter.costFunction(notFilter)).isEqualTo(3 + 2 + 1 + 1 + 1);
+			// cost==7, which is cheaper than 8
+			Assertions.assertThat(AndFilter.costFunction(notFilter)).isEqualTo(2 + 2 + 1 + 1 + 1);
 
 			Assertions.assertThat(notFilter.getNegated()).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
 				Assertions.assertThat(orFilter.getOperands()).containsAll(likes);
@@ -403,13 +404,13 @@ public class TestAndFilter {
 
 	@Test
 	public void testCostFunction() {
-		Assertions.assertThat(AndFilter.costFunction(Set.of(OrFilter.or(Map.of("a", "a1"))))).isEqualTo(1);
-		Assertions.assertThat(AndFilter.costFunction(Set.of(AndFilter.and(Map.of("a", "a1"))))).isEqualTo(1);
+		Assertions.assertThat(AndFilter.costFunction(OrFilter.or(Map.of("a", "a1")))).isEqualTo(1);
+		Assertions.assertThat(AndFilter.costFunction(AndFilter.and(Map.of("a", "a1")))).isEqualTo(1);
 
 		Assertions
 				.assertThat(OrFilter.or(AndFilter.and(ImmutableMap.of("a", "a1")),
 						AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1"))))
-				.hasToString("a==a1|b==b1&c==c1")
+				.hasToString("b==b1&c==c1|a==a1")
 				.satisfies(f -> {
 					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
 				});
@@ -425,9 +426,48 @@ public class TestAndFilter {
 		Assertions
 				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
 						OrFilter.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))))
-				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
+				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
+				// `LikeMatcher(pattern=c%)`)")
+				.hasToString("a==a1&!(b matches `LikeMatcher(pattern=b%)`&c does NOT match `LikeMatcher(pattern=c%)`)")
 				.satisfies(f -> {
-					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 3 + 2 + 1);
+					Assertions.assertThat(AndFilter.costFunction(f)).isEqualTo(1 + 2 + 1 + 2 + 1);
 				});
+	}
+
+	@Test
+	public void testCostFunction_notOfNot() {
+		// `a==a1`
+		Assertions.assertThat(AndFilter.costFunction(ColumnFilter.isMatching("c", EqualsMatcher.isEqualTo(123L))))
+				.isEqualTo(1);
+
+		// `a!=a1`
+		Assertions.assertThat(AndFilter.costFunction(
+				ColumnFilter.isMatching("c", NotMatcher.builder().negated(EqualsMatcher.isEqualTo(123L)).build())))
+				.isEqualTo(2 + 1);
+
+		// `!(a==a1)`
+		Assertions.assertThat(AndFilter.costFunction(
+				NotFilter.builder().negated(ColumnFilter.isMatching("c", EqualsMatcher.isEqualTo(123L))).build()))
+				.isEqualTo(2 + 1);
+
+		// `not(not(a==a1))`
+		Assertions.assertThat(AndFilter.costFunction(ColumnFilter.isMatching("c",
+				NotMatcher.builder()
+						.negated(NotMatcher.builder().negated(EqualsMatcher.isEqualTo(123L)).build())
+						.build())))
+				.isEqualTo(2 + 2 + 1);
+	}
+
+	@Test
+	public void testAnd_manyNegationsAndRedundant() {
+		ISliceFilter notA_and_notB = AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
+				NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
+				NotFilter.not(ColumnFilter.isEqualTo("c", "c1")));
+
+		// Ensure the wide AND of NOT is turned into a NOT of OR.
+		Assertions.assertThat(notA_and_notB).isInstanceOf(NotFilter.class);
+
+		Assertions.assertThat(AndFilter.and(notA_and_notB, NotFilter.not(ColumnFilter.isEqualTo("a", "a1"))))
+				.isEqualTo(notA_and_notB);
 	}
 }

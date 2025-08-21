@@ -33,8 +33,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,7 +40,6 @@ import java.util.stream.IntStream;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Ints;
@@ -56,7 +53,6 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
@@ -66,7 +62,6 @@ import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
-import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromQueriedToUnderlyings;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
@@ -385,42 +380,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			}
 		};
 
-		walkUpDag(queryPod, queryStepsDag, queryStepToValues, queryStepConsumer);
-	}
-
-	public static void walkUpDag(QueryPod queryPod,
-			IHasDagFromQueriedToUnderlyings queryStepsDag,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
-			Consumer<? super CubeQueryStep> queryStepConsumer) {
-		try {
-			queryPod.getExecutorService().submit(() -> {
-				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
-					// multi-threaded
-					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDagToDependancies();
-
-					List<CubeQueryStep> roots =
-							dag.vertexSet().stream().filter(step -> dag.getAncestors(step).isEmpty()).toList();
-
-					QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
-							.fromQueriedToDependancies(dag)
-							.queryStepToValues(queryStepToValues)
-							.onReadyStep(queryStepConsumer);
-					List<QueryStepRecursiveAction> actions =
-							roots.stream().map(step -> actionTemplate.step(step).build()).toList();
-
-					ForkJoinTask.invokeAll(actions);
-				} else {
-					// mono-threaded
-					queryStepsDag.iteratorFromUnderlyingsToQueried().forEachRemaining(queryStepConsumer);
-				}
-
-			}).get();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted", e);
-		} catch (ExecutionException e) {
-			throw new IllegalStateException("Failed", e);
-		}
+		QueryEngineConcurrencyHelper.walkUpDag(queryPod, queryStepsDag, queryStepToValues, queryStepConsumer);
 	}
 
 	protected void onQueryStep(QueryPod queryPod,

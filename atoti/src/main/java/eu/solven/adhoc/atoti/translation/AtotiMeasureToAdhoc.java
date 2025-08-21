@@ -42,6 +42,7 @@ import com.activeviam.pivot.postprocessing.impl.ABasicPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
+import com.qfs.agg.impl.SingleValueFunction;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
 import com.quartetfs.biz.pivot.definitions.IAggregatedMeasureDescription;
@@ -220,9 +221,11 @@ public class AtotiMeasureToAdhoc {
 	}
 
 	protected List<IMeasure> onAggregatedMeasure(IAggregatedMeasureDescription preAggregatedMeasure) {
-		Aggregator.AggregatorBuilder aggregatorBuilder = Aggregator.builder()
-				.name(preAggregatedMeasure.getName())
-				.aggregationKey(preAggregatedMeasure.getPreProcessedAggregation());
+		String atotiAggregation = preAggregatedMeasure.getPreProcessedAggregation();
+		String adhocAggregation = toAdhocAggregation(atotiAggregation);
+
+		Aggregator.AggregatorBuilder aggregatorBuilder =
+				Aggregator.builder().name(preAggregatedMeasure.getName()).aggregationKey(adhocAggregation);
 
 		if (sourceMode == SourceMode.Datastore) {
 			String rawFieldName = preAggregatedMeasure.getFieldName();
@@ -251,6 +254,15 @@ public class AtotiMeasureToAdhoc {
 		transferTagProperties(preAggregatedMeasure, aggregatorBuilder::tag);
 
 		return List.of(aggregatorBuilder.build());
+	}
+
+	protected String toAdhocAggregation(String atotiAggregation) {
+		if (SingleValueFunction.PLUGIN_KEY.equals(atotiAggregation)) {
+			// BEWARE Atoti would throw if the values is not reduced to 0 or 1, while Coalesce is laxer by returning the
+			// first not-null.
+			return CoalesceAggregation.KEY;
+		}
+		return atotiAggregation;
 	}
 
 	private String quoteIfNecessary(String rawFieldName) {

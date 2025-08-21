@@ -45,6 +45,7 @@ import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessor
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.qfs.agg.impl.SingleValueFunction;
 import com.quartetfs.biz.pivot.definitions.IActivePivotInstanceDescription;
 import com.quartetfs.biz.pivot.definitions.IAggregatedMeasureDescription;
 import com.quartetfs.biz.pivot.definitions.IPostProcessorDescription;
@@ -234,6 +235,23 @@ public class TestAtotiMeasureToAdhoc {
 			Assertions.assertThat(aggregator.getColumnName()).isEqualTo("\"someMeasure.Name\"");
 			Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo("someAggregationKey");
 			Assertions.assertThat(aggregator.getTags()).contains("group=someGroup", "folder=someFolder").hasSize(2);
+		});
+	}
+
+	@Test
+	public void testAggregator_SingleValue() {
+		AtotiMeasureToAdhoc converter = AtotiMeasureToAdhoc.builder().sourceMode(SourceMode.Datastore).build();
+
+		IAggregatedMeasureDescription a = new AggregatedMeasureDescription();
+		a.setName("someMeasureName");
+		a.setFieldName("someFieldName");
+		a.setPreProcessedAggregation(SingleValueFunction.PLUGIN_KEY);
+
+		List<IMeasure> measures = converter.onAggregatedMeasure(a);
+		Assertions.assertThat(measures).singleElement().isInstanceOfSatisfying(Aggregator.class, aggregator -> {
+			Assertions.assertThat(aggregator.getName()).isEqualTo("someMeasureName");
+			Assertions.assertThat(aggregator.getColumnName()).isEqualTo("someFieldName");
+			Assertions.assertThat(aggregator.getAggregationKey()).isEqualTo(CoalesceAggregation.KEY);
 		});
 	}
 

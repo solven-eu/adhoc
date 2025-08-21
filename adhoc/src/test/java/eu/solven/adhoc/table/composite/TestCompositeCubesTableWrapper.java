@@ -47,6 +47,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -218,6 +219,45 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(IMeasure.alias("min", k1Sum.getName()))
 				.contains(IMeasure.alias("max", k1Sum.getName()))
+				.hasSize(2);
+		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
+	}
+
+	// Test ensuring the computation of the filter for given subCube is also applied on a per-measure filter
+	@Test
+	public void testSubQuery_FilteredMeasure() {
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
+
+		// The subCube has a measure named `k1`
+		IHasMeasures subCube = Mockito.mock(IHasMeasures.class);
+		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
+
+		Set<String> subColumns = Set.of("c1");
+
+		// Request the min and the max of the same measure cross cubes
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(k1Sum.toBuilder().name("max_c1").aggregationKey(MaxAggregation.KEY).build())
+						.filter(ColumnFilter.isLike("c1", "a%"))
+						.build())
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(k1Sum.toBuilder().name("max_c2").aggregationKey(MaxAggregation.KEY).build())
+						.filter(ColumnFilter.isLike("c2", "a%"))
+						.build())
+				.build();
+
+		CompatibleMeasures compatibleMeasures = composite.computeSubMeasures(compositeQuery, subCube, subColumns);
+		Assertions.assertThat(compatibleMeasures.getPredefined())
+				.contains(Filtrator.builder()
+						.name("max_c1")
+						.underlying(k1Sum.getName())
+						.filter(ColumnFilter.isLike("c1", "a%"))
+						.build())
+				.contains(Filtrator.builder()
+						.name("max_c2")
+						.underlying(k1Sum.getName())
+						.filter(ISliceFilter.MATCH_ALL)
+						.build())
 				.hasSize(2);
 		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
 	}

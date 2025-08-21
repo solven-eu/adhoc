@@ -20,8 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,12 +34,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -201,26 +197,87 @@ public class TestFilterHelpers {
 	}
 
 	@Test
-	public void testStripFilterFromWhere() {
+	public void testStripFilterFromWhere_same() {
 		// filter is hold in where
 		Assertions
 				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
 						AndFilter.and(Map.of("a", "a1"))))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
+	}
 
+	@Test
+	public void testStripFilterFromWhere_unrelated() {
 		// filter is unrelated with where
 		Assertions
 				.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1")),
 						AndFilter.and(Map.of("b", "b1"))))
 				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
+	}
 
+	@Test
+	public void testStripFilterFromWhere_filterIsLaxer() {
 		// filter is laxer than where
 		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
 				AndFilter.and(Map.of("b", "b1")))).isEqualTo(ISliceFilter.MATCH_ALL);
+	}
 
+	@Test
+	public void testStripFilterFromWhere_nonEmptyIntersection() {
 		// filter is disjoint with non-empty-union than where
 		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(AndFilter.and(Map.of("a", "a1", "b", "b1")),
 				AndFilter.and(Map.of("b", "b1", "c", "c1")))).isEqualTo(AndFilter.and(Map.of("c", "c1")));
+	}
+
+	@Test
+	public void testStripFilterFromWhere_NotOr() {
+		ISliceFilter notA_and_notB = AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
+				NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
+				NotFilter.not(ColumnFilter.isEqualTo("c", "c1")));
+
+		// Ensure the given is optimized into a Not(Or(a=a1|b=b1))
+		Assertions.assertThat(notA_and_notB).isInstanceOf(NotFilter.class);
+
+		// filter is hold in where
+		Assertions
+				.assertThat(FilterHelpers.stripWhereFromFilter(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
+						notA_and_notB))
+				.isEqualTo(AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
+						NotFilter.not(ColumnFilter.isEqualTo("c", "c1"))));
+	}
+
+	// This case may underline a subtle edge-case:
+	// In this process, we will try each FILTER operator with the WHERE, to see if they are part of the WHERE or not.
+	// This process may fail due to optimizations, and and `AND(...)` may be turned into a `!OR(...)`, which are then
+	// considered not equals
+	@Test
+	public void testStripFilterFromWhere_NotAnd() {
+		List<ISliceFilter> baseConditions =
+				List.of(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
+
+		// Add more and more negated conditions to push `AND(...)` to be turned into a `NOT(OR(...))`
+		for (int nbNegated = 1; nbNegated < 8; nbNegated++) {
+			List<ISliceFilter> allConditions = new ArrayList<>();
+
+			allConditions.addAll(baseConditions);
+
+			for (int j = 0; j < nbNegated; j++) {
+				allConditions.add(NotFilter.not(ColumnFilter.isEqualTo("k" + j, "v" + j)));
+			}
+
+			ISliceFilter notA_and_notB = AndFilter.and(allConditions);
+
+			// Ensure the given filter is still an AND
+			// Assertions.assertThat(notA_and_notB)
+			// .describedAs("nbNegated == %s", nbNegated)
+			// .isInstanceOf(AndFilter.class);
+
+			// Ensure that even with many negated filters, the AND may turn an NOT(OR), but this algorithm does not fail
+			Assertions
+					.assertThat(FilterHelpers.isStricterThan(notA_and_notB,
+							NotFilter.not(ColumnFilter.isEqualTo("k" + 0, "v" + 0))))
+					.describedAs("nbNegated == %s", nbNegated)
+					.isTrue();
+		}
 	}
 
 }
