@@ -28,8 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.common.util.concurrent.MoreExecutors;
-
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
@@ -47,6 +45,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -81,13 +80,9 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 	@Default
 	IColumnsManager columnsManager = ColumnsManager.builder().build();
 
-	// Using a ForkJoinPool is much more complex than using an ExecutorService
-	// But it enable smooth usage of Stream API.
-	// Given part of the query is actually waiting for an external database (i.e. ITableQuery), it may be preferably not
-	// to rely on the commonPool.
 	@NonNull
 	@Default
-	ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+	ExecutorService executorService = AdhocUnsafe.adhocCommonPool;
 
 	@NonNull
 	@Default
@@ -199,7 +194,7 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 				columnsManager = ColumnsManager.builder().build();
 			}
 			if (executorService == null) {
-				executorService = MoreExecutors.newDirectExecutorService();
+				executorService = AdhocUnsafe.adhocCommonPool;
 			}
 			if (queryStepCache == null) {
 				queryStepCache = GuavaQueryStepCache.withSize(1);

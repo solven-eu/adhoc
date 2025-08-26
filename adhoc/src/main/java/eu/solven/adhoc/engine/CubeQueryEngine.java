@@ -90,6 +90,7 @@ import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -121,6 +122,21 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
 	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
+
+	@NonNull
+	@VisibleForTesting
+	@Getter
+	ITableQueryEngine tableQueryEngine;
+
+	private CubeQueryEngine(AdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
+		if (tableQueryEngine == null) {
+			tableQueryEngine = TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
+		}
+
+		this.factories = factories;
+		this.eventBus = eventBus;
+		this.tableQueryEngine = tableQueryEngine;
+	}
 
 	@Override
 	public String toString() {
@@ -333,13 +349,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		ITableQueryEngine tableQueryEngine = makeTableQueryEngine();
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
-	}
-
-	@VisibleForTesting
-	public ITableQueryEngine makeTableQueryEngine() {
-		return TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 	}
 
 	/**

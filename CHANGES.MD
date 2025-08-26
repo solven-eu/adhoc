@@ -2,6 +2,11 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.11]
+
+### Changed
+- `ITableQueryEngine` is now a field of `CubeQueryEngine` (instead of `.makeTableQueryEngine` factory method).
+
 ## [0.0.10]
 
 ### Added
