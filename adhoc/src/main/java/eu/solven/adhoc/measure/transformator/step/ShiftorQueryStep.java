@@ -48,6 +48,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -115,10 +116,13 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		step.getGroupBy().getGroupedByColumns().forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));
 
+			Object value;
 			if (optOperand.isEmpty()) {
-				throw new IllegalStateException("Missing value for column=%s in %s".formatted(column, editedSlice));
+				value = NullMatcher.NULL_HOLDER;
+			} else {
+				value = optOperand.get();
 			}
-			builder.append(optOperand.get());
+			builder.append(value);
 		});
 
 		return builder.build().asSlice();

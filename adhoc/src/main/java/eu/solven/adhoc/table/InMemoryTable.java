@@ -24,6 +24,7 @@ package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.springframework.util.ClassUtils;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -317,8 +320,15 @@ public class InMemoryTable implements ITableWrapper {
 	@Override
 	public List<ColumnMetadata> getColumns() {
 		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
+		Set<String> nullableColumns = new HashSet<>();
 
-		rows.forEach(row -> row.forEach((k, v) -> columnToClasses.put(k, v.getClass())));
+		rows.forEach(row -> row.forEach((k, v) -> {
+			if (v == null) {
+				nullableColumns.add(k);
+			} else {
+				columnToClasses.put(k, v.getClass());
+			}
+		}));
 
 		Map<String, Class<?>> columnToClass = new HashMap<>();
 
@@ -328,13 +338,9 @@ public class InMemoryTable implements ITableWrapper {
 			} else if (classes.isEmpty()) {
 				throw new IllegalStateException("No class for column=%s in %s".formatted(column, columnToClasses));
 			} else {
-				if (classes.stream().allMatch(Number.class::isAssignableFrom)) {
-					columnToClass.put(column, Number.class);
-				} else if (classes.stream().allMatch(CharSequence.class::isAssignableFrom)) {
-					columnToClass.put(column, CharSequence.class);
-				} else {
-					columnToClass.put(column, Object.class);
-				}
+				// Relates with eu.solven.adhoc.column.ColumnMetadata.merge(Collection<? extends ColumnMetadata>)
+				Class<?> type = classes.stream().reduce(ClassUtils::determineCommonAncestor).orElse(Object.class);
+				columnToClass.put(column, type);
 			}
 		});
 

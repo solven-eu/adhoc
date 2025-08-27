@@ -31,6 +31,7 @@ import org.springframework.util.ClassUtils;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.model.IHasTags;
+import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -63,6 +64,15 @@ public class ColumnMetadata implements IHasName, IHasTags {
 	@Singular
 	Set<String> aliases;
 
+	/**
+	 * 
+	 * Typically useful in {@link CompositeCubesTableWrapper}, where a column can be fed by different underlying
+	 * columns.
+	 * 
+	 * @param columns
+	 *            a Set of {@link ColumnMetadata}. Must not be empty
+	 * @return a ColumnMetdata representing the union of input columns.
+	 */
 	public static ColumnMetadata merge(Collection<? extends ColumnMetadata> columns) {
 		if (columns.isEmpty()) {
 			throw new IllegalArgumentException("Need at least one column");

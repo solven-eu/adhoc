@@ -258,7 +258,7 @@ public class FilterHelpers {
 			commonParts = Sets.intersection(commonParts, nextFilterParts);
 		}
 
-		return AndFilter.and(commonParts);
+		return FilterOptimizerHelpers.and(commonParts);
 	}
 
 	/**
@@ -302,7 +302,7 @@ public class FilterHelpers {
 	static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
 		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
-		return AndFilter.and(stricter, laxer).equals(stricter);
+		return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 	}
 
 	/**
@@ -338,6 +338,7 @@ public class FilterHelpers {
 			}
 		}
 
-		return AndFilter.and(notInWhere);
+		return FilterOptimizerHelpers.and(notInWhere);
 	}
+
 }

@@ -40,6 +40,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -60,6 +61,8 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		table().add(Map.of("color", "green", "ccy", "JPY", "k1", 456));
 		// Lack measure: should not materialize coordinates on shift
 		table().add(Map.of("color", "yellow", "ccy", "CHN"));
+		// Lack one column
+		table().add(MapWithNulls.of("color", null, "ccy", "HKD", "k1", 567));
 	}
 
 	// Default is EUR
@@ -96,12 +99,33 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 	}
 
 	@Test
+	public void testGroupByCcy_underlying() {
+		ITabularView output = cube().execute(CubeQuery.builder().measure(k1Sum).groupByAlso("ccy").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(k1Sum.getName(), 0L + 123 + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "USD");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(k1Sum.getName(), 0L + 234);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(k1Sum.getName(), 0L + 456);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "HKD");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(k1Sum.getName(), 0L + 567);
+		}).hasSize(4);
+	}
+
+	@Test
 	public void testGroupByCcy() {
 		ITabularView output = cube().execute(CubeQuery.builder().measure(mName).groupByAlso("ccy").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(3).anySatisfy((coordinates, measures) -> {
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
 		}).anySatisfy((coordinates, measures) -> {
@@ -110,7 +134,10 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		}).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-		});
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "HKD");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		}).hasSize(4);
 	}
 
 	@Test
