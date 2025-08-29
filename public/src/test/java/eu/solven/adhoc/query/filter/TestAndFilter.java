@@ -126,8 +126,7 @@ public class TestAndFilter {
 		ISliceFilter filterA1andInA12 =
 				AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isIn("a", "a1", "a2"));
 
-		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a1")`
-		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
+		Assertions.assertThat(filterA1andInA12).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
@@ -135,8 +134,16 @@ public class TestAndFilter {
 		ISliceFilter filterA1andInA12 =
 				AndFilter.and(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3"));
 
-		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a2")`
-		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
+		Assertions.assertThat(filterA1andInA12).isEqualTo(ColumnFilter.isEqualTo("a", "a2"));
+	}
+
+	@Test
+	public void testMultipleSameColumn_InAndIn_3blocks() {
+		ISliceFilter filterA1andInA12 = AndFilter.and(ColumnFilter.isIn("a", "a1", "a2"),
+				ColumnFilter.isIn("a", "a3", "a4"),
+				ColumnFilter.isIn("a", "a5", "a6"));
+
+		Assertions.assertThat(filterA1andInA12).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
@@ -239,9 +246,7 @@ public class TestAndFilter {
 				ColumnFilter.isEqualTo("a", "a1"),
 				OrFilter.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%")));
 
-		Assertions.assertThat(a1Anda2)
-				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
-						OrFilter.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%"))));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
@@ -290,6 +295,47 @@ public class TestAndFilter {
 				AndFilter.and(ColumnFilter.isIn("a", "a1", "a2", "a3"), ColumnFilter.isIn("a", "a2", "a3", "a4"));
 
 		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isIn("a", "a2", "a3"));
+	}
+
+	@Test
+	public void testGroupByColumn_MultipleComplex_In() {
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.isIn("a", "a1", "a2"),
+				ColumnFilter.isLike("a", "a%"),
+				ColumnFilter.isLike("a", "%1"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
+	}
+
+	@Test
+	public void testGroupByColumn_MultipleComplex_Out_withExplicitLeftover() {
+		ISliceFilter a1Anda2 = AndFilter.and(NotFilter.not(ColumnFilter.isIn("a", "a11", "a21", "b22")),
+				ColumnFilter.isLike("a", "a%"),
+				ColumnFilter.isLike("a", "%1"));
+
+		Assertions.assertThat(a1Anda2)
+				.isEqualTo(AndFilter.and(NotFilter.not(ColumnFilter.isIn("a", "a11", "a21")),
+						ColumnFilter.isLike("a", "a%"),
+						ColumnFilter.isLike("a", "%1")));
+	}
+
+	@Test
+	public void testGroupByColumn_MultipleComplex_Out_withoutExplicitLeftover() {
+		ISliceFilter a1Anda2 = AndFilter.and(NotFilter.not(ColumnFilter.isIn("a", "b2", "b22")),
+				ColumnFilter.isLike("a", "a%"),
+				ColumnFilter.isLike("a", "%1"));
+
+		Assertions.assertThat(a1Anda2)
+				.isEqualTo(AndFilter.and(ColumnFilter.isLike("a", "a%"), ColumnFilter.isLike("a", "%1")));
+	}
+
+	@Test
+	public void testGroupByColumn_MultipleComplex_InAndOut() {
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.isIn("a", "a1", "a2", "a21"),
+				NotFilter.not(ColumnFilter.isIn("a", "a11", "a21")),
+				ColumnFilter.isLike("a", "a%"),
+				ColumnFilter.isLike("a", "%1"));
+
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
@@ -411,7 +457,7 @@ public class TestAndFilter {
 		Assertions
 				.assertThat(OrFilter.or(AndFilter.and(ImmutableMap.of("a", "a1")),
 						AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1"))))
-				.hasToString("b==b1&c==c1|a==a1")
+				.hasToString("a==a1|b==b1&c==c1")
 				.satisfies(f -> {
 					Assertions.assertThat(FilterOptimizerHelpers.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
 				});

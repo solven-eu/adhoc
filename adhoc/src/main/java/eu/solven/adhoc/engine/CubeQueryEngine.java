@@ -90,7 +90,6 @@ import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -115,12 +114,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Default
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
+	@SuppressWarnings("PMD.UnusedAssignment")
 	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
+	@SuppressWarnings("PMD.UnusedAssignment")
 	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
 
 	@NonNull
@@ -128,7 +129,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Getter
 	ITableQueryEngine tableQueryEngine;
 
-	private CubeQueryEngine(AdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
+	protected CubeQueryEngine(AdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
 		if (tableQueryEngine == null) {
 			tableQueryEngine = TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 		}

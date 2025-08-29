@@ -1,9 +1,30 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.query.filter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -14,6 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -32,6 +54,8 @@ import lombok.extern.slf4j.Slf4j;
  * Typical usecase is splitting two filters given their common fraction (e.g. `f1:a=a1&b=b1` and `f2:a=a1&c=c1` may be
  * turned into the common `c:a=a1` and complementary two filters `f1_:b=b1` and `f2_:c=c1`). We would later recombine
  * the common fraction with the complementary filters, and we may need to make sure it gives the same original filters.
+ * 
+ * @author Benoit Lacelle
  */
 @Slf4j
 @UtilityClass
@@ -109,17 +133,31 @@ public class FilterOptimizerHelpers {
 			// Holds all AND operands which are not ORs.
 			ISliceFilter simpleAnd = and(orNotOr.get(false));
 
-			// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
-			Set<ISliceFilter> ors = Lists.cartesianProduct(orFilters).stream().map(orEntry -> {
-				ISliceFilter and2 = and(orEntry);
+			// Register if at least one simplification occured. If false, this is useful not to later call `Or.or` which
+			// would lead to a cycle as `Or.or` is based on `And.and` which ic based on current method.
+			AtomicBoolean hasSimplified = new AtomicBoolean();
 
-				// Combine the simple AND (based on not OR oeprands) with the orEntry.
-				// Keep the simple AND on the left, as they are common to all entries, hence easier to be read if first
-				return and(simpleAnd, and2);
-			})
+			// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
+			// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
+			Set<ISliceFilter> ors = Lists.cartesianProduct(orFilters)
+					.stream()
+					.map(FilterOptimizerHelpers::and)
+					// Combine the simple AND (based on not OR operands) with the orEntry.
+					// Keep the simple AND on the left, as they are common to all entries, hence easier to be read
+					// if first
+					.map(and2 -> and(simpleAnd, and2))
 					// Some entries would be filtered out
 					// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
-					.filter(f -> !f.isMatchNone())
+					.filter(f -> {
+						if (f.isMatchNone()) {
+							// Reject this OR which is irrelevant
+							// (e.g. flattening `AND(OR(...))`, it generated a filter like `a&!a`)
+							hasSimplified.set(true);
+							return false;
+						} else {
+							return true;
+						}
+					})
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 
 			Map<ISliceFilter, ISliceFilter> inducedToInducer = new LinkedHashMap<>();
@@ -137,17 +175,26 @@ public class FilterOptimizerHelpers {
 			inducedToInducer.forEach((induced, inducer) -> {
 				// Remove entry one by one, else we fear we may remove an inducer
 				// BEWARE Is it legit? I mean, should we just remove all inducers in all cases?
+				// TODO There is a bug in case of hierarchy of inducer, and we remove the intermediate inducer: the
+				// deeper inducer would then not removed
 				if (ors.contains(inducer)) {
 					ors.remove(induced);
+					hasSimplified.set(true);
 				}
 			});
 
-			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
-			// better/simpler/faster. Generally speaking, we prefer AND over OR.
-			ISliceFilter orCandidate = OrFilter.or(ors);
-			if (costFunction(orCandidate) < costFunction(operands)) {
-				return orCandidate;
+			if (hasSimplified.get()) {
+				// At least one simplification occured: it is relevant to build and optimize an OR over the leftover
+				// operands
+
+				// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
+				// better/simpler/faster. Generally speaking, we prefer AND over OR.
+				ISliceFilter orCandidate = OrFilter.or(ors);
+				if (costFunction(orCandidate) < costFunction(operands)) {
+					return orCandidate;
+				}
 			}
+
 		}
 		return new AndFilter(operands);
 	}
@@ -253,12 +300,168 @@ public class FilterOptimizerHelpers {
 	}
 
 	/**
+	 * Helps packColumnFilters
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	private static final class PackingColumns {
+		// If there is not a single valueMatcher with explicit values, we should add all as not managed
+		final AtomicBoolean hadSomeAllowedValues = new AtomicBoolean();
+		// allowedValues is meaningful only if hadSomeAllowedValues is true
+		final Set<Object> allowedValues = new LinkedHashSet<>();
+
+		// If there is not a single valueMatcher with explicit values, we should add all as not managed
+		final AtomicBoolean hadSomeDisallowedValues = new AtomicBoolean();
+		// allowedValues is meaningful only if hadSomeAllowedValues is true
+		final Set<Object> disallowedValues = new LinkedHashSet<>();
+
+		// Do no collect IValueMatcher until managing `nullIfAbsent`
+		final List<IColumnFilter> implicitFilters = new ArrayList<>();
+
+		// This flag is used to prevent re-ordering if the filter is not actually simplified
+		final AtomicBoolean hasSimplified = new AtomicBoolean();
+
+		private void registerPackedColumn(AtomicBoolean isMatchNone, IColumnFilter columnFilter) {
+			if (columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher) {
+				hadSomeAllowedValues.set(true);
+				Object operand = equalsMatcher.getWrapped();
+
+				addOperandInSet(isMatchNone, operand);
+			} else if (columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
+				hadSomeAllowedValues.set(true);
+				Set<?> operands = inMatcher.getOperands();
+
+				addOperandInSet(isMatchNone, operands);
+			} else if (columnFilter.getValueMatcher() instanceof NotMatcher notMatcher) {
+				if (notMatcher.getNegated() instanceof EqualsMatcher equalsMatcher) {
+					hadSomeDisallowedValues.set(true);
+					Object operand = equalsMatcher.getWrapped();
+
+					disallowedValues.add(operand);
+				} else if (notMatcher.getNegated() instanceof InMatcher inMatcher) {
+					hadSomeDisallowedValues.set(true);
+					Set<?> operands = inMatcher.getOperands();
+
+					disallowedValues.addAll(operands);
+				} else {
+					implicitFilters.add(columnFilter);
+				}
+			} else {
+				implicitFilters.add(columnFilter);
+			}
+		}
+
+		private void addOperandInSet(AtomicBoolean isMatchNone, Set<?> operands) {
+			if (allowedValues.isEmpty()) {
+				// This is the first accepted values
+				allowedValues.addAll(operands);
+			} else {
+				allowedValues.retainAll(operands);
+				if (allowedValues.isEmpty()) {
+					// There is 2 incompatible set
+					isMatchNone.set(true);
+				}
+			}
+		}
+
+		private void addOperandInSet(AtomicBoolean isMatchNone, Object operand) {
+			if (allowedValues.isEmpty()) {
+				// This is the first accepted values
+				allowedValues.add(operand);
+			} else {
+				if (allowedValues.contains(operand)) {
+					if (allowedValues.size() == 1) {
+						// Keep the allowed value
+						// Happens if we have multiple EqualsMatcher on the same operand
+						log.trace("Keep the allowed value");
+					} else {
+						// This is equivalent to a `.retain`
+						allowedValues.clear();
+						allowedValues.add(operand);
+					}
+				} else {
+					// There is 2 incompatible set
+					isMatchNone.set(true);
+				}
+			}
+		}
+
+		public void collectPacks(AtomicBoolean isMatchNone,
+				String column,
+				Builder<ISliceFilter> packedFiltersBuilder,
+				List<ISliceFilter> notManaged) {
+
+			if (hadSomeAllowedValues.get()) {
+				// We have a list of explicit values
+				if (!implicitFilters.isEmpty()) {
+					// Reject the values given the implicitFilters (e.g. regex filters)
+					allowedValues.removeIf(allowedValue -> {
+						// Remove any value which is not accepted by all (given AND) implicitFilters
+						boolean doRemove =
+								implicitFilters.stream().anyMatch(f -> !f.getValueMatcher().match(allowedValue));
+
+						if (doRemove) {
+							hasSimplified.set(true);
+						}
+
+						return doRemove;
+					});
+				}
+
+				// Remove explicitly disallowed values
+				if (allowedValues.removeAll(disallowedValues)) {
+					hasSimplified.set(true);
+				}
+
+				if (allowedValues.isEmpty()) {
+					// May happen only if implicitFilters or disallowedValues rejected all allowed values
+					isMatchNone.set(true);
+				} else {
+					// Consider a Set of explicit values
+					// implicitFilters are dropped as we checked they matched the values
+					packedFiltersBuilder.add(ColumnFilter.isIn(column, allowedValues));
+				}
+			} else if (hadSomeDisallowedValues.get()) {
+				// Some disallowedValues but no allowedValues
+
+				if (!implicitFilters.isEmpty()) {
+					// Reject the values given the implicitFilters (e.g. regex filters)
+
+					// No need to reject explicitly w value rejected by implicit filters
+					// (e.g. `az*` would reject `qwerty` so `out(qwerty)` is irrelevant)
+					disallowedValues.removeIf(disallowedValue -> {
+						// If empty, return false, hence do not remove the allowed value
+						boolean doRemove =
+								implicitFilters.stream().noneMatch(f -> f.getValueMatcher().match(disallowedValue));
+
+						if (doRemove) {
+							hasSimplified.set(true);
+						}
+
+						return doRemove;
+					});
+				}
+
+				if (!disallowedValues.isEmpty()) {
+					// We have a list of explicit disallowed values but no explicit values
+					packedFiltersBuilder.add(NotFilter.not(ColumnFilter.isIn(column, disallowedValues)));
+				}
+
+				notManaged.addAll(implicitFilters);
+			} else {
+				// neither allowed or disallowed values
+				notManaged.addAll(implicitFilters);
+			}
+		}
+	}
+
+	/**
 	 * Optimize input filters if they cover same columns. Typically, `a=a1&a=a2` can be simplified into `matchNone`.
 	 * 
 	 * @param filters
-	 * @return
+	 *            which are considered AND together.
+	 * @return a simpler list of filters, where filters are simplified on a per-column basis.
 	 */
-	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static Collection<? extends ISliceFilter> packColumnFilters(Collection<? extends ISliceFilter> filters) {
 		@SuppressWarnings("PMD.LinguisticNaming")
 		Map<Boolean, List<ISliceFilter>> isColumnToFilters =
@@ -276,6 +479,9 @@ public class FilterOptimizerHelpers {
 				notManaged.addAll(isColumnToFilters.get(false));
 			}
 
+			// TODO This breaks ordering by pushing implicit filters to the end
+			// A solution is not trivial: iterate through filters, adding in the output if implicit, else scanning the
+			// rest for same column
 			Map<String, List<IColumnFilter>> columnToFilters = isColumnToFilters.get(true)
 					.stream()
 					.map(f -> (IColumnFilter) f)
@@ -290,78 +496,20 @@ public class FilterOptimizerHelpers {
 					return;
 				}
 
-				// If there is not a single valueMatcher with explicit values, we should add all as not managed
-				AtomicBoolean hadSomeAllowedValues = new AtomicBoolean();
-				// allowedValues is meaningful only if hadSomeAllowedValues is true
-				Set<Object> allowedValues = new HashSet<>();
+				PackingColumns packingColumns = new PackingColumns();
 
-				// Do no collect IValueMatcher until managing `nullIfAbsent`
-				List<IColumnFilter> columnNotManaged = new ArrayList<>();
-
+				// Collect filter by allowedValue, disallowedValues and implicitFilters
 				columnFilters.stream().forEach(columnFilter -> {
 					if (isMatchNone.get()) {
 						// Fail-fast
 						return;
 					}
 
-					if (columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher) {
-						hadSomeAllowedValues.set(true);
-						Object operand = equalsMatcher.getWrapped();
-
-						if (allowedValues.isEmpty()) {
-							// This is the first accepted values
-							allowedValues.add(operand);
-						} else {
-							if (allowedValues.contains(operand)) {
-								if (allowedValues.size() == 1) {
-									// Keep the allowed value
-									// Happens if we have multiple EqualsMatcher on the same operand
-									log.trace("Keep the allowed value");
-								} else {
-									// This is equivalent to a `.retain`
-									allowedValues.clear();
-									allowedValues.add(operand);
-								}
-							} else {
-								// There is 2 incompatible set
-								isMatchNone.set(true);
-							}
-						}
-					} else if (columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
-						hadSomeAllowedValues.set(true);
-						Set<?> operands = inMatcher.getOperands();
-
-						if (allowedValues.isEmpty()) {
-							// This is the first accepted values
-							allowedValues.addAll(operands);
-						} else {
-							allowedValues.retainAll(operands);
-							if (allowedValues.isEmpty()) {
-								// There is 2 incompatible set
-								isMatchNone.set(true);
-							}
-						}
-					} else {
-						columnNotManaged.add(columnFilter);
-					}
+					packingColumns.registerPackedColumn(isMatchNone, columnFilter);
 				});
 
-				if (hadSomeAllowedValues.get()) {
-					if (!columnNotManaged.isEmpty()) {
-						allowedValues.removeIf(allowedValue -> {
-							// If empty, return false, hence do not remove the allowed value
-							return columnNotManaged.stream().noneMatch(f -> f.getValueMatcher().match(allowedValue));
-						});
-					}
+				packingColumns.collectPacks(isMatchNone, column, packedFiltersBuilder, notManaged);
 
-					if (allowedValues.isEmpty()) {
-						isMatchNone.set(true);
-					} else {
-						packedFiltersBuilder.add(ColumnFilter.isIn(column, allowedValues));
-					}
-				} else {
-					notManaged.addAll(columnNotManaged);
-				}
 			});
 
 			if (isMatchNone.get()) {

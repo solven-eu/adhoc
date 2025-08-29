@@ -20,33 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package authorization;
-
-import java.text.ParseException;
+package eu.solven.adhoc.engine;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
 
-import com.nimbusds.jose.jwk.OctetSequenceKey;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
-import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
-import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
-import eu.solven.adhoc.tools.JdkUuidGenerator;
-
-public class TestKumiteResourceServerConfiguration {
-	PivotableResourceServerConfiguration conf = new PivotableResourceServerConfiguration();
-
+public class TestAdhocFactories {
 	@Test
-	public void testGenerateMultipleTimes() throws ParseException {
-		MockEnvironment env = new MockEnvironment();
-		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, IPivotableOAuth2Constants.GENERATE);
+	public void testNormalizeNull() {
+		AdhocFactories factories = AdhocFactories.builder().build();
+		ISliceFactory sliceFactory = factories.getSliceFactory();
 
-		OctetSequenceKey key1 =
-				PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, JdkUuidGenerator.INSTANCE);
-		OctetSequenceKey key2 =
-				PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, JdkUuidGenerator.INSTANCE);
-
-		Assertions.assertThat(key1.toJSONString()).isEqualTo(key2.toJSONString());
+		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
+		Assertions.assertThat(slice.get("k")).isSameAs(NullMatcher.NULL_HOLDER);
 	}
 }

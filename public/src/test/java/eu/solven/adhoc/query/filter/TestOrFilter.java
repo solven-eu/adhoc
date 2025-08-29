@@ -28,14 +28,15 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 public class TestOrFilter {
@@ -58,22 +59,27 @@ public class TestOrFilter {
 	@Test
 	public void toString_small() {
 		List<ColumnFilter> filters = IntStream.range(0, 5)
-				.mapToObj(i -> ColumnFilter.builder().column("k" + i).matching(i).build())
+				.mapToObj(
+						i -> ColumnFilter.builder().column("k" + i).valueMatcher(LikeMatcher.matching("%" + i)).build())
 				.collect(Collectors.toList());
 
-		Assertions.assertThat(OrFilter.or(filters).toString()).isEqualTo("k0==0|k1==1|k2==2|k3==3|k4==4");
+		Assertions.assertThat(OrFilter.or(filters).toString())
+				.isEqualTo("k0 matches `LikeMatcher(pattern=%0)`" + "|k1 matches `LikeMatcher(pattern=%1)`"
+						+ "|k2 matches `LikeMatcher(pattern=%2)`"
+						+ "|k3 matches `LikeMatcher(pattern=%3)`"
+						+ "|k4 matches `LikeMatcher(pattern=%4)`");
 	}
 
 	@Test
 	public void toString_huge() {
 		List<ColumnFilter> filters = IntStream.range(0, 256)
-				.mapToObj(i -> ColumnFilter.builder().column("k").matching(i).build())
+				.mapToObj(i -> ColumnFilter.builder().column("k").valueMatcher(LikeMatcher.matching("%" + i)).build())
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(OrFilter.or(filters).toString())
-				.contains("#0=k==0", "#1=k==1")
+				.contains("#0=k matches `LikeMatcher(pattern=%0)`, #1=k matches `LikeMatcher(pattern=%1)`")
 				.doesNotContain("64")
-				.hasSizeLessThan(512);
+				.hasSizeLessThan(1024);
 	}
 
 	@Test
@@ -119,11 +125,7 @@ public class TestOrFilter {
 		ISliceFilter filterAllAndA = OrFilter
 				.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 
-		Assertions.assertThat(filterAllAndA).isInstanceOfSatisfying(OrFilter.class, andF -> {
-			Assertions.assertThat(andF.getOperands())
-					.hasSize(2)
-					.contains(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
-		});
+		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isIn("a", "a1", "a2"));
 	}
 
 	@Test
@@ -135,7 +137,6 @@ public class TestOrFilter {
 		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
 	}
 
-	@Disabled("TODO Implement this optimization")
 	@Test
 	public void testMultipleSameColumn_InAndIn() {
 		ISliceFilter filterA1andInA12 =
@@ -143,7 +144,7 @@ public class TestOrFilter {
 
 		Assertions.assertThat(filterA1andInA12).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
 			Assertions.assertThat(cf.getColumn()).isEqualTo("a");
-			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(InMatcher.isIn("a1", "a2", "s3"));
+			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(InMatcher.isIn("a1", "a2", "a3"));
 		});
 	}
 
@@ -210,5 +211,13 @@ public class TestOrFilter {
 		Assertions
 				.assertThat(OrFilter.or(AndFilter.and(Map.of("a", "a1", "b", "b1")), AndFilter.and(Map.of("b", "b1"))))
 				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
+	}
+
+	@Test
+	public void testOr_oneCommonColumn() {
+		Assertions
+				.assertThat(OrFilter.or(AndFilter.and(Map.of("a", "a1")),
+						AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1"))))
+				.hasToString("a==a1|a==a2&b==b1");
 	}
 }

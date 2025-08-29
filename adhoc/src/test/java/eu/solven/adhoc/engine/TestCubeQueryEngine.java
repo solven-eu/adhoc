@@ -43,6 +43,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
@@ -195,6 +196,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	public void testQueryStepCache() {
 		CubeWrapper cubeWrapper = CubeWrapper.builder()
 				.table(InMemoryTable.builder().build())
+				.forest(MeasureForest.empty())
 				.queryPreparator(
 						StandardQueryPreparator.builder().queryStepCache(GuavaQueryStepCache.withSize(1024)).build())
 				.build();

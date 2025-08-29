@@ -38,7 +38,6 @@ import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
@@ -67,8 +66,8 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 		boolean groupByScenario =
 				groupedByColumns.contains(C_SCENARIOINDEX) || groupedByColumns.contains(C_SCENARIONAME);
 
-		IValueMatcher scenarioIndexMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), C_SCENARIOINDEX);
-		IValueMatcher scenarioNameMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), C_SCENARIONAME);
+		IValueMatcher scenarioIndexMatcher = slice.sliceReader().getValueMatcher(C_SCENARIOINDEX);
+		IValueMatcher scenarioNameMatcher = slice.sliceReader().getValueMatcher(C_SCENARIONAME);
 
 		if (groupByScenario) {
 			// Decompose by scenario: will return a value instead of an array
@@ -92,7 +91,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 		} else {
 			// Return an array, but possibly only a subset of scenarios
 
-			Set<String> filteredColumns = FilterHelpers.getFilteredColumns(slice.asFilter());
+			Set<String> filteredColumns = slice.sliceReader().getFilteredColumns();
 			if (!filteredColumns.contains(C_SCENARIOINDEX) && !filteredColumns.contains(C_SCENARIONAME)) {
 				// No filter on scenarios
 				return List.of(IDecompositionEntry.of(Map.of(), value));

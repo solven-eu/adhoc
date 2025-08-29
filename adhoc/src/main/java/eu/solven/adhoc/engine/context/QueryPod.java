@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.util.concurrent.MoreExecutors;
+
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
@@ -45,7 +47,6 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -82,7 +83,9 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 
 	@NonNull
 	@Default
-	ExecutorService executorService = AdhocUnsafe.adhocCommonPool;
+	// By default, we do not jump into a separate thread/executorService, hence we do not rely on
+	// AdhocUnsafe.adhocCommonPool
+	ExecutorService executorService = MoreExecutors.newDirectExecutorService();
 
 	@NonNull
 	@Default
@@ -194,7 +197,9 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 				columnsManager = ColumnsManager.builder().build();
 			}
 			if (executorService == null) {
-				executorService = AdhocUnsafe.adhocCommonPool;
+				// By default, we do not jump into a separate thread/executorService, hence we do not rely on
+				// AdhocUnsafe.adhocCommonPool
+				executorService = MoreExecutors.newDirectExecutorService();
 			}
 			if (queryStepCache == null) {
 				queryStepCache = GuavaQueryStepCache.withSize(1);

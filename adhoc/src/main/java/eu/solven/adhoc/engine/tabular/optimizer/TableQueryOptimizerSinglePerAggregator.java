@@ -72,7 +72,7 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 		tableQueries.forEach(tq -> {
 			tq.getAggregators().forEach(agg -> {
 				// Typically holds options and customMarkers
-				CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).build());
+				CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
 
 				// consider a single context per measure
 				CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();

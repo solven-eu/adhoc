@@ -25,11 +25,10 @@ package eu.solven.adhoc.measure.dynamic_tenors;
 import java.util.Optional;
 
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,18 +42,17 @@ import lombok.extern.slf4j.Slf4j;
 public class MarketDataShiftCombination implements ICombination, IExamplePnLExplainConstant {
 	@Override
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		ISliceFilter filter = slice.asFilter();
-		if (ISliceFilter.MATCH_NONE.equals(filter)) {
-			return IValueProvider.NULL;
-		}
+		ISliceReader sliceReader = slice.sliceReader();
+		// if (ISliceFilter.MATCH_NONE.equals(filter)) {
+		// return IValueProvider.NULL;
+		// }
 
-		Optional<String> optTenor =
-				EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(filter, K_TENOR), String.class);
+		Optional<String> optTenor = EqualsMatcher.extractOperand(sliceReader.getValueMatcher(K_TENOR), String.class);
 		if (optTenor.isEmpty()) {
 			return IValueProvider.setValue("Lack tenor");
 		}
 		Optional<String> optMaturity =
-				EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(filter, K_MATURITY), String.class);
+				EqualsMatcher.extractOperand(sliceReader.getValueMatcher(K_MATURITY), String.class);
 		if (optMaturity.isEmpty()) {
 			return IValueProvider.setValue("Lack maturity");
 		}

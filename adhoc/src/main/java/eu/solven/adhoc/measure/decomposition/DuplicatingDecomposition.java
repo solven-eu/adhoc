@@ -225,7 +225,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	}
 
 	protected IValueMatcher getValueMatcher(ISliceWithStep slice, String relevantColumn) {
-		return FilterHelpers.getValueMatcherLax(slice.asFilter(), relevantColumn);
+		return slice.sliceReader().getValueMatcherLax(relevantColumn);
 	}
 
 	@Override

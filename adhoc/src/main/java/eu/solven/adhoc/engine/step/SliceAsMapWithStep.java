@@ -78,4 +78,8 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 		return filter;
 	}
 
+	@Override
+	public ISliceReader sliceReader() {
+		return new SliceReader(this.slice.asFilter(), this.queryStep.getFilter());
+	}
 }
