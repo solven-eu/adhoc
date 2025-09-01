@@ -90,10 +90,6 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			});
 		});
 
-		if (hasOptions.isDebugOrExplain()) {
-			log.info("[EXPLAIN] About to show the inducing steps");
-		}
-
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
 			// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
@@ -130,10 +126,6 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 								// right can be used to compute left
 								dagToDependancies.addEdge(induced, inducer);
 								hasFoundInducer.set(true);
-
-								if (hasOptions.isDebugOrExplain()) {
-									log.info("[EXPLAIN] {} will induce {}", inducer, induced);
-								}
 							});
 
 					if (hasFoundInducer.get()) {

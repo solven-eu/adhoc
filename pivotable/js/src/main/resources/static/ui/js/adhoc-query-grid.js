@@ -178,6 +178,8 @@ export default {
 						gridHelper.sanityCheckFirstRow(columnNames, coordinatesRow, measureNames, measuresRow);
 					}
 
+					// https://github.com/vuejs/core/issues/13826
+					// RangeError: Maximum call stack size exceeded
 					data.array.push(...gridHelper.toData(columnNames, view.coordinates, measureNames, view.values));
 
 					gridHelper.computeRowSpan(columnNames, metadata, view.coordinates);
