@@ -27,10 +27,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -45,7 +45,11 @@ import eu.solven.pepper.core.PepperLogHelper;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocSlice extends Comparable<IAdhocSlice> {
+public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRecord {
+	/**
+	 * 
+	 * @return true if this a grandTotal slice.
+	 */
 	boolean isEmpty();
 
 	/**
@@ -114,5 +118,4 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice> {
 
 	ISliceFactory getFactory();
 
-	void forEachGroupBy(BiConsumer<? super String, ? super Object> action);
 }

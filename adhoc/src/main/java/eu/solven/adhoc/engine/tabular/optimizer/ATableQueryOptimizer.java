@@ -22,27 +22,33 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +85,42 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		return TableQueryV2.fromV1(TableQuery.fromSteps(tableQueries));
 	}
 
+	protected Optional<ISliceFilter> makeLeftoverFilter(Collection<IAdhocColumn> inducerColumns,
+			ISliceFilter inducerFilter,
+			ISliceFilter inducedFilter) {
+		// BEWARE There is two different ways to filters rows from inducer for induced:
+		// Either we reject the rows which are in inducer but not expected by induced
+		// Or we keep-only the rows in inducer given additional constraints in induced
+		// We'll choose one or the other depending on columns available in inducer
+
+		Optional<ISliceFilter> leftoverFilter = Optional.empty();
+
+		ISliceFilter commonFilter = FilterHelpers.commonFilter(ImmutableSet.of(inducerFilter, inducedFilter));
+		ISliceFilter inducedLeftoverFilter = FilterHelpers.stripWhereFromFilter(commonFilter, inducedFilter);
+
+		// This match the row which has to be kept from inducer for induced
+		boolean hasLeftoverFilteringColumns = inducerColumns.stream()
+				.map(IAdhocColumn::getName)
+				.toList()
+				.containsAll(FilterHelpers.getFilteredColumns(inducedLeftoverFilter));
+
+		if (hasLeftoverFilteringColumns) {
+			leftoverFilter = Optional.of(inducedLeftoverFilter);
+		}
+
+		// This match the rows in the inducer which should be stripped off the induced
+		ISliceFilter rejectingFilter = AndFilter.and(inducerFilter, NotFilter.not(inducedFilter));
+		boolean hasRejectingColumns = inducerColumns.stream()
+				.map(IAdhocColumn::getName)
+				.toList()
+				.containsAll(FilterHelpers.getFilteredColumns(rejectingFilter));
+
+		if (hasRejectingColumns) {
+			leftoverFilter = Optional.of(NotFilter.not(rejectingFilter));
+		}
+		return leftoverFilter;
+	}
+
 	@Override
 	public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
@@ -98,21 +140,29 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		IMultitypeMergeableColumn<IAdhocSlice> inducedValues = factories.getColumnFactory()
 				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
+		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
+		Optional<ISliceFilter> sliceFilter =
+				makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
+		if (sliceFilter.isEmpty()) {
+			throw new IllegalStateException(
+					"Can not make a leftover filter given inducer=%s and induced=%s".formatted(inducer, induced));
+		}
+
 		FilterMatcher filterMatcher = FilterMatcher.builder()
-				.filter(induced.getFilter())
-				// A filtered column may be missing from groupBy: it is a common filter from induced and inducer: it is
-				// valid.
-				.onMissingColumn(DecompositionHelpers.onMissingColumn())
+				.filter(sliceFilter.get())
+				.onMissingColumn(FilterMatcher.failOnMissing())
 				.build();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 
-		inducerValues.stream().filter(s -> {
-			return filterMatcher.match(s.getSlice().getCoordinates());
-		}).forEach(slice -> {
-			// inducer have same or more columns than induced
-			IAdhocSlice inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
-			slice.getValueProvider().acceptReceiver(inducedValues.merge(inducedGroupBy));
-		});
+		inducerValues.stream()
+				// filter the relevant rows from inducer
+				.filter(s -> filterMatcher.match(s.getSlice()))
+				// aggregate the accepted rows
+				.forEach(slice -> {
+					// inducer have same or more columns than induced
+					IAdhocSlice inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
+					slice.getValueProvider().acceptReceiver(inducedValues.merge(inducedGroupBy));
+				});
 
 		if (hasOptions.isDebugOrExplain()) {
 			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),

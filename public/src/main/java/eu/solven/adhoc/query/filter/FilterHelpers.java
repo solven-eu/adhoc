@@ -299,7 +299,7 @@ public class FilterHelpers {
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
-	static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
+	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
 		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
 		return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);

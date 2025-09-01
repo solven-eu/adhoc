@@ -149,12 +149,12 @@ export default {
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
-				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
+				gridColumns.concat(gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				const measureNames = props.tabularView.query.measures;
 				console.log(`Rendering measureNames=${measureNames}`);
-				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions));
+				gridColumns.concat(gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions));
 
 				{
 					props.tabularView.loading.sorting = true;
@@ -180,7 +180,7 @@ export default {
 
 					// https://github.com/vuejs/core/issues/13826
 					// RangeError: Maximum call stack size exceeded
-					data.array.push(...gridHelper.toData(columnNames, view.coordinates, measureNames, view.values));
+					data.array.concat(gridHelper.toData(columnNames, view.coordinates, measureNames, view.values));
 
 					gridHelper.computeRowSpan(columnNames, metadata, view.coordinates);
 				} finally {

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -197,7 +198,7 @@ public class MoreFilterHelpers {
 	public static boolean match(ITableTranscoder transcoder,
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
-			ITabularRecord input) {
+			ITabularGroupByRecord input) {
 		if (filter.isMatchAll()) {
 			return true;
 		} else if (filter.isMatchNone()) {
