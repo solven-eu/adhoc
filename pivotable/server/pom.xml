@@ -15,7 +15,7 @@
 		<jacoco.branch.ratio>0.46</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
 
-		<springdoc-openapi.version>2.8.11</springdoc-openapi.version>
+		<springdoc-openapi.version>2.8.12</springdoc-openapi.version>
 	</properties>
 
 	<dependencies>
