@@ -86,24 +86,6 @@ public class SliceReader implements ISliceReader {
 		return filter;
 	}
 
-	// @Override
-	// public <T> Optional<T> getEqualsMatcherOperand(String column, Class<T> clazz) {
-	// Optional<T> operandFromSlice =
-	// EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(sliceFilter, column), clazz);
-	// if (operandFromSlice.isPresent()) {
-	// // If there is an actual filter, it should be compatible with the stepFilter: no need to check again for it
-	// return operandFromSlice;
-	// }
-	//
-	// Optional<T> operandFromStep =
-	// EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(stepFilter, column), clazz);
-	// if (operandFromStep.isPresent()) {
-	// return operandFromStep;
-	// }
-	//
-	// return Optional.empty();
-	// }
-
 	@Override
 	public IValueMatcher getValueMatcher(String column) {
 		// Priority to the sliceFilter, as it is equivalent to a Map of single value operands

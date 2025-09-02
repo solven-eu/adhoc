@@ -24,8 +24,6 @@ package eu.solven.adhoc.engine;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -35,7 +33,6 @@ import com.google.common.collect.Iterables;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;

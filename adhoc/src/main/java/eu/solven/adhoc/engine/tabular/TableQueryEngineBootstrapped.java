@@ -90,7 +90,6 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jgrapht.traverse.TopologicalOrderIterator;
 
 /**
  * Holds the execution logic related with an {@link ITableQueryEngine}, given a {@link ITableQueryOptimizer}.
@@ -99,6 +98,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
  */
 @Slf4j
 @Builder
+@SuppressWarnings("PMD.GodClass")
 public class TableQueryEngineBootstrapped {
 
 	@NonNull
