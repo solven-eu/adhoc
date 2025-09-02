@@ -52,7 +52,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
 
-	TableQueryEngine engine = (TableQueryEngine) engine().makeTableQueryEngine();
+	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
 	ITableQueryOptimizer optimizer = engine.optimizerFactory.makeOptimizer(engine().getFactories(), () -> Set.of());
 	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 

@@ -36,7 +36,6 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
@@ -83,8 +82,8 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 			return List.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
-		IValueMatcher tenorMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_TENOR);
-		IValueMatcher maturityMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_MATURITY);
+		IValueMatcher tenorMatcher = slice.sliceReader().getValueMatcher(K_TENOR);
+		IValueMatcher maturityMatcher = slice.sliceReader().getValueMatcher(K_MATURITY);
 
 		List<IDecompositionEntry> decompositions = new ArrayList<>();
 

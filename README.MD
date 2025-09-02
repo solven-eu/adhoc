@@ -43,7 +43,29 @@ If you encounter a case which performance would be much improved by multi-thread
 
 Adhoc enables caching in multiple places. These caches have to be activated manually (e.g. by decorating your `ITableWrapper` with a `CachingTableWrapper`).
 
-Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`.
+Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`. It is useful for end-to-end benchmarks, or investigating caching issues.
+
+##### Caching `CubeQuerySteps`
+
+One can add a cache over the results associated to an `CubeQueryStep`. This cache may keep entries associated to any step in a `CubeQueryStep` DAG. Given FIFO principle, if one execute twice the same query, the highest entries from the first query should remain in cache (while lowest entries may be discarded due to cache maximum size) ; hence, second query would be answered right-away, without re-executing the rest of the `CubeQueryStep`.
+
+```
+CubeWrapper.builder()
+.table(tableWrapper)
+.queryPreparator(StandardQueryPreparator.builder().queryStepCache(GuavaQueryStepCache.withSize(1024)).build())
+.build();
+```
+
+##### Caching `ITableWrapper`
+
+One can add a cache over the `ITableWrapper`. It will keep in cache the output from previous `TableQueries`. This may not lead to expected performances as reading from the cache leads to additional effort (e.g. merging a `ISliceToValue` from the table for one measure, and another from the cache for another measure requires some JOIN operation (e.g. aligning the slices from the 2 distinct `ISliceToValue`), which may not happen if both measures was queried in the same `tableQuery`).
+
+```
+ITableWrapper directTableWrapper = ...;
+ITableWrapper cachingTableWrapper = CachingTableWrapper.builder().decorated(directTableWrapper).builder();
+```
+
+`CachingTableWrapper` can be customized given its `cache` field, which is a plain Guava cache.
 
 ## Products
 
@@ -102,6 +124,7 @@ myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.build
 4. Define a `MeasureForest`: it defines the measures and the links between them, through their underlying measures.
 
 An early-stage forest could look like:
+
 ```
 Aggregator k1Sum = Aggregator.builder().name("k1").aggregationKey(SumAggregator.KEY).build();
 Aggregator k2Sum = Aggregator.builder().name("k2").aggregationKey(SumAggregator.KEY).build();
@@ -122,12 +145,13 @@ forestBuilder.addMeasure(k1PlusK2AsExpr);
 5. Defines an Adhoc Engine: it know how to execute a query given the measure relationships
 
 ```
-CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).forest(forestBuilder.build()).build();
+CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()).forest(forestBuilder.build()).build();
 ```
 
 6. Define your query
+
 ```
-ITabularView view = aqe.execute(CubeQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
+ITabularView view = engine.execute(CubeQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
 MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
 Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
@@ -139,6 +163,28 @@ Assertions.assertThat(mapBased.getCoordinatesToValues())
 7. Execute your query
 
 # Concepts
+
+## General Architecture
+
+```mermaid
+flowchart TD
+    Pivotable --> ICubeWrapper
+    ICubeWrapper --> IMeasureForest
+    ICubeWrapper --> ITableWrapper
+    ICubeWrapper --> ICubeQueryEngine
+    ICubeWrapper --> IQueryPreparator
+    IQueryPreparator --> IQueryStepCache
+    IQueryPreparator --> IImplicitFilter
+    IQueryPreparator --> IImplicitOptions
+    IQueryPreparator --> ExecutorService
+    ICubeQueryEngine --> ITableQueryEngine
+    ITableQueryEngine --> ITableWrapper
+    ITableQueryEngine --> ITableQueryOptimizer
+    ITableWrapper --> DuckDB
+    ITableWrapper --> RedShift
+    ITableWrapper --> BigQuery
+  
+```
 
 ## CubeQuery
 

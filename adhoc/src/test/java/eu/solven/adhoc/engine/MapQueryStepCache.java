@@ -20,33 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package authorization;
+package eu.solven.adhoc.engine;
 
-import java.text.ParseException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 
-import com.nimbusds.jose.jwk.OctetSequenceKey;
+/**
+ * A Simpler {@link IQueryStepCache} based on a Map, with no discarding policy.
+ * 
+ * @author Benoit Lacelle
+ */
+public class MapQueryStepCache implements IQueryStepCache {
+	final Map<CubeQueryStep, ISliceToValue> map = new ConcurrentHashMap<>();
 
-import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
-import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
-import eu.solven.adhoc.tools.JdkUuidGenerator;
-
-public class TestKumiteResourceServerConfiguration {
-	PivotableResourceServerConfiguration conf = new PivotableResourceServerConfiguration();
-
-	@Test
-	public void testGenerateMultipleTimes() throws ParseException {
-		MockEnvironment env = new MockEnvironment();
-		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, IPivotableOAuth2Constants.GENERATE);
-
-		OctetSequenceKey key1 =
-				PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, JdkUuidGenerator.INSTANCE);
-		OctetSequenceKey key2 =
-				PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, JdkUuidGenerator.INSTANCE);
-
-		Assertions.assertThat(key1.toJSONString()).isEqualTo(key2.toJSONString());
+	@Override
+	public Optional<ISliceToValue> getValue(CubeQueryStep step) {
+		return Optional.ofNullable(map.get(step));
 	}
+
+	@Override
+	public void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+		map.putAll(queryStepToValues);
+	}
+
 }

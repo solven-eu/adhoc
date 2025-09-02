@@ -22,37 +22,20 @@
  */
 package eu.solven.adhoc.engine;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
-/**
- * Centralize the basic factories used through Adhoc.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder(toBuilder = true)
-public class AdhocFactories {
-	@NonNull
-	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+public class TestAdhocFactories {
+	@Test
+	public void testNormalizeNull() {
+		AdhocFactories factories = AdhocFactories.builder().build();
+		ISliceFactory sliceFactory = factories.getSliceFactory();
 
-	@NonNull
-	@Default
-	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
-
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
-
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
+		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
+		Assertions.assertThat(slice.get("k")).isSameAs(NullMatcher.NULL_HOLDER);
+	}
 }

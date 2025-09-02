@@ -48,4 +48,14 @@ public class MapWithNulls {
 
 		return map;
 	}
+
+	public static Map<String, ?> of(String k, Object v, String k2, Object v2, String k3, Object v3) {
+		Map<String, Object> map = new LinkedHashMap<>();
+
+		map.put(k, v);
+		map.put(k2, v2);
+		map.put(k3, v3);
+
+		return map;
+	}
 }

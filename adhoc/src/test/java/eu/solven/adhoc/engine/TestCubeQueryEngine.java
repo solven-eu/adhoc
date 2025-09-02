@@ -34,9 +34,16 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
+import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
@@ -46,6 +53,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants {
@@ -169,6 +177,31 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 									\\-CubeQueryStep(id=2, measure=Combinator(name=m_B, tags=[], underlyings=[m_C], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
 										\\-CubeQueryStep(id=4, measure=Combinator(name=m_C, tags=[], underlyings=[m_D], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
 											\\-CubeQueryStep(id=6, measure=Combinator(name=m_D, tags=[], underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])""");
+	}
+
+	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.
+	@Test
+	public void testCustomTableQueryOptimizer() {
+		ITableQueryOptimizerFactory optimizerFactory = (factories, hasOptions) -> {
+			return new TableQueryOptimizerSinglePerAggregator(factories);
+		};
+		CubeQueryEngine cubeEngine = CubeQueryEngine.builder()
+				.tableQueryEngine(TableQueryEngine.builder().optimizerFactory(optimizerFactory).build())
+				.build();
+
+		Assertions.assertThat(cubeEngine.getTableQueryEngine()).isNotNull();
+	}
+
+	@Test
+	public void testQueryStepCache() {
+		CubeWrapper cubeWrapper = CubeWrapper.builder()
+				.table(InMemoryTable.builder().build())
+				.forest(MeasureForest.empty())
+				.queryPreparator(
+						StandardQueryPreparator.builder().queryStepCache(GuavaQueryStepCache.withSize(1024)).build())
+				.build();
+
+		Assertions.assertThat(cubeWrapper.getTable()).isNotNull();
 	}
 
 }

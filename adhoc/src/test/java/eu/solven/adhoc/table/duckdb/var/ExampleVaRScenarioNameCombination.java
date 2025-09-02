@@ -25,10 +25,11 @@ package eu.solven.adhoc.table.duckdb.var;
 import java.util.Map;
 
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
  * Enabling a mapping from the column specifying a scenarioIndex to a column specifying a scenarioName.
@@ -48,21 +49,21 @@ public class ExampleVaRScenarioNameCombination implements ICombination {
 
 	@Override
 	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		if (!FilterHelpers.getFilteredColumns(slice.asFilter()).contains(IExampleVaRConstants.C_SCENARIOINDEX)) {
+		ISliceReader sliceReader = slice.sliceReader();
+		IValueMatcher filteredScenarioIndex = sliceReader.getValueMatcher(IExampleVaRConstants.C_SCENARIOINDEX);
+
+		if (IValueMatcher.MATCH_ALL.equals(filteredScenarioIndex)) {
 			return vc -> vc.onObject(noScenario());
-		}
-
-		Object filteredScenarioIndex =
-				FilterHelpers.getValueMatcher(slice.asFilter(), IExampleVaRConstants.C_SCENARIOINDEX);
-
-		if (filteredScenarioIndex instanceof Number filteredScenarioIndexAsNumber) {
-			int indexAsInt = filteredScenarioIndexAsNumber.intValue();
-
-			Object scenarioName = indexToName(indexAsInt);
-			return vc -> vc.onObject(scenarioName);
 		} else {
-			// BEWARE Unclear case: some measure generated an unexpected scenarioIndex
-			return vc -> vc.onObject(filteredScenarioIndex);
+			if (filteredScenarioIndex instanceof Number filteredScenarioIndexAsNumber) {
+				int indexAsInt = filteredScenarioIndexAsNumber.intValue();
+
+				Object scenarioName = indexToName(indexAsInt);
+				return vc -> vc.onObject(scenarioName);
+			} else {
+				// BEWARE Unclear case: some measure generated an unexpected scenarioIndex
+				return vc -> vc.onObject(filteredScenarioIndex);
+			}
 		}
 	}
 

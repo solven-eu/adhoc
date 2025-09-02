@@ -25,7 +25,7 @@ package eu.solven.adhoc.query.filter;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -72,7 +72,18 @@ public class FilterMatcher {
 		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, map);
 	}
 
-	public boolean match(ITabularRecord tabularRecord) {
+	public boolean match(ITabularGroupByRecord tabularRecord) {
 		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, tabularRecord);
+	}
+
+	/**
+	 * 
+	 * @return a {@link Predicate} throwing if it called at any point. Useful when we should be guaranteed to always
+	 *         have all columns available.
+	 */
+	public static Predicate<IColumnFilter> failOnMissing() {
+		return cf -> {
+			throw new IllegalArgumentException("Missing column: %s".formatted(cf));
+		};
 	}
 }

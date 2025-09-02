@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -30,7 +31,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.MapQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
@@ -39,7 +43,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
-	TableQueryEngine engine = (TableQueryEngine) engine().makeTableQueryEngine();
+	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
 	ITableQueryOptimizer optimizer = engine.optimizerFactory.makeOptimizer(engine.getFactories(), () -> Set.of());
 	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 
@@ -123,6 +127,32 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
 
 			Assertions.assertThat(dbQuery.getAggregators()).hasSize(2).contains(k1Sum, k2Sum);
+		});
+	}
+
+	@Test
+	public void testSum_inCache() {
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
+		forest.addMeasure(k1PlusK2AsExpr);
+
+		MapQueryStepCache queryStepCache = new MapQueryStepCache();
+		queryStepCache.pushValues(Map.of(CubeQueryStep.builder().measure(k1Sum).build(), SliceToValue.empty()));
+
+		QueryPod queryPod = QueryPod.builder()
+				.query(CubeQuery.builder().measure(k1PlusK2AsExpr).build())
+				.forest(forest)
+				.table(table())
+				.queryStepCache(queryStepCache)
+				.build();
+		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+
+		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
+			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
+			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
+
+			// query only k2Sum as k1Sum is in cache
+			Assertions.assertThat(dbQuery.getAggregators()).hasSize(1).contains(k2Sum);
 		});
 	}
 }

@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -42,7 +43,6 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -90,10 +90,6 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			});
 		});
 
-		if (hasOptions.isDebugOrExplain()) {
-			log.info("[EXPLAIN] About to show the inducing steps");
-		}
-
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
 			// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
@@ -130,10 +126,6 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 								// right can be used to compute left
 								dagToDependancies.addEdge(induced, inducer);
 								hasFoundInducer.set(true);
-
-								if (hasOptions.isDebugOrExplain()) {
-									log.info("[EXPLAIN] {} will induce {}", inducer, induced);
-								}
 							});
 
 					if (hasFoundInducer.get()) {
@@ -158,7 +150,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 				.build();
 	}
 
-	// Typically: `groupBy:ccy&ccy=EUR|USD` can induce `ccy=EUR`
+	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`
 	protected boolean canInduce(CubeQueryStep inducer, CubeQueryStep induced) {
 		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
 			// Different measures: can not induce
@@ -181,26 +173,19 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		ISliceFilter inducerFilter = inducer.getFilter();
 		ISliceFilter inducedFilter = induced.getFilter();
 
-		if (!AndFilter.and(inducerFilter, inducedFilter).equals(inducedFilter)) {
-			// Inducer is stricter than induced: it can not infer it
+		if (!FilterHelpers.isStricterThan(inducedFilter, inducerFilter)) {
+			// Induced is not covered by inducer: it can not infer it
 			return false;
 		}
 
-		if (inducerColumns.stream()
-				.map(IAdhocColumn::getName)
-				.toList()
-				.containsAll(FilterHelpers.getFilteredColumns(inducedFilter))) {
-			// Inducer has enough columns to apply induced filter
-			return true;
+		Optional<ISliceFilter> leftoverFilter = makeLeftoverFilter(inducerColumns, inducerFilter, inducedFilter);
+
+		if (leftoverFilter.isEmpty()) {
+			// Inducer is missing columns to reject rows not expected by induced
+			return false;
 		}
 
-		// We may lack column
-		if (inducerFilter.equals(inducedFilter)) {
-			return true;
-		}
-
-		// TODO This comparison should be done only on the filter in induced not present in inducer
-		return false;
+		return true;
 	}
 
 }

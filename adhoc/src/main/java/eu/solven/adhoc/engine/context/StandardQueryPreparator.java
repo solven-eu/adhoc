@@ -77,6 +77,8 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 	// If not-concurrent, we want the simpler execution plan as possible
 	// it is especially important to simplify thread-jumping lowering readability of stack-traces
+	// TODO Should be anyway execute queries in some Adhoc-thread ? It may help monitoring CPU-activity and
+	// RAM-allocations
 	@NonNull
 	@Default
 	final ExecutorService nonConcurrentExecutorService = MoreExecutors.newDirectExecutorService();

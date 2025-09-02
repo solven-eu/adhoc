@@ -98,6 +98,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
+@SuppressWarnings("PMD.GodClass")
 public class TableQueryEngineBootstrapped {
 
 	@NonNull
@@ -118,6 +119,8 @@ public class TableQueryEngineBootstrapped {
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
 		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, tableQueries);
 
+		logInducedSteps(queryPod, inducerAndInduced);
+
 		// Given the inducers, group them by groupBy, to leverage FILTER per measure
 		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(optimizer, inducerAndInduced.getInducers());
 
@@ -132,6 +135,23 @@ public class TableQueryEngineBootstrapped {
 		reportAfterTableQueries(queryPod, stepToValues);
 
 		return stepToValues;
+	}
+
+	protected void logInducedSteps(QueryPod queryPod, SplitTableQueries inducerAndInduced) {
+		if (queryPod.isDebugOrExplain()) {
+			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = inducerAndInduced.getDagToDependancies();
+			log.info("[EXPLAIN] About to show {} inducers steps leading to {} induced steps",
+					inducerAndInduced.getInducers().size(),
+					inducerAndInduced.getInduceds().size());
+
+			// TODO We want to print the graph of induced steps. There should be something to refactor with DagExplainer
+			// new TopologicalOrderIterator<>(inducerAndInduced.getDagToDependancies()).fo
+			dag.edgeSet().forEach(edge -> {
+				CubeQueryStep inducer = dag.getEdgeSource(edge);
+				CubeQueryStep induced = dag.getEdgeTarget(edge);
+				log.info("[EXPLAIN] {} will induce {}", inducer, induced);
+			});
+		}
 	}
 
 	protected void reportAfterTableQueries(QueryPod queryPod,
@@ -260,6 +280,8 @@ public class TableQueryEngineBootstrapped {
 				// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
 				// `Transformator` with no undelryingSteps
 				.filter(step -> dag.outgoingEdgesOf(step).isEmpty())
+				// Skip steps with a value in cache
+				.filter(step -> !queryStepsDag.getStepToValues().containsKey(step))
 				.forEach(step -> {
 					IMeasure leafMeasure = queryPod.resolveIfRef(step.getMeasure());
 

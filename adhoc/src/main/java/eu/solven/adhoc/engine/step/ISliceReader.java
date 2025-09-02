@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,36 +22,49 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.filter.AndFilter;
+import java.util.Set;
+
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more contact to
- * {@link eu.solven.adhoc.measure.model.IMeasure}.
+ * Enables reading coordinates/column value given a {@link ISliceWithStep}.
+ * 
+ * While a {@link ISliceWithStep} can be interpreted as a {@link ISliceFilter}, doing so may be inefficient. This object
+ * helps getting coordinates in an optimal way.
  * 
  * @author Benoit Lacelle
  */
-public interface ISliceWithStep {
-	IAdhocSlice getSlice();
+public interface ISliceReader {
+	/**
+	 * This is a very generic behavior, but it may be quite slow.
+	 * 
+	 * @return this as a {@link ISliceFilter}.
+	 */
+	ISliceFilter asFilter();
 
 	/**
 	 * 
-	 * @return the queryStep owning this slice. The slice should express only the groupBy in the queryStep.
+	 * Follows the semantic of {@link FilterHelpers#getValueMatcher(ISliceFilter, String)}.
+	 * 
+	 * @param column
+	 * @return a perfectly matching {@link IValueMatcher} for given column.
 	 */
-	CubeQueryStep getQueryStep();
+	IValueMatcher getValueMatcher(String column);
 
 	/**
-	 *
-	 * @return an {@link ISliceFilter} equivalent to this slice. It is never `matchNone`. It is always equivalent to a
-	 *         {@link AndFilter} of {@link EqualsMatcher}.
+	 * Follows the semantic of {@link FilterHelpers#getValueMatcherLax(ISliceFilter, String)}.
+	 * 
+	 * @param column
+	 * @return a lax matching {@link IValueMatcher} for given column.
 	 */
-	@Deprecated(since = "Slow")
-	default ISliceFilter asFilter() {
-		return sliceReader().asFilter();
-	}
+	IValueMatcher getValueMatcherLax(String column);
 
-	ISliceReader sliceReader();
+	/**
+	 * 
+	 * @return the Set of column with an expressed filter.
+	 */
+	Set<String> getFilteredColumns();
 
 }

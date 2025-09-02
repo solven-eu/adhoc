@@ -81,12 +81,10 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 	@Default
 	IColumnsManager columnsManager = ColumnsManager.builder().build();
 
-	// Using a ForkJoinPool is much more complex than using an ExecutorService
-	// But it enable smooth usage of Stream API.
-	// Given part of the query is actually waiting for an external database (i.e. ITableQuery), it may be preferably not
-	// to rely on the commonPool.
 	@NonNull
 	@Default
+	// By default, we do not jump into a separate thread/executorService, hence we do not rely on
+	// AdhocUnsafe.adhocCommonPool
 	ExecutorService executorService = MoreExecutors.newDirectExecutorService();
 
 	@NonNull
@@ -199,6 +197,8 @@ public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
 				columnsManager = ColumnsManager.builder().build();
 			}
 			if (executorService == null) {
+				// By default, we do not jump into a separate thread/executorService, hence we do not rely on
+				// AdhocUnsafe.adhocCommonPool
 				executorService = MoreExecutors.newDirectExecutorService();
 			}
 			if (queryStepCache == null) {

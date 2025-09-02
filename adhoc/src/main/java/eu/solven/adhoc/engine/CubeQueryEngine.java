@@ -114,13 +114,30 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Default
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
+	@SuppressWarnings("PMD.UnusedAssignment")
 	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
+	@SuppressWarnings("PMD.UnusedAssignment")
 	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
+
+	@NonNull
+	@VisibleForTesting
+	@Getter
+	ITableQueryEngine tableQueryEngine;
+
+	protected CubeQueryEngine(AdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
+		if (tableQueryEngine == null) {
+			tableQueryEngine = TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
+		}
+
+		this.factories = factories;
+		this.eventBus = eventBus;
+		this.tableQueryEngine = tableQueryEngine;
+	}
 
 	@Override
 	public String toString() {
@@ -333,13 +350,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		ITableQueryEngine tableQueryEngine = makeTableQueryEngine();
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
-	}
-
-	@VisibleForTesting
-	public ITableQueryEngine makeTableQueryEngine() {
-		return TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 	}
 
 	/**

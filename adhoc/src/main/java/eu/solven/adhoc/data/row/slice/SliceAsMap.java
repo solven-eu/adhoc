@@ -202,4 +202,19 @@ public final class SliceAsMap implements IAdhocSlice {
 	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
 		asMap.forEach(action);
 	}
+
+	@Override
+	public IAdhocSlice getGroupBys() {
+		return this;
+	}
+
+	@Override
+	public Set<String> groupByKeySet() {
+		return getColumns();
+	}
+
+	@Override
+	public Object getGroupBy(String columnName) {
+		return getRawSliced(columnName);
+	}
 }

@@ -66,36 +66,38 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			return SplitTableQueries.empty();
 		}
 
-		ListMultimap<CubeQueryStep, CubeQueryStep> contextToQuery =
+		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
 				MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
 		tableQueries.forEach(tq -> {
 			tq.getAggregators().forEach(agg -> {
-				CubeQueryStep context = CubeQueryStep.edit(contextOnly(CubeQueryStep.edit(tq).measure(agg).build()))
-						.measure(agg)
-						.build();
-				CubeQueryStep aggregatorStep =
-						CubeQueryStep.edit(contextOnly(CubeQueryStep.edit(tq).measure(agg).build()))
-								.measure(agg)
-								.groupBy(tq.getGroupBy())
-								.filter(tq.getFilter())
-								.build();
+				// Typically holds options and customMarkers
+				CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
 
-				contextToQuery.put(context, aggregatorStep);
+				// consider a single context per measure
+				CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
+
+				CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
+						.measure(agg)
+						.groupBy(tq.getGroupBy())
+						.filter(tq.getFilter())
+						.build();
+
+				contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
 			});
 		});
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		SplitTableQueriesBuilder split = SplitTableQueries.builder();
-		contextToQuery.asMap().forEach((context, aggregators) -> {
+		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
 			Set<String> inducerColumns = new TreeSet<>();
 
 			Set<? extends ISliceFilter> filters =
-					aggregators.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+					filterGroupBy.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 			ISliceFilter commonFilter = FilterHelpers.commonFilter(filters);
 
-			aggregators.forEach(tq -> {
+			filterGroupBy.forEach(tq -> {
 				inducerColumns.addAll(tq.getGroupBy().getGroupedByColumns());
 
 				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
@@ -104,13 +106,13 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			});
 
 			// OR between each inducer own filter
-			Set<ISliceFilter> eachInducedFilters = aggregators.stream()
+			Set<ISliceFilter> eachInducedFilters = filterGroupBy.stream()
 					.map(tq -> FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			// induced will fetch the union of rows for all induced
 			ISliceFilter inducerFilter = AndFilter.and(commonFilter, OrFilter.or(eachInducedFilters));
 
-			aggregators.forEach(tq -> {
+			filterGroupBy.forEach(tq -> {
 				CubeQueryStep inducerStep = CubeQueryStep.edit(tq)
 						.filter(inducerFilter)
 						.groupBy(GroupByColumns.named(inducerColumns))

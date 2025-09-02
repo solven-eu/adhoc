@@ -31,6 +31,8 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 /**
  * Enables caching of {@link CubeQueryStep} results.
  * 
+ * A custom implementation may have dedicated invalidation policy.
+ * 
  * @author Benoit Lacelle
  */
 public interface IQueryStepCache {
@@ -39,6 +41,11 @@ public interface IQueryStepCache {
 		return new EmptyQueryStepCache();
 	}
 
+	/**
+	 * 
+	 * @param step
+	 * @return a {@link Optional} {@link ISliceToValue} for given {@link CubeQueryStep}.
+	 */
 	Optional<ISliceToValue> getValue(CubeQueryStep step);
 
 	void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues);

@@ -31,7 +31,6 @@ import java.util.function.DoubleConsumer;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
@@ -59,8 +58,8 @@ public class ReduceSensitivitiesCombination implements ICombination, IExamplePnL
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		MarketRiskSensitivity sensitivities = (MarketRiskSensitivity) underlyingValues.getFirst();
 
-		IValueMatcher tenorMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_TENOR);
-		IValueMatcher maturityMatcher = FilterHelpers.getValueMatcher(slice.asFilter(), K_MATURITY);
+		IValueMatcher tenorMatcher = slice.sliceReader().getValueMatcher(K_TENOR);
+		IValueMatcher maturityMatcher = slice.sliceReader().getValueMatcher(K_MATURITY);
 
 		if (modeCount) {
 			LongAdder counted = new LongAdder();

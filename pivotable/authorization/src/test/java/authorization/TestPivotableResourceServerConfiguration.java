@@ -20,39 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package authorization;
 
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.IStopwatchFactory;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Value;
+import java.text.ParseException;
 
-/**
- * Centralize the basic factories used through Adhoc.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder(toBuilder = true)
-public class AdhocFactories {
-	@NonNull
-	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
-	@NonNull
-	@Default
-	IColumnFactory columnFactory = StandardColumnFactory.builder().build();
+import com.nimbusds.jose.jwk.OctetSequenceKey;
 
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
+import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
+import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
+import eu.solven.adhoc.tools.JdkUuidGenerator;
 
-	@NonNull
-	@Default
-	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
+public class TestPivotableResourceServerConfiguration {
+	PivotableResourceServerConfiguration conf = new PivotableResourceServerConfiguration();
+
+	@Test
+	public void testGenerateMultipleTimes() throws ParseException {
+		MockEnvironment env = new MockEnvironment();
+		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, IPivotableOAuth2Constants.GENERATE);
+
+		OctetSequenceKey key1 =
+				PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, JdkUuidGenerator.INSTANCE);
+		OctetSequenceKey key2 =
+				PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, JdkUuidGenerator.INSTANCE);
+
+		Assertions.assertThat(key1.toJSONString()).isEqualTo(key2.toJSONString());
+	}
 }

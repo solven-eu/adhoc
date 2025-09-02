@@ -2,6 +2,20 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.11]
+
+### Added
+- Introduced `ISliceReader` to help reading coordinate given a `ISliceWithStep`. Usage is `slice.sliceReader().getValueMatcher(c)` instead of `FilterHelpers.getValueMatcher(slice.asFilter(), c)`
+
+### Changed
+- `ITableQueryEngine` is now a field of `CubeQueryEngine` (instead of `.makeTableQueryEngine` factory method).
+- `OrFilter.or` now relies on `AndFilter.and` to apply the same set of optimizations.
+
+### Fixed
+- Prevent `AdhocFactories` using an invalid `ICoordinateNormalizer` by default, using `StandardSliceFactory` own default.
+- Prefer `array.concat(otherArray)` over `arrat.push(...otherArray)` to improve performance and prevent `max call stack size` (https://github.com/vuejs/core/issues/13826).
+- `TableQueryEngineBootstrapped` will properly skip steps available from `IQueryStepCache`.
+
 ## [0.0.10]
 
 ### Added

@@ -55,7 +55,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-// @SuppressWarnings("PMD.GodClass")
 public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull

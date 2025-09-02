@@ -48,12 +48,12 @@ public interface ICubeQueryEngine {
 	 */
 	ITabularView execute(QueryPod queryPod);
 
-	@Deprecated(since = "This use a default IAdhocImplicitFilter")
+	@Deprecated(since = "This uses a default IAdhocImplicitFilter")
 	default ITabularView executeUnsafe(ICubeQuery query, IMeasureForest measures, ITableWrapper table) {
 		return executeUnsafe(query, measures, table, ColumnsManager.builder().build());
 	}
 
-	@Deprecated(since = "This use a default IAdhocImplicitFilter")
+	@Deprecated(since = "This uses a default IAdhocImplicitFilter")
 	default ITabularView executeUnsafe(ICubeQuery query,
 			IMeasureForest measures,
 			ITableWrapper table,

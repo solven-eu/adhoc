@@ -108,7 +108,7 @@ public class OrFilter implements IOrFilter {
 		// OR relies on AND optimizations
 		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
 
-		ISliceFilter negatedOptimized = AndFilter.and(negated, true);
+		ISliceFilter negatedOptimized = FilterOptimizerHelpers.and(negated, true);
 
 		if (negatedOptimized instanceof INotFilter notFilter) {
 			return notFilter.getNegated();

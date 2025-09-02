@@ -23,20 +23,23 @@
 package eu.solven.adhoc.engine;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.Iterables;
+
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestQueryStepsDag implements IAdhocTestConstants {
@@ -58,11 +61,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(1);
 		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(0);
 
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(k1Sum)
-				.filter(ISliceFilter.MATCH_ALL)
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).isEmpty();
+		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
 	}
 
 	@Test
@@ -79,11 +78,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
 		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
 
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(k1SumSquared)
-				.filter(ISliceFilter.MATCH_ALL)
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).hasSize(1);
+		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build())).hasSize(1);
 	}
 
 	@Test
@@ -118,17 +113,15 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(4);
 		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(3);
 
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(measures.getNameToMeasure().get(timesN))
-				.filter(ISliceFilter.MATCH_ALL)
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).hasSize(2);
+		Assertions
+				.assertThat(dag.underlyingSteps(
+						CubeQueryStep.builder().measure(measures.getNameToMeasure().get(timesN)).build()))
+				.hasSize(2);
 
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(measures.getNameToMeasure().get(timesNMinus1))
-				.filter(ISliceFilter.MATCH_ALL)
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).hasSize(2);
+		Assertions
+				.assertThat(dag.underlyingSteps(
+						CubeQueryStep.builder().measure(measures.getNameToMeasure().get(timesNMinus1)).build()))
+				.hasSize(2);
 	}
 
 	@Test
@@ -144,11 +137,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
 		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
 
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(k1SumSquared)
-				.filter(ISliceFilter.MATCH_ALL)
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).hasSize(1);
+		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build())).hasSize(1);
 	}
 
 	@Test
@@ -185,11 +174,9 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
 
 		// The 2 identical edges are explicit in `underlyingSteps` with the help of a multigraph
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(shiftorAisA1)
-				.filter(ColumnFilter.isEqualTo("a", "a1"))
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).hasSize(2);
+		Assertions.assertThat(dag.underlyingSteps(
+				CubeQueryStep.builder().measure(shiftorAisA1).filter(ColumnFilter.isEqualTo("a", "a1")).build()))
+				.hasSize(2);
 
 	}
 
@@ -212,10 +199,161 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(3);
 		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(3);
 
-		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder()
-				.measure(measure)
-				.filter(ISliceFilter.MATCH_ALL)
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
-				.build())).hasSize(2);
+		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(measure).build())).hasSize(2);
+	}
+
+	@Test
+	public void testQueryStepCache_root() {
+		MapQueryStepCache queryStepCache = new MapQueryStepCache();
+
+		String mName = k1Sum.getName();
+
+		// Before filling the cache
+		QueryStepsDag dagPre;
+		{
+			dagPre = engine.makeQueryStepsDag(QueryPod.builder()
+					.query(CubeQuery.builder().measure(mName).build())
+					.forest(measures)
+					.table(InMemoryTable.builder().build())
+					.queryStepCache(queryStepCache)
+					.build());
+
+			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
+
+			Assertions.assertThat(dagPre.getDag().vertexSet()).hasSize(1);
+			Assertions.assertThat(dagPre.getDag().edgeSet()).hasSize(0);
+
+			Assertions.assertThat(dagPre.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
+
+			Assertions.assertThat(dagPre.getStepToValues()).hasSize(0);
+		}
+
+		// Simulate the registration of a value in the cache
+		ISliceToValue sliceToValue = SliceToValue.empty();
+		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getQueried()), sliceToValue));
+		Assertions.assertThat(queryStepCache.map).hasSize(1);
+
+		// After filling the cache
+		{
+			QueryStepsDag dag = engine.makeQueryStepsDag(QueryPod.builder()
+					.query(CubeQuery.builder().measure(mName).build())
+					.forest(measures)
+					.table(InMemoryTable.builder().build())
+					.queryStepCache(queryStepCache)
+					.build());
+
+			Assertions.assertThat(dag.getQueried()).hasSize(1);
+
+			Assertions.assertThat(dag.getDag().vertexSet()).hasSize(1);
+			Assertions.assertThat(dag.getDag().edgeSet()).hasSize(0);
+
+			Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
+
+			Assertions.assertThat(dag.getStepToValues()).hasSize(1);
+		}
+	}
+
+	@Test
+	public void testQueryStepCache_hasDependency_dependencyInCache() {
+		MapQueryStepCache queryStepCache = new MapQueryStepCache();
+
+		String mName = k1Sum.getName();
+
+		QueryStepsDag dagPre;
+		{
+			dagPre = engine.makeQueryStepsDag(QueryPod.builder()
+					.query(CubeQuery.builder().measure(mName).build())
+					.forest(measures)
+					.table(InMemoryTable.builder().build())
+					.queryStepCache(queryStepCache)
+					.build());
+
+			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
+
+			Assertions.assertThat(dagPre.getDag().vertexSet()).hasSize(1);
+			Assertions.assertThat(dagPre.getDag().edgeSet()).hasSize(0);
+
+			Assertions.assertThat(dagPre.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
+		}
+
+		// Simulate the registration of a value in the cache
+		ISliceToValue sliceToValue = SliceToValue.empty();
+		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getQueried()), sliceToValue));
+		Assertions.assertThat(queryStepCache.map).hasSize(1);
+
+		// After filling the cache with an underlying measure, we query a dependant measure
+		{
+			QueryStepsDag dag = engine.makeQueryStepsDag(QueryPod.builder()
+					.query(CubeQuery.builder().measure(k1SumSquared.getName()).build())
+					.forest(measures)
+					.table(InMemoryTable.builder().build())
+					.queryStepCache(queryStepCache)
+					.build());
+
+			Assertions.assertThat(dag.getQueried()).hasSize(1);
+
+			// Dependant and underlying: the underlying has a value in cache
+			Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
+			Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
+
+			Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build()))
+					.hasSize(1);
+
+			Assertions.assertThat(dag.getStepToValues())
+					.containsKey(CubeQueryStep.builder().measure(k1Sum).build())
+					.hasSize(1);
+		}
+	}
+
+	@Test
+	public void testQueryStepCache_hasDependency_dependentInCache() {
+		MapQueryStepCache queryStepCache = new MapQueryStepCache();
+
+		// Query the dependent with empty cache
+		QueryStepsDag dagPre;
+		{
+			dagPre = engine.makeQueryStepsDag(QueryPod.builder()
+					.query(CubeQuery.builder().measure(k1SumSquared).build())
+					.forest(measures)
+					.table(InMemoryTable.builder().build())
+					.queryStepCache(queryStepCache)
+					.build());
+
+			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
+
+			Assertions.assertThat(dagPre.getDag().vertexSet()).hasSize(2);
+			Assertions.assertThat(dagPre.getDag().edgeSet()).hasSize(1);
+
+			Assertions.assertThat(dagPre.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build()))
+					.hasSize(1);
+		}
+
+		// Simulate the registration of a value in the cache
+		ISliceToValue sliceToValue = SliceToValue.empty();
+		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getQueried()), sliceToValue));
+		Assertions.assertThat(queryStepCache.map).hasSize(1);
+
+		// After filling the cache with an underlying measure, we query a dependant measure
+		{
+			QueryStepsDag dag = engine.makeQueryStepsDag(QueryPod.builder()
+					.query(CubeQuery.builder().measure(k1SumSquared.getName()).build())
+					.forest(measures)
+					.table(InMemoryTable.builder().build())
+					.queryStepCache(queryStepCache)
+					.build());
+
+			Assertions.assertThat(dag.getQueried()).hasSize(1);
+
+			// Given the dependent is in cache, the dependency is not added as vertex
+			Assertions.assertThat(dag.getDag().vertexSet()).hasSize(1);
+			Assertions.assertThat(dag.getDag().edgeSet()).hasSize(0);
+
+			Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build()))
+					.hasSize(0);
+
+			Assertions.assertThat(dag.getStepToValues())
+					.containsKey(CubeQueryStep.builder().measure(k1SumSquared).build())
+					.hasSize(1);
+		}
 	}
 }
