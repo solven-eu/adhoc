@@ -140,7 +140,9 @@ public class TableQueryEngineBootstrapped {
 	protected void logInducedSteps(QueryPod queryPod, SplitTableQueries inducerAndInduced) {
 		if (queryPod.isDebugOrExplain()) {
 			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = inducerAndInduced.getDagToDependancies();
-			log.info("[EXPLAIN] About to how {} inducers steps leads to {} induced steps", inducerAndInduced.getInducers().size(), inducerAndInduced.getInduceds().size());
+			log.info("[EXPLAIN] About to show {} inducers steps leading to {} induced steps",
+					inducerAndInduced.getInducers().size(),
+					inducerAndInduced.getInduceds().size());
 
 			// TODO We want to print the graph of induced steps. There should be something to refactor with DagExplainer
 			// new TopologicalOrderIterator<>(inducerAndInduced.getDagToDependancies()).fo
@@ -278,6 +280,8 @@ public class TableQueryEngineBootstrapped {
 				// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
 				// `Transformator` with no undelryingSteps
 				.filter(step -> dag.outgoingEdgesOf(step).isEmpty())
+				// Skip steps with a value in cache
+				.filter(step -> !queryStepsDag.getStepToValues().containsKey(step))
 				.forEach(step -> {
 					IMeasure leafMeasure = queryPod.resolveIfRef(step.getMeasure());
 

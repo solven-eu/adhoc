@@ -45,7 +45,7 @@ export default {
 				if (measure.underlying) {
 					underlyings.push(measure.underlying);
 				} else if (measure.underlyings) {
-					underlyings.concat(measure.underlyings);
+					underlyings.push(...measure.underlyings);
 				}
 
 				return underlyings;

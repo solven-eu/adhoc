@@ -186,6 +186,10 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			if (optSliceToValue.isPresent()) {
 				stepToValue.put(step, optSliceToValue.get());
 
+				if (step.isDebugOrExplain()) {
+					log.info("[EXPLAIN] step from cache: {}", step);
+				}
+
 				// The vertex must be added as even if we have a cacheHit, the DAG may need to refer to it for other
 				// measures.
 				hasCache = true;
@@ -307,7 +311,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		sanityChecks();
 	}
 
-	private void registerDescendants(ICanResolveMeasure canResolveMeasures) {
+	protected void registerDescendants(ICanResolveMeasure canResolveMeasures) {
 		// Add implicitly requested steps
 		while (hasLeftovers()) {
 			CubeQueryStep queryStep = pollLeftover();
