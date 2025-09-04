@@ -3,9 +3,12 @@ import { useAdhocStore } from "./store-adhoc.js";
 
 import AdhocEndpointRef from "./adhoc-endpoint-ref.js";
 
+import AdhocLoading from "./adhoc-loading.js";
+
 export default {
 	components: {
 		AdhocEndpointRef,
+		AdhocLoading,
 	},
 	props: {
 		endpointId: {
@@ -33,17 +36,14 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint) && (nbSchemaFetching > 0)">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading endpointId={{endpointId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error">endpoint.error={{endpoint.error}}</div>
+		<div v-if="!endpoint || endpoint.error">
+		    <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+		</div>
         <div v-else>
             <span>
                 <span v-if="withDescription">
                     <h1>
-                        <AdhocEndpointRef :endpointId="endpoint.id" />
+                        <AdhocEndpointRef :endpointId="endpointId" />
                     </h1>
                     Endpoint-Description: {{endpoint.name}}
                 </span>
