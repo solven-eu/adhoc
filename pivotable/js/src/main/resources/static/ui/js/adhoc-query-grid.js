@@ -1,7 +1,7 @@
 import { ref, watch, onMounted, reactive, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
-import AdhocGridFormat from "./adhoc-query-grid-format.js";
+import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
 import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
 
 // Formatters
@@ -16,7 +16,7 @@ export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocCellModal,
-		AdhocGridFormat,
+		AdhocGridFormatModal,
 		AdhocGridExportCsv,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -154,6 +154,7 @@ export default {
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				const measureNames = props.tabularView.query.measures;
 				console.log(`Rendering measureNames=${measureNames}`);
+				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
 				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions));
 
 				{
@@ -496,7 +497,6 @@ export default {
 			data,
 		};
 	},
-	// :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId"
 	template: /* HTML */ `
         <div>
             <div class="spinner-grow" role="status" v-if="loading">
@@ -528,7 +528,7 @@ export default {
             <div>props.tabularView.timing={{tabularView.timing}}</div>
             <AdhocGridExportCsv :array="data.array" />
 
-            <AdhocGridFormat :formatOptions="formatOptions" />
+			<AdhocGridFormatModal :formatOptions="formatOptions" />
         </div>
     `,
 };

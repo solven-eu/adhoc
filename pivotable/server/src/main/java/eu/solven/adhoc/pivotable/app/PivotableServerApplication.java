@@ -69,6 +69,7 @@ public class PivotableServerApplication {
 	public static void main(String[] args) {
 		SpringApplication springApp = new SpringApplication(PivotableServerApplication.class);
 
+		// https://docs.spring.io/spring-boot/reference/actuator/process-monitoring.html
 		springApp.addListeners(new ApplicationPidFileWriter());
 
 		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT

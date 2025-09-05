@@ -16,6 +16,10 @@ export default {
 			type: Boolean,
 			required: true,
 		},
+		type: {
+			type: String,
+			required: false,
+		},
 		error: {
 			type: String,
 			required: false,
@@ -33,7 +37,7 @@ export default {
             <div class="spinner-grow" role="status">
                 <span class="visually-hidden">Loading endpoint/cube information</span>
             </div>
-            Loading id={{id}}
+            Loading type={{type ? type : '?'}} id={{id}}
         </div>
         <div v-else-if="error && !error.endsWith('not_loaded')">
             <span>Issue loading id={{id}}. error={{error}}</span>

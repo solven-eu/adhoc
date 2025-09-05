@@ -11,11 +11,14 @@ import AdhocEndpointSchemaRef from "./adhoc-endpoint-schema-ref.js";
 import AdhocCube from "./adhoc-cube.js";
 import AdhocCubeRef from "./adhoc-cube-ref.js";
 
+import AdhocLoading from "./adhoc-loading.js";
+
 export default {
 	components: {
 		AdhocEndpointSchemaRef,
 		AdhocCube,
 		AdhocCubeRef,
+		AdhocLoading,
 	},
 	props: {
 		endpointId: {
@@ -57,8 +60,9 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-        <div v-if="!schema && nbSchemaFetching > 0">Loading schema</div>
-        <div v-else-if="schema.error">{{schema.error}}</div>
+		<div v-if="!schema || schema.error">
+		    <AdhocLoading :id="endpointId" type="schema" :loading="nbSchemaFetching > 0" :error="schema.error" />
+		</div>
         <div v-else>
             <span v-if="showSchema">
                 Tables:

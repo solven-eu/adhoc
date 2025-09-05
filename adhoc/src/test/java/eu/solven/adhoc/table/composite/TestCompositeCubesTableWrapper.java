@@ -37,9 +37,9 @@ import org.mockito.Mockito;
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
@@ -56,6 +56,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -182,19 +183,56 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	public void testFilterUnderlyingCube() {
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
-		Assertions.assertThat(composite.filterForColumns(ISliceFilter.MATCH_ALL, Set.of()))
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
+
+		Assertions.assertThat(composite.filterForColumns(subCube, ISliceFilter.MATCH_ALL, Set.of()))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
-		Assertions.assertThat(composite.filterForColumns(ISliceFilter.MATCH_NONE, Set.of()))
+		Assertions.assertThat(composite.filterForColumns(subCube, ISliceFilter.MATCH_NONE, Set.of()))
 				.isEqualTo(ISliceFilter.MATCH_NONE);
 
-		// and
-		Assertions.assertThat(composite.filterForColumns(
+		// and: all columns are known
+		Assertions
+				.assertThat(composite.filterForColumns(subCube,
+						AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+						Set.of("c1", "c2")))
+				.isEqualTo(AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")));
+
+		// and: some columns are unknown
+		Assertions.assertThat(composite.filterForColumns(subCube,
 				AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
-				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
-		// or
-		Assertions.assertThat(composite.filterForColumns(
+				Set.of("c1"))).isEqualTo(ISliceFilter.MATCH_NONE);
+
+		// or: all columns are known
+		Assertions
+				.assertThat(composite.filterForColumns(subCube,
+						OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+						Set.of("c1", "c2")))
+				.isEqualTo(OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")));
+
+		// or: some columns are unknown
+		Assertions.assertThat(composite.filterForColumns(subCube,
 				OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
 				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+
+		// Or.Not: all columns are known
+		Assertions
+				.assertThat(composite.filterForColumns(subCube,
+						OrFilter.builder()
+								.filter(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
+								.filter(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+								.build(),
+						Set.of("c1", "c2")))
+				// The expression is optimized, but still equivalent to the original
+				.isEqualTo(OrFilter.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")),
+						NotFilter.not(ColumnFilter.isLike("c2", "b%"))));
+
+		// Or.Not: some columns are unknown
+		Assertions.assertThat(composite.filterForColumns(subCube,
+				OrFilter.builder()
+						.filter(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
+						.filter(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+						.build(),
+				Set.of("c1"))).isEqualTo(NotFilter.not(ColumnFilter.isLike("c1", "a%")));
 	}
 
 	@Test
@@ -202,7 +240,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
 		// The subCube has a measure named `k1`
-		IHasMeasures subCube = Mockito.mock(IHasMeasures.class);
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		// Request the min and the max of the same measure cross cubes
@@ -229,7 +267,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
 		// The subCube has a measure named `k1`
-		IHasMeasures subCube = Mockito.mock(IHasMeasures.class);
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		Set<String> subColumns = Set.of("c1");
@@ -256,7 +294,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.contains(Filtrator.builder()
 						.name("max_c2")
 						.underlying(k1Sum.getName())
-						.filter(ISliceFilter.MATCH_ALL)
+						// .filter(ISliceFilter.MATCH_ALL)
+						.filter(ISliceFilter.MATCH_NONE)
 						.build())
 				.hasSize(2);
 		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
@@ -316,7 +355,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	// When a cube does not know a column, and given column is grouped by, Adhoc behave like the cube has a static given
 	// coordinate. This test filtering on given coordinate.
 	@Test
-	public void testFilterOnMissingColumn() {
+	public void testFilterOnMissingColumn_partiallyKnown() {
 		String tableName1 = "someTableName1";
 		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
 
@@ -372,26 +411,34 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			// filter unknownCoordinate grandTotal
 			{
 				ITabularView view = compositeCube.execute(
-						CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", missingColumnCoordinate).build());
+						CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", "unknownCoordinate").build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 345 + 456))
-						.hasSize(1);
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 			}
 
 			// filter unknownCoordinate groupBy:a
 			{
 				ITabularView view = compositeCube.execute(CubeQuery.builder()
 						.measure(k1Sum.getName())
-						.andFilter("a", missingColumnCoordinate)
+						.andFilter("a", "unknownCoordinate")
 						.groupByAlso("a")
 						.build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.containsEntry(Map.of("a", missingColumnCoordinate), Map.of(k1Sum.getName(), 0L + 345 + 456))
-						.hasSize(1);
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
+			}
+
+			// filter complex groupBy:a
+			{
+				ITabularView view = compositeCube.execute(CubeQuery.builder()
+						.measure(k1Sum.getName())
+						.andFilter(ColumnFilter.isLike("a", "az%"))
+						.groupByAlso("a")
+						.build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 			}
 		}
 	}
@@ -491,6 +538,46 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 								Map.of(m, 0L + 345 + 456))
 						.hasSize(3);
 			}
+		}
+	}
+
+	@Test
+	public void testUnknownColumn() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(k1Sum);
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).optCubeSlicer(Optional.of("cubeSlicer")).build();
+
+		{
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+
+			Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("cubeSlicer");
+
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withoutUnderlyings);
+
+			// groupBy
+			String m = k1Sum.getName();
+			Assertions.assertThatThrownBy(
+					() -> compositeCube.execute(CubeQuery.builder().measure(m).groupByAlso("unknownColumn").build()))
+					.isInstanceOf(IllegalArgumentException.class);
+
+			// filter
+			Assertions
+					.assertThatThrownBy(() -> compositeCube
+							.execute(CubeQuery.builder().measure(m).andFilter("unknownColumn", "anyValue").build()))
+					.isInstanceOf(IllegalArgumentException.class);
 		}
 	}
 

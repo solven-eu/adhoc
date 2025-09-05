@@ -23,6 +23,7 @@ export default {
 			required: true,
 		},
 
+		// TODO Why not using `queryModel.selectedOptions` as options?
 		options: {
 			type: Object,
 			required: true,
@@ -53,6 +54,7 @@ export default {
 			return wizardHelper.clearFilters(props.searchOptions);
 		};
 
+		// TODO Why not using `queryModel.selectedOptions` as options?
 		const queryModel = inject("queryModel");
 
 		return {
@@ -74,7 +76,7 @@ export default {
                     aria-controls="wizardOptions"
                 >
                     {{ Object.keys(metadata.query_options).length}} options &nbsp;
-                    <small class="badge text-bg-primary">{{filtered(options).length}}</small>
+                    <small class="badge text-bg-primary">{{filtered(queryModel.selectedOptions).length}}</small>
                 </button>
             </h2>
             <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">

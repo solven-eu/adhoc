@@ -10,6 +10,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Changed
 - `ITableQueryEngine` is now a field of `CubeQueryEngine` (instead of `.makeTableQueryEngine` factory method).
 - `OrFilter.or` now relies on `AndFilter.and` to apply the same set of optimizations.
+- `CompositeCubesTableWrapper` now rejects queries referring to unknown columns (in `groupBy` or `filter`).
+- `CompositeCubesTableWrapper` now apply filters on unknown column in subCube as if the whole subCube has the `onMissingColumn` value.
 
 ### Fixed
 - Prevent `AdhocFactories` using an invalid `ICoordinateNormalizer` by default, using `StandardSliceFactory` own default.

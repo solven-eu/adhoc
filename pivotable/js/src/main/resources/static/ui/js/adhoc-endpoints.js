@@ -33,7 +33,7 @@ export default {
         </div>
         <div v-else class="container">
             <div class="row border" v-for="endpoint in endpoints">
-                <AdhocEndpoint :endpointId="endpoint.id" :showSchema="false" v-if="!endpoint.error" />
+                <AdhocEndpoint :endpointId="endpoint.id" :showSchema="false"/>
             </div>
         </div>
     `,

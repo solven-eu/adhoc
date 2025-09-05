@@ -42,7 +42,8 @@ export default {
 				}
 			}
 			for (const column of Object.values(cube.columns.columns)) {
-				for (const tag of column.tags) {
+				// tags may be empty in case of error column
+				for (const tag of column.tags || []) {
 					tags.add(tag);
 				}
 			}

@@ -16,6 +16,8 @@ import AdhocEndpointSchema from "./adhoc-endpoint-schema.js";
 import AdhocCube from "./adhoc-cube.js";
 import AdhocCubeRef from "./adhoc-cube-ref.js";
 
+import AdhocLoading from "./adhoc-loading.js";
+
 export default {
 	components: {
 		AdhocEndpointHeader,
@@ -24,6 +26,7 @@ export default {
 		AdhocEndpointSchemaRef,
 		AdhocCube,
 		AdhocCubeRef,
+		AdhocLoading,
 	},
 	props: {
 		endpointId: {
@@ -45,8 +48,6 @@ export default {
 			endpoint(store) {
 				return store.endpoints[this.endpointId] || { error: "not_loaded" };
 			},
-		}),
-		...mapState(useAdhocStore, {
 			schema(store) {
 				return store.schemas[this.endpointId] || { error: "not_loaded" };
 			},
@@ -70,18 +71,15 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-        <div v-if="!endpoint && nbSchemaFetching > 0">
-            Loading
-            <RouterLink :to="{path:'/html/endpoints/' + endpointId}">endpoint={{endpointId}}</RouterLink>
-        </div>
-        <div v-else-if="endpoint.error">{{endpoint.error}}</div>
+		<div v-if="!endpoint || endpoint.error">
+		    <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+		</div>
         <div v-else>
             <AdhocEndpointHeader :endpointId="endpointId" />
 
             <span v-if="metadata.tags">
                 Tags:
-                <span class="badge text-bg-secondary" v-for="tag in endpoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span
-                ><br />
+                <span class="badge text-bg-secondary" v-for="tag in endpoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span>
             </span>
             <span v-if="schema">
                 <AdhocEndpointSchema :endpointId="endpointId" :cubeId="cubeId" :showSchema="showSchema" />

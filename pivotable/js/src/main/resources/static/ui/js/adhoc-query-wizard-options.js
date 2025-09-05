@@ -6,6 +6,7 @@ export default {
 	components: {},
 	// https://vuejs.org/guide/components/props.html
 	props: {
+		// TODO Why not using `queryModel.selectedOptions` as options?
 		queryModel: {
 			type: Object,
 			required: true,
