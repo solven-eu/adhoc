@@ -83,9 +83,9 @@ export default {
 	template: /* HTML */ `
         <div v-if="needsToLogin">Needs to login</div>
         <div v-else-if="!endpoint || endpoint.error || !cube || cube.error">
-            <AdhocLoading :id="cubeId" :type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
-            <AdhocLoading :id="endpointId" :type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-            <AdhocLoading id="login" :type="login" :loading="nbLoginLoading > 0" :error="needsToLogin ? 'needsToLogin' : null" />
+            <AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
+            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+            <AdhocLoading id="login" type="login" :loading="nbLoginLoading > 0" :error="needsToLogin ? 'needsToLogin' : null" />
         </div>
         <div v-else>
             <AdhocQuery :endpointId="endpointId" :cubeId="cubeId" :cube="cube" />

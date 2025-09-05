@@ -57,7 +57,6 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -73,6 +72,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.INotFilter;
@@ -163,6 +163,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
+		checkColumns(compositeQuery);
+
 		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
 		Map<String, ICubeQuery> cubeToQuery = new LinkedHashMap<>();
@@ -181,6 +183,36 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 		// not distinct slices as different subCubes may refer to the same slices
 		return new SuppliedTabularRecordStream(compositeQuery, false, () -> openStream(compositeGroupBy, cubeToView));
+	}
+
+	/**
+	 * This method will check the columns in the compositeQuery are valid. This is done early as in later phase, each
+	 * subCube will discard unknown columns, supposing another cube will take it in charge.
+	 * 
+	 * @param compositeQuery
+	 */
+	protected void checkColumns(TableQueryV2 compositeQuery) {
+		NavigableSet<String> groupedByColumns = new TreeSet<>(compositeQuery.getGroupBy().getNameToColumn().keySet());
+		Set<String> filteredColumns = new TreeSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
+
+		optCubeSlicer.ifPresent(cubeSlicer -> {
+			groupedByColumns.remove(cubeSlicer);
+			filteredColumns.remove(cubeSlicer);
+		});
+		for (ICubeWrapper cube : cubes) {
+			Set<String> cubeColumns = cube.getColumnsAsMap().keySet();
+			groupedByColumns.removeAll(cubeColumns);
+			filteredColumns.removeAll(cubeColumns);
+		}
+
+		if (!groupedByColumns.isEmpty()) {
+			throw new IllegalArgumentException(
+					"unknown groupedBy columns: %s for query=%s".formatted(groupedByColumns, compositeQuery));
+		} else if (!filteredColumns.isEmpty()) {
+			throw new IllegalArgumentException(
+					"unknown filtered columns: %s for query=%s".formatted(filteredColumns, compositeQuery));
+		}
+
 	}
 
 	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
@@ -212,7 +244,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	}
 
 	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
-			IHasMeasures subCube,
+			ICubeWrapper subCube,
 			Set<String> subColumns) {
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
 
@@ -227,7 +259,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 					if (compositeFilter.isMatchAll()) {
 						return IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName());
 					} else {
-						ISliceFilter subFilter = filterForColumns(compositeFilter, subColumns);
+						ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, subColumns);
 
 						return Filtrator.builder()
 								.name(fa.getAlias())
@@ -282,7 +314,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		subGroupBy.keySet().retainAll(subColumns);
 
 		ISliceFilter compositeFilter = compositeQuery.getFilter();
-		ISliceFilter subFilter = filterForColumns(compositeFilter, subColumns);
+		ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, subColumns);
 
 		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subColumns);
 
@@ -384,37 +416,39 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	/**
 	 *
+	 * @param subCube
 	 * @param filter
 	 *            a {@link ICubeQuery} filter
 	 * @param columns
 	 *            the {@link IAdhocColumn} available in a {@link ICubeWrapper}
 	 * @return the equivalent {@link ISliceFilter} given the subset of columns
 	 */
-	protected ISliceFilter filterForColumns(ISliceFilter filter, Set<String> columns) {
+	protected ISliceFilter filterForColumns(ICubeWrapper subCube, ISliceFilter filter, Set<String> columns) {
 		if (filter.isMatchAll() || filter.isMatchNone()) {
 			return filter;
 		} else if (filter instanceof IColumnFilter columnFilter) {
 			if (columns.contains(columnFilter.getColumn())) {
 				return columnFilter;
 			} else {
-				// Composite query filters an unknown column: we drop the filter on given column
-				return ISliceFilter.MATCH_ALL;
+				return onMissingFilterColumn(subCube, columnFilter);
 			}
 		} else if (filter instanceof INotFilter notFilter) {
-			ISliceFilter negatedForColumns = filterForColumns(notFilter.getNegated(), columns);
+			ISliceFilter negatedForColumns = filterForColumns(subCube, notFilter.getNegated(), columns);
 			if (ISliceFilter.MATCH_ALL.equals(negatedForColumns)) {
+				// BEWARE Filtering an unknown column?
 				return ISliceFilter.MATCH_ALL;
 			} else {
 				return NotFilter.not(negatedForColumns);
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();
-			List<ISliceFilter> filteredOperands = operands.stream().map(f -> filterForColumns(f, columns)).toList();
+			List<ISliceFilter> filteredOperands =
+					operands.stream().map(f -> filterForColumns(subCube, f, columns)).toList();
 			return AndFilter.and(filteredOperands);
 		} else if (filter instanceof IOrFilter orFilter) {
 			Set<ISliceFilter> operands = orFilter.getOperands();
 			List<ISliceFilter> filteredOperands = operands.stream()
-					.map(f -> filterForColumns(f, columns))
+					.map(f -> filterForColumns(subCube, f, columns))
 					// In a OR, matchAll should be discarded individually, else the whole OR is matchAll
 					// It assumes the initial operands where not matchAll: this is guaranteed by previous call to
 					// OrFilter.isMatchAll
@@ -423,6 +457,17 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			return OrFilter.or(filteredOperands);
 		} else {
 			throw new UnsupportedOperationException("Not handled: %s".formatted(filter));
+		}
+	}
+
+	protected ISliceFilter onMissingFilterColumn(ICubeWrapper subCube, IColumnFilter columnFilter) {
+		Object cubeCoordinateIfMissing = missingColumn(subCube, columnFilter.getColumn());
+
+		if (columnFilter.getValueMatcher().match(cubeCoordinateIfMissing)) {
+			// The filter matches the default coordinate: it matches the whole subCube
+			return ISliceFilter.MATCH_ALL;
+		} else {
+			return ISliceFilter.MATCH_NONE;
 		}
 	}
 
