@@ -431,8 +431,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		queryStepsDag.registerExecutionFeedback(queryStep,
 				SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
 
-		if (null != queryStepToValues.put(queryStep, outputColumn)) {
-			throw new IllegalStateException("The DAG processed twice queryStep=%s".formatted(queryStep));
+		ISliceToValue alreadyIn = queryStepToValues.putIfAbsent(queryStep, outputColumn);
+		if (null != alreadyIn) {
+			// This may happen only if CONCURRENT options is on
+			// TODO Prevent an intermediate step to be computed multiple times
+			log.debug("A queryStep has been computed multiple times queryStep={}");
 		}
 	}
 

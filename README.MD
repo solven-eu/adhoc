@@ -551,6 +551,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Enable browser-back to restore previous query.
 - [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
 - [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
+- [Concurrency] Prevent `QueryStepRecursiveAction` to request multiple times the same underlying queryStep
 
 # Sponsors
 
