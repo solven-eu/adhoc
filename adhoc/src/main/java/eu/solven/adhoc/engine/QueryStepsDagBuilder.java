@@ -59,6 +59,7 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -162,10 +163,10 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 		return Lists.cartesianProduct(indexToGroupBys).stream().map(columns -> {
 			IAdhocGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
-			ISliceFilter andFilter = AndFilter.and(columns.stream().map(Map.Entry::getValue).toList());
+			ISliceFilter andFilter = FilterBuilder.and(columns.stream().map(Map.Entry::getValue).toList()).optimize();
 			return MeasurelessQuery.edit(query)
 					.groupBy(groupBy)
-					.filter(AndFilter.and(query.getFilter(), andFilter))
+					.filter(FilterBuilder.and(query.getFilter(), andFilter).optimize())
 					.build();
 		}).collect(ImmutableSet.toImmutableSet());
 	}

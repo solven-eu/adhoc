@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,14 @@ public class TestAndFilter {
 										OrFilter.or(ImmutableMap.of("c", "c1", "d", "d1")))
 								.toString())
 				.isEqualTo("(a==a1|b==b1)&(c==c1|d==d1)");
+	}
+
+	@Test
+	public void testAndOr_onlyOr() {
+		Assertions
+				.assertThat(AndFilter.and(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1")),
+						OrFilter.or(ImmutableMap.of("a", "a1", "b", "b2"))))
+				.isEqualTo(AndFilter.and(Map.of("a", "a1")));
 	}
 
 	@Test
@@ -518,5 +527,52 @@ public class TestAndFilter {
 
 		Assertions.assertThat(AndFilter.and(notA_and_notB, NotFilter.not(ColumnFilter.isEqualTo("a", "a1"))))
 				.isEqualTo(notA_and_notB);
+	}
+
+	@Test
+	public void testAnd_Large_onlyOrs() {
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 1)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0|b==b0");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 2)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0&b==b1|b==b0&a==a1");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 3)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			Assertions.assertThat(AndFilter.and(operands)).hasToString("matchNone");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 16)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			// The combination is too large to detect it is matchNone
+			Assertions.assertThat(AndFilter.and(operands))
+					.hasToString(
+							"(a==a0|b==b0)&(a==a1|b==b1)&(a==a2|b==b2)&(a==a3|b==b3)&(a==a4|b==b4)&(a==a5|b==b5)&(a==a6|b==b6)&(a==a7|b==b7)&(a==a8|b==b8)&(a==a9|b==b9)&(a==a10|b==b10)&(a==a11|b==b11)&(a==a12|b==b12)&(a==a13|b==b13)&(a==a14|b==b14)&(a==a15|b==b15)");
+		}
+	}
+
+	@Test
+	public void testAnd_Large_andMatchOnlyOne() {
+		List<ISliceFilter> operands = IntStream.range(0, 16)
+				.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		// Adding a simpler operand may help detecting this is matchNone
+		operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+
+		Assertions.assertThat(AndFilter.and(operands)).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 }

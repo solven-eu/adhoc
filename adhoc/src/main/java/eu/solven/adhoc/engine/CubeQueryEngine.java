@@ -433,9 +433,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 		ISliceToValue alreadyIn = queryStepToValues.putIfAbsent(queryStep, outputColumn);
 		if (null != alreadyIn) {
-			// This may happen only if CONCURRENT options is on
+			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
+			// dependents.
 			// TODO Prevent an intermediate step to be computed multiple times
-			log.debug("A queryStep has been computed multiple times queryStep={}");
+			log.debug("A queryStep has been computed multiple times queryStep={}", queryPod);
 		}
 	}
 

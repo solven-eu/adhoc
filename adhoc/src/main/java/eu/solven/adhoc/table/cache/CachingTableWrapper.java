@@ -48,7 +48,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -304,7 +304,7 @@ public class CachingTableWrapper implements ITableWrapper {
 				.clearAggregators()
 				// TODO Should remove the alias from the cacheKey
 				.aggregator(aggregator.toBuilder().filter(ISliceFilter.MATCH_ALL).build())
-				.filter(AndFilter.and(tableQuery.getFilter(), aggregator.getFilter()))
+				.filter(FilterBuilder.and(tableQuery.getFilter(), aggregator.getFilter()).optimize())
 				.customMarker(customMarkerForCache)
 				.build();
 

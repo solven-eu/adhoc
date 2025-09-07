@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Getter;
@@ -62,7 +62,7 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	public ISliceFilter asFilterNoCache() {
 		// AND the slice with the step as the step may express some filters which are not in the slice
 		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
-		ISliceFilter filter = AndFilter.and(slice.asFilter(), queryStep.getFilter());
+		ISliceFilter filter = FilterBuilder.and(slice.asFilter(), queryStep.getFilter()).optimize();
 
 		if (filter.isMatchNone()) {
 			// These cases are unclear.

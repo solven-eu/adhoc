@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
@@ -118,7 +119,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return shiftColumn;
 			} else if (filterMode == FilterMode.alwaysShift) {
 				// Combine both columns
-				return AndFilter.and(columnFilter, shiftColumn);
+				return FilterBuilder.and(columnFilter, shiftColumn).optimize();
 			} else {
 				return filter;
 			}
@@ -128,14 +129,14 @@ public class SimpleFilterEditor implements IFilterEditor {
 			List<ISliceFilter> shiftedOperands =
 					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
 
-			return AndFilter.and(shiftedOperands);
+			return FilterBuilder.and(shiftedOperands).optimize();
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			Set<ISliceFilter> operands = orFilter.getOperands();
 
 			List<ISliceFilter> shiftedOperands =
 					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
 
-			return OrFilter.or(shiftedOperands);
+			return FilterBuilder.or(shiftedOperands).optimize();
 		} else {
 			throw new NotYetImplementedException("filter=%s".formatted(filter));
 		}
@@ -172,7 +173,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 					.map(subFilter -> retainsColumns(subFilter, retainedColumns))
 					.toList();
 
-			return AndFilter.and(unfilteredAnds);
+			return FilterBuilder.and(unfilteredAnds).optimize();
 		} else {
 			throw new NotYetImplementedException("filter=%s".formatted(filter));
 		}
@@ -207,7 +208,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();
 
-			return AndFilter.and(unfiltered);
+			return FilterBuilder.and(unfiltered).optimize();
 		} else if (filter instanceof IOrFilter orFilter) {
 			List<ISliceFilter> unfiltered = orFilter.getOperands()
 					.stream()

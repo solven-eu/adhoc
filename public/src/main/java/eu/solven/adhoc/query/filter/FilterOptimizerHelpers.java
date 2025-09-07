@@ -38,11 +38,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -117,94 +120,178 @@ public class FilterOptimizerHelpers {
 	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	private static ISliceFilter optimizeAndOfOr(Collection<ISliceFilter> operands) {
-		// Set<ISliceFilter> operands = andFilter.getOperands();
-
-		// TODO Manage `Not(Or(...))` and `Column(In(...))`
+		// TODO Manage `Column(In(...))` but beware of cartesian products
 		Map<Boolean, List<ISliceFilter>> orNotOr = operands.stream()
 				.collect(Collectors.partitioningBy(o -> o instanceof IOrFilter
 						|| o instanceof INotFilter notFilter && notFilter.getNegated() instanceof IAndFilter));
 
-		if (!orNotOr.get(true).isEmpty() && !orNotOr.get(false).isEmpty()) {
-			List<List<ISliceFilter>> orFilters =
-					orNotOr.get(true).stream().map(FilterOptimizerHelpers::getOrOperands).toList();
-
-			// Holds all AND operands which are not ORs.
-			ISliceFilter simpleAnd = and(orNotOr.get(false));
-
-			// Register if at least one simplification occured. If false, this is useful not to later call `Or.or` which
-			// would lead to a cycle as `Or.or` is based on `And.and` which ic based on current method.
-			AtomicBoolean hasSimplified = new AtomicBoolean();
-
-			// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
-			// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
-			Set<ISliceFilter> ors = Lists.cartesianProduct(orFilters)
-					.stream()
-					.map(FilterOptimizerHelpers::and)
-					// Combine the simple AND (based on not OR operands) with the orEntry.
-					// Keep the simple AND on the left, as they are common to all entries, hence easier to be read
-					// if first
-					.map(and2 -> and(simpleAnd, and2))
-					// Some entries would be filtered out
-					// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
-					.filter(f -> {
-						if (f.isMatchNone()) {
-							// Reject this OR which is irrelevant
-							// (e.g. flattening `AND(OR(...))`, it generated a filter like `a&!a`)
-							hasSimplified.set(true);
-							return false;
-						} else {
-							return true;
-						}
-					})
-					.collect(Collectors.toCollection(LinkedHashSet::new));
-
-			Map<ISliceFilter, ISliceFilter> inducedToInducer = new LinkedHashMap<>();
-
-			ors.stream().forEach(inducer -> {
-				ors.stream()
-						// filter induced is stricter than inducer
-						.filter(induced -> induced != inducer && FilterHelpers.isStricterThan(induced, inducer))
-						.forEach(induced -> {
-							// BEWARE an induced may have multiple inducer
-							inducedToInducer.put(induced, inducer);
-						});
-			});
-
-			inducedToInducer.forEach((induced, inducer) -> {
-				// Remove entry one by one, else we fear we may remove an inducer
-				// BEWARE Is it legit? I mean, should we just remove all inducers in all cases?
-				// TODO There is a bug in case of hierarchy of inducer, and we remove the intermediate inducer: the
-				// deeper inducer would then not removed
-				if (ors.contains(inducer)) {
-					ors.remove(induced);
-					hasSimplified.set(true);
-				}
-			});
-
-			if (hasSimplified.get()) {
-				// At least one simplification occured: it is relevant to build and optimize an OR over the leftover
-				// operands
-
-				// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
-				// better/simpler/faster. Generally speaking, we prefer AND over OR.
-				ISliceFilter orCandidate = OrFilter.or(ors);
-				if (costFunction(orCandidate) < costFunction(operands)) {
-					return orCandidate;
-				}
-			}
-
+		List<ISliceFilter> orOperands = orNotOr.get(true);
+		if (orOperands.isEmpty()) {
+			// There is no OR to optimize
+			return new AndFilter(operands);
 		}
-		return new AndFilter(operands);
+
+		// Holds all AND operands which are not ORs.
+		ISliceFilter simpleAnd = and(orNotOr.get(false));
+
+		// Register if at least one simplification occurred. If false, this is useful not to later call `Or.or`
+		// which would lead to a cycle as `Or.or` is based on `And.and` which is based on current method.
+		AtomicBoolean hasSimplified = new AtomicBoolean();
+
+		if (simpleAnd.isMatchNone()) {
+			return ISliceFilter.MATCH_NONE;
+		}
+		List<List<ISliceFilter>> orFilters =
+				orOperands.stream().map(FilterOptimizerHelpers::getOrOperands).map(orFilter -> {
+					List<ISliceFilter> operand = orFilter.stream()
+							// .map(orOperand -> AndFilter.and(simpleAnd, orOperand))
+
+							// Filter the combinations which are simplified into matchNone
+							.filter(sf -> {
+								ISliceFilter combinedOrOperand = AndFilter.and(simpleAnd, sf);
+
+								boolean matchNone = combinedOrOperand.isMatchNone();
+								if (matchNone) {
+									// Reject this operand which is irrelevant
+									hasSimplified.set(true);
+								}
+
+								return !matchNone;
+							})
+							.collect(Collectors.toCollection(ArrayList::new));
+
+					// Simplify the OR before doing the cartesian product
+					int sizeBefore = operand.size();
+					removeStricterInOr(operand);
+					if (operand.size() < sizeBefore) {
+						hasSimplified.set(true);
+					}
+
+					return operand;
+				}).toList();
+
+		// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
+		// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
+		List<List<ISliceFilter>> cartesianProduct = Lists.cartesianProduct(orFilters);
+
+		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
+		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
+		if (cartesianProduct.size() > AdhocUnsafe.cartesianProductLimit) {
+			// throw new NotYetImplementedException("Faulty optimization on %s".formatted(operands));
+			return new AndFilter(operands);
+		}
+
+		Set<ISliceFilter> ors = cartesianProduct.stream()
+				.map(FilterOptimizerHelpers::and)
+				// Combine the simple AND (based on not OR operands) with the orEntry.
+				// Keep the simple AND on the left, as they are common to all entries, hence easier to be read
+				// if first
+				// Some entries would be filtered out
+				// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
+				.filter(sf -> {
+					ISliceFilter combinedOrOperand = AndFilter.and(simpleAnd, sf);
+
+					if (combinedOrOperand.isMatchNone()) {
+						// Reject this OR which is irrelevant
+						// (e.g. flattening `AND(OR(...))`, it generated a filter like `a&!a`)
+						hasSimplified.set(true);
+						return false;
+					} else {
+						return true;
+					}
+				})
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+		if (hasSimplified.get()) {
+			// At least one simplification occurred: it is relevant to build and optimize an OR over the leftover
+			// operands
+
+			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
+			// better/simpler/faster. Generally speaking, we prefer AND over OR.
+			// BEWARE We go into another batch of optimization for OR, which is safe as this is strictly simpler than
+			// current input
+			ISliceFilter orCandidate = FilterBuilder.and(simpleAnd, FilterBuilder.or(ors).optimize()).optimize();
+			int costSimplifiedOr = costFunction(orCandidate);
+			int costInputAnd = costFunction(operands);
+
+			if (costSimplifiedOr < costInputAnd) {
+				return orCandidate;
+			}
+		}
+
+		// raw AND as we do not want to call optimizations recursively
+		return FilterBuilder.and(operands).combine();
+	}
+
+	/**
+	 * Given laxer operand imply stricter operands in OR, this will strip stricter operands.
+	 * 
+	 * @param orOperands
+	 *            operands which are ORed.
+	 */
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	private static void removeStricterInOr(Collection<? extends ISliceFilter> orOperands) {
+		// Given a list of ORs, we reject stricter operands in profit of the laxer operands
+		Map<ISliceFilter, ISliceFilter> inducedToInducer = new LinkedHashMap<>();
+
+		orOperands.stream().forEach(inducer -> {
+			orOperands.stream()
+					// filter induced is stricter than inducer
+					.filter(induced -> induced != inducer && FilterHelpers.isStricterThan(induced, inducer))
+					.forEach(induced -> {
+						// BEWARE an induced may have multiple inducer
+						inducedToInducer.put(induced, inducer);
+					});
+		});
+
+		inducedToInducer.forEach((induced, inducer) -> {
+			// Remove entry one by one, else we fear we may remove an inducer
+			// BEWARE Is it legit? I mean, should we just remove all inducers in all cases?
+			// TODO There is a bug in case of hierarchy of inducer, and we remove the intermediate inducer: the
+			// deeper inducer would then not removed
+			if (orOperands.contains(inducer)) {
+				orOperands.remove(induced);
+			}
+		});
+	}
+
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	private static Set<ISliceFilter> removeLaxerInAnd(Collection<? extends ISliceFilter> andOperands) {
+		// Given a list of ANDs, we reject stricter operands in profit of the laxer operands
+		Multimap<ISliceFilter, ISliceFilter> stricterToLaxer =
+				MultimapBuilder.linkedHashKeys().arrayListValues().build();
+
+		andOperands.stream().forEach(stricter -> {
+			andOperands.stream()
+					// filter induced is stricter than inducer
+					.filter(laxer -> laxer != stricter && FilterHelpers.isStricterThan(stricter, laxer))
+					.forEach(laxer -> {
+						// BEWARE a laxer may have multiple stricter
+						stricterToLaxer.put(stricter, laxer);
+					});
+		});
+
+		Set<ISliceFilter> stripped = new LinkedHashSet<>(andOperands);
+
+		stricterToLaxer.forEach((stricter, laxer) -> {
+			// Remove entry one by one, else we fear we may remove an inducer
+			// BEWARE Is it legit? I mean, should we just remove all inducers in all cases?
+			// TODO There is a bug in case of hierarchy of inducer, and we remove the intermediate inducer: the
+			// deeper inducer would then not removed
+			if (stripped.contains(stricter)) {
+				stripped.remove(laxer);
+			}
+		});
+
+		return ImmutableSet.copyOf(stripped);
 	}
 
 	private static List<ISliceFilter> getOrOperands(ISliceFilter f) {
 		if (f instanceof IOrFilter orFilter) {
 			return ImmutableList.copyOf(orFilter.getOperands());
 		} else {
-			return ImmutableList.copyOf(
-					((IAndFilter) ((INotFilter) f).getNegated()).getOperands().stream().map(NotFilter::not).toList());
+			IAndFilter negatedAnd = (IAndFilter) ((INotFilter) f).getNegated();
+			return ImmutableList.copyOf(negatedAnd.getOperands().stream().map(NotFilter::not).toList());
 		}
 	}
 
@@ -283,8 +370,10 @@ public class FilterOptimizerHelpers {
 			return notMatchAll.iterator().next();
 		}
 
+		Set<? extends ISliceFilter> stripDedundancy = removeLaxerInAnd(notMatchAll);
+
 		ISliceFilter orCandidate =
-				OrFilter.builder().filters(notMatchAll.stream().map(NotFilter::not).toList()).build();
+				OrFilter.builder().filters(stripDedundancy.stream().map(NotFilter::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 		int costOrCandidate;
 		if (willBeNegated) {
@@ -292,11 +381,11 @@ public class FilterOptimizerHelpers {
 		} else {
 			costOrCandidate = costFunction(notOrCandidate);
 		}
-		if (costOrCandidate < costFunction(notMatchAll)) {
+		if (costOrCandidate < costFunction(stripDedundancy)) {
 			return notOrCandidate;
 		}
 
-		return new AndFilter(notMatchAll);
+		return new AndFilter(stripDedundancy);
 	}
 
 	/**

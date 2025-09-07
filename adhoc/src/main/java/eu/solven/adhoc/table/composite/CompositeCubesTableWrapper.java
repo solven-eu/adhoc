@@ -71,7 +71,7 @@ import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -102,6 +102,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@NonNull
@@ -444,7 +445,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			Set<ISliceFilter> operands = andFilter.getOperands();
 			List<ISliceFilter> filteredOperands =
 					operands.stream().map(f -> filterForColumns(subCube, f, columns)).toList();
-			return AndFilter.and(filteredOperands);
+			return FilterBuilder.and(filteredOperands).optimize();
 		} else if (filter instanceof IOrFilter orFilter) {
 			Set<ISliceFilter> operands = orFilter.getOperands();
 			List<ISliceFilter> filteredOperands = operands.stream()

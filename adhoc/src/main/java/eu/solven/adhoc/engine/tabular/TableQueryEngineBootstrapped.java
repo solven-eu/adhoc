@@ -73,6 +73,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -552,7 +553,7 @@ public class TableQueryEngineBootstrapped {
 	}
 
 	protected ISliceFilter recombineWhereAndFilter(TableQueryV2 dagTableQuery, FilteredAggregator filteredAggregator) {
-		return AndFilter.and(dagTableQuery.getFilter(), filteredAggregator.getFilter());
+		return FilterBuilder.and().filters(dagTableQuery.getFilter(), filteredAggregator.getFilter()).optimize();
 	}
 
 	/**

@@ -11,8 +11,7 @@ export default {
 		},
 	},
 	setup(props) {
-		return {
-		};
+		return {};
 	},
 	template: /* HTML */ `
         <!-- Button trigger modal -->

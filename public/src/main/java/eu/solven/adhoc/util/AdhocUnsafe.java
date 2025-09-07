@@ -199,6 +199,9 @@ public class AdhocUnsafe {
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
 	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(getParallelism());
 
+	// Typically used as limit to prevent iterating over large cartesian products
+	public static int cartesianProductLimit = 128;
+
 	/**
 	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is
 	 * guaranteed never to need being grown/re-hashed.

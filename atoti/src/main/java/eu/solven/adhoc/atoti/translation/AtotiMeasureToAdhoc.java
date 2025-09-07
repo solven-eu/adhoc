@@ -82,7 +82,7 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.ITableTranscoder;
@@ -488,7 +488,7 @@ public class AtotiMeasureToAdhoc {
 		ISliceFilter filter = ISliceFilter.MATCH_ALL;
 		for (int i = 0; i < Math.min(levels.size(), filters.size()); i++) {
 			ISliceFilter columnFilter = apConditionToAdhoc.convertToAdhoc(levelToColumn(levels.get(i)), filters.get(i));
-			filter = AndFilter.and(filter, columnFilter);
+			filter = FilterBuilder.and(filter, columnFilter).optimize();
 		}
 		return filter;
 	}

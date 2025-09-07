@@ -86,9 +86,9 @@ export default {
 			// https://stackoverflow.com/questions/51805395/navigator-clipboard-is-undefined
 			if (!navigator.clipboard || !window.isSecureContext) {
 				copyToClipboardStatus.value = "cancelled (https?)";
-				return;	
+				return;
 			}
-			
+
 			copyToClipboardStatus.value = "doing";
 			navigator.clipboard
 				.writeText(jsonValue)

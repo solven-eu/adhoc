@@ -43,8 +43,8 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -265,7 +265,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 					.map(a -> convertGroupsToElementsFilter(groupColumn, elementColumn, a))
 					.toList();
 
-			underlyingFilter = AndFilter.and(elementsFilters);
+			underlyingFilter = FilterBuilder.and(elementsFilters).optimize();
 		} else if (requestedFilter.isOr() && requestedFilter instanceof IOrFilter orFilter) {
 			List<ISliceFilter> elementsFilters = orFilter.getOperands()
 					.stream()

@@ -37,6 +37,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -63,13 +64,13 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 		CubeQueryStep numerator = CubeQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
 				.measure(underlying)
-				.filter(AndFilter.and(step.getFilter(), combinator.getNumeratorFilter()))
+				.filter(FilterBuilder.and(step.getFilter(), combinator.getNumeratorFilter()).optimize())
 				.build();
 
 		CubeQueryStep denominator = CubeQueryStep.edit(step)
 				// Change the requested measureName to the underlying measureName
 				.measure(underlying)
-				.filter(AndFilter.and(step.getFilter(), combinator.getDenominatorFilter()))
+				.filter(FilterBuilder.and(step.getFilter(), combinator.getDenominatorFilter()).optimize())
 				.build();
 
 		return Arrays.asList(numerator, denominator);

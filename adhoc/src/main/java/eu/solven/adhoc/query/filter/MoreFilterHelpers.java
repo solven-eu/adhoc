@@ -110,10 +110,10 @@ public class MoreFilterHelpers {
 					.valueMatcher(transcodeType(customTypeManager, column, columnFilter.getValueMatcher()))
 					.build();
 		} else if (filter instanceof IAndFilter andFilter) {
-			return AndFilter.and(andFilter.getOperands()
+			return FilterBuilder.and(andFilter.getOperands()
 					.stream()
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
-					.toList());
+					.toList()).optimize();
 		} else if (filter instanceof IOrFilter orFilter) {
 			return OrFilter.or(orFilter.getOperands()
 					.stream()

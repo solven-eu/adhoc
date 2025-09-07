@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -109,7 +109,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		}
 
 		// This match the rows in the inducer which should be stripped off the induced
-		ISliceFilter rejectingFilter = AndFilter.and(inducerFilter, NotFilter.not(inducedFilter));
+		ISliceFilter rejectingFilter = FilterBuilder.and(inducerFilter, NotFilter.not(inducedFilter)).optimize();
 		boolean hasRejectingColumns = inducerColumns.stream()
 				.map(IAdhocColumn::getName)
 				.toList()

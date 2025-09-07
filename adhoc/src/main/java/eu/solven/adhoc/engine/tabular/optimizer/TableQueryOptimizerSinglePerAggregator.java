@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -110,7 +110,10 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 					.map(tq -> FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			// induced will fetch the union of rows for all induced
-			ISliceFilter inducerFilter = AndFilter.and(commonFilter, OrFilter.or(eachInducedFilters));
+			// BEWARE Do not use `OrFilter.or` as the input may be very large, leading to induce in the optimization
+			// engine
+			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).combine();
+			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize();
 
 			filterGroupBy.forEach(tq -> {
 				CubeQueryStep inducerStep = CubeQueryStep.edit(tq)

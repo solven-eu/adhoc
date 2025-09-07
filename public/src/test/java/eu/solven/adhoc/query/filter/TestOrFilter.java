@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -219,5 +220,44 @@ public class TestOrFilter {
 				.assertThat(OrFilter.or(AndFilter.and(Map.of("a", "a1")),
 						AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1"))))
 				.hasToString("a==a1|a==a2&b==b1");
+	}
+
+	// This test checks some optimization does not fails due to the large problem
+	// Typically, some optimization may do a cartesian product and this should ensure such case are managed smoothly.
+	// Happens typically with TableQueryOptimizerSinglePerAggregator which will to a large OR of the different table
+	// queries
+	@Test
+	public void testOr_Large_onlyOrs() {
+		List<ISliceFilter> operands = IntStream.range(0, 16)
+				.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+				.toList();
+
+		Assertions.assertThat(OrFilter.or(operands))
+				.hasToString(
+						"a==a0&b==b0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3|a==a4&b==b4|a==a5&b==b5|a==a6&b==b6|a==a7&b==b7|a==a8&b==b8|a==a9&b==b9|a==a10&b==b10|a==a11&b==b11|a==a12&b==b12|a==a13&b==b13|a==a14&b==b14|a==a15&b==b15");
+	}
+
+	@Test
+	public void testOr_Large_andMatchOnlyOne() {
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 4)
+					.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.collect(Collectors.toCollection(ArrayList::new));
+
+			operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+
+			Assertions.assertThat(OrFilter.or(operands)).hasToString("a==a0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 16)
+					.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.collect(Collectors.toCollection(ArrayList::new));
+
+			operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+
+			Assertions.assertThat(OrFilter.or(operands))
+					.hasToString(
+							"a==a0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3|a==a4&b==b4|a==a5&b==b5|a==a6&b==b6|a==a7&b==b7|a==a8&b==b8|a==a9&b==b9|a==a10&b==b10|a==a11&b==b11|a==a12&b==b12|a==a13&b==b13|a==a14&b==b14|a==a15&b==b15");
+		}
 	}
 }

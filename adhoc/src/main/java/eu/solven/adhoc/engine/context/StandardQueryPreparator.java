@@ -44,7 +44,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -167,7 +167,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 	protected ICubeQuery combineWithImplicit(ICubeQuery rawQuery) {
 		ISliceFilter preprocessedFilter =
-				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
+				FilterBuilder.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery)).optimize();
 
 		Set<IQueryOption> addedOptions = implicitOptions.getOptions(rawQuery);
 		CubeQuery query = CubeQuery.edit(rawQuery).filter(preprocessedFilter).options(addedOptions).build();

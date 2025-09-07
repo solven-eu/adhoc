@@ -186,7 +186,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testSplitAnd() {
-		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_ALL)).containsExactly(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_ALL)).isEmpty();
 		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_NONE)).containsExactly(ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(FilterHelpers.splitAnd(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"))))
 				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
@@ -194,6 +194,18 @@ public class TestFilterHelpers {
 		// IN is not an AND but an OR
 		Assertions.assertThat(FilterHelpers.splitAnd(ColumnFilter.isIn("a", "a1", "a2")))
 				.containsExactly(ColumnFilter.isIn("a", "a1", "a2"));
+	}
+
+	@Test
+	public void testSplitOr() {
+		Assertions.assertThat(FilterHelpers.splitOr(ISliceFilter.MATCH_ALL)).contains(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.splitOr(ISliceFilter.MATCH_NONE)).isEmpty();
+		Assertions.assertThat(FilterHelpers.splitOr(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1"))))
+				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
+
+		// IN is an OR
+		Assertions.assertThat(FilterHelpers.splitOr(ColumnFilter.isIn("a", "a1", "a2")))
+				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 	}
 
 	@Test
@@ -278,6 +290,29 @@ public class TestFilterHelpers {
 					.describedAs("nbNegated == %s", nbNegated)
 					.isTrue();
 		}
+	}
+
+	@Test
+	public void testIsStricterThan_doubleNegation() {
+		ColumnFilter equalsTo = ColumnFilter.isEqualTo("k", "v");
+		ISliceFilter in = ColumnFilter.isIn("k", "v", "v2");
+
+		Assertions.assertThat(FilterHelpers.isStricterThan(equalsTo, in)).isTrue();
+		Assertions.assertThat(FilterHelpers.isStricterThan(in, equalsTo)).isFalse();
+
+		Assertions.assertThat(FilterHelpers.isStricterThan(NotFilter.builder().negated(equalsTo).build(),
+				NotFilter.builder().negated(in).build())).isFalse();
+		Assertions.assertThat(FilterHelpers.isStricterThan(NotFilter.builder().negated(in).build(),
+				NotFilter.builder().negated(equalsTo).build())).isTrue();
+	}
+
+	@Test
+	public void testCommonFilter_negated() {
+		ISliceFilter notA1 = NotFilter.not(ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter notA1B2 =
+				NotFilter.not(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2")));
+
+		Assertions.assertThat(FilterHelpers.commonFilter(Set.of(notA1, notA1B2))).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 }

@@ -52,13 +52,13 @@ export default {
 			const csv = toCsv();
 
 			console.log("Writing to clipboard size", formatBytes(csv.length));
-			
+
 			// https://stackoverflow.com/questions/51805395/navigator-clipboard-is-undefined
 			if (!navigator.clipboard || !window.isSecureContext) {
 				copyToClipboardStatus.value = "cancelled (https?)";
-				return;	
+				return;
 			}
-			
+
 			copyToClipboardStatus.value = "doing";
 			navigator.clipboard
 				.writeText(csv)

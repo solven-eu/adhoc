@@ -61,8 +61,8 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -568,7 +568,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			Collection<ISliceFilter> leftoversConditions) {
 		return ConditionWithFilter.builder()
 				.condition(andSql(sqlConditions))
-				.postFilter(AndFilter.and(leftoversConditions))
+				.postFilter(FilterBuilder.and(leftoversConditions).optimize())
 				.build();
 	}
 
