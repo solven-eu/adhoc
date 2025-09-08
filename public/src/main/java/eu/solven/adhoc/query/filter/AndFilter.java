@@ -146,14 +146,14 @@ public class AndFilter implements IAndFilter {
 		}
 	}
 
-	@Deprecated(since = "FilterOptimizerHelpers.and")
+	@Deprecated(since = "FilterBuilder.and")
 	public static ISliceFilter and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
-		return FilterOptimizerHelpers.and(first, second, more);
+		return FilterBuilder.and(first, second, more).optimize();
 	}
 
-	@Deprecated(since = "FilterOptimizerHelpers.and")
+	@Deprecated(since = "FilterBuilder.and")
 	public static ISliceFilter and(Collection<? extends ISliceFilter> filters) {
-		return FilterOptimizerHelpers.and(filters);
+		return FilterBuilder.and(filters).optimize();
 	}
 
 }

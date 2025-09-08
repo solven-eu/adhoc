@@ -41,7 +41,6 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestCubeQuery_DuplicatingDecomposition extends ADagTest implements IAdhocTestConstants {
 

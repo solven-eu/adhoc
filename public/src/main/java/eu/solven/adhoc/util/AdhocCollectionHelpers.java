@@ -142,7 +142,7 @@ public class AdhocCollectionHelpers {
 		} else {
 			return listOfSets.stream()
 					.map(c -> BigInteger.valueOf(c.size()))
-					.reduce(BigInteger.ONE, (l, r) -> l.multiply(r));
+					.reduce(BigInteger.ONE, BigInteger::multiply);
 		}
 	}
 }

@@ -552,6 +552,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
 - [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
 - [Concurrency] Prevent `QueryStepRecursiveAction` to request multiple times the same underlying queryStep
+- [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
 
 # Sponsors
 

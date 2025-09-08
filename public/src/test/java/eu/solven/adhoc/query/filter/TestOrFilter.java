@@ -102,7 +102,7 @@ public class TestOrFilter {
 	@Test
 	public void testOr_oneGrandTotal_forced() {
 		ISliceFilter filterAllAndA =
-				FilterBuilder.or(ISliceFilter.MATCH_ALL).filter(ColumnFilter.isEqualTo("a", "a1")).combine();
+				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1")).combine();
 
 		// We forced an OrBuilder: It is not simplified into IAdhocFilter.MATCH_ALL but is is isMatchAll
 		Assertions.assertThat(filterAllAndA.isMatchAll()).isTrue();

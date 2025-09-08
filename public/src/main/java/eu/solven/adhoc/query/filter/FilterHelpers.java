@@ -259,7 +259,7 @@ public class FilterHelpers {
 			commonParts = Sets.intersection(commonParts, nextFilterParts);
 		}
 
-		return FilterOptimizerHelpers.and(commonParts);
+		return FilterBuilder.and(commonParts).optimize();
 	}
 
 	/**
@@ -336,6 +336,12 @@ public class FilterHelpers {
 	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
 		if (stricter instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
 			return isStricterThan(notLaxer.getNegated(), notStricter.getNegated());
+		} else if (stricter instanceof IColumnFilter stricterColumn && laxer instanceof IColumnFilter laxerFilter) {
+			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
+			if (!isSameColumn) {
+				return false;
+			}
+			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
 		}
 
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
@@ -344,12 +350,38 @@ public class FilterHelpers {
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
 		if (splitAnd(stricter).containsAll(splitAnd(laxer))) {
-			return true;
-		} else if (splitOr(laxer).containsAll(splitOr(stricter))) {
+			// true if `stricter:A=a1&B=b1` and `laxer:B=b1`
 			return true;
 		}
 
+		Set<ISliceFilter> allStricters = splitOr(stricter);
+		Set<ISliceFilter> allLaxers = splitOr(laxer);
+		if (allLaxers.containsAll(allStricters)) {
+			// true if `stricter:A=a1` and `laxer:A=a1|B=b1`.
+			return true;
+		}
+
+		// true if `stricter:A=7` and `laxer:A>5|B=b1`.
+		boolean allLaxersInStricter = allStricters.stream().allMatch(oneStricter -> {
+			return allLaxers.stream().anyMatch(oneLaxer -> {
+				if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
+					// break cycle in recursivity
+					return false;
+				}
+
+				return isStricterThan(oneStricter, oneLaxer);
+			});
+		});
+		if (allLaxersInStricter) {
+			return true;
+		}
+		// TODO Equivalent to previous clause for AND
+
 		return false;
+	}
+
+	private static boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
+		return AndMatcher.and(stricter, laxer).equals(stricter);
 	}
 
 	/**
@@ -371,21 +403,48 @@ public class FilterHelpers {
 			return ISliceFilter.MATCH_ALL;
 		}
 
-		// Split the FILTER in parts
-		Set<? extends ISliceFilter> andOperands = splitAnd(filter);
+		// Given the FILTER, we reject the AND operands already covered by WHERE
+		ISliceFilter postAnd;
+		{
 
-		Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
+			// Split the FILTER in parts
+			Set<? extends ISliceFilter> andOperands = splitAnd(filter);
 
-		// For each part of `FILTER`, reject those already filtered in `WHERE`
-		for (ISliceFilter subFilter : andOperands) {
-			boolean whereCoversSubFilter = isStricterThan(where, subFilter);
+			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
 
-			if (!whereCoversSubFilter) {
-				notInWhere.add(subFilter);
+			// For each part of `FILTER`, reject those already filtered in `WHERE`
+			for (ISliceFilter subFilter : andOperands) {
+				boolean whereCoversSubFilter = isStricterThan(where, subFilter);
+
+				if (!whereCoversSubFilter) {
+					notInWhere.add(subFilter);
+				}
 			}
+			postAnd = FilterBuilder.and(notInWhere).optimize();
 		}
 
-		return FilterOptimizerHelpers.and(notInWhere);
+		// Given the FILTER, we reject the OR operands already rejected by WHERE
+		// TODO Why managing OR after AND? (and not the inverse)
+		ISliceFilter postOr;
+		{
+
+			Set<ISliceFilter> orOperands = splitOr(postAnd);
+
+			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
+			// For each part of `FILTER`, reject those already filtered in `WHERE`
+			for (ISliceFilter subFilter : orOperands) {
+				boolean whereRejectsSubFilter =
+						ISliceFilter.MATCH_NONE.equals(FilterBuilder.and(where, subFilter).optimize());
+
+				if (!whereRejectsSubFilter) {
+					notInWhere.add(subFilter);
+				}
+			}
+
+			postOr = FilterBuilder.or(notInWhere).optimize();
+		}
+
+		return postOr;
 	}
 
 }

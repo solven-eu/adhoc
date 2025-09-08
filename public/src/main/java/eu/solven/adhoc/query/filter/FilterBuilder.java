@@ -49,8 +49,8 @@ public class FilterBuilder {
 		return and().filters(filters);
 	}
 
-	public static FilterBuilder and(ISliceFilter first, ISliceFilter... more) {
-		return and().filter(first, more);
+	public static FilterBuilder and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
+		return and().filter(first, second, more);
 	}
 
 	public static FilterBuilder or() {
@@ -61,8 +61,8 @@ public class FilterBuilder {
 		return or().filters(filters);
 	}
 
-	public static FilterBuilder or(ISliceFilter first, ISliceFilter... more) {
-		return or().filter(first, more);
+	public static FilterBuilder or(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
+		return or().filter(first, second, more);
 	}
 
 	public FilterBuilder filters(Collection<? extends ISliceFilter> filters) {
@@ -71,8 +71,9 @@ public class FilterBuilder {
 		return this;
 	}
 
-	public FilterBuilder filter(ISliceFilter first, ISliceFilter... more) {
+	public FilterBuilder filter(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
 		this.filters.add(first);
+		this.filters.add(second);
 		this.filters.addAll(Arrays.asList(more));
 
 		return this;
@@ -84,7 +85,7 @@ public class FilterBuilder {
 	 */
 	public ISliceFilter optimize() {
 		if (andElseOr) {
-			return FilterOptimizerHelpers.and(filters);
+			return FilterOptimizerHelpers.and(filters, false);
 		} else {
 			return or2(filters);
 		}
@@ -102,6 +103,18 @@ public class FilterBuilder {
 			return OrFilter.builder().filters(filters).build();
 		}
 	}
+
+	// `first, second, more` syntax to push providing at least 2 arguments
+	// public static ISliceFilter and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
+	// if (more.length == 0 && first.equals(second)) {
+	// return first;
+	// }
+	// return and(Lists.asList(first, second, more));
+	// }
+	//
+	// public static ISliceFilter and(Collection<? extends ISliceFilter> filters) {
+	// return and(filters, false);
+	// }
 
 	private static ISliceFilter or2(Collection<? extends ISliceFilter> filters) {
 		// OR relies on AND optimizations
