@@ -38,8 +38,12 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
 			return new TableQueryOptimizerNone(factories);
 		} else {
-			return new TableQueryOptimizer(factories);
+			return makeOptimizer(factories);
 		}
+	}
+
+	protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
+		return new TableQueryOptimizer(factories);
 	}
 
 }
