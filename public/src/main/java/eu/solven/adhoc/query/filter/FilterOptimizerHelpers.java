@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +46,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.experimental.UtilityClass;
@@ -121,6 +123,10 @@ public class FilterOptimizerHelpers {
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
 	private static ISliceFilter optimizeAndOfOr(Collection<ISliceFilter> operands) {
+		// 1- Segment filters between OR-like filters and others
+		// OR-like filters will be combined with a cartesian product, in the hope of rejecting many irrelevant
+		// combinations. The others are combined as a single AND.
+
 		// TODO Manage `Column(In(...))` but beware of cartesian products
 		Map<Boolean, List<ISliceFilter>> orNotOr = operands.stream()
 				.collect(Collectors.partitioningBy(o -> o instanceof IOrFilter
@@ -128,12 +134,12 @@ public class FilterOptimizerHelpers {
 
 		List<ISliceFilter> orOperands = orNotOr.get(true);
 		if (orOperands.isEmpty()) {
-			// There is no OR to optimize
+			// There is no OR : this is a plain AND.
 			return new AndFilter(operands);
 		}
 
 		// Holds all AND operands which are not ORs.
-		ISliceFilter simpleAnd = and(orNotOr.get(false));
+		ISliceFilter simpleAnd = FilterBuilder.and(orNotOr.get(false)).optimize();
 
 		// Register if at least one simplification occurred. If false, this is useful not to later call `Or.or`
 		// which would lead to a cycle as `Or.or` is based on `And.and` which is based on current method.
@@ -145,8 +151,6 @@ public class FilterOptimizerHelpers {
 		List<List<ISliceFilter>> orFilters =
 				orOperands.stream().map(FilterOptimizerHelpers::getOrOperands).map(orFilter -> {
 					List<ISliceFilter> operand = orFilter.stream()
-							// .map(orOperand -> AndFilter.and(simpleAnd, orOperand))
-
 							// Filter the combinations which are simplified into matchNone
 							.filter(sf -> {
 								ISliceFilter combinedOrOperand = AndFilter.and(simpleAnd, sf);
@@ -171,16 +175,20 @@ public class FilterOptimizerHelpers {
 					return operand;
 				}).toList();
 
-		// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
-		// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
-		List<List<ISliceFilter>> cartesianProduct = Lists.cartesianProduct(orFilters);
+		// This method prevents `Lists.cartesianProduct` to throw if the cartesianProduct is larger than
+		// Integer.MAX_VALUE
+		BigInteger cartesianProductSize = AdhocCollectionHelpers.cartesianProductSize(orFilters);
 
 		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
 		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
-		if (cartesianProduct.size() > AdhocUnsafe.cartesianProductLimit) {
+		if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) > 0) {
 			// throw new NotYetImplementedException("Faulty optimization on %s".formatted(operands));
 			return new AndFilter(operands);
 		}
+
+		// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
+		// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
+		List<List<ISliceFilter>> cartesianProduct = Lists.cartesianProduct(orFilters);
 
 		Set<ISliceFilter> ors = cartesianProduct.stream()
 				.map(FilterOptimizerHelpers::and)

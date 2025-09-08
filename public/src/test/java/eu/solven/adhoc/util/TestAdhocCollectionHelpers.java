@@ -22,9 +22,13 @@
  */
 package eu.solven.adhoc.util;
 
+import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -59,5 +63,23 @@ public class TestAdhocCollectionHelpers {
 		List<Object> noNested = Arrays.asList(123, null, Arrays.asList(null, "foo"));
 		Assertions.assertThat(AdhocCollectionHelpers.unnestAsList(noNested, Predicates.alwaysTrue()))
 				.isEqualTo(Arrays.asList(123, null, null, "foo"));
+	}
+
+	@Test
+	public void testCartesianProduct() {
+		Assertions.assertThat(AdhocCollectionHelpers.cartesianProductSize(List.of())).isEqualTo(BigInteger.ZERO);
+
+		List<List<?>> size5 = IntStream.range(0, 5)
+				.mapToObj(i -> List.of("a", "b", "c"))
+				.collect(Collectors.toCollection(ArrayList::new));
+		Assertions.assertThat(AdhocCollectionHelpers.cartesianProductSize(size5))
+				.isEqualTo(BigInteger.valueOf(3 * 3 * 3 * 3 * 3));
+
+		// Does not even fit in a long
+		List<List<?>> size1024 = IntStream.range(0, 128)
+				.mapToObj(i -> List.of("a", "b", "c"))
+				.collect(Collectors.toCollection(ArrayList::new));
+		Assertions.assertThat(AdhocCollectionHelpers.cartesianProductSize(size1024))
+				.hasToString("11790184577738583171520872861412518665678211592275841109096961");
 	}
 }

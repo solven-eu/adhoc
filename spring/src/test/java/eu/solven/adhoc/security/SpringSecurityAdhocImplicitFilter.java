@@ -33,8 +33,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import eu.solven.adhoc.engine.context.IImplicitFilter;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -78,6 +78,6 @@ public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {
 				});
 
 		// The user has access to the union of the authorized slices
-		return OrFilter.or(operands);
+		return FilterBuilder.or(operands).optimize();
 	}
 }

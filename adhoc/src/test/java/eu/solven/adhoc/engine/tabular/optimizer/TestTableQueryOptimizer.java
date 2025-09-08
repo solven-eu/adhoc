@@ -33,6 +33,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQ
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -76,7 +77,8 @@ public class TestTableQueryOptimizer {
 		Assertions.assertThat(optimizer.canInduce(
 				// inducer has OR on different columns
 				CubeQueryStep.edit(step)
-						.filter(OrFilter.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1")))
+						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1"))
+								.optimize())
 						.build(),
 				// induced has only one of filters
 				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("c", "c1")).build()))
@@ -87,7 +89,8 @@ public class TestTableQueryOptimizer {
 				// inducer has OR on different columns
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(OrFilter.or(ColumnFilter.isEqualTo("g", "g1"), ColumnFilter.isEqualTo("h", "h1")))
+						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("g", "g1"), ColumnFilter.isEqualTo("h", "h1"))
+								.optimize())
 						.build(),
 				// induced has only one of filters
 				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("g", "g1")).build()))
@@ -98,7 +101,8 @@ public class TestTableQueryOptimizer {
 				// inducer has OR on different columns
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(OrFilter.or(ColumnFilter.isEqualTo("g", "g1"), ColumnFilter.isEqualTo("c", "c1")))
+						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("g", "g1"), ColumnFilter.isEqualTo("c", "c1"))
+								.optimize())
 						.build(),
 				// induced has only one of filters
 				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("g", "g1")).build()))
@@ -184,17 +188,20 @@ public class TestTableQueryOptimizer {
 	@Test
 	public void testCanInduce_coveringFilterNotFullyGroupedBy() {
 		Assertions
-				.assertThat(optimizer.canInduce(
-						CubeQueryStep.edit(step)
-								.groupBy(GroupByColumns.named("g", "h"))
-								.filter(OrFilter.or(ColumnFilter.isEqualTo("c", "someC"),
-										ColumnFilter.isEqualTo("g", "someG")))
-								.build(),
-						// induced has a filter on a not groupedBy column
-						CubeQueryStep.edit(step)
-								.groupBy(GroupByColumns.named("g"))
-								.filter(ColumnFilter.isEqualTo("c", "someC"))
-								.build()))
+				.assertThat(
+						optimizer.canInduce(
+								CubeQueryStep.edit(step)
+										.groupBy(GroupByColumns.named("g", "h"))
+										.filter(FilterBuilder
+												.or(ColumnFilter.isEqualTo("c", "someC"),
+														ColumnFilter.isEqualTo("g", "someG"))
+												.optimize())
+										.build(),
+								// induced has a filter on a not groupedBy column
+								CubeQueryStep.edit(step)
+										.groupBy(GroupByColumns.named("g"))
+										.filter(ColumnFilter.isEqualTo("c", "someC"))
+										.build()))
 				// while we're guaranteed to see all input, which are not able to filter out irrelevant input
 				// given the filter on the not groupedBy column
 				.isFalse();

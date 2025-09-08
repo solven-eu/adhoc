@@ -55,6 +55,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -205,13 +206,13 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		// or: all columns are known
 		Assertions
 				.assertThat(composite.filterForColumns(subCube,
-						OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+						FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).optimize(),
 						Set.of("c1", "c2")))
-				.isEqualTo(OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")));
+				.isEqualTo(FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")));
 
 		// or: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
-				OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+				FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).optimize(),
 				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
 
 		// Or.Not: all columns are known
@@ -223,7 +224,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 								.build(),
 						Set.of("c1", "c2")))
 				// The expression is optimized, but still equivalent to the original
-				.isEqualTo(OrFilter.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")),
+				.isEqualTo(FilterBuilder.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")),
 						NotFilter.not(ColumnFilter.isLike("c2", "b%"))));
 
 		// Or.Not: some columns are unknown

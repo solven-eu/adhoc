@@ -86,6 +86,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -455,9 +456,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 					// OrFilter.isMatchAll
 					.filter(f -> !f.isMatchAll())
 					.toList();
-			return OrFilter.or(filteredOperands);
+			return FilterBuilder.or(filteredOperands).optimize();
 		} else {
-			throw new UnsupportedOperationException("Not handled: %s".formatted(filter));
+			throw new NotYetImplementedException("Not handled: %s".formatted(filter));
 		}
 	}
 

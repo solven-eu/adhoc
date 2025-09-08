@@ -553,7 +553,7 @@ public class TableQueryEngineBootstrapped {
 	}
 
 	protected ISliceFilter recombineWhereAndFilter(TableQueryV2 dagTableQuery, FilteredAggregator filteredAggregator) {
-		return FilterBuilder.and().filters(dagTableQuery.getFilter(), filteredAggregator.getFilter()).optimize();
+		return FilterBuilder.and(dagTableQuery.getFilter(), filteredAggregator.getFilter()).optimize();
 	}
 
 	/**

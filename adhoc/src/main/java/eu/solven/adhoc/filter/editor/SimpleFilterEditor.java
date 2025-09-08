@@ -30,14 +30,12 @@ import java.util.function.Function;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -215,7 +213,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();
 
-			return OrFilter.or(unfiltered);
+			return FilterBuilder.or(unfiltered).optimize();
 		} else {
 			throw new NotYetImplementedException("filter:%s".formatted(filter));
 		}

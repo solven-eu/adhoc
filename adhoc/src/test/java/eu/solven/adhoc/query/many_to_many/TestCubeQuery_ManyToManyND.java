@@ -50,7 +50,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
 public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestConstants {
@@ -271,8 +271,10 @@ public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestCo
 		ITabularView output = cube.execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
-				.filter(OrFilter.or(ColumnFilter.isEqualTo(cElementGender, "male"),
-						ColumnFilter.isEqualTo(cElementAge, "young")))
+				.filter(FilterBuilder
+						.or(ColumnFilter.isEqualTo(cElementGender, "male"),
+								ColumnFilter.isEqualTo(cElementAge, "young"))
+						.optimize())
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);

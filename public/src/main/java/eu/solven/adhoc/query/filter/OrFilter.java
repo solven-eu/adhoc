@@ -23,7 +23,6 @@
 package eu.solven.adhoc.query.filter;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +30,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -104,24 +102,6 @@ public class OrFilter implements IOrFilter {
 		}
 	}
 
-	public static ISliceFilter or(Collection<? extends ISliceFilter> filters) {
-		// OR relies on AND optimizations
-		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
-
-		ISliceFilter negatedOptimized = FilterOptimizerHelpers.and(negated, true);
-
-		if (negatedOptimized instanceof INotFilter notFilter) {
-			return notFilter.getNegated();
-		} else {
-			return NotFilter.not(negatedOptimized);
-		}
-	}
-
-	// `first, second, more` syntax to push providing at least 2 arguments
-	public static ISliceFilter or(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
-		return or(Lists.asList(first, second, more));
-	}
-
 	/**
 	 *
 	 * @param columnToFilter
@@ -131,9 +111,9 @@ public class OrFilter implements IOrFilter {
 	 * @return a filter doing an `OR` between each {@link Map} entry,
 	 */
 	public static ISliceFilter or(Map<String, ?> columnToFilter) {
-		return or(columnToFilter.entrySet()
+		return FilterBuilder.or(columnToFilter.entrySet()
 				.stream()
 				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
-				.collect(Collectors.toList()));
+				.collect(Collectors.toList())).optimize();
 	}
 }

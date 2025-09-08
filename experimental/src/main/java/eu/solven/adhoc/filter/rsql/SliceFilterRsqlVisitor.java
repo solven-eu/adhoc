@@ -35,7 +35,6 @@ import eu.solven.adhoc.query.filter.ColumnFilter.ColumnFilterBuilder;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 /**
@@ -55,7 +54,7 @@ public class SliceFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String>
 	public ISliceFilter visit(OrNode node, String param) {
 		List<ISliceFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
 
-		return OrFilter.or(operands);
+		return FilterBuilder.or(operands).optimize();
 	}
 
 	@Override

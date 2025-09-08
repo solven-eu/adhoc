@@ -38,6 +38,7 @@ import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -84,7 +85,8 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testToCondition_OrColumnsEquals() {
-		ISliceFilter filter = OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2"));
+		ISliceFilter filter =
+				FilterBuilder.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")).optimize();
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -97,8 +99,8 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testToCondition_Not() {
-		ISliceFilter filter =
-				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")));
+		ISliceFilter filter = NotFilter.not(
+				FilterBuilder.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")).optimize());
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -194,7 +196,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testFilter_custom_OR() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter = OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter);
+		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.isEqualTo("d", "someD"), customFilter).optimize();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
@@ -208,7 +210,8 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testFilter_custom_NOT() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter = NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("d", "someD"), customFilter));
+		ISliceFilter orFilter =
+				NotFilter.not(FilterBuilder.or(ColumnFilter.isEqualTo("d", "someD"), customFilter).optimize());
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 

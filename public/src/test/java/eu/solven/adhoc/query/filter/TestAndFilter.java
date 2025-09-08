@@ -253,7 +253,7 @@ public class TestAndFilter {
 	public void testMultipleEqualsSameColumn_joint_andComplexNotColumn() {
 		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
 				ColumnFilter.isEqualTo("a", "a1"),
-				OrFilter.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%")));
+				FilterBuilder.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%")).optimize());
 
 		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
@@ -277,11 +277,12 @@ public class TestAndFilter {
 	public void testMultipleEqualsSameColumn_joint_withOr() {
 		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
 				ColumnFilter.isEqualTo("a", "a1"),
-				OrFilter.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3")));
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3")).optimize());
 
 		Assertions.assertThat(a1Anda2)
 				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
-						OrFilter.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3"))));
+						FilterBuilder.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3"))
+								.optimize()));
 	}
 
 	@Test
@@ -453,7 +454,7 @@ public class TestAndFilter {
 	@Test
 	public void testAnd_orDifferentColumns_sameColumn() {
 		ColumnFilter left = ColumnFilter.isEqualTo("g", "c1");
-		ISliceFilter leftOrRight = OrFilter.or(left, ColumnFilter.isEqualTo("h", "c1"));
+		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.isEqualTo("h", "c1")).optimize();
 
 		Assertions.assertThat(AndFilter.and(leftOrRight, left)).isEqualTo(left);
 	}
@@ -464,8 +465,11 @@ public class TestAndFilter {
 		Assertions.assertThat(FilterOptimizerHelpers.costFunction(AndFilter.and(Map.of("a", "a1")))).isEqualTo(1);
 
 		Assertions
-				.assertThat(OrFilter.or(AndFilter.and(ImmutableMap.of("a", "a1")),
-						AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1"))))
+				.assertThat(
+						FilterBuilder
+								.or(AndFilter.and(ImmutableMap.of("a", "a1")),
+										AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
+								.optimize())
 				.hasToString("a==a1|b==b1&c==c1")
 				.satisfies(f -> {
 					Assertions.assertThat(FilterOptimizerHelpers.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
@@ -481,7 +485,8 @@ public class TestAndFilter {
 
 		Assertions
 				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-						OrFilter.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))))
+						FilterBuilder.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))
+								.optimize()))
 				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
 				// `LikeMatcher(pattern=c%)`)")
 				.hasToString("a==a1&!(b matches `LikeMatcher(pattern=b%)`&c does NOT match `LikeMatcher(pattern=c%)`)")

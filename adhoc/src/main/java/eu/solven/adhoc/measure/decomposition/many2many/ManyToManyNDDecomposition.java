@@ -57,6 +57,7 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -245,7 +246,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 				Set<ISliceFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
 
-				ISliceFilter elementAdditionalFilter = OrFilter.or(elementsFilters);
+				ISliceFilter elementAdditionalFilter = FilterBuilder.or(elementsFilters).optimize();
 
 				underlyingFilter = elementAdditionalFilter;
 			} else {
@@ -260,9 +261,9 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 			List<ISliceFilter> elementsFilters =
 					orFilter.getOperands().stream().map(a -> convertGroupsToElementsFilter(groupColumn, a)).toList();
 
-			underlyingFilter = OrFilter.or(elementsFilters);
+			underlyingFilter = FilterBuilder.or(elementsFilters).optimize();
 		} else {
-			throw new UnsupportedOperationException("TODO handle requestedFilter=%s".formatted(requestedFilter));
+			throw new NotYetImplementedException("TODO handle requestedFilter=%s".formatted(requestedFilter));
 		}
 
 		return underlyingFilter;

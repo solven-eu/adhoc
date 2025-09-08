@@ -115,10 +115,10 @@ public class MoreFilterHelpers {
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
 					.toList()).optimize();
 		} else if (filter instanceof IOrFilter orFilter) {
-			return OrFilter.or(orFilter.getOperands()
+			return FilterBuilder.or(orFilter.getOperands()
 					.stream()
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
-					.toList());
+					.toList()).optimize();
 		} else if (filter instanceof INotFilter notFilter) {
 			return NotFilter.not(transcodeFilter(customTypeManager, tableTranscoder, notFilter.getNegated()));
 		} else {

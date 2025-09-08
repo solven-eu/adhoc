@@ -67,7 +67,7 @@ public class AtotiConditionDatastoreToAdhoc {
 				} else if (implementationCode == ImplementationCode.AND) {
 					return FilterBuilder.and(Stream.of(subConditions).map(this::convertToAdhoc).toList()).optimize();
 				} else if (implementationCode == ImplementationCode.OR) {
-					return OrFilter.or(Stream.of(subConditions).map(this::convertToAdhoc).toList());
+					return FilterBuilder.or(Stream.of(subConditions).map(this::convertToAdhoc).toList()).optimize();
 				} else if (implementationCode == ImplementationCode.TRUE) {
 					return ISliceFilter.MATCH_ALL;
 				} else if (implementationCode == ImplementationCode.FALSE) {

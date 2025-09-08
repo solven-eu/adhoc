@@ -140,9 +140,12 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_or_lax() {
-		ISliceFilter filter = OrFilter.or(AndFilter.and(Map.of("c1", "v1")),
-				AndFilter.and(Map.of("c2", "v21")),
-				AndFilter.and(Map.of("c2", "v22", "c3", "v3")));
+		ISliceFilter filter =
+				FilterBuilder
+						.or(AndFilter.and(Map.of("c1", "v1")),
+								AndFilter.and(Map.of("c2", "v21")),
+								AndFilter.and(Map.of("c2", "v22", "c3", "v3")))
+						.optimize();
 
 		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
 		// Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c2")).isEqualTo(InMatcher.isIn("v21",
@@ -175,9 +178,8 @@ public class TestFilterHelpers {
 		Assertions.assertThat(FilterHelpers.asMap(ColumnFilter.isEqualTo("c", "v"))).isEqualTo(Map.of("c", "v"));
 
 		// BEWARE We may introduce a `toList` to manage OR.
-		Assertions
-				.assertThatThrownBy(() -> FilterHelpers
-						.asMap(OrFilter.or(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2"))))
+		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(
+				FilterBuilder.or(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2")).optimize()))
 				.isInstanceOf(IllegalArgumentException.class);
 
 		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(ISliceFilter.MATCH_NONE))

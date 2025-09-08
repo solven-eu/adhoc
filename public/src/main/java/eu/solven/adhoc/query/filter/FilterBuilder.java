@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.query.filter;
 
 import java.util.ArrayList;
@@ -14,6 +36,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class FilterBuilder {
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	final List<ISliceFilter> filters = new ArrayList<>();
 
 	final boolean andElseOr;
@@ -27,7 +50,7 @@ public class FilterBuilder {
 	}
 
 	public static FilterBuilder and(ISliceFilter first, ISliceFilter... more) {
-		return and().filters(first, more);
+		return and().filter(first, more);
 	}
 
 	public static FilterBuilder or() {
@@ -39,7 +62,7 @@ public class FilterBuilder {
 	}
 
 	public static FilterBuilder or(ISliceFilter first, ISliceFilter... more) {
-		return or().filters(first, more);
+		return or().filter(first, more);
 	}
 
 	public FilterBuilder filters(Collection<? extends ISliceFilter> filters) {
@@ -48,7 +71,7 @@ public class FilterBuilder {
 		return this;
 	}
 
-	public FilterBuilder filters(ISliceFilter first, ISliceFilter... more) {
+	public FilterBuilder filter(ISliceFilter first, ISliceFilter... more) {
 		this.filters.add(first);
 		this.filters.addAll(Arrays.asList(more));
 
@@ -63,7 +86,7 @@ public class FilterBuilder {
 		if (andElseOr) {
 			return FilterOptimizerHelpers.and(filters);
 		} else {
-			return OrFilter.or(filters);
+			return or2(filters);
 		}
 	}
 
@@ -72,10 +95,25 @@ public class FilterBuilder {
 	 * @return a {@link ISliceFilter} skipping most expensive optimizations.
 	 */
 	public ISliceFilter combine() {
+		// TODO If size --1, return the insle filter
 		if (andElseOr) {
 			return AndFilter.builder().filters(filters).build();
 		} else {
 			return OrFilter.builder().filters(filters).build();
 		}
 	}
+
+	private static ISliceFilter or2(Collection<? extends ISliceFilter> filters) {
+		// OR relies on AND optimizations
+		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
+
+		ISliceFilter negatedOptimized = FilterOptimizerHelpers.and(negated, true);
+
+		if (negatedOptimized instanceof INotFilter notFilter) {
+			return notFilter.getNegated();
+		} else {
+			return NotFilter.not(negatedOptimized);
+		}
+	}
+
 }
