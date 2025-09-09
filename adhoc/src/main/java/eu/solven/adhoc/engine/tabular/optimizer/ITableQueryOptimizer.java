@@ -63,7 +63,7 @@ public interface ITableQueryOptimizer {
 	 */
 	@Value
 	@Builder
-	class SplitTableQueries implements IHasDagFromQueriedToUnderlyings {
+	class SplitTableQueries implements IHasDagFromInducedToInducer {
 		// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
 		@Singular
 		@NonNull
@@ -74,15 +74,15 @@ public interface ITableQueryOptimizer {
 		@NonNull
 		ImmutableSet<CubeQueryStep> induceds;
 
-		// From inducer to induced
+		// From induced to inducer
 		@NonNull
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dagToDependancies;
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
 		public static SplitTableQueries empty() {
 			return SplitTableQueries.builder()
 					.induceds(Set.of())
 					.inducers(Set.of())
-					.dagToDependancies(new DirectedAcyclicGraph<>(DefaultEdge.class))
+					.inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class))
 					.build();
 		}
 	}

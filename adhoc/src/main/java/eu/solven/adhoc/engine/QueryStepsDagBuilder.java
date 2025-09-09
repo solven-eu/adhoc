@@ -291,7 +291,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	@Override
 	public QueryStepsDag getQueryDag() {
 		return QueryStepsDag.builder()
-				.dag(dag)
+				.inducedToInducer(dag)
 				.multigraph(multigraph)
 				.queried(ImmutableSet.copyOf(roots))
 				.stepToValues(stepToValue)

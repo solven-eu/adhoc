@@ -54,7 +54,8 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helps understanding a queryPlan for an {@link ICubeQuery}.
+ * Helps understanding a queryPlan for an {@link ICubeQuery}. It will print in log each step as a row, from roots to
+ * leaves, with ASCII-like representation of edges.
  * 
  * @author Benoit Lacelle
  */
@@ -92,7 +93,7 @@ public class DagExplainer implements IDagExplainer {
 				return dag.getQueried().stream().sorted(this.orderForExplain()).toList();
 			} else {
 				// Return the actual underlying steps
-				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> rawDag = dag.getDag();
+				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> rawDag = dag.getInducedToInducer();
 				return rawDag.outgoingEdgesOf(step)
 						.stream()
 						.map(edge -> Graphs.getOppositeVertex(rawDag, edge, step))
@@ -102,7 +103,7 @@ public class DagExplainer implements IDagExplainer {
 
 		/**
 		 * 
-		 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN
+		 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN.
 		 */
 		protected Comparator<CubeQueryStep> orderForExplain() {
 			return Comparator.<CubeQueryStep, String>comparing(qr -> qr.getMeasure().toString())

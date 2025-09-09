@@ -35,7 +35,7 @@ import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromQueriedToUnderlyings;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import lombok.experimental.UtilityClass;
 
@@ -48,14 +48,14 @@ import lombok.experimental.UtilityClass;
 public class QueryEngineConcurrencyHelper {
 
 	public static void walkUpDag(QueryPod queryPod,
-			IHasDagFromQueriedToUnderlyings queryStepsDag,
+			IHasDagFromInducedToInducer queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
 			Consumer<? super CubeQueryStep> queryStepConsumer) {
 		try {
 			queryPod.getExecutorService().submit(() -> {
 				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 					// multi-threaded
-					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getDagToDependancies();
+					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
 
 					List<CubeQueryStep> roots =
 							dag.vertexSet().stream().filter(step -> dag.getAncestors(step).isEmpty()).toList();
@@ -70,7 +70,7 @@ public class QueryEngineConcurrencyHelper {
 					ForkJoinTask.invokeAll(actions);
 				} else {
 					// mono-threaded
-					queryStepsDag.iteratorFromUnderlyingsToQueried().forEachRemaining(queryStepConsumer);
+					queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(queryStepConsumer);
 				}
 
 			}).get();

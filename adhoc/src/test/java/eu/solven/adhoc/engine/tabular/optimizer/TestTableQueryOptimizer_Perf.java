@@ -57,7 +57,7 @@ public class TestTableQueryOptimizer_Perf {
 	int cardinalityOut = 1000;
 
 	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
 	Map<CubeQueryStep, ISliceToValue> inducers = new LinkedHashMap<>();
 
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
@@ -69,12 +69,15 @@ public class TestTableQueryOptimizer_Perf {
 		CubeQueryStep inducerStep =
 				CubeQueryStep.builder().measure(agg).groupBy(GroupByColumns.named("c0", "c1")).build();
 		CubeQueryStep inducedStep = CubeQueryStep.edit(inducerStep).groupBy(GroupByColumns.named("c0")).build();
-		dag.addVertex(inducerStep);
-		dag.addVertex(inducedStep);
-		dag.addEdge(inducedStep, inducerStep);
+		inducedToInducer.addVertex(inducerStep);
+		inducedToInducer.addVertex(inducedStep);
+		inducedToInducer.addEdge(inducedStep, inducerStep);
 
-		SplitTableQueries split =
-				SplitTableQueries.builder().inducer(inducerStep).induced(inducedStep).dagToDependancies(dag).build();
+		SplitTableQueries split = SplitTableQueries.builder()
+				.inducer(inducerStep)
+				.induced(inducedStep)
+				.inducedToInducer(inducedToInducer)
+				.build();
 
 		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
 

@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromQueriedToUnderlyings;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -57,11 +57,11 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromQueriedToUnderlyings {
+public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInducedToInducer {
 	// The DAG of a given IAdhocQuery, from queried to aggregators. It does not accept multiple times the same edge
 	// (e.g. a ratio and a filter leading to same numerator and denominator).
 	@NonNull
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag;
+	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
 	// The multigraph of a given IAdhocQuery, from queried to aggregators, accepting a queriedStep to query multiple
 	// times the same underlyingStep
@@ -91,7 +91,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromQueried
 		// Given EdgeSetFactory, this Set is backed by an ArrayList, and ordering is then maintained
 		Set<DefaultEdge> outgoingEdges = multigraph.outgoingEdgesOf(queryStep);
 		// underlyingSteps are on the opposite of queryStep edges
-		return outgoingEdges.stream().map(edge -> Graphs.getOppositeVertex(dag, edge, queryStep)).toList();
+		return outgoingEdges.stream().map(edge -> Graphs.getOppositeVertex(inducedToInducer, edge, queryStep)).toList();
 	}
 
 	@Override
@@ -100,8 +100,8 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromQueried
 	}
 
 	@Override
-	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getDagToDependancies() {
-		return dag;
+	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getInducedToInducer() {
+		return inducedToInducer;
 	}
 
 }

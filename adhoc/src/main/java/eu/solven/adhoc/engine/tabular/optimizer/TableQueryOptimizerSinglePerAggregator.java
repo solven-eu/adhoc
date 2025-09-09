@@ -87,7 +87,8 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			});
 		});
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		SplitTableQueriesBuilder split = SplitTableQueries.builder();
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
@@ -116,23 +117,23 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize();
 
 			filterGroupBy.forEach(tq -> {
-				CubeQueryStep inducerStep = CubeQueryStep.edit(tq)
+				CubeQueryStep inducer = CubeQueryStep.edit(tq)
 						.filter(inducerFilter)
 						.groupBy(GroupByColumns.named(inducerColumns))
 						.build();
-				split.inducer(inducerStep);
+				split.inducer(inducer);
 
 				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
-				CubeQueryStep inducedStep = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
-				split.induced(inducedStep);
+				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
+				split.induced(induced);
 
-				dag.addVertex(inducerStep);
-				dag.addVertex(inducedStep);
-				dag.addEdge(inducedStep, inducerStep);
+				inducedToInducer.addVertex(inducer);
+				inducedToInducer.addVertex(induced);
+				inducedToInducer.addEdge(induced, inducer);
 			});
 		});
 
-		return split.dagToDependancies(dag).build();
+		return split.inducedToInducer(inducedToInducer).build();
 	}
 
 }

@@ -339,7 +339,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// steps which were slow to be computed.
 		// BEWARE This mono-threaded iteration helps pushing into cache with a specific order, given the `stepToValues`
 		// is typically a ConcurrenthashMap, hence with indeterministic order.
-		queryStepsDag.iteratorFromUnderlyingsToQueried().forEachRemaining(step -> {
+		queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(step -> {
 			if (queryStepsDag.getStepToValues().containsKey(step)) {
 				log.debug("Do not add an entry already in cache");
 				// Else it may force keeping the entry
@@ -559,7 +559,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				underlyingSteps.stream().map(this::dense).toList())).append(System.lineSeparator());
 
 		ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
-				new JohnsonShortestPaths<>(queryStepsDag.getDag());
+				new JohnsonShortestPaths<>(queryStepsDag.getInducedToInducer());
 
 		queryStepsDag.getQueried()
 				.stream()

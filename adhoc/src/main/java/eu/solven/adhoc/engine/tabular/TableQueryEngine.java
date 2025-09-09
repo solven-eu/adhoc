@@ -53,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 @Slf4j
 public class TableQueryEngine implements ITableQueryEngine {
 

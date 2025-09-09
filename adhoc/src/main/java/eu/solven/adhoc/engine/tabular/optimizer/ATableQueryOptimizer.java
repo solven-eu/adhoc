@@ -126,7 +126,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			CubeQueryStep induced) {
-		List<CubeQueryStep> inducers = inducerAndInduced.getDependencies(induced);
+		List<CubeQueryStep> inducers = inducerAndInduced.getInducers(induced);
 		if (inducers.size() != 1) {
 			throw new IllegalStateException(
 					"Induced should have a single inducer. induced=%s inducers=%s".formatted(induced, inducers));
