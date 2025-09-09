@@ -22,29 +22,25 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.Set;
+import java.util.Map;
+
+import lombok.Builder;
+import lombok.Singular;
+import lombok.ToString;
 
 /**
- * This reverse the use of {@link ITableTranscoder}. It is useful to materialize only the columns which has been
- * effectively queried.
+ * An {@link ITableAliaser} based on a (not-necessarily bijective) mapping.
  * 
  * @author Benoit Lacelle
  */
-public interface ITableReverseTranscoder {
+@Builder
+@ToString
+public class MapTableAliaser implements ITableAliaser {
+	@Singular
+	final Map<String, String> queriedToUnderlyings;
 
-	/**
-	 * @param underlying
-	 *            a column name typically used by the database.
-	 * @return the queried columns which were mapping to given underlying.
-	 */
-	Set<String> queried(String underlying);
-
-	/**
-	 *
-	 * Typically used for provisioning the reversed {@link java.util.Map}.
-	 * 
-	 * @param underlyingKeys
-	 * @return the number of queriedKeys through all underlyings
-	 */
-	int estimateQueriedSize(Set<String> underlyingKeys);
+	@Override
+	public String underlying(String queried) {
+		return queriedToUnderlyings.get(queried);
+	}
 }

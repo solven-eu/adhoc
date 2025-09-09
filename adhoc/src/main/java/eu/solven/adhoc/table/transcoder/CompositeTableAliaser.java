@@ -30,12 +30,12 @@ import lombok.NonNull;
 import lombok.Singular;
 
 /**
- * Helps combining multiple {@link ITableTranscoder}.
+ * Helps combining multiple {@link ITableAliaser}.
  * 
  * @author Benoit Lacelle
  */
 @Builder
-public class CompositeTableTranscoder implements ITableTranscoder {
+public class CompositeTableAliaser implements ITableAliaser {
 	/**
 	 * Different modes when iterating through the available transcoders.
 	 * 
@@ -56,7 +56,7 @@ public class CompositeTableTranscoder implements ITableTranscoder {
 
 	@NonNull
 	@Singular
-	ImmutableList<ITableTranscoder> transcoders;
+	ImmutableList<ITableAliaser> transcoders;
 
 	@Default
 	@NonNull
@@ -67,7 +67,7 @@ public class CompositeTableTranscoder implements ITableTranscoder {
 		boolean oneMatched = false;
 		String currenQueried = queried;
 
-		for (ITableTranscoder transcoder : transcoders) {
+		for (ITableAliaser transcoder : transcoders) {
 			String underlying = transcoder.underlying(currenQueried);
 
 			if (underlying != null) {

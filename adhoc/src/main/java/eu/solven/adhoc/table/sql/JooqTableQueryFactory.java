@@ -87,8 +87,8 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -99,8 +99,8 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This is especially important to make sure all calls to {@link ITableTranscoder} relies on a
- * {@link TranscodingContext}
+ * This is especially important to make sure all calls to {@link ITableAliaser} relies on a
+ * {@link AliasingContext}
  *
  * @author Benoit Lacelle
  */

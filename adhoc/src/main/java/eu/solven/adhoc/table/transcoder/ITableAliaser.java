@@ -32,14 +32,14 @@ import eu.solven.adhoc.table.ITableWrapper;
  * <p>
  * This enables re-using a {@link eu.solven.adhoc.measure.MeasureForest} for different {@link ITableWrapper}.
  *
- * @see TranscodingContext
- * @see ITableReverseTranscoder
+ * @see AliasingContext
+ * @see ITableReverseAliaser
  *
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface ITableTranscoder {
+public interface ITableAliaser {
 	/**
 	 * This may return null for convenience of implementation.
 	 *
@@ -65,9 +65,9 @@ public interface ITableTranscoder {
 
 	/**
 	 * 
-	 * @return a {@link ITableTranscoder} which does not transcode anything.
+	 * @return a {@link ITableAliaser} which does not alias any column.
 	 */
-	static ITableTranscoder identity() {
-		return IdentityImplicitTranscoder.IDENTITY.get();
+	static ITableAliaser identity() {
+		return IdentityImplicitAliaser.IDENTITY.get();
 	}
 }

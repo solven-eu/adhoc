@@ -52,7 +52,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -68,7 +68,7 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 	@NonNull
 	// @Builder.Default
 	@Getter
-	final ITableTranscoder transcoder = AtotiTranscoder.builder().build();
+	final ITableAliaser transcoder = AtotiAliaser.builder().build();
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {

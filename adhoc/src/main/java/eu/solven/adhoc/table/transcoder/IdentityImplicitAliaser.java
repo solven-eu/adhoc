@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,36 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.table;
+package eu.solven.adhoc.table.transcoder;
 
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
+
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
- * This {@link ITableTranscoder} is useful into translating from levelNames as configured in ActivePivot processors,
- * into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the
- * levelName.
+ * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
+ * {@link eu.solven.adhoc.query.cube.CubeQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
+ * the identity.
  *
- * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor properties).
- * But this is not specific to querying ActivePivot as an Adhoc Database.
+ * This always returns `null`, hence it is not reversible.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-@Slf4j
-public class AtotiTranscoder implements ITableTranscoder {
-	private static final char LEVEL_SEPARATOR = '@';
+public class IdentityImplicitAliaser implements ITableAliaser {
+	static final Supplier<IdentityImplicitAliaser> IDENTITY =
+			Suppliers.memoize(() -> new IdentityImplicitAliaser());
 
 	@Override
 	public String underlying(String queried) {
-		int indexOfSeparator = queried.indexOf(LEVEL_SEPARATOR);
-		if (indexOfSeparator >= 0) {
-			// queried is typically `levelName@hierarchyname@dimensionName`. And the Database column is typically the
-			// levelName.
-			return queried.substring(0, indexOfSeparator);
-		} else {
-			return null;
-		}
+		return null;
 	}
 }

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,45 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.atoti.table;
 
-import java.util.Set;
-
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * A transcoder useful when it is known that all columns has a redundant prefix (e.g. from SQL schema).
+ * This {@link ITableAliaser} is useful into translating from levelNames as configured in ActivePivot processors,
+ * into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the
+ * levelName.
+ *
+ * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor properties).
+ * But this is not specific to querying ActivePivot as an Adhoc Database.
  * 
  * @author Benoit Lacelle
- *
  */
 @Builder
-public class PrefixTranscoder implements ITableTranscoder, ITableReverseTranscoder {
-	// If empty, it is like the IdentityTranscoder
-	@NonNull
-	@Default
-	String prefix = "";
+@Slf4j
+public class AtotiAliaser implements ITableAliaser {
+	private static final char LEVEL_SEPARATOR = '@';
 
 	@Override
 	public String underlying(String queried) {
-		return prefix + queried;
-	}
-
-	@Override
-	public Set<String> queried(String underlying) {
-		if (underlying.startsWith(prefix)) {
-			String queried = underlying.substring(prefix.length());
-			return Set.of(queried);
+		int indexOfSeparator = queried.indexOf(LEVEL_SEPARATOR);
+		if (indexOfSeparator >= 0) {
+			// queried is typically `levelName@hierarchyname@dimensionName`. And the Database column is typically the
+			// levelName.
+			return queried.substring(0, indexOfSeparator);
 		} else {
-			throw new IllegalArgumentException(
-					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));
+			return null;
 		}
-	}
-
-	@Override
-	public int estimateQueriedSize(Set<String> underlyingKeys) {
-		return underlyingKeys.size();
 	}
 }

@@ -68,7 +68,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIn_Transcoded() {
-		ITableTranscoder transcoder = PrefixTranscoder.builder().prefix("p_").build();
+		ITableAliaser transcoder = PrefixAliaser.builder().prefix("p_").build();
 
 		Assertions
 				.assertThat(

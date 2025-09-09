@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,25 +22,21 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.Map;
+import java.util.function.Function;
 
 import lombok.Builder;
-import lombok.Singular;
-import lombok.ToString;
 
 /**
- * An {@link ITableTranscoder} based on a (not-necessarily bijective) mapping.
+ * A {@link ITableAliaser} over a {@link Function}.
  * 
  * @author Benoit Lacelle
  */
 @Builder
-@ToString
-public class MapTableTranscoder implements ITableTranscoder {
-	@Singular
-	final Map<String, String> queriedToUnderlyings;
+public class FunctionTableAliaser implements ITableAliaser {
+	final Function<String, String> queriedToUnderlying;
 
 	@Override
 	public String underlying(String queried) {
-		return queriedToUnderlyings.get(queried);
+		return queriedToUnderlying.apply(queried);
 	}
 }

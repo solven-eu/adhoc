@@ -55,7 +55,7 @@ import lombok.Value;
  * `FILTER` clause for per-aggregator filtering, on-top of the `WHERE` clause.
  * 
  * @author Benoit Lacelle
- * @see eu.solven.adhoc.table.transcoder.ITableTranscoder
+ * @see eu.solven.adhoc.table.transcoder.ITableAliaser
  */
 @Value
 @Builder(toBuilder = true)

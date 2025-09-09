@@ -28,13 +28,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TestIdentityReversibleTranscoder {
-	IdentityReversibleTranscoder transcoder = new IdentityReversibleTranscoder();
+	IdentityReversibleAliaser transcoder = new IdentityReversibleAliaser();
 
 	@Test
 	public void testTranscoder() {
 		Assertions.assertThat(transcoder.underlying("c")).isEqualTo("c");
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
 		Assertions.assertThat(context.queried("c")).isEqualTo(Set.of("c"));

@@ -22,11 +22,8 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -55,7 +52,6 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-@SuppressWarnings("PMD.GodClass")
 public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 	@NonNull
 	@Singular

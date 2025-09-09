@@ -49,7 +49,6 @@ import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -63,17 +62,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@UtilityClass
-public class FilterOptimizerHelpers {
+public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
-	/**
-	 * 
-	 * @param filters
-	 * @param willBeNegated
-	 *            true if this expression will be negated (e.g. when being called by `OR`)
-	 * @return
-	 */
-	protected static ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+	@Override
+	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
 		ISliceFilter flatten = andNotOptimized(filters, willBeNegated);
 
@@ -94,6 +86,20 @@ public class FilterOptimizerHelpers {
 			return andNotOptimized(packedColumns, willBeNegated);
 		} else {
 			return flatten;
+		}
+	}
+
+	@Override
+	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+		// OR relies on AND optimizations
+		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
+
+		ISliceFilter negatedOptimized = and(negated, true);
+
+		if (negatedOptimized instanceof INotFilter notFilter) {
+			return notFilter.getNegated();
+		} else {
+			return NotFilter.not(negatedOptimized);
 		}
 	}
 
@@ -518,7 +524,7 @@ public class FilterOptimizerHelpers {
 			}
 		}
 
-		public void collectPacks(AtomicBoolean isMatchNone,
+		protected void collectPacks(AtomicBoolean isMatchNone,
 				String column,
 				Builder<ISliceFilter> packedFiltersBuilder,
 				List<ISliceFilter> notManaged) {

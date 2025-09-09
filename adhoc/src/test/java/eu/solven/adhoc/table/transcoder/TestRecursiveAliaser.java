@@ -25,47 +25,47 @@ package eu.solven.adhoc.table.transcoder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestRecursiveTranscoder {
+public class TestRecursiveAliaser {
 	@Test
 	public void testRecursive() {
-		ITableTranscoder transcoder = RecursiveTranscoder.wrap(
-				MapTableTranscoder.builder().queriedToUnderlying("k", "_k").queriedToUnderlying("_k", "__k").build());
+		ITableAliaser aliaser = RecursiveAliaser.wrap(
+				MapTableAliaser.builder().queriedToUnderlying("k", "_k").queriedToUnderlying("_k", "__k").build());
 
-		Assertions.assertThat(transcoder.underlying("a")).isEqualTo(null);
-		Assertions.assertThat(transcoder.underlying("k")).isEqualTo("__k");
-		Assertions.assertThat(transcoder.underlying("_k")).isEqualTo("__k");
-		Assertions.assertThat(transcoder.underlying("__k")).isEqualTo(null);
+		Assertions.assertThat(aliaser.underlying("a")).isEqualTo(null);
+		Assertions.assertThat(aliaser.underlying("k")).isEqualTo("__k");
+		Assertions.assertThat(aliaser.underlying("_k")).isEqualTo("__k");
+		Assertions.assertThat(aliaser.underlying("__k")).isEqualTo(null);
 	}
 
 	@Test
 	public void testRecursive_cycle() {
-		ITableTranscoder transcoder = RecursiveTranscoder.wrap(MapTableTranscoder.builder()
+		ITableAliaser aliaser = RecursiveAliaser.wrap(MapTableAliaser.builder()
 				.queriedToUnderlying("k", "_k")
 				.queriedToUnderlying("_k", "__k")
 				.queriedToUnderlying("__k", "k")
 				.build());
 
-		Assertions.assertThat(transcoder.underlying("a")).isEqualTo(null);
-		Assertions.assertThatThrownBy(() -> transcoder.underlying("k"))
+		Assertions.assertThat(aliaser.underlying("a")).isEqualTo(null);
+		Assertions.assertThatThrownBy(() -> aliaser.underlying("k"))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("Transcoding cycle from `k` and through: [k, _k, __k, k]");
-		Assertions.assertThatThrownBy(() -> transcoder.underlying("_k"))
+		Assertions.assertThatThrownBy(() -> aliaser.underlying("_k"))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("Transcoding cycle from `_k` and through: [_k, __k, k, _k]");
-		Assertions.assertThatThrownBy(() -> transcoder.underlying("__k"))
+		Assertions.assertThatThrownBy(() -> aliaser.underlying("__k"))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("Transcoding cycle from `__k` and through: [__k, k, _k, __k]");
 	}
 
 	@Test
 	public void testRecursive_veryDeep() {
-		MapTableTranscoder.MapTableTranscoderBuilder mapTableTranscoderBuilder = MapTableTranscoder.builder();
+		var aliaserBuilder = MapTableAliaser.builder();
 
 		int depth = 16 * 1024;
 		for (int i = 0; i <= depth; i++) {
-			mapTableTranscoderBuilder.queriedToUnderlying("k_" + i, "k_" + (i + 1));
+			aliaserBuilder.queriedToUnderlying("k_" + i, "k_" + (i + 1));
 		}
-		ITableTranscoder transcoder = RecursiveTranscoder.wrap(mapTableTranscoderBuilder.build());
+		ITableAliaser transcoder = RecursiveAliaser.wrap(aliaserBuilder.build());
 
 		Assertions.assertThat(transcoder.underlying("k_" + (depth - 1))).isEqualTo("k_" + (depth + 1));
 		Assertions.assertThatThrownBy(() -> transcoder.underlying("k_" + 0))

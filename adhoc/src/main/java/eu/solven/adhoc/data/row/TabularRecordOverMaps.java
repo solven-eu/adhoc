@@ -36,7 +36,7 @@ import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
-import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
 import lombok.NonNull;
@@ -115,7 +115,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
+	public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
 		Map<String, ?> transcodedSlice =
 				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.getGroupBys().getCoordinates());
 

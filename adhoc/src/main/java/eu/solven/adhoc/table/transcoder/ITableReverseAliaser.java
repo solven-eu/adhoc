@@ -24,30 +24,27 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
-import eu.solven.adhoc.table.ITableWrapper;
-
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.CubeQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns the input column, hence it is reversible.
+ * This reverse the use of {@link ITableAliaser}. It is useful to materialize only the columns which has been
+ * effectively queried.
  * 
  * @author Benoit Lacelle
  */
-public class IdentityReversibleTranscoder implements ITableTranscoder, ITableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
+public interface ITableReverseAliaser {
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
-	}
+	/**
+	 * @param underlying
+	 *            a column name typically used by the database.
+	 * @return the queried columns which were mapping to given underlying.
+	 */
+	Set<String> queried(String underlying);
 
-	@Override
-	public int estimateQueriedSize(Set<String> underlyingKeys) {
-		return underlyingKeys.size();
-	}
+	/**
+	 *
+	 * Typically used for provisioning the reversed {@link java.util.Map}.
+	 * 
+	 * @param underlyingKeys
+	 * @return the number of queriedKeys through all underlyings
+	 */
+	int estimateQueriedSize(Set<String> underlyingKeys);
 }

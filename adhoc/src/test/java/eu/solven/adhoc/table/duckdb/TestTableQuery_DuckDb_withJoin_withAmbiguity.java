@@ -46,7 +46,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTest implements IAdhocTestConstants {
 
@@ -141,7 +141,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		insertData();
 
 		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
-				.transcoder(MapTableTranscoder.builder().queriedToUnderlying("name", "p.name").build())
+				.transcoder(MapTableAliaser.builder().queriedToUnderlying("name", "p.name").build())
 				.build()).build();
 
 		cube.getColumnTypes().forEach((column, type) -> {

@@ -31,9 +31,9 @@ import org.mockito.Mockito;
 public class TestTranscodingContext {
 	@Test
 	public void testAddIdentity() {
-		ITableTranscoder transcoder = Mockito.mock(ITableTranscoder.class, Mockito.CALLS_REAL_METHODS);
+		ITableAliaser transcoder = Mockito.mock(ITableAliaser.class, Mockito.CALLS_REAL_METHODS);
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
 		Assertions.assertThat(context.queried("c")).containsExactly("c");
@@ -48,11 +48,11 @@ public class TestTranscodingContext {
 
 	@Test
 	public void testAddMapped() {
-		ITableTranscoder transcoder = Mockito.mock(ITableTranscoder.class, Mockito.CALLS_REAL_METHODS);
+		ITableAliaser transcoder = Mockito.mock(ITableAliaser.class, Mockito.CALLS_REAL_METHODS);
 
 		Mockito.when(transcoder.underlying("cubeC")).thenReturn("tableC");
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("cubeC")).isEqualTo("tableC");
 		Assertions.assertThat(context.queried("tableC")).containsExactly("cubeC");
@@ -67,12 +67,12 @@ public class TestTranscodingContext {
 
 	@Test
 	public void testAddIdentityAndMapped() {
-		ITableTranscoder transcoder = Mockito.mock(ITableTranscoder.class, Mockito.CALLS_REAL_METHODS);
+		ITableAliaser transcoder = Mockito.mock(ITableAliaser.class, Mockito.CALLS_REAL_METHODS);
 
 		Mockito.when(transcoder.underlying("cubeC")).thenReturn("tableC");
 		Mockito.when(transcoder.underlying("tableC")).thenReturn("tableC");
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
 
 		Assertions.assertThat(context.underlying("cubeC")).isEqualTo("tableC");
 		Assertions.assertThat(context.underlying("tableC")).isEqualTo("tableC");

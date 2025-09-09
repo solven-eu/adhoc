@@ -34,7 +34,7 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -130,7 +130,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public ITabularRecord transcode(ITableReverseTranscoder transcodingContext) {
+		public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
 			throw new UnsupportedOperationException("Recording does not implement this");
 		}
 

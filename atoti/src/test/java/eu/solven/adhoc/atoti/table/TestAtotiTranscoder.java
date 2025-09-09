@@ -25,20 +25,20 @@ package eu.solven.adhoc.atoti.table;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.table.transcoder.CompositeTableTranscoder;
-import eu.solven.adhoc.table.transcoder.CompositeTableTranscoder.ChainMode;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.CompositeTableAliaser;
+import eu.solven.adhoc.table.transcoder.CompositeTableAliaser.ChainMode;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestAtotiTranscoder {
 	@Test
 	public void testRecursive() {
 		// We transcode `AsOf` to `f.AsOf` to explicit which table provides given field in case of ambiguity (e.g. on
 		// joins)
-		ITableTranscoder transcoder = CompositeTableTranscoder.builder()
+		ITableAliaser transcoder = CompositeTableAliaser.builder()
 				.chainMode(ChainMode.ApplyAll)
-				.transcoder(AtotiTranscoder.builder().build())
-				.transcoder(MapTableTranscoder.builder().queriedToUnderlying("AsOf", "f.AsOf").build())
+				.transcoder(AtotiAliaser.builder().build())
+				.transcoder(MapTableAliaser.builder().queriedToUnderlying("AsOf", "f.AsOf").build())
 				.build();
 
 		Assertions.assertThat(transcoder.underlying("someL")).isNull();
@@ -56,7 +56,7 @@ public class TestAtotiTranscoder {
 	public void testNoPriority() {
 		// We transcode `AsOf` to `f.AsOf` to explicit which table provides given field in case of ambiguity (e.g. on
 		// joins)
-		AtotiTranscoder transcoder = AtotiTranscoder.builder().build();
+		AtotiAliaser transcoder = AtotiAliaser.builder().build();
 
 		Assertions.assertThat(transcoder.underlying("someL")).isNull();
 		Assertions.assertThat(transcoder.underlying("someL@someH")).isEqualTo("someL");

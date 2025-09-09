@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -36,13 +37,15 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class FilterBuilder {
+	final IFilterOptimizerHelpers optimizer;
+
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	final List<ISliceFilter> filters = new ArrayList<>();
 
 	final boolean andElseOr;
 
 	public static FilterBuilder and() {
-		return new FilterBuilder(true);
+		return new FilterBuilder(AdhocUnsafe.sliceFilterOptimizer, true);
 	}
 
 	public static FilterBuilder and(Collection<? extends ISliceFilter> filters) {
@@ -54,7 +57,7 @@ public class FilterBuilder {
 	}
 
 	public static FilterBuilder or() {
-		return new FilterBuilder(false);
+		return new FilterBuilder(AdhocUnsafe.sliceFilterOptimizer, false);
 	}
 
 	public static FilterBuilder or(Collection<? extends ISliceFilter> filters) {
@@ -85,47 +88,31 @@ public class FilterBuilder {
 	 */
 	public ISliceFilter optimize() {
 		if (andElseOr) {
-			return FilterOptimizerHelpers.and(filters, false);
+			return optimizer.and(filters, false);
 		} else {
-			return or2(filters);
+			return optimizer.or(filters);
 		}
 	}
 
 	/**
 	 * 
-	 * @return a {@link ISliceFilter} skipping most expensive optimizations.
+	 * @return a {@link ISliceFilter} skipping all optimizations.
 	 */
 	public ISliceFilter combine() {
-		// TODO If size --1, return the insle filter
-		if (andElseOr) {
-			return AndFilter.builder().filters(filters).build();
+		if (filters.isEmpty()) {
+			if (andElseOr) {
+				return ISliceFilter.MATCH_ALL;
+			} else {
+				return ISliceFilter.MATCH_NONE;
+			}
+		} else if (filters.size() == 1) {
+			return filters.getFirst();
 		} else {
-			return OrFilter.builder().filters(filters).build();
-		}
-	}
-
-	// `first, second, more` syntax to push providing at least 2 arguments
-	// public static ISliceFilter and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
-	// if (more.length == 0 && first.equals(second)) {
-	// return first;
-	// }
-	// return and(Lists.asList(first, second, more));
-	// }
-	//
-	// public static ISliceFilter and(Collection<? extends ISliceFilter> filters) {
-	// return and(filters, false);
-	// }
-
-	private static ISliceFilter or2(Collection<? extends ISliceFilter> filters) {
-		// OR relies on AND optimizations
-		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
-
-		ISliceFilter negatedOptimized = FilterOptimizerHelpers.and(negated, true);
-
-		if (negatedOptimized instanceof INotFilter notFilter) {
-			return notFilter.getNegated();
-		} else {
-			return NotFilter.not(negatedOptimized);
+			if (andElseOr) {
+				return AndFilter.builder().filters(filters).build();
+			} else {
+				return OrFilter.builder().filters(filters).build();
+			}
 		}
 	}
 

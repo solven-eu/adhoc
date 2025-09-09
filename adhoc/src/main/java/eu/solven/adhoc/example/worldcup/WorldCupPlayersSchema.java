@@ -73,7 +73,7 @@ import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -288,7 +288,7 @@ public class WorldCupPlayersSchema {
 				.table(table)
 				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
 				.columnsManager(ColumnsManager.builder()
-						.transcoder(MapTableTranscoder.builder()
+						.transcoder(MapTableAliaser.builder()
 								.queriedToUnderlyings(snowflakeBuilder().getQueriedToUnderlying())
 								// TODO Need to progress on caseSensitivity
 								.queriedToUnderlying("MatchID", "WorldCupPlayers.MatchId")
