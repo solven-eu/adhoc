@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -32,23 +31,19 @@ import lombok.Singular;
 import lombok.ToString;
 
 /**
- * An {@link ITableAliaser} based on a (not-necessarily bijective) mapping. If a key it mapped to different originals,
- * the last alias wins.
+ * An {@link ITableAliaser} based on a (not-necessarily bijective) mapping.
+ * 
+ * It is strict as any conflicting insertions (at build-time) will lead to an exception.
  * 
  * @author Benoit Lacelle
- * @see MapTableStrictAliaser
+ * @see MapTableAliaser
  */
 @Builder
 @ToString
-public class MapTableAliaser implements ITableAliaser, IHasAliasedColumns {
+public class MapTableStrictAliaser implements ITableAliaser, IHasAliasedColumns {
 	// Multiple aliases may map to the same original
-	// Not a ImmutableMap, else conflicting mappings would lead to an exception
 	@Singular
-	final Map<String, String> aliasToOriginals;
-
-	protected MapTableAliaser(Map<String, String> aliasToOriginals) {
-		this.aliasToOriginals = ImmutableMap.copyOf(aliasToOriginals);
-	}
+	final ImmutableMap<String, String> aliasToOriginals;
 
 	@Override
 	public String underlying(String queried) {
