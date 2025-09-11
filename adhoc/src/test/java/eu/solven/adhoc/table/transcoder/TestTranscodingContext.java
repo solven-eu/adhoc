@@ -31,9 +31,9 @@ import org.mockito.Mockito;
 public class TestTranscodingContext {
 	@Test
 	public void testAddIdentity() {
-		ITableTranscoder transcoder = Mockito.mock(ITableTranscoder.class, Mockito.CALLS_REAL_METHODS);
+		ITableAliaser aliaser = Mockito.mock(ITableAliaser.class, Mockito.CALLS_REAL_METHODS);
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
 		Assertions.assertThat(context.queried("c")).containsExactly("c");
@@ -43,16 +43,16 @@ public class TestTranscodingContext {
 
 		// Implementation specific
 		Assertions.assertThat(context.identity).contains("c");
-		Assertions.assertThat(context.underlyingToQueried.asMap()).isEmpty();
+		Assertions.assertThat(context.originalToAlias.asMap()).isEmpty();
 	}
 
 	@Test
 	public void testAddMapped() {
-		ITableTranscoder transcoder = Mockito.mock(ITableTranscoder.class, Mockito.CALLS_REAL_METHODS);
+		ITableAliaser aliaser = Mockito.mock(ITableAliaser.class, Mockito.CALLS_REAL_METHODS);
 
-		Mockito.when(transcoder.underlying("cubeC")).thenReturn("tableC");
+		Mockito.when(aliaser.underlying("cubeC")).thenReturn("tableC");
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("cubeC")).isEqualTo("tableC");
 		Assertions.assertThat(context.queried("tableC")).containsExactly("cubeC");
@@ -62,17 +62,17 @@ public class TestTranscodingContext {
 
 		// Implementation specific
 		Assertions.assertThat(context.identity).isEmpty();
-		Assertions.assertThat(context.underlyingToQueried.asMap()).containsEntry("tableC", Set.of("cubeC"));
+		Assertions.assertThat(context.originalToAlias.asMap()).containsEntry("tableC", Set.of("cubeC"));
 	}
 
 	@Test
 	public void testAddIdentityAndMapped() {
-		ITableTranscoder transcoder = Mockito.mock(ITableTranscoder.class, Mockito.CALLS_REAL_METHODS);
+		ITableAliaser aliaser = Mockito.mock(ITableAliaser.class, Mockito.CALLS_REAL_METHODS);
 
-		Mockito.when(transcoder.underlying("cubeC")).thenReturn("tableC");
-		Mockito.when(transcoder.underlying("tableC")).thenReturn("tableC");
+		Mockito.when(aliaser.underlying("cubeC")).thenReturn("tableC");
+		Mockito.when(aliaser.underlying("tableC")).thenReturn("tableC");
 
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("cubeC")).isEqualTo("tableC");
 		Assertions.assertThat(context.underlying("tableC")).isEqualTo("tableC");
@@ -83,6 +83,6 @@ public class TestTranscodingContext {
 
 		// Implementation specific
 		Assertions.assertThat(context.identity).contains("tableC");
-		Assertions.assertThat(context.underlyingToQueried.asMap()).containsEntry("tableC", Set.of("cubeC"));
+		Assertions.assertThat(context.originalToAlias.asMap()).containsEntry("tableC", Set.of("cubeC"));
 	}
 }

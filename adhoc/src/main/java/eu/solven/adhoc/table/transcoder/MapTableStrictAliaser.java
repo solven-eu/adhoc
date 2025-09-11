@@ -24,41 +24,34 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
+
 import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
+import lombok.Singular;
+import lombok.ToString;
 
 /**
- * A transcoder useful when it is known that all columns has a redundant prefix (e.g. from SQL schema).
+ * An {@link ITableAliaser} based on a (not-necessarily bijective) mapping.
+ * 
+ * It is strict as any conflicting insertions (at build-time) will lead to an exception.
  * 
  * @author Benoit Lacelle
- *
+ * @see MapTableAliaser
  */
 @Builder
-public class PrefixTranscoder implements ITableTranscoder, ITableReverseTranscoder {
-	// If empty, it is like the IdentityTranscoder
-	@NonNull
-	@Default
-	String prefix = "";
+@ToString
+public class MapTableStrictAliaser implements ITableAliaser, IHasAliasedColumns {
+	// Multiple aliases may map to the same original
+	@Singular
+	final ImmutableMap<String, String> aliasToOriginals;
 
 	@Override
 	public String underlying(String queried) {
-		return prefix + queried;
+		return aliasToOriginals.get(queried);
 	}
 
 	@Override
-	public Set<String> queried(String underlying) {
-		if (underlying.startsWith(prefix)) {
-			String queried = underlying.substring(prefix.length());
-			return Set.of(queried);
-		} else {
-			throw new IllegalArgumentException(
-					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));
-		}
-	}
-
-	@Override
-	public int estimateQueriedSize(Set<String> underlyingKeys) {
-		return underlyingKeys.size();
+	public Set<String> getAlias() {
+		return aliasToOriginals.keySet();
 	}
 }

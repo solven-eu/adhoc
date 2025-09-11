@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -44,7 +44,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -128,7 +128,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	 * @return a {@link MeasureForest} restricted to the measures playing a role in {@link ICubeQuery}.
 	 */
 	@SuppressWarnings("PMD.CollapsibleIfStatements")
-	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
+	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
 		Set<IMeasure> relevantMeasures = new LinkedHashSet<>();
 
 		Set<IMeasure> measuresToAdd = new LinkedHashSet<>(preparedQuery.getMeasures());
@@ -167,7 +167,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 	protected ICubeQuery combineWithImplicit(ICubeQuery rawQuery) {
 		ISliceFilter preprocessedFilter =
-				AndFilter.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery));
+				FilterBuilder.and(rawQuery.getFilter(), implicitFilter.getImplicitFilter(rawQuery)).optimize();
 
 		Set<IQueryOption> addedOptions = implicitOptions.getOptions(rawQuery);
 		CubeQuery query = CubeQuery.edit(rawQuery).filter(preprocessedFilter).options(addedOptions).build();

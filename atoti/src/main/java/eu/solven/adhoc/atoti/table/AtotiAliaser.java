@@ -20,73 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.atoti.table;
 
-import com.google.common.collect.ImmutableList;
-
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.Singular;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Helps combining multiple {@link ITableTranscoder}.
+ * This {@link ITableAliaser} is useful into translating from levelNames as configured in ActivePivot processors,
+ * into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the
+ * levelName.
+ *
+ * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor properties).
+ * But this is not specific to querying ActivePivot as an Adhoc Database.
  * 
  * @author Benoit Lacelle
  */
 @Builder
-public class CompositeTableTranscoder implements ITableTranscoder {
-	/**
-	 * Different modes when iterating through the available transcoders.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	@SuppressWarnings("PMD.FieldNamingConventions")
-	public enum ChainMode {
-		/**
-		 * Should we return the first not-null underlying
-		 */
-		FirstNotNull,
-
-		/**
-		 * All transcoders, as a chain of transcoders
-		 */
-		ApplyAll
-	}
-
-	@NonNull
-	@Singular
-	ImmutableList<ITableTranscoder> transcoders;
-
-	@Default
-	@NonNull
-	ChainMode chainMode = ChainMode.FirstNotNull;
+@Slf4j
+public class AtotiAliaser implements ITableAliaser {
+	private static final char LEVEL_SEPARATOR = '@';
 
 	@Override
 	public String underlying(String queried) {
-		boolean oneMatched = false;
-		String currenQueried = queried;
-
-		for (ITableTranscoder transcoder : transcoders) {
-			String underlying = transcoder.underlying(currenQueried);
-
-			if (underlying != null) {
-				oneMatched = true;
-
-				if (chainMode == ChainMode.FirstNotNull) {
-					return underlying;
-				} else {
-					currenQueried = underlying;
-				}
-			}
-		}
-
-		// null means `not transcoded`
-		if (oneMatched) {
-			return currenQueried;
+		int indexOfSeparator = queried.indexOf(LEVEL_SEPARATOR);
+		if (indexOfSeparator >= 0) {
+			// queried is typically `levelName@hierarchyname@dimensionName`. And the Database column is typically the
+			// levelName.
+			return queried.substring(0, indexOfSeparator);
 		} else {
 			return null;
 		}
 	}
-
 }

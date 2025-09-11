@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -140,9 +141,12 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testGetValueMatcher_or_lax() {
-		ISliceFilter filter = OrFilter.or(AndFilter.and(Map.of("c1", "v1")),
-				AndFilter.and(Map.of("c2", "v21")),
-				AndFilter.and(Map.of("c2", "v22", "c3", "v3")));
+		ISliceFilter filter =
+				FilterBuilder
+						.or(AndFilter.and(Map.of("c1", "v1")),
+								AndFilter.and(Map.of("c2", "v21")),
+								AndFilter.and(Map.of("c2", "v22", "c3", "v3")))
+						.optimize();
 
 		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c1")).isEqualTo(EqualsMatcher.isEqualTo("v1"));
 		// Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c2")).isEqualTo(InMatcher.isIn("v21",
@@ -175,9 +179,8 @@ public class TestFilterHelpers {
 		Assertions.assertThat(FilterHelpers.asMap(ColumnFilter.isEqualTo("c", "v"))).isEqualTo(Map.of("c", "v"));
 
 		// BEWARE We may introduce a `toList` to manage OR.
-		Assertions
-				.assertThatThrownBy(() -> FilterHelpers
-						.asMap(OrFilter.or(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2"))))
+		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(
+				FilterBuilder.or(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2")).optimize()))
 				.isInstanceOf(IllegalArgumentException.class);
 
 		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(ISliceFilter.MATCH_NONE))
@@ -186,7 +189,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testSplitAnd() {
-		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_ALL)).containsExactly(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_ALL)).isEmpty();
 		Assertions.assertThat(FilterHelpers.splitAnd(ISliceFilter.MATCH_NONE)).containsExactly(ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(FilterHelpers.splitAnd(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"))))
 				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
@@ -194,6 +197,18 @@ public class TestFilterHelpers {
 		// IN is not an AND but an OR
 		Assertions.assertThat(FilterHelpers.splitAnd(ColumnFilter.isIn("a", "a1", "a2")))
 				.containsExactly(ColumnFilter.isIn("a", "a1", "a2"));
+	}
+
+	@Test
+	public void testSplitOr() {
+		Assertions.assertThat(FilterHelpers.splitOr(ISliceFilter.MATCH_ALL)).contains(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.splitOr(ISliceFilter.MATCH_NONE)).isEmpty();
+		Assertions.assertThat(FilterHelpers.splitOr(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1"))))
+				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b1"));
+
+		// IN is an OR
+		Assertions.assertThat(FilterHelpers.splitOr(ColumnFilter.isIn("a", "a1", "a2")))
+				.containsExactly(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
 	}
 
 	@Test
@@ -229,6 +244,13 @@ public class TestFilterHelpers {
 	}
 
 	@Test
+	public void testStripFilterFromWhere_emptyIntersection() {
+		// filter is disjoint with empty intersection
+		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(ColumnFilter.isIn("a", "a1", "a2"),
+				ColumnFilter.isIn("a", "a3", "a4"))).isEqualTo(ISliceFilter.MATCH_NONE);
+	}
+
+	@Test
 	public void testStripFilterFromWhere_NotOr() {
 		ISliceFilter notA_and_notB = AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("a", "a1")),
 				NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
@@ -243,6 +265,32 @@ public class TestFilterHelpers {
 						notA_and_notB))
 				.isEqualTo(AndFilter.and(NotFilter.not(ColumnFilter.isEqualTo("b", "b1")),
 						NotFilter.not(ColumnFilter.isEqualTo("c", "c1"))));
+	}
+
+	@Test
+	public void testStripFilterFromWhere_whereEquals_filterGreaterThan_orOther() {
+		ColumnFilter equalsTo = ColumnFilter.isEqualTo("a", 123);
+		ISliceFilter greaterThanOrOther =
+				FilterBuilder
+						.or(ColumnFilter.isMatching("a", ComparingMatcher.strictlyGreaterThan(12)),
+								ColumnFilter.isEqualTo("b", "b1"))
+						.combine();
+
+		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(equalsTo, greaterThanOrOther))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
+	}
+
+	@Test
+	public void testStripFilterFromWhere_whereEquals_filterGreaterThan_andOther() {
+		ColumnFilter equalsTo = ColumnFilter.isEqualTo("a", 123);
+		ISliceFilter greaterThanOrOther =
+				FilterBuilder
+						.and(ColumnFilter.isMatching("a", ComparingMatcher.strictlyGreaterThan(12)),
+								ColumnFilter.isEqualTo("b", "b1"))
+						.combine();
+
+		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(equalsTo, greaterThanOrOther))
+				.isEqualTo(ColumnFilter.isEqualTo("b", "b1"));
 	}
 
 	// This case may underline a subtle edge-case:
@@ -278,6 +326,56 @@ public class TestFilterHelpers {
 					.describedAs("nbNegated == %s", nbNegated)
 					.isTrue();
 		}
+	}
+
+	@Test
+	public void testIsStricterThan_doubleNegation() {
+		ColumnFilter equalsTo = ColumnFilter.isEqualTo("k", "v");
+		ISliceFilter in = ColumnFilter.isIn("k", "v", "v2");
+
+		Assertions.assertThat(FilterHelpers.isStricterThan(equalsTo, in)).isTrue();
+		Assertions.assertThat(FilterHelpers.isStricterThan(in, equalsTo)).isFalse();
+
+		Assertions.assertThat(FilterHelpers.isStricterThan(NotFilter.builder().negated(equalsTo).build(),
+				NotFilter.builder().negated(in).build())).isFalse();
+		Assertions.assertThat(FilterHelpers.isStricterThan(NotFilter.builder().negated(in).build(),
+				NotFilter.builder().negated(equalsTo).build())).isTrue();
+	}
+
+	@Test
+	public void testIsStricterThan_comparison() {
+		ColumnFilter equalsTo = ColumnFilter.isEqualTo("a", 123);
+		ISliceFilter greaterThanOrOther =
+				FilterBuilder
+						.or(ColumnFilter.isMatching("a", ComparingMatcher.strictlyGreaterThan(12)),
+								ColumnFilter.isEqualTo("b", "b1"))
+						.combine();
+
+		Assertions.assertThat(FilterHelpers.isStricterThan(equalsTo, greaterThanOrOther)).isTrue();
+		Assertions.assertThat(FilterHelpers.isStricterThan(greaterThanOrOther, equalsTo)).isFalse();
+	}
+
+	@Test
+	public void testCommonFilter_negated() {
+		ISliceFilter notA1 = NotFilter.not(ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter notA1B2 =
+				NotFilter.not(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2")));
+
+		Assertions.assertThat(FilterHelpers.commonFilter(Set.of(notA1, notA1B2))).isEqualTo(ISliceFilter.MATCH_ALL);
+	}
+
+	@Test
+	public void testSplitOr_or() {
+		Set<ISliceFilter> splitted = FilterHelpers.splitOr(
+				FilterBuilder
+						.or(ColumnFilter.isMatching("a", EqualsMatcher.isEqualTo("a1")),
+								ColumnFilter.isMatching("b", EqualsMatcher.isEqualTo("b2")))
+						.combine());
+
+		Assertions.assertThat(splitted)
+				.contains(ColumnFilter.isMatching("a", EqualsMatcher.isEqualTo("a1")))
+				.contains(ColumnFilter.isMatching("b", EqualsMatcher.isEqualTo("b2")))
+				.hasSize(2);
 	}
 
 }

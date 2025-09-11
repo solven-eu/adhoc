@@ -39,8 +39,13 @@ import eu.solven.adhoc.measure.model.Aggregator;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IHasDagFromQueriedToUnderlyings {
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getDagToDependancies();
+public interface IHasDagFromInducedToInducer {
+	/**
+	 * This DAG has edges from the queried/output/induced to the underlyings/input/inducer.
+	 * 
+	 * @return
+	 */
+	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getInducedToInducer();
 
 	/**
 	 * 
@@ -48,16 +53,16 @@ public interface IHasDagFromQueriedToUnderlyings {
 	 *         encountered strictly after its underlyings.
 	 */
 
-	default Iterator<CubeQueryStep> iteratorFromUnderlyingsToQueried() {
+	default Iterator<CubeQueryStep> iteratorFromInducerToInduced() {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
 		EdgeReversedGraph<CubeQueryStep, DefaultEdge> fromAggregatesToQueried =
-				new EdgeReversedGraph<>(getDagToDependancies());
+				new EdgeReversedGraph<>(getInducedToInducer());
 
 		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
 	}
 
-	default List<CubeQueryStep> getDependencies(CubeQueryStep induced) {
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = getDagToDependancies();
+	default List<CubeQueryStep> getInducers(CubeQueryStep induced) {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = getInducedToInducer();
 		return dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
 	}
 }

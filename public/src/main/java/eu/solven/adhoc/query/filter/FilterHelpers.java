@@ -38,6 +38,7 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -258,7 +259,7 @@ public class FilterHelpers {
 			commonParts = Sets.intersection(commonParts, nextFilterParts);
 		}
 
-		return FilterOptimizerHelpers.and(commonParts);
+		return FilterBuilder.and(commonParts).optimize();
 	}
 
 	/**
@@ -268,8 +269,10 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
-		if (filter.isMatchAll() || filter.isMatchNone()) {
-			return Set.of(filter);
+		if (filter.isMatchAll()) {
+			return ImmutableSet.of();
+		} else if (filter.isMatchNone()) {
+			return ImmutableSet.of(filter);
 		} else if (filter instanceof IAndFilter andFilter) {
 			return andFilter.getOperands();
 		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IOrFilter orFilter) {
@@ -282,27 +285,103 @@ public class FilterHelpers {
 				return andMatcher.getOperands()
 						.stream()
 						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
-						.collect(Collectors.toCollection(LinkedHashSet::new));
+						.collect(ImmutableSet.toImmutableSet());
 			}
-
 		}
 
 		// Not splittable
-		return Set.of(filter);
+		return ImmutableSet.of(filter);
+	}
+
+	public static Set<ISliceFilter> splitOr(ISliceFilter filter) {
+		if (filter.isMatchNone()) {
+			return ImmutableSet.of();
+		} else if (filter.isMatchAll()) {
+			return ImmutableSet.of(filter);
+		} else if (filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands();
+		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().map(NotFilter::not).collect(ImmutableSet.toImmutableSet());
+		} else if (filter instanceof IColumnFilter columnFilter) {
+			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
+
+			String column = columnFilter.getColumn();
+			if (valueMatcher instanceof OrMatcher orMatcher) {
+				return orMatcher.getOperands()
+						.stream()
+						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
+						.collect(ImmutableSet.toImmutableSet());
+			} else if (valueMatcher instanceof InMatcher inMatcher) {
+				return inMatcher.getOperands()
+						.stream()
+						.map(operand -> ColumnFilter.builder().column(column).matchEquals(operand).build())
+						.collect(ImmutableSet.toImmutableSet());
+			}
+		}
+
+		// Not splittable
+		return ImmutableSet.of(filter);
 	}
 
 	/**
 	 * 
-	 * Typically true if `stricter:A=a1&B=b1` and `laxer:B=b1`.
+	 * Typically true if `stricter:A=a1&B=b1` and `laxer:B=b1` or `stricter:A=a1` and `laxer:A=a1|B=b1`.
+	 * 
+	 * True if stricter and laxer are equivalent.
 	 * 
 	 * @param stricter
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
 	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
+		if (stricter instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
+			return isStricterThan(notLaxer.getNegated(), notStricter.getNegated());
+		} else if (stricter instanceof IColumnFilter stricterColumn && laxer instanceof IColumnFilter laxerFilter) {
+			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
+			if (!isSameColumn) {
+				return false;
+			}
+			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
+		}
+
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
 		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
-		return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
+		// BEWARE Do not rely on AndFilter either, else it may lead on further cycles
+		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
+
+		if (splitAnd(stricter).containsAll(splitAnd(laxer))) {
+			// true if `stricter:A=a1&B=b1` and `laxer:B=b1`
+			return true;
+		}
+
+		Set<ISliceFilter> allStricters = splitOr(stricter);
+		Set<ISliceFilter> allLaxers = splitOr(laxer);
+		if (allLaxers.containsAll(allStricters)) {
+			// true if `stricter:A=a1` and `laxer:A=a1|B=b1`.
+			return true;
+		}
+
+		// true if `stricter:A=7` and `laxer:A>5|B=b1`.
+		boolean allLaxersInStricter = allStricters.stream().allMatch(oneStricter -> {
+			return allLaxers.stream().anyMatch(oneLaxer -> {
+				if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
+					// break cycle in recursivity
+					return false;
+				}
+
+				return isStricterThan(oneStricter, oneLaxer);
+			});
+		});
+		if (allLaxersInStricter) {
+			return true;
+		}
+		// TODO Equivalent to previous clause for AND
+
+		return false;
+	}
+
+	private static boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
+		return AndMatcher.and(stricter, laxer).equals(stricter);
 	}
 
 	/**
@@ -324,21 +403,48 @@ public class FilterHelpers {
 			return ISliceFilter.MATCH_ALL;
 		}
 
-		// Split the FILTER in parts
-		Set<? extends ISliceFilter> andOperands = splitAnd(filter);
+		// Given the FILTER, we reject the AND operands already covered by WHERE
+		ISliceFilter postAnd;
+		{
 
-		Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
+			// Split the FILTER in parts
+			Set<? extends ISliceFilter> andOperands = splitAnd(filter);
 
-		// For each part of `FILTER`, reject those already filtered in `WHERE`
-		for (ISliceFilter subFilter : andOperands) {
-			boolean whereCoversSubFilter = isStricterThan(where, subFilter);
+			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
 
-			if (!whereCoversSubFilter) {
-				notInWhere.add(subFilter);
+			// For each part of `FILTER`, reject those already filtered in `WHERE`
+			for (ISliceFilter subFilter : andOperands) {
+				boolean whereCoversSubFilter = isStricterThan(where, subFilter);
+
+				if (!whereCoversSubFilter) {
+					notInWhere.add(subFilter);
+				}
 			}
+			postAnd = FilterBuilder.and(notInWhere).optimize();
 		}
 
-		return FilterOptimizerHelpers.and(notInWhere);
+		// Given the FILTER, we reject the OR operands already rejected by WHERE
+		// TODO Why managing OR after AND? (and not the inverse)
+		ISliceFilter postOr;
+		{
+
+			Set<ISliceFilter> orOperands = splitOr(postAnd);
+
+			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
+			// For each part of `FILTER`, reject those already filtered in `WHERE`
+			for (ISliceFilter subFilter : orOperands) {
+				boolean whereRejectsSubFilter =
+						ISliceFilter.MATCH_NONE.equals(FilterBuilder.and(where, subFilter).optimize());
+
+				if (!whereRejectsSubFilter) {
+					notInWhere.add(subFilter);
+				}
+			}
+
+			postOr = FilterBuilder.or(notInWhere).optimize();
+		}
+
+		return postOr;
 	}
 
 }

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.util;
 
+import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -131,6 +132,17 @@ public class AdhocCollectionHelpers {
 			return list.getFirst();
 		} else {
 			return c.iterator().next();
+		}
+	}
+
+	// eu.solven.pepper.collection.CartesianProductHelper.cartesianProductSize(List<? extends Set<?>>)
+	public static BigInteger cartesianProductSize(List<? extends Collection<?>> listOfSets) {
+		if (listOfSets.isEmpty()) {
+			return BigInteger.ZERO;
+		} else {
+			return listOfSets.stream()
+					.map(c -> BigInteger.valueOf(c.size()))
+					.reduce(BigInteger.ONE, BigInteger::multiply);
 		}
 	}
 }

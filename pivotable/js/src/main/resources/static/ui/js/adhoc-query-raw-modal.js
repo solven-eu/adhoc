@@ -82,6 +82,13 @@ export default {
 		const copyToClipboard = function () {
 			const jsonValue = isEditing.value ? editedJson.value : JSON.stringify(props.queryJson, null, 2);
 			console.log("Writing to clipboard");
+
+			// https://stackoverflow.com/questions/51805395/navigator-clipboard-is-undefined
+			if (!navigator.clipboard || !window.isSecureContext) {
+				copyToClipboardStatus.value = "cancelled (https?)";
+				return;
+			}
+
 			copyToClipboardStatus.value = "doing";
 			navigator.clipboard
 				.writeText(jsonValue)

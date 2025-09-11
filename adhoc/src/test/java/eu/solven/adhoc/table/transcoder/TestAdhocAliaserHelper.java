@@ -28,11 +28,11 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestAdhocTranscodingHelper {
+public class TestAdhocAliaserHelper {
 	@Test
 	public void testSimpleMapping_Empty() {
-		ITableTranscoder transcoder = MapTableTranscoder.builder().build();
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
 
@@ -47,8 +47,8 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testSimpleMapping() {
-		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
 		Assertions.assertThat(context.underlying("k2")).isEqualTo("k2");
@@ -64,8 +64,8 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testSimpleMapping_RequestUnderlying() {
-		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("k1", "k").build();
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
@@ -86,9 +86,9 @@ public class TestAdhocTranscodingHelper {
 
 	@Test
 	public void testOverlap() {
-		ITableTranscoder transcoder =
-				MapTableTranscoder.builder().queriedToUnderlying("k1", "k2").queriedToUnderlying("k2", "k3").build();
-		TranscodingContext context = TranscodingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser =
+				MapTableAliaser.builder().aliasToOriginal("k1", "k2").aliasToOriginal("k2", "k3").build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k2");
 		Assertions.assertThat(context.underlying("k2")).isEqualTo("k3");
@@ -115,7 +115,7 @@ public class TestAdhocTranscodingHelper {
 
 		Set<String> outputKeys = Set.of("k1", "k2");
 
-		ITableReverseTranscoder transcoder = new ITableReverseTranscoder() {
+		ITableReverseAliaser transcoder = new ITableReverseAliaser() {
 			@Override
 			public Set<String> queried(String underlying) {
 				return outputKeys;
@@ -138,7 +138,7 @@ public class TestAdhocTranscodingHelper {
 
 		Set<String> outputKeys = Set.of("k1", "k2");
 
-		ITableReverseTranscoder transcoder = new ITableReverseTranscoder() {
+		ITableReverseAliaser transcoder = new ITableReverseAliaser() {
 			@Override
 			public Set<String> queried(String underlying) {
 				return outputKeys;

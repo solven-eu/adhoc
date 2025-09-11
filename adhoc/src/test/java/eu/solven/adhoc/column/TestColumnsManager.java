@@ -29,18 +29,18 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
+import eu.solven.adhoc.table.transcoder.AliasingContext;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestColumnsManager {
 	@Test
 	public void testTranscodeExpressionColumn() {
-		ITableTranscoder transcoder = MapTableTranscoder.builder().queriedToUnderlying("queried", "underlying").build();
-		ColumnsManager columnsManager = ColumnsManager.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("queried", "underlying").build();
+		ColumnsManager columnsManager = ColumnsManager.builder().aliaser(aliaser).build();
 
-		TranscodingContext context = columnsManager.openTranscodingContext();
+		AliasingContext context = columnsManager.openTranscodingContext();
 
 		IAdhocGroupBy groupBy =
 				GroupByColumns.of(TableExpressionColumn.builder().name("underlying").sql("someSql").build());
@@ -50,7 +50,7 @@ public class TestColumnsManager {
 				.isEqualTo(
 						GroupByColumns.of(TableExpressionColumn.builder().name("underlying").sql("someSql").build()));
 
-		ITableReverseTranscoder reversed = columnsManager.prepareColumnTranscoder(context);
+		ITableReverseAliaser reversed = columnsManager.prepareColumnTranscoder(context);
 
 		Assertions.assertThat(reversed.estimateQueriedSize(Set.of("underlying"))).isEqualTo(1);
 		Assertions.assertThat(reversed.queried("underlying")).containsExactly("underlying");

@@ -58,7 +58,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasName;
@@ -307,7 +307,7 @@ public class AdhocSchema implements IAdhocSchema {
 
 	protected ISliceFilter transcodeFilter(ICubeWrapper cubeWrapper, ISliceFilter filter) {
 		ICustomTypeManagerSimple customTypeManager = makeTypeManager(cubeWrapper);
-		return MoreFilterHelpers.transcodeFilter(customTypeManager, ITableTranscoder.identity(), filter);
+		return MoreFilterHelpers.transcodeFilter(customTypeManager, ITableAliaser.identity(), filter);
 	}
 
 	protected ICustomTypeManagerSimple makeTypeManager(ICubeWrapper cubeWrapper) {

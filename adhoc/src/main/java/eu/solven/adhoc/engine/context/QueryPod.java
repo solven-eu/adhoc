@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -61,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements IHasQueryOptions, ICanResolveMeasure {
+public class QueryPod implements IHasQueryOptions, IMeasureResolver {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;

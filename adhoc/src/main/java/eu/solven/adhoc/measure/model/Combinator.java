@@ -145,4 +145,13 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 			return Optional.empty();
 		}
 	}
+
+	public static IMeasure sum(String first, String second) {
+		return Combinator.builder()
+				.name("sum(%s,%s)".formatted(first, second))
+				.combinationKey(SumCombination.KEY)
+				.underlying(first)
+				.underlying(second)
+				.build();
+	}
 }

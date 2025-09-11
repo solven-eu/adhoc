@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -87,7 +87,8 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			});
 		});
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		SplitTableQueriesBuilder split = SplitTableQueries.builder();
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
@@ -110,26 +111,29 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 					.map(tq -> FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			// induced will fetch the union of rows for all induced
-			ISliceFilter inducerFilter = AndFilter.and(commonFilter, OrFilter.or(eachInducedFilters));
+			// BEWARE Do not use `OrFilter.or` as the input may be very large, leading to induce in the optimization
+			// engine
+			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).combine();
+			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize();
 
 			filterGroupBy.forEach(tq -> {
-				CubeQueryStep inducerStep = CubeQueryStep.edit(tq)
+				CubeQueryStep inducer = CubeQueryStep.edit(tq)
 						.filter(inducerFilter)
 						.groupBy(GroupByColumns.named(inducerColumns))
 						.build();
-				split.inducer(inducerStep);
+				split.inducer(inducer);
 
 				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
-				CubeQueryStep inducedStep = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
-				split.induced(inducedStep);
+				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
+				split.induced(induced);
 
-				dag.addVertex(inducerStep);
-				dag.addVertex(inducedStep);
-				dag.addEdge(inducedStep, inducerStep);
+				inducedToInducer.addVertex(inducer);
+				inducedToInducer.addVertex(induced);
+				inducedToInducer.addEdge(induced, inducer);
 			});
 		});
 
-		return split.dagToDependancies(dag).build();
+		return split.inducedToInducer(inducedToInducer).build();
 	}
 
 }

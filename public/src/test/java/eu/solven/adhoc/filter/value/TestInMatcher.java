@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -176,5 +177,18 @@ public class TestInMatcher {
 	public void testIn_positive_hardcoded() {
 		Assertions.assertThat(InMatcher.isIn(ComparingMatcher.builder().greaterThan(123).build(), 234D))
 				.isInstanceOf(ComparingMatcher.class);
+	}
+
+	@Test
+	public void testToString_huge() {
+		IValueMatcher inMatcher = InMatcher.isIn(IntStream.range(0, 1024).mapToObj(i -> i).toList());
+
+		Assertions.assertThat(inMatcher)
+				.hasToString(
+						"InMatcher{size=1024, #0=0, #1=1, #2=2, #3=3, #4=4, #5=5, #6=6, #7=7, #8=8, #9=9, #10=10, #11=11, #12=12, #13=13, #14=14, #15=15, #16=1008 more entries}")
+				.isInstanceOfSatisfying(InMatcher.class, m -> {
+					Assertions.assertThat(m.toString("c", false))
+							.isEqualTo("c=in=(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15, and 1008 more entries)");
+				});
 	}
 }

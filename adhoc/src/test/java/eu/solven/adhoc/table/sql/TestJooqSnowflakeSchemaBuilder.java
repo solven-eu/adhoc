@@ -54,7 +54,7 @@ public class TestJooqSnowflakeSchemaBuilder {
 				    on "base"."baseA" = "joined"."joinedA"
 								""".trim());
 
-		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
+		Assertions.assertThat(snowflakeBuilder.getAliasToOriginal())
 				.containsEntry("baseA", "\"base\".\"baseA\"")
 				.hasSize(1);
 	}
@@ -78,7 +78,7 @@ public class TestJooqSnowflakeSchemaBuilder {
 				    on "joined1"."baseA" = "joined2"."joined2A"
 								                """.trim());
 
-		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
+		Assertions.assertThat(snowflakeBuilder.getAliasToOriginal())
 				.containsEntry("baseA", "\"base\".\"baseA\"")
 				.hasSize(1);
 	}
@@ -102,7 +102,7 @@ public class TestJooqSnowflakeSchemaBuilder {
 				    on "base"."ill_name.baseA" = "joined2"."joined2A"
 								                """.trim());
 
-		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
+		Assertions.assertThat(snowflakeBuilder.getAliasToOriginal())
 				.containsEntry("baseA", "\"base\".\"baseA\"")
 				.containsEntry("ill_name.baseA", "\"base\".\"ill_name.baseA\"")
 				.hasSize(2);
@@ -128,7 +128,7 @@ public class TestJooqSnowflakeSchemaBuilder {
 				    on ill_name.baseA'' = "joined2"."joined2A"
 								                """.trim());
 
-		Assertions.assertThat(snowflakeBuilder.getQueriedToUnderlying())
+		Assertions.assertThat(snowflakeBuilder.getAliasToOriginal())
 				.containsEntry("baseA", "\"base\".\"baseA\"")
 				.hasSize(1);
 	}

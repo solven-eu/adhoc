@@ -22,27 +22,43 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.function.Supplier;
+import java.util.Set;
 
-import com.google.common.base.Suppliers;
-
-import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.CubeQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns `null`, hence it is not reversible.
+ * A transcoder useful when it is known that all columns has a redundant prefix (e.g. from SQL schema).
  * 
  * @author Benoit Lacelle
+ *
  */
-public class IdentityImplicitTranscoder implements ITableTranscoder {
-	static final Supplier<IdentityImplicitTranscoder> IDENTITY =
-			Suppliers.memoize(() -> new IdentityImplicitTranscoder());
+@Builder
+public class PrefixAliaser implements ITableAliaser, ITableReverseAliaser {
+	// If empty, it is like the IdentityTranscoder
+	@NonNull
+	@Default
+	String prefix = "";
 
 	@Override
 	public String underlying(String queried) {
-		return null;
+		return prefix + queried;
+	}
+
+	@Override
+	public Set<String> queried(String underlying) {
+		if (underlying.startsWith(prefix)) {
+			String queried = underlying.substring(prefix.length());
+			return Set.of(queried);
+		} else {
+			throw new IllegalArgumentException(
+					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));
+		}
+	}
+
+	@Override
+	public int estimateQueriedSize(Set<String> underlyingKeys) {
+		return underlyingKeys.size();
 	}
 }

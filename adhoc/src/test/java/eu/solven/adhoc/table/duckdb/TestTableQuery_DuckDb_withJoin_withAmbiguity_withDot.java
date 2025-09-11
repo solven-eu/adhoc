@@ -52,7 +52,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckDbJooqTest
 		implements IAdhocTestConstants {
@@ -126,7 +126,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 	@Override
 	public CubeWrapperBuilder makeCube() {
 		return super.makeCube().columnsManager(ColumnsManager.builder()
-				.transcoder(MapTableTranscoder.builder().queriedToUnderlying("name", joinedAlias + ".name").build())
+				.aliaser(MapTableAliaser.builder().aliasToOriginal("name", joinedAlias + ".name").build())
 				.build());
 	}
 

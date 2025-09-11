@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 public class TestAndFilter {
+	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+
 	// A short toString not to prevail is composition .toString
 	@Test
 	public void toString_grandTotal() {
@@ -83,6 +86,14 @@ public class TestAndFilter {
 										OrFilter.or(ImmutableMap.of("c", "c1", "d", "d1")))
 								.toString())
 				.isEqualTo("(a==a1|b==b1)&(c==c1|d==d1)");
+	}
+
+	@Test
+	public void testAndOr_onlyOr() {
+		Assertions
+				.assertThat(AndFilter.and(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1")),
+						OrFilter.or(ImmutableMap.of("a", "a1", "b", "b2"))))
+				.isEqualTo(AndFilter.and(Map.of("a", "a1")));
 	}
 
 	@Test
@@ -244,7 +255,7 @@ public class TestAndFilter {
 	public void testMultipleEqualsSameColumn_joint_andComplexNotColumn() {
 		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
 				ColumnFilter.isEqualTo("a", "a1"),
-				OrFilter.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%")));
+				FilterBuilder.or(ColumnFilter.isLike("a", "%a"), ColumnFilter.isLike("a", "a%")).optimize());
 
 		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
@@ -268,11 +279,12 @@ public class TestAndFilter {
 	public void testMultipleEqualsSameColumn_joint_withOr() {
 		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
 				ColumnFilter.isEqualTo("a", "a1"),
-				OrFilter.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3")));
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3")).optimize());
 
 		Assertions.assertThat(a1Anda2)
 				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("a", "a1"),
-						OrFilter.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3"))));
+						FilterBuilder.or(ColumnFilter.isEqualTo("a", "a2"), ColumnFilter.isEqualTo("a", "a3"))
+								.optimize()));
 	}
 
 	@Test
@@ -394,12 +406,11 @@ public class TestAndFilter {
 		List<ISliceFilter> nots = likes.stream().map(NotFilter::not).toList();
 
 		// And over 3 Not
-		Assertions.assertThat(FilterOptimizerHelpers.costFunction(AndFilter.builder().filters(nots).build()))
-				.isEqualTo(3 + 3 + 3);
+		Assertions.assertThat(optimizer.costFunction(AndFilter.builder().filters(nots).build())).isEqualTo(3 + 3 + 3);
 
 		// Not over Or over 3 simple: cost==8
 		Assertions
-				.assertThat(FilterOptimizerHelpers
+				.assertThat(optimizer
 						.costFunction(NotFilter.builder().negated(OrFilter.builder().filters(likes).build()).build()))
 				.isEqualTo(2 + 2 + 1 + 1 + 1);
 
@@ -407,7 +418,7 @@ public class TestAndFilter {
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
 			// cost==7, which is cheaper than 8
-			Assertions.assertThat(FilterOptimizerHelpers.costFunction(notFilter)).isEqualTo(2 + 2 + 1 + 1 + 1);
+			Assertions.assertThat(optimizer.costFunction(notFilter)).isEqualTo(2 + 2 + 1 + 1 + 1);
 
 			Assertions.assertThat(notFilter.getNegated()).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
 				Assertions.assertThat(orFilter.getOperands()).containsAll(likes);
@@ -444,22 +455,25 @@ public class TestAndFilter {
 	@Test
 	public void testAnd_orDifferentColumns_sameColumn() {
 		ColumnFilter left = ColumnFilter.isEqualTo("g", "c1");
-		ISliceFilter leftOrRight = OrFilter.or(left, ColumnFilter.isEqualTo("h", "c1"));
+		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.isEqualTo("h", "c1")).optimize();
 
 		Assertions.assertThat(AndFilter.and(leftOrRight, left)).isEqualTo(left);
 	}
 
 	@Test
 	public void testCostFunction() {
-		Assertions.assertThat(FilterOptimizerHelpers.costFunction(OrFilter.or(Map.of("a", "a1")))).isEqualTo(1);
-		Assertions.assertThat(FilterOptimizerHelpers.costFunction(AndFilter.and(Map.of("a", "a1")))).isEqualTo(1);
+		Assertions.assertThat(optimizer.costFunction(OrFilter.or(Map.of("a", "a1")))).isEqualTo(1);
+		Assertions.assertThat(optimizer.costFunction(AndFilter.and(Map.of("a", "a1")))).isEqualTo(1);
 
 		Assertions
-				.assertThat(OrFilter.or(AndFilter.and(ImmutableMap.of("a", "a1")),
-						AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1"))))
+				.assertThat(
+						FilterBuilder
+								.or(AndFilter.and(ImmutableMap.of("a", "a1")),
+										AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
+								.optimize())
 				.hasToString("a==a1|b==b1&c==c1")
 				.satisfies(f -> {
-					Assertions.assertThat(FilterOptimizerHelpers.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
+					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(1 + 2 + 1 + 1);
 				});
 
 		Assertions
@@ -467,40 +481,39 @@ public class TestAndFilter {
 						OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1"))))
 				.hasToString("a==a1&(b==b1|c==c1)")
 				.satisfies(f -> {
-					Assertions.assertThat(FilterOptimizerHelpers.costFunction(f)).isEqualTo(1 + 1 + 2 + 1);
+					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(1 + 1 + 2 + 1);
 				});
 
 		Assertions
 				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-						OrFilter.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))))
+						FilterBuilder.or(NotFilter.not(ColumnFilter.isLike("b", "b%")), ColumnFilter.isLike("c", "c%"))
+								.optimize()))
 				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
 				// `LikeMatcher(pattern=c%)`)")
 				.hasToString("a==a1&!(b matches `LikeMatcher(pattern=b%)`&c does NOT match `LikeMatcher(pattern=c%)`)")
 				.satisfies(f -> {
-					Assertions.assertThat(FilterOptimizerHelpers.costFunction(f)).isEqualTo(1 + 2 + 1 + 2 + 1);
+					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(1 + 2 + 1 + 2 + 1);
 				});
 	}
 
 	@Test
 	public void testCostFunction_notOfNot() {
 		// `a==a1`
-		Assertions
-				.assertThat(FilterOptimizerHelpers
-						.costFunction(ColumnFilter.isMatching("c", EqualsMatcher.isEqualTo(123L))))
+		Assertions.assertThat(optimizer.costFunction(ColumnFilter.isMatching("c", EqualsMatcher.isEqualTo(123L))))
 				.isEqualTo(1);
 
 		// `a!=a1`
-		Assertions.assertThat(FilterOptimizerHelpers.costFunction(
+		Assertions.assertThat(optimizer.costFunction(
 				ColumnFilter.isMatching("c", NotMatcher.builder().negated(EqualsMatcher.isEqualTo(123L)).build())))
 				.isEqualTo(2 + 1);
 
 		// `!(a==a1)`
-		Assertions.assertThat(FilterOptimizerHelpers.costFunction(
+		Assertions.assertThat(optimizer.costFunction(
 				NotFilter.builder().negated(ColumnFilter.isMatching("c", EqualsMatcher.isEqualTo(123L))).build()))
 				.isEqualTo(2 + 1);
 
 		// `not(not(a==a1))`
-		Assertions.assertThat(FilterOptimizerHelpers.costFunction(ColumnFilter.isMatching("c",
+		Assertions.assertThat(optimizer.costFunction(ColumnFilter.isMatching("c",
 				NotMatcher.builder()
 						.negated(NotMatcher.builder().negated(EqualsMatcher.isEqualTo(123L)).build())
 						.build())))
@@ -518,5 +531,52 @@ public class TestAndFilter {
 
 		Assertions.assertThat(AndFilter.and(notA_and_notB, NotFilter.not(ColumnFilter.isEqualTo("a", "a1"))))
 				.isEqualTo(notA_and_notB);
+	}
+
+	@Test
+	public void testAnd_Large_onlyOrs() {
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 1)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0|b==b0");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 2)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0&b==b1|b==b0&a==a1");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 3)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			Assertions.assertThat(AndFilter.and(operands)).hasToString("matchNone");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 16)
+					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.toList();
+
+			// The combination is too large to detect it is matchNone
+			Assertions.assertThat(AndFilter.and(operands))
+					.hasToString(
+							"(a==a0|b==b0)&(a==a1|b==b1)&(a==a2|b==b2)&(a==a3|b==b3)&(a==a4|b==b4)&(a==a5|b==b5)&(a==a6|b==b6)&(a==a7|b==b7)&(a==a8|b==b8)&(a==a9|b==b9)&(a==a10|b==b10)&(a==a11|b==b11)&(a==a12|b==b12)&(a==a13|b==b13)&(a==a14|b==b14)&(a==a15|b==b15)");
+		}
+	}
+
+	@Test
+	public void testAnd_Large_andMatchOnlyOne() {
+		List<ISliceFilter> operands = IntStream.range(0, 16)
+				.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		// Adding a simpler operand may help detecting this is matchNone
+		operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+
+		Assertions.assertThat(AndFilter.and(operands)).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 }

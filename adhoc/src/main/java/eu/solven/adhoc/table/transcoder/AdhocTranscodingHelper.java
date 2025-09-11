@@ -50,7 +50,7 @@ public class AdhocTranscodingHelper {
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
 	// TODO Should return original Map is there is no actual transcoding
-	public static Map<String, ?> transcodeColumns(ITableReverseTranscoder reverseTranscoder,
+	public static Map<String, ?> transcodeColumns(ITableReverseAliaser reverseTranscoder,
 			Map<String, ?> underlyingMap) {
 		int initialCapacity = reverseTranscoder.estimateQueriedSize(underlyingMap.keySet());
 		Map<String, Object> transcoded = HashMap.newHashMap(initialCapacity);

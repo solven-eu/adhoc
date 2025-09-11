@@ -508,6 +508,71 @@ One may also define a custom `IOperatorsFactory`:
 - by creating your own `IOperatorsFactory` and combining with `CompositeOperatorsFactory`
 - by adding a fallback strategy with `DummyOperatorsFactory`
 
+# Query Optimizations
+
+Adhoc, as a query engine, has various optimizations regarding its own execution, and how it interacts with `ITableWrapper`.
+
+## `ISliceFilter` optimizations
+
+Given some `ISliceFilter`, these may be automatically optimized into a simpler expression. Typically:
+- `a==a1|a:like:a%` is automatically turned into `a:like:a%`
+
+Most of these optimizations are done by `FilterOptimizerHelpers`.
+
+Beware, it is currently difficult to tweak these optimization (neither to add a feature, nor to fix a bug).
+
+`FilterOptimizerHelpers.andNotOptimized` is based on a cost function, to decide when to prefer `!a&!b&!c` over `!(a|b|c)`.
+
+Beware, these optimizations are sensitive as they are used through the engines for various optimizations (e.g. detecting a common `AND` clause between different filters). It is
+crucial that such a recombination (e.g. from a common `WHERE` and individual `FILTER`) to produce the exact same (i.e. regarding `hashode/equals`) filter, in order
+to get back into the original filter, hence the original `CubeQueryStep`.
+
+## `IValueMatcher` optimizations
+
+Given some `optimizations`, these may be automatically optimized into a simpler expression. Typically:
+- `==a1|like:a%` is automatically turned into `like:a%`
+
+Beware, it is currently difficult to tweak these optimization (neither to add a feature, nor to fix a bug).
+
+## `ITableQuery` optimizations
+
+Given a set of `CubeQueryStep` referring an `Aggregator`, these may be grouped together to minimize the number of queries submitted to `ITableWrapper`.
+
+For instance:
+- `SUM(a) WHERE f1 AND f2` and `SUM(B) WHERE f1` may be grouped into `SUM(a) FILTER f2, SUM(b) WHERE f1`
+
+It is also possible to change the way queries are grouped together (typically on a per-`GROUP BY` basis) in order to execute less queries (though these queries would query irrelevant information):
+
+```java
+CubeWrapper cube = CubeWrapper.builder()
+    .name(table.getName())
+    .table(table)
+    .forest(forest)
+    .engine(CubeQueryEngine.builder()
+            .tableQueryEngine(TableQueryEngine.builder().optimizerFactory(new ITableQueryOptimizerFactory() {
+
+                @Override
+                public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
+                    if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+                        return new TableQueryOptimizerNone(factories);
+                    } else {
+                        return new TableQueryOptimizerSinglePerAggregator(factories);
+                    }
+                }
+            }).build())
+            .build())
+    .build();
+```
+
+`TableQueryOptimizerSinglePerAggregator` will merge all `GROUP BY` in a union of columns, and filters into a `OR`. Hence, in a single query, 
+it will be able to fetch al lthe necessary information.
+
+For instance:
+- Given `SUM(a1) GROUP BY b1 WHERE c1`
+- and `SUM(a2) GROUP BY b2 WHERE c2`
+- it will query `SUM(a1), SUM(a2) GROUP BY b1, b2 WHERE c1 OR c2`
+- If `GROUP BY b1, b2` is dense, and returns `p * q` cells where `p` is `GROUP BY b1` cardinality and `q` is `GROUP BY b2` cardinality, it leads to a query sensibly more complex than the 2 simpler ones.
+
 # Roadmap / Limitations to lift soon
 
 ## Recent changes
@@ -540,7 +605,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Fetch all column details in a single query
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
-- [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`.
+- [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`. [DuckDB](https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html)
 - [Feature] Add Wizard filter showing only from current query. It would enable dropping faulty measures.
 - [Feature] Record statistics about used measures in storage, for easier re-use.
 - [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
@@ -551,6 +616,8 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Enable browser-back to restore previous query.
 - [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
 - [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
+- [Concurrency] Prevent `QueryStepRecursiveAction` to request multiple times the same underlying queryStep
+- [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
 
 # Sponsors
 

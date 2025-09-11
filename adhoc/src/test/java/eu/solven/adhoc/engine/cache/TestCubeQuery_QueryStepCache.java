@@ -140,7 +140,7 @@ public class TestCubeQuery_QueryStepCache extends ADagTest implements IAdhocTest
 			});
 		}
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+				/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
 				\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal""");
 
 		Assertions.assertThat(messages).hasSize(2);
@@ -187,7 +187,7 @@ public class TestCubeQuery_QueryStepCache extends ADagTest implements IAdhocTest
 			});
 		}
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+				/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
 				\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
 				    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 				    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal""");

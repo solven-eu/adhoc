@@ -43,16 +43,16 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
@@ -265,16 +265,16 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 					.map(a -> convertGroupsToElementsFilter(groupColumn, elementColumn, a))
 					.toList();
 
-			underlyingFilter = AndFilter.and(elementsFilters);
+			underlyingFilter = FilterBuilder.and(elementsFilters).optimize();
 		} else if (requestedFilter.isOr() && requestedFilter instanceof IOrFilter orFilter) {
 			List<ISliceFilter> elementsFilters = orFilter.getOperands()
 					.stream()
 					.map(a -> convertGroupsToElementsFilter(groupColumn, elementColumn, a))
 					.toList();
 
-			underlyingFilter = OrFilter.or(elementsFilters);
+			underlyingFilter = FilterBuilder.or(elementsFilters).optimize();
 		} else {
-			throw new UnsupportedOperationException("TODO handle requestedFilter=%s".formatted(requestedFilter));
+			throw new NotYetImplementedException("TODO handle requestedFilter=%s".formatted(requestedFilter));
 		}
 
 		return underlyingFilter;

@@ -58,7 +58,7 @@ public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> tableQueriesDag =
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		SplitTableQueriesBuilder split = SplitTableQueries.builder();
@@ -67,13 +67,13 @@ public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 		tableQueries.forEach(tq -> {
 			tq.getAggregators().stream().forEach(agg -> {
 				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
-				tableQueriesDag.addVertex(step);
+				inducedToInducer.addVertex(step);
 
 				split.inducer(step);
 			});
 		});
 
-		return split.dagToDependancies(tableQueriesDag).build();
+		return split.inducedToInducer(inducedToInducer).build();
 	}
 
 }

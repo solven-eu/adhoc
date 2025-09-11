@@ -25,15 +25,33 @@ package eu.solven.adhoc.table.transcoder;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestMapTableTranscoder {
+public class TestMapTableAliaser {
 	@Test
 	public void testNotRecursive() {
-		MapTableTranscoder transcoder =
-				MapTableTranscoder.builder().queriedToUnderlying("k", "_k").queriedToUnderlying("_k", "__k").build();
+		MapTableAliaser transcoder =
+				MapTableAliaser.builder().aliasToOriginal("k", "_k").aliasToOriginal("_k", "__k").build();
 
 		Assertions.assertThat(transcoder.underlying("a")).isEqualTo(null);
 		Assertions.assertThat(transcoder.underlying("k")).isEqualTo("_k");
 		Assertions.assertThat(transcoder.underlying("_k")).isEqualTo("__k");
 		Assertions.assertThat(transcoder.underlying("__k")).isEqualTo(null);
+	}
+
+	@Test
+	public void testConflict_strict() {
+		Assertions.assertThatThrownBy(
+				() -> MapTableStrictAliaser.builder().aliasToOriginal("k", "_k").aliasToOriginal("k", "k_").build())
+				.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testConflict_lax() {
+		MapTableAliaser transcoder =
+				MapTableAliaser.builder().aliasToOriginal("k", "_k").aliasToOriginal("k", "k_").build();
+
+		Assertions.assertThat(transcoder.underlying("a")).isEqualTo(null);
+		Assertions.assertThat(transcoder.underlying("k")).isEqualTo("k_");
+		Assertions.assertThat(transcoder.underlying("k_")).isEqualTo(null);
+		Assertions.assertThat(transcoder.underlying("_k")).isEqualTo(null);
 	}
 }

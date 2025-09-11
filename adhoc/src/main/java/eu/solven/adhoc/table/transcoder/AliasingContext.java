@@ -41,39 +41,37 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Given an {@link ITableTranscoder}, this will remember how each column has been transcoded. It serves multiple
- * purposes. The first one is not to require {@link ITableTranscoder} to express a bi-directional mapping. The second
- * main purpose is the reverse mapping may be ambiguous, when multiple queries columns could be served by the same
- * underlying column.
+ * Given an {@link ITableAliaser}, this will remember how each column has been aliased. It serves multiple purposes. The
+ * first one is not to require {@link ITableAliaser} to express a bi-directional mapping. The second main purpose is the
+ * reverse mapping may be ambiguous, when multiple queries columns could be served by the same underlying column.
  * 
  * @author Benoit Lacelle
  */
 @Builder
 @Slf4j
-public class TranscodingContext implements ITableTranscoder, ITableReverseTranscoder {
-	// Most column would be managed through identity transcoding
+public class AliasingContext implements ITableAliaser, ITableReverseAliaser {
+	// Most column would be managed through identity aliasing
 	final Set<String> identity = new LinkedHashSet<>();
-	// Some columns would be managed through not-trivial transcoding
-	final SetMultimap<String, String> underlyingToQueried =
-			MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+	// Some columns would be managed through not-trivial aliasing
+	final SetMultimap<String, String> originalToAlias = MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
 	@Getter
 	final Map<String, FunctionCalculatedColumn> nameToCalculated = new LinkedHashMap<>();
 
 	@Builder.Default
-	final ITableTranscoder transcoder = new IdentityImplicitTranscoder();
+	final ITableAliaser aliaser = new IdentityImplicitAliaser();
 
 	// Optimization performance
 	private final Map<Set<String>, Long> cacheKeysToSize = new ConcurrentHashMap<>();
 
 	@Override
-	public String underlying(String queried) {
-		String underlyingColumn = transcoder.underlyingNonNull(queried);
+	public String underlying(String alias) {
+		String underlyingColumn = aliaser.underlyingNonNull(alias);
 
-		if (Objects.equals(underlyingColumn, queried)) {
+		if (Objects.equals(underlyingColumn, alias)) {
 			identity.add(underlyingColumn);
-		} else if (underlyingToQueried.put(underlyingColumn, queried)) {
-			log.trace("Registered {} -> {} in {}", underlyingColumn, queried, this);
+		} else if (originalToAlias.put(underlyingColumn, alias)) {
+			log.trace("Registered {} -> {} in {}", underlyingColumn, alias, this);
 		}
 
 		return underlyingColumn;
@@ -81,14 +79,11 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 
 	@Override
 	public Set<String> queried(String underlying) {
-		if (underlyingToQueried.containsKey(underlying)) {
+		if (originalToAlias.containsKey(underlying)) {
 			if (identity.contains(underlying)) {
-				return ImmutableSet.<String>builder()
-						.addAll(underlyingToQueried.get(underlying))
-						.add(underlying)
-						.build();
+				return ImmutableSet.<String>builder().addAll(originalToAlias.get(underlying)).add(underlying).build();
 			} else {
-				return underlyingToQueried.get(underlying);
+				return originalToAlias.get(underlying);
 			}
 		} else if (identity.contains(underlying)) {
 			return Set.of(underlying);
@@ -100,11 +95,11 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 	}
 
 	public Set<String> underlyings() {
-		if (underlyingToQueried.isEmpty()) {
+		if (originalToAlias.isEmpty()) {
 			return identity;
 		} else {
-			// Merge the keys which are transcoded and those which are not transcoded
-			return ImmutableSet.<String>builder().addAll(underlyingToQueried.keySet()).addAll(identity).build();
+			// Merge the keys which are aliased and those which are not aliased
+			return ImmutableSet.<String>builder().addAll(originalToAlias.keySet()).addAll(identity).build();
 		}
 	}
 
@@ -125,6 +120,6 @@ public class TranscodingContext implements ITableTranscoder, ITableReverseTransc
 	}
 
 	public boolean isOnlyIdentity() {
-		return underlyingToQueried.isEmpty();
+		return originalToAlias.isEmpty();
 	}
 }

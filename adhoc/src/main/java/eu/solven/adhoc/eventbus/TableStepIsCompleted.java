@@ -20,34 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.eventbus;
 
-import java.util.Set;
+import java.time.Duration;
 
-import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.query.table.TableQueryV2;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * Sometimes (e.g. in early projects) there is a direct mapping from columns used by
- * {@link eu.solven.adhoc.query.cube.CubeQuery} and those provided by a {@link ITableWrapper}. Then, the transcoding is
- * the identity.
- *
- * This always returns the input column, hence it is reversible.
+ * An {@link eu.solven.adhoc.engine.step.CubeQueryStep} has been evaluated.
  * 
  * @author Benoit Lacelle
  */
-public class IdentityReversibleTranscoder implements ITableTranscoder, ITableReverseTranscoder {
-	@Override
-	public String underlying(String queried) {
-		return queried;
-	}
+@Value
+@Builder
+public class TableStepIsCompleted implements IAdhocEvent {
+	@NonNull
+	TableQueryV2 querystep;
 
-	@Override
-	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
-	}
+	long nbCells;
 
-	@Override
-	public int estimateQueriedSize(Set<String> underlyingKeys) {
-		return underlyingKeys.size();
-	}
+	@NonNull
+	Duration duration;
+
+	@NonNull
+	Object source;
 }

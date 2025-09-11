@@ -36,7 +36,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTestConstants {
@@ -103,9 +103,9 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	@Test
 	public void test_groupBy_rename() {
 		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
-				.transcoder(MapTableTranscoder.builder()
-						.queriedToUnderlying("proxy_a", "a")
-						.queriedToUnderlying("proxy_b", "b")
+				.aliaser(MapTableAliaser.builder()
+						.aliasToOriginal("proxy_a", "a")
+						.aliasToOriginal("proxy_b", "b")
 						.build())
 				.build()).build();
 

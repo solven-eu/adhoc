@@ -38,7 +38,7 @@ import com.quartetfs.fwk.filtering.impl.OrCondition;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 public class TestAtotiConditionCubeToAdhoc {
@@ -74,7 +74,7 @@ public class TestAtotiConditionCubeToAdhoc {
 		Assertions
 				.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel",
 						new OrCondition(Arrays.asList(new GreaterEqualCondition(123), new LowerCondition(234)))))
-				.isEqualTo(OrFilter.or(Arrays.asList(ColumnFilter.builder()
+				.isEqualTo(FilterBuilder.or(Arrays.asList(ColumnFilter.builder()
 						.column("someLevel")
 						.valueMatcher(
 								ComparingMatcher.builder().greaterThan(true).matchIfEqual(true).operand(123).build())
@@ -86,7 +86,8 @@ public class TestAtotiConditionCubeToAdhoc {
 										.matchIfEqual(false)
 										.operand(234)
 										.build())
-								.build())));
+								.build()))
+						.optimize());
 	}
 
 	@Test

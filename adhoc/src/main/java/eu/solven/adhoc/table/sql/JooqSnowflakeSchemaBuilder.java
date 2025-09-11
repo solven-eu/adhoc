@@ -56,8 +56,9 @@ public class JooqSnowflakeSchemaBuilder {
 	// e.g. if `FROM table t JOIN joined j ON t.k = j.k`, then may decide that `k` always refers to `t.k`
 	@NonNull
 	// @Builder.Default
+	// BEWARE Naming should follow MapTableAliaser
 	@Getter
-	final Map<String, String> queriedToUnderlying = new ConcurrentHashMap<>();
+	final Map<String, String> aliasToOriginal = new ConcurrentHashMap<>();
 
 	@NonNull
 	final Table<Record> baseTable;
@@ -156,7 +157,7 @@ public class JooqSnowflakeSchemaBuilder {
 		String tableName = leftName.toString();
 
 		if (!Objects.equals(queryName, tableName)) {
-			queriedToUnderlying.putIfAbsent(queryName, tableName);
+			aliasToOriginal.putIfAbsent(queryName, tableName);
 		}
 	}
 

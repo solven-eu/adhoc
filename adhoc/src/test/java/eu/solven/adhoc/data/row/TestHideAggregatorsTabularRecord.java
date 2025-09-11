@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.table.transcoder.IdentityReversibleTranscoder;
+import eu.solven.adhoc.table.transcoder.IdentityReversibleAliaser;
 
 public class TestHideAggregatorsTabularRecord {
 	@Test
@@ -45,7 +45,7 @@ public class TestHideAggregatorsTabularRecord {
 				.keptAggregates(ImmutableSet.of("k1"))
 				.build();
 
-		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
+		ITabularRecord transcoded = record.transcode(new IdentityReversibleAliaser());
 
 		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123L).hasSize(2);
 
@@ -65,7 +65,7 @@ public class TestHideAggregatorsTabularRecord {
 				.keptAggregates(ImmutableSet.of("k1", "k3"))
 				.build();
 
-		ITabularRecord transcoded = record.transcode(new IdentityReversibleTranscoder());
+		ITabularRecord transcoded = record.transcode(new IdentityReversibleAliaser());
 
 		Assertions.assertThat((Map) transcoded.asMap()).containsEntry("c", "c1").containsEntry("k1", 123L).hasSize(2);
 

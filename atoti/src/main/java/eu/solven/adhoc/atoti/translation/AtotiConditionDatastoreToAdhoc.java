@@ -29,8 +29,8 @@ import com.qfs.condition.IConstantCondition;
 import com.qfs.condition.IDynamicCondition;
 import com.qfs.condition.ImplementationCode;
 
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
@@ -65,9 +65,9 @@ public class AtotiConditionDatastoreToAdhoc {
 					return ColumnFilter.isMatching(constantCondition.getFields()[0], RegexMatcher.compile(regex));
 
 				} else if (implementationCode == ImplementationCode.AND) {
-					return AndFilter.and(Stream.of(subConditions).map(this::convertToAdhoc).toList());
+					return FilterBuilder.and(Stream.of(subConditions).map(this::convertToAdhoc).toList()).optimize();
 				} else if (implementationCode == ImplementationCode.OR) {
-					return OrFilter.or(Stream.of(subConditions).map(this::convertToAdhoc).toList());
+					return FilterBuilder.or(Stream.of(subConditions).map(this::convertToAdhoc).toList()).optimize();
 				} else if (implementationCode == ImplementationCode.TRUE) {
 					return ISliceFilter.MATCH_ALL;
 				} else if (implementationCode == ImplementationCode.FALSE) {

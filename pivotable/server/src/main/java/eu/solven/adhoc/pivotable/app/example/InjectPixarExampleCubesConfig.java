@@ -63,7 +63,7 @@ import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.table.transcoder.MapTableTranscoder;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import eu.solven.pepper.spring.PepperResourceHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -181,9 +181,7 @@ public class InjectPixarExampleCubesConfig {
 					.forest(MeasureForest.fromMeasures("films", measuresFilm))
 					.table(filmsTable)
 					.columnsManager(ColumnsManager.builder()
-							.transcoder(MapTableTranscoder.builder()
-									.queriedToUnderlyings(films.getQueriedToUnderlying())
-									.build())
+							.aliaser(MapTableAliaser.builder().aliasToOriginals(films.getAliasToOriginal()).build())
 							.build())
 					.build();
 			schema.registerCube(filmsCube);
@@ -213,9 +211,7 @@ public class InjectPixarExampleCubesConfig {
 					.forest(MeasureForest.fromMeasures("people", measuresPeople))
 					.table(peopleTable)
 					.columnsManager(ColumnsManager.builder()
-							.transcoder(MapTableTranscoder.builder()
-									.queriedToUnderlyings(people.getQueriedToUnderlying())
-									.build())
+							.aliaser(MapTableAliaser.builder().aliasToOriginals(people.getAliasToOriginal()).build())
 							.build())
 					.build();
 			schema.registerCube(peopleCube);

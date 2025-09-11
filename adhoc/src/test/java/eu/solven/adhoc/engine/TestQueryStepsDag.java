@@ -58,8 +58,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(1);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(1);
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(0);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(1);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(0);
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
 	}
@@ -75,8 +75,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(1);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build())).hasSize(1);
 	}
@@ -110,8 +110,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(1);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(4);
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(3);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(4);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(3);
 
 		Assertions
 				.assertThat(dag.underlyingSteps(
@@ -134,8 +134,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(2);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build())).hasSize(1);
 	}
@@ -154,8 +154,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(2);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(3);
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(2);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(3);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(2);
 	}
 
 	@Test
@@ -168,10 +168,10 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(1);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
 
 		// There is 2 identical edges: they are merged in the DAG
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
 
 		// The 2 identical edges are explicit in `underlyingSteps` with the help of a multigraph
 		Assertions.assertThat(dag.underlyingSteps(
@@ -196,8 +196,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getQueried()).hasSize(1);
 
-		Assertions.assertThat(dag.getDag().vertexSet()).hasSize(3);
-		Assertions.assertThat(dag.getDag().edgeSet()).hasSize(3);
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(3);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(3);
 
 		Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(measure).build())).hasSize(2);
 	}
@@ -220,8 +220,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
 
-			Assertions.assertThat(dagPre.getDag().vertexSet()).hasSize(1);
-			Assertions.assertThat(dagPre.getDag().edgeSet()).hasSize(0);
+			Assertions.assertThat(dagPre.getInducedToInducer().vertexSet()).hasSize(1);
+			Assertions.assertThat(dagPre.getInducedToInducer().edgeSet()).hasSize(0);
 
 			Assertions.assertThat(dagPre.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
 
@@ -244,8 +244,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 			Assertions.assertThat(dag.getQueried()).hasSize(1);
 
-			Assertions.assertThat(dag.getDag().vertexSet()).hasSize(1);
-			Assertions.assertThat(dag.getDag().edgeSet()).hasSize(0);
+			Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(1);
+			Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(0);
 
 			Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
 
@@ -270,8 +270,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
 
-			Assertions.assertThat(dagPre.getDag().vertexSet()).hasSize(1);
-			Assertions.assertThat(dagPre.getDag().edgeSet()).hasSize(0);
+			Assertions.assertThat(dagPre.getInducedToInducer().vertexSet()).hasSize(1);
+			Assertions.assertThat(dagPre.getInducedToInducer().edgeSet()).hasSize(0);
 
 			Assertions.assertThat(dagPre.underlyingSteps(CubeQueryStep.builder().measure(k1Sum).build())).isEmpty();
 		}
@@ -293,8 +293,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 			Assertions.assertThat(dag.getQueried()).hasSize(1);
 
 			// Dependant and underlying: the underlying has a value in cache
-			Assertions.assertThat(dag.getDag().vertexSet()).hasSize(2);
-			Assertions.assertThat(dag.getDag().edgeSet()).hasSize(1);
+			Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
+			Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
 
 			Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build()))
 					.hasSize(1);
@@ -321,8 +321,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
 
-			Assertions.assertThat(dagPre.getDag().vertexSet()).hasSize(2);
-			Assertions.assertThat(dagPre.getDag().edgeSet()).hasSize(1);
+			Assertions.assertThat(dagPre.getInducedToInducer().vertexSet()).hasSize(2);
+			Assertions.assertThat(dagPre.getInducedToInducer().edgeSet()).hasSize(1);
 
 			Assertions.assertThat(dagPre.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build()))
 					.hasSize(1);
@@ -345,8 +345,8 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 			Assertions.assertThat(dag.getQueried()).hasSize(1);
 
 			// Given the dependent is in cache, the dependency is not added as vertex
-			Assertions.assertThat(dag.getDag().vertexSet()).hasSize(1);
-			Assertions.assertThat(dag.getDag().edgeSet()).hasSize(0);
+			Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(1);
+			Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(0);
 
 			Assertions.assertThat(dag.underlyingSteps(CubeQueryStep.builder().measure(k1SumSquared).build()))
 					.hasSize(0);

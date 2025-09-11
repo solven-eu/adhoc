@@ -27,7 +27,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableReverseTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 
 /**
@@ -57,7 +57,7 @@ public interface ITabularRecord extends ITabularGroupByRecord {
 
 	// boolean isEmpty();
 
-	ITabularRecord transcode(ITableReverseTranscoder transcodingContext);
+	ITabularRecord transcode(ITableReverseAliaser transcodingContext);
 
 	ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder);
 

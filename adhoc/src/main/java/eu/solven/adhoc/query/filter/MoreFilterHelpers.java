@@ -39,7 +39,7 @@ import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
@@ -98,7 +98,7 @@ public class MoreFilterHelpers {
 	}
 
 	public static ISliceFilter transcodeFilter(ICustomTypeManagerSimple customTypeManager,
-			ITableTranscoder tableTranscoder,
+			ITableAliaser tableTranscoder,
 			ISliceFilter filter) {
 
 		if (filter.isMatchAll() || filter.isMatchNone()) {
@@ -110,15 +110,15 @@ public class MoreFilterHelpers {
 					.valueMatcher(transcodeType(customTypeManager, column, columnFilter.getValueMatcher()))
 					.build();
 		} else if (filter instanceof IAndFilter andFilter) {
-			return AndFilter.and(andFilter.getOperands()
+			return FilterBuilder.and(andFilter.getOperands()
 					.stream()
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
-					.toList());
+					.toList()).optimize();
 		} else if (filter instanceof IOrFilter orFilter) {
-			return OrFilter.or(orFilter.getOperands()
+			return FilterBuilder.or(orFilter.getOperands()
 					.stream()
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
-					.toList());
+					.toList()).optimize();
 		} else if (filter instanceof INotFilter notFilter) {
 			return NotFilter.not(transcodeFilter(customTypeManager, tableTranscoder, notFilter.getNegated()));
 		} else {
@@ -141,7 +141,7 @@ public class MoreFilterHelpers {
 		return FilterMatcher.builder().filter(filter).build().match(Collections.singletonMap(column, value));
 	}
 
-	public static boolean match(ITableTranscoder transcoder, ISliceFilter filter, Map<String, ?> input) {
+	public static boolean match(ITableAliaser transcoder, ISliceFilter filter, Map<String, ?> input) {
 		return FilterMatcher.builder().transcoder(transcoder).filter(filter).build().match(input);
 	}
 
@@ -150,7 +150,7 @@ public class MoreFilterHelpers {
 	 * @return true if the input matches the filter, where each column in input is transcoded.
 	 */
 	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterParameters`")
-	public static boolean match(ITableTranscoder transcoder,
+	public static boolean match(ITableAliaser transcoder,
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
 			Map<String, ?> input) {
@@ -195,7 +195,7 @@ public class MoreFilterHelpers {
 		return FilterMatcher.builder().filter(filter).build().match(input);
 	}
 
-	public static boolean match(ITableTranscoder transcoder,
+	public static boolean match(ITableAliaser transcoder,
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
 			ITabularGroupByRecord input) {

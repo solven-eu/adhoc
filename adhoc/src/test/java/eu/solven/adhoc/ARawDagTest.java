@@ -87,9 +87,7 @@ public abstract class ARawDagTest {
 				.engine(engine())
 				.forest(forest)
 				.eventBus(eventBus::post)
-				.queryPreparator(queryPreparator())
-		// .columnsManager(ColumnsManager.builder().transcoder(transcoder).build())
-		;
+				.queryPreparator(queryPreparator());
 	}
 
 	protected IQueryPreparator queryPreparator() {

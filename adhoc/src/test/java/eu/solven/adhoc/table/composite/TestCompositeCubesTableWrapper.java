@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,10 +37,12 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.IHasMeasures;
+import eu.solven.adhoc.engine.tabular.optimizer.CubeWrapperEditor;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
@@ -55,7 +58,9 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -63,6 +68,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdhocTestConstants {
 
@@ -85,7 +91,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		return CubeWrapper.builder().name("composite").table(compositeTable).forest(forest).engine(engine()).build();
 	}
 
-	// `k1` is both an underdlyingCube measure, and an explicit cube measure.
+	// `k1` is both an underlyingCube measure, and an explicit cube measure.
 	@Test
 	public void testAddUnderlyingMeasures_sameMeasureNameInUnderlyingAndInComposite() {
 		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
@@ -182,19 +188,60 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	public void testFilterUnderlyingCube() {
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
-		Assertions.assertThat(composite.filterForColumns(ISliceFilter.MATCH_ALL, Set.of()))
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
+
+		Assertions.assertThat(composite.filterForColumns(subCube, ISliceFilter.MATCH_ALL, Set.of()::contains))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
-		Assertions.assertThat(composite.filterForColumns(ISliceFilter.MATCH_NONE, Set.of()))
+		Assertions.assertThat(composite.filterForColumns(subCube, ISliceFilter.MATCH_NONE, Set.of()::contains))
 				.isEqualTo(ISliceFilter.MATCH_NONE);
 
-		// and
-		Assertions.assertThat(composite.filterForColumns(
+		// and: all columns are known
+		Assertions
+				.assertThat(composite.filterForColumns(subCube,
+						AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+						Set.of("c1", "c2")::contains))
+				.isEqualTo(AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")));
+
+		// and: some columns are unknown
+		Assertions.assertThat(composite.filterForColumns(subCube,
 				AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
-				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
-		// or
-		Assertions.assertThat(composite.filterForColumns(
-				OrFilter.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
-				Set.of("c1"))).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+				Set.of("c1")::contains)).isEqualTo(ISliceFilter.MATCH_NONE);
+
+		// or: all columns are known
+		Assertions
+				.assertThat(composite.filterForColumns(subCube,
+						FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).optimize(),
+						Set.of("c1", "c2")::contains))
+				.isEqualTo(
+						FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).combine());
+
+		// or: some columns are unknown
+		Assertions.assertThat(composite.filterForColumns(subCube,
+				FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).optimize(),
+				Set.of("c1")::contains)).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+
+		// Or.Not: all columns are known
+		Assertions
+				.assertThat(composite.filterForColumns(subCube,
+						OrFilter.builder()
+								.filter(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
+								.filter(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+								.build(),
+						Set.of("c1", "c2")::contains))
+				// The expression is optimized, but still equivalent to the original
+				.isEqualTo(
+						FilterBuilder
+								.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")),
+										NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+								.optimize());
+
+		// Or.Not: some columns are unknown
+		Assertions.assertThat(composite.filterForColumns(subCube,
+				OrFilter.builder()
+						.filter(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
+						.filter(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+						.build(),
+				Set.of("c1")::contains)).isEqualTo(NotFilter.not(ColumnFilter.isLike("c1", "a%")));
 	}
 
 	@Test
@@ -202,7 +249,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
 		// The subCube has a measure named `k1`
-		IHasMeasures subCube = Mockito.mock(IHasMeasures.class);
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		// Request the min and the max of the same measure cross cubes
@@ -215,7 +262,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 						.build())
 				.build();
 
-		CompatibleMeasures compatibleMeasures = composite.computeSubMeasures(compositeQuery, subCube, Set.of());
+		CompatibleMeasures compatibleMeasures =
+				composite.computeSubMeasures(compositeQuery, subCube, Set.of()::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(IMeasure.alias("min", k1Sum.getName()))
 				.contains(IMeasure.alias("max", k1Sum.getName()))
@@ -229,7 +277,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().build();
 
 		// The subCube has a measure named `k1`
-		IHasMeasures subCube = Mockito.mock(IHasMeasures.class);
+		ICubeWrapper subCube = Mockito.mock(ICubeWrapper.class);
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		Set<String> subColumns = Set.of("c1");
@@ -246,7 +294,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 						.build())
 				.build();
 
-		CompatibleMeasures compatibleMeasures = composite.computeSubMeasures(compositeQuery, subCube, subColumns);
+		CompatibleMeasures compatibleMeasures =
+				composite.computeSubMeasures(compositeQuery, subCube, subColumns::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(Filtrator.builder()
 						.name("max_c1")
@@ -256,7 +305,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.contains(Filtrator.builder()
 						.name("max_c2")
 						.underlying(k1Sum.getName())
-						.filter(ISliceFilter.MATCH_ALL)
+						// .filter(ISliceFilter.MATCH_ALL)
+						.filter(ISliceFilter.MATCH_NONE)
 						.build())
 				.hasSize(2);
 		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
@@ -316,7 +366,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 	// When a cube does not know a column, and given column is grouped by, Adhoc behave like the cube has a static given
 	// coordinate. This test filtering on given coordinate.
 	@Test
-	public void testFilterOnMissingColumn() {
+	public void testFilterOnMissingColumn_partiallyKnown() {
 		String tableName1 = "someTableName1";
 		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
 
@@ -372,26 +422,34 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			// filter unknownCoordinate grandTotal
 			{
 				ITabularView view = compositeCube.execute(
-						CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", missingColumnCoordinate).build());
+						CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", "unknownCoordinate").build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 345 + 456))
-						.hasSize(1);
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 			}
 
 			// filter unknownCoordinate groupBy:a
 			{
 				ITabularView view = compositeCube.execute(CubeQuery.builder()
 						.measure(k1Sum.getName())
-						.andFilter("a", missingColumnCoordinate)
+						.andFilter("a", "unknownCoordinate")
 						.groupByAlso("a")
 						.build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-				Assertions.assertThat(mapBased.getCoordinatesToValues())
-						.containsEntry(Map.of("a", missingColumnCoordinate), Map.of(k1Sum.getName(), 0L + 345 + 456))
-						.hasSize(1);
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
+			}
+
+			// filter complex groupBy:a
+			{
+				ITabularView view = compositeCube.execute(CubeQuery.builder()
+						.measure(k1Sum.getName())
+						.andFilter(ColumnFilter.isLike("a", "az%"))
+						.groupByAlso("a")
+						.build());
+				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+				Assertions.assertThat(mapBased.getCoordinatesToValues()).isEmpty();
 			}
 		}
 	}
@@ -420,7 +478,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("cubeSlicer");
+		Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("~CompositeSlicer");
 	}
 
 	@Test
@@ -491,6 +549,46 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 								Map.of(m, 0L + 345 + 456))
 						.hasSize(3);
 			}
+		}
+	}
+
+	@Test
+	public void testUnknownColumn() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(k1Sum);
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).optCubeSlicer(Optional.of("cubeSlicer")).build();
+
+		{
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+
+			Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("cubeSlicer");
+
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withoutUnderlyings);
+
+			// groupBy
+			String m = k1Sum.getName();
+			Assertions.assertThatThrownBy(
+					() -> compositeCube.execute(CubeQuery.builder().measure(m).groupByAlso("unknownColumn").build()))
+					.isInstanceOf(IllegalArgumentException.class);
+
+			// filter
+			Assertions
+					.assertThatThrownBy(() -> compositeCube
+							.execute(CubeQuery.builder().measure(m).andFilter("unknownColumn", "anyValue").build()))
+					.isInstanceOf(IllegalArgumentException.class);
 		}
 	}
 
@@ -574,44 +672,46 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 						.isEqualToNormalizingNewlines(
 								"""
-										time=4ms for openingStream on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-										time=6ms for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-										time=7ms sizes=[1] for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-										#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-										|  No cost info
+										/-- time=6ms for openingStream
+										|/- time=8ms for mergingAggregates
+										|/- time=9ms sizes=[1] for sortingColumns
+										\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) WHERE matchAll GROUP BY ()
+										/-- #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+										|      No cost info
 										\\-- #1 m=table1_k_minus2(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |  size=1 duration=8ms
+										    |  size=1 duration=10ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-										        \\  size=1 duration=18ms
-										Executed status=OK duration=33ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
-										time=10ms for openingStream on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-										time=12ms for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-										time=13ms sizes=[1] for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-										#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
-										|  No cost info
+										        \\  size=1 duration=24ms
+										Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										/-- time=13ms for openingStream
+										|/- time=15ms for mergingAggregates
+										|/- time=16ms sizes=[1] for sortingColumns
+										\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) WHERE matchAll GROUP BY ()
+										/-- #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+										|      No cost info
 										\\-- #1 m=table2_k_minus3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |  size=1 duration=14ms
+										    |  size=1 duration=17ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
-										        \\  size=1 duration=36ms
-										Executed status=OK duration=69ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
-										time=104ms for openingStream on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=table1_k_minus2, tags=[], columnName=table1_k_minus2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=table2_k_minus3, tags=[], columnName=table2_k_minus3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN])
-										time=16ms for mergeTableAggregates on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=table1_k_minus2, tags=[], columnName=table1_k_minus2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=table2_k_minus3, tags=[], columnName=table2_k_minus3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN])
-										time=17ms sizes=[1, 1] for toSortedColumns on TableQueryV2(filter=matchAll, groupBy=grandTotal, aggregators=[FilteredAggregator(aggregator=Aggregator(name=table1_k_minus2, tags=[], columnName=table1_k_minus2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=table2_k_minus3, tags=[], columnName=table2_k_minus3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=null, topClause=noLimit, options=[EXPLAIN])
-										#0 s=composite id=00000000-0000-0000-0000-000000000000
-										|  No cost info
+										        \\  size=1 duration=45ms
+										Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										/-- time=150ms for openingStream
+										|/- time=19ms for mergingAggregates
+										|/- time=20ms sizes=[1, 1] for sortingColumns
+										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2)table2_k_minus3:SUM(table2_k_minus3) WHERE matchAll GROUP BY ()
+										/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
+										|      No cost info
 										\\-- #1 m=compositeSum(Combinator[SUM]) filter=matchAll groupBy=grandTotal
-										    |  size=1 duration=20ms
+										    |  size=1 duration=23ms
 										    |\\- #2 m=composite_power2(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										    |   |  size=1 duration=18ms
+										    |   |  size=1 duration=21ms
 										    |   \\-- #3 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
-										    |       \\  size=1 duration=48ms
+										    |       \\  size=1 duration=57ms
 										    \\-- #4 m=composite_power3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
-										        |  size=1 duration=19ms
+										        |  size=1 duration=22ms
 										        \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
-										            \\  size=1 duration=48ms
-										Executed status=OK duration=210ms on table=composite forest=composite-filtered query=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""");
-
-				Assertions.assertThat(messages).hasSize(24);
+										            \\  size=1 duration=57ms
+										Executed status=OK duration=276ms on table=composite forest=composite-filtered query=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""")
+						.hasLineCount(39);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
 						.containsEntry(Map.of(),
@@ -726,5 +826,88 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 							Map.of(k1Sum.getName(), 0L + 123 + 234 + 345, filterK1onA1.getName(), 0L + 123 + 345))
 					.hasSize(1);
 		}
+	}
+
+	@Test
+	public void testGetColumns_alias() {
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		ICubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		ICubeWrapper cube2;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			cube2 = wrapInCube(measureBag, table2);
+
+			cube2 = CubeWrapperEditor.edit(cube2)
+					.aliaser(MapTableAliaser.builder().aliasToOriginal("a", "_a").build())
+					.build();
+		}
+
+		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
+		withoutUnderlyings.addMeasure(k1Sum);
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		{
+			table1.add(Map.of("k1", 123, "a", "a1"));
+			table1.add(Map.of("k1", 234, "a", "a2"));
+
+			table2.add(Map.of("k1", 345, "_a", "a1"));
+			table2.add(Map.of("k1", 456, "_a", "a2"));
+
+			// Consider a column in one table but not the other
+			Assertions.assertThat(table1.getColumnTypes()).containsKey("a");
+			Assertions.assertThat(table2.getColumnTypes()).doesNotContainKey("a");
+
+			CubeWrapper compositeCube = makeComposite(compositeCubesTable, withoutUnderlyings);
+
+			Assertions.assertThat(compositeCube.getColumnsAsMap())
+					.containsEntry("a",
+							ColumnMetadata.builder().name("a").tag("composite-full").type(String.class).build())
+					.containsEntry("_a",
+							ColumnMetadata.builder()
+									.name("_a")
+									.tag("composite-partial")
+									.tag("composite-partial-unknown-" + cube1.getName())
+									.tag("composite-partial-known-" + cube2.getName())
+									.alias("a")
+									.type(String.class)
+									.build())
+					.containsEntry("k1",
+							ColumnMetadata.builder().name("k1").tag("composite-full").type(Integer.class).build())
+					.containsEntry("~CompositeSlicer",
+							ColumnMetadata.builder()
+									.name("~CompositeSlicer")
+									.tag("meta")
+									.tag("composite-full")
+									.type(String.class)
+									.build());
+		}
+	}
+
+	@Test
+	public void testCompositeSlicerIsLastByDefault() {
+		CompositeCubesTableWrapper compositeCubesTable = CompositeCubesTableWrapper.builder().build();
+
+		Assertions.assertThat(compositeCubesTable.optCubeSlicer.get())
+				.usingComparator(Comparator.naturalOrder())
+				.isGreaterThan("a")
+				.isGreaterThan("z")
+				.isGreaterThan("A")
+				.isGreaterThan("Z")
+				.isGreaterThan("0")
+				.isGreaterThan("9");
+
 	}
 }

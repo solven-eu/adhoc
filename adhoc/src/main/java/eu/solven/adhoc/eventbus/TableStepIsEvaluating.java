@@ -20,27 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.eventbus;
 
-import java.util.Map;
-
+import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
-import lombok.Singular;
-import lombok.ToString;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * An {@link ITableTranscoder} based on a (not-necessarily bijective) mapping.
+ * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have computed a
+ * {@link SliceToValue} for current {@link CubeQueryStep}.
  * 
  * @author Benoit Lacelle
+ *
  */
+@Value
 @Builder
-@ToString
-public class MapTableTranscoder implements ITableTranscoder {
-	@Singular
-	final Map<String, String> queriedToUnderlyings;
+public class TableStepIsEvaluating implements IAdhocEvent {
+	@NonNull
+	TableQueryV2 tableQuery;
 
-	@Override
-	public String underlying(String queried) {
-		return queriedToUnderlyings.get(queried);
-	}
+	@NonNull
+	Object source;
 }

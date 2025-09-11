@@ -145,8 +145,8 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 				.isEqualTo(
 						"""
 								Executing on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
-								Executed status=OK duration=15ms on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""");
-
-		Assertions.assertThat(messages).hasSize(2);
+								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE a==a1 GROUP BY ()
+								Executed status=OK duration=21ms on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""")
+				.hasLineCount(3);
 	}
 }

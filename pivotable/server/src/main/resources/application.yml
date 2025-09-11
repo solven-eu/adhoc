@@ -33,7 +33,11 @@ spring:
 # https://stackoverflow.com/questions/55237276/how-to-return-gzip-responses-with-spring-webflux
 server.compression:
   enabled: true
+  mime-types: application/json, application/hal+json
   min-response-size: 1024
+
+# https://stackoverflow.com/questions/53810900/why-there-is-no-exception-stack-trace-in-spring-webflux-with-default-configurati
+server.error.includeStacktrace: ALWAYS
 
 # Relates with ApplicationPidFileWriter
 spring.pid.fail-on-write-error:

@@ -37,10 +37,9 @@ import com.quartetfs.fwk.filtering.impl.InCondition;
 import com.quartetfs.fwk.filtering.impl.OrCondition;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
@@ -98,12 +97,12 @@ public class AtotiConditionCubeToAdhoc {
 			List<ISliceFilter> subAdhocConditions = Stream.of(orCondition.getConditions())
 					.map(subCondition -> convertToAdhoc(level, subCondition))
 					.toList();
-			return OrFilter.or(subAdhocConditions);
+			return FilterBuilder.or(subAdhocConditions).optimize();
 		} else if (logicalCondition instanceof AndCondition andCondition) {
 			List<ISliceFilter> subAdhocConditions = Stream.of(andCondition.getConditions())
 					.map(subCondition -> convertToAdhoc(level, subCondition))
 					.toList();
-			return AndFilter.and(subAdhocConditions);
+			return FilterBuilder.and(subAdhocConditions).optimize();
 		} else {
 			// Or, And, Not
 			log.warn("This case is not well handled: {}", logicalCondition);

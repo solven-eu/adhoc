@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine;
 
 import java.util.Set;
 
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 
@@ -37,12 +36,10 @@ public interface IQueryStepsDagBuilder {
 
 	/**
 	 * 
-	 * @param canResolveMeasures
-	 *            typically an {@link QueryPod}
 	 * @param rootMeasures
 	 *            the measures requested directly by the IAdhocQuery
 	 */
-	void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> rootMeasures);
+	void registerRootWithDescendants(Set<IMeasure> rootMeasures);
 
 	QueryStepsDag getQueryDag();
 

@@ -23,20 +23,34 @@
 package eu.solven.adhoc.engine.observability;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IQueryStepsDagBuilder;
+import eu.solven.adhoc.engine.QueryStepsDagBuilder;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestDagExplainer implements IAdhocTestConstants {
 	EventBus eventBus = new EventBus();
-	List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+	List<String> messagesPerf = AdhocExplainerTestHelper.listenForPerf(eventBus);
+	List<String> messagesExplain = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
 
 	@Test
 	public void testPerfLog() {
@@ -69,5 +83,80 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
 
 		Assertions.assertThat(dagExplainer.toString()).isEqualTo(DagExplainer.class.getSimpleName());
+	}
+
+	@Test
+	public void testExplain_singleNode() {
+		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
+
+		QueryPod queryPod = QueryPod.forTable(InMemoryTable.builder().build());
+		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
+
+		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(Aggregator.sum("k")).build();
+
+		builder.registerRootWithDescendants(measures);
+
+		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
+				builder.getQueryDag());
+
+		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000001
+				\\-- #1 m=k(SUM) filter=matchAll groupBy=grandTotal""");
+	}
+
+	@Test
+	public void testExplain_withChildren() {
+		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
+
+		Aggregator k1 = Aggregator.sum("k1");
+		Aggregator k2 = Aggregator.sum("k2");
+		IMeasure sumK1K2 = Combinator.sum(k1.getName(), k2.getName());
+		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
+
+		QueryPod queryPod = QueryPod.forTable(InMemoryTable.builder().build())
+				.toBuilder()
+				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
+				.build();
+		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
+
+		builder.registerRootWithDescendants(Set.of(sumK1K2));
+
+		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
+				builder.getQueryDag());
+
+		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000001
+				\\-- #1 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
+				    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
+	}
+
+	@Test
+	public void testExplain_withChildrenAndReferences() {
+		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
+
+		Aggregator k1 = Aggregator.sum("k1");
+		Aggregator k2 = Aggregator.sum("k2");
+		IMeasure sumK1K2 = Combinator.sum(k1.getName(), k2.getName());
+		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
+
+		QueryPod queryPod = QueryPod.forTable(InMemoryTable.builder().build())
+				.toBuilder()
+				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
+				.build();
+		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
+
+		builder.registerRootWithDescendants(measures);
+
+		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
+				builder.getQueryDag());
+
+		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000001
+				|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal
+				|\\- #2 m=k2(SUM) filter=matchAll groupBy=grandTotal
+				\\-- #3 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				    |\\- !1
+				    \\-- !2""");
 	}
 }

@@ -55,7 +55,7 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.TranscodingContext;
+import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
@@ -155,6 +155,20 @@ public class CubeWrapper implements ICubeWrapper {
 			}
 		});
 
+		getColumnsManager().getColumnAliases().forEach(columnAlias -> {
+			String tableName = getColumnsManager().openTranscodingContext().underlying(columnAlias);
+
+			ColumnMetadata originalMetadata = columnToType.get(tableName);
+
+			if (originalMetadata == null) {
+				log.debug("Unclear alias=%s as it has no underlying table", columnAlias);
+				columnToType.put(columnAlias,
+						ColumnMetadata.builder().name(columnAlias).tag("alias").type(Object.class).build());
+			} else {
+				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
+			}
+		});
+
 		return columnToType.values();
 	}
 
@@ -205,7 +219,7 @@ public class CubeWrapper implements ICubeWrapper {
 			// `p.someColumn` as a column from JooQ
 			Map<String, IValueMatcher> tableColumnToValueMatcher = new LinkedHashMap<>();
 
-			TranscodingContext transcodedContext = columnsManager.openTranscodingContext();
+			AliasingContext transcodedContext = columnsManager.openTranscodingContext();
 			Sets.difference(columnToValueMatcher.keySet(), generatedColumns).forEach(cubeColumn -> {
 				String tableColumn = transcodedContext.underlyingNonNull(cubeColumn);
 				tableColumnToValueMatcher.put(tableColumn, columnToValueMatcher.get(cubeColumn));

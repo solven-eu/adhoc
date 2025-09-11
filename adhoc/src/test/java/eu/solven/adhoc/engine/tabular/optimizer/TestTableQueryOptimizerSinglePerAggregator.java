@@ -33,7 +33,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -61,7 +61,8 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(CubeQueryStep.edit(step)
-						.filter(OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("c", "c1")))
+						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("c", "c1"))
+								.optimize())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
 						.build());
 
@@ -92,7 +93,8 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(CubeQueryStep.edit(step)
-						.filter(OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("c", "c1")))
+						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("c", "c1"))
+								.optimize())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
 						.measure(Aggregator.empty())
 						.build());

@@ -164,7 +164,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
 						"""
-								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=d_country=current_ratio(Columnator[SUM]) filter=country==US groupBy=grandTotal
 								    \\-- #2 m=d_country=current_ratio_postcheck(Combinator[DIVIDE]) filter=country==US groupBy=grandTotal
 								        |\\- #3 m=d_country=current_slice(Partitionor[SUM][SUM]) filter=country==US groupBy=grandTotal

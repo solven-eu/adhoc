@@ -30,12 +30,11 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import cz.jirutka.rsql.parser.ast.RSQLOperators;
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter.ColumnFilterBuilder;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 /**
@@ -48,14 +47,14 @@ public class SliceFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String>
 	public ISliceFilter visit(AndNode node, String param) {
 		List<ISliceFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
 
-		return AndFilter.and(operands);
+		return FilterBuilder.and(operands).optimize();
 	}
 
 	@Override
 	public ISliceFilter visit(OrNode node, String param) {
 		List<ISliceFilter> operands = node.getChildren().stream().map(operand -> operand.accept(this, param)).toList();
 
-		return OrFilter.or(operands);
+		return FilterBuilder.or(operands).optimize();
 	}
 
 	@Override

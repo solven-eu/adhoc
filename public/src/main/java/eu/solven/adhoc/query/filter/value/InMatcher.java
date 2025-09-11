@@ -88,6 +88,10 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 		operands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 			toStringHelper.add("#" + index.getAndIncrement(), filter);
 		});
+		if (operands.size() > AdhocUnsafe.limitOrdinalToString) {
+			int nbMore = operands.size() - AdhocUnsafe.limitOrdinalToString;
+			toStringHelper.add("#" + AdhocUnsafe.limitOrdinalToString, nbMore + " more entries");
+		}
 
 		return toStringHelper.toString();
 	}
@@ -172,7 +176,17 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 	@Override
 	public String toString(String column, boolean negated) {
 		// https://github.com/jirutka/rsql-parser?tab=readme-ov-file#grammar-and-semantic
-		String operandsToString = operands.stream().map(String::valueOf).collect(Collectors.joining(",", "(", ")"));
+		String operandsToString = operands.stream()
+				.map(String::valueOf)
+				.limit(AdhocUnsafe.limitOrdinalToString)
+				.collect(Collectors.joining(",", "(", ""));
+
+		if (operands.size() > AdhocUnsafe.limitOrdinalToString) {
+			int nbMore = operands.size() - AdhocUnsafe.limitOrdinalToString;
+			operandsToString += ", and " + nbMore + " more entries";
+		}
+
+		operandsToString += ")";
 
 		if (negated) {
 			return column + "=out=" + operandsToString;

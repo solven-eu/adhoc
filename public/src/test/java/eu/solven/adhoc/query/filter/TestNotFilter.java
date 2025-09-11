@@ -37,8 +37,8 @@ public class TestNotFilter {
 
 	@Test
 	public void testNotOr() {
-		ISliceFilter orFilter =
-				NotFilter.not(OrFilter.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1")));
+		ISliceFilter orFilter = NotFilter
+				.not(FilterBuilder.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1")).combine());
 
 		Assertions.assertThat(orFilter).isInstanceOfSatisfying(AndFilter.class, andMatcher -> {
 			Assertions.assertThat(andMatcher.getOperands())

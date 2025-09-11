@@ -33,10 +33,10 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestMoreFilterHelpers {
@@ -68,7 +68,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIn_Transcoded() {
-		ITableTranscoder transcoder = PrefixTranscoder.builder().prefix("p_").build();
+		ITableAliaser transcoder = PrefixAliaser.builder().prefix("p_").build();
 
 		Assertions
 				.assertThat(
@@ -80,7 +80,7 @@ public class TestMoreFilterHelpers {
 				Map.of("p_c", "a"))).isTrue();
 
 		Assertions.assertThat(MoreFilterHelpers.match(transcoder,
-				OrFilter.or(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")),
+				FilterBuilder.or(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")).optimize(),
 				Map.of("p_c", "azerty"))).isTrue();
 	}
 

@@ -73,7 +73,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dagToDependancies =
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		// Inference in aggregator based: `k1` does not imply `k2`, `k1.SUM` does not imply `k1.MAX`
@@ -85,7 +85,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		tableQueries.forEach(tq -> {
 			tq.getAggregators().stream().forEach(agg -> {
 				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
-				dagToDependancies.addVertex(step);
+				inducedToInducer.addVertex(step);
 				aggregatorToQueries.put(agg, step);
 			});
 		});
@@ -124,7 +124,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 							.findFirst()
 							.ifPresent(inducer -> {
 								// right can be used to compute left
-								dagToDependancies.addEdge(induced, inducer);
+								inducedToInducer.addEdge(induced, inducer);
 								hasFoundInducer.set(true);
 							});
 
@@ -136,17 +136,17 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		});
 
 		// Collect the steps which can not be induced by another tableQuery
-		Set<CubeQueryStep> inducers = dagToDependancies.vertexSet()
+		Set<CubeQueryStep> inducers = inducedToInducer.vertexSet()
 				.stream()
-				.filter(tq -> dagToDependancies.outgoingEdgesOf(tq).isEmpty())
+				.filter(tq -> inducedToInducer.outgoingEdgesOf(tq).isEmpty())
 				.collect(ImmutableSet.toImmutableSet());
 		// induced is to complement to inducers
-		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(dagToDependancies.vertexSet(), inducers));
+		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(inducedToInducer.vertexSet(), inducers));
 
 		return SplitTableQueries.builder()
 				.inducers(inducers)
 				.induceds(induced)
-				.dagToDependancies(dagToDependancies)
+				.inducedToInducer(inducedToInducer)
 				.build();
 	}
 

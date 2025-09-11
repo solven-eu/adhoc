@@ -259,7 +259,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					"Can not query multiple measures with same name: %s".formatted(nameToCount));
 		}
 
-		queryStepsDagBuilder.registerRootWithDescendants(queryPod::resolveIfRef, queriedMeasures);
+		queryStepsDagBuilder.registerRootWithDescendants(queriedMeasures);
 
 		return queryStepsDagBuilder.getQueryDag();
 	}
@@ -339,7 +339,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// steps which were slow to be computed.
 		// BEWARE This mono-threaded iteration helps pushing into cache with a specific order, given the `stepToValues`
 		// is typically a ConcurrenthashMap, hence with indeterministic order.
-		queryStepsDag.iteratorFromUnderlyingsToQueried().forEachRemaining(step -> {
+		queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(step -> {
 			if (queryStepsDag.getStepToValues().containsKey(step)) {
 				log.debug("Do not add an entry already in cache");
 				// Else it may force keeping the entry
@@ -431,8 +431,12 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		queryStepsDag.registerExecutionFeedback(queryStep,
 				SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
 
-		if (null != queryStepToValues.put(queryStep, outputColumn)) {
-			throw new IllegalStateException("The DAG processed twice queryStep=%s".formatted(queryStep));
+		ISliceToValue alreadyIn = queryStepToValues.putIfAbsent(queryStep, outputColumn);
+		if (null != alreadyIn) {
+			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
+			// dependents.
+			// TODO Prevent an intermediate step to be computed multiple times
+			log.debug("A queryStep has been computed multiple times queryStep={}", queryPod);
 		}
 	}
 
@@ -555,7 +559,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				underlyingSteps.stream().map(this::dense).toList())).append(System.lineSeparator());
 
 		ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
-				new JohnsonShortestPaths<>(queryStepsDag.getDag());
+				new JohnsonShortestPaths<>(queryStepsDag.getInducedToInducer());
 
 		queryStepsDag.getQueried()
 				.stream()

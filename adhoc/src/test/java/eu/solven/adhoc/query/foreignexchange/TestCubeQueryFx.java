@@ -213,7 +213,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
 						"""
-								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=matchAll groupBy=grandTotal customMarker=JPY
 								    \\-- #2 m=k1(SUM) filter=matchAll groupBy=(ccyFrom) customMarker=JPY""");
 
@@ -238,7 +238,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
 						"""
-								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color==red groupBy=(letter) customMarker=JPY
 								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(ccyFrom, letter) customMarker=JPY""");
 
@@ -263,18 +263,18 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
-								time=2ms for openingStream on TableQueryV2(filter=color==red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=4ms for mergeTableAggregates on TableQueryV2(filter=color==red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=5ms sizes=[2] for toSortedColumns on TableQueryV2(filter=color==red, groupBy=(ccyFrom, letter), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								#0 s=inMemory id=00000000-0000-0000-0000-000000000000
-								|  No cost info
+								/-- time=3ms for openingStream
+								|/- time=5ms for mergingAggregates
+								|/- time=6ms sizes=[2] for sortingColumns
+								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE color==red GROUP BY (ccyFrom,letter)
+								/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								|      No cost info
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color==red groupBy=(letter) customMarker=JPY
-								    |  size=2 duration=6ms
+								    |  size=2 duration=7ms
 								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(ccyFrom, letter) customMarker=JPY
-								        \\  size=2 duration=12ms
-								Executed status=OK duration=21ms on table=inMemory forest=TestCubeQueryFx-filtered query=CubeQuery(filter=color==red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""");
-
-		Assertions.assertThat(messages).hasSize(7);
+								        \\  size=2 duration=15ms
+								Executed status=OK duration=28ms on table=inMemory forest=TestCubeQueryFx-filtered query=CubeQuery(filter=color==red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""")
+				.hasLineCount(11);
 	}
 
 }

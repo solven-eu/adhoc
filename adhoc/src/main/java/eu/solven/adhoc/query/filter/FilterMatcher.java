@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.table.transcoder.ITableTranscoder;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -59,7 +59,7 @@ public class FilterMatcher {
 
 	@Default
 	@NonNull
-	ITableTranscoder transcoder = ITableTranscoder.identity();
+	ITableAliaser transcoder = ITableAliaser.identity();
 
 	@NonNull
 	ISliceFilter filter;

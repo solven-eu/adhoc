@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,7 +52,8 @@ public class TestOrFilter {
 
 	@Test
 	public void toString_notEmpty() {
-		ISliceFilter a1orb2 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
+		ISliceFilter a1orb2 =
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2")).optimize();
 
 		Assertions.assertThat(a1orb2.isMatchAll()).isFalse();
 	}
@@ -63,7 +65,7 @@ public class TestOrFilter {
 						i -> ColumnFilter.builder().column("k" + i).valueMatcher(LikeMatcher.matching("%" + i)).build())
 				.collect(Collectors.toList());
 
-		Assertions.assertThat(OrFilter.or(filters).toString())
+		Assertions.assertThat(FilterBuilder.or(filters).combine().toString())
 				.isEqualTo("k0 matches `LikeMatcher(pattern=%0)`" + "|k1 matches `LikeMatcher(pattern=%1)`"
 						+ "|k2 matches `LikeMatcher(pattern=%2)`"
 						+ "|k3 matches `LikeMatcher(pattern=%3)`"
@@ -76,7 +78,7 @@ public class TestOrFilter {
 				.mapToObj(i -> ColumnFilter.builder().column("k").valueMatcher(LikeMatcher.matching("%" + i)).build())
 				.collect(Collectors.toList());
 
-		Assertions.assertThat(OrFilter.or(filters).toString())
+		Assertions.assertThat(FilterBuilder.or(filters).combine().toString())
 				.contains("#0=k matches `LikeMatcher(pattern=%0)`, #1=k matches `LikeMatcher(pattern=%1)`")
 				.doesNotContain("64")
 				.hasSizeLessThan(1024);
@@ -84,14 +86,15 @@ public class TestOrFilter {
 
 	@Test
 	public void testAndFilters_twoGrandTotal() {
-		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_ALL, ISliceFilter.MATCH_ALL);
+		ISliceFilter filterAllAndA = FilterBuilder.or(ISliceFilter.MATCH_ALL, ISliceFilter.MATCH_ALL).optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testAndFilters_oneGrandTotal() {
-		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter filterAllAndA =
+				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1")).optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
@@ -99,7 +102,7 @@ public class TestOrFilter {
 	@Test
 	public void testOr_oneGrandTotal_forced() {
 		ISliceFilter filterAllAndA =
-				OrFilter.builder().filter(ISliceFilter.MATCH_ALL).filter(ColumnFilter.isEqualTo("a", "a1")).build();
+				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.isEqualTo("a", "a1")).combine();
 
 		// We forced an OrBuilder: It is not simplified into IAdhocFilter.MATCH_ALL but is is isMatchAll
 		Assertions.assertThat(filterAllAndA.isMatchAll()).isTrue();
@@ -108,22 +111,25 @@ public class TestOrFilter {
 
 	@Test
 	public void testOr_oneMatchNone() {
-		ISliceFilter filterAllAndA = OrFilter.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter filterAllAndA =
+				FilterBuilder.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1")).optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
 	public void test_twiceSame() {
-		ISliceFilter filterAllAndA = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a1"));
+		ISliceFilter filterAllAndA =
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a1")).optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isEqualTo("a", "a1"));
 	}
 
 	@Test
 	public void testOr_oneGrandTotal_TwoCustom() {
-		ISliceFilter filterAllAndA = OrFilter
-				.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"));
+		ISliceFilter filterAllAndA = FilterBuilder
+				.or(ISliceFilter.MATCH_NONE, ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("a", "a2"))
+				.optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.isIn("a", "a1", "a2"));
 	}
@@ -131,7 +137,7 @@ public class TestOrFilter {
 	@Test
 	public void testMultipleSameColumn_equalsAndIn() {
 		ISliceFilter filterA1andInA12 =
-				OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isIn("a", "a1", "a2"));
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isIn("a", "a1", "a2")).optimize();
 
 		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a1")`
 		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
@@ -140,7 +146,7 @@ public class TestOrFilter {
 	@Test
 	public void testMultipleSameColumn_InAndIn() {
 		ISliceFilter filterA1andInA12 =
-				OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3"));
+				FilterBuilder.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("a", "a2", "a3")).optimize();
 
 		Assertions.assertThat(filterA1andInA12).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
 			Assertions.assertThat(cf.getColumn()).isEqualTo("a");
@@ -150,7 +156,8 @@ public class TestOrFilter {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		ISliceFilter filter = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
+		ISliceFilter filter =
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2")).optimize();
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -198,8 +205,9 @@ public class TestOrFilter {
 
 	@Test
 	public void testChained() {
-		ISliceFilter a1Andb2 = OrFilter.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2"));
-		ISliceFilter a1Andb2AndC3 = OrFilter.or(a1Andb2, ColumnFilter.isEqualTo("c", "c3"));
+		ISliceFilter a1Andb2 =
+				FilterBuilder.or(ColumnFilter.isEqualTo("a", "a1"), ColumnFilter.isEqualTo("b", "b2")).optimize();
+		ISliceFilter a1Andb2AndC3 = FilterBuilder.or(a1Andb2, ColumnFilter.isEqualTo("c", "c3")).optimize();
 
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
 			Assertions.assertThat(orFilter.getOperands()).hasSize(3);
@@ -209,15 +217,68 @@ public class TestOrFilter {
 	@Test
 	public void testIncluded() {
 		Assertions
-				.assertThat(OrFilter.or(AndFilter.and(Map.of("a", "a1", "b", "b1")), AndFilter.and(Map.of("b", "b1"))))
+				.assertThat(
+						FilterBuilder.or(AndFilter.and(Map.of("a", "a1", "b", "b1")), AndFilter.and(Map.of("b", "b1")))
+								.optimize())
 				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
 	}
 
 	@Test
 	public void testOr_oneCommonColumn() {
-		Assertions
-				.assertThat(OrFilter.or(AndFilter.and(Map.of("a", "a1")),
-						AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1"))))
+		Assertions.assertThat(
+				FilterBuilder.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1")))
+						.optimize())
 				.hasToString("a==a1|a==a2&b==b1");
+	}
+
+	// This test checks some optimization does not fails due to the large problem
+	// Typically, some optimization may do a cartesian product and this should ensure such case are managed smoothly.
+	// Happens typically with TableQueryOptimizerSinglePerAggregator which will to a large OR of the different table
+	// queries
+	@Test
+	public void testOr_Large_onlyOrs() {
+		List<ISliceFilter> operands = IntStream.range(0, 16)
+				.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+				.toList();
+
+		Assertions.assertThat(FilterBuilder.or(operands).optimize())
+				.hasToString(
+						"a==a0&b==b0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3|a==a4&b==b4|a==a5&b==b5|a==a6&b==b6|a==a7&b==b7|a==a8&b==b8|a==a9&b==b9|a==a10&b==b10|a==a11&b==b11|a==a12&b==b12|a==a13&b==b13|a==a14&b==b14|a==a15&b==b15");
+	}
+
+	@Test
+	public void testOr_Large_andMatchOnlyOne() {
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 4)
+					.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.collect(Collectors.toCollection(ArrayList::new));
+
+			operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+
+			Assertions.assertThat(FilterBuilder.or(operands).optimize())
+					.hasToString("a==a0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3");
+		}
+		{
+			List<ISliceFilter> operands = IntStream.range(0, 16)
+					.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.collect(Collectors.toCollection(ArrayList::new));
+
+			operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+
+			Assertions.assertThat(FilterBuilder.or(operands).optimize())
+					.hasToString(
+							"a==a0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3|a==a4&b==b4|a==a5&b==b5|a==a6&b==b6|a==a7&b==b7|a==a8&b==b8|a==a9&b==b9|a==a10&b==b10|a==a11&b==b11|a==a12&b==b12|a==a13&b==b13|a==a14&b==b14|a==a15&b==b15");
+		}
+	}
+
+	@Test
+	public void testOr_Huge() {
+		List<ISliceFilter> operands = IntStream.range(0, 128)
+				.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		Assertions.assertThat(FilterBuilder.or(operands).optimize())
+				.hasToString(
+						"OrFilter{size=128, #0=a==a0&b==b0, #1=a==a1&b==b1, #2=a==a2&b==b2, #3=a==a3&b==b3, #4=a==a4&b==b4, #5=a==a5&b==b5, #6=a==a6&b==b6, #7=a==a7&b==b7, #8=a==a8&b==b8, #9=a==a9&b==b9, #10=a==a10&b==b10, #11=a==a11&b==b11, #12=a==a12&b==b12, #13=a==a13&b==b13, #14=a==a14&b==b14, #15=a==a15&b==b15}");
 	}
 }

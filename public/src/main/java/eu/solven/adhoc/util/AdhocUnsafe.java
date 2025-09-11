@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
 
+import eu.solven.adhoc.query.filter.FilterOptimizerHelpers;
+import eu.solven.adhoc.query.filter.IFilterOptimizerHelpers;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;
@@ -198,6 +200,11 @@ public class AdhocUnsafe {
 
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
 	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(getParallelism());
+
+	// Typically used as limit to prevent iterating over large cartesian products
+	public static int cartesianProductLimit = 128;
+
+	public static IFilterOptimizerHelpers sliceFilterOptimizer = new FilterOptimizerHelpers();
 
 	/**
 	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is

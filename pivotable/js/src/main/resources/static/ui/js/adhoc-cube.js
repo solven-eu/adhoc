@@ -6,12 +6,15 @@ import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import AdhocQueryRef from "./adhoc-query-ref.js";
 
+import AdhocLoading from "./adhoc-loading.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocEndpointHeader,
 		AdhocCubeHeader,
 		AdhocQueryRef,
+		AdhocLoading,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -51,23 +54,17 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-                </div>
-            </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+		<div v-if="!endpoint || endpoint.error || !cube || cube.error">
+			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+			<AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
+		</div>
         <div v-else>
             <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 
-            <AdhocEndpointHeader :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" />
-
-            <AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" />
+			<ul>
+				<li><AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
+			</ul>
+            
         </div>
     `,
 };

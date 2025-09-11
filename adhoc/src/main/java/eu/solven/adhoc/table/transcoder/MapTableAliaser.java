@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.table.transcoder;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.model.IMeasure;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+
+import lombok.Builder;
+import lombok.Singular;
+import lombok.ToString;
 
 /**
- * Typically useful to resolve {@link ReferencedMeasure} or {@link AliasedMeasure}
+ * An {@link ITableAliaser} based on a (not-necessarily bijective) mapping. If a key it mapped to different originals,
+ * the last alias wins.
  * 
  * @author Benoit Lacelle
+ * @see MapTableStrictAliaser
  */
-@FunctionalInterface
-public interface ICanResolveMeasure {
+@Builder
+@ToString
+public class MapTableAliaser implements ITableAliaser, IHasAliasedColumns {
+	// Multiple aliases may map to the same original
+	// Not a ImmutableMap, else conflicting mappings would lead to an exception
+	@Singular
+	final Map<String, String> aliasToOriginals;
 
-	IMeasure resolveIfRef(IMeasure measure);
+	protected MapTableAliaser(Map<String, String> aliasToOriginals) {
+		this.aliasToOriginals = ImmutableMap.copyOf(aliasToOriginals);
+	}
 
+	@Override
+	public String underlying(String queried) {
+		return aliasToOriginals.get(queried);
+	}
+
+	@Override
+	public Set<String> getAlias() {
+		return aliasToOriginals.keySet();
+	}
 }

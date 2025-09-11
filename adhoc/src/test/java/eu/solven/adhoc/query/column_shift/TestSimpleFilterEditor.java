@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -72,14 +73,17 @@ public class TestSimpleFilterEditor {
 	public void testShift_Or() {
 		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "b", "b2"))
-				.isEqualTo(OrFilter.or(AndFilter.and(Map.of("a", "a1", "b", "b2")), AndFilter.and(Map.of("b", "b2"))));
+				.isEqualTo(
+						FilterBuilder.or(AndFilter.and(Map.of("a", "a1", "b", "b2")), AndFilter.and(Map.of("b", "b2")))
+								.optimize());
 	}
 
 	@Test
 	public void testShiftIfPresent_Or() {
 		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
 		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "b", "b2"))
-				.isEqualTo(OrFilter.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b2"))));
+				.isEqualTo(FilterBuilder.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b2")))
+						.optimize());
 	}
 
 	@Test
