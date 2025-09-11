@@ -13,7 +13,7 @@
 
 	<properties>
 		<cucumber.version>7.23.0</cucumber.version>
-		<jooq.version>3.20.6</jooq.version>
+		<jooq.version>3.20.7</jooq.version>
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
