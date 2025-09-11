@@ -103,9 +103,9 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 	@Test
 	public void test_groupBy_rename() {
 		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
-				.transcoder(MapTableAliaser.builder()
-						.queriedToUnderlying("proxy_a", "a")
-						.queriedToUnderlying("proxy_b", "b")
+				.aliaser(MapTableAliaser.builder()
+						.aliasToOriginal("proxy_a", "a")
+						.aliasToOriginal("proxy_b", "b")
 						.build())
 				.build()).build();
 

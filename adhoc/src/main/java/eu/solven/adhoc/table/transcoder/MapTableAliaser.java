@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
-import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
 
 import lombok.Builder;
 import lombok.Singular;
@@ -35,12 +37,18 @@ import lombok.ToString;
  */
 @Builder
 @ToString
-public class MapTableAliaser implements ITableAliaser {
+public class MapTableAliaser implements ITableAliaser, IHasAliasedColumns {
+	// Multiple aliases may map to the same original
 	@Singular
-	final Map<String, String> queriedToUnderlyings;
+	final ImmutableMap<String, String> aliasToOriginals;
 
 	@Override
 	public String underlying(String queried) {
-		return queriedToUnderlyings.get(queried);
+		return aliasToOriginals.get(queried);
+	}
+
+	@Override
+	public Set<String> getAlias() {
+		return aliasToOriginals.keySet();
 	}
 }

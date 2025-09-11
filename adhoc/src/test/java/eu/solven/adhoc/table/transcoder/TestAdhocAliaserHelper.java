@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 public class TestAdhocAliaserHelper {
 	@Test
 	public void testSimpleMapping_Empty() {
-		ITableAliaser transcoder = MapTableAliaser.builder().build();
-		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
 
@@ -47,8 +47,8 @@ public class TestAdhocAliaserHelper {
 
 	@Test
 	public void testSimpleMapping() {
-		ITableAliaser transcoder = MapTableAliaser.builder().queriedToUnderlying("k1", "k").build();
-		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
 		Assertions.assertThat(context.underlying("k2")).isEqualTo("k2");
@@ -64,8 +64,8 @@ public class TestAdhocAliaserHelper {
 
 	@Test
 	public void testSimpleMapping_RequestUnderlying() {
-		ITableAliaser transcoder = MapTableAliaser.builder().queriedToUnderlying("k1", "k").build();
-		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k");
 		Assertions.assertThat(context.underlying("k")).isEqualTo("k");
@@ -86,9 +86,9 @@ public class TestAdhocAliaserHelper {
 
 	@Test
 	public void testOverlap() {
-		ITableAliaser transcoder =
-				MapTableAliaser.builder().queriedToUnderlying("k1", "k2").queriedToUnderlying("k2", "k3").build();
-		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser =
+				MapTableAliaser.builder().aliasToOriginal("k1", "k2").aliasToOriginal("k2", "k3").build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("k1")).isEqualTo("k2");
 		Assertions.assertThat(context.underlying("k2")).isEqualTo("k3");

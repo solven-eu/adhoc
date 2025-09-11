@@ -106,7 +106,7 @@ public class DagExplainer implements IDagExplainer {
 		 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN.
 		 */
 		protected Comparator<CubeQueryStep> orderForExplain() {
-			return Comparator.<CubeQueryStep, String>comparing(qr -> qr.getMeasure().toString())
+			return Comparator.<CubeQueryStep, String>comparing(qr -> qr.getMeasure().getName())
 					.thenComparing(qr -> qr.getFilter().toString())
 					.thenComparing(qr -> qr.getGroupBy().toString());
 		}
@@ -139,12 +139,11 @@ public class DagExplainer implements IDagExplainer {
 			boolean isLast) {
 		boolean isReferenced;
 		{
-			String parentIndentation = optParent.map(dagState.stepToIndentation::get).orElse("");
-
 			String indentation;
 			if (optParent.isEmpty()) {
 				indentation = "";
 			} else {
+				String parentIndentation = optParent.map(dagState.stepToIndentation::get).orElse("");
 				// We keep `|` symbols as they are relevant for the next lines
 				indentation = parentIndentation.replace('\\', ' ').replace('-', ' ');
 
@@ -156,6 +155,12 @@ public class DagExplainer implements IDagExplainer {
 			}
 
 			dagState.stepToIndentation.putIfAbsent(step, indentation);
+
+			if (indentation.isEmpty()) {
+				// This is the root node: add some sort of opening indentation.
+				// But it must not be registered in stepToIndentation as children should not re-apply it
+				indentation = "/-- ";
+			}
 
 			String stepAsString = toString(dagState, step);
 			isReferenced = stepAsString.startsWith("!");

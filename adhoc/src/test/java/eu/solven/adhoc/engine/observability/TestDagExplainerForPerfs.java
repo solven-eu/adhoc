@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
@@ -54,20 +54,18 @@ public class TestDagExplainerForPerfs {
 	public void testPerfLog() {
 		DagExplainerForPerfs dagExplainer = DagExplainerForPerfs.builder().eventBus(eventBus::post).build();
 
-		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder().build(),
-				"someCube",
-				CubeQuery.builder().build(),
-				IQueryStepCache.noCache());
-
 		Map<String, IMeasure> refToMeasure = new HashMap<>();
 
-		ICanResolveMeasure canResolve = m -> {
+		IMeasureResolver canResolve = m -> {
 			if (m instanceof ReferencedMeasure ref) {
 				return refToMeasure.get(ref.getRef());
 			} else {
 				return m;
 			}
 		};
+
+		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder()
+				.build(), "someCube", canResolve, CubeQuery.builder().build(), IQueryStepCache.noCache());
 
 		Combinator root = Combinator.builder().name("root").underlying("underlying1").underlying("underlying2").build();
 
@@ -91,15 +89,15 @@ public class TestDagExplainerForPerfs {
 		refToMeasure.put("underlying22", underlying22);
 		refToMeasure.put("a", aggregator111);
 
-		queryStepsDagBuilder.registerRootWithDescendants(canResolve, Set.of(root));
+		queryStepsDagBuilder.registerRootWithDescendants(Set.of(root));
 
 		QueryStepsDag dag = queryStepsDagBuilder.getQueryDag();
 
 		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().build()), dag);
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 s=someCube id=00000000-0000-0000-0000-000000000000
-				|  No cost info
+				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000000
+				|      No cost info
 				\\-- #1 m=root(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |  No cost info
 				    |\\- #2 m=underlying1(Combinator[SUM]) filter=matchAll groupBy=grandTotal

@@ -32,9 +32,9 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
-import eu.solven.adhoc.table.transcoder.AliasingContext;
 
 /**
  * BEWARE This unitTests is useless since transcoding has been moved to {@link IColumnsManager}.
@@ -49,15 +49,14 @@ public class TestJooqTableQueryFactory_Transcoding {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	ITableAliaser transcoder =
-			MapTableAliaser.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
+	ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("k1", "k").aliasToOriginal("k2", "k").build();
 
 	JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
 			.table(DSL.table(DSL.name("someTableName")))
 			.dslContext(DSL.using(SQLDialect.DUCKDB))
 			.build();
 
-	AliasingContext transcodingContext = AliasingContext.builder().transcoder(transcoder).build();
+	AliasingContext transcodingContext = AliasingContext.builder().aliaser(aliaser).build();
 
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {

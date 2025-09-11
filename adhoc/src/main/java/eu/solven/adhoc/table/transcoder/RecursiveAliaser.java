@@ -32,12 +32,12 @@ import lombok.Builder;
 import lombok.NonNull;
 
 /**
- * A decorating {@link ITableAliaser} , which applies the transcoding logic recursively
+ * A decorating {@link ITableAliaser} , which applies the aliasing logic recursively
  * 
  * @author Benoit Lacelle
  */
 @Builder
-public class RecursiveAliaser implements ITableAliaser {
+public class RecursiveAliaser implements ITableAliaser, IHasAliasedColumns {
 	/**
 	 * The maximum depth of recursivity
 	 */
@@ -87,6 +87,15 @@ public class RecursiveAliaser implements ITableAliaser {
 
 			first = false;
 			nextQueried = nextUnderlying;
+		}
+	}
+
+	@Override
+	public Set<String> getAlias() {
+		if (aliaser instanceof IHasAliasedColumns hasAliasedColumns) {
+			return hasAliasedColumns.getAlias();
+		} else {
+			return Set.of();
 		}
 	}
 }

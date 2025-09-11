@@ -141,7 +141,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity extends ADuckDbJooqTes
 		insertData();
 
 		CubeWrapper cube = editCube().columnsManager(ColumnsManager.builder()
-				.transcoder(MapTableAliaser.builder().queriedToUnderlying("name", "p.name").build())
+				.aliaser(MapTableAliaser.builder().aliasToOriginal("name", "p.name").build())
 				.build()).build();
 
 		cube.getColumnTypes().forEach((column, type) -> {

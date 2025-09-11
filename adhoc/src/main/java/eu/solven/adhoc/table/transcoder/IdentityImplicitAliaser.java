@@ -38,8 +38,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * @author Benoit Lacelle
  */
 public class IdentityImplicitAliaser implements ITableAliaser {
-	static final Supplier<IdentityImplicitAliaser> IDENTITY =
-			Suppliers.memoize(() -> new IdentityImplicitAliaser());
+	static final Supplier<IdentityImplicitAliaser> IDENTITY = Suppliers.memoize(() -> new IdentityImplicitAliaser());
 
 	@Override
 	public String underlying(String queried) {

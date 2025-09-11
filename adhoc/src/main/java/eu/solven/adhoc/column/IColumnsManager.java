@@ -33,8 +33,8 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.util.IHasColumnTypes;
 
@@ -71,5 +71,7 @@ public interface IColumnsManager extends IHasColumnTypes {
 	List<IColumnGenerator> getGeneratedColumns(IOperatorFactory operatorFactory,
 			Set<IMeasure> measures,
 			IValueMatcher columnMatcher);
+
+	Set<String> getColumnAliases();
 
 }

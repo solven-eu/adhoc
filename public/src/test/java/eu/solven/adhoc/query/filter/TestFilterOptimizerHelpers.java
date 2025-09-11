@@ -33,11 +33,13 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestFilterOptimizerHelpers {
+	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+
 	AtomicBoolean hasSimplified = new AtomicBoolean();
 
 	@Test
 	public void testStripOr_orHasCommon() {
-		Set<ISliceFilter> output = FilterOptimizerHelpers.splitThenStripOrs(hasSimplified,
+		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
 				AndFilter.and(Map.of("a", "a1")),
 				Set.of(OrFilter.or(Map.of("a", "a1", "b", "b2"))));
 
@@ -46,7 +48,7 @@ public class TestFilterOptimizerHelpers {
 
 	@Test
 	public void testStripOr() {
-		Set<ISliceFilter> output = FilterOptimizerHelpers.splitThenStripOrs(hasSimplified,
+		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
 				AndFilter.and(Map.of("a", "a1")),
 				Set.of(OrFilter.or(Map.of("b", "b2", "c", "c3"))));
 
@@ -55,7 +57,7 @@ public class TestFilterOptimizerHelpers {
 
 	@Test
 	public void testStripOr_matchNone() {
-		Set<ISliceFilter> output = FilterOptimizerHelpers.splitThenStripOrs(hasSimplified,
+		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
 				AndFilter.and(Map.of("a", "a1")),
 				Set.of(FilterBuilder
 						.or(NotFilter.not(ColumnFilter.isMatching("a", LikeMatcher.matching("a%"))),
@@ -70,10 +72,10 @@ public class TestFilterOptimizerHelpers {
 		List<ISliceFilter> fromLaxToStrict =
 				List.of(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("a", "a1", "b", "b2")));
 
-		Set<ISliceFilter> strippedAnd = FilterOptimizerHelpers.removeLaxerInAnd(fromLaxToStrict);
+		Set<ISliceFilter> strippedAnd = optimizer.removeLaxerInAnd(fromLaxToStrict);
 		Assertions.assertThat(strippedAnd).containsExactly(AndFilter.and(Map.of("a", "a1", "b", "b2")));
 
-		Set<ISliceFilter> strippedOr = FilterOptimizerHelpers.removeStricterInOr(fromLaxToStrict);
+		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
 		Assertions.assertThat(strippedOr).containsExactly(AndFilter.and(Map.of("a", "a1")));
 	}
 }

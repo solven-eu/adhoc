@@ -126,7 +126,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 	@Override
 	public CubeWrapperBuilder makeCube() {
 		return super.makeCube().columnsManager(ColumnsManager.builder()
-				.transcoder(MapTableAliaser.builder().queriedToUnderlying("name", joinedAlias + ".name").build())
+				.aliaser(MapTableAliaser.builder().aliasToOriginal("name", joinedAlias + ".name").build())
 				.build());
 	}
 

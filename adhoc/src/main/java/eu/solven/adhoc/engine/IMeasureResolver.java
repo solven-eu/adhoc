@@ -31,7 +31,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface ICanResolveMeasure {
+public interface IMeasureResolver {
 
 	IMeasure resolveIfRef(IMeasure measure);
 

@@ -29,16 +29,16 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
-import eu.solven.adhoc.table.transcoder.ITableAliaser;
-import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
+import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestColumnsManager {
 	@Test
 	public void testTranscodeExpressionColumn() {
-		ITableAliaser transcoder = MapTableAliaser.builder().queriedToUnderlying("queried", "underlying").build();
-		ColumnsManager columnsManager = ColumnsManager.builder().transcoder(transcoder).build();
+		ITableAliaser aliaser = MapTableAliaser.builder().aliasToOriginal("queried", "underlying").build();
+		ColumnsManager columnsManager = ColumnsManager.builder().aliaser(aliaser).build();
 
 		AliasingContext context = columnsManager.openTranscodingContext();
 

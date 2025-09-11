@@ -169,12 +169,12 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 				.containsEntry(k2Sum.getColumnName(), Integer.class)
 				.containsEntry(k3Sum.getColumnName(), Integer.class)
 				.containsEntry("k4", Number.class)
-				.containsEntry("cubeSlicer", String.class)
+				.containsEntry("~CompositeSlicer", String.class)
 				.hasSize(8);
 
 		Assertions.assertThat(cube3.getColumns()).anySatisfy(c -> {
-			Assertions.assertThat(c.getName()).isEqualTo("cubeSlicer");
-			Assertions.assertThat(c.getTags()).contains("adhoc");
+			Assertions.assertThat(c.getName()).isEqualTo("~CompositeSlicer");
+			Assertions.assertThat(c.getTags()).contains("meta");
 		}).hasSize(8);
 
 		Assertions.assertThat(cube3.getNameToMeasure().keySet())
@@ -322,17 +322,17 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
 						"""
-								#0 s=composite id=00000000-0000-0000-0000-000000000000
+								/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=b==b1 groupBy=grandTotal
 								    |\\- #2 m=k1(SUM) filter=b==b1 groupBy=grandTotal
 								    \\-- #3 m=k2(SUM) filter=b==b1 groupBy=grandTotal
-								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								/-- #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|\\- #1 m=k1(SUM) filter=b==b1 groupBy=grandTotal
 								\\-- #2 m=k2(SUM) filter=b==b1 groupBy=grandTotal
-								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+								/-- #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								\\-- #1 m=k1(SUM) filter=matchNone groupBy=grandTotal"""
-								.trim());
-		Assertions.assertThat(messages).hasSize(9);
+								.trim())
+				.hasLineCount(9);
 	}
 
 	@Test
@@ -562,40 +562,42 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
-								time=4ms for openingStream on TableQueryV2(filter=b==red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=6ms for mergeTableAggregates on TableQueryV2(filter=b==red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=7ms sizes=[0, 0] for toSortedColumns on TableQueryV2(filter=b==red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								|  No cost info
+								/-- time=6ms for openingStream
+								|/- time=8ms for mergingAggregates
+								|/- time=9ms sizes=[0, 0] for sortingColumns
+								\\------ time=35ms for tableQuery on SELECT k1:SUM(k1)k2:SUM(k2) WHERE b==red GROUP BY (a)
+								/-- #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|      No cost info
 								|\\- #1 m=k1(SUM) filter=b==red groupBy=(a) customMarker=JPY
-								|   \\  size=0 duration=18ms
+								|   \\  size=0 duration=24ms
 								\\-- #2 m=k2(SUM) filter=b==red groupBy=(a) customMarker=JPY
-								    \\  size=0 duration=18ms
-								Executed status=OK duration=25ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cube=composite))
-								time=9ms for openingStream on TableQueryV2(filter=matchNone, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=11ms for mergeTableAggregates on TableQueryV2(filter=matchNone, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=12ms sizes=[0, 0] for toSortedColumns on TableQueryV2(filter=matchNone, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
-								|  No cost info
+								    \\  size=0 duration=24ms
+								Executed status=OK duration=39ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cube=composite))
+								/-- time=12ms for openingStream
+								|/- time=14ms for mergingAggregates
+								|/- time=15ms sizes=[0, 0] for sortingColumns
+								\\------ time=65ms for tableQuery on SELECT k1:SUM(k1)k3:SUM(k3) WHERE matchNone GROUP BY (a)
+								/-- #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+								|      No cost info
 								|\\- #1 m=k1(SUM) filter=matchNone groupBy=(a) customMarker=JPY
-								|   \\  size=0 duration=33ms
+								|   \\  size=0 duration=42ms
 								\\-- #2 m=k3(SUM) filter=matchNone groupBy=(a) customMarker=JPY
-								    \\  size=0 duration=33ms
-								Executed status=OK duration=50ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k3), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cube=composite))
-								time=77ms for openingStream on TableQueryV2(filter=b==red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=14ms for mergeTableAggregates on TableQueryV2(filter=b==red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=15ms sizes=[0, 0, 0] for toSortedColumns on TableQueryV2(filter=b==red, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k2, tags=[], columnName=k2, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k3, tags=[], columnName=k3, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								#0 s=composite id=00000000-0000-0000-0000-000000000000
-								|  No cost info
-								|\\- #1 m=k1(SUM) filter=b==red groupBy=(a) customMarker=JPY
-								|   \\  size=0 duration=42ms
-								|\\- #2 m=k2(SUM) filter=b==red groupBy=(a) customMarker=JPY
-								|   \\  size=0 duration=42ms
-								\\-- #3 m=k3(SUM) filter=b==red groupBy=(a) customMarker=JPY
 								    \\  size=0 duration=42ms
-								Executed status=OK duration=120ms on table=composite forest=composite-filtered query=CubeQuery(filter=b==red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN])""");
-
-		Assertions.assertThat(messages).hasSize(22);
+								Executed status=OK duration=75ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k3), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cube=composite))
+								/-- time=117ms for openingStream
+								|/- time=17ms for mergingAggregates
+								|/- time=18ms sizes=[0, 0, 0] for sortingColumns
+								\\------ time=170ms for tableQuery on SELECT k1:SUM(k1)k2:SUM(k2)k3:SUM(k3) WHERE b==red GROUP BY (a)
+								/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
+								|      No cost info
+								|\\- #1 m=k1(SUM) filter=b==red groupBy=(a) customMarker=JPY
+								|   \\  size=0 duration=51ms
+								|\\- #2 m=k2(SUM) filter=b==red groupBy=(a) customMarker=JPY
+								|   \\  size=0 duration=51ms
+								\\-- #3 m=k3(SUM) filter=b==red groupBy=(a) customMarker=JPY
+								    \\  size=0 duration=51ms
+								Executed status=OK duration=171ms on table=composite forest=composite-filtered query=CubeQuery(filter=b==red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN])""")
+				.hasLineCount(35);
 	}
 
 	@Test
@@ -630,39 +632,41 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualToNormalizingNewlines(
 						"""
-								time=4ms for openingStream on TableQueryV2(filter=b==b1, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=6ms for mergeTableAggregates on TableQueryV2(filter=b==b1, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=7ms sizes=[1] for toSortedColumns on TableQueryV2(filter=b==b1, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								#0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								|  No cost info
+								/-- time=6ms for openingStream
+								|/- time=8ms for mergingAggregates
+								|/- time=9ms sizes=[1] for sortingColumns
+								\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) WHERE b==b1 GROUP BY (a)
+								/-- #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|      No cost info
 								|\\- #1 m=k1(SUM) filter=b==b1 groupBy=(a) customMarker=JPY
-								|   \\  size=1 duration=18ms
+								|   \\  size=1 duration=24ms
 								\\-- #2 m=k1.someTableName1.cube(Combinator[COALESCE]) filter=b==b1 groupBy=(a) customMarker=JPY
-								    |  size=1 duration=8ms
+								    |  size=1 duration=10ms
 								    \\-- !1
-								Executed status=OK duration=33ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==b1, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cube=composite))
-								time=10ms for openingStream on TableQueryV2(filter=matchNone, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=12ms for mergeTableAggregates on TableQueryV2(filter=matchNone, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								time=13ms sizes=[0] for toSortedColumns on TableQueryV2(filter=matchNone, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED])
-								#0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
-								|  No cost info
+								Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==b1, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cube=composite))
+								/-- time=13ms for openingStream
+								|/- time=15ms for mergingAggregates
+								|/- time=16ms sizes=[0] for sortingColumns
+								\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) WHERE matchNone GROUP BY (a)
+								/-- #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+								|      No cost info
 								|\\- #1 m=k1(SUM) filter=matchNone groupBy=(a) customMarker=JPY
-								|   \\  size=0 duration=36ms
+								|   \\  size=0 duration=45ms
 								\\-- #2 m=k1.someTableName1.cube(Combinator[COALESCE]) filter=matchNone groupBy=(a) customMarker=JPY
-								    |  size=0 duration=14ms
+								    |  size=0 duration=17ms
 								    \\-- !1
-								Executed status=OK duration=69ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cube=composite))
-								time=104ms for openingStream on TableQueryV2(filter=b==b1, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=16ms for mergeTableAggregates on TableQueryV2(filter=b==b1, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								time=17ms sizes=[1, 1] for toSortedColumns on TableQueryV2(filter=b==b1, groupBy=(a), aggregators=[FilteredAggregator(aggregator=Aggregator(name=k1, tags=[], columnName=k1, aggregationKey=MAX, aggregationOptions={}), filter=matchAll, index=0), FilteredAggregator(aggregator=Aggregator(name=k1.someTableName1.cube, tags=[], columnName=k1, aggregationKey=SUM, aggregationOptions={}), filter=matchAll, index=0)], customMarker=JPY, topClause=noLimit, options=[EXPLAIN])
-								#0 s=composite id=00000000-0000-0000-0000-000000000000
-								|  No cost info
+								Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cube=composite))
+								/-- time=150ms for openingStream
+								|/- time=19ms for mergingAggregates
+								|/- time=20ms sizes=[1, 1] for sortingColumns
+								\\------ time=209ms for tableQuery on SELECT k1:MAX(k1)k1.someTableName1.cube:SUM(k1) WHERE b==b1 GROUP BY (a)
+								/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
+								|      No cost info
 								|\\- #1 m=k1(MAX) filter=b==b1 groupBy=(a) customMarker=JPY
-								|   \\  size=1 duration=48ms
+								|   \\  size=1 duration=57ms
 								\\-- #2 m=k1.someTableName1.cube(SUM) filter=b==b1 groupBy=(a) customMarker=JPY
-								    \\  size=1 duration=48ms
-								Executed status=OK duration=153ms on table=composite forest=composite-filtered query=CubeQuery(filter=b==b1, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k1.someTableName1.cube)], customMarker=JPY, options=[EXPLAIN])""");
-
-		Assertions.assertThat(messages).hasSize(23);
+								    \\  size=1 duration=57ms
+								Executed status=OK duration=210ms on table=composite forest=composite-filtered query=CubeQuery(filter=b==b1, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k1.someTableName1.cube)], customMarker=JPY, options=[EXPLAIN])""")
+				.hasLineCount(35);
 	}
 }

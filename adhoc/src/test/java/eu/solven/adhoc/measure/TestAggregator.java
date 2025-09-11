@@ -82,4 +82,16 @@ public class TestAggregator {
 			Assertions.assertThat(copy.getColumnName()).isEqualTo(aggregator.getName());
 		}
 	}
+
+	@Test
+	public void testToString() {
+		Assertions.assertThat(Aggregator.builder().name("someName").build()).hasToString("someName:SUM(someName)");
+		Assertions.assertThat(Aggregator.builder()
+				.name("someName")
+				.columnName("otherColumnName")
+				.aggregationKey("someKey")
+				.aggregationOption("someOptionKey", "someOptionValue")
+				.tag("someTag")
+				.build()).hasToString("someName:someKey(otherColumnName){someOptionKey=someOptionValue}");
+	}
 }

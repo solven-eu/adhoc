@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
@@ -103,6 +102,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 @SuppressWarnings("PMD.GodClass")
+// https://math.stackexchange.com/questions/2966359/how-to-calculate-cost-in-discrete-markov-transitions
 public class TableQueryEngineBootstrapped {
 
 	@NonNull
@@ -128,7 +128,7 @@ public class TableQueryEngineBootstrapped {
 		// Given the inducers, group them by groupBy, to leverage FILTER per measure
 		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(optimizer, inducerAndInduced.getInducers());
 
-		sanityChecks(queryStepsDag, inducerAndInduced, tableQueriesV2);
+		sanityChecks(queryPod, queryStepsDag, inducerAndInduced, tableQueriesV2);
 
 		// Execute the actual tableQueries
 		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
@@ -199,9 +199,17 @@ public class TableQueryEngineBootstrapped {
 					Duration elapsed = stopWatch.elapsed();
 					eventBus.post(TableStepIsCompleted.builder()
 							.querystep(tableQuery)
-							.nbCells(queryStepToValues.values().stream().mapToLong(c -> c.size()).sum())
+							.nbCells(queryStepToValues.values().stream().mapToLong(ISliceToValue::size).sum())
 							.source(this)
 							.duration(elapsed)
+							.build());
+
+					eventBus.post(AdhocLogEvent.builder()
+							.debug(queryPod.isDebug())
+							.explain(queryPod.isExplain())
+							.performance(true)
+							.message(formatPerfLog("\\------ time=%s for tableQuery on %s", elapsed, tableQuery))
+							.source(this)
 							.build());
 
 					queryStepToValuesInner.putAll(queryStepToValues);
@@ -221,15 +229,21 @@ public class TableQueryEngineBootstrapped {
 		}
 	}
 
+	protected String formatPerfLog(String template, Duration elapsed, TableQueryV2 tableQuery) {
+		return template.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), toPerfLog(tableQuery));
+	}
+
 	protected Map<CubeQueryStep, ISliceToValue> processOneTableQuery(QueryPod queryPod,
 			ISinkExecutionFeedback sinkExecutionFeedback,
-			TableQueryV2 dagQuery) {
-		TableQueryV2 suppressedQuery = suppressGeneratedColumns(queryPod, dagQuery);
+			TableQueryV2 tableQuery) {
+		TableQueryV2 suppressedQuery = suppressGeneratedColumns(queryPod, tableQuery);
 
 		// TODO We may be querying multiple times the same suppressedTableQuery
 		// e.g. if 2 tableQueries differs only by a suppressedColumn
-		TableQueryToSuppressedTableQuery toSuppressed =
-				TableQueryToSuppressedTableQuery.builder().dagQuery(dagQuery).suppressedQuery(suppressedQuery).build();
+		TableQueryToSuppressedTableQuery toSuppressed = TableQueryToSuppressedTableQuery.builder()
+				.dagQuery(tableQuery)
+				.suppressedQuery(suppressedQuery)
+				.build();
 
 		IStopwatch stopWatchSinking;
 
@@ -246,8 +260,7 @@ public class TableQueryEngineBootstrapped {
 						.debug(queryPod.isDebug())
 						.explain(queryPod.isExplain())
 						.performance(true)
-						.message("time=%s for openingStream on %s"
-								.formatted(PepperLogHelper.humanDuration(openingElasped.toMillis()), dagQuery))
+						.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, tableQuery))
 						.source(this)
 						.build());
 			}
@@ -260,6 +273,21 @@ public class TableQueryEngineBootstrapped {
 		reportAboutDoneAggregators(sinkExecutionFeedback, elapsed, stepToValues);
 
 		return stepToValues;
+	}
+
+	protected String toPerfLog(TableQueryV2 tableQuery) {
+		String groupBy =
+				tableQuery.getGroupBy().getGroupedByColumns().stream().collect(Collectors.joining(",", "(", ")"));
+		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining());
+		return "SELECT " + measures + " WHERE " + tableQuery.getFilter() + " GROUP BY " + groupBy;
+	}
+
+	protected String toPerfLog(FilteredAggregator fa) {
+		if (fa.getFilter().isMatchAll()) {
+			return fa.getAggregator().toString();
+		} else {
+			return fa.getAggregator() + " FILTER(" + fa.getFilter() + ")";
+		}
 	}
 
 	protected void reportAboutDoneAggregators(ISinkExecutionFeedback sinkExecutionFeedback,
@@ -280,6 +308,46 @@ public class TableQueryEngineBootstrapped {
 	}
 
 	/**
+	 * 
+	 * @param queryPod
+	 * @param queryStepsDag
+	 * @return a Stream over {@link CubeQueryStep} with resolved measures, guaranteed to be an {@link Aggregator}.
+	 */
+	protected Stream<CubeQueryStep> streamMissingRoots(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
+
+		return dag.vertexSet()
+				.stream()
+				// Consider only leaves steps.
+				// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
+				// `Transformator` with no undelryingSteps
+				.filter(step -> dag.outDegreeOf(step) == 0)
+				// Skip steps with a value in cache
+				.filter(step -> !queryStepsDag.getStepToValues().containsKey(step))
+				.map(step -> {
+					IMeasure measure = queryPod.resolveIfRef(step.getMeasure());
+
+					return CubeQueryStep.edit(step).measure(measure).build();
+				})
+				.filter(step -> {
+					IMeasure measure = step.getMeasure();
+
+					if (measure instanceof Aggregator) {
+						return true;
+					} else if (measure instanceof EmptyMeasure) {
+						log.trace("An EmptyMeasure has no underlying measures");
+						return false;
+					} else {
+						// Happens on Transformator with no underlying queryStep (no underlying measure, or planned as
+						// having no underlying step (e.g. Filtrator with matchNone filter))
+						log.debug("step={} has been planned having no underlying step", step);
+						return false;
+					}
+				});
+	}
+
+	/**
 	 * @param queryPod
 	 * @param queryStepsDag
 	 * @return the Set of {@link TableQuery} to be executed.
@@ -288,34 +356,19 @@ public class TableQueryEngineBootstrapped {
 		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
 		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
 
-		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
-		dag.vertexSet()
-				.stream()
-				// Consider only leaves steps.
-				// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
-				// `Transformator` with no undelryingSteps
-				.filter(step -> dag.outgoingEdgesOf(step).isEmpty())
-				// Skip steps with a value in cache
-				.filter(step -> !queryStepsDag.getStepToValues().containsKey(step))
-				.forEach(step -> {
-					IMeasure leafMeasure = queryPod.resolveIfRef(step.getMeasure());
+		streamMissingRoots(queryPod, queryStepsDag).forEach(step -> {
+			IMeasure measure = step.getMeasure();
 
-					if (leafMeasure instanceof Aggregator leafAggregator) {
-						MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
+			if (measure instanceof Aggregator leafAggregator) {
+				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
 
-						// Aggregator leaves are groupedBy context (groupBy+filter+customMarker)
-						// They may be later grouped by different granularities (e.g. to leverage `FILTER` per measure)
-						measurelessToAggregators
-								.merge(measureless, Set.of(leafAggregator), UnionSetAggregation::unionSet);
-					} else if (leafMeasure instanceof EmptyMeasure) {
-						log.trace("An EmptyMeasure has no underlying measures");
-					} else {
-						// Happens on Transformator with no underlying queryStep (no underlying measure, or planned as
-						// having no underlying step (e.g. Filtrator with matchNone filter))
-						log.debug("step={} has been planned having no underlying step", step);
-					}
-				});
+				// Aggregator leaves are groupedBy context (groupBy+filter+customMarker)
+				// They may be later grouped by different granularities (e.g. to leverage `FILTER` per measure)
+				measurelessToAggregators.merge(measureless, Set.of(leafAggregator), UnionSetAggregation::unionSet);
+			} else {
+				throw new IllegalStateException("%s is not an Aggregator".formatted(step));
+			}
+		});
 
 		return measurelessToAggregators.entrySet().stream().map(e -> {
 			MeasurelessQuery measurelessQuery = e.getKey();
@@ -438,21 +491,16 @@ public class TableQueryEngineBootstrapped {
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("time=%s sizes=%s total_size=%s for toSortedColumns on %s".formatted(
-								PepperLogHelper.humanDuration(elapsed.toMillis()),
-								Arrays.toString(sizes),
-								totalSize,
-								queryAndSuppressed.getDagQuery()))
+						.message("|/- time=%s sizes=%s total_size=%s for sortingColumns".formatted(PepperLogHelper
+								.humanDuration(elapsed.toMillis()), Arrays.toString(sizes), totalSize))
 						.source(this)
 						.build());
 			} else if (queryPod.isExplain()) {
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("time=%s sizes=%s for toSortedColumns on %s".formatted(
-								PepperLogHelper.humanDuration(elapsed.toMillis()),
-								Arrays.toString(sizes),
-								queryAndSuppressed.getDagQuery()))
+						.message("|/- time=%s sizes=%s for sortingColumns"
+								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), Arrays.toString(sizes)))
 						.source(this)
 						.build());
 			}
@@ -475,18 +523,18 @@ public class TableQueryEngineBootstrapped {
 			long totalSize = dagQuery.getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
 
 			eventBus.post(AdhocLogEvent.builder()
-					.debug(true)
+					.debug(queryPod.isDebug())
 					.performance(true)
-					.message("time=%s size=%s for mergeTableAggregates on %s"
-							.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), totalSize, dagQuery))
+					.message("|/- time=%s size=%s for mergingAggregates"
+							.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), totalSize))
 					.source(this)
 					.build());
 		} else if (queryPod.isExplain()) {
 			eventBus.post(AdhocLogEvent.builder()
-					.explain(true)
+					.explain(queryPod.isExplain())
 					.performance(true)
-					.message("time=%s for mergeTableAggregates on %s"
-							.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), dagQuery))
+					.message("|/- time=%s for mergingAggregates"
+							.formatted(PepperLogHelper.humanDuration(elapsed.toMillis())))
 					.source(this)
 					.build());
 		}
@@ -624,11 +672,14 @@ public class TableQueryEngineBootstrapped {
 	/**
 	 * Checks the tableQueries are actually valid: do they cover the required steps?
 	 * 
+	 * @param queryPod
+	 * 
 	 * @param queryStepsDag
 	 * @param inducerAndInduced
 	 * @param tableQueries
 	 */
-	protected void sanityChecks(QueryStepsDag queryStepsDag,
+	protected void sanityChecks(QueryPod queryPod,
+			QueryStepsDag queryStepsDag,
 			SplitTableQueries inducerAndInduced,
 			Set<TableQueryV2> tableQueries) {
 		// Holds the querySteps evaluated from the ITableWrapper
@@ -671,15 +722,8 @@ public class TableQueryEngineBootstrapped {
 
 		// Given all tableDag nodes, we should have all cubeDag roots
 		{
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> cubeDag = queryStepsDag.getInducedToInducer();
-			Set<CubeQueryStep> cubeRoots = cubeDag.vertexSet()
-					.stream()
-					.filter(key -> cubeDag.outDegreeOf(key) == 0)
-					.collect(Collectors.toSet());
-
-			// Remove unnecessary steps (e.g. as provided by cache)
 			Set<CubeQueryStep> neededCubeRoots =
-					ImmutableSet.copyOf(Sets.difference(cubeRoots, queryStepsDag.getStepToValues().keySet()));
+					streamMissingRoots(queryPod, queryStepsDag).collect(Collectors.toSet());
 
 			Set<CubeQueryStep> missingCubeRoots = Sets.difference(neededCubeRoots, stepsImpliedByTableQueries);
 			if (!missingCubeRoots.isEmpty()) {

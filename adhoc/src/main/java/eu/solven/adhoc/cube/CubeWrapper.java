@@ -155,6 +155,20 @@ public class CubeWrapper implements ICubeWrapper {
 			}
 		});
 
+		getColumnsManager().getColumnAliases().forEach(columnAlias -> {
+			String tableName = getColumnsManager().openTranscodingContext().underlying(columnAlias);
+
+			ColumnMetadata originalMetadata = columnToType.get(tableName);
+
+			if (originalMetadata == null) {
+				log.debug("Unclear alias=%s as it has no underlying table", columnAlias);
+				columnToType.put(columnAlias,
+						ColumnMetadata.builder().name(columnAlias).tag("alias").type(Object.class).build());
+			} else {
+				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
+			}
+		});
+
 		return columnToType.values();
 	}
 

@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.context;
 
 import java.util.Set;
 
-import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -44,7 +44,7 @@ public class GeneratedColumnsPreparator extends StandardQueryPreparator {
 	Set<String> generatedColumnsMeasures;
 
 	@Override
-	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
+	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
 		MeasureForestBuilder filteredForest = super.filterForest(forest, preparedQuery);
 
 		generatedColumnsMeasures.forEach(calculatedMeasure -> filteredForest

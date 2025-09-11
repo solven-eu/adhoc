@@ -29,7 +29,7 @@ public class TestMapTableTranscoder {
 	@Test
 	public void testNotRecursive() {
 		MapTableAliaser transcoder =
-				MapTableAliaser.builder().queriedToUnderlying("k", "_k").queriedToUnderlying("_k", "__k").build();
+				MapTableAliaser.builder().aliasToOriginal("k", "_k").aliasToOriginal("_k", "__k").build();
 
 		Assertions.assertThat(transcoder.underlying("a")).isEqualTo(null);
 		Assertions.assertThat(transcoder.underlying("k")).isEqualTo("_k");

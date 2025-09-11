@@ -30,15 +30,15 @@ import eu.solven.adhoc.table.transcoder.CompositeTableAliaser.ChainMode;
 public class TestCompositeTableTranscoder {
 	@Test
 	public void testFirstNotNull() {
-		MapTableAliaser transcoder1 =
-				MapTableAliaser.builder().queriedToUnderlying("a1", "b1").queriedToUnderlying("a2", "b2").build();
-		MapTableAliaser transcoder2 =
-				MapTableAliaser.builder().queriedToUnderlying("b1", "c1").queriedToUnderlying("b3", "c3").build();
+		MapTableAliaser aliaser1 =
+				MapTableAliaser.builder().aliasToOriginal("a1", "b1").aliasToOriginal("a2", "b2").build();
+		MapTableAliaser aliaser2 =
+				MapTableAliaser.builder().aliasToOriginal("b1", "c1").aliasToOriginal("b3", "c3").build();
 
 		CompositeTableAliaser aliaser = CompositeTableAliaser.builder()
 				.chainMode(ChainMode.FirstNotNull)
-				.transcoder(transcoder1)
-				.transcoder(transcoder2)
+				.aliaser(aliaser1)
+				.aliaser(aliaser2)
 				.build();
 
 		Assertions.assertThat(aliaser.underlying("a1")).isEqualTo("b1");
@@ -50,21 +50,21 @@ public class TestCompositeTableTranscoder {
 
 	@Test
 	public void testApplyTry() {
-		MapTableAliaser transcoder1 =
-				MapTableAliaser.builder().queriedToUnderlying("a1", "b1").queriedToUnderlying("a2", "b2").build();
-		MapTableAliaser transcoder2 =
-				MapTableAliaser.builder().queriedToUnderlying("b1", "c1").queriedToUnderlying("b3", "c3").build();
+		MapTableAliaser aliaser1 =
+				MapTableAliaser.builder().aliasToOriginal("a1", "b1").aliasToOriginal("a2", "b2").build();
+		MapTableAliaser aliaser2 =
+				MapTableAliaser.builder().aliasToOriginal("b1", "c1").aliasToOriginal("b3", "c3").build();
 
-		CompositeTableAliaser transcoder = CompositeTableAliaser.builder()
+		CompositeTableAliaser aliaser = CompositeTableAliaser.builder()
 				.chainMode(ChainMode.ApplyAll)
-				.transcoder(transcoder1)
-				.transcoder(transcoder2)
+				.aliaser(aliaser1)
+				.aliaser(aliaser2)
 				.build();
 
-		Assertions.assertThat(transcoder.underlying("a1")).isEqualTo("c1");
-		Assertions.assertThat(transcoder.underlying("b1")).isEqualTo("c1");
-		Assertions.assertThat(transcoder.underlying("a2")).isEqualTo("b2");
-		Assertions.assertThat(transcoder.underlying("b3")).isEqualTo("c3");
-		Assertions.assertThat(transcoder.underlying("unknown")).isEqualTo(null);
+		Assertions.assertThat(aliaser.underlying("a1")).isEqualTo("c1");
+		Assertions.assertThat(aliaser.underlying("b1")).isEqualTo("c1");
+		Assertions.assertThat(aliaser.underlying("a2")).isEqualTo("b2");
+		Assertions.assertThat(aliaser.underlying("b3")).isEqualTo("c3");
+		Assertions.assertThat(aliaser.underlying("unknown")).isEqualTo(null);
 	}
 }

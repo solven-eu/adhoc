@@ -44,7 +44,7 @@ import eu.solven.adhoc.table.transcoder.PrefixAliaser;
 
 public class TestTransformator_Transcoding extends ADagTest implements IAdhocTestConstants {
 	IColumnsManager columnsManager =
-			ColumnsManager.builder().transcoder(PrefixAliaser.builder().prefix("p_").build()).build();
+			ColumnsManager.builder().aliaser(PrefixAliaser.builder().prefix("p_").build()).build();
 
 	@Override
 	public CubeWrapperBuilder makeCube() {

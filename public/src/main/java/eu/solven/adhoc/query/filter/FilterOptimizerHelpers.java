@@ -117,13 +117,13 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
-	private static ISliceFilter optimizeAndOfOr(Collection<ISliceFilter> andOperands) {
+	protected ISliceFilter optimizeAndOfOr(Collection<ISliceFilter> andOperands) {
 		// 1- Segment filters between OR-like filters and others
 		// OR-like filters will be combined with a cartesian product, in the hope of rejecting many irrelevant
 		// combinations. The others are combined as a single AND.
 
 		Map<Boolean, List<ISliceFilter>> orNotOr =
-				andOperands.stream().collect(Collectors.partitioningBy(FilterOptimizerHelpers::hasOrOperands));
+				andOperands.stream().collect(Collectors.partitioningBy(this::hasOrOperands));
 
 		List<ISliceFilter> orOperands = orNotOr.get(true);
 		if (orOperands.isEmpty()) {
@@ -148,7 +148,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		// is to reduce the cartesian product as much as possible.
 		Set<ISliceFilter> strippedOrFiltersAsAnd = splitAndStripOrs(hasSimplified, where, orOperands);
 		List<List<ISliceFilter>> strippedOrFilters = strippedOrFiltersAsAnd.stream()
-				.map(FilterOptimizerHelpers::getOrOperands)
+				.map(this::getOrOperands)
 				.<List<ISliceFilter>>map(ImmutableList::copyOf)
 				.toList();
 
@@ -189,7 +189,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		return FilterBuilder.and(andOperands).combine();
 	}
 
-	private static Set<ISliceFilter> cartedianProductAndStripOrs(ISliceFilter commonAnd,
+	protected Set<ISliceFilter> cartedianProductAndStripOrs(ISliceFilter commonAnd,
 			AtomicBoolean hasSimplified,
 			List<List<ISliceFilter>> cartesianProduct) {
 		return cartesianProduct.stream()
@@ -225,11 +225,11 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 *            triggering or not, to prevent cycles.
 	 * @return a {@link List} of AND operands
 	 */
-	private static Set<ISliceFilter> splitAndStripOrs(AtomicBoolean hasSimplified,
+	protected Set<ISliceFilter> splitAndStripOrs(AtomicBoolean hasSimplified,
 			ISliceFilter where,
 			List<ISliceFilter> andOperands) {
 		Collection<ISliceFilter> outputOperands = andOperands.stream()
-				.map(FilterOptimizerHelpers::getOrOperands)
+				.map(this::getOrOperands)
 				.map(orOperands -> splitThenStripOrs(hasSimplified, where, orOperands))
 				.map(orOperands -> FilterBuilder.or(orOperands).optimize())
 				.collect(Collectors.toCollection(ArrayList::new));
@@ -244,7 +244,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @param orOperands
 	 * @return a {@link List} of operands to OR, equivalent to the input {@link List}
 	 */
-	protected static Set<ISliceFilter> splitThenStripOrs(AtomicBoolean hasSimplified,
+	protected Set<ISliceFilter> splitThenStripOrs(AtomicBoolean hasSimplified,
 			ISliceFilter where,
 			Set<ISliceFilter> orOperands) {
 		List<ISliceFilter> strippedWhere = orOperands.stream()
@@ -273,7 +273,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		return strippedStricter;
 	}
 
-	static Set<ISliceFilter> removeLaxerInAnd(Collection<? extends ISliceFilter> operands) {
+	Set<ISliceFilter> removeLaxerInAnd(Collection<? extends ISliceFilter> operands) {
 		return removeLaxerOrStricter(operands, true);
 	}
 
@@ -283,12 +283,12 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @param operands
 	 *            operands which are ORed.
 	 */
-	static Set<ISliceFilter> removeStricterInOr(Collection<? extends ISliceFilter> operands) {
+	Set<ISliceFilter> removeStricterInOr(Collection<? extends ISliceFilter> operands) {
 		return removeLaxerOrStricter(operands, false);
 	}
 
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	private static Set<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
+	protected Set<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		// Given a list of ANDs, we reject stricter operands in profit of the laxer operands
 		// Given the presence of hard, we remove soft
@@ -336,11 +336,11 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @param f
 	 * @return true if this can be expressed as a OR with at least 2 operands.
 	 */
-	private static boolean hasOrOperands(ISliceFilter f) {
+	protected boolean hasOrOperands(ISliceFilter f) {
 		return FilterHelpers.splitOr(f).size() >= 2;
 	}
 
-	private static Set<ISliceFilter> getOrOperands(ISliceFilter f) {
+	protected Set<ISliceFilter> getOrOperands(ISliceFilter f) {
 		return FilterHelpers.splitOr(f);
 	}
 
@@ -350,8 +350,8 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @param operands
 	 * @return the cost of given operands, considered as being AND together.
 	 */
-	static int costFunction(Collection<? extends ISliceFilter> operands) {
-		return operands.stream().mapToInt(FilterOptimizerHelpers::costFunction).sum();
+	int costFunction(Collection<? extends ISliceFilter> operands) {
+		return operands.stream().mapToInt(this::costFunction).sum();
 	}
 
 	/**
@@ -363,7 +363,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 */
 	// factors are additive (hence not multiplicative) as we prefer a high `Not` (counting once) than multiple deep Not
 	@SuppressWarnings("checkstyle:MagicNumber")
-	static int costFunction(ISliceFilter f) {
+	int costFunction(ISliceFilter f) {
 		if (f instanceof IAndFilter andFilter) {
 			return costFunction(andFilter.getOperands());
 		} else if (f instanceof INotFilter notFilter) {
@@ -379,7 +379,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		}
 	}
 
-	static int costFunction(IValueMatcher m) {
+	int costFunction(IValueMatcher m) {
 		if (m instanceof NotMatcher notMatcher) {
 			// `Not(c=c1)` will cost `3`
 			return 2 + costFunction(notMatcher.getNegated());
@@ -389,7 +389,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	}
 
 	// Like `and` but skipping the optimization. May be useful for debugging
-	private static ISliceFilter andNotOptimized(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+	protected ISliceFilter andNotOptimized(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
 		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
 			return IAndFilter.MATCH_NONE;
 		}
@@ -442,7 +442,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * 
 	 * @author Benoit Lacelle
 	 */
-	private static final class PackingColumns {
+	protected static class PackingColumns {
 		// If there is not a single valueMatcher with explicit values, we should add all as not managed
 		final AtomicBoolean hadSomeAllowedValues = new AtomicBoolean();
 		// allowedValues is meaningful only if hadSomeAllowedValues is true
@@ -459,7 +459,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		// This flag is used to prevent re-ordering if the filter is not actually simplified
 		final AtomicBoolean hasSimplified = new AtomicBoolean();
 
-		private void registerPackedColumn(AtomicBoolean isMatchNone, IColumnFilter columnFilter) {
+		protected void registerPackedColumn(AtomicBoolean isMatchNone, IColumnFilter columnFilter) {
 			if (columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher) {
 				hadSomeAllowedValues.set(true);
 				Object operand = equalsMatcher.getWrapped();
@@ -489,7 +489,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			}
 		}
 
-		private void addOperandInSet(AtomicBoolean isMatchNone, Set<?> operands) {
+		protected void addOperandInSet(AtomicBoolean isMatchNone, Set<?> operands) {
 			if (allowedValues.isEmpty()) {
 				// This is the first accepted values
 				allowedValues.addAll(operands);
@@ -502,7 +502,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			}
 		}
 
-		private void addOperandInSet(AtomicBoolean isMatchNone, Object operand) {
+		protected void addOperandInSet(AtomicBoolean isMatchNone, Object operand) {
 			if (allowedValues.isEmpty()) {
 				// This is the first accepted values
 				allowedValues.add(operand);
@@ -600,7 +600,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 *            which are considered AND together.
 	 * @return a simpler list of filters, where filters are simplified on a per-column basis.
 	 */
-	private static Collection<? extends ISliceFilter> packColumnFilters(Collection<? extends ISliceFilter> filters) {
+	protected Collection<? extends ISliceFilter> packColumnFilters(Collection<? extends ISliceFilter> filters) {
 		@SuppressWarnings("PMD.LinguisticNaming")
 		Map<Boolean, List<ISliceFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.partitioningBy(f -> f instanceof IColumnFilter));

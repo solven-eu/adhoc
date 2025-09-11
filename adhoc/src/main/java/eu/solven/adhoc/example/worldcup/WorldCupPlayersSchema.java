@@ -288,11 +288,11 @@ public class WorldCupPlayersSchema {
 				.table(table)
 				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
 				.columnsManager(ColumnsManager.builder()
-						.transcoder(MapTableAliaser.builder()
-								.queriedToUnderlyings(snowflakeBuilder().getQueriedToUnderlying())
+						.aliaser(MapTableAliaser.builder()
+								.aliasToOriginals(snowflakeBuilder().getAliasToOriginal())
 								// TODO Need to progress on caseSensitivity
-								.queriedToUnderlying("MatchID", "WorldCupPlayers.MatchId")
-								.queriedToUnderlying("RoundID", "WorldCupPlayers.RoundId")
+								.aliasToOriginal("MatchID", "WorldCupPlayers.MatchId")
+								.aliasToOriginal("RoundID", "WorldCupPlayers.RoundId")
 								.build())
 						.build());
 	}

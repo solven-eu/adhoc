@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.measure;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -101,7 +101,7 @@ public final class UnsafeMeasureForest implements IMeasureForest {
 		return Optional.of(measure);
 	}
 
-	public static UnsafeMeasureForest fromMeasures(String name, List<IMeasure> measures) {
+	public static UnsafeMeasureForest fromMeasures(String name, Collection<IMeasure> measures) {
 		UnsafeMeasureForest ams = UnsafeMeasureForest.builder().name(name).build();
 
 		measures.forEach(measure -> {

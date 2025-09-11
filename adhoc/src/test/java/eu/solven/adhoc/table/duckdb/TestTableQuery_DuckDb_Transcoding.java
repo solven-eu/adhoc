@@ -63,15 +63,15 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
-	private CubeWrapper cube(ITableAliaser transcoder) {
-		return editCube().columnsManager(ColumnsManager.builder().transcoder(transcoder).build()).build();
+	private CubeWrapper cube(ITableAliaser aliaser) {
+		return editCube().columnsManager(ColumnsManager.builder().aliaser(aliaser).build()).build();
 	}
 
 	@Test
 	public void testDifferentQueriedSameUnderlying() {
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableAliaser transcoder =
-				MapTableAliaser.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
+				MapTableAliaser.builder().aliasToOriginal("k1", "k").aliasToOriginal("k2", "k").build();
 
 		CubeWrapper cube = cube(transcoder);
 
@@ -97,7 +97,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testOverlap() {
 		// Let's say k1 and k2 rely on the single k DB column
-		ITableAliaser transcoder = MapTableAliaser.builder().queriedToUnderlying("k1", "k").build();
+		ITableAliaser transcoder = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
@@ -120,10 +120,10 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	public void testCycle_measure() {
 		// Cycle of length 4: k1 -> k2, k2 -> k3, k3 -> k4, k4 -> k1
 		ITableAliaser transcoder = MapTableAliaser.builder()
-				.queriedToUnderlying("k1", "k2")
-				.queriedToUnderlying("k2", "k3")
-				.queriedToUnderlying("k3", "k4")
-				.queriedToUnderlying("k4", "k1")
+				.aliasToOriginal("k1", "k2")
+				.aliasToOriginal("k2", "k3")
+				.aliasToOriginal("k3", "k4")
+				.aliasToOriginal("k4", "k1")
 				.build();
 
 		CubeWrapper cube = cube(transcoder);
@@ -178,10 +178,10 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	public void testCycle_groupBy() {
 		// Cycle of length 4: k1 -> k2, k2 -> k3, k3 -> k4, k4 -> k1
 		ITableAliaser transcoder = MapTableAliaser.builder()
-				.queriedToUnderlying("k1", "k2")
-				.queriedToUnderlying("k2", "k3")
-				.queriedToUnderlying("k3", "k4")
-				.queriedToUnderlying("k4", "k1")
+				.aliasToOriginal("k1", "k2")
+				.aliasToOriginal("k2", "k3")
+				.aliasToOriginal("k3", "k4")
+				.aliasToOriginal("k4", "k1")
 				.build();
 
 		dsl.createTableIfNotExists(tableName)
@@ -212,7 +212,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testCubeQuery() {
 		// Let's say k1 and k2 rely on the single k DB column
-		ITableAliaser transcoder = MapTableAliaser.builder().queriedToUnderlying("k1", "k").build();
+		ITableAliaser transcoder = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
@@ -239,7 +239,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	public void testCubeQuery_aliasWithNameAlreadyInTable() {
 		// Let's say k1 and k2 rely on the single k DB column
 		ITableAliaser transcoder =
-				MapTableAliaser.builder().queriedToUnderlying("k1", "k").queriedToUnderlying("k2", "k").build();
+				MapTableAliaser.builder().aliasToOriginal("k1", "k").aliasToOriginal("k2", "k").build();
 
 		dsl.createTableIfNotExists(tableName)
 				.column("k", SQLDataType.INTEGER)
@@ -269,7 +269,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Test
 	public void testCubeQuery_sumFilterGroupByk1() {
 		// Let's say k1 and k2 rely on the single k DB column
-		ITableAliaser transcoder = MapTableAliaser.builder().queriedToUnderlying("k1", "k").build();
+		ITableAliaser transcoder = MapTableAliaser.builder().aliasToOriginal("k1", "k").build();
 
 		dsl.createTableIfNotExists(tableName).column("k", SQLDataType.INTEGER).execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("k")).values(123).execute();
@@ -292,9 +292,8 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 		// In this useCase, we rely on a simple FILTER expression
 		// While this could be done with a Filtrator, it demonstrate useCases like: potentially more complex
 		// expressions, or Atoti ColumnCalculator
-		ITableAliaser transcoder = MapTableAliaser.builder()
-				.queriedToUnderlying("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))")
-				.build();
+		ITableAliaser transcoder =
+				MapTableAliaser.builder().aliasToOriginal("v_RED", "max(\"v\") FILTER(\"color\" in ('red'))").build();
 
 		dsl.createTableIfNotExists(tableName)
 				.column("v", SQLDataType.INTEGER)

@@ -24,6 +24,9 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Optional;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -48,19 +51,21 @@ public interface ITableAliaser {
 	 * @return the equivalent underlying column name, typically used by the database. If null, it means the column maps
 	 *         to itself.
 	 */
+	@Nullable
 	String underlying(String queried);
 
 	/**
 	 * This never returns null for convenience of callers.
 	 *
-	 * @param queried
+	 * @param alias
 	 *            a column name typically used by an {@link ICubeQuery}.
 	 * @return the equivalent underlying column name, typically used by the database.
 	 */
-	default String underlyingNonNull(String queried) {
-		String underlyingColumn = underlying(queried);
+	@NonNull
+	default String underlyingNonNull(String alias) {
+		String underlyingColumn = underlying(alias);
 
-		return Optional.ofNullable(underlyingColumn).orElse(queried);
+		return Optional.ofNullable(underlyingColumn).orElse(alias);
 	}
 
 	/**

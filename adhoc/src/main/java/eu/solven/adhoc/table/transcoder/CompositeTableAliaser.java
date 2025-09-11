@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableList;
 
 import lombok.Builder;
@@ -35,7 +39,7 @@ import lombok.Singular;
  * @author Benoit Lacelle
  */
 @Builder
-public class CompositeTableAliaser implements ITableAliaser {
+public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns {
 	/**
 	 * Different modes when iterating through the available transcoders.
 	 * 
@@ -56,7 +60,7 @@ public class CompositeTableAliaser implements ITableAliaser {
 
 	@NonNull
 	@Singular
-	ImmutableList<ITableAliaser> transcoders;
+	ImmutableList<ITableAliaser> aliasers;
 
 	@Default
 	@NonNull
@@ -67,8 +71,8 @@ public class CompositeTableAliaser implements ITableAliaser {
 		boolean oneMatched = false;
 		String currenQueried = queried;
 
-		for (ITableAliaser transcoder : transcoders) {
-			String underlying = transcoder.underlying(currenQueried);
+		for (ITableAliaser aliaser : aliasers) {
+			String underlying = aliaser.underlying(currenQueried);
 
 			if (underlying != null) {
 				oneMatched = true;
@@ -87,6 +91,17 @@ public class CompositeTableAliaser implements ITableAliaser {
 		} else {
 			return null;
 		}
+	}
+
+	@Override
+	public Set<String> getAlias() {
+		return aliasers.stream().flatMap(a -> {
+			if (a instanceof IHasAliasedColumns hasAliases) {
+				return hasAliases.getAlias().stream();
+			} else {
+				return Stream.of();
+			}
+		}).collect(Collectors.toSet());
 	}
 
 }

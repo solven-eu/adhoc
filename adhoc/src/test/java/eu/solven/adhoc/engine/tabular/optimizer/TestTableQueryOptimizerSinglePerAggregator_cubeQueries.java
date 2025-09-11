@@ -84,7 +84,7 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 	@Test
 	public void testCanInduce_groupByDifferentColumns() {
 
-		ICubeWrapper cube = new CubeWrapperEditor(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
 			@Override
 			protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
 				return new TableQueryOptimizerSinglePerAggregator(factories);
@@ -139,7 +139,7 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 				.filter(ColumnFilter.isEqualTo("a", "a1"))
 				.build());
 
-		ICubeWrapper cube = new CubeWrapperEditor(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
 			@Override
 			protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
 				return new TableQueryOptimizerSinglePerAggregator(factories);

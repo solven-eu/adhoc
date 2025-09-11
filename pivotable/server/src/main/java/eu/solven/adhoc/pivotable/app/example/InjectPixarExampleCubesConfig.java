@@ -181,9 +181,7 @@ public class InjectPixarExampleCubesConfig {
 					.forest(MeasureForest.fromMeasures("films", measuresFilm))
 					.table(filmsTable)
 					.columnsManager(ColumnsManager.builder()
-							.transcoder(MapTableAliaser.builder()
-									.queriedToUnderlyings(films.getQueriedToUnderlying())
-									.build())
+							.aliaser(MapTableAliaser.builder().aliasToOriginals(films.getAliasToOriginal()).build())
 							.build())
 					.build();
 			schema.registerCube(filmsCube);
@@ -213,9 +211,7 @@ public class InjectPixarExampleCubesConfig {
 					.forest(MeasureForest.fromMeasures("people", measuresPeople))
 					.table(peopleTable)
 					.columnsManager(ColumnsManager.builder()
-							.transcoder(MapTableAliaser.builder()
-									.queriedToUnderlyings(people.getQueriedToUnderlying())
-									.build())
+							.aliaser(MapTableAliaser.builder().aliasToOriginals(people.getAliasToOriginal()).build())
 							.build())
 					.build();
 			schema.registerCube(peopleCube);

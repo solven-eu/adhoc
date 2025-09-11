@@ -53,26 +53,25 @@ public class AliasingContext implements ITableAliaser, ITableReverseAliaser {
 	// Most column would be managed through identity aliasing
 	final Set<String> identity = new LinkedHashSet<>();
 	// Some columns would be managed through not-trivial aliasing
-	final SetMultimap<String, String> underlyingToQueried =
-			MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+	final SetMultimap<String, String> originalToAlias = MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
 	@Getter
 	final Map<String, FunctionCalculatedColumn> nameToCalculated = new LinkedHashMap<>();
 
 	@Builder.Default
-	final ITableAliaser transcoder = new IdentityImplicitAliaser();
+	final ITableAliaser aliaser = new IdentityImplicitAliaser();
 
 	// Optimization performance
 	private final Map<Set<String>, Long> cacheKeysToSize = new ConcurrentHashMap<>();
 
 	@Override
-	public String underlying(String queried) {
-		String underlyingColumn = transcoder.underlyingNonNull(queried);
+	public String underlying(String alias) {
+		String underlyingColumn = aliaser.underlyingNonNull(alias);
 
-		if (Objects.equals(underlyingColumn, queried)) {
+		if (Objects.equals(underlyingColumn, alias)) {
 			identity.add(underlyingColumn);
-		} else if (underlyingToQueried.put(underlyingColumn, queried)) {
-			log.trace("Registered {} -> {} in {}", underlyingColumn, queried, this);
+		} else if (originalToAlias.put(underlyingColumn, alias)) {
+			log.trace("Registered {} -> {} in {}", underlyingColumn, alias, this);
 		}
 
 		return underlyingColumn;
@@ -80,14 +79,11 @@ public class AliasingContext implements ITableAliaser, ITableReverseAliaser {
 
 	@Override
 	public Set<String> queried(String underlying) {
-		if (underlyingToQueried.containsKey(underlying)) {
+		if (originalToAlias.containsKey(underlying)) {
 			if (identity.contains(underlying)) {
-				return ImmutableSet.<String>builder()
-						.addAll(underlyingToQueried.get(underlying))
-						.add(underlying)
-						.build();
+				return ImmutableSet.<String>builder().addAll(originalToAlias.get(underlying)).add(underlying).build();
 			} else {
-				return underlyingToQueried.get(underlying);
+				return originalToAlias.get(underlying);
 			}
 		} else if (identity.contains(underlying)) {
 			return Set.of(underlying);
@@ -99,11 +95,11 @@ public class AliasingContext implements ITableAliaser, ITableReverseAliaser {
 	}
 
 	public Set<String> underlyings() {
-		if (underlyingToQueried.isEmpty()) {
+		if (originalToAlias.isEmpty()) {
 			return identity;
 		} else {
 			// Merge the keys which are aliased and those which are not aliased
-			return ImmutableSet.<String>builder().addAll(underlyingToQueried.keySet()).addAll(identity).build();
+			return ImmutableSet.<String>builder().addAll(originalToAlias.keySet()).addAll(identity).build();
 		}
 	}
 
@@ -124,6 +120,6 @@ public class AliasingContext implements ITableAliaser, ITableReverseAliaser {
 	}
 
 	public boolean isOnlyIdentity() {
-		return underlyingToQueried.isEmpty();
+		return originalToAlias.isEmpty();
 	}
 }

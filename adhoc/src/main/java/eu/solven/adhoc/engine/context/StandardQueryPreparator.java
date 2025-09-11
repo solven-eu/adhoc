@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.engine.ICanResolveMeasure;
+import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -128,7 +128,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	 * @return a {@link MeasureForest} restricted to the measures playing a role in {@link ICubeQuery}.
 	 */
 	@SuppressWarnings("PMD.CollapsibleIfStatements")
-	protected MeasureForestBuilder filterForest(ICanResolveMeasure forest, ICubeQuery preparedQuery) {
+	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
 		Set<IMeasure> relevantMeasures = new LinkedHashSet<>();
 
 		Set<IMeasure> measuresToAdd = new LinkedHashSet<>(preparedQuery.getMeasures());

@@ -89,6 +89,17 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 		}
 	}
 
+	@Override
+	public String toString() {
+		String asString = "%s:%s(%s)".formatted(name, aggregationKey, columnName);
+
+		if (!aggregationOptions.isEmpty()) {
+			asString += aggregationOptions;
+		}
+
+		return asString;
+	}
+
 	/**
 	 * 
 	 * @param column

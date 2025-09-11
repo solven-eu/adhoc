@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 public class TestRecursiveAliaser {
 	@Test
 	public void testRecursive() {
-		ITableAliaser aliaser = RecursiveAliaser.wrap(
-				MapTableAliaser.builder().queriedToUnderlying("k", "_k").queriedToUnderlying("_k", "__k").build());
+		ITableAliaser aliaser = RecursiveAliaser
+				.wrap(MapTableAliaser.builder().aliasToOriginal("k", "_k").aliasToOriginal("_k", "__k").build());
 
 		Assertions.assertThat(aliaser.underlying("a")).isEqualTo(null);
 		Assertions.assertThat(aliaser.underlying("k")).isEqualTo("__k");
@@ -40,9 +40,9 @@ public class TestRecursiveAliaser {
 	@Test
 	public void testRecursive_cycle() {
 		ITableAliaser aliaser = RecursiveAliaser.wrap(MapTableAliaser.builder()
-				.queriedToUnderlying("k", "_k")
-				.queriedToUnderlying("_k", "__k")
-				.queriedToUnderlying("__k", "k")
+				.aliasToOriginal("k", "_k")
+				.aliasToOriginal("_k", "__k")
+				.aliasToOriginal("__k", "k")
 				.build());
 
 		Assertions.assertThat(aliaser.underlying("a")).isEqualTo(null);
@@ -63,7 +63,7 @@ public class TestRecursiveAliaser {
 
 		int depth = 16 * 1024;
 		for (int i = 0; i <= depth; i++) {
-			aliaserBuilder.queriedToUnderlying("k_" + i, "k_" + (i + 1));
+			aliaserBuilder.aliasToOriginal("k_" + i, "k_" + (i + 1));
 		}
 		ITableAliaser transcoder = RecursiveAliaser.wrap(aliaserBuilder.build());
 

@@ -24,19 +24,17 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.cube.ICubeWrapper;
 
-public class TestIdentityReversibleTranscoder {
-	IdentityReversibleAliaser aliaser = new IdentityReversibleAliaser();
+/**
+ * Enable a {@link ITableAliaser} to indicates some typically queried columns. Useful to enrich the columns of a
+ * {@link ICubeWrapper}.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IHasAliasedColumns {
 
-	@Test
-	public void testTranscoder() {
-		Assertions.assertThat(aliaser.underlying("c")).isEqualTo("c");
+	Set<String> getAlias();
 
-		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
-
-		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
-		Assertions.assertThat(context.queried("c")).isEqualTo(Set.of("c"));
-	}
 }

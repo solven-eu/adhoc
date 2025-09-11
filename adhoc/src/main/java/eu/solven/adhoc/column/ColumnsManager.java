@@ -63,10 +63,11 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.transcoder.AliasingContext;
+import eu.solven.adhoc.table.transcoder.IHasAliasedColumns;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.IdentityImplicitAliaser;
-import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
@@ -100,7 +101,7 @@ public class ColumnsManager implements IColumnsManager {
 	@Default
 	@NonNull
 	@Getter
-	final ITableAliaser transcoder = new IdentityImplicitAliaser();
+	final ITableAliaser aliaser = new IdentityImplicitAliaser();
 
 	@NonNull
 	@Default
@@ -280,8 +281,8 @@ public class ColumnsManager implements IColumnsManager {
 		});
 
 		return TabularRecordOverMaps.builder()
-				.aggregates(row.aggregatesAsMap())
 				.slice(SliceAsMap.fromMap(enrichedGroupBy))
+				.aggregates(row.aggregatesAsMap())
 				.build();
 	}
 
@@ -312,14 +313,14 @@ public class ColumnsManager implements IColumnsManager {
 
 	@Override
 	public AliasingContext openTranscodingContext() {
-		return AliasingContext.builder().transcoder(getTranscoder()).build();
+		return AliasingContext.builder().aliaser(getAliaser()).build();
 	}
 
 	protected ISliceFilter transcodeFilter(ITableAliaser tableTranscoder, ISliceFilter filter) {
 		return MoreFilterHelpers.transcodeFilter(customTypeManager, tableTranscoder, filter);
 	}
 
-	protected IAdhocGroupBy transcodeGroupBy(AliasingContext transcodingContext, IAdhocGroupBy groupBy) {
+	protected IAdhocGroupBy transcodeGroupBy(AliasingContext aliasingContext, IAdhocGroupBy groupBy) {
 		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();
 
 		List<IAdhocColumn> transcoded = nameToColumn.values()
@@ -341,17 +342,17 @@ public class ColumnsManager implements IColumnsManager {
 				.flatMap(c -> {
 					if (c instanceof ReferencedColumn referencedColumn) {
 						String columnName = referencedColumn.getName();
-						return Stream.of(transcodingContext.underlying(columnName)).map(ReferencedColumn::ref);
+						return Stream.of(aliasingContext.underlying(columnName)).map(ReferencedColumn::ref);
 					} else if (c instanceof FunctionCalculatedColumn calculatedColumn) {
-						transcodingContext.addCalculatedColumn(calculatedColumn);
+						aliasingContext.addCalculatedColumn(calculatedColumn);
 
 						Collection<ReferencedColumn> operandColumns =
 								FunctionCalculatedColumn.getUnderlyingColumns(calculatedColumn);
 						return operandColumns.stream()
-								.map(operandColumn -> transcodingContext.underlying(operandColumn.getName()))
+								.map(operandColumn -> aliasingContext.underlying(operandColumn.getName()))
 								.map(ReferencedColumn::ref);
 					} else if (c instanceof TableExpressionColumn expressionColumn) {
-						transcodingContext.underlying(expressionColumn.getName());
+						aliasingContext.underlying(expressionColumn.getName());
 
 						// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
 						eventBus.post(AdhocLogEvent.builder()
@@ -416,6 +417,15 @@ public class ColumnsManager implements IColumnsManager {
 		columnGenerators.addAll(ColumnGeneratorHelpers.getColumnGenerators(operatorFactory, measures, columnMatcher));
 
 		return columnGenerators;
+	}
+
+	@Override
+	public Set<String> getColumnAliases() {
+		if (aliaser instanceof IHasAliasedColumns hasAliasedColumns) {
+			return hasAliasedColumns.getAlias();
+		} else {
+			return Set.of();
+		}
 	}
 
 }

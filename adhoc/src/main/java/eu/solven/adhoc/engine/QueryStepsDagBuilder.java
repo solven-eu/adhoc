@@ -24,8 +24,8 @@ package eu.solven.adhoc.engine;
 
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -93,14 +93,18 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final Set<CubeQueryStep> processed = new HashSet<>();
 
 	// From cache
-	final Map<CubeQueryStep, ISliceToValue> stepToValue = new HashMap<>();
+	final Map<CubeQueryStep, ISliceToValue> stepToValue = new LinkedHashMap<>();
+
+	final IMeasureResolver measureResolver;
 
 	public QueryStepsDagBuilder(AdhocFactories factories,
 			String cube,
+			IMeasureResolver canResolveMeasures,
 			ICubeQuery query,
 			IQueryStepCache queryStepCache) {
 		this.factories = factories;
 		this.table = cube;
+		this.measureResolver = canResolveMeasures;
 		this.query = query;
 		this.queryStepCache = queryStepCache;
 	}
@@ -299,24 +303,24 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	}
 
 	@Override
-	public void registerRootWithDescendants(ICanResolveMeasure canResolveMeasures, Set<IMeasure> queriedMeasures) {
+	public void registerRootWithDescendants(Set<IMeasure> queriedMeasures) {
 		queriedMeasures.forEach(queriedMeasure -> {
-			queriedMeasure = resolveMeasure(canResolveMeasures, queriedMeasure);
+			queriedMeasure = resolveMeasure(queriedMeasure);
 
 			addRoot(queriedMeasure);
 		});
 
-		registerDescendants(canResolveMeasures);
+		registerDescendants();
 
 		sanityChecks();
 	}
 
-	protected void registerDescendants(ICanResolveMeasure canResolveMeasures) {
+	protected void registerDescendants() {
 		// Add implicitly requested steps
 		while (hasLeftovers()) {
 			CubeQueryStep queryStep = pollLeftover();
 
-			IMeasure measure = canResolveMeasures.resolveIfRef(queryStep.getMeasure());
+			IMeasure measure = measureResolver.resolveIfRef(queryStep.getMeasure());
 
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
@@ -326,7 +330,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 				List<CubeQueryStep> underlyingSteps;
 				try {
 					underlyingSteps = wrappedQueryStep.getUnderlyingSteps().stream().map(underlyingStep -> {
-						IMeasure notRefMeasure = resolveMeasure(canResolveMeasures, underlyingStep.getMeasure());
+						IMeasure notRefMeasure = resolveMeasure(underlyingStep.getMeasure());
 
 						return CubeQueryStep.edit(underlyingStep).measure(notRefMeasure).build();
 					}).toList();
@@ -345,14 +349,13 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	/**
 	 * 
-	 * @param canResolveMeasures
 	 * @param measure
 	 *            any measure
 	 * @return an explicit {@link IMeasure}, hence never a {@link ReferencedMeasure}
 	 */
-	protected IMeasure resolveMeasure(ICanResolveMeasure canResolveMeasures, IMeasure measure) {
+	protected IMeasure resolveMeasure(IMeasure measure) {
 		// Make sure the DAG has actual measure nodes, and not references
-		IMeasure resolved = canResolveMeasures.resolveIfRef(measure);
+		IMeasure resolved = measureResolver.resolveIfRef(measure);
 
 		// Simplify ITableMeasure into Aggregator, as ITableMeasure should not play a role in the engine
 		if (resolved instanceof ITableMeasure tableMeasure && !(tableMeasure instanceof Aggregator)) {
@@ -365,6 +368,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	public static IQueryStepsDagBuilder make(AdhocFactories factories, QueryPod queryPod) {
 		return new QueryStepsDagBuilder(factories,
 				queryPod.getTable().getName(),
+				queryPod::resolveIfRef,
 				queryPod.getQuery(),
 				queryPod.getQueryStepCache());
 	}

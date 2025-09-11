@@ -65,8 +65,14 @@ public class DagExplainerForPerfs extends DagExplainer {
 		if (hasNoChildren) {
 			prefix += "\\  ";
 		} else {
-			// Propagate the `|` to the children rows
-			prefix += "|  ";
+			if ("/   ".equals(prefix)) {
+				// This is the cost Info of the whole query
+				// Should not add `| ` as it is already present with `/`, which is turned into `|`
+				prefix = prefix.replace('/', '|') + "   ";
+			} else {
+				// Propagate the `|` to the children rows
+				prefix += "|  ";
+			}
 		}
 		if (cost == null) {
 			return EOL + prefix + "No cost info";

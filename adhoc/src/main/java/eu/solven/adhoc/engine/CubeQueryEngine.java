@@ -259,7 +259,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					"Can not query multiple measures with same name: %s".formatted(nameToCount));
 		}
 
-		queryStepsDagBuilder.registerRootWithDescendants(queryPod::resolveIfRef, queriedMeasures);
+		queryStepsDagBuilder.registerRootWithDescendants(queriedMeasures);
 
 		return queryStepsDagBuilder.getQueryDag();
 	}

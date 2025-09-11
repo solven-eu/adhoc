@@ -37,8 +37,8 @@ public class TestAtotiTranscoder {
 		// joins)
 		ITableAliaser transcoder = CompositeTableAliaser.builder()
 				.chainMode(ChainMode.ApplyAll)
-				.transcoder(AtotiAliaser.builder().build())
-				.transcoder(MapTableAliaser.builder().queriedToUnderlying("AsOf", "f.AsOf").build())
+				.aliaser(AtotiAliaser.builder().build())
+				.aliaser(MapTableAliaser.builder().aliasToOriginal("AsOf", "f.AsOf").build())
 				.build();
 
 		Assertions.assertThat(transcoder.underlying("someL")).isNull();

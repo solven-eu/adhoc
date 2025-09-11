@@ -28,13 +28,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TestIdentityImplicitTranscoder {
-	IdentityImplicitAliaser transcoder = new IdentityImplicitAliaser();
+	IdentityImplicitAliaser aliaser = new IdentityImplicitAliaser();
 
 	@Test
 	public void testTranscoder() {
-		Assertions.assertThat(transcoder.underlying("c")).isEqualTo(null);
+		Assertions.assertThat(aliaser.underlying("c")).isEqualTo(null);
 
-		AliasingContext context = AliasingContext.builder().transcoder(transcoder).build();
+		AliasingContext context = AliasingContext.builder().aliaser(aliaser).build();
 
 		Assertions.assertThat(context.underlying("c")).isEqualTo("c");
 		Assertions.assertThat(context.queried("c")).isEqualTo(Set.of("c"));

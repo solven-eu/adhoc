@@ -179,11 +179,11 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 		}
 
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				#0 s=inMemory id=00000000-0000-0000-0000-000000000000
-				|\\- #1 m=d(SUM) filter=country==US groupBy=grandTotal
-				\\-- #2 m=FRoverUS(RatioByCombinator[DIVIDE]) filter=country==US groupBy=grandTotal
-				    |\\- #3 m=d(SUM) filter=matchNone groupBy=grandTotal
-				    \\-- !1""");
+				/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
+				|\\- #1 m=FRoverUS(RatioByCombinator[DIVIDE]) filter=country==US groupBy=grandTotal
+				|   |\\- #2 m=d(SUM) filter=matchNone groupBy=grandTotal
+				|   \\-- #3 m=d(SUM) filter=country==US groupBy=grandTotal
+				\\-- !3""");
 
 		Assertions.assertThat(messages).hasSize(5);
 	}
