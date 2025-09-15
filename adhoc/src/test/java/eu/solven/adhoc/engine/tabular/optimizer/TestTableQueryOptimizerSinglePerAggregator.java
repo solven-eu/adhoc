@@ -188,4 +188,19 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 						.build())
 				.contains(CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("a", "a1")).build());
 	}
+
+	@Test
+	public void testCanInduce_SelfAndGranular() {
+		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
+		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
+	}
 }

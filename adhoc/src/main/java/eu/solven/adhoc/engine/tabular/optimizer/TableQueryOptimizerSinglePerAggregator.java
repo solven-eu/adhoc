@@ -44,6 +44,7 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The main strategy of this {@link ITableQueryOptimizer} is to evaluate the minimal number of {@link TableQuery} needed
@@ -54,6 +55,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer {
 
 	public TableQueryOptimizerSinglePerAggregator(AdhocFactories factories) {
@@ -120,16 +122,19 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 					.filter(inducerFilter)
 					.groupBy(GroupByColumns.named(inducerColumns))
 					.build();
-			split.inducer(inducer);
 
 			filterGroupBy.forEach(tq -> {
 				ISliceFilter inducedFilter = FilterBuilder.and(inducerFilter, tq.getFilter()).optimize();
 				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(inducedFilter).build();
-				split.induced(induced);
 
-				inducedToInducer.addVertex(inducer);
-				inducedToInducer.addVertex(induced);
-				inducedToInducer.addEdge(induced, inducer);
+				if (inducer.equals(induced)) {
+					// e.g. `GROUP BY a,b` and `GROUP BY a`
+					log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
+				} else {
+					inducedToInducer.addVertex(inducer);
+					inducedToInducer.addVertex(induced);
+					inducedToInducer.addEdge(induced, inducer);
+				}
 			});
 		});
 

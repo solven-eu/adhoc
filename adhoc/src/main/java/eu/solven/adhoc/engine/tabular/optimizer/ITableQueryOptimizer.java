@@ -29,6 +29,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -40,7 +41,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -65,23 +65,34 @@ public interface ITableQueryOptimizer {
 	@Builder
 	class SplitTableQueries implements IHasDagFromInducedToInducer {
 		// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
-		@Singular
-		@NonNull
-		ImmutableSet<CubeQueryStep> inducers;
-
-		// Holds the TableQuery which can be evaluated implicitly from underlyings
-		@Singular
-		@NonNull
-		ImmutableSet<CubeQueryStep> induceds;
+		// @Singular
+		// @NonNull
+		// ImmutableSet<CubeQueryStep> inducers;
+		//
+		// // Holds the TableQuery which can be evaluated implicitly from underlyings
+		// @Singular
+		// @NonNull
+		// ImmutableSet<CubeQueryStep> induceds;
 
 		// From induced to inducer
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
+		public ImmutableSet<CubeQueryStep> getInducers() {
+			return inducedToInducer.vertexSet()
+					.stream()
+					.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
+					.collect(ImmutableSet.toImmutableSet());
+		}
+
+		public ImmutableSet<CubeQueryStep> getInduceds() {
+			return ImmutableSet.copyOf(Sets.difference(inducedToInducer.vertexSet(), getInducers()));
+		}
+
 		public static SplitTableQueries empty() {
 			return SplitTableQueries.builder()
-					.induceds(Set.of())
-					.inducers(Set.of())
+					// .induceds(Set.of())
+					// .inducers(Set.of())
 					.inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class))
 					.build();
 		}
