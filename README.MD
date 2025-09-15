@@ -582,6 +582,67 @@ For instance:
 - it will query `SUM(a1), SUM(a2) GROUP BY b1, b2 WHERE c1 OR c2`
 - If `GROUP BY b1, b2` is dense, and returns `p * q` cells where `p` is `GROUP BY b1` cardinality and `q` is `GROUP BY b2` cardinality, it leads to a query sensibly more complex than the 2 simpler ones.
 
+# ETL (Extract-Transform-Load) emulation
+
+Adhoc does not load data as its result are always based on results from underlying databases/`ITableWrapper`. Still, it may
+be necessary to enable data customization similarly to ETL operations.
+
+There is a few options to achieve such behavior.
+
+## Transient JOINs with `JooqTableWrapper`
+
+If you use `JooqTableWrapper` and the underlying database enables transient storage (e.g. like DuckDB), you could add a table and enrich your
+JooQ table.
+
+```java
+public void createCustomTable(DSLSupplier dslSupplier) {
+    DSLContext dslContext = dslSupplier.getDSLContext();
+
+    dslContext.createTable("customTable")
+        .column("customKey", SQLDataType.VARCHAR)
+        .column("customColumn", SQLDataType.VARCHAR)
+
+        .execute();
+
+    dslContext.connection(c -> {
+        DuckDBConnection duckDbC = (DuckDBConnection) c;
+
+        DuckDBAppender appender = duckDbC.createAppender("main", "customTable");
+        
+        ImmutableMap.builder()
+                .put("keyA", "customA")
+                .put("keyB", "customB")
+                .put("keyC", "customC")
+                .build().forEach((key,value) -> {
+
+                  try {
+                    appender.beginRow();
+
+                    appender.append(key);
+                    appender.append(value);
+                    
+                    appender.endRow();
+                  } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
+    });
+}
+```
+
+and then add a join to your JooQ table:
+```java
+public void joinTable(Table baseTable) {
+  baseTable.leftJoin(DSL.table("customTable")).on(DSL.field("rawValue").eq(DSL.field("customKey")));
+}
+```
+
+The column `customColumn` or `"customTable"."customColumn"` can now be referenced as any other column.
+
+## Calculated Column
+
+`ICalculatedColumn` enables
+
 # Roadmap / Limitations to lift soon
 
 ## Recent changes
