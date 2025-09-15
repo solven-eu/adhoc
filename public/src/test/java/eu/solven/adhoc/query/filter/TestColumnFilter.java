@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
@@ -149,5 +150,12 @@ public class TestColumnFilter {
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(LikeMatcher.matching("a%"))).build();
 
 		Assertions.assertThat(ksEqualsV).hasToString("c does NOT match `LikeMatcher(pattern=a%)`");
+	}
+
+	@Test
+	public void testMatchAll() {
+		ISliceFilter cIsMatchAll = ColumnFilter.builder().column("c").valueMatcher(IValueMatcher.MATCH_ALL).build();
+
+		Assertions.assertThat(cIsMatchAll).hasToString("matchAll");
 	}
 }

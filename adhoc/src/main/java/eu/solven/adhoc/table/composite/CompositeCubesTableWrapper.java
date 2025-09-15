@@ -419,9 +419,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			}).get();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted", e);
+			throw new IllegalStateException("Interrupted on cube=%s".formatted(queryPod.getTable().getName()), e);
 		} catch (ExecutionException e) {
-			throw new IllegalStateException("Failed", e);
+			throw new IllegalStateException("Failed on cube=%s".formatted(queryPod.getTable().getName()), e);
 		}
 	}
 

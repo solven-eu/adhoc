@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import java.util.Objects;
 
 import eu.solven.adhoc.column.ColumnsManager;
+import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
@@ -78,6 +79,17 @@ public class CubeWrapperEditor {
 
 		ColumnsManager rawColumnsManager = (ColumnsManager) rawCubeWrapper.getColumnsManager();
 		ColumnsManager newColumnsManager = rawColumnsManager.toBuilder().aliaser(aliaser).build();
+
+		cubeWrapper = rawCubeWrapper.toBuilder().columnsManager(newColumnsManager).build();
+
+		return this;
+	}
+
+	public CubeWrapperEditor addCalculatedColumn(ICalculatedColumn calculatedColumn) {
+		CubeWrapper rawCubeWrapper = (CubeWrapper) cubeWrapper;
+
+		ColumnsManager rawColumnsManager = (ColumnsManager) rawCubeWrapper.getColumnsManager();
+		ColumnsManager newColumnsManager = rawColumnsManager.toBuilder().calculatedColumn(calculatedColumn).build();
 
 		cubeWrapper = rawCubeWrapper.toBuilder().columnsManager(newColumnsManager).build();
 

@@ -222,9 +222,10 @@ public class TableQueryEngineBootstrapped {
 			throw new IllegalStateException("Interrupted", e);
 		} catch (ExecutionException e) {
 			if (e.getCause() instanceof IllegalStateException) {
-				throw new IllegalStateException("Failed", e);
+				throw new IllegalStateException("Failed query on table=%s".formatted(queryPod.getTable().getName()), e);
 			} else {
-				throw new IllegalArgumentException("Failed", e);
+				throw new IllegalArgumentException("Failed query on table=%s".formatted(queryPod.getTable().getName()),
+						e);
 			}
 		}
 	}

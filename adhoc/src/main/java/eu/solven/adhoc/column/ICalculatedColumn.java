@@ -25,7 +25,6 @@ package eu.solven.adhoc.column;
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.IHasName;
 
 /**
  * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the
@@ -33,7 +32,7 @@ import eu.solven.adhoc.util.IHasName;
  * 
  * @author Benoit Lacelle
  */
-public interface ICalculatedColumn extends IHasName {
+public interface ICalculatedColumn extends IAdhocColumn {
 
 	/**
 	 * 

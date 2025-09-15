@@ -42,6 +42,7 @@ import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
 import eu.solven.adhoc.column.generated_column.EmptyColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
@@ -50,12 +51,14 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -73,7 +76,6 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -124,18 +126,23 @@ public class ColumnsManager implements IColumnsManager {
 		AliasingContext transcodingContext = openTranscodingContext();
 
 		ISliceFilter transcodedFilter;
+		ISliceFilter postFilter;
+
+		Set<String> postFilterColumns;
 		{
 			ISliceFilter notTranscodedFilter = query.getFilter();
 
 			Set<String> calculatedColumns = getFiltrableCalculatedColumns(query);
-			Set<String> calculatedAndFiltered =
-					Sets.intersection(calculatedColumns, FilterHelpers.getFilteredColumns(notTranscodedFilter));
-			if (!calculatedAndFiltered.isEmpty()) {
-				throw new NotYetImplementedException(
-						"Can not filter along calculated columns: %s".formatted(calculatedAndFiltered));
-			}
 
-			transcodedFilter = transcodeFilter(transcodingContext, notTranscodedFilter);
+			// Exclude the calculatedColumns as they can not be evaluated by the ITableWrapper
+			ISliceFilter preFilter = SimpleFilterEditor.suppressColumn(notTranscodedFilter, calculatedColumns);
+
+			// We'll have to filter manually the rows given the calculated columns
+			// BEWARE This may rely on standard columns, for filters like `custom=c1&standard=s1|custom=c2&standard=s2`
+			postFilter = FilterHelpers.stripWhereFromFilter(preFilter, notTranscodedFilter);
+			postFilterColumns = FilterHelpers.getFilteredColumns(postFilter);
+
+			transcodedFilter = transcodeFilter(transcodingContext, preFilter);
 
 			// Sanity checks
 			FilterHelpers.getFilteredColumns(transcodedFilter).forEach(underlying -> {
@@ -148,9 +155,26 @@ public class ColumnsManager implements IColumnsManager {
 				}
 			});
 		}
+
+		IAdhocGroupBy groupByIncludingPostFilterColumns;
+
+		{
+			Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
+
+			columnToDetails.putAll(query.getGroupBy().getNameToColumn());
+
+			for (String postFilterColumn : postFilterColumns) {
+				if (!columnToDetails.containsKey(postFilterColumn)) {
+					columnToDetails.put(postFilterColumn, ReferencedColumn.ref(postFilterColumn));
+				}
+			}
+
+			groupByIncludingPostFilterColumns = GroupByColumns.of(columnToDetails.values());
+		}
+
 		TableQueryV2 transcodedQuery = query.toBuilder()
 				.filter(transcodedFilter)
-				.groupBy(transcodeGroupBy(transcodingContext, query.getGroupBy()))
+				.groupBy(transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns))
 				.clearAggregators()
 				.aggregators(transcodeAggregators(transcodingContext, query.getAggregators()))
 				.build();
@@ -184,7 +208,7 @@ public class ColumnsManager implements IColumnsManager {
 			}
 		}
 
-		return transcodeRows(transcodingContext, tabularRecordStream, transcodedFilter);
+		return transcodeRows(transcodingContext, tabularRecordStream, postFilter);
 	}
 
 	protected Set<String> getFiltrableCalculatedColumns(TableQueryV2 query) {
@@ -200,9 +224,17 @@ public class ColumnsManager implements IColumnsManager {
 		return calculatedColumns;
 	}
 
+	/**
+	 * 
+	 * @param transcodingContext
+	 * @param tabularRecordStream
+	 * @param postFilter
+	 *            a filter to apply over the table rows. Typically used for filter over {@link ICalculatedColumn}.
+	 * @return
+	 */
 	protected ITabularRecordStream transcodeRows(AliasingContext transcodingContext,
 			ITabularRecordStream tabularRecordStream,
-			ISliceFilter transcodedFilter) {
+			ISliceFilter postFilter) {
 		return new ITabularRecordStream() {
 
 			@Override
@@ -227,6 +259,10 @@ public class ColumnsManager implements IColumnsManager {
 			public Stream<ITabularRecord> records() {
 				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
 				ITableReverseAliaser columnTranscoder = prepareColumnTranscoder(transcodingContext);
+				FilterMatcher postFilterer = FilterMatcher.builder()
+						.filter(postFilter)
+						.onMissingColumn(FilterMatcher.failOnMissing())
+						.build();
 
 				return tabularRecordStream.records()
 						.map(row -> transcodeTypes(valueTranscoder, row))
@@ -234,9 +270,8 @@ public class ColumnsManager implements IColumnsManager {
 						.map(notTranscoded -> notTranscoded.transcode(columnTranscoder))
 						// calculate columns after transcoding, as these expression are generally table-independant
 						.map(row -> evaluateCalculated(transcodingContext, row))
-				// TODO Filter
-				// .filter(row -> filterCalculatedColumns(transcodedFilter, row))
-				;
+						// TODO Filter
+						.filter(row -> filterCalculatedColumns(postFilterer, row));
 			}
 
 			@Override
@@ -246,9 +281,9 @@ public class ColumnsManager implements IColumnsManager {
 		};
 	}
 
-	// protected boolean filterCalculatedColumns(IAdhocFilter transcodedFilter, ITabularRecord row) {
-	// return true;
-	// }
+	protected boolean filterCalculatedColumns(FilterMatcher postFilterer, ITabularGroupByRecord row) {
+		return postFilterer.match(row);
+	}
 
 	protected ITableReverseAliaser prepareColumnTranscoder(AliasingContext transcodingContext) {
 		int estimatedSize = transcodingContext.estimateQueriedSize(transcodingContext.underlyings());
@@ -367,7 +402,7 @@ public class ColumnsManager implements IColumnsManager {
 					}
 				})
 				.toList();
-
+		
 		return GroupByColumns.of(transcoded);
 	}
 

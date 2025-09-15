@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.groupby;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -133,16 +134,16 @@ public class GroupByColumns implements IAdhocGroupBy {
 	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
 		ImmutableSortedMap.Builder<String, T> nameToColumnBuilder = ImmutableSortedMap.<String, T>naturalOrder();
 
+		Set<T> distinct = new LinkedHashSet<>();
+
 		columns.forEach(column -> {
-			String columnName = column.getName();
-			// if (nameToColumn.containsKey(columnName)) {
-			// if (nameToColumn.get(columnName).equals(column)) {
-			// log.trace("Column={} is expressed multiple times in {}", column, columns);
-			// } else {
-			// throw new IllegalArgumentException("Multiple columns with same name: %s and %s");
-			// }
-			// }
-			nameToColumnBuilder.put(columnName, column);
+			if (distinct.add(column)) {
+				nameToColumnBuilder.put(column.getName(), column);
+			} else {
+				// Typically when referencing the same column multiple times
+				// Occurs when different calculatedColumns refers to the same underlying
+				log.trace("Skip {} as it is already in the groupBy");
+			}
 		});
 
 		return nameToColumnBuilder.build();
