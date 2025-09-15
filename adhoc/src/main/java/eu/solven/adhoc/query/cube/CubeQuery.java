@@ -71,7 +71,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 	@NonNull
 	@Default
 	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
-	// @Singular
+	// Not @Singular as we added manually the relevant @Builder methods
 	ImmutableSet<IMeasure> measures;
 
 	// This property is transported down to the DatabaseQuery

@@ -116,15 +116,15 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).combine();
 			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize();
 
-			filterGroupBy.forEach(tq -> {
-				CubeQueryStep inducer = CubeQueryStep.edit(tq)
-						.filter(inducerFilter)
-						.groupBy(GroupByColumns.named(inducerColumns))
-						.build();
-				split.inducer(inducer);
+			CubeQueryStep inducer = CubeQueryStep.edit(contextualAggregate)
+					.filter(inducerFilter)
+					.groupBy(GroupByColumns.named(inducerColumns))
+					.build();
+			split.inducer(inducer);
 
-				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
-				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(strippedFromWhere).build();
+			filterGroupBy.forEach(tq -> {
+				ISliceFilter inducedFilter = FilterBuilder.and(inducerFilter, tq.getFilter()).optimize();
+				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(inducedFilter).build();
 				split.induced(induced);
 
 				inducedToInducer.addVertex(inducer);
