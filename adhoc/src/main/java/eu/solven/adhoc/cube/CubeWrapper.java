@@ -111,6 +111,38 @@ public class CubeWrapper implements ICubeWrapper {
 
 	@Override
 	public Collection<ColumnMetadata> getColumns() {
+		Map<String, ColumnMetadata> columnToType = getColumnsWithoutAliases();
+
+		// Register aliases in the `alias` field of metadata
+		// TODO This does not handle recursive aliases
+		getColumnsManager().getColumnAliases().forEach(columnAlias -> {
+			String tableName = getColumnsManager().openTranscodingContext().underlying(columnAlias);
+
+			ColumnMetadata originalMetadata = columnToType.get(tableName);
+
+			if (originalMetadata == null) {
+				log.debug("Unclear alias=%s as it has no underlying column", columnAlias);
+				columnToType.put(columnAlias,
+						ColumnMetadata.builder().name(columnAlias).tag("alias").type(Object.class).build());
+			} else {
+				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
+			}
+		});
+
+		// Duplicate each column given its alias
+		Map<String, ColumnMetadata> aliasToColumn = new LinkedHashMap<String, ColumnMetadata>();
+		columnToType.forEach((column, metadata) -> {
+			metadata.getAliases().forEach(alias -> {
+				aliasToColumn.put(alias, metadata.toBuilder().name(alias).alias(column).build());
+			});
+		});
+
+		columnToType.putAll(aliasToColumn);
+
+		return columnToType.values();
+	}
+
+	private Map<String, ColumnMetadata> getColumnsWithoutAliases() {
 		Map<String, ColumnMetadata> columnToType = new HashMap<>();
 
 		// First, register table columns
@@ -154,22 +186,7 @@ public class CubeWrapper implements ICubeWrapper {
 				}
 			}
 		});
-
-		getColumnsManager().getColumnAliases().forEach(columnAlias -> {
-			String tableName = getColumnsManager().openTranscodingContext().underlying(columnAlias);
-
-			ColumnMetadata originalMetadata = columnToType.get(tableName);
-
-			if (originalMetadata == null) {
-				log.debug("Unclear alias=%s as it has no underlying table", columnAlias);
-				columnToType.put(columnAlias,
-						ColumnMetadata.builder().name(columnAlias).tag("alias").type(Object.class).build());
-			} else {
-				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
-			}
-		});
-
-		return columnToType.values();
+		return columnToType;
 	}
 
 	/**

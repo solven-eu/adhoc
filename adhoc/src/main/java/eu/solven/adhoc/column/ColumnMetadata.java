@@ -29,6 +29,7 @@ import java.util.Set;
 import org.springframework.util.ClassUtils;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.measure.model.IHasTags;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
@@ -62,7 +63,7 @@ public class ColumnMetadata implements IHasName, IHasTags {
 	// Alternative names referring to this given (e.g. in SQL, a column may be qualified or not). The list may not be
 	// exhaustive.
 	@Singular
-	Set<String> aliases;
+	ImmutableSet<String> aliases;
 
 	/**
 	 * 
@@ -79,12 +80,31 @@ public class ColumnMetadata implements IHasName, IHasTags {
 		}
 
 		// https://stackoverflow.com/questions/9797212/finding-the-nearest-common-superclass-or-superinterface-of-a-collection-of-cla
-		Optional<? extends Class<?>> reduce =
+		Optional<? extends Class<?>> commonType =
 				columns.stream().<Class<?>>map(c -> c.getType()).reduce(ClassUtils::determineCommonAncestor);
+
+		// Keep as alias only if all definition holds given alias
+		// This is better for composite cubes, as an alias valid for only a subCube should not be consider an alias in
+		// the composite
+		Set<String> intersectionAliases = columns.stream()
+				.<Set<String>>map(c -> c.getAliases())
+				.reduce(ImmutableSet.of(), (l, r) -> Sets.intersection(l, r));
+
+		// In a composite cube, it seems legitime to consider the union of tags. This would not be true of composite
+		// tags like `composite-full`.
+		Set<String> unionTags = columns.stream()
+				.<Set<String>>map(c -> c.getTags())
+				.reduce(ImmutableSet.of(), (l, r) -> Sets.union(l, r));
 
 		ColumnMetadata first = columns.iterator().next();
 
-		return first.toBuilder().type(reduce.get()).build();
+		return first.toBuilder()
+				.type(commonType.get())
+				.clearAliases()
+				.aliases(intersectionAliases)
+				.clearTags()
+				.tags(unionTags)
+				.build();
 	}
 
 }

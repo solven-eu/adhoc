@@ -129,26 +129,26 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
-		SetMultimap<String, ColumnMetadata> columnToJavaType = SetMultimapBuilder.treeKeys().hashSetValues().build();
+		SetMultimap<String, ColumnMetadata> columnToMeta = SetMultimapBuilder.treeKeys().hashSetValues().build();
 		SetMultimap<String, String> columnToCubes = SetMultimapBuilder.treeKeys().hashSetValues().build();
 
 		cubes.stream().forEach(cube -> {
 			cube.getColumns().forEach(c -> {
 				String columnName = c.getName();
 
-				columnToJavaType.put(columnName, c);
+				columnToMeta.put(columnName, c);
 				columnToCubes.put(columnName, cube.getName());
-				c.getAliases().forEach(alias -> columnToCubes.put(alias, cube.getName()));
 			});
 		});
 
-		optCubeSlicer.ifPresent(cubeColumn -> columnToJavaType.put(cubeColumn,
+		// Add a column enables to groupBy/filter through subCubes
+		optCubeSlicer.ifPresent(cubeColumn -> columnToMeta.put(cubeColumn,
 				ColumnMetadata.builder().name(cubeColumn).tag("meta").type(String.class).build()));
 
-		return columnToJavaType.asMap()
+		return columnToMeta.asMap()
 				.entrySet()
 				.stream()
-				// merge types
+				// merge types through subCubes
 				.map(e -> {
 					return ColumnMetadata.merge(e.getValue());
 				})
@@ -166,9 +166,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 						cubes.forEach(cube -> {
 							String cubeName = cube.getName();
 							if (cubesWithColumn.contains(cubeName)) {
-								builder.tag("composite-partial-known-" + cubeName);
+								builder.tag("composite-known:" + cubeName);
 							} else {
-								builder.tag("composite-partial-unknown-" + cubeName);
+								builder.tag("composite-unknown:" + cubeName);
 							}
 						});
 

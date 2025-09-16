@@ -879,9 +879,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 							ColumnMetadata.builder()
 									.name("_a")
 									.tag("composite-partial")
-									.tag("composite-partial-unknown-" + cube1.getName())
-									.tag("composite-partial-known-" + cube2.getName())
-									.alias("a")
+									.tag("composite-unknown:" + cube1.getName())
+									.tag("composite-known:" + cube2.getName())
 									.type(String.class)
 									.build())
 					.containsEntry("k1",
@@ -892,7 +891,15 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 									.tag("meta")
 									.tag("composite-full")
 									.type(String.class)
-									.build());
+									.build())
+					.hasSize(4);
+
+			ITabularView view =
+					compositeCube.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("a").build());
+			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+					.hasSize(2)
+					.containsEntry(Map.of("a", "a1"), Map.of(k1Sum.getName(), 0L + 123 + 345))
+					.containsEntry(Map.of("a", "a2"), Map.of(k1Sum.getName(), 0L + 234 + 456));
 		}
 	}
 
