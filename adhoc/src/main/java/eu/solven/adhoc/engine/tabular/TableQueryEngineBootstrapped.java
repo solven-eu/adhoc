@@ -468,9 +468,7 @@ public class TableQueryEngineBootstrapped {
 		IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates =
 				mergeTableAggregates(queryPod, queryAndSuppressed, stream);
 
-		Map<CubeQueryStep, ISliceToValue> immutableChunks =
-				splitTableGridToColumns(queryPod, queryAndSuppressed, sliceToAggregates);
-		return immutableChunks;
+		return splitTableGridToColumns(queryPod, queryAndSuppressed, sliceToAggregates);
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> splitTableGridToColumns(QueryPod queryPod,

@@ -224,8 +224,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Assertions
 				.assertThat(composite.filterForColumns(subCube,
 						OrFilter.builder()
-								.filter(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
-								.filter(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+								.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
+								.or(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
 								.build(),
 						Set.of("c1", "c2")::contains))
 				// The expression is optimized, but still equivalent to the original
@@ -238,8 +238,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		// Or.Not: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
 				OrFilter.builder()
-						.filter(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
-						.filter(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+						.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
+						.or(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
 						.build(),
 				Set.of("c1")::contains)).isEqualTo(NotFilter.not(ColumnFilter.isLike("c1", "a%")));
 	}

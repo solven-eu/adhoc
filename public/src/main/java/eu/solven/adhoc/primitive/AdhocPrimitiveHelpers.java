@@ -98,7 +98,6 @@ public class AdhocPrimitiveHelpers {
 		}
 	}
 
-	@SuppressWarnings("PMD.UnnecessaryBoxing")
 	public static IValueProvider normalizeValueAsProvider(Object o) {
 		if (o == null) {
 			return IValueProvider.NULL;

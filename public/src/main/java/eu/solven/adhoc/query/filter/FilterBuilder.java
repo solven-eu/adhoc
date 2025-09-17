@@ -109,9 +109,9 @@ public class FilterBuilder {
 			return filters.getFirst();
 		} else {
 			if (andElseOr) {
-				return AndFilter.builder().filters(filters).build();
+				return AndFilter.builder().ands(filters).build();
 			} else {
-				return OrFilter.builder().filters(filters).build();
+				return OrFilter.builder().ors(filters).build();
 			}
 		}
 	}

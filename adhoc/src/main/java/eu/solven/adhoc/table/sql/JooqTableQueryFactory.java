@@ -330,7 +330,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
 		AdhocTopClause topClause = tableQuery.getTopClause();
-		List<? extends OrderField<?>> columns = topClause.getColumns().stream().map(c -> {
+		return topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);
 
 			SortField<Object> desc;
@@ -342,8 +342,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 			return desc;
 		}).toList();
-
-		return columns;
 	}
 
 	@SuppressWarnings("PMD.CognitiveComplexity")
@@ -587,14 +585,16 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	/**
 	 *
 	 * @param columnFilter
-	 * @return
+	 * @return if empty, it means the {@link IColumnFilter} can not be transcoded into a {@link Condition}.
 	 */
+	@SuppressWarnings("PMD.AssignmentInOperand")
 	protected Optional<Condition> toCondition(IColumnFilter columnFilter) {
 		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 		String column = columnFilter.getColumn();
 
-		Condition condition;
 		final Field<Object> field = DSL.field(name(column));
+
+		Condition condition;
 		switch (valueMatcher) {
 		case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
 		case InMatcher inMatcher -> {
@@ -676,7 +676,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * 
 	 * @param column
 	 * @param valueMatcher
-	 * @return By default, we return null so that this {@link IValueMatcher} is managed a post-filtering by Adhoc, over
+	 * @return By default, we return null so that this {@link IValueMatcher} is managed as post-filtering by Adhoc, over
 	 *         the {@link ITableWrapper} result.
 	 */
 	protected Condition onCustomCondition(String column, IValueMatcher valueMatcher) {

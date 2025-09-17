@@ -88,6 +88,8 @@ public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 					// One very generic but probably slow way to convert from String is to search matching
 					// coordinates
 					IValueMatcher stringMatcher = StringMatcher.hasToString(coordinateAsString);
+
+					log.trace("TODO Check a single coordinate match given toString={}", coordinateAsString);
 					// CoordinatesSample sample =
 					// cubeWrapper.getCoordinates(column, stringMatcher, Integer.MAX_VALUE);
 					//

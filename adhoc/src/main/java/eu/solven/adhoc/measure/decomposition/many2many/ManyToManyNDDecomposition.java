@@ -116,10 +116,9 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 		// The groups valid given the filter: we compute it only once as an element may matches many groups: we do not
 		// want to filter all groups for each element
-		Set<Object> queryMatchingGroups = (Set<Object>) queryStepCache.computeIfAbsent("matchingGroups", cacheKey -> {
+		return (Set<Object>) queryStepCache.computeIfAbsent("matchingGroups", cacheKey -> {
 			return getQueryStepMatchingGroupsNoCache(slice);
 		});
-		return queryMatchingGroups;
 	}
 
 	protected Set<?> getQueryStepMatchingGroupsNoCache(ISliceWithStep slice) {

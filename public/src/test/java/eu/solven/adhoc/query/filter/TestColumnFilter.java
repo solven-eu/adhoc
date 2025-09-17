@@ -154,7 +154,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testMatchAll() {
-		ISliceFilter cIsMatchAll = ColumnFilter.builder().column("c").valueMatcher(IValueMatcher.MATCH_ALL).build();
+		ISliceFilter cIsMatchAll = ColumnFilter.isMatching("c", IValueMatcher.MATCH_ALL);
 
 		Assertions.assertThat(cIsMatchAll).hasToString("matchAll");
 	}

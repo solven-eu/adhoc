@@ -86,15 +86,13 @@ public class ColumnMetadata implements IHasName, IHasTags {
 		// Keep as alias only if all definition holds given alias
 		// This is better for composite cubes, as an alias valid for only a subCube should not be consider an alias in
 		// the composite
-		Set<String> intersectionAliases = columns.stream()
-				.<Set<String>>map(c -> c.getAliases())
-				.reduce(ImmutableSet.of(), (l, r) -> Sets.intersection(l, r));
+		Set<String> intersectionAliases =
+				columns.stream().<Set<String>>map(c -> c.getAliases()).reduce(ImmutableSet.of(), Sets::intersection);
 
-		// In a composite cube, it seems legitime to consider the union of tags. This would not be true of composite
+		// In a composite cube, it seems legitimate to consider the union of tags. This would not be true of composite
 		// tags like `composite-full`.
-		Set<String> unionTags = columns.stream()
-				.<Set<String>>map(c -> c.getTags())
-				.reduce(ImmutableSet.of(), (l, r) -> Sets.union(l, r));
+		Set<String> unionTags =
+				columns.stream().<Set<String>>map(ColumnMetadata::getTags).reduce(ImmutableSet.of(), Sets::union);
 
 		ColumnMetadata first = columns.iterator().next();
 

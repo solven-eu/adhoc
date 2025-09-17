@@ -39,11 +39,11 @@ import eu.solven.adhoc.util.AdhocBlackHole;
 @Deprecated(since = "Not-Ready")
 public interface ICombinationBinding {
 
+	/**
+	 * A ICombinationBinding which transmit the IValueProvider at given index.
+	 */
 	static ICombinationBinding atIndex(int bindedIndex) {
 
-		/**
-		 * A ICombinationBinding which transmit the IValueProvider at given index.
-		 */
 		return new ICombinationBinding() {
 			final MultitypeCell receiver = MultitypeCell.builder().aggregation(new CoalesceAggregation()).build();
 

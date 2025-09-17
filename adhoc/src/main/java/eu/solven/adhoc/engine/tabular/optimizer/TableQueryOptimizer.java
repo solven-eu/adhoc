@@ -33,10 +33,8 @@ import java.util.stream.IntStream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.AdhocFactories;

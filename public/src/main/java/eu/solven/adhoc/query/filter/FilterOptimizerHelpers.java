@@ -422,7 +422,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		Set<? extends ISliceFilter> stripDedundancy = removeLaxerInAnd(notMatchAll);
 
 		ISliceFilter orCandidate =
-				OrFilter.builder().filters(stripDedundancy.stream().map(NotFilter::not).toList()).build();
+				OrFilter.builder().ors(stripDedundancy.stream().map(NotFilter::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 		int costOrCandidate;
 		if (willBeNegated) {

@@ -38,15 +38,6 @@ public interface IMultitypeArray {
 	int size();
 
 	/**
-	 * Ensures that this column can hold a certain number of keys without rehashing.
-	 *
-	 * @param capacity
-	 *            a number of keys; there will be no rehashing unless the column {@linkplain #size() size} exceeds this
-	 *            number.
-	 */
-	// void ensureCapacity(int capacity);
-
-	/**
 	 * Append a value at the end of this array.
 	 * 
 	 * @return

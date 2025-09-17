@@ -130,7 +130,7 @@ public class CubeWrapper implements ICubeWrapper {
 		});
 
 		// Duplicate each column given its alias
-		Map<String, ColumnMetadata> aliasToColumn = new LinkedHashMap<String, ColumnMetadata>();
+		Map<String, ColumnMetadata> aliasToColumn = new LinkedHashMap<>();
 		columnToType.forEach((column, metadata) -> {
 			metadata.getAliases().forEach(alias -> {
 				aliasToColumn.put(alias, metadata.toBuilder().name(alias).alias(column).build());

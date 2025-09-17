@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableSet;
@@ -57,15 +58,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AndFilter implements IAndFilter {
 
+	@JsonProperty("filters")
 	@Singular
 	@NonNull
-	final ImmutableSet<ISliceFilter> filters;
+	final ImmutableSet<ISliceFilter> ands;
 
 	// This constructor helps not copying ImmutableSet, as `@Singular` always generates a builder, preventing `.copyOf`
 	// optimization
 	@Deprecated(since = "Legit API?")
-	public AndFilter(Collection<? extends ISliceFilter> filters) {
-		this.filters = ImmutableSet.copyOf(filters);
+	public AndFilter(Collection<? extends ISliceFilter> ands) {
+		this.ands = ImmutableSet.copyOf(ands);
 	}
 
 	@Override
@@ -76,12 +78,12 @@ public class AndFilter implements IAndFilter {
 	@Override
 	public boolean isMatchAll() {
 		// An empty AND is considered to match everything
-		return filters.isEmpty();
+		return ands.isEmpty();
 	}
 
 	@Override
 	public boolean isMatchNone() {
-		return filters.stream().anyMatch(ISliceFilter::isMatchNone);
+		return ands.stream().anyMatch(ISliceFilter::isMatchNone);
 	}
 
 	@Override
@@ -91,7 +93,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public Set<ISliceFilter> getOperands() {
-		return ImmutableSet.copyOf(filters);
+		return ImmutableSet.copyOf(ands);
 	}
 
 	@Override
@@ -100,9 +102,9 @@ public class AndFilter implements IAndFilter {
 			return "matchAll";
 		}
 
-		int size = filters.size();
+		int size = ands.size();
 		if (size <= AdhocUnsafe.limitOrdinalToString) {
-			return filters.stream().map(o -> {
+			return ands.stream().map(o -> {
 				if (o instanceof OrFilter orFilter) {
 					return "(%s)".formatted(orFilter);
 				} else {
@@ -113,7 +115,7 @@ public class AndFilter implements IAndFilter {
 			ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size);
 
 			AtomicInteger index = new AtomicInteger();
-			filters.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+			ands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 
@@ -142,7 +144,7 @@ public class AndFilter implements IAndFilter {
 		if (columnFilters.size() == 1) {
 			return columnFilters.getFirst();
 		} else {
-			return builder().filters(columnFilters).build();
+			return builder().ands(columnFilters).build();
 		}
 	}
 

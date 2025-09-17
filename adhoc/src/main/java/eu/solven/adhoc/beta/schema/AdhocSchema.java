@@ -108,9 +108,7 @@ public class AdhocSchema implements IAdhocSchema {
 							.column("netYetDefined")
 							.build();
 
-					List<ColumnMetadata> enriched =
-							rawColumns.stream().map(c -> enrichColumn(columnIdTemplate, c)).toList();
-					return enriched;
+					return rawColumns.stream().map(c -> enrichColumn(columnIdTemplate, c)).toList();
 				}
 			}));
 
@@ -317,9 +315,7 @@ public class AdhocSchema implements IAdhocSchema {
 
 		cubeColumns.forEach(column -> columnToType.put(column.getName(), column.getType()));
 
-		ICustomTypeManagerSimple customTypeManager =
-				CubeWrapperTypeTranscoder.builder().columnToTypes(columnToType).build();
-		return customTypeManager;
+		return CubeWrapperTypeTranscoder.builder().columnToTypes(columnToType).build();
 	}
 
 	public void registerCube(ICubeWrapper cube) {

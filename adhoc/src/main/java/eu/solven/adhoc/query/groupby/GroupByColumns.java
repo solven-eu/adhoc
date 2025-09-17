@@ -142,7 +142,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 			} else {
 				// Typically when referencing the same column multiple times
 				// Occurs when different calculatedColumns refers to the same underlying
-				log.trace("Skip {} as it is already in the groupBy");
+				log.trace("Skip {} as it is already in the groupBy", column);
 			}
 		});
 

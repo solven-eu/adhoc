@@ -258,7 +258,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
 			final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
-		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
+
+		return cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
 			Set<String> subColumns = subCube.getColumnsAsMap().keySet();
 
@@ -274,7 +275,6 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				};
 			});
 		});
-		return streams;
 	}
 
 	protected Map<String, ICubeWrapper> getNameToCube() {
@@ -321,13 +321,12 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				.filter(a -> isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 
-		CompatibleMeasures compatible = CompatibleMeasures.builder()
+		return CompatibleMeasures.builder()
 				.predefined(predefinedMeasures)
 				.defined(defined.stream()
 						.map(FilteredAggregator::toAggregator)
 						.collect(Collectors.toCollection(LinkedHashSet::new)))
 				.build();
-		return compatible;
 	}
 
 	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {

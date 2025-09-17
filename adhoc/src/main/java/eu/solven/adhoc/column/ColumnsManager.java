@@ -327,7 +327,7 @@ public class ColumnsManager implements IColumnsManager {
 				.filter(customTypeManager::mayTranscode)
 				.collect(Collectors.toSet());
 
-		IColumnValueTranscoder valueTranscoder = new IColumnValueTranscoder() {
+		return new IColumnValueTranscoder() {
 
 			@Override
 			public Set<String> mayTranscode(Set<String> recordColumns) {
@@ -339,7 +339,6 @@ public class ColumnsManager implements IColumnsManager {
 				return customTypeManager.fromTable(column, value);
 			}
 		};
-		return valueTranscoder;
 	}
 
 	protected ITabularRecord transcodeTypes(IColumnValueTranscoder valueTranscoder, ITabularRecord row) {
@@ -402,7 +401,7 @@ public class ColumnsManager implements IColumnsManager {
 					}
 				})
 				.toList();
-		
+
 		return GroupByColumns.of(transcoded);
 	}
 
