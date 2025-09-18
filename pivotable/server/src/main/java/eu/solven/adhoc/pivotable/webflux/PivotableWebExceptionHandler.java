@@ -67,7 +67,7 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 	final ObjectMapper objectMapper = PivotableJackson.objectMapper();
 
 	@Override
-	public @NonNull Mono<Void> handle(@NonNull ServerWebExchange exchange, @NonNull Throwable e) {
+	public Mono<Void> handle(@NonNull ServerWebExchange exchange, @NonNull Throwable e) {
 		if (e instanceof NoResourceFoundException) {
 			// Let the default WebExceptionHandler manage 404
 			return Mono.error(e);

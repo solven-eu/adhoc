@@ -34,6 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -150,7 +151,7 @@ public class AndFilter implements IAndFilter {
 
 	@Deprecated(since = "FilterBuilder.and")
 	public static ISliceFilter and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
-		return FilterBuilder.and(first, second, more).optimize();
+		return FilterBuilder.and(Lists.asList(first, second, more)).optimize();
 	}
 
 	@Deprecated(since = "FilterBuilder.and")

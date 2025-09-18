@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.query.filter;
 
 import java.util.List;
@@ -14,6 +36,8 @@ import lombok.experimental.UtilityClass;
 
 /**
  * Helps computing functional equality between {@link ISliceFilter}.
+ * 
+ * @author Benoit Lacelle
  */
 @UtilityClass
 @Deprecated(since = "WIP")
@@ -63,19 +87,22 @@ public class FilterEquivalencyHelpers {
 		} else if (filter instanceof IAndFilter and) {
 			Set<ISliceFilter> operands = and.getOperands();
 
-			List<Set<ISliceFilter>> operandDnfs = operands.stream().map(s -> dnf(s)).toList();
+			// Each AND operand is turned into an OR of DNFs
+			List<Set<ISliceFilter>> operandDnfs = operands.stream().map(FilterEquivalencyHelpers::dnf).toList();
 
+			// Do the cartesian product between the AND of OR
+			// TODO Manage smoothly if the cartesianProduct is too large
 			Set<List<ISliceFilter>> ors = Sets.cartesianProduct(operandDnfs);
 
+			// Each cartesianProduct entry is a simple AND
 			return ors.stream().map(l -> FilterBuilder.and(l).optimize()).collect(Collectors.toSet());
 		} else if (filter instanceof IOrFilter or) {
 			Set<ISliceFilter> operands = or.getOperands();
 
-			List<Set<ISliceFilter>> operandDnfs = operands.stream().map(s -> dnf(s)).toList();
+			// Turn each OR operand into an OR of simpler DNFs
+			List<Set<ISliceFilter>> operandDnfs = operands.stream().map(FilterEquivalencyHelpers::dnf).toList();
 
-			Set<ISliceFilter> ors = operandDnfs.stream().flatMap(s -> s.stream()).collect(Collectors.toSet());
-
-			return ors;
+			return operandDnfs.stream().flatMap(Set::stream).collect(Collectors.toSet());
 		} else if (filter instanceof INotFilter not) {
 			Set<ISliceFilter> negatedDnf = dnf(not.getNegated());
 

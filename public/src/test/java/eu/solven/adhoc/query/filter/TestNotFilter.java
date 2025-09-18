@@ -72,10 +72,8 @@ public class TestNotFilter {
 
 	@Test
 	public void testNotNot_and() {
-		ISliceFilter and = AndFilter.builder()
-				.and(ColumnFilter.isLike("a", "a%"))
-				.and(ColumnFilter.isLike("b", "b%"))
-				.build();
+		ISliceFilter and =
+				AndFilter.builder().and(ColumnFilter.isLike("a", "a%")).and(ColumnFilter.isLike("b", "b%")).build();
 		Assertions.assertThat(and).isInstanceOf(AndFilter.class);
 
 		ISliceFilter notAnd = NotFilter.not(and);

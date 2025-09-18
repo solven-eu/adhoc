@@ -287,8 +287,74 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		return removeLaxerOrStricter(operands, false);
 	}
 
+	/**
+	 * 
+	 * @param operands
+	 *            if `removeLaxerElseStricter==true`, this represents the operands of an AND.
+	 * @param removeLaxerElseStricter
+	 * @return
+	 */
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected Set<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
+			boolean removeLaxerElseStricter) {
+		// Remove the operands which are induced by 1 other operand
+		Set<ISliceFilter> stripped1By1 = removeLaxerOrStricter_1by1(operands, removeLaxerElseStricter);
+
+		// The following phase is applied only if at least 3 operands, else previous step would have stripped it
+		if (stripped1By1.size() < 3) {
+			return stripped1By1;
+		}
+
+		// Remove the operands which are induced by the other operands
+		// This second passes would cover the 1by1 pass. We keep at assuming it helps performances.
+		List<ISliceFilter> asList = new ArrayList<>(stripped1By1);
+
+		List<ISliceFilter> notDiscarded = new ArrayList<>();
+
+		// Process each operand one by one to prevent cycle in the optimization process
+		for (int i = 0; i < asList.size(); i++) {
+			ISliceFilter mayBeDiscarded = asList.get(i);
+
+			List<ISliceFilter> others = new ArrayList<>(stripped1By1);
+			others.remove(i);
+
+			// TODO Manage NotFilter
+			if (removeLaxerElseStricter && mayBeDiscarded instanceof IOrFilter orMayBeDiscarded) {
+				ISliceFilter otherAsAnd = FilterBuilder.and(others).optimize();
+
+				// `a&b&e&(c|a&b)` -> `a&b`
+				boolean orIsImplied = orMayBeDiscarded.getOperands()
+						.stream()
+						// `a&b&e` is stricter than `a&b` so `(c|a&b)` is matchAll
+						.anyMatch(orOperand -> FilterHelpers.isStricterThan(otherAsAnd, orOperand));
+
+				if (orIsImplied) {
+					log.trace("Discarded {} in {}", mayBeDiscarded, operands);
+				} else {
+					notDiscarded.add(mayBeDiscarded);
+				}
+			} else if (!removeLaxerElseStricter && mayBeDiscarded instanceof IAndFilter andMayBeDiscarded) {
+				log.trace("TODO What's is the equivalent logic for OR? andOperands={}",
+						andMayBeDiscarded.getOperands());
+				// ISliceFilter otherAsAnd = FilterBuilder.and(others).optimize();
+				//
+				// // `a|b|e|c&!a&!b` -> `a|b`
+				// boolean andIsMatchNone = andMayBeDiscarded.getOperands()
+				// .stream()
+				// .anyMatch(
+				// andOperands -> FilterBuilder.and(others).filter(orOperand).optimize().isMatchAll());
+				//
+				notDiscarded.add(mayBeDiscarded);
+			} else {
+				notDiscarded.add(mayBeDiscarded);
+			}
+		}
+
+		return ImmutableSet.copyOf(notDiscarded);
+	}
+
+	// Given the list of operands, we check if at least 1 other operand implies it
+	private Set<ISliceFilter> removeLaxerOrStricter_1by1(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		// Given a list of ANDs, we reject stricter operands in profit of the laxer operands
 		// Given the presence of hard, we remove soft

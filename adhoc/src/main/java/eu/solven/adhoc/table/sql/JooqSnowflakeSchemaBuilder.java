@@ -68,7 +68,7 @@ public class JooqSnowflakeSchemaBuilder {
 	@Getter
 	Table<Record> snowflakeTable;
 
-	String latestJoin = null;
+	String latestJoin;
 
 	// @NonNull
 	// @Default

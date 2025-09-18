@@ -52,8 +52,8 @@ public class FilterBuilder {
 		return and().filters(filters);
 	}
 
-	public static FilterBuilder and(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
-		return and().filter(first, second, more);
+	public static FilterBuilder and(ISliceFilter first, ISliceFilter... more) {
+		return and().filter(first, more);
 	}
 
 	public static FilterBuilder or() {
@@ -64,8 +64,8 @@ public class FilterBuilder {
 		return or().filters(filters);
 	}
 
-	public static FilterBuilder or(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
-		return or().filter(first, second, more);
+	public static FilterBuilder or(ISliceFilter first, ISliceFilter... more) {
+		return or().filter(first, more);
 	}
 
 	public FilterBuilder filters(Collection<? extends ISliceFilter> filters) {
@@ -74,9 +74,8 @@ public class FilterBuilder {
 		return this;
 	}
 
-	public FilterBuilder filter(ISliceFilter first, ISliceFilter second, ISliceFilter... more) {
+	public FilterBuilder filter(ISliceFilter first, ISliceFilter... more) {
 		this.filters.add(first);
-		this.filters.add(second);
 		this.filters.addAll(Arrays.asList(more));
 
 		return this;

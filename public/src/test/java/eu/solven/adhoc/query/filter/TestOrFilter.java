@@ -349,4 +349,70 @@ public class TestOrFilter {
 				.hasToString(
 						"a==a1&(b==b1&c==c1|b==b1&c==c2|b==b1&c==c3|b==b2&c==c1&d==d1|b==b2&c==c2&d==d1|b==b2&c==c3&d==d1|b==b3&c==c1&d==d1|b==b3&c==c2&d==d1|b==b3&c==c3&d==d1)");
 	}
+
+	@Test
+	public void testOr_AndWithAnOrOfAnds_andLong_2() {
+		// Typically happens with TableQueryOptimizer:
+
+		// There is a cubeQueryStep for a given filter
+		List<ISliceFilter> operandsSlice = new ArrayList<ISliceFilter>();
+		// which is part of a large OR, enabling to answer multiple cubeQuerySteps
+		// This holds the filter common to all cubeQuerySteps
+		List<ISliceFilter> tableWhere = new ArrayList<ISliceFilter>();
+		// This holds the list of filters, each associated to a cubeQueryStep
+		List<ISliceFilter> tableOr = new ArrayList<ISliceFilter>();
+
+		// There is a common simple filter
+		operandsSlice.add(ColumnFilter.isEqualTo("a", "a1"));
+		tableWhere.add(ColumnFilter.isEqualTo("a", "a1"));
+
+		// The OR has other cubeQueryStep referring to unrelated columns
+		tableOr.add(ColumnFilter.isEqualTo("d", "d1"));
+
+		// There is two common IN
+		ISliceFilter inB = ColumnFilter.isIn("b", "b1", "b2", "b3");
+		operandsSlice.add(inB);
+		ISliceFilter inC = ColumnFilter.isIn("c", "c1", "c2", "c3");
+		operandsSlice.add(inC);
+
+		// current cubeQueryStep has a filter to a column specific to it
+		operandsSlice.add(ColumnFilter.isEqualTo("e", "e1"));
+		tableOr.add(FilterBuilder.and(inB, inC, ColumnFilter.isEqualTo("e", "e1")).combine());
+
+		ISliceFilter cubeQueryStep = FilterBuilder.and(operandsSlice).combine();
+		ISliceFilter tableQueryStep = FilterBuilder.and(tableWhere)
+				.filter(
+						// This combines, as it may be very wide and prone to cartesianProduct explosion
+						FilterBuilder.or(tableOr).combine())
+				.combine();
+
+		// Check AND between the wide tableQuery and the cubeQueryStep gives
+		ISliceFilter combined = FilterBuilder.and(tableQueryStep, cubeQueryStep).optimize();
+
+		Assertions.assertThat(combined)
+				.hasToString(
+						"a==a1&(b==b1&c==c1|b==b1&c==c2|b==b1&c==c3|b==b2&c==c1&d==d1|b==b2&c==c2&d==d1|b==b2&c==c3&d==d1|b==b3&c==c1&d==d1|b==b3&c==c2&d==d1|b==b3&c==c3&d==d1)");
+	}
+
+	@Test
+	public void testOr_stripInducedByAllOthers() {
+		// d==d1|b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1, b=in=(b1,b2,b3), c=in=(c1,c2,c3)
+
+		ISliceFilter output = FilterBuilder.and()
+				.filter(ColumnFilter.isEqualTo("a", "a1"))
+				.filter(ColumnFilter.isIn("b", "b1", "b2", "b3"))
+				.filter(ColumnFilter.isIn("c", "c1", "c2", "c3"))
+				// The following OR has an unrelated clause, and a clause which is implied by the other AND operands
+				.filter(FilterBuilder
+						.or(ColumnFilter.isEqualTo("e", "e1"),
+								FilterBuilder
+										.and(ColumnFilter.isIn("b", "b1", "b2", "b3"),
+												ColumnFilter.isIn("c", "c1", "c2", "c3"))
+										.optimize())
+						.optimize())
+				.optimize();
+
+		Assertions.assertThat(output).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)");
+
+	}
 }
