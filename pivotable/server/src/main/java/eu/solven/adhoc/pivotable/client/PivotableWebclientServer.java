@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClient.RequestBodySpec;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -146,14 +145,12 @@ public class PivotableWebclientServer implements IPivotableServer {
 	@Override
 	public Flux<PivotableAdhocEndpointMetadata> searchEntrypoints(AdhocEndpointSearch search) {
 		return accessToken().map(accessToken -> {
-			RequestHeadersSpec<?> spec = getWebClient().get()
+			return getWebClient().get()
 					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints")
 							.queryParamIfPresent("endpoint_id", search.getEndpointId())
 							.queryParamIfPresent("keyword", search.getKeyword())
 							.build())
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
-
-			return spec;
 		}).flatMapMany(spec -> {
 			return spec.exchangeToFlux(r -> {
 				if (!r.statusCode().is2xxSuccessful()) {
@@ -168,14 +165,12 @@ public class PivotableWebclientServer implements IPivotableServer {
 	@Override
 	public Flux<TargetedEndpointSchemaMetadata> searchSchemas(AdhocEndpointSearch search) {
 		return accessToken().map(accessToken -> {
-			RequestHeadersSpec<?> spec = getWebClient().get()
+			return getWebClient().get()
 					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints/schemas")
 							.queryParamIfPresent("endpoint_id", search.getEndpointId())
 							.queryParamIfPresent("keyword", search.getKeyword())
 							.build())
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
-
-			return spec;
 		}).flatMapMany(spec -> {
 			return spec.exchangeToFlux(r -> {
 				if (!r.statusCode().is2xxSuccessful()) {
@@ -190,7 +185,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 	@Override
 	public Flux<ColumnStatistics> columnMetadata(AdhocColumnSearch search) {
 		return accessToken().map(accessToken -> {
-			RequestHeadersSpec<?> spec = getWebClient().get()
+			return getWebClient().get()
 					.uri(uriBuilder -> uriBuilder.path(PREFIX + "/endpoints/schemas/columns")
 							.queryParamIfPresent("endpoint_id", search.getEndpointId())
 							.queryParamIfPresent("cube", search.getCube())
@@ -199,8 +194,6 @@ public class PivotableWebclientServer implements IPivotableServer {
 							.queryParamIfPresent("coordinate", search.getCoordinate())
 							.build())
 					.header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
-
-			return spec;
 		}).flatMapMany(spec -> {
 			return spec.exchangeToFlux(r -> {
 				if (!r.statusCode().is2xxSuccessful()) {
@@ -221,11 +214,9 @@ public class PivotableWebclientServer implements IPivotableServer {
 	@Override
 	public Mono<ITabularView> executeQuery(TargetedCubeQuery query) {
 		return accessToken().map(accessToken -> {
-			RequestBodySpec spec = getWebClient().post().uri(uriBuilder -> {
+			return getWebClient().post().uri(uriBuilder -> {
 				return uriBuilder.path(PREFIX + "/cubes/query").build();
 			}).header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken.getAccessToken());
-
-			return spec;
 		}).flatMap(spec -> {
 			return spec.bodyValue(query).exchangeToMono(r -> {
 				if (!r.statusCode().is2xxSuccessful()) {

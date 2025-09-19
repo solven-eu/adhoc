@@ -33,10 +33,8 @@ import java.util.stream.IntStream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -135,19 +133,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			});
 		});
 
-		// Collect the steps which can not be induced by another tableQuery
-		Set<CubeQueryStep> inducers = inducedToInducer.vertexSet()
-				.stream()
-				.filter(tq -> inducedToInducer.outgoingEdgesOf(tq).isEmpty())
-				.collect(ImmutableSet.toImmutableSet());
-		// induced is to complement to inducers
-		Set<CubeQueryStep> induced = ImmutableSet.copyOf(Sets.difference(inducedToInducer.vertexSet(), inducers));
-
-		return SplitTableQueries.builder()
-				.inducers(inducers)
-				.induceds(induced)
-				.inducedToInducer(inducedToInducer)
-				.build();
+		return SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
 	}
 
 	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`

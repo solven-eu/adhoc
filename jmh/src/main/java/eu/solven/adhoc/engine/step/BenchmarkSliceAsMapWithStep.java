@@ -63,7 +63,7 @@ public class BenchmarkSliceAsMapWithStep {
 	final ISliceFilter filterBC = AndFilter.and(Map.of("b", "b1", "c", "c1"));
 
 	final ISliceFilter filterA_optimized = AndFilter.and(filterAB, filterBC);
-	final ISliceFilter filterA_notOptimized = AndFilter.builder().filter(filterAB).filter(filterBC).build();
+	final ISliceFilter filterA_notOptimized = AndFilter.builder().and(filterAB).and(filterBC).build();
 
 	final ISliceReader filterA_SliceFilter = SliceReader.builder().sliceFilter(filterAB).stepFilter(filterBC).build();
 
@@ -86,7 +86,7 @@ public class BenchmarkSliceAsMapWithStep {
 
 	@Benchmark
 	public ISliceFilter and_notOptimized() {
-		return AndFilter.builder().filter(filterAB).filter(filterBC).build();
+		return AndFilter.builder().and(filterAB).and(filterBC).build();
 	}
 
 	@Benchmark

@@ -11,61 +11,12 @@
 
 Adhoc makes it easy to define/code/review [a la Excel](https://support.microsoft.com/en-us/office/Formulas-and-functions-294d9486-b332-48ed-b489-abe7d0f9eda9) formulas, over a wide range of databases and query engines.
 
-- The rules define a DAG/Directed-Acyclic-Graph, going from raw-data to complex measures. Intermediate nodes could also be used as measures.
-- The DAG should be easily readable and modifiable but a human, not necessarily a developer.
-- The DAG can express simple operations like `SUM` or `PRODUCT`, and complex operations like `GROUPBY`. 
+- The formulas define a DAG/Directed-Acyclic-Graph, going from abstract measures to raw data. Intermediate formulas could also be used as measures.
+- The DAG should be easily readable and modifiable by a human, not necessarily a developer.
+- The DAG can express simple operations like `SUM` or `PRODUCT`, and complex operations like `GROUP BY` or any custom logic. 
 
-Given formulas often represents a functional indicator, Adhoc can be seen as a semantic layer, enabling complex formulas over a snowflake SQL/!SQL schema, or a composite of snowflake schemas.
+Most measures, including intermediate measures, hold a functional meaning. Hence, Adhoc can be seen as a semantic layer, enabling complex formulas over a snowflake SQL/!SQL schema, or a composite of snowflake schemas.
 
-### About performance
-
-Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. The table pre-aggregation is generally the slow-part of a full `CubeQuery` query. Hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slightly slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying `ITableWrapper`.
-
-#### Concurrency
-
-As of `0.0.5`, concurrency is not enabled by default, but it can be enabled through `StandardQueryOptions.CONCURRENT`.
-
-Adhoc will execute queries in its own `Executors.newWorkStealingPool`. It can be customized through `AdhocUnsafe.adhocCommonPool`.
-
-Concurrent sections are:
-
-- subQueries in a `CompositeCubesTableWrapper`: each subCube may be queried concurrently.
-- tableQueries in a `CubeQuery`: if the DAG leads to multiple tableQueries, these may be executed concurrently.
-- `CubeQuerySteps` in a DAG: if the DAG enables query steps to be executed concurrently, these may be executed concurrently.
-
-For now, we do not try to make Adhoc fully parallelized. It enables a simpler implementation, fast-enough is many cases.
-
-If you encounter a case which performance would be much improved by multi-threading, please report its specificities through a new issue. A benchmark / unitTest demonstrating the case would be very helpful.
-
-`parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
-
-#### Caching
-
-Adhoc enables caching in multiple places. These caches have to be activated manually (e.g. by decorating your `ITableWrapper` with a `CachingTableWrapper`).
-
-Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`. It is useful for end-to-end benchmarks, or investigating caching issues.
-
-##### Caching `CubeQuerySteps`
-
-One can add a cache over the results associated to an `CubeQueryStep`. This cache may keep entries associated to any step in a `CubeQueryStep` DAG. Given FIFO principle, if one execute twice the same query, the highest entries from the first query should remain in cache (while lowest entries may be discarded due to cache maximum size) ; hence, second query would be answered right-away, without re-executing the rest of the `CubeQueryStep`.
-
-```
-CubeWrapper.builder()
-.table(tableWrapper)
-.queryPreparator(StandardQueryPreparator.builder().queryStepCache(GuavaQueryStepCache.withSize(1024)).build())
-.build();
-```
-
-##### Caching `ITableWrapper`
-
-One can add a cache over the `ITableWrapper`. It will keep in cache the output from previous `TableQueries`. This may not lead to expected performances as reading from the cache leads to additional effort (e.g. merging a `ISliceToValue` from the table for one measure, and another from the cache for another measure requires some JOIN operation (e.g. aligning the slices from the 2 distinct `ISliceToValue`), which may not happen if both measures was queried in the same `tableQuery`).
-
-```
-ITableWrapper directTableWrapper = ...;
-ITableWrapper cachingTableWrapper = CachingTableWrapper.builder().decorated(directTableWrapper).builder();
-```
-
-`CachingTableWrapper` can be customized given its `cache` field, which is a plain Guava cache.
 
 ## Products
 
@@ -508,6 +459,64 @@ One may also define a custom `IOperatorsFactory`:
 - by creating your own `IOperatorsFactory` and combining with `CompositeOperatorsFactory`
 - by adding a fallback strategy with `DummyOperatorsFactory`
 
+## About performance
+
+Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table.
+
+The limiting factor in term of performance is generally the under table, which executes aggregations at the granularity requested by Adhoc, induced by the User `GROUP BY`, and those implied by some formulas (e.g. a `Partitionor` by Currency). 
+
+Hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slightly slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying `ITableWrapper`.
+
+Adhoc performances can be improved by:
+- Scale horizontally: each Adhoc instance is stateless, and can operate a User-query independently of other shards. There is no plan to enable a single Adhoc query to be dispatched through a cluster on Adhoc instance, but it may be considered if some project would benefit from such a feature.
+- Enable caching (e.g. `CubeQueryStep` caching).
+
+### Concurrency
+
+As of `0.0.5`, concurrency is not enabled by default, but it can be enabled through `StandardQueryOptions.CONCURRENT`.
+
+Non-concurrent queries are executed in the calling-thread (e.g. `MoreExecutors.newDirectExecutorService()`).
+
+Concurrent queries are executed in Adhoc own `Executors.newWorkStealingPool`. It can be customized through `AdhocUnsafe.adhocCommonPool`.
+
+Concurrent sections are:
+
+- subQueries in a `CompositeCubesTableWrapper`: each subCube may be queried concurrently.
+- `CubeQuerySteps` in a DAG: independent tasks may be executed concurrently.
+- tableQueries induced by leaves `CubeQUerySteps`: independent tableQueries may be executed concurrently.
+
+If you encounter a case which performance would be much improved by multi-threading, please report its specificities through a new issue. A benchmark / unitTest demonstrating the case would be very helpful.
+
+`parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
+
+### Caching
+
+Adhoc enables caching in multiple places. These caches have to be activated manually (e.g. by decorating your `ITableWrapper` with a `CachingTableWrapper`).
+
+Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`. It is useful for end-to-end benchmarks, or investigating caching issues.
+
+#### Caching `CubeQuerySteps`
+
+One can add a cache over the results associated to an `CubeQueryStep`. This cache may keep entries associated to any step in a `CubeQueryStep` DAG. Given FIFO principle, if one execute twice the same query, the highest entries from the first query should remain in cache (while lowest entries may be discarded due to cache maximum size) ; hence, second query would be answered right-away, without re-executing the rest of the `CubeQueryStep`.
+
+```
+CubeWrapper.builder()
+.table(tableWrapper)
+.queryPreparator(StandardQueryPreparator.builder().queryStepCache(GuavaQueryStepCache.withSize(1024)).build())
+.build();
+```
+
+#### Caching `ITableWrapper`
+
+One can add a cache over the `ITableWrapper`. It will keep in cache the output from previous `TableQueries`. This may not lead to expected performances as reading from the cache leads to additional effort (e.g. merging a `ISliceToValue` from the table for one measure, and another from the cache for another measure requires some JOIN operation (e.g. aligning the slices from the 2 distinct `ISliceToValue`), which may not happen if both measures was queried in the same `tableQuery`).
+
+```
+ITableWrapper directTableWrapper = ...;
+ITableWrapper cachingTableWrapper = CachingTableWrapper.builder().decorated(directTableWrapper).builder();
+```
+
+`CachingTableWrapper` can be customized given its `cache` field, which is a plain Guava cache.
+
 # Query Optimizations
 
 Adhoc, as a query engine, has various optimizations regarding its own execution, and how it interacts with `ITableWrapper`.
@@ -572,6 +581,67 @@ For instance:
 - and `SUM(a2) GROUP BY b2 WHERE c2`
 - it will query `SUM(a1), SUM(a2) GROUP BY b1, b2 WHERE c1 OR c2`
 - If `GROUP BY b1, b2` is dense, and returns `p * q` cells where `p` is `GROUP BY b1` cardinality and `q` is `GROUP BY b2` cardinality, it leads to a query sensibly more complex than the 2 simpler ones.
+
+# ETL (Extract-Transform-Load) emulation
+
+Adhoc does not load data as its result are always based on results from underlying databases/`ITableWrapper`. Still, it may
+be necessary to enable data customization similarly to ETL operations.
+
+There is a few options to achieve such behavior.
+
+## Transient JOINs with `JooqTableWrapper`
+
+If you use `JooqTableWrapper` and the underlying database enables transient storage (e.g. like DuckDB), you could add a table and enrich your
+JooQ table.
+
+```java
+public void createCustomTable(DSLSupplier dslSupplier) {
+    DSLContext dslContext = dslSupplier.getDSLContext();
+
+    dslContext.createTable("customTable")
+        .column("customKey", SQLDataType.VARCHAR)
+        .column("customColumn", SQLDataType.VARCHAR)
+
+        .execute();
+
+    dslContext.connection(c -> {
+        DuckDBConnection duckDbC = (DuckDBConnection) c;
+
+        DuckDBAppender appender = duckDbC.createAppender("main", "customTable");
+        
+        ImmutableMap.builder()
+                .put("keyA", "customA")
+                .put("keyB", "customB")
+                .put("keyC", "customC")
+                .build().forEach((key,value) -> {
+
+                  try {
+                    appender.beginRow();
+
+                    appender.append(key);
+                    appender.append(value);
+                    
+                    appender.endRow();
+                  } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
+    });
+}
+```
+
+and then add a join to your JooQ table:
+```java
+public void joinTable(Table baseTable) {
+  baseTable.leftJoin(DSL.table("customTable")).on(DSL.field("rawValue").eq(DSL.field("customKey")));
+}
+```
+
+The column `customColumn` or `"customTable"."customColumn"` can now be referenced as any other column.
+
+## Calculated Column
+
+`ICalculatedColumn` enables
 
 # Roadmap / Limitations to lift soon
 

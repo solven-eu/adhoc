@@ -113,7 +113,7 @@ public class TestAndFilter {
 	@Test
 	public void testAndFilters_oneGrandTotal_forced() {
 		ISliceFilter filterAllAndA =
-				AndFilter.builder().filter(ISliceFilter.MATCH_NONE).filter(ColumnFilter.isEqualTo("a", "a1")).build();
+				AndFilter.builder().and(ISliceFilter.MATCH_NONE).and(ColumnFilter.isEqualTo("a", "a1")).build();
 
 		// We forced an AndFilter: It is not simplified into IAdhocFilter.MATCH_NONE but is is isMatchNone
 		Assertions.assertThat(filterAllAndA.isMatchNone()).isTrue();
@@ -406,12 +406,12 @@ public class TestAndFilter {
 		List<ISliceFilter> nots = likes.stream().map(NotFilter::not).toList();
 
 		// And over 3 Not
-		Assertions.assertThat(optimizer.costFunction(AndFilter.builder().filters(nots).build())).isEqualTo(3 + 3 + 3);
+		Assertions.assertThat(optimizer.costFunction(AndFilter.builder().ands(nots).build())).isEqualTo(3 + 3 + 3);
 
 		// Not over Or over 3 simple: cost==8
 		Assertions
 				.assertThat(optimizer
-						.costFunction(NotFilter.builder().negated(OrFilter.builder().filters(likes).build()).build()))
+						.costFunction(NotFilter.builder().negated(OrFilter.builder().ors(likes).build()).build()))
 				.isEqualTo(2 + 2 + 1 + 1 + 1);
 
 		ISliceFilter notA1AndNotA2 = AndFilter.and(nots);

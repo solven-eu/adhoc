@@ -92,7 +92,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			}
 
 			int size = underlyings.size();
-			Stream<SliceAndMeasures> notSortedSlices = notSortedAsSet.stream().map(sliceAsMap -> {
+			return notSortedAsSet.stream().map(sliceAsMap -> {
 				List<Object> underlyingVs = new ArrayList<>(size);
 				for (int i = 0; i < size; i++) {
 					underlyingVs.add(ISliceToValue.getValue(underlyings.get(i), sliceAsMap));
@@ -101,7 +101,6 @@ public class UnderlyingQueryStepHelpersNavigable {
 				return SliceAndMeasures.from(sliceAsMap, queryStep, underlyingVs);
 			});
 
-			return notSortedSlices;
 		} else {
 			// All underlyings are sorted (typically from MultitypeColumnNavigable)
 			List<ISliceToValue> sorted = new ArrayList<>();
@@ -114,9 +113,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 				}
 			}
 
-			Stream<SliceAndMeasures> sortedSlices = mergeSortedStreamDistinct(queryStep, underlyings);
-
-			return sortedSlices;
+			return mergeSortedStreamDistinct(queryStep, underlyings);
 		}
 	}
 

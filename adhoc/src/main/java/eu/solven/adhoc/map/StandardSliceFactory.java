@@ -246,7 +246,8 @@ public class StandardSliceFactory implements ISliceFactory {
 			return keySet.keysAsSet.asList();
 		}
 
-		@SuppressWarnings("PMD.CompareObjectsWithEquals")
+		// TODO Introduce hashCode/equals
+		@SuppressWarnings({ "PMD.CompareObjectsWithEquals", "PMD.OverrideBothEqualsAndHashCodeOnComparable" })
 		@Override
 		public int compareTo(EnrichedNavigableSet keys) {
 			if (this == keys) {

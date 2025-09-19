@@ -159,8 +159,7 @@ public class PivotableLoginController {
 
 	private PivotableUser userFromOAuth2(OAuth2User o) {
 		PivotableUserRawRaw rawRaw = PivotableOAuth2UserService.oauth2ToRawRaw(o);
-		PivotableUser user = usersRegistry.getUser(rawRaw);
-		return user;
+		return usersRegistry.getUser(rawRaw);
 	}
 
 	// Provides the User if available. Not error if no user.
@@ -216,8 +215,7 @@ public class PivotableLoginController {
 
 	private PivotableUser userFromUsername(UsernamePasswordAuthenticationToken usernameToken) {
 		UUID accountId = UUID.fromString(usernameToken.getName());
-		PivotableUser user = usersRegistry.getUser(accountId);
-		return user;
+		return usersRegistry.getUser(accountId);
 	}
 
 	@GetMapping("/oauth2/token")

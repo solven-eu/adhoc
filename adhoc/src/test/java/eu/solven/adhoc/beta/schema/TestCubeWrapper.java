@@ -65,7 +65,15 @@ public class TestCubeWrapper {
 			Assertions.assertThat(cube.getColumnsAsMap())
 					.containsEntry("rawC",
 							ColumnMetadata.builder().name("rawC").type(String.class).alias("aliasC").build())
-					.hasSize(1);
+					// An alias column has the columnName as its own alias
+					.containsEntry("aliasC",
+							ColumnMetadata.builder()
+									.name("aliasC")
+									.type(String.class)
+									.alias("rawC")
+									.alias("aliasC")
+									.build())
+					.hasSize(2);
 		}
 	}
 

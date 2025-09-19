@@ -24,6 +24,8 @@ package eu.solven.adhoc.pivotable.cube;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import lombok.Builder;
 import lombok.NonNull;
@@ -45,28 +47,9 @@ public class PivotableCubeMetadata {
 	PivotableCubeId id;
 
 	@NonNull
-	Set<String> measures;
+	ImmutableSet<String> measures;
 
 	@NonNull
-	Set<String> columns;
-
-	// public static PivotableCubeMetadataBuilder fromEntrypoint(AdhocEntrypointMetadata game) {
-	// return PivotableCubeMetadata.builder().endpointId(game.getId());
-	// }
-
-	/**
-	 * 
-	 * @return an invalid {@link PivotableCubeMetadata}. Useful in edge-cases, like processing race-conditions and
-	 *         removed contests.
-	 */
-	// public static PivotableCubeMetadata empty() {
-	// return PivotableCubeMetadata.builder()
-	// .gameId(IServerMetadataConstants.EMPTY)
-	// .name("empty")
-	// .author(UUID.fromString("12345678-1234-1234-1234-123456789012"))
-	// .minPlayers(Integer.MIN_VALUE)
-	// .maxPlayers(Integer.MIN_VALUE)
-	// .build();
-	// }
+	ImmutableSet<String> columns;
 
 }

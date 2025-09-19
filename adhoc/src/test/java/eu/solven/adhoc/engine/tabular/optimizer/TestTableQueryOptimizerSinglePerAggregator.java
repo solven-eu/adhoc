@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -32,6 +33,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -111,5 +113,94 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 						.groupBy(GroupByColumns.named("d"))
 						.measure(Aggregator.empty())
 						.build());
+	}
+
+	@Test
+	public void testCanInduce_AndDifferentColumns() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder
+								.and(AndFilter.and(Map.of("a", "a1")),
+										FilterBuilder
+												.or(ColumnFilter.isEqualTo("b", "b1"),
+														ColumnFilter.isEqualTo("c", "c1"))
+												.optimize())
+								.optimize())
+						.groupBy(GroupByColumns.named("b", "c", "d"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(2)
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.groupBy(GroupByColumns.named("b"))
+						.build())
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+						.groupBy(GroupByColumns.named("d"))
+						.build());
+	}
+
+	@Test
+	public void testCanInduce_AndDifferentColumns_andThirdOnlyCommonFilter() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and(Map.of("a", "a1"))).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1")))
+						.groupBy(GroupByColumns.named("b", "c", "d"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(3)
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.groupBy(GroupByColumns.named("b"))
+						.build())
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+						.groupBy(GroupByColumns.named("d"))
+						.build())
+				.contains(CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("a", "a1")).build());
+	}
+
+	@Test
+	public void testCanInduce_SelfAndGranular() {
+		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
+		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
 	}
 }

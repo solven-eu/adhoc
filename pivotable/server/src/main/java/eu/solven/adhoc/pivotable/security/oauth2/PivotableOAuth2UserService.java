@@ -79,8 +79,7 @@ public class PivotableOAuth2UserService extends DefaultReactiveOAuth2UserService
 
 	@VisibleForTesting
 	public PivotableUser onAdhocUserRaw(PivotableUserPreRegister userPreRegister) {
-		PivotableUser user = usersRegistry.registerOrUpdate(userPreRegister);
-		return user;
+		return usersRegistry.registerOrUpdate(userPreRegister);
 	}
 
 	private Mono<OAuth2User> processOAuth2User(OAuth2UserRequest oAuth2UserRequest,
@@ -130,8 +129,7 @@ public class PivotableOAuth2UserService extends DefaultReactiveOAuth2UserService
 	public static PivotableUserRawRaw oauth2ToRawRaw(OAuth2User o) {
 		String providerId = guessProviderId(o);
 		String sub = getSub(providerId, o);
-		PivotableUserRawRaw rawRaw = PivotableUserRawRaw.builder().providerId(providerId).sub(sub).build();
-		return rawRaw;
+		return PivotableUserRawRaw.builder().providerId(providerId).sub(sub).build();
 	}
 
 	private static String getSub(String providerId, OAuth2User o) {

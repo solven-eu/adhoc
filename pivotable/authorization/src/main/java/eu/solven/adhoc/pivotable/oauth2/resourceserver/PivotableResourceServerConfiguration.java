@@ -100,6 +100,7 @@ public class PivotableResourceServerConfiguration {
 		}
 
 		OctetSequenceKey octetSequenceKey = OctetSequenceKey.parse(secretKeySpec);
+		log.info("Loaded or generated octetSequenceKey with kid={}", octetSequenceKey.getKeyID());
 		return octetSequenceKey;
 	}
 }

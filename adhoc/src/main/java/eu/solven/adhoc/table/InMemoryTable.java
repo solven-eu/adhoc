@@ -187,14 +187,13 @@ public class InMemoryTable implements ITableWrapper {
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
 
-				Stream<ITabularRecord> distinctStream = groupedAggregatedRecord.entrySet()
+				return groupedAggregatedRecord.entrySet()
 						.stream()
 						.filter(e -> e.getValue().isPresent())
 						.map(e -> TabularRecordOverMaps.builder()
 								.slice(e.getKey())
 								.aggregates(e.getValue().get().aggregatesAsMap())
 								.build());
-				return distinctStream;
 			} else {
 				if (distinctSlices) {
 					List<ITabularRecord> asList = stream.toList();

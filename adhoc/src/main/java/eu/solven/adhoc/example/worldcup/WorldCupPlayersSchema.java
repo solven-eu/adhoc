@@ -208,7 +208,7 @@ public class WorldCupPlayersSchema {
 				.dslSupplier(dslSupplier)
 				.build();
 
-		JooqTableWrapper table = new JooqTableWrapper(tableName, tableParameters) {
+		return new JooqTableWrapper(tableName, tableParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 				return new JooqTableQueryFactory(tableParameters.getOperatorFactory(),
@@ -229,18 +229,16 @@ public class WorldCupPlayersSchema {
 				};
 			}
 		};
-		return table;
 	}
 
 	private JooqSnowflakeSchemaBuilder snowflakeBuilder() {
-		JooqSnowflakeSchemaBuilder worldCupPlayers = JooqSnowflakeSchemaBuilder.builder()
+		return JooqSnowflakeSchemaBuilder.builder()
 				.baseTable(DSL.table("WorldCupPlayers"))
 				.baseTableAlias("WorldCupPlayers")
 				.build()
 				.leftJoin(DSL.table("WorldCupMatches"),
 						"WorldCupMatches",
 						List.of(Map.entry("MatchId", "MatchID"), Map.entry("RoundId", "RoundID")));
-		return worldCupPlayers;
 	}
 
 	// `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` as we can not use PreparedStatement on FROM clause.

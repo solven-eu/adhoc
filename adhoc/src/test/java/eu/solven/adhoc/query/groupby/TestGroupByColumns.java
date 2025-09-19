@@ -27,6 +27,9 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import eu.solven.adhoc.column.FunctionCalculatedColumn;
+import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -54,5 +57,22 @@ public class TestGroupByColumns {
 				{
 				  "columns" : [ "a", "b" ]
 				}""");
+	}
+
+	@Test
+	public void testOf_multipleSameRef() {
+		IAdhocGroupBy groupBy = GroupByColumns.named("a", "b", "a");
+		Assertions.assertThat(groupBy).isEqualTo(GroupByColumns.named("a", "b"));
+	}
+
+	@Test
+	public void testOf_multiplename_differentType() {
+		ICalculatedColumn calculatedColumn =
+				FunctionCalculatedColumn.builder().name("a").recordToCoordinate(r -> r.getGroupBy("a_")).build();
+
+		Assertions
+				.assertThatThrownBy(
+						() -> GroupByColumns.of(ReferencedColumn.ref("a"), ReferencedColumn.ref("b"), calculatedColumn))
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

@@ -101,6 +101,8 @@ public class PivotableTokenService {
 				.issueTime(Date.from(Instant.now()))
 				.generate();
 
+		log.info("Generated a JWK with kid={}", jwk.getKeyID());
+
 		return jwk;
 	}
 

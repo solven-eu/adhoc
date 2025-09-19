@@ -26,7 +26,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -106,13 +105,8 @@ public class AdhocQueryMonitor {
 	}
 
 	private Comparator<Map.Entry<QueryPod, Duration>> comparatorForSlowest() {
-		Comparator<Entry<QueryPod, Duration>> comparingByValue = Map.Entry.comparingByValue();
-
-		return comparingByValue
 		// We want first entry with large duration
-		// In fact, we want fast to be first, to be dropped on `.remove()`
-		// .reversed()
-		;
+		return Map.Entry.comparingByValue();
 	}
 
 	protected void onNbActive(int nbActive) {

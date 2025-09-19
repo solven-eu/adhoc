@@ -53,13 +53,12 @@ public class TabularRecordLogger {
 	}
 
 	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(TableQueryV2 tableQuery) {
-		BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate = (input, optCoordinates) -> {
+		return (input, optCoordinates) -> {
 			int currentIn = nbIn.incrementAndGet();
 			if (logAboutRow(tableQuery, currentIn)) {
 				log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
 			}
 		};
-		return peekOnCoordinate;
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")

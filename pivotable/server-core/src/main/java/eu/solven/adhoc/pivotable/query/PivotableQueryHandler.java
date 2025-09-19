@@ -145,7 +145,7 @@ public class PivotableQueryHandler {
 						.column(filteredColumn)
 						.valueMatcher(OrMatcher.builder().operands(filters).build())
 						.build();
-				andBuilder.filter(columnFilter);
+				andBuilder.and(columnFilter);
 			});
 			queryBuilder.filter(andBuilder.build());
 		}

@@ -30,6 +30,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 import eu.solven.adhoc.account.IAdhocUserContextHolder;
 import eu.solven.adhoc.security.LoginRouteButNotAuthenticatedException;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
@@ -37,6 +38,7 @@ import reactor.core.publisher.Mono;
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 public class JwtUserContextHolder implements IAdhocUserContextHolder {
 
 	@Override
@@ -46,6 +48,8 @@ public class JwtUserContextHolder implements IAdhocUserContextHolder {
 
 			if (authentication instanceof JwtAuthenticationToken jwtAuth) {
 				UUID accountId = UUID.fromString(jwtAuth.getToken().getSubject());
+
+				log.debug("Authenticated accountId={}", accountId);
 
 				return accountId;
 			} else {

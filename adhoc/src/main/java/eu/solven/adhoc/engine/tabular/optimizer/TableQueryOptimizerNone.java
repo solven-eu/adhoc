@@ -68,8 +68,6 @@ public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 			tq.getAggregators().stream().forEach(agg -> {
 				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
 				inducedToInducer.addVertex(step);
-
-				split.inducer(step);
 			});
 		});
 
