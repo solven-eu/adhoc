@@ -129,26 +129,26 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
-		SetMultimap<String, ColumnMetadata> columnToJavaType = SetMultimapBuilder.treeKeys().hashSetValues().build();
+		SetMultimap<String, ColumnMetadata> columnToMeta = SetMultimapBuilder.treeKeys().hashSetValues().build();
 		SetMultimap<String, String> columnToCubes = SetMultimapBuilder.treeKeys().hashSetValues().build();
 
 		cubes.stream().forEach(cube -> {
 			cube.getColumns().forEach(c -> {
 				String columnName = c.getName();
 
-				columnToJavaType.put(columnName, c);
+				columnToMeta.put(columnName, c);
 				columnToCubes.put(columnName, cube.getName());
-				c.getAliases().forEach(alias -> columnToCubes.put(alias, cube.getName()));
 			});
 		});
 
-		optCubeSlicer.ifPresent(cubeColumn -> columnToJavaType.put(cubeColumn,
+		// Add a column enables to groupBy/filter through subCubes
+		optCubeSlicer.ifPresent(cubeColumn -> columnToMeta.put(cubeColumn,
 				ColumnMetadata.builder().name(cubeColumn).tag("meta").type(String.class).build()));
 
-		return columnToJavaType.asMap()
+		return columnToMeta.asMap()
 				.entrySet()
 				.stream()
-				// merge types
+				// merge types through subCubes
 				.map(e -> {
 					return ColumnMetadata.merge(e.getValue());
 				})
@@ -166,9 +166,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 						cubes.forEach(cube -> {
 							String cubeName = cube.getName();
 							if (cubesWithColumn.contains(cubeName)) {
-								builder.tag("composite-partial-known-" + cubeName);
+								builder.tag("composite-known:" + cubeName);
 							} else {
-								builder.tag("composite-partial-unknown-" + cubeName);
+								builder.tag("composite-unknown:" + cubeName);
 							}
 						});
 
@@ -258,7 +258,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
 			final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
-		Stream<ITabularRecord> streams = cubeToView.entrySet().stream().flatMap(e -> {
+
+		return cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
 			Set<String> subColumns = subCube.getColumnsAsMap().keySet();
 
@@ -274,7 +275,6 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				};
 			});
 		});
-		return streams;
 	}
 
 	protected Map<String, ICubeWrapper> getNameToCube() {
@@ -321,13 +321,12 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				.filter(a -> isColumnAvailable(isSubColumn, a.getAggregator().getColumnName()))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 
-		CompatibleMeasures compatible = CompatibleMeasures.builder()
+		return CompatibleMeasures.builder()
 				.predefined(predefinedMeasures)
 				.defined(defined.stream()
 						.map(FilteredAggregator::toAggregator)
 						.collect(Collectors.toCollection(LinkedHashSet::new)))
 				.build();
-		return compatible;
 	}
 
 	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {
@@ -419,9 +418,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			}).get();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted", e);
+			throw new IllegalStateException("Interrupted on cube=%s".formatted(queryPod.getTable().getName()), e);
 		} catch (ExecutionException e) {
-			throw new IllegalStateException("Failed", e);
+			throw new IllegalStateException("Failed on cube=%s".formatted(queryPod.getTable().getName()), e);
 		}
 	}
 

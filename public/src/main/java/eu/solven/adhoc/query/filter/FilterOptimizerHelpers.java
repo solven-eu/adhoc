@@ -62,6 +62,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 	@Override
@@ -287,8 +288,89 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		return removeLaxerOrStricter(operands, false);
 	}
 
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	/**
+	 * 
+	 * @param operands
+	 *            if `removeLaxerElseStricter==true`, this represents the operands of an AND.
+	 * @param removeLaxerElseStricter
+	 * @return
+	 */
+	@SuppressWarnings("checkstyle:MagicNumber")
 	protected Set<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
+			boolean removeLaxerElseStricter) {
+		// Remove the operands which are induced by 1 other operand
+		Set<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(operands, removeLaxerElseStricter);
+
+		// The following phase is applied only if at least 3 operands, else previous step would have stripped it
+		if (strippedAgainst1.size() < 3) {
+			return strippedAgainst1;
+		}
+
+		List<ISliceFilter> strippedAgainstAll =
+				removeLaxerOrStricerGivenAll(operands, removeLaxerElseStricter, strippedAgainst1);
+
+		return ImmutableSet.copyOf(strippedAgainstAll);
+	}
+
+	protected List<ISliceFilter> removeLaxerOrStricerGivenAll(Collection<? extends ISliceFilter> operands,
+			boolean removeLaxerElseStricter,
+			Set<ISliceFilter> stripped1By1) {
+		// Remove the operands which are induced by the other operands
+		// This second passes would cover the 1by1 pass. We keep at assuming it helps performances.
+		List<ISliceFilter> asList = new ArrayList<>(stripped1By1);
+
+		List<ISliceFilter> notDiscarded = new ArrayList<>();
+
+		// Process each operand one by one to prevent cycle in the optimization process
+		for (int i = 0; i < asList.size(); i++) {
+			ISliceFilter mayBeDiscarded = asList.get(i);
+
+			List<ISliceFilter> others = new ArrayList<>(stripped1By1);
+			others.remove(i);
+
+			// TODO Manage NotFilter
+			if (removeLaxerElseStricter && mayBeDiscarded instanceof IOrFilter orMayBeDiscarded) {
+				// Do not `FilterBuilder.and(others).optimize()` else it may lead to a huge amount of recursive
+				// optimization. Given an input with N operands, this would optimize `N-1` other components, itself
+				// testing `N-2` other components, etc, leading to `!N` optimizations.
+				ISliceFilter otherAsAnd = FilterBuilder.and(others).combine();
+				// Set<ISliceFilter> asAnd = others.stream()
+				// .flatMap(f -> FilterHelpers.splitAnd(orMayBeDiscarded).stream())
+				// .collect(Collectors.toSet());
+
+				// `a&b&e&(c|a&b)` -> `a&b`
+				boolean orIsImplied = orMayBeDiscarded.getOperands()
+						.stream()
+						// `a&b&e` is stricter than `a&b` so `(c|a&b)` is matchAll
+						.anyMatch(orOperand -> FilterHelpers.isStricterThan(otherAsAnd, orOperand));
+
+				if (orIsImplied) {
+					log.trace("Discarded {} in {}", mayBeDiscarded, operands);
+				} else {
+					notDiscarded.add(mayBeDiscarded);
+				}
+			} else if (!removeLaxerElseStricter && mayBeDiscarded instanceof IAndFilter andMayBeDiscarded) {
+				log.trace("TODO What's is the equivalent logic for OR? andOperands={}",
+						andMayBeDiscarded.getOperands());
+				// ISliceFilter otherAsAnd = FilterBuilder.and(others).optimize();
+				//
+				// // `a|b|e|c&!a&!b` -> `a|b`
+				// boolean andIsMatchNone = andMayBeDiscarded.getOperands()
+				// .stream()
+				// .anyMatch(
+				// andOperands -> FilterBuilder.and(others).filter(orOperand).optimize().isMatchAll());
+				//
+				notDiscarded.add(mayBeDiscarded);
+			} else {
+				notDiscarded.add(mayBeDiscarded);
+			}
+		}
+		return notDiscarded;
+	}
+
+	// Given the list of operands, we check if at least 1 other operand implies it
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected Set<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		// Given a list of ANDs, we reject stricter operands in profit of the laxer operands
 		// Given the presence of hard, we remove soft
@@ -422,7 +504,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		Set<? extends ISliceFilter> stripDedundancy = removeLaxerInAnd(notMatchAll);
 
 		ISliceFilter orCandidate =
-				OrFilter.builder().filters(stripDedundancy.stream().map(NotFilter::not).toList()).build();
+				OrFilter.builder().ors(stripDedundancy.stream().map(NotFilter::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 		int costOrCandidate;
 		if (willBeNegated) {

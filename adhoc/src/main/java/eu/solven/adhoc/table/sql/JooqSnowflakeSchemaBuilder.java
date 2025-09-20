@@ -68,6 +68,8 @@ public class JooqSnowflakeSchemaBuilder {
 	@Getter
 	Table<Record> snowflakeTable;
 
+	String latestJoin;
+
 	// @NonNull
 	// @Default
 	Supplier<Parser> parserSupplier = DSL.using(SQLDialect.DUCKDB)::parser;
@@ -81,6 +83,8 @@ public class JooqSnowflakeSchemaBuilder {
 		this.baseTableAlias = baseTableAlias;
 
 		this.snowflakeTable = baseTable.as(baseTableAlias);
+
+		this.latestJoin = baseTableAlias;
 	}
 
 	/**
@@ -135,10 +139,12 @@ public class JooqSnowflakeSchemaBuilder {
 			Name leftName = parseOnName(leftTableAlias, e.getKey());
 			Name rightName = parseOnName(joinName, e.getValue());
 
-			registerInTranscoder(leftName, rightName);
+			registerInAliaser(leftName, rightName);
 
 			return DSL.field(leftName).eq(DSL.field(rightName));
 		}).toList();
+
+		this.latestJoin = joinName;
 
 		return leftJoinConditions(joinedTable.as(joinName), onConditions);
 	}
@@ -150,7 +156,7 @@ public class JooqSnowflakeSchemaBuilder {
 		return leftJoin(leftTableAlias, joinedTable, joinName, on.stream().map(f -> Map.entry(f, f)).toList());
 	}
 
-	protected void registerInTranscoder(Name leftName, Name rightName) {
+	protected void registerInAliaser(Name leftName, Name rightName) {
 		// `putIfAbsent`: priority to the first occurrence of the field
 		// `leftTableAlias`; priority to the LEFT/base table than the RIGHT/joined table
 		String queryName = leftName.last();
@@ -163,6 +169,9 @@ public class JooqSnowflakeSchemaBuilder {
 
 	public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
 		snowflakeTable = snowflakeTable.leftJoin(joinedTable).on(on.toArray(Condition[]::new));
+
+		// BEWARE Should we set `latestJoin` to null? No as it may has just been set by the caller. But if it is not the
+		// case, we should reset it to null as current JOIN is not aliased.
 
 		return this;
 	}
@@ -192,16 +201,28 @@ public class JooqSnowflakeSchemaBuilder {
 	}
 
 	/**
-	 * Lombok @Builder
 	 * 
-	 * @author Benoit Lacelle
+	 * Register an alias mapping to the latest registered table.
+	 * 
+	 * @param alias
+	 *            the name of the column as it should be referrable through ITableWrapper
+	 * @param original
+	 *            the name of the column in the table. Do not qualify it for current table
+	 * @return current builder
 	 */
-	// public static class JooqSnowflakeSchemaBuilderBuilder {
-	//
-	// // https://github.com/projectlombok/lombok/issues/2307#issuecomment-1119511303
-	// private JooqSnowflakeSchemaBuilderBuilder snowflakeTable(Table<Record> snowflakeTable) {
-	// return this;
-	// }
-	// }
+	public JooqSnowflakeSchemaBuilder withAlias(String alias, String original) {
+		return withAliases(Map.of(alias, original));
+	}
+
+	public JooqSnowflakeSchemaBuilder withAliases(Map<String, String> aliasToOriginal) {
+		if (latestJoin == null) {
+			throw new IllegalStateException("Can not register an alias over an unamed JOIN");
+		}
+
+		aliasToOriginal.forEach(
+				(alias, original) -> this.aliasToOriginal.put(alias, parseOnName(latestJoin, original).toString()));
+
+		return this;
+	}
 
 }

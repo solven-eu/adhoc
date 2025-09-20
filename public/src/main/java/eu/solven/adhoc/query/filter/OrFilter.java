@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 
@@ -51,9 +52,10 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class OrFilter implements IOrFilter {
 
+	@JsonProperty("filters")
 	@Singular
 	@NonNull
-	final ImmutableSet<ISliceFilter> filters;
+	final ImmutableSet<ISliceFilter> ors;
 
 	@Override
 	public boolean isNot() {
@@ -63,12 +65,12 @@ public class OrFilter implements IOrFilter {
 	@Override
 	public boolean isMatchNone() {
 		// An empty OR is considered to match nothing
-		return filters.isEmpty();
+		return ors.isEmpty();
 	}
 
 	@Override
 	public boolean isMatchAll() {
-		return filters.stream().anyMatch(ISliceFilter::isMatchAll);
+		return ors.stream().anyMatch(ISliceFilter::isMatchAll);
 	}
 
 	@Override
@@ -78,7 +80,7 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public Set<ISliceFilter> getOperands() {
-		return filters;
+		return ors;
 	}
 
 	@Override
@@ -87,14 +89,14 @@ public class OrFilter implements IOrFilter {
 			return "matchNone";
 		}
 
-		int size = filters.size();
+		int size = ors.size();
 		if (size <= AdhocUnsafe.limitOrdinalToString) {
-			return filters.stream().map(Object::toString).collect(Collectors.joining("|"));
+			return ors.stream().map(Object::toString).collect(Collectors.joining("|"));
 		} else {
-			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", filters.size());
+			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", ors.size());
 
 			AtomicInteger index = new AtomicInteger();
-			filters.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+			ors.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 

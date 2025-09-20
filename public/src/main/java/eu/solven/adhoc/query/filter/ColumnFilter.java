@@ -187,6 +187,11 @@ public class ColumnFilter implements IColumnFilter {
 	}
 
 	public static ISliceFilter isMatching(String column, IValueMatcher matcher) {
+		if (matcher == IValueMatcher.MATCH_ALL) {
+			return MATCH_ALL;
+		} else if (matcher == IValueMatcher.MATCH_NONE) {
+			return MATCH_NONE;
+		}
 		return ColumnFilter.builder().column(column).valueMatcher(matcher).build();
 	}
 }

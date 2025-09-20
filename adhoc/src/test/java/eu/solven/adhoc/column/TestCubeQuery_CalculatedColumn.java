@@ -31,13 +31,14 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.tabular.optimizer.CubeWrapperEditor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
-import eu.solven.adhoc.util.NotYetImplementedException;
 
 public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTestConstants {
 	@Override
@@ -90,14 +91,35 @@ public class TestCubeQuery_CalculatedColumn extends ADagTest implements IAdhocTe
 
 	@Test
 	public void test_groupBy_filter() {
-		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder()
+		ITabularView view = cube().execute(CubeQuery.builder()
 				.measure("k1")
 				.groupByAlso(FunctionCalculatedColumn.builder()
 						.name("custom")
 						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
 						.build())
 				.andFilter("custom", "a2-b2")
-				.build())).hasRootCauseInstanceOf(NotYetImplementedException.class);
+				.build());
+
+		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+				.containsEntry(Map.of("custom", "a2-b2"), Map.of("k1", 0L + 567))
+				.hasSize(1);
+	}
+
+	@Test
+	public void test_filter_groupByUndelryingColumn() {
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube())
+				.addCalculatedColumn(FunctionCalculatedColumn.builder()
+						.name("custom")
+						.recordToCoordinate(r -> r.getGroupBy("a") + "-" + r.getGroupBy("b"))
+						.build())
+				.build();
+
+		ITabularView view =
+				cube.execute(CubeQuery.builder().measure("k1").groupByAlso("a").andFilter("custom", "a2-b2").build());
+
+		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+				.containsEntry(Map.of("a", "a2"), Map.of("k1", 0L + 567))
+				.hasSize(1);
 	}
 
 	@Test

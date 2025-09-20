@@ -28,7 +28,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
@@ -77,5 +80,34 @@ public class TestFilterOptimizerHelpers {
 
 		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
 		Assertions.assertThat(strippedOr).containsExactly(AndFilter.and(Map.of("a", "a1")));
+	}
+
+	@Test
+	public void testRemoveLaxerInAnd_compareWithAll() {
+		// a&b&(c|a&b) -> a&b
+		List<ISliceFilter> fromLaxToStrict = List.of(AndFilter.and(Map.of("a", "a1")),
+				AndFilter.and(Map.of("b", "b1")),
+				FilterBuilder.or(AndFilter.and(Map.of("c", "c1")), AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.combine());
+
+		Set<ISliceFilter> strippedAnd = optimizer.removeLaxerInAnd(fromLaxToStrict);
+		Assertions.assertThat(strippedAnd)
+				.containsExactly(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1")));
+	}
+
+	@Disabled("TODO This test is false. The principle is interesting but we need first to craft a relevant case")
+	@Test
+	public void testRemoveStricterInOr_compareWithAll() {
+		// a|b|(a|c)&(b|d) -> a|b
+		List<ISliceFilter> fromLaxToStrict = List.of(AndFilter.and(Map.of("a", "a1")),
+				AndFilter.and(Map.of("b", "b1")),
+				FilterBuilder
+						.and(OrFilter.or(ImmutableMap.of("a", "a1", "c", "c1")),
+								OrFilter.or(ImmutableMap.of("b", "b1", "d", "d1")))
+						.combine());
+
+		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
+		Assertions.assertThat(strippedOr)
+				.containsExactly(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1")));
 	}
 }

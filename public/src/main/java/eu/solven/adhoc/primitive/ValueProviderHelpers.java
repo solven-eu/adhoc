@@ -38,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ValueProviderHelpers {
 
-	@SuppressWarnings("PMD.UnnecessaryBoxing")
 	public static IValueProvider asLongIfExact(Number number) {
 		if (number instanceof Integer intValue) {
 			return IValueProvider.setValue(intValue.intValue());

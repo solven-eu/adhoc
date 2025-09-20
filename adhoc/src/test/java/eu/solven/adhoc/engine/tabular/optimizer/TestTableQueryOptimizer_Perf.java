@@ -73,11 +73,7 @@ public class TestTableQueryOptimizer_Perf {
 		inducedToInducer.addVertex(inducedStep);
 		inducedToInducer.addEdge(inducedStep, inducerStep);
 
-		SplitTableQueries split = SplitTableQueries.builder()
-				.inducer(inducerStep)
-				.induced(inducedStep)
-				.inducedToInducer(inducedToInducer)
-				.build();
+		SplitTableQueries split = SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
 
 		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
 

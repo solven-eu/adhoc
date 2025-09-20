@@ -203,9 +203,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 					.filter(slice.getQueryStep().getFilter())
 					.onMissingColumn(DecompositionHelpers.onMissingColumn())
 					.build();
-			boolean isRelevant = decompositionMatcher.match(fullSlice);
-
-			return isRelevant;
+			return decompositionMatcher.match(fullSlice);
 		}
 	}
 
