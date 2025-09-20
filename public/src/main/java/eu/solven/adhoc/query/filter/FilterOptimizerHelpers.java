@@ -62,6 +62,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 	@Override
@@ -294,17 +295,26 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @param removeLaxerElseStricter
 	 * @return
 	 */
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	@SuppressWarnings("checkstyle:MagicNumber")
 	protected Set<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		// Remove the operands which are induced by 1 other operand
-		Set<ISliceFilter> stripped1By1 = removeLaxerOrStricter_1by1(operands, removeLaxerElseStricter);
+		Set<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(operands, removeLaxerElseStricter);
 
 		// The following phase is applied only if at least 3 operands, else previous step would have stripped it
-		if (stripped1By1.size() < 3) {
-			return stripped1By1;
+		if (strippedAgainst1.size() < 3) {
+			return strippedAgainst1;
 		}
 
+		List<ISliceFilter> strippedAgainstAll =
+				removeLaxerOrStricerGivenAll(operands, removeLaxerElseStricter, strippedAgainst1);
+
+		return ImmutableSet.copyOf(strippedAgainstAll);
+	}
+
+	protected List<ISliceFilter> removeLaxerOrStricerGivenAll(Collection<? extends ISliceFilter> operands,
+			boolean removeLaxerElseStricter,
+			Set<ISliceFilter> stripped1By1) {
 		// Remove the operands which are induced by the other operands
 		// This second passes would cover the 1by1 pass. We keep at assuming it helps performances.
 		List<ISliceFilter> asList = new ArrayList<>(stripped1By1);
@@ -320,7 +330,13 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 			// TODO Manage NotFilter
 			if (removeLaxerElseStricter && mayBeDiscarded instanceof IOrFilter orMayBeDiscarded) {
-				ISliceFilter otherAsAnd = FilterBuilder.and(others).optimize();
+				// Do not `FilterBuilder.and(others).optimize()` else it may lead to a huge amount of recursive
+				// optimization. Given an input with N operands, this would optimize `N-1` other components, itself
+				// testing `N-2` other components, etc, leading to `!N` optimizations.
+				ISliceFilter otherAsAnd = FilterBuilder.and(others).combine();
+				// Set<ISliceFilter> asAnd = others.stream()
+				// .flatMap(f -> FilterHelpers.splitAnd(orMayBeDiscarded).stream())
+				// .collect(Collectors.toSet());
 
 				// `a&b&e&(c|a&b)` -> `a&b`
 				boolean orIsImplied = orMayBeDiscarded.getOperands()
@@ -349,12 +365,12 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 				notDiscarded.add(mayBeDiscarded);
 			}
 		}
-
-		return ImmutableSet.copyOf(notDiscarded);
+		return notDiscarded;
 	}
 
 	// Given the list of operands, we check if at least 1 other operand implies it
-	private Set<ISliceFilter> removeLaxerOrStricter_1by1(Collection<? extends ISliceFilter> operands,
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected Set<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		// Given a list of ANDs, we reject stricter operands in profit of the laxer operands
 		// Given the presence of hard, we remove soft
