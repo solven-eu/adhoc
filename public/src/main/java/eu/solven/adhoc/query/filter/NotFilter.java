@@ -61,12 +61,23 @@ public class NotFilter implements INotFilter {
 		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
 			// Prefer `c!=c1` over `!(c==c1)`
 			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
+			// } else if (filter instanceof IAndFilter andFilter) {
+			// return FilterBuilder.or(andFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
 		} else if (filter instanceof IOrFilter orFilter) {
-			// Plays optimizations given a And of Not.
+			// Plays optimizations given an `AND` of `NOT`s.
 			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
 			return FilterBuilder.and(orFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
 		}
+
+		// Set<ISliceFilter> ors = FilterHelpers.splitOr(filter);
+		// return FilterBuilder.and(ors.stream().map(NotFilter::not).toList()).optimize();
+
 		return NotFilter.builder().negated(filter).build();
+	}
+
+	@Override
+	public ISliceFilter negate() {
+		return negated;
 	}
 
 }

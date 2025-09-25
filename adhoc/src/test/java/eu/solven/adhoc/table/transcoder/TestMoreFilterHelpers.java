@@ -38,6 +38,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestMoreFilterHelpers {
 
@@ -72,15 +73,15 @@ public class TestMoreFilterHelpers {
 
 		Assertions
 				.assertThat(
-						MoreFilterHelpers.match(transcoder, ColumnFilter.isIn("c", "c1", "c2"), Map.of("p_c", "c1")))
+						MoreFilterHelpers.match(transcoder, ColumnFilter.matchIn("c", "c1", "c2"), Map.of("p_c", "c1")))
 				.isTrue();
 
 		Assertions.assertThat(MoreFilterHelpers.match(transcoder,
-				AndFilter.and(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")),
+				AndFilter.and(ColumnFilter.matchLike("c", "a%"), ColumnFilter.matchLike("c", "%a")),
 				Map.of("p_c", "a"))).isTrue();
 
 		Assertions.assertThat(MoreFilterHelpers.match(transcoder,
-				FilterBuilder.or(ColumnFilter.isLike("c", "a%"), ColumnFilter.isLike("c", "%a")).optimize(),
+				FilterBuilder.or(ColumnFilter.matchLike("c", "a%"), ColumnFilter.matchLike("c", "%a")).optimize(),
 				Map.of("p_c", "azerty"))).isTrue();
 	}
 
@@ -162,7 +163,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsDistinctFrom() {
-		ISliceFilter kIsNull = ColumnFilter.isDistinctFrom("k", "v");
+		ISliceFilter kIsNull = ColumnFilter.notEqualTo("k", "v");
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isTrue();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
@@ -173,7 +174,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsIn_single() {
-		ISliceFilter kIsNull = ColumnFilter.isIn("k", "v");
+		ISliceFilter kIsNull = ColumnFilter.matchIn("k", "v");
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
@@ -184,7 +185,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsIn_list() {
-		ISliceFilter kIsNull = ColumnFilter.isIn("k", List.of("v"));
+		ISliceFilter kIsNull = ColumnFilter.matchIn("k", List.of("v"));
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
@@ -193,4 +194,12 @@ public class TestMoreFilterHelpers {
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
 	}
 
+	@Test
+	public void testNot_nullMatcher() {
+		ISliceFilter matchNull = ColumnFilter.match("c", NullMatcher.matchNull());
+		Assertions.assertThat(MoreFilterHelpers.match(matchNull, Map.of())).isTrue();
+
+		ISliceFilter notMatchNull = NotFilter.not(matchNull);
+		Assertions.assertThat(MoreFilterHelpers.match(notMatchNull, Map.of())).isFalse();
+	}
 }

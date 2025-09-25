@@ -138,11 +138,11 @@ public class PivotableEndpointsHandler {
 		AdhocHandlerHelper.optString(request, "cube").ifPresent(id -> parameters.cube(Optional.of(id)));
 
 		AdhocHandlerHelper.optString(request, "name")
-				.ifPresent(id -> parameters.name(Optional.of(EqualsMatcher.isEqualTo(id))));
+				.ifPresent(id -> parameters.name(Optional.of(EqualsMatcher.equalTo(id))));
 		// TODO How to turn from String to Object? (e.g. LocalDate)
 		// Should we switch to a `SameString` matcher?
 		AdhocHandlerHelper.optString(request, "coordinate")
-				.ifPresent(id -> parameters.coordinate(Optional.of(EqualsMatcher.isEqualTo(id))));
+				.ifPresent(id -> parameters.coordinate(Optional.of(EqualsMatcher.equalTo(id))));
 
 		Number limitCoordinates =
 				AdhocHandlerHelper.optNumber(request, "limit_coordinates").orElse(DEFAULT_LIMIT_COORDINATES);

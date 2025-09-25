@@ -42,7 +42,7 @@ public class TestOrMatcher {
 
 	@Test
 	public void test_multipleEquals() {
-		IValueMatcher a_and_aandb = OrMatcher.or(EqualsMatcher.isEqualTo("a"), EqualsMatcher.isEqualTo("b"));
+		IValueMatcher a_and_aandb = OrMatcher.or(EqualsMatcher.equalTo("a"), EqualsMatcher.equalTo("b"));
 
 		Assertions.assertThat(a_and_aandb).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
 			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b");
@@ -51,7 +51,7 @@ public class TestOrMatcher {
 
 	@Test
 	public void testOr_InEq() {
-		IValueMatcher a_or_bc = OrMatcher.or(EqualsMatcher.isEqualTo("a"), InMatcher.isIn("b", "c"));
+		IValueMatcher a_or_bc = OrMatcher.or(EqualsMatcher.equalTo("a"), InMatcher.isIn("b", "c"));
 
 		Assertions.assertThat(a_or_bc).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
 			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b", "c");
@@ -60,7 +60,7 @@ public class TestOrMatcher {
 
 	@Test
 	public void testOr_InEq_overlap() {
-		IValueMatcher a_or_ab = OrMatcher.or(EqualsMatcher.isEqualTo("a"), InMatcher.isIn("a", "b"));
+		IValueMatcher a_or_ab = OrMatcher.or(EqualsMatcher.equalTo("a"), InMatcher.isIn("a", "b"));
 
 		Assertions.assertThat(a_or_ab).isEqualTo(InMatcher.isIn("a", "b"));
 	}
@@ -76,14 +76,14 @@ public class TestOrMatcher {
 
 	@Test
 	public void testAnd_all() {
-		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_ALL);
+		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.equalTo("a"), IValueMatcher.MATCH_ALL);
 		Assertions.assertThat(matcher).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 
 	@Test
 	public void testAnd_none() {
-		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_NONE);
-		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
+		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.equalTo("a"), IValueMatcher.MATCH_NONE);
+		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.equalTo("a"));
 	}
 
 	@Test
@@ -98,9 +98,7 @@ public class TestOrMatcher {
 
 	@Test
 	public void testNotOrEquals_multiple() {
-		Assertions
-				.assertThat(
-						NotMatcher.not(OrMatcher.or(EqualsMatcher.isEqualTo("foo"), EqualsMatcher.isEqualTo("bar"))))
+		Assertions.assertThat(NotMatcher.not(OrMatcher.or(EqualsMatcher.equalTo("foo"), EqualsMatcher.equalTo("bar"))))
 				.isInstanceOfSatisfying(NotMatcher.class, notMatcher -> {
 					Assertions.assertThat(notMatcher.getNegated())
 							.isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
@@ -112,7 +110,7 @@ public class TestOrMatcher {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%"));
+		IValueMatcher matcher = OrMatcher.or(EqualsMatcher.equalTo("azerty"), LikeMatcher.matching("b%"));
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper

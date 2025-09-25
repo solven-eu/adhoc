@@ -196,7 +196,7 @@ public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLE
 		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure("pnl_explain")
 				.groupByAlso(K_TENOR)
-				.andFilter(ColumnFilter.isLike(K_MATURITY, "2Y"))
+				.andFilter(ColumnFilter.matchLike(K_MATURITY, "2Y"))
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -214,7 +214,7 @@ public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLE
 	@Test
 	public void testGrandTotal_filterMaturity() {
 		ITabularView output = cube().execute(
-				CubeQuery.builder().measure("pnl_explain").andFilter(ColumnFilter.isLike(K_MATURITY, "2Y")).build());
+				CubeQuery.builder().measure("pnl_explain").andFilter(ColumnFilter.matchLike(K_MATURITY, "2Y")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

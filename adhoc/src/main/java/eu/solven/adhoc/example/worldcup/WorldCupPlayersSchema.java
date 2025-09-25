@@ -107,14 +107,14 @@ public class WorldCupPlayersSchema {
 		measures.add(Filtrator.builder()
 				.name("goal_count")
 				// Goals and OwnGoals
-				.filter(ColumnFilter.isIn("event_code", "G", "OG"))
+				.filter(ColumnFilter.matchIn("event_code", "G", "OG"))
 				.underlying("event_count")
 				.build());
 
 		measures.add(Filtrator.builder()
 				.name("redcard_count")
 				// Redcards and SecondYellows
-				.filter(ColumnFilter.isIn("event_code", "R", "SY"))
+				.filter(ColumnFilter.matchIn("event_code", "R", "SY"))
 				.underlying("event_count")
 				.build());
 

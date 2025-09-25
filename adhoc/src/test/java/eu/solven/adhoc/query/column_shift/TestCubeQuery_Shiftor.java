@@ -204,7 +204,7 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 	@Test
 	public void testFilterByComplexColor() {
 		ITabularView output = cube()
-				.execute(CubeQuery.builder().measure(mName).andFilter(ColumnFilter.isLike("color", "bl%")).build());
+				.execute(CubeQuery.builder().measure(mName).andFilter(ColumnFilter.matchLike("color", "bl%")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

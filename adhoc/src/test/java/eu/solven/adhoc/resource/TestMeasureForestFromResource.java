@@ -215,7 +215,7 @@ public class TestMeasureForestFromResource {
 				.isInstanceOfSatisfying(Filtrator.class, c -> {
 					Assertions.assertThat(c.getName()).isEqualTo("k1_c=V");
 					Assertions.assertThat(c.getUnderlyingNames()).containsExactly("k1");
-					Assertions.assertThat(c.getFilter()).isEqualTo(ColumnFilter.isEqualTo("c", "someString"));
+					Assertions.assertThat(c.getFilter()).isEqualTo(ColumnFilter.equalTo("c", "someString"));
 				});
 
 		MeasureForest forest = MeasureForest.fromMeasures("testWithFilter", measures);

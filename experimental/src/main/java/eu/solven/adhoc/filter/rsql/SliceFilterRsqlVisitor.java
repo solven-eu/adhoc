@@ -67,10 +67,10 @@ public class SliceFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String>
 		Object argument = arguments.get(0);
 
 		if (RSQLOperators.EQUAL.equals(op)) {
-			return ColumnFilter.isEqualTo(column, argument);
+			return ColumnFilter.equalTo(column, argument);
 		}
 		if (RSQLOperators.NOT_EQUAL.equals(op)) {
-			return NotFilter.not(ColumnFilter.isEqualTo(column, argument));
+			return NotFilter.not(ColumnFilter.equalTo(column, argument));
 		}
 
 		if (RSQLOperators.IN.equals(op)) {

@@ -63,16 +63,10 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 	@BeforeEach
 	public void registerMeasures() {
-		forest.addMeasure(Filtrator.builder()
-				.name("onUS")
-				.underlying("d")
-				.filter(ColumnFilter.isEqualTo("country", "US"))
-				.build());
-		forest.addMeasure(Filtrator.builder()
-				.name("onFR")
-				.underlying("d")
-				.filter(ColumnFilter.isEqualTo("country", "FR"))
-				.build());
+		forest.addMeasure(
+				Filtrator.builder().name("onUS").underlying("d").filter(ColumnFilter.equalTo("country", "US")).build());
+		forest.addMeasure(
+				Filtrator.builder().name("onFR").underlying("d").filter(ColumnFilter.equalTo("country", "FR")).build());
 		forest.addMeasure(Combinator.builder()
 				.name("FRoverUS")
 				.underlyings(Arrays.asList("onFR", "onUS"))

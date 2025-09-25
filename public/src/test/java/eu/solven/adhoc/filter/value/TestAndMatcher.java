@@ -44,22 +44,22 @@ public class TestAndMatcher {
 	@Test
 	public void testAndInEq() {
 		AndMatcher a_and_aandb =
-				AndMatcher.builder().operand(EqualsMatcher.isEqualTo("a")).operand(InMatcher.isIn("a", "b")).build();
+				AndMatcher.builder().operand(EqualsMatcher.equalTo("a")).operand(InMatcher.isIn("a", "b")).build();
 
 		// TODO Improve this when relevant
 		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
-		Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
+		Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.equalTo("a"));
 	}
 
 	@Test
 	public void testAnd_all() {
-		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_ALL);
-		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.isEqualTo("a"));
+		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.equalTo("a"), IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(matcher).isEqualTo(EqualsMatcher.equalTo("a"));
 	}
 
 	@Test
 	public void testAnd_none() {
-		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.isEqualTo("a"), IValueMatcher.MATCH_NONE);
+		IValueMatcher matcher = AndMatcher.and(EqualsMatcher.equalTo("a"), IValueMatcher.MATCH_NONE);
 		Assertions.assertThat(matcher).isEqualTo(IValueMatcher.MATCH_NONE);
 	}
 
@@ -75,15 +75,15 @@ public class TestAndMatcher {
 
 	@Test
 	public void testAndEqualsLike() {
-		Assertions.assertThat(AndMatcher.and(EqualsMatcher.isEqualTo("azerty"), LikeMatcher.matching("b%")))
+		Assertions.assertThat(AndMatcher.and(EqualsMatcher.equalTo("azerty"), LikeMatcher.matching("b%")))
 				.isEqualTo(IValueMatcher.MATCH_NONE);
 	}
 
 	@Test
 	public void testAndNotEquals_multiple() {
 		Assertions
-				.assertThat(AndMatcher.and(NotMatcher.not(EqualsMatcher.isEqualTo("foo")),
-						NotMatcher.not(EqualsMatcher.isEqualTo("bar"))))
+				.assertThat(AndMatcher.and(NotMatcher.not(EqualsMatcher.equalTo("foo")),
+						NotMatcher.not(EqualsMatcher.equalTo("bar"))))
 				.isInstanceOfSatisfying(NotMatcher.class, notMatcher -> {
 					Assertions.assertThat(notMatcher.getNegated())
 							.isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
@@ -96,7 +96,7 @@ public class TestAndMatcher {
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		IValueMatcher matcher =
-				AndMatcher.and(NotMatcher.not(EqualsMatcher.isEqualTo("azerty")), LikeMatcher.matching("a%"));
+				AndMatcher.and(NotMatcher.not(EqualsMatcher.equalTo("azerty")), LikeMatcher.matching("a%"));
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper

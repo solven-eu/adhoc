@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,6 +86,11 @@ public class OrFilter implements IOrFilter {
 	}
 
 	@Override
+	public ISliceFilter negate() {
+		return FilterBuilder.and(getOperands().stream().map(NotFilter::not).toList()).combine();
+	}
+
+	@Override
 	public String toString() {
 		if (isMatchNone()) {
 			return "matchNone";
@@ -113,9 +120,17 @@ public class OrFilter implements IOrFilter {
 	 * @return a filter doing an `OR` between each {@link Map} entry,
 	 */
 	public static ISliceFilter or(Map<String, ?> columnToFilter) {
-		return FilterBuilder.or(columnToFilter.entrySet()
+		List<? extends ISliceFilter> asList = columnToFilter.entrySet()
 				.stream()
-				.map(e -> ColumnFilter.builder().column(e.getKey()).matching(e.getValue()).build())
-				.collect(Collectors.toList())).optimize();
+				.map(e -> ColumnFilter.matchLax(e.getKey(), e.getValue()))
+				.collect(Collectors.toCollection(ArrayList::new));
+
+		if (asList.contains(MATCH_ALL)) {
+			return MATCH_ALL;
+		}
+
+		asList.removeIf(MATCH_NONE::equals);
+
+		return FilterBuilder.or(asList).combine();
 	}
 }

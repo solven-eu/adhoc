@@ -99,7 +99,7 @@ public class TestInMatcher {
 		singletonNull.add("notNull");
 
 		Assertions.assertThat(InMatcher.isIn(singletonNull))
-				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), EqualsMatcher.isEqualTo("notNull")));
+				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), EqualsMatcher.equalTo("notNull")));
 	}
 
 	@Test
@@ -126,16 +126,16 @@ public class TestInMatcher {
 	@Test
 	public void testGetOperands() {
 		// equals case
-		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.isEqualTo("foo"), String.class))
+		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.equalTo("foo"), String.class))
 				.containsExactly("foo");
 
 		// Incompatible class
-		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.isEqualTo("foo"), LocalDate.class)).isEmpty();
+		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.equalTo("foo"), LocalDate.class)).isEmpty();
 
 		Assertions.assertThat(InMatcher.extractOperands(InMatcher.isIn("foo", LocalDate.now(), "bar"), String.class))
 				.containsExactly("foo", "bar");
 
-		Assertions.assertThat(InMatcher.extractOperands(NotMatcher.not(EqualsMatcher.isEqualTo("foo")), String.class))
+		Assertions.assertThat(InMatcher.extractOperands(NotMatcher.not(EqualsMatcher.equalTo("foo")), String.class))
 				.isEmpty();
 	}
 
@@ -146,15 +146,13 @@ public class TestInMatcher {
 		IValueMatcher inMatcher = InMatcher.isIn(operandValueMatcher, "bar");
 
 		Assertions.assertThat(inMatcher)
-				.isEqualTo(OrMatcher.builder()
-						.operand(operandValueMatcher)
-						.operand(EqualsMatcher.isEqualTo("bar"))
-						.build());
+				.isEqualTo(
+						OrMatcher.builder().operand(operandValueMatcher).operand(EqualsMatcher.equalTo("bar")).build());
 	}
 
 	@Test
 	public void testMultipleInts() {
-		IValueMatcher or123_234 = OrMatcher.or(EqualsMatcher.isEqualTo(123), EqualsMatcher.isEqualTo(234));
+		IValueMatcher or123_234 = OrMatcher.or(EqualsMatcher.equalTo(123), EqualsMatcher.equalTo(234));
 		Assertions.assertThat(or123_234.match(123)).isTrue();
 	}
 

@@ -44,12 +44,12 @@ public class TestAtotiConditionDatastoreToAdhoc {
 				.isEqualTo(ISliceFilter.MATCH_ALL);
 
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.And(BaseConditions.Equal("c1", "v1"))))
-				.isEqualTo(ColumnFilter.isEqualTo("c1", "v1"));
+				.isEqualTo(ColumnFilter.equalTo("c1", "v1"));
 
 		Assertions
 				.assertThat(apConditionToAdhoc.convertToAdhoc(
 						BaseConditions.And(BaseConditions.Equal("c1", "v1"), BaseConditions.Equal("c2", "v2"))))
-				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2")));
+				.isEqualTo(AndFilter.and(ColumnFilter.equalTo("c1", "v1"), ColumnFilter.equalTo("c2", "v2")));
 	}
 
 	@Test
@@ -60,17 +60,17 @@ public class TestAtotiConditionDatastoreToAdhoc {
 				.isEqualTo(ISliceFilter.MATCH_NONE);
 
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.And(BaseConditions.Equal("c1", "v1"))))
-				.isEqualTo(ColumnFilter.isEqualTo("c1", "v1"));
+				.isEqualTo(ColumnFilter.equalTo("c1", "v1"));
 
 		Assertions
 				.assertThat(apConditionToAdhoc.convertToAdhoc(
 						BaseConditions.And(BaseConditions.Equal("c1", "v1"), BaseConditions.Equal("c2", "v2"))))
-				.isEqualTo(AndFilter.and(ColumnFilter.isEqualTo("c1", "v1"), ColumnFilter.isEqualTo("c2", "v2")));
+				.isEqualTo(AndFilter.and(ColumnFilter.equalTo("c1", "v1"), ColumnFilter.equalTo("c2", "v2")));
 	}
 
 	@Test
 	public void testPattern() {
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc(BaseConditions.Like("c1", "v1")).toString())
-				.isEqualTo(ColumnFilter.isMatching("c1", Pattern.compile("v1")).toString());
+				.isEqualTo(ColumnFilter.matchPattern("c1", Pattern.compile("v1")).toString());
 	}
 }

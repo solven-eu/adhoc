@@ -130,13 +130,13 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 		forest.addMeasure(Filtrator.builder()
 				.name("k1Sum_maxByA_b1")
 				.underlying("k1Sum_maxByA")
-				.filter(ColumnFilter.isEqualTo("b", "b1"))
+				.filter(ColumnFilter.equalTo("b", "b1"))
 				.build());
 
 		forest.addMeasure(Filtrator.builder()
 				.name("k1Sum_maxByB_a1")
 				.underlying("k1Sum_maxByB")
-				.filter(ColumnFilter.isEqualTo("a", "a1"))
+				.filter(ColumnFilter.equalTo("a", "a1"))
 				.build());
 
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {

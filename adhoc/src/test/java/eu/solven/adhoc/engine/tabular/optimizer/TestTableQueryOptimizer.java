@@ -42,7 +42,7 @@ public class TestTableQueryOptimizer {
 	CubeQueryStep step = CubeQueryStep.builder()
 			.measure("m1")
 			.groupBy(GroupByColumns.named("g", "h"))
-			.filter(ColumnFilter.isEqualTo("c", "c1"))
+			.filter(ColumnFilter.equalTo("c", "c1"))
 			.build();
 
 	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
@@ -67,7 +67,7 @@ public class TestTableQueryOptimizer {
 		// Different column same coordinate
 		Assertions
 				.assertThat(optimizer.canInduce(step,
-						CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("d", "c1")).build()))
+						CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("d", "c1")).build()))
 				.isFalse();
 	}
 
@@ -76,11 +76,11 @@ public class TestTableQueryOptimizer {
 		Assertions.assertThat(optimizer.canInduce(
 				// inducer has OR on different columns
 				CubeQueryStep.edit(step)
-						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "d1"))
+						.filter(FilterBuilder.or(ColumnFilter.equalTo("c", "c1"), ColumnFilter.equalTo("d", "d1"))
 								.optimize())
 						.build(),
 				// induced has only one of filters
-				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("c", "c1")).build()))
+				CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("c", "c1")).build()))
 				// false because filtered columns are not groupedBy
 				.isFalse();
 
@@ -88,11 +88,11 @@ public class TestTableQueryOptimizer {
 				// inducer has OR on different columns
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("g", "g1"), ColumnFilter.isEqualTo("h", "h1"))
+						.filter(FilterBuilder.or(ColumnFilter.equalTo("g", "g1"), ColumnFilter.equalTo("h", "h1"))
 								.optimize())
 						.build(),
 				// induced has only one of filters
-				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("g", "g1")).build()))
+				CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("g", "g1")).build()))
 				// true because filtered columns are groupedBy: irrelevant `g` can be filtered.
 				.isTrue();
 
@@ -100,11 +100,11 @@ public class TestTableQueryOptimizer {
 				// inducer has OR on different columns
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(FilterBuilder.or(ColumnFilter.isEqualTo("g", "g1"), ColumnFilter.isEqualTo("c", "c1"))
+						.filter(FilterBuilder.or(ColumnFilter.equalTo("g", "g1"), ColumnFilter.equalTo("c", "c1"))
 								.optimize())
 						.build(),
 				// induced has only one of filters
-				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("g", "g1")).build()))
+				CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("g", "g1")).build()))
 				// true because inducer has more rows than induced, and these rows can be filtered out (based on `g`)
 				.isTrue();
 	}
@@ -113,30 +113,30 @@ public class TestTableQueryOptimizer {
 	public void testCanInduce_AndDifferentColumns() {
 		Assertions.assertThat(optimizer.canInduce(
 				// inducer has OR on different columns
-				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("c", "c1")).build(),
+				CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("c", "c1")).build(),
 				// induced has only one of filters
 				CubeQueryStep.edit(step)
-						.filter(AndFilter.and(ColumnFilter.isEqualTo("c", "c1"), ColumnFilter.isEqualTo("d", "c1")))
+						.filter(AndFilter.and(ColumnFilter.equalTo("c", "c1"), ColumnFilter.equalTo("d", "c1")))
 						.build()))
 				// false because filtered columns are not groupedBy
 				.isFalse();
 
 		Assertions.assertThat(optimizer.canInduce(
 				// inducer has OR on different columns
-				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("g", "c1")).build(),
+				CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("g", "c1")).build(),
 				// induced has only one of filters
 				CubeQueryStep.edit(step)
-						.filter(AndFilter.and(ColumnFilter.isEqualTo("g", "c1"), ColumnFilter.isEqualTo("h", "c1")))
+						.filter(AndFilter.and(ColumnFilter.equalTo("g", "c1"), ColumnFilter.equalTo("h", "c1")))
 						.build()))
 				// true because filtered columns are groupedBy
 				.isTrue();
 
 		Assertions.assertThat(optimizer.canInduce(
 				// inducer has OR on different columns
-				CubeQueryStep.edit(step).filter(ColumnFilter.isEqualTo("g", "c1")).build(),
+				CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("g", "c1")).build(),
 				// induced has only one of filters
 				CubeQueryStep.edit(step)
-						.filter(AndFilter.and(ColumnFilter.isEqualTo("g", "c1"), ColumnFilter.isEqualTo("c", "c1")))
+						.filter(AndFilter.and(ColumnFilter.equalTo("g", "c1"), ColumnFilter.equalTo("c", "c1")))
 						.build()))
 				// false because inducer lacks information to filter along c
 				.isFalse();
@@ -150,7 +150,7 @@ public class TestTableQueryOptimizer {
 				// groupBy (g) filter (g)
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g"))
-						.filter(ColumnFilter.isEqualTo("g", "someG"))
+						.filter(ColumnFilter.equalTo("g", "someG"))
 						.build()))
 				// true because if inducer has laxer filter, there is enough groupBy to infer it
 				.isTrue();
@@ -161,7 +161,7 @@ public class TestTableQueryOptimizer {
 				// groupBy (g) filter (g)
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("c"))
-						.filter(ColumnFilter.isEqualTo("c", "someC"))
+						.filter(ColumnFilter.equalTo("c", "someC"))
 						.build()))
 				// false because inducer lax information about c
 				.isFalse();
@@ -173,12 +173,12 @@ public class TestTableQueryOptimizer {
 				// groupBy (g,h) filterX
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(ColumnFilter.isEqualTo("c", "someC"))
+						.filter(ColumnFilter.equalTo("c", "someC"))
 						.build(),
 				// groupBy (g) filterX
 				CubeQueryStep.edit(step)
 						.groupBy(GroupByColumns.named("g"))
-						.filter(ColumnFilter.isEqualTo("c", "someC"))
+						.filter(ColumnFilter.equalTo("c", "someC"))
 						.build()))
 				// true because filter is identical
 				.isTrue();
@@ -192,14 +192,14 @@ public class TestTableQueryOptimizer {
 								CubeQueryStep.edit(step)
 										.groupBy(GroupByColumns.named("g", "h"))
 										.filter(FilterBuilder
-												.or(ColumnFilter.isEqualTo("c", "someC"),
-														ColumnFilter.isEqualTo("g", "someG"))
+												.or(ColumnFilter.equalTo("c", "someC"),
+														ColumnFilter.equalTo("g", "someG"))
 												.optimize())
 										.build(),
 								// induced has a filter on a not groupedBy column
 								CubeQueryStep.edit(step)
 										.groupBy(GroupByColumns.named("g"))
-										.filter(ColumnFilter.isEqualTo("c", "someC"))
+										.filter(ColumnFilter.equalTo("c", "someC"))
 										.build()))
 				// while we're guaranteed to see all input, which are not able to filter out irrelevant input
 				// given the filter on the not groupedBy column
@@ -212,13 +212,13 @@ public class TestTableQueryOptimizer {
 				.assertThat(optimizer.canInduce(
 						CubeQueryStep.edit(step)
 								.groupBy(GroupByColumns.named("g", "h"))
-								.filter(ColumnFilter.isEqualTo("c", "someC"))
+								.filter(ColumnFilter.equalTo("c", "someC"))
 								.build(),
 						// induced has a stricter filter, based on a column which is groupedBy in the inducer
 						CubeQueryStep.edit(step)
 								.groupBy(GroupByColumns.grandTotal())
-								.filter(AndFilter.and(ColumnFilter.isEqualTo("c", "someC"),
-										ColumnFilter.isEqualTo("g", "someG")))
+								.filter(AndFilter.and(ColumnFilter.equalTo("c", "someC"),
+										ColumnFilter.equalTo("g", "someG")))
 								.build()))
 				// true because filter is inducable (given G is groupedBy, we can ensure to get ride of C rows)
 				.isTrue();
@@ -227,12 +227,12 @@ public class TestTableQueryOptimizer {
 	@Test
 	public void testSplit_disjoint_noMeasure() {
 		TableQuery tq1 = TableQuery.edit(step)
-				.filter(ColumnFilter.isEqualTo("a", "a1"))
+				.filter(ColumnFilter.equalTo("a", "a1"))
 				.groupBy(GroupByColumns.named("b"))
 				.aggregator(Aggregator.sum("m1"))
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
-				.filter(ColumnFilter.isEqualTo("c", "c1"))
+				.filter(ColumnFilter.equalTo("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(Aggregator.sum("m1"))
 				.build();

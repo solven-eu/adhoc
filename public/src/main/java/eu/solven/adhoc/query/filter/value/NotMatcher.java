@@ -35,7 +35,7 @@ import lombok.extern.jackson.Jacksonized;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 public class NotMatcher implements IValueMatcher, IColumnToString {
 
@@ -49,6 +49,10 @@ public class NotMatcher implements IValueMatcher, IColumnToString {
 
 	public static IValueMatcher not(IValueMatcher negated) {
 		return not(negated, true);
+	}
+
+	public static IValueMatcher notEqualTo(Object matching) {
+		return not(EqualsMatcher.equalTo(matching));
 	}
 
 	/**

@@ -344,7 +344,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				log.debug("Do not add an entry already in cache");
 				// Else it may force keeping the entry
 			} else {
-				queryStepCache.pushValues(Map.of(step, queryStepToValues.get(step)));
+				SizeAndDuration cost = queryStepsDag.getStepToCost().get(step);
+				queryStepCache.pushValue(step, queryStepToValues.get(step), cost);
 			}
 		});
 	}
@@ -368,7 +369,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	 * @return a dense version of the queryStep, for logging purposes
 	 */
 	protected String dense(CubeQueryStep queryStep) {
-		// Do not log about debug, explainm or cache
+		// Do not log about debug, explain or cache
 		return new StringBuilder().append("m=")
 				.append(queryStep.getMeasure().getName())
 				.append(" filter=")

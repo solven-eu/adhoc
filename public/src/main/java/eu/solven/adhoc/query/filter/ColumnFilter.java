@@ -48,9 +48,6 @@ import lombok.extern.jackson.Jacksonized;
  * @author Benoit Lacelle
  */
 @Value
-@Builder(toBuilder = true)
-@Jacksonized
-@SuppressWarnings("PMD.LinguisticNaming")
 public class ColumnFilter implements IColumnFilter {
 
 	@NonNull
@@ -63,8 +60,15 @@ public class ColumnFilter implements IColumnFilter {
 	// This flag does not have an effect on most IValueMatcher, but only on matchers which may returns true on null.
 	// For instance, it is noop for EqualsMatcher, which accepts only a non-null operand. But it can be
 	// very important if one use a NullMatcher.
-	@Builder.Default
-	final boolean nullIfAbsent = true;
+	final boolean nullIfAbsent;
+
+	@Builder(toBuilder = true)
+	@Jacksonized
+	public ColumnFilter(String column, IValueMatcher valueMatcher, boolean nullIfAbsent) {
+		this.column = column;
+		this.valueMatcher = valueMatcher;
+		this.nullIfAbsent = nullIfAbsent;
+	}
 
 	@Override
 	public boolean isNot() {
@@ -95,12 +99,21 @@ public class ColumnFilter implements IColumnFilter {
 		}
 	}
 
+	@Override
+	public ISliceFilter negate() {
+		// BEWARE negating must not change the semantic of `nullIfAbsent`: we just want to negate the result
+		return this.toBuilder().valueMatcher(NotMatcher.not(valueMatcher)).build();
+	}
+
 	/**
 	 * Lombok Builder.
 	 * 
 	 * @author Benoit Lacelle
 	 */
 	public static class ColumnFilterBuilder {
+		// By default, we treat the absence of a column as a null (e.g. like in most Map implementations)
+		boolean nullIfAbsent = true;
+
 		/**
 		 * Used when we want this to match cases where the column is null
 		 *
@@ -118,7 +131,7 @@ public class ColumnFilter implements IColumnFilter {
 		}
 
 		public ColumnFilterBuilder matchEquals(Object o) {
-			this.valueMatcher = EqualsMatcher.isEqualTo(o);
+			this.valueMatcher = EqualsMatcher.equalTo(o);
 			return this;
 		}
 
@@ -133,6 +146,10 @@ public class ColumnFilter implements IColumnFilter {
 			this.valueMatcher = IValueMatcher.matching(matching);
 			return this;
 		}
+
+		public ColumnFilter build() {
+			return new ColumnFilter(column, valueMatcher, nullIfAbsent);
+		}
 	}
 
 	/**
@@ -142,7 +159,7 @@ public class ColumnFilter implements IColumnFilter {
 	 *            the value expected to be found
 	 * @return true if the column holds the same value as matching (following {@link Object#equals(Object)}) contract.
 	 */
-	public static ColumnFilter isEqualTo(String column, Object matching) {
+	public static ColumnFilter equalTo(String column, Object matching) {
 		return ColumnFilter.builder().column(column).matchEquals(matching).build();
 	}
 
@@ -152,9 +169,9 @@ public class ColumnFilter implements IColumnFilter {
 	 * @return true if the value is different, including if the value is null.
 	 */
 	// https://stackoverflow.com/questions/36508815/not-equal-and-null-in-postgres
-	public static ISliceFilter isDistinctFrom(String column, Object matching) {
-		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.isEqualTo(matching)).build();
-		return isMatching(column, not);
+	public static ISliceFilter notEqualTo(String column, Object matching) {
+		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.equalTo(matching)).build();
+		return match(column, not);
 	}
 
 	/**
@@ -166,7 +183,7 @@ public class ColumnFilter implements IColumnFilter {
 	 * @return a {@link ColumnFilter}
 	 */
 	// https://duckdb.org/docs/sql/query_syntax/unnest.html
-	public static ISliceFilter isIn(String column, Object first, Object... more) {
+	public static ISliceFilter matchIn(String column, Object first, Object... more) {
 		List<Object> rawList = Lists.asList(first, more);
 
 		Collection<?> expandedList = AdhocCollectionHelpers.unnestAsCollection(rawList);
@@ -178,20 +195,44 @@ public class ColumnFilter implements IColumnFilter {
 		}
 	}
 
-	public static ISliceFilter isLike(String column, String likeExpression) {
-		return isMatching(column, LikeMatcher.matching(likeExpression));
+	public static ISliceFilter notIn(String column, Object first, Object... more) {
+		List<Object> rawList = Lists.asList(first, more);
+
+		Collection<?> expandedList = AdhocCollectionHelpers.unnestAsCollection(rawList);
+
+		if (expandedList.isEmpty()) {
+			return MATCH_ALL;
+		} else {
+			return ColumnFilter.builder()
+					.column(column)
+					.valueMatcher(NotMatcher.not(InMatcher.isIn(expandedList)))
+					.build();
+		}
 	}
 
-	public static ISliceFilter isMatching(String column, Pattern pattern) {
-		return isMatching(column, RegexMatcher.matching(pattern));
+	public static ISliceFilter matchLike(String column, String likeExpression) {
+		return match(column, LikeMatcher.matching(likeExpression));
 	}
 
-	public static ISliceFilter isMatching(String column, IValueMatcher matcher) {
+	public static ISliceFilter notLike(String column, String likeExpression) {
+		return matchLike(column, likeExpression).negate();
+	}
+
+	public static ISliceFilter matchPattern(String column, Pattern pattern) {
+		return match(column, RegexMatcher.matching(pattern));
+	}
+
+	public static ISliceFilter match(String column, IValueMatcher matcher) {
 		if (matcher == IValueMatcher.MATCH_ALL) {
 			return MATCH_ALL;
 		} else if (matcher == IValueMatcher.MATCH_NONE) {
 			return MATCH_NONE;
 		}
 		return ColumnFilter.builder().column(column).valueMatcher(matcher).build();
+	}
+
+	public static ISliceFilter matchLax(String column, Object value) {
+		IValueMatcher matcher = IValueMatcher.matching(value);
+		return match(column, matcher);
 	}
 }

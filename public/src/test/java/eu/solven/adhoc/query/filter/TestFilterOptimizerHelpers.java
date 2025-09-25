@@ -63,8 +63,8 @@ public class TestFilterOptimizerHelpers {
 		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
 				AndFilter.and(Map.of("a", "a1")),
 				Set.of(FilterBuilder
-						.or(NotFilter.not(ColumnFilter.isMatching("a", LikeMatcher.matching("a%"))),
-								ColumnFilter.isEqualTo("b", "b2"))
+						.or(NotFilter.not(ColumnFilter.match("a", LikeMatcher.matching("a%"))),
+								ColumnFilter.equalTo("b", "b2"))
 						.combine()));
 
 		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or(Map.of("b", "b2")));

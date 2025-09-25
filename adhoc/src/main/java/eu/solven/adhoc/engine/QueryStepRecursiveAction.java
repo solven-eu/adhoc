@@ -60,6 +60,7 @@ public class QueryStepRecursiveAction extends RecursiveAction {
 	CubeQueryStep step;
 
 	// BEWARE This should be a thread-safe Map!
+	// BEWARE This must not be an ImmutableMap, as this is modified to receive the results
 	@NonNull
 	Map<CubeQueryStep, ?> queryStepToValues;
 

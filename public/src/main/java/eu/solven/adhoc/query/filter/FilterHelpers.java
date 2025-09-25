@@ -274,9 +274,24 @@ public class FilterHelpers {
 		} else if (filter.isMatchNone()) {
 			return ImmutableSet.of(filter);
 		} else if (filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands();
-		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IOrFilter orFilter) {
-			return orFilter.getOperands().stream().map(NotFilter::not).collect(ImmutableSet.toImmutableSet());
+			return andFilter.getOperands()
+					.stream()
+					.flatMap(f -> splitAnd(f).stream())
+					.collect(ImmutableSet.toImmutableSet());
+		} else if (filter instanceof INotFilter notFilter) {
+			if (notFilter.getNegated() instanceof IOrFilter orFilter) {
+				return orFilter.getOperands()
+						.stream()
+						.map(NotFilter::not)
+						.flatMap(f -> splitAnd(f).stream())
+						.collect(ImmutableSet.toImmutableSet());
+			} else if (notFilter.getNegated() instanceof IColumnFilter columnFilter
+					&& columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
+				return inMatcher.getOperands()
+						.stream()
+						.map(o -> ColumnFilter.match(columnFilter.getColumn(), NotMatcher.notEqualTo(o)))
+						.collect(ImmutableSet.toImmutableSet());
+			}
 		} else if (filter instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 
@@ -285,6 +300,15 @@ public class FilterHelpers {
 				return andMatcher.getOperands()
 						.stream()
 						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
+						.collect(ImmutableSet.toImmutableSet());
+			} else if (valueMatcher instanceof NotMatcher notMatcher
+					&& notMatcher.getNegated() instanceof InMatcher notInMatcher) {
+				return notInMatcher.getOperands()
+						.stream()
+						.map(operand -> ColumnFilter.builder()
+								.column(column)
+								.valueMatcher(NotMatcher.not(EqualsMatcher.equalTo(operand)))
+								.build())
 						.collect(ImmutableSet.toImmutableSet());
 			}
 		}
@@ -299,9 +323,16 @@ public class FilterHelpers {
 		} else if (filter.isMatchAll()) {
 			return ImmutableSet.of(filter);
 		} else if (filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands();
+			return orFilter.getOperands()
+					.stream()
+					.flatMap(f -> splitOr(f).stream())
+					.collect(ImmutableSet.toImmutableSet());
 		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IAndFilter andFilter) {
-			return andFilter.getOperands().stream().map(NotFilter::not).collect(ImmutableSet.toImmutableSet());
+			return andFilter.getOperands()
+					.stream()
+					.map(NotFilter::not)
+					.flatMap(f -> splitOr(f).stream())
+					.collect(ImmutableSet.toImmutableSet());
 		} else if (filter instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 

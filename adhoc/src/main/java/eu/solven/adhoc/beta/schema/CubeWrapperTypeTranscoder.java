@@ -53,7 +53,7 @@ public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 	@Override
 	public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
 		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-			return EqualsMatcher.isEqualTo(toTable(column, equalsMatcher.getOperand()));
+			return EqualsMatcher.equalTo(toTable(column, equalsMatcher.getOperand()));
 		} else if (valueMatcher instanceof InMatcher inMatcher) {
 			return InMatcher.isIn(inMatcher.getOperands().stream().map(operand -> toTable(column, operand)).toList());
 		}

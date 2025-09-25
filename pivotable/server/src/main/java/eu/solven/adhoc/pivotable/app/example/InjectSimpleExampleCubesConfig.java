@@ -140,7 +140,7 @@ public class InjectSimpleExampleCubesConfig {
 		schema.registerCube("simple", "simple", "simple");
 
 		schema.registerCustomMarker("ccy",
-				EqualsMatcher.isEqualTo("simple"),
+				EqualsMatcher.equalTo("simple"),
 				CustomMarkerMetadataGenerator.builder()
 						.path(ReferenceCcyShallowCombination.PATH_SHALLOW_CCY)
 						.possibleValues(() -> Set.of(ReferenceCcyShallowCombination.CCY_DEFAULT, "USD", "JPY"))
@@ -148,7 +148,7 @@ public class InjectSimpleExampleCubesConfig {
 						.build());
 
 		schema.registerCustomMarker("deepCcy",
-				EqualsMatcher.isEqualTo("simple"),
+				EqualsMatcher.equalTo("simple"),
 				CustomMarkerMetadataGenerator.builder()
 						.path(ReferenceCcyDeepCombination.PATH_DEEP_CCY)
 						.possibleValues(() -> Set.of(ReferenceCcyDeepCombination.CCY_DEFAULT, "USD", "JPY"))

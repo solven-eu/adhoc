@@ -74,12 +74,12 @@ public class FilterEquivalencyHelpers {
 			if (valueMatcher instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
-						.map(o -> ColumnFilter.isEqualTo(column.getColumn(), o))
+						.map(o -> ColumnFilter.equalTo(column.getColumn(), o))
 						.collect(Collectors.toSet());
 			} else if (valueMatcher instanceof NotMatcher not && not.getNegated() instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
-						.map(o -> NotFilter.not(ColumnFilter.isEqualTo(column.getColumn(), o)))
+						.map(o -> NotFilter.not(ColumnFilter.equalTo(column.getColumn(), o)))
 						.collect(Collectors.toSet());
 			} else {
 				return Set.of(column);

@@ -43,7 +43,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testJackson_equals() throws JsonProcessingException {
-		ColumnFilter ksEqualsV = ColumnFilter.isEqualTo("k", "v");
+		ColumnFilter ksEqualsV = ColumnFilter.equalTo("k", "v");
 
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,7 +58,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testInEmpty() {
-		ISliceFilter ksEqualsV = ColumnFilter.isIn("k", Set.of());
+		ISliceFilter ksEqualsV = ColumnFilter.matchIn("k", Set.of());
 
 		Assertions.assertThat(ksEqualsV).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
@@ -76,7 +76,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_equals() {
-		ISliceFilter filter = ColumnFilter.isEqualTo("c", "v");
+		ISliceFilter filter = ColumnFilter.equalTo("c", "v");
 
 		Assertions.assertThat(filter).hasToString("c==v");
 	}
@@ -84,7 +84,7 @@ public class TestColumnFilter {
 	@Test
 	public void testToString_equals_not() {
 		ISliceFilter filter =
-				ColumnFilter.builder().column("c").matching(NotMatcher.not(EqualsMatcher.isEqualTo("v"))).build();
+				ColumnFilter.builder().column("c").matching(NotMatcher.not(EqualsMatcher.equalTo("v"))).build();
 
 		Assertions.assertThat(filter).hasToString("c!=v");
 	}
@@ -124,7 +124,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_in() {
-		ISliceFilter filter = ColumnFilter.isIn("c", ImmutableSet.of("v1", "v2"));
+		ISliceFilter filter = ColumnFilter.matchIn("c", ImmutableSet.of("v1", "v2"));
 
 		Assertions.assertThat(filter).hasToString("c=in=(v1,v2)");
 	}
@@ -154,7 +154,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testMatchAll() {
-		ISliceFilter cIsMatchAll = ColumnFilter.isMatching("c", IValueMatcher.MATCH_ALL);
+		ISliceFilter cIsMatchAll = ColumnFilter.match("c", IValueMatcher.MATCH_ALL);
 
 		Assertions.assertThat(cIsMatchAll).hasToString("matchAll");
 	}
