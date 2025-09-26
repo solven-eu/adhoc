@@ -65,6 +65,8 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		filters = optimizeOperands(filters);
+
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
 		ImmutableSet<? extends ISliceFilter> flatten = splitAnd(ImmutableSet.copyOf(filters));
 
@@ -74,9 +76,6 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 		// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
 		ImmutableSet<? extends ISliceFilter> packedColumns = packColumnFilters(splitAnd(flatten));
-
-		// Then simplify the AND (e.g. `AND(a=a1)` to `a=a1`)
-		// ImmutableSet<? extends ISliceFilter> finalOptim = splitAnd(packedColumns);
 
 		if (packedColumns.contains(ISliceFilter.MATCH_NONE)) {
 			return ISliceFilter.MATCH_NONE;
@@ -92,6 +91,28 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		}
 
 		return preferNotOrOverAndNot(willBeNegated, stripRedundancy);
+	}
+
+	/**
+	 * Apply recursively the optimization process to operands.
+	 * 
+	 * @param filters
+	 * @return a {@link Set} of operands, guaranteed to be optimized.
+	 */
+	protected Set<? extends ISliceFilter> optimizeOperands(Collection<? extends ISliceFilter> filters) {
+		return filters.stream().map(this::optimizeOperand).collect(ImmutableSet.toImmutableSet());
+	}
+
+	protected ISliceFilter optimizeOperand(ISliceFilter f) {
+		if (f instanceof IAndFilter andFilter) {
+			return FilterBuilder.and(andFilter.getOperands()).optimize();
+		} else if (f instanceof IOrFilter orFilter) {
+			return FilterBuilder.or(orFilter.getOperands()).optimize();
+		} else if (f instanceof INotFilter notFilter) {
+			return FilterBuilder.not(notFilter.getNegated());
+		} else {
+			return f;
+		}
 	}
 
 	@Override
@@ -506,6 +527,18 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
+	/**
+	 * BEWARE This method is quite dangerous. Given a {@link ISliceFilter} is used as key in hashed structure, and
+	 * {@link ISliceFilter} may be recombined through operations (e.g. split between `WHERE` and `FILTER` which are
+	 * later `AND`-ed together). Hence, we need to have a single representation per equivalent boolean expression.
+	 * 
+	 * Using a cost-function is seductive, but it may lead to issues. Typically, if two equivalent representations has
+	 * the same cost, we must also pick the same representation.
+	 * 
+	 * @param willBeNegated
+	 * @param and
+	 * @return
+	 */
 	protected ISliceFilter preferNotOrOverAndNot(boolean willBeNegated, Set<? extends ISliceFilter> and) {
 		// Consider returning a `!(a|b)` instead of `!a&!b`
 		ISliceFilter orCandidate = OrFilter.builder().ors(and.stream().map(NotFilter::not).toList()).build();
@@ -520,6 +553,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			costOrCandidate = costFunction(notOrCandidate);
 			costAndCandidate = costFunction(and);
 		}
+		// BEWARE If same cost, we prefer `AND`
 		if (costOrCandidate < costAndCandidate) {
 			return notOrCandidate;
 		}

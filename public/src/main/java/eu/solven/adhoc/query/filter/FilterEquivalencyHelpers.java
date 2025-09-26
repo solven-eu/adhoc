@@ -104,6 +104,7 @@ public class FilterEquivalencyHelpers {
 
 			return operandDnfs.stream().flatMap(Set::stream).collect(Collectors.toSet());
 		} else if (filter instanceof INotFilter not) {
+			// TODO This is false: we must turn a `!(a&b)` into `!a|!b`
 			Set<ISliceFilter> negatedDnf = dnf(not.getNegated());
 
 			return negatedDnf.stream().map(NotFilter::not).collect(Collectors.toSet());

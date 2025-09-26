@@ -688,4 +688,30 @@ public class TestAndFilter {
 		// discardable entries.
 		Assertions.assertThat(FilterBuilder.and(largeIn, ISliceFilter.MATCH_ALL).optimize()).isEqualTo(largeIn);
 	}
+
+	// Consider an AND over combined entries: if we optimize the outer, we should re-optimize the inner. It is important
+	// to ensure a single representation per boolean expression
+	@Test
+	public void testAnd_optimizeInputs() {
+		ISliceFilter combined =
+				FilterBuilder
+						.or(ColumnFilter.notEqualTo("a", "a1"),
+								ColumnFilter.notEqualTo("b", "b1"),
+								ColumnFilter.notEqualTo("c", "c1"))
+						.combine();
+		ISliceFilter optimized =
+				FilterBuilder
+						.or(ColumnFilter.notEqualTo("a", "a1"),
+								ColumnFilter.notEqualTo("b", "b1"),
+								ColumnFilter.notEqualTo("c", "c1"))
+						.optimize();
+
+		Assertions.assertThat(combined).isNotEqualTo(optimized);
+		// Commented as `FilterEquivalencyHelpers` does not manage this case, due to mis-management of `NOT`
+		// Assertions.assertThat(FilterEquivalencyHelpers.areEquivalent(combined, optimized)).isTrue();
+
+		Assertions.assertThat(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), combined).optimize())
+				.isEqualTo(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), optimized).optimize());
+
+	}
 }

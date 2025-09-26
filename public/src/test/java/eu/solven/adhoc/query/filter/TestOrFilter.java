@@ -416,7 +416,7 @@ public class TestOrFilter {
 	}
 
 	@Test
-	public void testOr_complex() {
+	public void testOr_AndNotOr() {
 		ISliceFilter notLikeA1 = ColumnFilter.matchLike("a", "a1").negate();
 		ISliceFilter output = FilterBuilder.and()
 				.filter(notLikeA1)
@@ -436,6 +436,44 @@ public class TestOrFilter {
 		Assertions.assertThat(output)
 				.hasToString(
 						"b=out=(b1,b2,b3,b4)&c=out=(c1,c2)&d=out=(d1,d2)&e!=e1&a does NOT match `LikeMatcher(pattern=a1)`");
+	}
+
+	@Test
+	public void testOr_AndNotOr_2() {
+		ISliceFilter output = FilterBuilder.and()
+				.filter(ColumnFilter.equalTo("b", "b1"))
+				.filter(ColumnFilter.notIn("c", "c1", "c2"))
+				.filter(ColumnFilter.equalTo("d", "d2"))
+
+				.filter(FilterBuilder
+						.and(ColumnFilter.notIn("c", "c1", "c2", "c3", "c4"),
+								ColumnFilter.notIn("f", "f1", "f2"),
+
+								FilterBuilder.or()
+										.filter(FilterBuilder
+												.and(ColumnFilter.notIn("d", "d2", "d3"),
+														ColumnFilter.notLike("h", "h1"))
+												.combine())
+										.filter(FilterBuilder
+												.and(ColumnFilter.notIn("d", "d2", "d3"),
+														ColumnFilter.matchLike("g", "g1"))
+												.combine())
+										.filter(FilterBuilder
+												.and(ColumnFilter.equalTo("d", "d3"), ColumnFilter.matchLike("g", "g1"))
+												.combine())
+										.filter(FilterBuilder
+												.and(ColumnFilter.notEqualTo("d", "d2"),
+														ColumnFilter.matchLike("g", "g1"))
+												.combine())
+
+										.combine(),
+
+								ColumnFilter.notLike("g", "g1"))
+						.combine()
+						.negate())
+				.optimize();
+
+		Assertions.assertThat(output).hasToString("b==b1&c=out=(c1,c2)&d==d2");
 	}
 
 	@Test

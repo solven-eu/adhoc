@@ -25,9 +25,10 @@ package eu.solven.adhoc.query.filter;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-public class TestFilterEqualsHelpers {
+public class TestFilterEquivalencyHelpers {
 	@Test
 	public void testEquivalent_inEquivalentOr() {
 		ISliceFilter in = ColumnFilter.matchIn("c", "c1", "c2");
@@ -52,5 +53,19 @@ public class TestFilterEqualsHelpers {
 
 		Assertions.assertThat(and).isNotEqualTo(or);
 		Assertions.assertThat(FilterEquivalencyHelpers.areEquivalent(and, or)).isTrue();
+	}
+
+	@Test
+	@Disabled("NOT is not properly managed when computing DNFs")
+	public void testAnd_oneEqualsOneNotEquals() {
+		ISliceFilter combined = NotFilter.builder()
+				.negated(FilterBuilder.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.notEqualTo("b", "b1"))
+						.combine())
+				.build();
+		ISliceFilter optimized =
+				FilterBuilder.or(ColumnFilter.notEqualTo("a", "a1"), ColumnFilter.equalTo("b", "b1")).optimize();
+
+		Assertions.assertThat(combined).isNotEqualTo(optimized);
+		Assertions.assertThat(FilterEquivalencyHelpers.areEquivalent(combined, optimized)).isTrue();
 	}
 }
