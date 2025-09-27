@@ -667,7 +667,6 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Composite] `getCoordinates` should be executed once per underlying cube
 - [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
-- [Feature] Enable calculated columns, computed right after the table
 - [Feature] Break rowspan on right columns
 - [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
@@ -676,7 +675,6 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`. [DuckDB](https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html)
-- [Feature] Add Wizard filter showing only from current query. It would enable dropping faulty measures.
 - [Feature] Record statistics about used measures in storage, for easier re-use.
 - [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
 - [Transformator] Introduce a measure enabling to apply some logic along some column, iterating in proper order. (e.g. accumulating some value along a time column).
