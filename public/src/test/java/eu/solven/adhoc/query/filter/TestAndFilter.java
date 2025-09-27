@@ -457,9 +457,9 @@ public class TestAndFilter {
 	@Test
 	public void testAnd_orDifferentColumns_sameColumn() {
 		ColumnFilter left = ColumnFilter.equalTo("g", "c1");
-		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.equalTo("h", "c1")).optimize();
+		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.equalTo("h", "c1")).combine();
 
-		Assertions.assertThat(AndFilter.and(leftOrRight, left)).isEqualTo(left);
+		Assertions.assertThat(FilterBuilder.and(leftOrRight, left).optimize()).isEqualTo(left);
 	}
 
 	@Test

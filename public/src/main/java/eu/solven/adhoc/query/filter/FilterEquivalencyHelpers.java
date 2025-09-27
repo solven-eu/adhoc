@@ -50,7 +50,7 @@ public class FilterEquivalencyHelpers {
 	 */
 	// https://en.wikipedia.org/wiki/Disjunctive_normal_form
 	public boolean areEquivalent(ISliceFilter left, ISliceFilter right) {
-		ISliceFilter commonAnd = FilterHelpers.commonFilter(Set.of(left, right));
+		ISliceFilter commonAnd = FilterHelpers.commonAnd(Set.of(left, right));
 
 		ISliceFilter leftWithoutCommon = FilterHelpers.stripWhereFromFilter(commonAnd, left);
 		ISliceFilter rightWithoutCommon = FilterHelpers.stripWhereFromFilter(commonAnd, right);

@@ -347,12 +347,22 @@ public class TestFilterHelpers {
 	}
 
 	@Test
+	public void testIsStricterThan_andIn() {
+		ISliceFilter a_b =
+				FilterBuilder.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchIn("b", "b1", "b2"))
+						.optimize();
+		ISliceFilter abc = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1"));
+
+		Assertions.assertThat(FilterHelpers.isStricterThan(abc, a_b)).isTrue();
+	}
+
+	@Test
 	public void testCommonFilter_negated() {
 		ISliceFilter notA1 = NotFilter.not(ColumnFilter.equalTo("a", "a1"));
 		ISliceFilter notA1B2 =
 				NotFilter.not(AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b2")));
 
-		Assertions.assertThat(FilterHelpers.commonFilter(Set.of(notA1, notA1B2))).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FilterHelpers.commonAnd(Set.of(notA1, notA1B2))).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test

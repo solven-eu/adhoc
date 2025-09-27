@@ -39,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.math.LongMath;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -90,6 +91,18 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			return stripRedundancy.iterator().next();
 		}
 
+		if (packedColumns.size() >= 2) {
+			// `!(a==a1&b==b1)&!(a==a1&b==b2)&!(a==a1&b==b3)` can be turned into `a!=a1|b=out=(b1,b2,b3)`
+			ISliceFilter commonOr = FilterHelpers.commonOr(packedColumns);
+
+			if (!ISliceFilter.MATCH_NONE.equals(commonOr)) {
+				List<ISliceFilter> toAnd =
+						packedColumns.stream().map(f -> FilterHelpers.stripWhereFromFilterOr(commonOr, f)).toList();
+
+				return FilterBuilder.or(commonOr, FilterBuilder.and(toAnd).optimize()).combine();
+			}
+		}
+
 		return preferNotOrOverAndNot(willBeNegated, stripRedundancy);
 	}
 
@@ -122,11 +135,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 		ISliceFilter negatedOptimized = and(negated, true);
 
-		if (negatedOptimized instanceof INotFilter notFilter) {
-			return notFilter.getNegated();
-		} else {
-			return NotFilter.not(negatedOptimized);
-		}
+		return FilterBuilder.not(negatedOptimized);
 	}
 
 	/**
@@ -188,6 +197,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
 		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
 		if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) > 0) {
+			log.info("Skip .optimizeAndOfOr due to {} > {}", cartesianProductSize, AdhocUnsafe.cartesianProductLimit);
 			// throw new NotYetImplementedException("Faulty optimization on %s".formatted(operands));
 			return andOperands;
 		}
@@ -229,6 +239,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 				// Some entries would be filtered out
 				// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
 				.filter(sf -> {
+					// TODO if `commonAnd` is matchAll, we can skip `.optimize`
 					ISliceFilter combinedOrOperand = FilterBuilder.and(commonAnd, sf).optimize();
 
 					if (combinedOrOperand.isMatchNone()) {
@@ -259,6 +270,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			List<ISliceFilter> andOperands) {
 		Collection<ISliceFilter> outputOperands = andOperands.stream()
 				.map(this::getOrOperands)
+				// Simplify orOperands given `WHERE`
 				.map(orOperands -> splitThenStripOrs(hasSimplified, where, orOperands))
 				.map(orOperands -> FilterBuilder.or(orOperands).optimize())
 				.collect(Collectors.toCollection(ArrayList::new));
@@ -397,10 +409,16 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	}
 
 	// Given the list of operands, we check if at least 1 other operand implies it
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected Set<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
-		if (operands.size() > AdhocUnsafe.cartesianProductLimit) {
+		if (operands.size() <= 1) {
+			// Need at least 2 operands to compare each other
+			return ImmutableSet.copyOf(operands);
+		}
+
+		long combinations = LongMath.checkedMultiply(operands.size(), operands.size() - 1);
+
+		if (combinations > AdhocUnsafe.cartesianProductLimit) {
 			log.warn("Skip 'removeLaxerOrStricterGivenOne' due to AdhocUnsafe.cartesianProductLimit={} over {}",
 					AdhocUnsafe.cartesianProductLimit,
 					operands);
@@ -411,39 +429,46 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		// Given the presence of hard, we remove soft
 		Multimap<ISliceFilter, ISliceFilter> hardToSoft = MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
-		operands.stream().forEach(stricter -> {
-			operands.stream()
-					// filter induced is stricter than inducer
-					.filter(laxer -> laxer != stricter && FilterHelpers.isStricterThan(stricter, laxer))
-					.forEach(laxer -> {
-						// BEWARE a laxer may have multiple stricter
-						ISliceFilter hard;
-						ISliceFilter soft;
+		List<ISliceFilter> operandsAsList = ImmutableList.copyOf(operands);
 
-						if (removeLaxerElseStricter) {
-							// AND: we remove laxer filter as they are covered by stricter
-							hard = stricter;
-							soft = laxer;
-						} else {
-							// OR: we remove stricter filter as they are covered by laxer
-							hard = laxer;
-							soft = stricter;
-						}
-						hardToSoft.put(hard, soft);
-					});
-		});
+		// This has quadratic complexity
+		// In the general case, we expect only a few oeprands to be removed, hence we do not optimizations like those
+		// implied by transitivity of strictness. (e.g. `if a>b, then we can skip looking for items owned by b as they
+		// would be owned by a`)
+		for (int stricterI = 0; stricterI < operandsAsList.size(); stricterI++) {
+			ISliceFilter stricter = operandsAsList.get(stricterI);
+
+			// BEWARE We need to compare `a with b` and `b with a`, as the check `isStricterThan` is not
+			for (int stricterJ = 0; stricterJ < operandsAsList.size(); stricterJ++) {
+				if (stricterI == stricterJ) {
+					continue;
+				}
+
+				ISliceFilter laxer = operandsAsList.get(stricterJ);
+
+				// filter induced is stricter than inducer
+				if (FilterHelpers.isStricterThan(stricter, laxer)) {
+					// BEWARE a laxer may have multiple stricter
+					ISliceFilter hard;
+					ISliceFilter soft;
+
+					if (removeLaxerElseStricter) {
+						// AND: we remove laxer filter as they are covered by stricter
+						hard = stricter;
+						soft = laxer;
+					} else {
+						// OR: we remove stricter filter as they are covered by laxer
+						hard = laxer;
+						soft = stricter;
+					}
+					hardToSoft.put(hard, soft);
+				}
+			}
+		}
 
 		Set<ISliceFilter> stripped = new LinkedHashSet<>(operands);
 
-		hardToSoft.forEach((hard, soft) -> {
-			// Remove entry one by one, else we fear we may remove an inducer
-			// BEWARE Is it legit? I mean, should we just remove all inducers in all cases?
-			// TODO There is a bug in case of hierarchy of inducer, and we remove the intermediate inducer: the
-			// deeper inducer would then not removed
-			if (stripped.contains(hard)) {
-				stripped.remove(soft);
-			}
-		});
+		stripped.removeAll(ImmutableSet.copyOf(hardToSoft.values()));
 
 		return ImmutableSet.copyOf(stripped);
 	}
@@ -730,6 +755,10 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @return a simpler list of filters, where filters are simplified on a per-column basis.
 	 */
 	protected ImmutableSet<? extends ISliceFilter> packColumnFilters(ImmutableSet<? extends ISliceFilter> filters) {
+		if (filters.size() <= 1) {
+			return filters;
+		}
+
 		@SuppressWarnings("PMD.LinguisticNaming")
 		Map<Boolean, List<ISliceFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.partitioningBy(f -> f instanceof IColumnFilter));

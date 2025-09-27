@@ -242,7 +242,15 @@ public class FilterHelpers {
 		}
 	}
 
-	public static ISliceFilter commonFilter(Set<? extends ISliceFilter> filters) {
+	/**
+	 * Given the input filters, considered to be `AND` together, this returns a `WHERE` filter, common to all input
+	 * filters. It would typically extracted from each filter with
+	 * {@link #stripWhereFromFilter(ISliceFilter, ISliceFilter)}.
+	 * 
+	 * @param filters
+	 * @return
+	 */
+	public static ISliceFilter commonAnd(Set<? extends ISliceFilter> filters) {
 		if (filters.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
 		} else if (filters.size() == 1) {
@@ -260,6 +268,18 @@ public class FilterHelpers {
 		}
 
 		return FilterBuilder.and(commonParts).optimize();
+	}
+
+	/**
+	 * Given the input filters, considered to be `OR` together, this returns a `WHERE` filter, common to all input
+	 * filters.
+	 * 
+	 * @param filters
+	 * @return
+	 */
+	public static ISliceFilter commonOr(ImmutableSet<? extends ISliceFilter> filters) {
+		// common `OR` in `a|b` and `a|c` is related with negation of the common `AND` between `!a&!b` and `!a&!c`
+		return commonAnd(filters.stream().map(ISliceFilter::negate).collect(Collectors.toSet())).negate();
 	}
 
 	/**
@@ -380,33 +400,52 @@ public class FilterHelpers {
 		// BEWARE Do not rely on AndFilter either, else it may lead on further cycles
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
-		if (splitAnd(stricter).containsAll(splitAnd(laxer))) {
-			// true if `stricter:A=a1&B=b1` and `laxer:B=b1`
-			return true;
-		}
+		{
+			Set<ISliceFilter> allStricters = splitAnd(stricter);
+			Set<ISliceFilter> allLaxers = splitAnd(laxer);
+			if (allStricters.containsAll(allLaxers)) {
+				// true if `stricter:A=a1&B=b1` and `laxer:B=b1`
+				return true;
+			}
+			// true if `a==a1&b==b1&c==c1` and `a=in=(a1,a2)&b=in=(b1,b2)`.
+			boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
+				return allStricters.stream().anyMatch(oneStricter -> {
+					if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
+						// break cycle in recursivity
+						return false;
+					}
 
-		Set<ISliceFilter> allStricters = splitOr(stricter);
-		Set<ISliceFilter> allLaxers = splitOr(laxer);
-		if (allLaxers.containsAll(allStricters)) {
-			// true if `stricter:A=a1` and `laxer:A=a1|B=b1`.
-			return true;
-		}
-
-		// true if `stricter:A=7` and `laxer:A>5|B=b1`.
-		boolean allLaxersInStricter = allStricters.stream().allMatch(oneStricter -> {
-			return allLaxers.stream().anyMatch(oneLaxer -> {
-				if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
-					// break cycle in recursivity
-					return false;
-				}
-
-				return isStricterThan(oneStricter, oneLaxer);
+					return isStricterThan(oneStricter, oneLaxer);
+				});
 			});
-		});
-		if (allLaxersInStricter) {
-			return true;
+			if (allLaxersHasStricter) {
+				return true;
+			}
 		}
-		// TODO Equivalent to previous clause for AND
+
+		{
+			Set<ISliceFilter> allStricters = splitOr(stricter);
+			Set<ISliceFilter> allLaxers = splitOr(laxer);
+			if (allLaxers.containsAll(allStricters)) {
+				// true if `stricter:A=a1` and `laxer:A=a1|B=b1`.
+				return true;
+			}
+
+			// true if `stricter:A=7` and `laxer:A>5|B=b1`.
+			boolean allLaxersInStricter = allStricters.stream().allMatch(oneStricter -> {
+				return allLaxers.stream().anyMatch(oneLaxer -> {
+					if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
+						// break cycle in recursivity
+						return false;
+					}
+
+					return isStricterThan(oneStricter, oneLaxer);
+				});
+			});
+			if (allLaxersInStricter) {
+				return true;
+			}
+		}
 
 		return false;
 	}
@@ -422,7 +461,7 @@ public class FilterHelpers {
 	 * @param filter
 	 *            some `FILTER` clause
 	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause, considering the WHERE and FILTER
-	 *         clauses are combined with`AND`.
+	 *         clauses are combined with`AND`. `WHERE` may or may not be laxer than `FILTER`.
 	 */
 	public static ISliceFilter stripWhereFromFilter(ISliceFilter where, ISliceFilter filter) {
 		if (where.isMatchAll()) {
@@ -476,6 +515,11 @@ public class FilterHelpers {
 		}
 
 		return postOr;
+	}
+
+	public static ISliceFilter stripWhereFromFilterOr(ISliceFilter where, ISliceFilter filter) {
+		// Given `a`, turns `a|b|c&d` into `b|c&d`
+		return stripWhereFromFilter(where.negate(), filter.negate()).negate();
 	}
 
 }

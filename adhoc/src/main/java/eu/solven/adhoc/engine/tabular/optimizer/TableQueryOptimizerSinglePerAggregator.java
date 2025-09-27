@@ -98,7 +98,7 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 
 			Set<? extends ISliceFilter> filters =
 					filterGroupBy.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
-			ISliceFilter commonFilter = FilterHelpers.commonFilter(filters);
+			ISliceFilter commonFilter = FilterHelpers.commonAnd(filters);
 
 			Set<String> inducerColumns = new TreeSet<>();
 			Set<ISliceFilter> eachInducedFilters = new LinkedHashSet<>();
