@@ -145,7 +145,7 @@ public class TestTableQuery_DuckDb_customType extends ADuckDbJooqTest implements
 
 		// groupBy `a` with no measure: this is a distinct query on given groupBy
 		ITabularView result = cube()
-				.execute(CubeQuery.builder().filter(ColumnFilter.isEqualTo("letter", Letter.A)).measure(k1Sum).build());
+				.execute(CubeQuery.builder().filter(ColumnFilter.equalTo("letter", Letter.A)).measure(k1Sum).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

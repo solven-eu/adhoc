@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -94,28 +95,26 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 
 		SplitTableQueriesBuilder split = SplitTableQueries.builder();
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
-			Set<String> inducerColumns = new TreeSet<>();
 
 			Set<? extends ISliceFilter> filters =
 					filterGroupBy.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
-			ISliceFilter commonFilter = FilterHelpers.commonFilter(filters);
+			ISliceFilter commonFilter = FilterHelpers.commonAnd(filters);
 
+			Set<String> inducerColumns = new TreeSet<>();
+			Set<ISliceFilter> eachInducedFilters = new LinkedHashSet<>();
 			filterGroupBy.forEach(tq -> {
 				inducerColumns.addAll(tq.getGroupBy().getGroupedByColumns());
 
 				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
 				// We need these additional columns for proper filtering
 				inducerColumns.addAll(FilterHelpers.getFilteredColumns(strippedFromWhere));
+
+				eachInducedFilters.add(strippedFromWhere);
 			});
 
 			// OR between each inducer own filter
-			Set<ISliceFilter> eachInducedFilters = filterGroupBy.stream()
-					.map(tq -> FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter()))
-					.collect(ImmutableSet.toImmutableSet());
 			// induced will fetch the union of rows for all induced
-			// BEWARE Do not use `OrFilter.or` as the input may be very large, leading to induce in the optimization
-			// engine
-			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).combine();
+			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).optimize();
 			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize();
 
 			CubeQueryStep inducer = CubeQueryStep.edit(contextualAggregate)

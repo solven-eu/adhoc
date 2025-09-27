@@ -198,50 +198,51 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		// and: all columns are known
 		Assertions
 				.assertThat(composite.filterForColumns(subCube,
-						AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+						AndFilter.and(ColumnFilter.matchLike("c1", "a%"), ColumnFilter.matchLike("c2", "b%")),
 						Set.of("c1", "c2")::contains))
-				.isEqualTo(AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")));
+				.isEqualTo(AndFilter.and(ColumnFilter.matchLike("c1", "a%"), ColumnFilter.matchLike("c2", "b%")));
 
 		// and: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
-				AndFilter.and(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")),
+				AndFilter.and(ColumnFilter.matchLike("c1", "a%"), ColumnFilter.matchLike("c2", "b%")),
 				Set.of("c1")::contains)).isEqualTo(ISliceFilter.MATCH_NONE);
 
 		// or: all columns are known
 		Assertions
 				.assertThat(composite.filterForColumns(subCube,
-						FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).optimize(),
+						FilterBuilder.or(ColumnFilter.matchLike("c1", "a%"), ColumnFilter.matchLike("c2", "b%"))
+								.optimize(),
 						Set.of("c1", "c2")::contains))
-				.isEqualTo(
-						FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).combine());
+				.isEqualTo(FilterBuilder.or(ColumnFilter.matchLike("c1", "a%"), ColumnFilter.matchLike("c2", "b%"))
+						.combine());
 
 		// or: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
-				FilterBuilder.or(ColumnFilter.isLike("c1", "a%"), ColumnFilter.isLike("c2", "b%")).optimize(),
-				Set.of("c1")::contains)).isEqualTo(ColumnFilter.isLike("c1", "a%"));
+				FilterBuilder.or(ColumnFilter.matchLike("c1", "a%"), ColumnFilter.matchLike("c2", "b%")).optimize(),
+				Set.of("c1")::contains)).isEqualTo(ColumnFilter.matchLike("c1", "a%"));
 
 		// Or.Not: all columns are known
 		Assertions
 				.assertThat(composite.filterForColumns(subCube,
 						OrFilter.builder()
-								.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
-								.or(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+								.or(NotFilter.not(ColumnFilter.matchLike("c1", "a%")))
+								.or(NotFilter.not(ColumnFilter.matchLike("c2", "b%")))
 								.build(),
 						Set.of("c1", "c2")::contains))
 				// The expression is optimized, but still equivalent to the original
 				.isEqualTo(
 						FilterBuilder
-								.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")),
-										NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+								.or(NotFilter.not(ColumnFilter.matchLike("c1", "a%")),
+										NotFilter.not(ColumnFilter.matchLike("c2", "b%")))
 								.optimize());
 
 		// Or.Not: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
 				OrFilter.builder()
-						.or(NotFilter.not(ColumnFilter.isLike("c1", "a%")))
-						.or(NotFilter.not(ColumnFilter.isLike("c2", "b%")))
+						.or(NotFilter.not(ColumnFilter.matchLike("c1", "a%")))
+						.or(NotFilter.not(ColumnFilter.matchLike("c2", "b%")))
 						.build(),
-				Set.of("c1")::contains)).isEqualTo(NotFilter.not(ColumnFilter.isLike("c1", "a%")));
+				Set.of("c1")::contains)).isEqualTo(NotFilter.not(ColumnFilter.matchLike("c1", "a%")));
 	}
 
 	@Test
@@ -286,11 +287,11 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		TableQueryV2 compositeQuery = TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("max_c1").aggregationKey(MaxAggregation.KEY).build())
-						.filter(ColumnFilter.isLike("c1", "a%"))
+						.filter(ColumnFilter.matchLike("c1", "a%"))
 						.build())
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("max_c2").aggregationKey(MaxAggregation.KEY).build())
-						.filter(ColumnFilter.isLike("c2", "a%"))
+						.filter(ColumnFilter.matchLike("c2", "a%"))
 						.build())
 				.build();
 
@@ -300,7 +301,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.contains(Filtrator.builder()
 						.name("max_c1")
 						.underlying(k1Sum.getName())
-						.filter(ColumnFilter.isLike("c1", "a%"))
+						.filter(ColumnFilter.matchLike("c1", "a%"))
 						.build())
 				.contains(Filtrator.builder()
 						.name("max_c2")
@@ -444,7 +445,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			{
 				ITabularView view = compositeCube.execute(CubeQuery.builder()
 						.measure(k1Sum.getName())
-						.andFilter(ColumnFilter.isLike("a", "az%"))
+						.andFilter(ColumnFilter.matchLike("a", "az%"))
 						.groupByAlso("a")
 						.build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);

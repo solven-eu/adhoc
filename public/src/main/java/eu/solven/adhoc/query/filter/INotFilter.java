@@ -27,7 +27,6 @@ package eu.solven.adhoc.query.filter;
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
 public interface INotFilter extends ISliceFilter {
 	ISliceFilter getNegated();
 }

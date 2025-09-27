@@ -129,7 +129,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 			Set<ISliceFilter> filters = filteredAggregators.stream()
 					.map(FilteredAggregator::getFilter)
 					.collect(Collectors.toCollection(LinkedHashSet::new));
-			ISliceFilter commonFilter = FilterHelpers.commonFilter(filters);
+			ISliceFilter commonFilter = FilterHelpers.commonAnd(filters);
 
 			TableQueryV2Builder v2Builder = edit(groupBy).filter(commonFilter);
 

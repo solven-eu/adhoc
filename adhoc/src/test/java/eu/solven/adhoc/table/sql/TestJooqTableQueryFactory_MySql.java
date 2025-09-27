@@ -65,7 +65,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = queryFactory.toCondition(ColumnFilter.isEqualTo("k1", "v1")).get();
+		Condition condition = queryFactory.toCondition(ColumnFilter.equalTo("k1", "v1")).get();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'""");
@@ -88,7 +88,7 @@ public class TestJooqTableQueryFactory_MySql {
 	@Test
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
-				FilterBuilder.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")).optimize();
+				FilterBuilder.or(ColumnFilter.equalTo("k1", "v1"), ColumnFilter.equalTo("k2", "v2")).optimize();
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -101,8 +101,8 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testToCondition_Not() {
-		ISliceFilter filter = NotFilter.not(
-				FilterBuilder.or(ColumnFilter.isEqualTo("k1", "v1"), ColumnFilter.isEqualTo("k2", "v2")).optimize());
+		ISliceFilter filter = NotFilter
+				.not(FilterBuilder.or(ColumnFilter.equalTo("k1", "v1"), ColumnFilter.equalTo("k2", "v2")).optimize());
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -204,11 +204,11 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testFilter_custom_OR() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.isEqualTo("d", "someD"), customFilter).optimize();
+		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.equalTo("d", "someD"), customFilter).optimize();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
-		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(orFilter));
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo("select sum(`k`) as `k`, `c`, `d` from `someTableName` group by `c`, `d`");
 	}
@@ -231,7 +231,7 @@ public class TestJooqTableQueryFactory_MySql {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter notFilter =
-				NotFilter.not(FilterBuilder.or(ColumnFilter.isEqualTo("d", "someD"), customFilter).optimize());
+				NotFilter.not(FilterBuilder.or(ColumnFilter.equalTo("d", "someD"), customFilter).optimize());
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
@@ -245,7 +245,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testFilteredAggregator() {
-		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
+		ColumnFilter customFilter = ColumnFilter.equalTo("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
@@ -257,7 +257,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testFilteredAggregator_rank() {
-		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
+		ColumnFilter customFilter = ColumnFilter.equalTo("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.builder()
@@ -277,7 +277,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testFilteredAggregator_countStar() {
-		ColumnFilter customFilter = ColumnFilter.isEqualTo("c", "c1");
+		ColumnFilter customFilter = ColumnFilter.equalTo("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.countAsterisk())

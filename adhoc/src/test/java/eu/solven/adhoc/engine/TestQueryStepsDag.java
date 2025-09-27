@@ -174,8 +174,9 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
 
 		// The 2 identical edges are explicit in `underlyingSteps` with the help of a multigraph
-		Assertions.assertThat(dag.underlyingSteps(
-				CubeQueryStep.builder().measure(shiftorAisA1).filter(ColumnFilter.isEqualTo("a", "a1")).build()))
+		Assertions
+				.assertThat(dag.underlyingSteps(
+						CubeQueryStep.builder().measure(shiftorAisA1).filter(ColumnFilter.equalTo("a", "a1")).build()))
 				.hasSize(2);
 
 	}

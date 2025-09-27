@@ -67,7 +67,7 @@ public class AndFilter implements IAndFilter {
 	// This constructor helps not copying ImmutableSet, as `@Singular` always generates a builder, preventing `.copyOf`
 	// optimization
 	@Deprecated(since = "Legit API?")
-	public AndFilter(Collection<? extends ISliceFilter> ands) {
+	AndFilter(Collection<? extends ISliceFilter> ands) {
 		this.ands = ImmutableSet.copyOf(ands);
 	}
 
@@ -157,6 +157,11 @@ public class AndFilter implements IAndFilter {
 	@Deprecated(since = "FilterBuilder.and")
 	public static ISliceFilter and(Collection<? extends ISliceFilter> filters) {
 		return FilterBuilder.and(filters).optimize();
+	}
+
+	@Override
+	public ISliceFilter negate() {
+		return FilterBuilder.or(getOperands().stream().map(NotFilter::not).toList()).combine();
 	}
 
 }

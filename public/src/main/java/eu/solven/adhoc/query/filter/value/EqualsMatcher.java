@@ -65,9 +65,9 @@ public abstract class EqualsMatcher implements IValueMatcher, IHasWrapped, IColu
 	public static IValueMatcher createWrapped(Object o) {
 		if (o instanceof Map<?, ?> map) {
 			// Workaround some Jackson issue/limitations
-			return isEqualTo(map.get("operand"));
+			return equalTo(map.get("operand"));
 		} else {
-			return isEqualTo(o);
+			return equalTo(o);
 		}
 	}
 
@@ -77,8 +77,7 @@ public abstract class EqualsMatcher implements IValueMatcher, IHasWrapped, IColu
 	 *            typically a value for which `.equals` is relevant. `null` and `IValueMatcher` are special cases.
 	 * @return
 	 */
-	@SuppressWarnings("PMD.LinguisticNaming")
-	public static IValueMatcher isEqualTo(Object operand) {
+	public static IValueMatcher equalTo(Object operand) {
 		if (operand == null) {
 			return NullMatcher.matchNull();
 		} else if (operand instanceof IValueMatcher valueMatcher) {

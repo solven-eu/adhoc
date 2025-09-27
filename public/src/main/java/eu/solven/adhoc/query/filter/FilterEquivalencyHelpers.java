@@ -50,7 +50,7 @@ public class FilterEquivalencyHelpers {
 	 */
 	// https://en.wikipedia.org/wiki/Disjunctive_normal_form
 	public boolean areEquivalent(ISliceFilter left, ISliceFilter right) {
-		ISliceFilter commonAnd = FilterHelpers.commonFilter(Set.of(left, right));
+		ISliceFilter commonAnd = FilterHelpers.commonAnd(Set.of(left, right));
 
 		ISliceFilter leftWithoutCommon = FilterHelpers.stripWhereFromFilter(commonAnd, left);
 		ISliceFilter rightWithoutCommon = FilterHelpers.stripWhereFromFilter(commonAnd, right);
@@ -74,12 +74,12 @@ public class FilterEquivalencyHelpers {
 			if (valueMatcher instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
-						.map(o -> ColumnFilter.isEqualTo(column.getColumn(), o))
+						.map(o -> ColumnFilter.equalTo(column.getColumn(), o))
 						.collect(Collectors.toSet());
 			} else if (valueMatcher instanceof NotMatcher not && not.getNegated() instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
-						.map(o -> NotFilter.not(ColumnFilter.isEqualTo(column.getColumn(), o)))
+						.map(o -> NotFilter.not(ColumnFilter.equalTo(column.getColumn(), o)))
 						.collect(Collectors.toSet());
 			} else {
 				return Set.of(column);
@@ -104,6 +104,7 @@ public class FilterEquivalencyHelpers {
 
 			return operandDnfs.stream().flatMap(Set::stream).collect(Collectors.toSet());
 		} else if (filter instanceof INotFilter not) {
+			// TODO This is false: we must turn a `!(a&b)` into `!a|!b`
 			Set<ISliceFilter> negatedDnf = dnf(not.getNegated());
 
 			return negatedDnf.stream().map(NotFilter::not).collect(Collectors.toSet());

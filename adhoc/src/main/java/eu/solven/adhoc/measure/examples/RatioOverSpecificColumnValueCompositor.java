@@ -56,7 +56,7 @@ public class RatioOverSpecificColumnValueCompositor {
 				.add(Filtrator.builder()
 						.name(sliceMeasureName)
 						.underlying(underlying)
-						.filter(ColumnFilter.isEqualTo(column, value))
+						.filter(ColumnFilter.equalTo(column, value))
 						.build())
 
 				// Filter the specific country: if we were filtering color=red, this filters only country

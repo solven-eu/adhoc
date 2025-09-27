@@ -95,7 +95,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 
 		Optional<ISliceFilter> leftoverFilter = Optional.empty();
 
-		ISliceFilter commonFilter = FilterHelpers.commonFilter(ImmutableSet.of(inducerFilter, inducedFilter));
+		ISliceFilter commonFilter = FilterHelpers.commonAnd(ImmutableSet.of(inducerFilter, inducedFilter));
 		ISliceFilter inducedLeftoverFilter = FilterHelpers.stripWhereFromFilter(commonFilter, inducedFilter);
 
 		// This match the row which has to be kept from inducer for induced

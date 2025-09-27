@@ -65,7 +65,7 @@ public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {
 		}
 		// Some role with static rules
 		if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_" + ROLE_EUR))) {
-			operands.add(ColumnFilter.isEqualTo("ccy", "EUR"));
+			operands.add(ColumnFilter.equalTo("ccy", "EUR"));
 		}
 		// Some role with dynamic rules
 		authentication.getAuthorities()
@@ -74,7 +74,7 @@ public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {
 				.filter(ga -> ga.startsWith("ROLE_color="))
 				.map(ga -> ga.substring("ROLE_color=".length()))
 				.forEach(authorizedColor -> {
-					operands.add(ColumnFilter.isEqualTo("color", authorizedColor));
+					operands.add(ColumnFilter.equalTo("color", authorizedColor));
 				});
 
 		// The user has access to the union of the authorized slices

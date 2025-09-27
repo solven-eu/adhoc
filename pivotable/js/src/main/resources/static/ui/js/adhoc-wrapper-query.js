@@ -26,7 +26,7 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useUserStore, ["nbLoginLoading", "needsToLogin"]),
+		...mapState(useUserStore, ["nbLoginLoading", "isLoggedIn"]),
 		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
@@ -81,11 +81,11 @@ export default {
 		return { store };
 	},
 	template: /* HTML */ `
-        <div v-if="needsToLogin">Needs to login</div>
+		<div v-if="!isLoggedIn"><LoginRef /></div>
         <div v-else-if="!endpoint || endpoint.error || !cube || cube.error">
             <AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
             <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-            <AdhocLoading id="login" type="login" :loading="nbLoginLoading > 0" :error="needsToLogin ? 'needsToLogin' : null" />
+            <AdhocLoading id="login" type="login" :loading="nbLoginLoading > 0" :error="!isLoggedIn ? 'needsToLogin' : null" />
         </div>
         <div v-else>
             <AdhocQuery :endpointId="endpointId" :cubeId="cubeId" :cube="cube" />

@@ -64,7 +64,7 @@ public class MoreFilterHelpers {
 		}
 
 		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-			return EqualsMatcher.isEqualTo(customTypeManager.toTable(column, equalsMatcher.getOperand()));
+			return EqualsMatcher.equalTo(customTypeManager.toTable(column, equalsMatcher.getOperand()));
 		} else if (valueMatcher instanceof InMatcher inMatcher) {
 			List<Object> transcodedOperands = inMatcher.getOperands()
 					.stream()

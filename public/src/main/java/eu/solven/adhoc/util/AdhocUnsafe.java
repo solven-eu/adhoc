@@ -202,7 +202,8 @@ public class AdhocUnsafe {
 	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(getParallelism());
 
 	// Typically used as limit to prevent iterating over large cartesian products
-	public static int cartesianProductLimit = 128;
+	// This limit should be applied over the number of potential combinations
+	public static int cartesianProductLimit = 16 * 1024;
 
 	public static IFilterOptimizerHelpers sliceFilterOptimizer = new FilterOptimizerHelpers();
 

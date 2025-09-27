@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
 public interface IAndFilter extends ISliceFilter, IHasOperands<ISliceFilter> {
 
 	@Override

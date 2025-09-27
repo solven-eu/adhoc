@@ -253,7 +253,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 			if (columnFilter.getColumn().equals(groupColumn)) {
 				// Plain filter on the group column: transform it into a filter into the input column
 				Set<?> elements = elementsMatchingGroups(columnFilter.getValueMatcher());
-				ISliceFilter elementAdditionalFilter = ColumnFilter.isIn(elementColumn, elements);
+				ISliceFilter elementAdditionalFilter = ColumnFilter.matchIn(elementColumn, elements);
 
 				underlyingFilter = elementAdditionalFilter;
 			} else {

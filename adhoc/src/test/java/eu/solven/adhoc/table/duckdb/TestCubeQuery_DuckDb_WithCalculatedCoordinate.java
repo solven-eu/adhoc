@@ -150,7 +150,7 @@ public class TestCubeQuery_DuckDb_WithCalculatedCoordinate extends ADuckDbJooqTe
 						.calculatedCoordinate(
 								CalculatedCoordinate.builder().coordinate("*").filter(ISliceFilter.MATCH_ALL).build())
 						.build()))
-				.filter(ColumnFilter.isMatching("d", ComparingMatcher.greaterThanOrEqual(today)))
+				.filter(ColumnFilter.match("d", ComparingMatcher.greaterThanOrEqual(today)))
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);

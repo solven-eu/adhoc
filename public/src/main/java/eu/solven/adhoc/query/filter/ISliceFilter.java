@@ -42,6 +42,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 // Custom serialization is configured with `AdhocPublicJackson.makeAdhocModule()`
 // @JsonSerialize(using = AdhocFilterSerializer.class)
 // @JsonDeserialize(using = AdhocFilterDeserializer.class)
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface ISliceFilter {
 	ISliceFilter MATCH_ALL = AndFilter.builder().build();
 	ISliceFilter MATCH_NONE = OrFilter.builder().build();
@@ -60,7 +61,8 @@ public interface ISliceFilter {
 
 	/**
 	 *
-	 * @return true if this matcher matches everything
+	 * @return true if this matcher matches everything. false if it may or may not match everything (e.g. a very complex
+	 *         expression may be .matchAll, without being explicit about it due to its complexity).
 	 */
 	@JsonIgnore
 	default boolean isMatchAll() {
@@ -101,4 +103,9 @@ public interface ISliceFilter {
 	default boolean isAnd() {
 		return false;
 	}
+
+	/**
+	 * @return a filter equivalent to wrapping this with a {@link NotFilter}.
+	 */
+	ISliceFilter negate();
 }

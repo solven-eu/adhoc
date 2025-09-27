@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.RequiredArgsConstructor;
 
@@ -113,6 +114,30 @@ public class FilterBuilder {
 				return OrFilter.builder().ors(filters).build();
 			}
 		}
+	}
+
+	public static ISliceFilter not(ISliceFilter filter) {
+		if (filter.isMatchAll()) {
+			return ISliceFilter.MATCH_NONE;
+		} else if (filter.isMatchNone()) {
+			return ISliceFilter.MATCH_ALL;
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return notFilter.getNegated();
+		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
+			// Prefer `c!=c1` over `!(c==c1)`
+			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
+			// } else if (filter instanceof IAndFilter andFilter) {
+			// return FilterBuilder.or(andFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
+		} else if (filter instanceof IOrFilter orFilter) {
+			// Plays optimizations given an `AND` of `NOT`s.
+			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
+			return and(orFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
+		}
+
+		// Set<ISliceFilter> ors = FilterHelpers.splitOr(filter);
+		// return FilterBuilder.and(ors.stream().map(NotFilter::not).toList()).optimize();
+
+		return NotFilter.builder().negated(filter).build();
 	}
 
 }

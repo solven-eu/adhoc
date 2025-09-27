@@ -180,7 +180,7 @@ public class TestDispatchor_PnLExplain extends ADagTest implements IExamplePnLEx
 		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure("pnl_explain")
 				.groupByAlso(K_TENOR)
-				.andFilter(ColumnFilter.isLike(K_MATURITY, "2Y"))
+				.andFilter(ColumnFilter.matchLike(K_MATURITY, "2Y"))
 				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -198,7 +198,7 @@ public class TestDispatchor_PnLExplain extends ADagTest implements IExamplePnLEx
 	@Test
 	public void testGrandTotal_filterMaturity() {
 		ITabularView output = cube().execute(
-				CubeQuery.builder().measure("pnl_explain").andFilter(ColumnFilter.isLike(K_MATURITY, "2Y")).build());
+				CubeQuery.builder().measure("pnl_explain").andFilter(ColumnFilter.matchLike(K_MATURITY, "2Y")).build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
