@@ -500,6 +500,26 @@ public class TestOrFilter {
 		Assertions.assertThat(FilterBuilder.or(a_b, abc).optimize()).hasToString("a=in=(a1,a2)&b=in=(b1,b2)");
 	}
 
+	@Test
+	public void testOrFilter_cartesianProductToAndIn_line() {
+		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
+		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
+		ISliceFilter a1b3 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b3"));
+
+		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3).optimize()).hasToString("a==a1&b=in=(b1,b2,b3)");
+	}
+
+	@Test
+	public void testOrFilter_cartesianProductToAndIn_line_withNoise() {
+		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
+		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
+		ISliceFilter a1b3 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b3"));
+		ISliceFilter a2b4 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b4"));
+
+		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3, a2b4).optimize())
+				.hasToString("a==a1&b=in=(b1,b2,b3)|a==a2&b==b4");
+	}
+
 	// TODO We do not guess cartesianProducts yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_square() {
@@ -512,15 +532,6 @@ public class TestOrFilter {
 				.hasToString("a==a1&b==b1|a==a1&b==b2|a==a2&b==b1|a==a2&b==b2")
 		// .hasToString("a=in=(a1,a2)&b=in=(b1,b2)")
 		;
-	}
-
-	@Test
-	public void testOrFilter_cartesianProductToAndIn_line() {
-		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
-		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
-		ISliceFilter a1b3 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b3"));
-
-		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3).optimize()).hasToString("a==a1&b=in=(b1,b2,b3)");
 	}
 
 	// TODO We do not guess cartesianProducts yet

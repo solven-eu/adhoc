@@ -61,6 +61,7 @@ public class AdhocUnsafe {
 		failFast = true;
 		parallelism = defaultParallelism();
 		defaultColumnCapacity = limitColumnSize;
+		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 
 		// TODO Should we also reset adhocCommonPool?
 	}
@@ -78,6 +79,7 @@ public class AdhocUnsafe {
 		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
 		// Customize with `-Dadhoc.defaultColumnCapacity=100_000`
 		defaultColumnCapacity = safeLoadIntegerProperty("adhoc.defaultColumnCapacity", limitColumnSize);
+		cartesianProductLimit = safeLoadIntegerProperty("adhoc.cartesianProductLimit", DEFAULT_CARTESIAN_PRODUCT_LIMIT);
 	}
 
 	static int safeLoadIntegerProperty(String key, int defaultValue) {
@@ -204,6 +206,7 @@ public class AdhocUnsafe {
 	// Typically used as limit to prevent iterating over large cartesian products
 	// This limit should be applied over the number of potential combinations
 	public static int cartesianProductLimit = 16 * 1024;
+	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
 	public static IFilterOptimizerHelpers sliceFilterOptimizer = new FilterOptimizerHelpers();
 

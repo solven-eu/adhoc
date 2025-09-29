@@ -66,44 +66,62 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		// First, we ensure operands are themselves optimized. This may lead to duplicate work, as later step may
+		// themselves optimize. But it is useful to ensure consistency of equivalent inputs.
 		filters = optimizeOperands(filters);
 
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
 		ImmutableSet<? extends ISliceFilter> flatten = splitAnd(ImmutableSet.copyOf(filters));
 
+		// Normalization refers to grouping columns together, and discarding irrelevant operands
+		// Do it before cartesianProduct, to simplify the cartesianProduct
+		ImmutableSet<? extends ISliceFilter> stripRedundancyPre = normalizeOperands(flatten);
+		if (stripRedundancyPre.isEmpty()) {
+			return ISliceFilter.MATCH_ALL;
+		} else if (stripRedundancyPre.size() == 1) {
+			return stripRedundancyPre.iterator().next();
+		}
+
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
 		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
-		flatten = optimizeAndOfOr(flatten);
+		ImmutableSet<? extends ISliceFilter> postCartesianProduct = optimizeAndOfOr(stripRedundancyPre);
 
-		// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
-		ImmutableSet<? extends ISliceFilter> packedColumns = packColumnFilters(splitAnd(flatten));
-
-		if (packedColumns.contains(ISliceFilter.MATCH_NONE)) {
-			return ISliceFilter.MATCH_NONE;
-		}
-
-		// given `a&b&c`, remove `c` if it is laxer than `a`.
-		Set<? extends ISliceFilter> stripRedundancy = removeLaxerInAnd(packedColumns);
-
-		if (stripRedundancy.isEmpty()) {
+		// Normalize again after the cartesianProduct
+		// TODO Skip if cartesianProduct had no effect
+		ImmutableSet<? extends ISliceFilter> stripRedundancyPost = normalizeOperands(postCartesianProduct);
+		if (stripRedundancyPost.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
-		} else if (stripRedundancy.size() == 1) {
-			return stripRedundancy.iterator().next();
+		} else if (stripRedundancyPost.size() == 1) {
+			return stripRedundancyPost.iterator().next();
 		}
 
-		if (packedColumns.size() >= 2) {
+		if (stripRedundancyPost.size() >= 2) {
 			// `!(a==a1&b==b1)&!(a==a1&b==b2)&!(a==a1&b==b3)` can be turned into `a!=a1|b=out=(b1,b2,b3)`
-			ISliceFilter commonOr = FilterHelpers.commonOr(packedColumns);
+			ISliceFilter commonOr = FilterHelpers.commonOr(stripRedundancyPost);
 
 			if (!ISliceFilter.MATCH_NONE.equals(commonOr)) {
-				List<ISliceFilter> toAnd =
-						packedColumns.stream().map(f -> FilterHelpers.stripWhereFromFilterOr(commonOr, f)).toList();
+				List<ISliceFilter> toAnd = stripRedundancyPost.stream()
+						.map(f -> FilterHelpers.stripWhereFromFilterOr(commonOr, f))
+						.toList();
 
 				return FilterBuilder.or(commonOr, FilterBuilder.and(toAnd).optimize()).combine();
 			}
 		}
 
-		return preferNotOrOverAndNot(willBeNegated, stripRedundancy);
+		return preferNotOrOverAndNot(willBeNegated, stripRedundancyPost);
+	}
+
+	protected ImmutableSet<? extends ISliceFilter> normalizeOperands(ImmutableSet<? extends ISliceFilter> flatten) {
+		// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
+		ImmutableSet<? extends ISliceFilter> packedColumns = packColumnFilters(splitAnd(flatten));
+
+		if (packedColumns.contains(ISliceFilter.MATCH_NONE)) {
+			return ImmutableSet.of(ISliceFilter.MATCH_NONE);
+		}
+
+		// given `a&b&c`, remove `c` if it is laxer than `a`.
+		ImmutableSet<? extends ISliceFilter> stripRedundancy = removeLaxerInAnd(packedColumns);
+		return stripRedundancy;
 	}
 
 	/**
@@ -314,7 +332,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		return strippedStricter;
 	}
 
-	protected Set<ISliceFilter> removeLaxerInAnd(Collection<? extends ISliceFilter> operands) {
+	protected ImmutableSet<ISliceFilter> removeLaxerInAnd(Collection<? extends ISliceFilter> operands) {
 		return removeLaxerOrStricter(operands, true);
 	}
 
@@ -336,10 +354,10 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * @return
 	 */
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected Set<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
+	protected ImmutableSet<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		// Remove the operands which are induced by 1 other operand
-		Set<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(operands, removeLaxerElseStricter);
+		ImmutableSet<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(operands, removeLaxerElseStricter);
 
 		// The following phase is applied only if at least 3 operands, else previous step would have stripped it
 		if (strippedAgainst1.size() < 3) {
@@ -409,7 +427,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	}
 
 	// Given the list of operands, we check if at least 1 other operand implies it
-	protected Set<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
+	protected ImmutableSet<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		if (operands.size() <= 1) {
 			// Need at least 2 operands to compare each other

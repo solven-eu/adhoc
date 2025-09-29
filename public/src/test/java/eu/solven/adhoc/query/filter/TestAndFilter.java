@@ -43,6 +43,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestAndFilter {
 	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
@@ -713,5 +714,26 @@ public class TestAndFilter {
 		Assertions.assertThat(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), combined).optimize())
 				.isEqualTo(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), optimized).optimize());
 
+	}
+
+	@Test
+	public void testAndOr_contradictoryIns() {
+		// b has 3 options, c has 3 options, d has 2 options (post simplification by packing columns)
+		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
+
+		try {
+			ISliceFilter combined =
+					FilterBuilder
+							.and(ColumnFilter.equalTo("a", "a1"),
+									ColumnFilter.matchIn("b", "b1", "b2", "b3"),
+									ColumnFilter.matchIn("c", "c1", "c2", "c3"),
+									ColumnFilter.notEqualTo("d", "d1"),
+									ColumnFilter.matchIn("d", "d1", "d2", "d3"))
+							.optimize();
+
+			Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&d=in=(d2,d3)");
+		} finally {
+			AdhocUnsafe.resetProperties();
+		}
 	}
 }

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
@@ -109,5 +110,14 @@ public class TestFilterOptimizerHelpers {
 		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
 		Assertions.assertThat(strippedOr)
 				.containsExactly(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1")));
+	}
+
+	@Test
+	public void testPack_InAndOutIsEmpty() {
+		FilterOptimizerHelpers helper = new FilterOptimizerHelpers();
+		ImmutableSet<? extends ISliceFilter> packed = helper.packColumnFilters(
+				ImmutableSet.of(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.matchIn("d", "d1", "d2", "d3")));
+
+		Assertions.assertThat((Set) packed).hasSize(1).containsExactly(ColumnFilter.matchIn("d", "d2", "d3"));
 	}
 }
