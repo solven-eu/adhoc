@@ -510,6 +510,23 @@ public class TestOrFilter {
 	}
 
 	@Test
+	public void testOrFilter_cartesianProductToAndIn_line_huge() {
+		List<ISliceFilter> ands =
+				IntStream.range(0, 128).mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a1", "b", "b" + i))).toList();
+
+		FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+		FilterBuilder combined = FilterBuilder.builder().andElseOr(false).optimizer(optimizer).build();
+
+		Assertions.assertThat(combined.filters(ands).optimize())
+				.hasToString(
+						"a==a1&b=in=(b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15, and 112 more entries)");
+
+		// TODO This is a problem: it demonstrate we unnecessarily consider large cartesian products. To be studied.
+		Assertions.assertThat(optimizer.nbSkip).hasValue(1);
+	}
+
+	// TODO We do not manage noise yet
+	@Test
 	public void testOrFilter_cartesianProductToAndIn_line_withNoise() {
 		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
 		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
@@ -517,7 +534,8 @@ public class TestOrFilter {
 		ISliceFilter a2b4 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b4"));
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3, a2b4).optimize())
-				.hasToString("a==a1&b=in=(b1,b2,b3)|a==a2&b==b4");
+				// .hasToString("a==a1&b=in=(b1,b2,b3)|a==a2&b==b4")
+				.hasToString("a==a1&b==b1|a==a1&b==b2|a==a1&b==b3|a==a2&b==b4");
 	}
 
 	// TODO We do not guess cartesianProducts yet
@@ -551,6 +569,22 @@ public class TestOrFilter {
 						"a==a1&b==b1|a==a1&b==b2|a==a1&b==b3|a==a2&b==b1|a==a2&b==b2|a==a2&b==b3|a==a3&b==b1|a==a3&b==b2")
 		// .hasToString("a=in=(a1,a2,3)&b=in=(b1,b2,3)&!(a==a3&b==b3)")
 		;
+	}
+
+	// Turns `a|a&b|a&b&c|...` into `a`, without failing on a cartesianProductLimit
+	@Test
+	public void testOr_deepChainOfStricterClauses() {
+		List<ISliceFilter> ands = IntStream.range(1, 256)
+				.<ISliceFilter>mapToObj(i -> AndFilter.and(IntStream.range(0, i)
+						.<Integer>mapToObj(j -> j)
+						.collect(Collectors.toMap(j -> Integer.toString(j), j -> "v"))))
+				.toList();
+
+		FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+		FilterBuilder combined = FilterBuilder.builder().andElseOr(false).optimizer(optimizer).build();
+
+		Assertions.assertThat(combined.filters(ands).optimize()).hasToString("0==v");
+		Assertions.assertThat(optimizer.nbSkip).hasValue(0);
 	}
 
 }

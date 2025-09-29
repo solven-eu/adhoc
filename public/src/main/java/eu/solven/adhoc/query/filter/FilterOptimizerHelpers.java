@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -63,6 +65,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("PMD.GodClass")
 public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
+	final AtomicInteger nbSkip = new AtomicInteger();
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
@@ -215,7 +218,11 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
 		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
 		if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) > 0) {
-			log.info("Skip .optimizeAndOfOr due to {} > {}", cartesianProductSize, AdhocUnsafe.cartesianProductLimit);
+			nbSkip.incrementAndGet();
+			log.warn("Skip .optimizeAndOfOr due to {} > {} (input={})",
+					cartesianProductSize,
+					AdhocUnsafe.cartesianProductLimit,
+					andOperands);
 			// throw new NotYetImplementedException("Faulty optimization on %s".formatted(operands));
 			return andOperands;
 		}
@@ -427,6 +434,8 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	}
 
 	// Given the list of operands, we check if at least 1 other operand implies it
+	// In `AND`, `removeLaxerElseStricter` is true as `a&(a|b)==a` and `a|b` is laxer than `a`
+	// In `OR`, `removeLaxerElseStricter` is false as `a|a&b==a` and `a&b` is stricter than `a`
 	protected ImmutableSet<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		if (operands.size() <= 1) {
@@ -434,10 +443,55 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			return ImmutableSet.copyOf(operands);
 		}
 
+		// TODO We could make a DAG of striterThan, and then iterate in topological order
+		// BEWARE `FilterHelpers.isStricterThan` does not define a consistent ordering: we can not properly order a List
+		// with it
+
+		// In a first pass, we search for the laxer element, and remove for stricter
+		// This suppose we often receive a list with one element covering many others
+		// TODO We should do multiple passes. How many ? Until when? A DAG is the answer
+		{
+			List<ISliceFilter> operandsAsList = new ArrayList<>(operands);
+
+			ISliceFilter harder = operandsAsList.getFirst();
+
+			for (int i = 0; i < operandsAsList.size(); i++) {
+				ISliceFilter candidate = operandsAsList.get(i);
+
+				if (candidate != harder) {
+					if (removeLaxerElseStricter && FilterHelpers.isStricterThan(candidate, harder)) {
+						// removeLaxer, so we searcher for stricter
+						candidate = harder;
+					} else if (!removeLaxerElseStricter && FilterHelpers.isLaxerThan(candidate, harder)) {
+						// removeStricter, so we search for laxer
+						candidate = harder;
+					}
+				}
+			}
+			// Remove all stricter than the laxer
+			Predicate<ISliceFilter> isSofter;
+			if (removeLaxerElseStricter) {
+				isSofter = sf -> FilterHelpers.isLaxerThan(sf, harder);
+			} else {
+				isSofter = sf -> FilterHelpers.isStricterThan(sf, harder);
+			}
+			int sizeBefore = operandsAsList.size();
+			operandsAsList.removeIf(candidate -> candidate != harder && isSofter.test(candidate));
+			int sizeAfter = operandsAsList.size();
+			if (sizeAfter != sizeBefore) {
+				log.debug("The hardest filter suppressed {} other filters", sizeBefore - sizeBefore);
+			}
+
+			operands = operandsAsList;
+		}
+
 		long combinations = LongMath.checkedMultiply(operands.size(), operands.size() - 1);
 
 		if (combinations > AdhocUnsafe.cartesianProductLimit) {
-			log.warn("Skip 'removeLaxerOrStricterGivenOne' due to AdhocUnsafe.cartesianProductLimit={} over {}",
+			nbSkip.incrementAndGet();
+			log.warn(
+					"Skip 'removeLaxerOrStricterGivenOne' due to product={} is greater than AdhocUnsafe.cartesianProductLimit={} over {}",
+					combinations,
 					AdhocUnsafe.cartesianProductLimit,
 					operands);
 			return ImmutableSet.copyOf(operands);
@@ -450,7 +504,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		List<ISliceFilter> operandsAsList = ImmutableList.copyOf(operands);
 
 		// This has quadratic complexity
-		// In the general case, we expect only a few oeprands to be removed, hence we do not optimizations like those
+		// In the general case, we expect only a few operands to be removed, hence we do not optimizations like those
 		// implied by transitivity of strictness. (e.g. `if a>b, then we can skip looking for items owned by b as they
 		// would be owned by a`)
 		for (int stricterI = 0; stricterI < operandsAsList.size(); stricterI++) {

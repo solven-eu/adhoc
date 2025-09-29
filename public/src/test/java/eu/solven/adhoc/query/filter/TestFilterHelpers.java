@@ -357,6 +357,12 @@ public class TestFilterHelpers {
 	}
 
 	@Test
+	public void testIsLaxerThan() {
+		Assertions.assertThat(FilterHelpers.isLaxerThan(ColumnFilter.matchIn("a", "a1", "a2", "a3"),
+				ColumnFilter.matchIn("a", "a1", "a2"))).isTrue();
+	}
+
+	@Test
 	public void testCommonFilter_negated() {
 		ISliceFilter notA1 = NotFilter.not(ColumnFilter.equalTo("a", "a1"));
 		ISliceFilter notA1B2 =

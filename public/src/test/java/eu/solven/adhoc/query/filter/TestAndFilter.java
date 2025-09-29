@@ -722,16 +722,20 @@ public class TestAndFilter {
 		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
 
 		try {
-			ISliceFilter combined =
-					FilterBuilder
-							.and(ColumnFilter.equalTo("a", "a1"),
-									ColumnFilter.matchIn("b", "b1", "b2", "b3"),
-									ColumnFilter.matchIn("c", "c1", "c2", "c3"),
-									ColumnFilter.notEqualTo("d", "d1"),
-									ColumnFilter.matchIn("d", "d1", "d2", "d3"))
-							.optimize();
+			FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+			ISliceFilter combined = FilterBuilder.builder()
+					.andElseOr(true)
+					.optimizer(optimizer)
+					.build()
+					.filter(ColumnFilter.equalTo("a", "a1"),
+							ColumnFilter.matchIn("b", "b1", "b2", "b3"),
+							ColumnFilter.matchIn("c", "c1", "c2", "c3"),
+							ColumnFilter.notEqualTo("d", "d1"),
+							ColumnFilter.matchIn("d", "d1", "d2", "d3"))
+					.optimize();
 
 			Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&d=in=(d2,d3)");
+			Assertions.assertThat(optimizer.nbSkip).hasValue(0);
 		} finally {
 			AdhocUnsafe.resetProperties();
 		}

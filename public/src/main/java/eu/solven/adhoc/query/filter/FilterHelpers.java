@@ -384,6 +384,9 @@ public class FilterHelpers {
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
+	// if `a&b=a` then a is stricter than b, as a is enough to imply b
+	// then `a&b|b=a|b`
+	// then `b=a|b` then b is laxer than a, as b is enough to cover a
 	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
 		if (stricter instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
 			return isStricterThan(notLaxer.getNegated(), notStricter.getNegated());
@@ -452,6 +455,10 @@ public class FilterHelpers {
 
 	private static boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
 		return AndMatcher.and(stricter, laxer).equals(stricter);
+	}
+
+	public static boolean isLaxerThan(ISliceFilter laxer, ISliceFilter stricter) {
+		return isStricterThan(laxer.negate(), stricter.negate());
 	}
 
 	/**

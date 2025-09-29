@@ -29,6 +29,7 @@ import java.util.List;
 
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
+@Builder
 public class FilterBuilder {
 	final IFilterOptimizerHelpers optimizer;
 
