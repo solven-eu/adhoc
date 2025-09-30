@@ -37,7 +37,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestFilterOptimizerHelpers {
-	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 
 	AtomicBoolean hasSimplified = new AtomicBoolean();
 
@@ -114,7 +114,7 @@ public class TestFilterOptimizerHelpers {
 
 	@Test
 	public void testPack_InAndOutIsEmpty() {
-		FilterOptimizerHelpers helper = new FilterOptimizerHelpers();
+		FilterOptimizerHelpers helper = FilterOptimizerHelpers.builder().build();
 		ImmutableSet<? extends ISliceFilter> packed = helper.packColumnFilters(
 				ImmutableSet.of(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.matchIn("d", "d1", "d2", "d3")));
 

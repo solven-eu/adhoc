@@ -208,7 +208,7 @@ public class AdhocUnsafe {
 	public static int cartesianProductLimit = 16 * 1024;
 	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
-	public static IFilterOptimizerHelpers sliceFilterOptimizer = new FilterOptimizerHelpers();
+	public static IFilterOptimizerHelpers sliceFilterOptimizer = FilterOptimizerHelpers.builder().build();
 
 	/**
 	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is

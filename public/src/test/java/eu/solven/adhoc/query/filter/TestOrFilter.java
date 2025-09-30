@@ -336,15 +336,15 @@ public class TestOrFilter {
 
 		operands.add(OrFilter.builder()
 				.or(ColumnFilter.equalTo("d", "d1"))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c1"))))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c2"))))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c3"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c1"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c2"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c3"))))
 				// Following ORs are always true given inB and inC
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c4"))))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c5"))))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c6"))))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c7"))))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c8"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c4"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c5"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c6"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c7"))))
+				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c8"))))
 				.build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
@@ -390,7 +390,7 @@ public class TestOrFilter {
 		// Check AND between the wide tableQuery and the cubeQueryStep gives
 		ISliceFilter combined = FilterBuilder.and(tableQueryStep, cubeQueryStep).optimize();
 
-		Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1");
+		Assertions.assertThat(combined).hasToString("a==a1&e==e1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)");
 	}
 
 	@Test
@@ -412,6 +412,25 @@ public class TestOrFilter {
 				.optimize();
 
 		Assertions.assertThat(output).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)");
+	}
+
+	@Test
+	public void testOr_AndNotOr_22() {
+		// make sure this case is optimized without cartesianProductAndOr
+		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().withCartesianProductsAndOr(false).build();
+
+		// `d!=d1&(d==d1|e!=e1)`
+		ISliceFilter output = FilterBuilder.builder()
+				.optimizer(optimizer)
+				.andElseOr(true)
+				.build()
+				.filter(FilterBuilder.and(ColumnFilter.equalTo("d", "d1")).combine().negate())
+				.filter(FilterBuilder.and(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.equalTo("e", "e1"))
+						.combine()
+						.negate())
+				.optimize();
+
+		Assertions.assertThat(output).hasToString("d!=d1&e!=e1");
 	}
 
 	@Test
@@ -514,15 +533,14 @@ public class TestOrFilter {
 		List<ISliceFilter> ands =
 				IntStream.range(0, 128).mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a1", "b", "b" + i))).toList();
 
-		FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 		FilterBuilder combined = FilterBuilder.builder().andElseOr(false).optimizer(optimizer).build();
 
 		Assertions.assertThat(combined.filters(ands).optimize())
 				.hasToString(
 						"a==a1&b=in=(b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15, and 112 more entries)");
 
-		// TODO This is a problem: it demonstrate we unnecessarily consider large cartesian products. To be studied.
-		Assertions.assertThat(optimizer.nbSkip).hasValue(1);
+		Assertions.assertThat(optimizer.nbSkip).hasValue(0);
 	}
 
 	// TODO We do not manage noise yet
@@ -580,7 +598,7 @@ public class TestOrFilter {
 						.collect(Collectors.toMap(j -> Integer.toString(j), j -> "v"))))
 				.toList();
 
-		FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 		FilterBuilder combined = FilterBuilder.builder().andElseOr(false).optimizer(optimizer).build();
 
 		Assertions.assertThat(combined.filters(ands).optimize()).hasToString("0==v");

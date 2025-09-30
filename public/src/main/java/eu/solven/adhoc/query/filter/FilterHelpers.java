@@ -491,13 +491,26 @@ public class FilterHelpers {
 
 			// For each part of `FILTER`, reject those already filtered in `WHERE`
 			for (ISliceFilter subFilter : andOperands) {
-				boolean whereCoversSubFilter = isStricterThan(where, subFilter);
+				ISliceFilter simplerSubFilter;
+				if (subFilter.equals(filter)) {
+					// Break cycle when we reach simplest filters
+					simplerSubFilter = subFilter;
+				} else {
+					simplerSubFilter = stripWhereFromFilter(where, subFilter);
+				}
 
-				if (!whereCoversSubFilter) {
-					notInWhere.add(subFilter);
+				if (andMatchNone(where, simplerSubFilter)) {
+					return ISliceFilter.MATCH_NONE;
+				} else {
+					boolean whereCoversSubFilter = isStricterThan(where, simplerSubFilter);
+
+					if (!whereCoversSubFilter) {
+						notInWhere.add(simplerSubFilter);
+					}
 				}
 			}
-			postAnd = FilterBuilder.and(notInWhere).optimize();
+			// `.combine` to break cycle, and output has not reason to be more optimized than input
+			postAnd = FilterBuilder.and(notInWhere).combine();
 		}
 
 		// Given the FILTER, we reject the OR operands already rejected by WHERE
@@ -510,18 +523,35 @@ public class FilterHelpers {
 			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
 			// For each part of `FILTER`, reject those already filtered in `WHERE`
 			for (ISliceFilter subFilter : orOperands) {
-				boolean whereRejectsSubFilter =
-						ISliceFilter.MATCH_NONE.equals(FilterBuilder.and(where, subFilter).optimize());
+				ISliceFilter simplerSubFilter;
+				if (subFilter.equals(filter)) {
+					// Break cycle when we reach simplest filters
+					simplerSubFilter = subFilter;
+				} else {
+					simplerSubFilter = stripWhereFromFilter(where, subFilter);
+				}
 
-				if (!whereRejectsSubFilter) {
-					notInWhere.add(subFilter);
+				if (andMatchNone(where, simplerSubFilter)) {
+					continue;
+				} else {
+					boolean whereRejectsSubFilter = isStricterThan(where, simplerSubFilter);
+
+					if (!whereRejectsSubFilter) {
+						notInWhere.add(simplerSubFilter);
+					}
 				}
 			}
 
-			postOr = FilterBuilder.or(notInWhere).optimize();
+			// `.combine` to break cycle, and output has not reason to be more optimized than input
+			postOr = FilterBuilder.or(notInWhere).combine();
 		}
 
 		return postOr;
+	}
+
+	// `a&b=matchNone` is equivalent to `a includes !b`, which is equivalent to `a is stricter than !b`
+	private static boolean andMatchNone(ISliceFilter left, ISliceFilter right) {
+		return isStricterThan(left, right.negate());
 	}
 
 	public static ISliceFilter stripWhereFromFilterOr(ISliceFilter where, ISliceFilter filter) {

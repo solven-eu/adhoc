@@ -46,7 +46,7 @@ import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestAndFilter {
-	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 
 	// A short toString not to prevail is composition .toString
 	@Test
@@ -376,13 +376,6 @@ public class TestAndFilter {
 		ISliceFilter notA1AndNotA2 = AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
 				NotFilter.not(ColumnFilter.matchIn("b", "b1", "b2")));
 
-		// TODO Should we simplify the not?
-		// Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
-		// Assertions.assertThat(notFilter.getNegated())
-		// .isEqualTo(NotFilter
-		// .not(OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("b", "b1", "b2"))));
-		// });
-
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands())
 					.contains(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
@@ -598,41 +591,55 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_Large_onlyOrs() {
+		FilterBuilder filterBuilder = FilterBuilder.builder()
+				.optimizer(FilterOptimizerHelpers.builder().withCartesianProductsAndOr(true).build())
+				.andElseOr(true)
+				.build();
+
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 1)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0|b==b0");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize()).hasToString("a==a0|b==b0");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 2)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0&b==b1|b==b0&a==a1");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize()).hasToString("a==a0&b==b1|b==b0&a==a1");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 3)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(AndFilter.and(operands)).hasToString("matchNone");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize()).hasToString("matchNone");
 		}
 		{
+			// `(a0|b0)&(a1|b1)&(a2|b2)&...`
 			List<ISliceFilter> operands = IntStream.range(0, 16)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
 			// The combination is too large to detect it is matchNone
-			Assertions.assertThat(AndFilter.and(operands))
+			Assertions.assertThat(filterBuilder.filters(operands).optimize())
 					.hasToString(
 							"(a==a0|b==b0)&(a==a1|b==b1)&(a==a2|b==b2)&(a==a3|b==b3)&(a==a4|b==b4)&(a==a5|b==b5)&(a==a6|b==b6)&(a==a7|b==b7)&(a==a8|b==b8)&(a==a9|b==b9)&(a==a10|b==b10)&(a==a11|b==b11)&(a==a12|b==b12)&(a==a13|b==b13)&(a==a14|b==b14)&(a==a15|b==b15)");
 		}
 	}
 
+	// Similar to `testAnd_Large_onlyOrs` but with a helping filter
 	@Test
 	public void testAnd_Large_andMatchOnlyOne() {
+		// In this case, given the hint, we do not need any cartesianProduct
+		FilterBuilder filterBuilder = FilterBuilder.builder()
+				.optimizer(FilterOptimizerHelpers.builder().withCartesianProductsAndOr(false).build())
+				.andElseOr(true)
+				.build();
+
+		// `(a0|b0)&(a1|b1)&(a2|b2)&...`
 		List<ISliceFilter> operands = IntStream.range(0, 16)
 				.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 				.collect(Collectors.toCollection(ArrayList::new));
@@ -640,7 +647,7 @@ public class TestAndFilter {
 		// Adding a simpler operand may help detecting this is matchNone
 		operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
 
-		Assertions.assertThat(AndFilter.and(operands)).isEqualTo(ISliceFilter.MATCH_NONE);
+		Assertions.assertThat(filterBuilder.filters(operands).optimize()).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
@@ -722,7 +729,7 @@ public class TestAndFilter {
 		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
 
 		try {
-			FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+			FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 			ISliceFilter combined = FilterBuilder.builder()
 					.andElseOr(true)
 					.optimizer(optimizer)

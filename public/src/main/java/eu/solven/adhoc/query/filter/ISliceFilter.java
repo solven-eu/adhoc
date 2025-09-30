@@ -108,4 +108,14 @@ public interface ISliceFilter {
 	 * @return a filter equivalent to wrapping this with a {@link NotFilter}.
 	 */
 	ISliceFilter negate();
+
+	/**
+	 * A not-optimized `AND`
+	 * 
+	 * @param other
+	 * @return
+	 */
+	default ISliceFilter and(ISliceFilter other) {
+		return FilterBuilder.and(this, other).combine();
+	}
 }

@@ -98,8 +98,11 @@ public class FilterBuilder {
 
 	/**
 	 * 
+	 * 
+	 * 
 	 * @return a {@link ISliceFilter} skipping all optimizations.
 	 */
+	// Should we `Keep simple optimizations like stripping `matchNone` from `OR`.`?
 	public ISliceFilter combine() {
 		if (filters.isEmpty()) {
 			if (andElseOr) {
