@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -101,7 +101,7 @@ public class FilterBuilder {
 		return optimize(AdhocUnsafe.sliceFilterOptimizer);
 	}
 
-	public ISliceFilter optimize(IFilterOptimizerHelpers optimizer) {
+	public ISliceFilter optimize(IFilterOptimizer optimizer) {
 		if (andElseOr == Type.AND) {
 			return optimizer.and(filters, false);
 		} else if (andElseOr == Type.OR) {

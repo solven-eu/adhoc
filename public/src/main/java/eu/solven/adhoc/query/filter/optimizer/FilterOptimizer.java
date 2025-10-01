@@ -75,9 +75,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("PMD.GodClass")
 @SuperBuilder
-public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
-	// final AtomicInteger nbSkip = new AtomicInteger();
-
+public class FilterOptimizer implements IFilterOptimizer {
 	@Default
 	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
@@ -704,7 +702,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 */
 	@Builder
 	protected static class PackingColumns {
-		final IFilterOptimizerHelpers optimizer;
+		final IFilterOptimizer optimizer;
 
 		// If there is not a single valueMatcher with explicit values, we should add all as not managed
 		final AtomicBoolean hadSomeAllowedValues = new AtomicBoolean();
@@ -957,5 +955,4 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 		return NotFilter.builder().negated(filter).build();
 	}
-
 }

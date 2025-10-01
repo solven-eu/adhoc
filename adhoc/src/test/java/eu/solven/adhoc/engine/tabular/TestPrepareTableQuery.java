@@ -39,12 +39,14 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
-	ITableQueryOptimizer optimizer = engine.optimizerFactory.makeOptimizer(engine.getFactories(), () -> Set.of());
+	ITableQueryOptimizer optimizer =
+			engine.optimizerFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
 	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 
 	@Override

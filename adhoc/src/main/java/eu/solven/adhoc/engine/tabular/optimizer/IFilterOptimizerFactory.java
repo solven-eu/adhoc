@@ -22,35 +22,38 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import lombok.RequiredArgsConstructor;
 
 /**
- * Standard implementation for {@link ITableQueryOptimizerFactory}.
+ * Helps creating a {@link IFilterOptimizer}.
+ * 
+ * We need a factory as some {@link IFilterOptimizerFactory} should be used only within a given context (e.g. to take
+ * advantage of a cache, which must not be polluted by {@link ISliceFilter} irrelevant to given context, for
+ * cache-efficiency purposes).
  * 
  * @author Benoit Lacelle
  */
-@RequiredArgsConstructor
-public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
+public interface IFilterOptimizerFactory {
+	IFilterOptimizer makeOptimizer();
 
-	// final IFilterOptimizerFactory filterOptimizerFactory;
+	IFilterOptimizer makeOptimizerWithCache();
 
-	@Override
-	public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
-		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
-			IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
-			return new TableQueryOptimizerNone(factories, filterOptimizer);
-		} else {
-			return makeOptimizer(factories);
-		}
+	static IFilterOptimizerFactory standard() {
+		return new IFilterOptimizerFactory() {
+
+			@Override
+			public IFilterOptimizer makeOptimizer() {
+				return FilterOptimizer.builder().build();
+			}
+
+			@Override
+			public IFilterOptimizer makeOptimizerWithCache() {
+				return FilterOptimizerWithCache.builder().build();
+			}
+
+		};
 	}
-
-	protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
-		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
-		return new TableQueryOptimizer(factories, filterOptimizer);
-	}
-
 }

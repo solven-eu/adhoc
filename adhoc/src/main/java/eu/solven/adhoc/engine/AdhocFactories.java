@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine;
 
+import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -54,5 +55,10 @@ public class AdhocFactories {
 
 	@NonNull
 	@Default
+	IFilterOptimizerFactory filterOptimizerFactory = IFilterOptimizerFactory.standard();
+
+	@NonNull
+	@Default
 	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
+
 }

@@ -41,6 +41,7 @@ import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -53,6 +54,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
@@ -183,7 +185,8 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	@Test
 	public void testCustomTableQueryOptimizer() {
 		ITableQueryOptimizerFactory optimizerFactory = (factories, hasOptions) -> {
-			return new TableQueryOptimizerSinglePerAggregator(factories);
+			IFilterOptimizer filterOptimizer = IFilterOptimizerFactory.standard().makeOptimizer();
+			return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
 		};
 		CubeQueryEngine cubeEngine = CubeQueryEngine.builder()
 				.tableQueryEngine(TableQueryEngine.builder().optimizerFactory(optimizerFactory).build())

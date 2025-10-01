@@ -49,6 +49,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +64,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 	final AdhocFactories factories;
+
+	final IFilterOptimizer filterOptimizer;
 
 	/**
 	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the

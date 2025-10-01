@@ -47,8 +47,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class ATransformatorQueryStep implements ITransformatorQueryStep {
 
-	// TODO Introduce a way to customize this default value
-
 	protected abstract CubeQueryStep getStep();
 
 	protected abstract AdhocFactories getFactories();

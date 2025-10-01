@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
 
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerHelpers;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.pepper.thread.NamingForkJoinWorkerThreadFactory;
 import lombok.Getter;
 import lombok.Setter;
@@ -220,14 +220,14 @@ public class AdhocUnsafe {
 	public static int cartesianProductLimit = 16 * 1024;
 	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
-	public static IFilterOptimizerHelpers sliceFilterOptimizer = FilterOptimizerHelpers.builder().build();
+	public static IFilterOptimizer sliceFilterOptimizer = FilterOptimizer.builder().build();
 
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios
 	public static Executor maintenancePool = Executors.newCachedThreadPool(Thread.ofPlatform()
 			// Daemon as these thread does not hold critical operations
 			.daemon(true)
-			.name("adhoc-maintenance-")
+			.name("adhoc-maintenance-", 0)
 			.factory());
 
 	/**

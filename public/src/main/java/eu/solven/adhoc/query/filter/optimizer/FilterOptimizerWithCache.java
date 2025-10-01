@@ -25,7 +25,6 @@ package eu.solven.adhoc.query.filter.optimizer;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -37,23 +36,22 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Extends {@link FilterOptimizerHelpers} to enable caching. The caching shall catch any intermediate
- * {@link ISliceFilter} being optimized.
+ * Extends {@link FilterOptimizer} to enable caching. The caching shall catch any intermediate {@link ISliceFilter}
+ * being optimized.
+ * 
+ * The default caching strategy has no invalidation: as it may memory-leak, it should not be used for long-running
+ * processed. However, it can be used in the context of a single query.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
 @SuperBuilder
-public class FilterOptimizerHelpersWithCache extends FilterOptimizerHelpers implements IHasCache {
-	final AtomicInteger nbSkip = new AtomicInteger();
-
+public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCache {
 	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNegated = CacheBuilder.newBuilder().build();
 	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNotNegated = CacheBuilder.newBuilder().build();
 
 	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedOrs = CacheBuilder.newBuilder().build();
 	final Cache<ISliceFilter, ISliceFilter> optimizedNot = CacheBuilder.newBuilder().build();
-
-	final boolean withCartesianProductsAndOr;
 
 	@Override
 	public void invalidateAll() {

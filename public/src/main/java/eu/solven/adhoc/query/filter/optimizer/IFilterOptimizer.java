@@ -31,7 +31,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
  * 
  * @author Benoit Lacelle
  */
-public interface IFilterOptimizerHelpers {
+public interface IFilterOptimizer {
 
 	/**
 	 * 

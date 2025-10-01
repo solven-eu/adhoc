@@ -36,6 +36,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.InMemoryTable;
@@ -44,7 +45,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 	TableQueryEngine engine = TableQueryEngine.builder().build();
 
 	ITableQueryOptimizer tableQueryOptimizer =
-			engine.optimizerFactory.makeOptimizer(engine.getFactories(), () -> Set.of());
+			engine.optimizerFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
 
 	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(tableQueryOptimizer);
 

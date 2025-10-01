@@ -35,6 +35,7 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -45,7 +46,8 @@ public class TestTableQueryOptimizer {
 			.filter(ColumnFilter.equalTo("c", "c1"))
 			.build();
 
-	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
+	TableQueryOptimizer optimizer =
+			new TableQueryOptimizer(AdhocFactories.builder().build(), FilterOptimizer.builder().build());
 
 	@Test
 	public void testCanInduce_Trivial() {

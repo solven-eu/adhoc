@@ -239,6 +239,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			groupedByColumns.remove(cubeSlicer);
 			filteredColumns.remove(cubeSlicer);
 		});
+
+		// TODO Should we handle cubes concurrently? It may help given `.getColumnsAsMap` can be slow, but it would make
+		// it more difficult to stop once all columns are considered known.
 		for (ICubeWrapper cube : cubes) {
 			Set<String> cubeColumns = cube.getColumnsAsMap().keySet();
 			groupedByColumns.removeAll(cubeColumns);

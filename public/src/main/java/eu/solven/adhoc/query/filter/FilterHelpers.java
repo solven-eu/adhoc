@@ -555,7 +555,7 @@ public class FilterHelpers {
 	}
 
 	public static ISliceFilter stripWhereFromFilterOr(ISliceFilter where, ISliceFilter filter) {
-		// Given `a`, turns `a|b|c&d` into `b|c&d`
+		// Given `WHERE:a`, turns `FILTER:a|b|c&d` into `FILTER:b|c&d`
 		return stripWhereFromFilter(where.negate(), filter.negate()).negate();
 	}
 

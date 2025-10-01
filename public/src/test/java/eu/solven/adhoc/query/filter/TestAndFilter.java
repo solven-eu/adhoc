@@ -40,8 +40,8 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.FilterBuilder.Type;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerHelpers;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers.IOptimizerEventListener;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer.IOptimizerEventListener;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
@@ -56,7 +56,7 @@ public class TestAndFilter {
 			nbSkip.incrementAndGet();
 		}
 	};
-	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().listener(listener).build();
+	FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
 
 	// A short toString not to prevail is composition .toString
 	@Test
@@ -513,7 +513,7 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_Large_onlyOrs() {
-		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().withCartesianProductsAndOr(true).build();
+		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
 		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
 
 		{
@@ -554,7 +554,7 @@ public class TestAndFilter {
 	// Similar to `testAnd_Large_onlyOrs` but with a helping filter
 	@Test
 	public void testAnd_Large_andMatchOnlyOne() {
-		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().withCartesianProductsAndOr(true).build();
+		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
 
 		// In this case, given the hint, we do not need any cartesianProduct
 		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
@@ -649,7 +649,7 @@ public class TestAndFilter {
 		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
 
 		try {
-			FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().listener(listener).build();
+			FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
 			ISliceFilter combined = FilterBuilder.builder()
 					.andElseOr(Type.AND)
 					.build()

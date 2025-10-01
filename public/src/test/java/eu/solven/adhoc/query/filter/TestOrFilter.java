@@ -38,8 +38,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.FilterBuilder.Type;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerHelpers;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers.IOptimizerEventListener;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer.IOptimizerEventListener;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
@@ -54,7 +54,7 @@ public class TestOrFilter {
 			nbSkip.incrementAndGet();
 		}
 	};
-	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().listener(listener).build();
+	FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
 
 	// A short toString not to prevail is composition .toString
 	@Test
@@ -431,7 +431,7 @@ public class TestOrFilter {
 	@Test
 	public void testOr_AndNotOr_22() {
 		// make sure this case is optimized without cartesianProductAndOr
-		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().withCartesianProductsAndOr(false).build();
+		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(false).build();
 
 		// `d!=d1&(d==d1|e!=e1)`
 		ISliceFilter output = FilterBuilder.builder()
