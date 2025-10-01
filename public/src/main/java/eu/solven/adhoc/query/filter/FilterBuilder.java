@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;

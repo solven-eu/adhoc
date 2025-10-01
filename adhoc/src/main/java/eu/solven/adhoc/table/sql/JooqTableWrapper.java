@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import java.sql.Connection;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +46,13 @@ import org.jooq.conf.ParamType;
 import org.jooq.exception.DataAccessException;
 import org.jooq.exception.InvalidResultException;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
+
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.data.row.ITabularRecord;
@@ -64,6 +72,8 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasCache;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -81,7 +91,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @ToString(of = "name")
-public class JooqTableWrapper implements ITableWrapper {
+public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	// TODO Investigate the benefit of String internalization
 	// May be propagated into a more general dictionarization
 	private static final boolean DO_INTERN_STRINGS = false;
@@ -96,6 +106,20 @@ public class JooqTableWrapper implements ITableWrapper {
 	@Default
 	protected ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
 
+	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()
+			// https://github.com/google/guava/wiki/cachesexplained#refresh
+			.refreshAfterWrite(Duration.ofMinutes(1))
+			.removalListener(new RemovalListener<Object, List<Field<?>>>() {
+
+				@Override
+				public void onRemoval(RemovalNotification<Object, List<Field<?>>> notification) {
+					RemovalCause cause = notification.getCause();
+					List<Field<?>> removedFields = notification.getValue();
+					log.debug("Removing fields for {} due to {} (were {})", getName(), cause, removedFields);
+				}
+			})
+			.build(CacheLoader.asyncReloading(CacheLoader.from(this::noCacheGetFields), AdhocUnsafe.maintenancePool));
+
 	public JooqTableWrapper(String name, JooqTableWrapperParameters tableParameters) {
 		this(name, tableParameters, StandardSliceFactory.builder().build());
 	}
@@ -103,6 +127,11 @@ public class JooqTableWrapper implements ITableWrapper {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public void invalidateAll() {
+		fieldsCache.invalidateAll();
 	}
 
 	@Override
@@ -147,6 +176,18 @@ public class JooqTableWrapper implements ITableWrapper {
 	}
 
 	protected List<Field<?>> getFields() {
+		List<Field<?>> fields = fieldsCache.getUnchecked(Boolean.TRUE);
+
+		if (fields.isEmpty()) {
+			// Fields is typically empty if we were missing some files: let's retry
+			fieldsCache.invalidateAll();
+			fields = fieldsCache.getUnchecked(Boolean.TRUE);
+		}
+
+		return fields;
+	}
+
+	protected List<Field<?>> noCacheGetFields() {
 		Field<?>[] fields;
 
 		try {
@@ -173,6 +214,8 @@ public class JooqTableWrapper implements ITableWrapper {
 	 * @return a {@link Result} which can be used to fetch the fields of this table.
 	 */
 	protected Result<Record> getResultForFields() {
+		// Log in INFO as this operation maybe a bit slow
+		log.info("Fetching fields of table={}", getName());
 		return tableParameters.getDslSupplier()
 				.getDSLContext()
 				.select()

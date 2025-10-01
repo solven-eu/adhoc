@@ -243,6 +243,11 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			Set<String> cubeColumns = cube.getColumnsAsMap().keySet();
 			groupedByColumns.removeAll(cubeColumns);
 			filteredColumns.removeAll(cubeColumns);
+
+			if (groupedByColumns.isEmpty() && filteredColumns.isEmpty()) {
+				// leave early as the columns looks legitimate, and `.getColumnsAsMap` can be a slow operation
+				break;
+			}
 		}
 
 		if (!groupedByColumns.isEmpty()) {

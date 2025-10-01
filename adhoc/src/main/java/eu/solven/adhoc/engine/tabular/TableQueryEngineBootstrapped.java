@@ -144,7 +144,9 @@ public class TableQueryEngineBootstrapped {
 	protected void logInducedSteps(QueryPod queryPod, SplitTableQueries inducerAndInduced) {
 		if (queryPod.isDebugOrExplain()) {
 			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = inducerAndInduced.getInducedToInducer();
-			log.info("[EXPLAIN] queryStep inducers is composed of {} inducers steps leading to {} induced steps",
+			log.info(
+					"[EXPLAIN] querySteps on table={} inducers is composed of {} inducers steps leading to {} induced steps",
+					queryPod.getTable().getName(),
 					inducerAndInduced.getInducers().size(),
 					inducerAndInduced.getInduceds().size());
 

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.query.filter.optimizer;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -42,14 +41,24 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.math.LongMath;
 
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.IAndFilter;
+import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.INotFilter;
+import eu.solven.adhoc.query.filter.IOrFilter;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,22 +76,36 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("PMD.GodClass")
 @SuperBuilder
 public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
-	final AtomicInteger nbSkip = new AtomicInteger();
+	// final AtomicInteger nbSkip = new AtomicInteger();
+
+	@Default
+	final IOptimizerEventListener listener = new IOptimizerEventListener() {
+
+	};
+
+	@Default
+	final IFilterCostFunction costFunction = new StandardFilterCostFunction();
 
 	final boolean withCartesianProductsAndOr;
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		listener.onOptimize(AndFilter.builder().ands(filters).build());
+
 		return notCachedAnd(filters, willBeNegated);
 	}
 
 	@Override
 	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+		listener.onOptimize(OrFilter.builder().ors(filters).build());
+
 		return notCachedOr(filters);
 	}
 
 	@Override
 	public ISliceFilter not(ISliceFilter filter) {
+		listener.onOptimize(NotFilter.builder().negated(filter).build());
+
 		return notCachedNot(filter);
 	}
 
@@ -175,7 +198,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			ISliceFilter simpler =
 					FilterHelpers.stripWhereFromFilter(FilterBuilder.and(contextAsAnds).combine(), oneToSimplify);
 
-			if (costFunction(simpler) < costFunction(oneToSimplify)) {
+			if (costFunction.cost(simpler) < costFunction.cost(oneToSimplify)) {
 				asAnds.set(i, simpler);
 			}
 		}
@@ -282,7 +305,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
 		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
 		if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) > 0) {
-			nbSkip.incrementAndGet();
+			listener.onSkip(AndFilter.builder().ands(andOperands).build());
 			log.warn("Skip .optimizeAndOfOr due to {} > {} (input={})",
 					cartesianProductSize,
 					AdhocUnsafe.cartesianProductLimit,
@@ -305,8 +328,8 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 			// BEWARE We go into another batch of optimization for OR, which is safe as this is strictly simpler than
 			// current input
 			ISliceFilter orCandidate = and(List.of(where, or(ors)), false);
-			int costSimplifiedOr = costFunction(orCandidate);
-			int costInputAnd = costFunction(andOperands);
+			long costSimplifiedOr = costFunction.cost(orCandidate);
+			long costInputAnd = costFunction.cost(andOperands);
 
 			if (costSimplifiedOr < costInputAnd) {
 				return ImmutableSet.copyOf(FilterHelpers.splitAnd(orCandidate));
@@ -553,7 +576,11 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		long combinations = LongMath.checkedMultiply(operands.size(), operands.size() - 1);
 
 		if (combinations > AdhocUnsafe.cartesianProductLimit) {
-			nbSkip.incrementAndGet();
+			if (removeLaxerElseStricter) {
+				listener.onSkip(AndFilter.builder().ands(operands).build());
+			} else {
+				listener.onSkip(OrFilter.builder().ors(operands).build());
+			}
 			log.warn(
 					"Skip 'removeLaxerOrStricterGivenOne' due to product={} is greater than AdhocUnsafe.cartesianProductLimit={} over {}",
 					combinations,
@@ -623,59 +650,6 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		return FilterHelpers.splitOr(f);
 	}
 
-	/**
-	 * Evaluate the cost of an `AND` given its operands
-	 * 
-	 * @param operands
-	 * @return the cost of given operands, considered as being AND together.
-	 */
-	protected int costFunction(Collection<? extends ISliceFilter> operands) {
-		return operands.stream().mapToInt(this::costFunction).sum();
-	}
-
-	/**
-	 * Given a formula, the cost can be evaluated manually by counting the number of each operators. `AND` is free, `OR`
-	 * cost `2`, `!` cost 3, any value matcher costs `1`.
-	 * 
-	 * @param f
-	 * @return
-	 */
-	// factors are additive (hence not multiplicative) as we prefer a high `Not` (counting once) than multiple deep Not
-	@SuppressWarnings("checkstyle:MagicNumber")
-	protected int costFunction(ISliceFilter f) {
-		if (f instanceof IAndFilter andFilter) {
-			return costFunction(andFilter.getOperands());
-		} else if (f instanceof INotFilter notFilter) {
-			// We generally do not like NOT
-			// But it one prefers `!(a|b|c|d)` over `!a&!b&!c&!d`
-			return 2 * costFunction(notFilter.getNegated());
-		} else if (f instanceof IColumnFilter columnFilter) {
-			// `Not` costs 3: we prefer one OR than one NOT
-			return costFunction(columnFilter.getValueMatcher());
-		} else if (f instanceof IOrFilter orFilter) {
-			// We generally do not like NOT
-			// But it one prefers `!(a|b|c|d)` over `!a&!b&!c&!d`
-			return 5 + costFunction(orFilter.getOperands());
-		} else {
-			throw new NotYetImplementedException("Not managed: %s".formatted(f));
-		}
-	}
-
-	@SuppressWarnings("checkstyle:MagicNumber")
-	protected int costFunction(IValueMatcher m) {
-		if (m instanceof NotMatcher notMatcher) {
-			IValueMatcher negated = notMatcher.getNegated();
-			if (negated instanceof EqualsMatcher || negated instanceof InMatcher) {
-				// `=out=` is not very bad, but still more costly than `!(=out=)`
-				return 5;
-			} else {
-				return 7 + costFunction(negated);
-			}
-		} else {
-			return 3;
-		}
-	}
-
 	// Like `and` but skipping the optimization. May be useful for debugging
 	protected ImmutableSet<? extends ISliceFilter> splitAnd(ImmutableSet<? extends ISliceFilter> filters) {
 		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
@@ -706,14 +680,14 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 		ISliceFilter orCandidate = OrFilter.builder().ors(and.stream().map(this::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 
-		int costOrCandidate;
-		int costAndCandidate;
+		long costOrCandidate;
+		long costAndCandidate;
 		if (willBeNegated) {
-			costOrCandidate = costFunction(orCandidate);
-			costAndCandidate = costFunction(NotFilter.builder().negated(FilterBuilder.and(and).combine()).build());
+			costOrCandidate = costFunction.cost(orCandidate);
+			costAndCandidate = costFunction.cost(NotFilter.builder().negated(FilterBuilder.and(and).combine()).build());
 		} else {
-			costOrCandidate = costFunction(notOrCandidate);
-			costAndCandidate = costFunction(and);
+			costOrCandidate = costFunction.cost(notOrCandidate);
+			costAndCandidate = costFunction.cost(and);
 		}
 		// BEWARE If same cost, we prefer `AND`
 		if (costOrCandidate < costAndCandidate) {

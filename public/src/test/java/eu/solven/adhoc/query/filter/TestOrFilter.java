@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.filter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -37,12 +38,24 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.FilterBuilder.Type;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerHelpers;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers.IOptimizerEventListener;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 
 public class TestOrFilter {
+	AtomicInteger nbSkip = new AtomicInteger();
+	IOptimizerEventListener listener = new IOptimizerEventListener() {
+
+		@Override
+		public void onSkip(ISliceFilter filter) {
+			nbSkip.incrementAndGet();
+		}
+	};
+	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().listener(listener).build();
+
 	// A short toString not to prevail is composition .toString
 	@Test
 	public void toString_empty() {
@@ -533,14 +546,13 @@ public class TestOrFilter {
 		List<ISliceFilter> ands =
 				IntStream.range(0, 128).mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a1", "b", "b" + i))).toList();
 
-		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 		FilterBuilder combined = FilterBuilder.builder().andElseOr(Type.OR).build();
 
 		Assertions.assertThat(combined.filters(ands).optimize(optimizer))
 				.hasToString(
 						"a==a1&b=in=(b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15, and 112 more entries)");
 
-		Assertions.assertThat(optimizer.nbSkip).hasValue(0);
+		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
 	// TODO We do not manage noise yet
@@ -598,11 +610,10 @@ public class TestOrFilter {
 						.collect(Collectors.toMap(j -> Integer.toString(j), j -> "v"))))
 				.toList();
 
-		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 		FilterBuilder combined = FilterBuilder.builder().andElseOr(Type.OR).build();
 
 		Assertions.assertThat(combined.filters(ands).optimize(optimizer)).hasToString("0==v");
-		Assertions.assertThat(optimizer.nbSkip).hasValue(0);
+		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
 }

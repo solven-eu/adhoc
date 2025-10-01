@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.query.filter.optimizer;
 
 import java.util.Collection;
 import java.util.Set;
@@ -31,6 +31,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,12 +44,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @SuperBuilder
-public class FilterOptimizerHelpersWithCache extends FilterOptimizerHelpers {
+public class FilterOptimizerHelpersWithCache extends FilterOptimizerHelpers implements IHasCache {
 	final AtomicInteger nbSkip = new AtomicInteger();
-
-	// The cache can be useful when we know many optimization will happen on a set of very related expressions
-	// By default, it is empty to prevent memory-leak.
-	final Cache<ISliceFilter, ISliceFilter> optimizedFilters = CacheBuilder.newBuilder().build();
 
 	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNegated = CacheBuilder.newBuilder().build();
 	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNotNegated = CacheBuilder.newBuilder().build();
@@ -56,6 +54,14 @@ public class FilterOptimizerHelpersWithCache extends FilterOptimizerHelpers {
 	final Cache<ISliceFilter, ISliceFilter> optimizedNot = CacheBuilder.newBuilder().build();
 
 	final boolean withCartesianProductsAndOr;
+
+	@Override
+	public void invalidateAll() {
+		optimizedAndNegated.invalidateAll();
+		optimizedAndNotNegated.invalidateAll();
+		optimizedOrs.invalidateAll();
+		optimizedNot.invalidateAll();
+	}
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {

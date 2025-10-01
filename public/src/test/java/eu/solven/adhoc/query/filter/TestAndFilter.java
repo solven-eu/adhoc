@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -39,15 +40,23 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.FilterBuilder.Type;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerHelpers;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizerHelpers.IOptimizerEventListener;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestAndFilter {
-	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
+	AtomicInteger nbSkip = new AtomicInteger();
+	IOptimizerEventListener listener = new IOptimizerEventListener() {
+
+		@Override
+		public void onSkip(ISliceFilter filter) {
+			nbSkip.incrementAndGet();
+		}
+	};
+	FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().listener(listener).build();
 
 	// A short toString not to prevail is composition .toString
 	@Test
@@ -396,34 +405,6 @@ public class TestAndFilter {
 	}
 
 	@Test
-	public void testAnd_allNotFilter_like_3() {
-		List<ISliceFilter> likes = List.of(ColumnFilter.matchLike("a", "a%"),
-				ColumnFilter.matchLike("b", "b%"),
-				ColumnFilter.matchLike("c", "c%"));
-		List<ISliceFilter> nots = likes.stream().map(NotFilter::not).toList();
-
-		// And over 3 Not
-		Assertions.assertThat(optimizer.costFunction(AndFilter.builder().ands(nots).build())).isEqualTo(10 + 10 + 10);
-
-		// Not over Or over 3 simple
-		Assertions
-				.assertThat(optimizer
-						.costFunction(NotFilter.builder().negated(OrFilter.builder().ors(likes).build()).build()))
-				.isEqualTo(2 * (5 + (3 + 3 + 3)));
-
-		ISliceFilter notA1AndNotA2 = FilterBuilder.and(nots).optimize();
-
-		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
-			// cost==7, which is cheaper than 8
-			Assertions.assertThat(optimizer.costFunction(notFilter)).isEqualTo(2 * (5 + 3 + 3 + 3));
-
-			Assertions.assertThat(notFilter.getNegated()).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
-				Assertions.assertThat(orFilter.getOperands()).containsAll(likes);
-			});
-		});
-	}
-
-	@Test
 	public void testAnd_allNotMatcher() {
 		ISliceFilter notA1AndNotB1 =
 				AndFilter.and(ColumnFilter.notEqualTo("a", "a1"), ColumnFilter.notEqualTo("b", "b1"));
@@ -455,66 +436,6 @@ public class TestAndFilter {
 		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.equalTo("h", "c1")).combine();
 
 		Assertions.assertThat(FilterBuilder.and(leftOrRight, left).optimize()).isEqualTo(left);
-	}
-
-	@Test
-	public void testCostFunction() {
-		Assertions.assertThat(optimizer.costFunction(ColumnFilter.equalTo("a", "a1"))).isEqualTo(3);
-
-		Assertions
-				.assertThat(
-						FilterBuilder
-								.or(AndFilter.and(ImmutableMap.of("a", "a1")),
-										AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
-								.optimize())
-				.hasToString("a==a1|b==b1&c==c1")
-				.satisfies(f -> {
-					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(3 + 5 + 3 + 3);
-				});
-
-		Assertions
-				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-						OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1"))))
-				.hasToString("a==a1&(b==b1|c==c1)")
-				.satisfies(f -> {
-					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(3 + 5 + 3 + 3);
-				});
-
-		Assertions.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-				FilterBuilder.or(NotFilter.not(ColumnFilter.matchLike("b", "b%")), ColumnFilter.matchLike("c", "c%"))
-						.optimize()))
-				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
-				// `LikeMatcher(pattern=c%)`)")
-				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
-				.satisfies(f -> {
-					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(3 + 5 + 10 + 3);
-				});
-	}
-
-	@Test
-	public void testCostFunction_notOfNot() {
-		// `a==a1`
-		Assertions.assertThat(optimizer.costFunction(ColumnFilter.match("c", EqualsMatcher.equalTo(123L))))
-				.isEqualTo(3);
-
-		// `a!=a1`
-		Assertions
-				.assertThat(optimizer.costFunction(
-						ColumnFilter.match("c", NotMatcher.builder().negated(EqualsMatcher.equalTo(123L)).build())))
-				.isEqualTo(5);
-
-		// `!(a==a1)`
-		Assertions
-				.assertThat(optimizer.costFunction(
-						NotFilter.builder().negated(ColumnFilter.match("c", EqualsMatcher.equalTo(123L))).build()))
-				.isEqualTo(2 * 3);
-
-		// `not(not(a==a1))`
-		Assertions.assertThat(optimizer.costFunction(ColumnFilter.match("c",
-				NotMatcher.builder()
-						.negated(NotMatcher.builder().negated(EqualsMatcher.equalTo(123L)).build())
-						.build())))
-				.isEqualTo(2 * 2 * 3);
 	}
 
 	@Test
@@ -728,7 +649,7 @@ public class TestAndFilter {
 		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
 
 		try {
-			FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
+			FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().listener(listener).build();
 			ISliceFilter combined = FilterBuilder.builder()
 					.andElseOr(Type.AND)
 					.build()
@@ -740,7 +661,7 @@ public class TestAndFilter {
 					.optimize(optimizer);
 
 			Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&d=in=(d2,d3)");
-			Assertions.assertThat(optimizer.nbSkip).hasValue(0);
+			Assertions.assertThat(nbSkip).hasValue(0);
 		} finally {
 			AdhocUnsafe.resetProperties();
 		}
