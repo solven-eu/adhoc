@@ -159,7 +159,10 @@ public class ColumnFilter implements IColumnFilter {
 	 *            the value expected to be found
 	 * @return true if the column holds the same value as matching (following {@link Object#equals(Object)}) contract.
 	 */
-	public static ColumnFilter equalTo(String column, Object matching) {
+	public static ISliceFilter equalTo(String column, Object matching) {
+		if (matching instanceof IValueMatcher matcher) {
+			return match(column, matcher);
+		}
 		return ColumnFilter.builder().column(column).matchEquals(matching).build();
 	}
 
@@ -170,8 +173,7 @@ public class ColumnFilter implements IColumnFilter {
 	 */
 	// https://stackoverflow.com/questions/36508815/not-equal-and-null-in-postgres
 	public static ISliceFilter notEqualTo(String column, Object matching) {
-		NotMatcher not = NotMatcher.builder().negated(EqualsMatcher.equalTo(matching)).build();
-		return match(column, not);
+		return equalTo(column, matching).negate();
 	}
 
 	/**

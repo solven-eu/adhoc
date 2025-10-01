@@ -267,7 +267,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testStripFilterFromWhere_whereEquals_filterGreaterThan_orOther() {
-		ColumnFilter equalsTo = ColumnFilter.equalTo("a", 123);
+		ISliceFilter equalsTo = ColumnFilter.equalTo("a", 123);
 		ISliceFilter greaterThanOrOther = FilterBuilder
 				.or(ColumnFilter.match("a", ComparingMatcher.strictlyGreaterThan(12)), ColumnFilter.equalTo("b", "b1"))
 				.combine();
@@ -278,7 +278,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testStripFilterFromWhere_whereEquals_filterGreaterThan_andOther() {
-		ColumnFilter equalsTo = ColumnFilter.equalTo("a", 123);
+		ISliceFilter equalsTo = ColumnFilter.equalTo("a", 123);
 		ISliceFilter greaterThanOrOther = FilterBuilder
 				.and(ColumnFilter.match("a", ComparingMatcher.strictlyGreaterThan(12)), ColumnFilter.equalTo("b", "b1"))
 				.combine();
@@ -323,7 +323,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testIsStricterThan_doubleNegation() {
-		ColumnFilter equalsTo = ColumnFilter.equalTo("k", "v");
+		ISliceFilter equalsTo = ColumnFilter.equalTo("k", "v");
 		ISliceFilter in = ColumnFilter.matchIn("k", "v", "v2");
 
 		Assertions.assertThat(FilterHelpers.isStricterThan(equalsTo, in)).isTrue();
@@ -337,7 +337,7 @@ public class TestFilterHelpers {
 
 	@Test
 	public void testIsStricterThan_comparison() {
-		ColumnFilter equalsTo = ColumnFilter.equalTo("a", 123);
+		ISliceFilter equalsTo = ColumnFilter.equalTo("a", 123);
 		ISliceFilter greaterThanOrOther = FilterBuilder
 				.or(ColumnFilter.match("a", ComparingMatcher.strictlyGreaterThan(12)), ColumnFilter.equalTo("b", "b1"))
 				.combine();

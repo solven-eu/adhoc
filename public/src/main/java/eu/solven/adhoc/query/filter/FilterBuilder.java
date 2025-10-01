@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -40,15 +39,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Builder
 public class FilterBuilder {
-	final IFilterOptimizerHelpers optimizer;
-
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	final List<ISliceFilter> filters = new ArrayList<>();
 
-	final boolean andElseOr;
+	final Type andElseOr;
+
+	/**
+	 * The different type of {@link ISliceFilter} buildable with a {@link FilterBuilder}.
+	 */
+	public enum Type {
+		AND, OR, NOT;
+	}
 
 	public static FilterBuilder and() {
-		return new FilterBuilder(AdhocUnsafe.sliceFilterOptimizer, true);
+		return new FilterBuilder(Type.AND);
 	}
 
 	public static FilterBuilder and(Collection<? extends ISliceFilter> filters) {
@@ -60,7 +64,7 @@ public class FilterBuilder {
 	}
 
 	public static FilterBuilder or() {
-		return new FilterBuilder(AdhocUnsafe.sliceFilterOptimizer, false);
+		return new FilterBuilder(Type.OR);
 	}
 
 	public static FilterBuilder or(Collection<? extends ISliceFilter> filters) {
@@ -69,6 +73,10 @@ public class FilterBuilder {
 
 	public static FilterBuilder or(ISliceFilter first, ISliceFilter... more) {
 		return or().filter(first, more);
+	}
+
+	public static FilterBuilder not(ISliceFilter filter) {
+		return new FilterBuilder(Type.NOT).filter(filter);
 	}
 
 	public FilterBuilder filters(Collection<? extends ISliceFilter> filters) {
@@ -89,10 +97,20 @@ public class FilterBuilder {
 	 * @return a {@link ISliceFilter} which is optimized.
 	 */
 	public ISliceFilter optimize() {
-		if (andElseOr) {
+		return optimize(AdhocUnsafe.sliceFilterOptimizer);
+	}
+
+	public ISliceFilter optimize(IFilterOptimizerHelpers optimizer) {
+		if (andElseOr == Type.AND) {
 			return optimizer.and(filters, false);
-		} else {
+		} else if (andElseOr == Type.OR) {
 			return optimizer.or(filters);
+		} else {
+			// if (andElseOr == Type.NOT)
+			if (filters.size() != 1) {
+				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
+			}
+			return optimizer.not(filters.getFirst());
 		}
 	}
 
@@ -105,44 +123,29 @@ public class FilterBuilder {
 	// Should we `Keep simple optimizations like stripping `matchNone` from `OR`.`?
 	public ISliceFilter combine() {
 		if (filters.isEmpty()) {
-			if (andElseOr) {
+			if (andElseOr == Type.AND) {
 				return ISliceFilter.MATCH_ALL;
-			} else {
+			} else if (andElseOr == Type.OR) {
 				return ISliceFilter.MATCH_NONE;
+			} else {
+				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
 		} else if (filters.size() == 1) {
-			return filters.getFirst();
-		} else {
-			if (andElseOr) {
-				return AndFilter.builder().ands(filters).build();
+			ISliceFilter singleFilter = filters.getFirst();
+			if (andElseOr == Type.NOT) {
+				return NotFilter.builder().negated(singleFilter).build();
 			} else {
+				return singleFilter;
+			}
+		} else {
+			if (andElseOr == Type.AND) {
+				return AndFilter.builder().ands(filters).build();
+			} else if (andElseOr == Type.OR) {
 				return OrFilter.builder().ors(filters).build();
+			} else {
+				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
 		}
-	}
-
-	public static ISliceFilter not(ISliceFilter filter) {
-		if (filter.isMatchAll()) {
-			return ISliceFilter.MATCH_NONE;
-		} else if (filter.isMatchNone()) {
-			return ISliceFilter.MATCH_ALL;
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return notFilter.getNegated();
-		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
-			// Prefer `c!=c1` over `!(c==c1)`
-			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
-			// } else if (filter instanceof IAndFilter andFilter) {
-			// return FilterBuilder.or(andFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
-		} else if (filter instanceof IOrFilter orFilter) {
-			// Plays optimizations given an `AND` of `NOT`s.
-			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
-			return and(orFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
-		}
-
-		// Set<ISliceFilter> ors = FilterHelpers.splitOr(filter);
-		// return FilterBuilder.and(ors.stream().map(NotFilter::not).toList()).optimize();
-
-		return NotFilter.builder().negated(filter).build();
 	}
 
 }

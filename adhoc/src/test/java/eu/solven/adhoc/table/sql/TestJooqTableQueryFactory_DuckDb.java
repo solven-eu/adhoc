@@ -70,7 +70,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = queryFactory.toCondition(ColumnFilter.equalTo("k1", "v1")).get();
+		Condition condition = queryFactory.toCondition(ColumnFilter.equalTo("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'""");
@@ -250,7 +250,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testFilteredAggregator() {
-		ColumnFilter customFilter = ColumnFilter.equalTo("c", "c1");
+		ISliceFilter customFilter = ColumnFilter.equalTo("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
@@ -261,7 +261,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testFilteredAggregator_rank() {
-		ColumnFilter customFilter = ColumnFilter.equalTo("c", "c1");
+		ISliceFilter customFilter = ColumnFilter.equalTo("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.builder()

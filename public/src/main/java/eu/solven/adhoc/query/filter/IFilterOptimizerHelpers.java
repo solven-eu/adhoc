@@ -42,4 +42,6 @@ public interface IFilterOptimizerHelpers {
 
 	ISliceFilter or(Collection<? extends ISliceFilter> filters);
 
+	ISliceFilter not(ISliceFilter first);
+
 }

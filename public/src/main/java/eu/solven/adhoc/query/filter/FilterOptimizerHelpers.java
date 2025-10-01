@@ -30,16 +30,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -53,6 +49,7 @@ import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.Builder;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,14 +69,24 @@ import lombok.extern.slf4j.Slf4j;
 public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	final AtomicInteger nbSkip = new AtomicInteger();
 
-	// The cache can be useful when we know many optimization will happen on a set of very related expressions
-	// By default, it is empty to prevent memory-leak.
-	final Cache<ISliceFilter, ISliceFilter> optimizedFilters = CacheBuilder.newBuilder().maximumSize(0).build();
-
 	final boolean withCartesianProductsAndOr;
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		return notCachedAnd(filters, willBeNegated);
+	}
+
+	@Override
+	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+		return notCachedOr(filters);
+	}
+
+	@Override
+	public ISliceFilter not(ISliceFilter filter) {
+		return notCachedNot(filter);
+	}
+
+	protected ISliceFilter notCachedAnd(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
 		// First, we ensure operands are themselves optimized. This may lead to duplicate work, as later step may
 		// themselves optimize. But it is useful to ensure consistency of equivalent inputs.
 		filters = optimizeOperands(filters);
@@ -187,31 +194,24 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	}
 
 	protected ISliceFilter optimizeOperand(ISliceFilter f) {
-		try {
-			return optimizedFilters.get(f, () -> {
-				if (f instanceof IAndFilter andFilter) {
-					return FilterBuilder.and(andFilter.getOperands()).optimize();
-				} else if (f instanceof IOrFilter orFilter) {
-					return FilterBuilder.or(orFilter.getOperands()).optimize();
-				} else if (f instanceof INotFilter notFilter) {
-					return FilterBuilder.not(notFilter.getNegated());
-				} else {
-					return f;
-				}
-			});
-		} catch (ExecutionException e) {
-			throw new IllegalArgumentException("Issue on f=%s".formatted(f), e);
+		if (f instanceof IAndFilter andFilter) {
+			return and(andFilter.getOperands(), false);
+		} else if (f instanceof IOrFilter orFilter) {
+			return or(orFilter.getOperands());
+		} else if (f instanceof INotFilter notFilter) {
+			return not(notFilter.getNegated());
+		} else {
+			return f;
 		}
 	}
 
-	@Override
-	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+	protected ISliceFilter notCachedOr(Collection<? extends ISliceFilter> filters) {
 		// OR relies on AND optimizations
-		List<ISliceFilter> negated = filters.stream().map(NotFilter::not).toList();
+		List<ISliceFilter> negated = filters.stream().map(this::not).toList();
 
 		ISliceFilter negatedOptimized = and(negated, true);
 
-		return FilterBuilder.not(negatedOptimized);
+		return not(negatedOptimized);
 	}
 
 	/**
@@ -703,7 +703,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 */
 	protected ISliceFilter preferNotOrOverAndNot(boolean willBeNegated, Set<? extends ISliceFilter> and) {
 		// Consider returning a `!(a|b)` instead of `!a&!b`
-		ISliceFilter orCandidate = OrFilter.builder().ors(and.stream().map(NotFilter::not).toList()).build();
+		ISliceFilter orCandidate = OrFilter.builder().ors(and.stream().map(this::not).toList()).build();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 
 		int costOrCandidate;
@@ -728,7 +728,10 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 	 * 
 	 * @author Benoit Lacelle
 	 */
+	@Builder
 	protected static class PackingColumns {
+		final IFilterOptimizerHelpers optimizer;
+
 		// If there is not a single valueMatcher with explicit values, we should add all as not managed
 		final AtomicBoolean hadSomeAllowedValues = new AtomicBoolean();
 		// allowedValues is meaningful only if hadSomeAllowedValues is true
@@ -816,7 +819,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 		protected void collectPacks(AtomicBoolean isMatchNone,
 				String column,
-				Builder<ISliceFilter> packedFiltersBuilder,
+				ImmutableList.Builder<ISliceFilter> packedFiltersBuilder,
 				List<ISliceFilter> notManaged) {
 
 			if (hadSomeAllowedValues.get()) {
@@ -872,7 +875,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 
 				if (!disallowedValues.isEmpty()) {
 					// We have a list of explicit disallowed values but no explicit values
-					packedFiltersBuilder.add(NotFilter.not(ColumnFilter.matchIn(column, disallowedValues)));
+					packedFiltersBuilder.add(optimizer.not(ColumnFilter.matchIn(column, disallowedValues)));
 				}
 
 				notManaged.addAll(implicitFilters);
@@ -929,7 +932,7 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 					return;
 				}
 
-				PackingColumns packingColumns = new PackingColumns();
+				PackingColumns packingColumns = new PackingColumns(this);
 
 				// Collect filter by allowedValue, disallowedValues and implicitFilters
 				columnFilters.stream().forEach(columnFilter -> {
@@ -955,6 +958,30 @@ public class FilterOptimizerHelpers implements IFilterOptimizerHelpers {
 						.build());
 			}
 		}
+	}
+
+	protected ISliceFilter notCachedNot(ISliceFilter filter) {
+		if (filter.isMatchAll()) {
+			return ISliceFilter.MATCH_NONE;
+		} else if (filter.isMatchNone()) {
+			return ISliceFilter.MATCH_ALL;
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return notFilter.getNegated();
+		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
+			// Prefer `c!=c1` over `!(c==c1)`
+			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
+			// } else if (filter instanceof IAndFilter andFilter) {
+			// return FilterBuilder.or(andFilter.getOperands().stream().map(NotFilter::not).toList()).optimize();
+		} else if (filter instanceof IOrFilter orFilter) {
+			// Plays optimizations given an `AND` of `NOT`s.
+			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
+			return and(orFilter.getOperands().stream().map(this::not).toList(), false);
+		}
+
+		// Set<ISliceFilter> ors = FilterHelpers.splitOr(filter);
+		// return FilterBuilder.and(ors.stream().map(NotFilter::not).toList()).optimize();
+
+		return NotFilter.builder().negated(filter).build();
 	}
 
 }

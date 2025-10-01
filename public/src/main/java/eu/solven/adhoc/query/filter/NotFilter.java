@@ -56,7 +56,7 @@ public class NotFilter implements INotFilter {
 	}
 
 	public static ISliceFilter not(ISliceFilter filter) {
-		return FilterBuilder.not(filter);
+		return FilterBuilder.not(filter).optimize();
 	}
 
 }

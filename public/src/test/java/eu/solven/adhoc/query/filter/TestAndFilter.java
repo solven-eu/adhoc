@@ -38,6 +38,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.query.filter.FilterBuilder.Type;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
@@ -450,7 +451,7 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_orDifferentColumns_sameColumn() {
-		ColumnFilter left = ColumnFilter.equalTo("g", "c1");
+		ISliceFilter left = ColumnFilter.equalTo("g", "c1");
 		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.equalTo("h", "c1")).combine();
 
 		Assertions.assertThat(FilterBuilder.and(leftOrRight, left).optimize()).isEqualTo(left);
@@ -591,31 +592,30 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_Large_onlyOrs() {
-		FilterBuilder filterBuilder = FilterBuilder.builder()
-				.optimizer(FilterOptimizerHelpers.builder().withCartesianProductsAndOr(true).build())
-				.andElseOr(true)
-				.build();
+		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().withCartesianProductsAndOr(true).build();
+		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
 
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 1)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(filterBuilder.filters(operands).optimize()).hasToString("a==a0|b==b0");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer)).hasToString("a==a0|b==b0");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 2)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(filterBuilder.filters(operands).optimize()).hasToString("a==a0&b==b1|b==b0&a==a1");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer))
+					.hasToString("a==a0&b==b1|b==b0&a==a1");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 3)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(filterBuilder.filters(operands).optimize()).hasToString("matchNone");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer)).hasToString("matchNone");
 		}
 		{
 			// `(a0|b0)&(a1|b1)&(a2|b2)&...`
@@ -633,11 +633,10 @@ public class TestAndFilter {
 	// Similar to `testAnd_Large_onlyOrs` but with a helping filter
 	@Test
 	public void testAnd_Large_andMatchOnlyOne() {
+		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().withCartesianProductsAndOr(true).build();
+
 		// In this case, given the hint, we do not need any cartesianProduct
-		FilterBuilder filterBuilder = FilterBuilder.builder()
-				.optimizer(FilterOptimizerHelpers.builder().withCartesianProductsAndOr(false).build())
-				.andElseOr(true)
-				.build();
+		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
 
 		// `(a0|b0)&(a1|b1)&(a2|b2)&...`
 		List<ISliceFilter> operands = IntStream.range(0, 16)
@@ -647,7 +646,7 @@ public class TestAndFilter {
 		// Adding a simpler operand may help detecting this is matchNone
 		operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
 
-		Assertions.assertThat(filterBuilder.filters(operands).optimize()).isEqualTo(ISliceFilter.MATCH_NONE);
+		Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer)).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
@@ -731,15 +730,14 @@ public class TestAndFilter {
 		try {
 			FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
 			ISliceFilter combined = FilterBuilder.builder()
-					.andElseOr(true)
-					.optimizer(optimizer)
+					.andElseOr(Type.AND)
 					.build()
 					.filter(ColumnFilter.equalTo("a", "a1"),
 							ColumnFilter.matchIn("b", "b1", "b2", "b3"),
 							ColumnFilter.matchIn("c", "c1", "c2", "c3"),
 							ColumnFilter.notEqualTo("d", "d1"),
 							ColumnFilter.matchIn("d", "d1", "d2", "d3"))
-					.optimize();
+					.optimize(optimizer);
 
 			Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&d=in=(d2,d3)");
 			Assertions.assertThat(optimizer.nbSkip).hasValue(0);

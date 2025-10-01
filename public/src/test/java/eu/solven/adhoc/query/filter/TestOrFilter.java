@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.query.filter.FilterBuilder.Type;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
@@ -421,14 +422,13 @@ public class TestOrFilter {
 
 		// `d!=d1&(d==d1|e!=e1)`
 		ISliceFilter output = FilterBuilder.builder()
-				.optimizer(optimizer)
-				.andElseOr(true)
+				.andElseOr(Type.AND)
 				.build()
 				.filter(FilterBuilder.and(ColumnFilter.equalTo("d", "d1")).combine().negate())
 				.filter(FilterBuilder.and(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.equalTo("e", "e1"))
 						.combine()
 						.negate())
-				.optimize();
+				.optimize(optimizer);
 
 		Assertions.assertThat(output).hasToString("d!=d1&e!=e1");
 	}
@@ -534,9 +534,9 @@ public class TestOrFilter {
 				IntStream.range(0, 128).mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a1", "b", "b" + i))).toList();
 
 		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
-		FilterBuilder combined = FilterBuilder.builder().andElseOr(false).optimizer(optimizer).build();
+		FilterBuilder combined = FilterBuilder.builder().andElseOr(Type.OR).build();
 
-		Assertions.assertThat(combined.filters(ands).optimize())
+		Assertions.assertThat(combined.filters(ands).optimize(optimizer))
 				.hasToString(
 						"a==a1&b=in=(b0,b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15, and 112 more entries)");
 
@@ -599,9 +599,9 @@ public class TestOrFilter {
 				.toList();
 
 		FilterOptimizerHelpers optimizer = FilterOptimizerHelpers.builder().build();
-		FilterBuilder combined = FilterBuilder.builder().andElseOr(false).optimizer(optimizer).build();
+		FilterBuilder combined = FilterBuilder.builder().andElseOr(Type.OR).build();
 
-		Assertions.assertThat(combined.filters(ands).optimize()).hasToString("0==v");
+		Assertions.assertThat(combined.filters(ands).optimize(optimizer)).hasToString("0==v");
 		Assertions.assertThat(optimizer.nbSkip).hasValue(0);
 	}
 
