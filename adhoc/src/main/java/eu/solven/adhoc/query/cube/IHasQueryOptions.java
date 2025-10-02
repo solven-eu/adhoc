@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.cube;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.debug.IIsDebugable;
 import eu.solven.adhoc.debug.IIsExplainable;
@@ -59,5 +60,9 @@ public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
 	@JsonIgnore
 	default boolean isDebugOrExplain() {
 		return isDebug() || isExplain();
+	}
+
+	static IHasQueryOptions noOption() {
+		return ImmutableSet::of;
 	}
 }

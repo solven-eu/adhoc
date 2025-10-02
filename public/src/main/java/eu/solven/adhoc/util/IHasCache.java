@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
-
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+package eu.solven.adhoc.util;
 
 /**
- * A boolean `not`/`!`.
+ * Enable managing any structure behaving like a cache.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-@Jacksonized
-public class NotFilter implements INotFilter {
-
-	@NonNull
-	final ISliceFilter negated;
-
-	@Override
-	public boolean isNot() {
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "!(%s)".formatted(negated);
-	}
-
-	@Override
-	public ISliceFilter negate() {
-		return negated;
-	}
-
-	public static ISliceFilter not(ISliceFilter filter) {
-		return FilterBuilder.not(filter).optimize();
-	}
-
+@FunctionalInterface
+public interface IHasCache {
+	void invalidateAll();
 }

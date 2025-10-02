@@ -43,6 +43,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,8 +56,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TableQueryOptimizer extends ATableQueryOptimizer {
 
-	public TableQueryOptimizer(AdhocFactories factories) {
-		super(factories);
+	public TableQueryOptimizer(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		super(factories, filterOptimizer);
 	}
 
 	/**

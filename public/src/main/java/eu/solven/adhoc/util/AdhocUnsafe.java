@@ -23,14 +23,17 @@
 package eu.solven.adhoc.util;
 
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
 
-import eu.solven.adhoc.query.filter.FilterOptimizerHelpers;
-import eu.solven.adhoc.query.filter.IFilterOptimizerHelpers;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.pepper.thread.NamingForkJoinWorkerThreadFactory;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;
@@ -61,6 +64,7 @@ public class AdhocUnsafe {
 		failFast = true;
 		parallelism = defaultParallelism();
 		defaultColumnCapacity = limitColumnSize;
+		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 
 		// TODO Should we also reset adhocCommonPool?
 	}
@@ -78,6 +82,7 @@ public class AdhocUnsafe {
 		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
 		// Customize with `-Dadhoc.defaultColumnCapacity=100_000`
 		defaultColumnCapacity = safeLoadIntegerProperty("adhoc.defaultColumnCapacity", limitColumnSize);
+		cartesianProductLimit = safeLoadIntegerProperty("adhoc.cartesianProductLimit", DEFAULT_CARTESIAN_PRODUCT_LIMIT);
 	}
 
 	static int safeLoadIntegerProperty(String key, int defaultValue) {
@@ -199,13 +204,35 @@ public class AdhocUnsafe {
 	}
 
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
-	public static ExecutorService adhocCommonPool = Executors.newWorkStealingPool(getParallelism());
+	public static ExecutorService adhocCommonPool = newWorkStealingPool();
+
+	/**
+	 * Similar with java.util.concurrent.Executors.newWorkStealingPool(int), but with a custom name.
+	 * 
+	 * @return
+	 */
+	private static ForkJoinPool newWorkStealingPool() {
+		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
+	}
 
 	// Typically used as limit to prevent iterating over large cartesian products
 	// This limit should be applied over the number of potential combinations
 	public static int cartesianProductLimit = 16 * 1024;
+	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
-	public static IFilterOptimizerHelpers sliceFilterOptimizer = new FilterOptimizerHelpers();
+	/**
+	 * Default {@link IFilterOptimizer}, used by static methods. As this one is maintained in the long-run, it should
+	 * have no persistent cache, or with a proper expiring policy.
+	 */
+	public static IFilterOptimizer sliceFilterOptimizer = FilterOptimizerIntraCache.builder().build();
+
+	// A pool dedicated to maintenance operations.
+	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios
+	public static Executor maintenancePool = Executors.newCachedThreadPool(Thread.ofPlatform()
+			// Daemon as these thread does not hold critical operations
+			.daemon(true)
+			.name("adhoc-maintenance-", 0)
+			.factory());
 
 	/**
 	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is

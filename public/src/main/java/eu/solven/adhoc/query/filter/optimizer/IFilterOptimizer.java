@@ -20,16 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.query.filter.optimizer;
 
 import java.util.Collection;
+
+import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * Holds the optimization of {@link ISliceFilter}
  * 
  * @author Benoit Lacelle
  */
-public interface IFilterOptimizerHelpers {
+public interface IFilterOptimizer {
 
 	/**
 	 * 
@@ -42,4 +44,22 @@ public interface IFilterOptimizerHelpers {
 
 	ISliceFilter or(Collection<? extends ISliceFilter> filters);
 
+	ISliceFilter not(ISliceFilter first);
+
+	/**
+	 * Enable receiving event related to the optimization process.
+	 * 
+	 * @author Benoit Lacelle
+	 */
+	// Methods are defaulted to prevent breaking code when adding events
+	interface IOptimizerEventListener {
+
+		default void onOptimize(ISliceFilter filter) {
+			// swallowed
+		}
+
+		default void onSkip(ISliceFilter filter) {
+			// swallowed
+		}
+	}
 }

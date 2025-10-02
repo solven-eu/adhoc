@@ -43,7 +43,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testJackson_equals() throws JsonProcessingException {
-		ColumnFilter ksEqualsV = ColumnFilter.equalTo("k", "v");
+		ISliceFilter ksEqualsV = ColumnFilter.equalTo("k", "v");
 
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -157,5 +157,19 @@ public class TestColumnFilter {
 		ISliceFilter cIsMatchAll = ColumnFilter.match("c", IValueMatcher.MATCH_ALL);
 
 		Assertions.assertThat(cIsMatchAll).hasToString("matchAll");
+	}
+
+	@Test
+	public void testEqualTo_matcher() {
+		ISliceFilter cIsMatchAll = ColumnFilter.equalTo("c", LikeMatcher.matching("a%"));
+
+		Assertions.assertThat(cIsMatchAll).hasToString("c matches `LikeMatcher(pattern=a%)`");
+	}
+
+	@Test
+	public void testEqualTo_Set() {
+		ISliceFilter cIsMatchAll = ColumnFilter.equalTo("c", ImmutableSet.of("v1", "v2"));
+
+		Assertions.assertThat(cIsMatchAll).hasToString("c==[v1, v2]");
 	}
 }

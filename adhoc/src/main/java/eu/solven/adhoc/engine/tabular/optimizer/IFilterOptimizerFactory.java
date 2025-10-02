@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 
 /**
- * A boolean `not`/`!`.
+ * Helps creating a {@link IFilterOptimizer}.
+ * 
+ * We need a factory as some {@link IFilterOptimizerFactory} should be used only within a given context (e.g. to take
+ * advantage of a cache, which must not be polluted by {@link ISliceFilter} irrelevant to given context, for
+ * cache-efficiency purposes).
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-@Jacksonized
-public class NotFilter implements INotFilter {
+public interface IFilterOptimizerFactory {
+	IFilterOptimizer makeOptimizer();
 
-	@NonNull
-	final ISliceFilter negated;
+	IFilterOptimizer makeOptimizerWithCache();
 
-	@Override
-	public boolean isNot() {
-		return true;
+	static IFilterOptimizerFactory standard() {
+		return new IFilterOptimizerFactory() {
+
+			@Override
+			public IFilterOptimizer makeOptimizer() {
+				return FilterOptimizer.builder().build();
+			}
+
+			@Override
+			public IFilterOptimizer makeOptimizerWithCache() {
+				return FilterOptimizerWithCache.builder().build();
+			}
+
+		};
 	}
-
-	@Override
-	public String toString() {
-		return "!(%s)".formatted(negated);
-	}
-
-	@Override
-	public ISliceFilter negate() {
-		return negated;
-	}
-
-	public static ISliceFilter not(ISliceFilter filter) {
-		return FilterBuilder.not(filter).optimize();
-	}
-
 }

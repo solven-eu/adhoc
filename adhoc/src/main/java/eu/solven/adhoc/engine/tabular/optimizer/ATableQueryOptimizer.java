@@ -29,7 +29,6 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -44,14 +43,13 @@ import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
+import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -60,9 +58,19 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@RequiredArgsConstructor
 public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 	final AdhocFactories factories;
+
+	final IFilterOptimizer filterOptimizer;
+
+	final FilterUtility filterHelper;
+
+	public ATableQueryOptimizer(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		this.factories = factories;
+		this.filterOptimizer = filterOptimizer;
+
+		this.filterHelper = FilterUtility.builder().optimizer(filterOptimizer).build();
+	}
 
 	/**
 	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the
@@ -85,40 +93,40 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		return TableQueryV2.fromV1(TableQuery.fromSteps(tableQueries));
 	}
 
+	/**
+	 * 
+	 * @param inducerColumns
+	 * @param inducerFilter
+	 * @param inducedFilter
+	 *            it has to be laxer than inducer (i.e. this is not checked but assumed in this method).
+	 * @return an {@link Optional} {@link ISliceFilter} expressing the rows to keep from `inducer` to find all and only
+	 *         rows from `induced`.
+	 */
 	protected Optional<ISliceFilter> makeLeftoverFilter(Collection<IAdhocColumn> inducerColumns,
 			ISliceFilter inducerFilter,
 			ISliceFilter inducedFilter) {
-		// BEWARE There is two different ways to filters rows from inducer for induced:
-		// Either we reject the rows which are in inducer but not expected by induced
-		// Or we keep-only the rows in inducer given additional constraints in induced
-		// We'll choose one or the other depending on columns available in inducer
+		assert FilterHelpers.isLaxerThan(inducerFilter, inducedFilter);
 
-		Optional<ISliceFilter> leftoverFilter = Optional.empty();
-
-		ISliceFilter commonFilter = FilterHelpers.commonAnd(ImmutableSet.of(inducerFilter, inducedFilter));
-		ISliceFilter inducedLeftoverFilter = FilterHelpers.stripWhereFromFilter(commonFilter, inducedFilter);
+		// BEWARE There is NOT two different ways to filters rows from inducer for induced:
+		// Either we reject the rows which are in inducer but not expected by induced,
+		// Or we keep-only the rows in inducer given additional constraints in induced.
+		// Indeed, we see no actual case where we could only look at inducer columns to infer irrelevant rows, without
+		// actually check the induced filter.
 
 		// This match the row which has to be kept from inducer for induced
+		ISliceFilter inducedLeftoverFilter = FilterHelpers.stripWhereFromFilter(inducerFilter, inducedFilter);
+
 		boolean hasLeftoverFilteringColumns = inducerColumns.stream()
 				.map(IAdhocColumn::getName)
 				.toList()
 				.containsAll(FilterHelpers.getFilteredColumns(inducedLeftoverFilter));
 
 		if (hasLeftoverFilteringColumns) {
-			leftoverFilter = Optional.of(inducedLeftoverFilter);
+			// Given inducer, one can filter a subset of rows based on a filter given its rows are available
+			return Optional.of(inducedLeftoverFilter);
 		}
 
-		// This match the rows in the inducer which should be stripped off the induced
-		ISliceFilter rejectingFilter = FilterBuilder.and(inducerFilter, NotFilter.not(inducedFilter)).optimize();
-		boolean hasRejectingColumns = inducerColumns.stream()
-				.map(IAdhocColumn::getName)
-				.toList()
-				.containsAll(FilterHelpers.getFilteredColumns(rejectingFilter));
-
-		if (hasRejectingColumns) {
-			leftoverFilter = Optional.of(NotFilter.not(rejectingFilter));
-		}
-		return leftoverFilter;
+		return Optional.empty();
 	}
 
 	@Override

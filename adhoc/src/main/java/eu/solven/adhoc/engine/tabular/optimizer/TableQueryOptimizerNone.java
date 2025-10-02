@@ -31,6 +31,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,8 +44,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 
-	public TableQueryOptimizerNone(AdhocFactories factories) {
-		super(factories);
+	public TableQueryOptimizerNone(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		super(factories, filterOptimizer);
 	}
 
 	/**

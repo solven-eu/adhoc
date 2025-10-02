@@ -47,13 +47,15 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
 
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
-	ITableQueryOptimizer optimizer = engine.optimizerFactory.makeOptimizer(engine().getFactories(), () -> Set.of());
+	ITableQueryOptimizer optimizer =
+			engine.optimizerFactory.makeOptimizer(engine().getFactories(), IHasQueryOptions.noOption());
 	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 
 	@Override

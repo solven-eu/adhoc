@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -38,14 +39,24 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.FilterBuilder.Type;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer.IOptimizerEventListener;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestAndFilter {
-	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+	AtomicInteger nbSkip = new AtomicInteger();
+	IOptimizerEventListener listener = new IOptimizerEventListener() {
+
+		@Override
+		public void onSkip(ISliceFilter filter) {
+			nbSkip.incrementAndGet();
+		}
+	};
+	FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
 
 	// A short toString not to prevail is composition .toString
 	@Test
@@ -375,13 +386,6 @@ public class TestAndFilter {
 		ISliceFilter notA1AndNotA2 = AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
 				NotFilter.not(ColumnFilter.matchIn("b", "b1", "b2")));
 
-		// TODO Should we simplify the not?
-		// Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
-		// Assertions.assertThat(notFilter.getNegated())
-		// .isEqualTo(NotFilter
-		// .not(OrFilter.or(ColumnFilter.isIn("a", "a1", "a2"), ColumnFilter.isIn("b", "b1", "b2"))));
-		// });
-
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands())
 					.contains(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
@@ -397,34 +401,6 @@ public class TestAndFilter {
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands()).containsAll(nots);
-		});
-	}
-
-	@Test
-	public void testAnd_allNotFilter_like_3() {
-		List<ISliceFilter> likes = List.of(ColumnFilter.matchLike("a", "a%"),
-				ColumnFilter.matchLike("b", "b%"),
-				ColumnFilter.matchLike("c", "c%"));
-		List<ISliceFilter> nots = likes.stream().map(NotFilter::not).toList();
-
-		// And over 3 Not
-		Assertions.assertThat(optimizer.costFunction(AndFilter.builder().ands(nots).build())).isEqualTo(10 + 10 + 10);
-
-		// Not over Or over 3 simple
-		Assertions
-				.assertThat(optimizer
-						.costFunction(NotFilter.builder().negated(OrFilter.builder().ors(likes).build()).build()))
-				.isEqualTo(2 * (5 + (3 + 3 + 3)));
-
-		ISliceFilter notA1AndNotA2 = FilterBuilder.and(nots).optimize();
-
-		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
-			// cost==7, which is cheaper than 8
-			Assertions.assertThat(optimizer.costFunction(notFilter)).isEqualTo(2 * (5 + 3 + 3 + 3));
-
-			Assertions.assertThat(notFilter.getNegated()).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
-				Assertions.assertThat(orFilter.getOperands()).containsAll(likes);
-			});
 		});
 	}
 
@@ -456,70 +432,10 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_orDifferentColumns_sameColumn() {
-		ColumnFilter left = ColumnFilter.equalTo("g", "c1");
+		ISliceFilter left = ColumnFilter.equalTo("g", "c1");
 		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.equalTo("h", "c1")).combine();
 
 		Assertions.assertThat(FilterBuilder.and(leftOrRight, left).optimize()).isEqualTo(left);
-	}
-
-	@Test
-	public void testCostFunction() {
-		Assertions.assertThat(optimizer.costFunction(ColumnFilter.equalTo("a", "a1"))).isEqualTo(3);
-
-		Assertions
-				.assertThat(
-						FilterBuilder
-								.or(AndFilter.and(ImmutableMap.of("a", "a1")),
-										AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
-								.optimize())
-				.hasToString("a==a1|b==b1&c==c1")
-				.satisfies(f -> {
-					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(3 + 5 + 3 + 3);
-				});
-
-		Assertions
-				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-						OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1"))))
-				.hasToString("a==a1&(b==b1|c==c1)")
-				.satisfies(f -> {
-					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(3 + 5 + 3 + 3);
-				});
-
-		Assertions.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-				FilterBuilder.or(NotFilter.not(ColumnFilter.matchLike("b", "b%")), ColumnFilter.matchLike("c", "c%"))
-						.optimize()))
-				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
-				// `LikeMatcher(pattern=c%)`)")
-				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
-				.satisfies(f -> {
-					Assertions.assertThat(optimizer.costFunction(f)).isEqualTo(3 + 5 + 10 + 3);
-				});
-	}
-
-	@Test
-	public void testCostFunction_notOfNot() {
-		// `a==a1`
-		Assertions.assertThat(optimizer.costFunction(ColumnFilter.match("c", EqualsMatcher.equalTo(123L))))
-				.isEqualTo(3);
-
-		// `a!=a1`
-		Assertions
-				.assertThat(optimizer.costFunction(
-						ColumnFilter.match("c", NotMatcher.builder().negated(EqualsMatcher.equalTo(123L)).build())))
-				.isEqualTo(5);
-
-		// `!(a==a1)`
-		Assertions
-				.assertThat(optimizer.costFunction(
-						NotFilter.builder().negated(ColumnFilter.match("c", EqualsMatcher.equalTo(123L))).build()))
-				.isEqualTo(2 * 3);
-
-		// `not(not(a==a1))`
-		Assertions.assertThat(optimizer.costFunction(ColumnFilter.match("c",
-				NotMatcher.builder()
-						.negated(NotMatcher.builder().negated(EqualsMatcher.equalTo(123L)).build())
-						.build())))
-				.isEqualTo(2 * 2 * 3);
 	}
 
 	@Test
@@ -597,41 +513,53 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_Large_onlyOrs() {
+		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
+		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
+
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 1)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0|b==b0");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer)).hasToString("a==a0|b==b0");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 2)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(AndFilter.and(operands)).hasToString("a==a0&b==b1|b==b0&a==a1");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer))
+					.hasToString("a==a0&b==b1|b==b0&a==a1");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 3)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
-			Assertions.assertThat(AndFilter.and(operands)).hasToString("matchNone");
+			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer)).hasToString("matchNone");
 		}
 		{
+			// `(a0|b0)&(a1|b1)&(a2|b2)&...`
 			List<ISliceFilter> operands = IntStream.range(0, 16)
 					.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 					.toList();
 
 			// The combination is too large to detect it is matchNone
-			Assertions.assertThat(AndFilter.and(operands))
+			Assertions.assertThat(filterBuilder.filters(operands).optimize())
 					.hasToString(
 							"(a==a0|b==b0)&(a==a1|b==b1)&(a==a2|b==b2)&(a==a3|b==b3)&(a==a4|b==b4)&(a==a5|b==b5)&(a==a6|b==b6)&(a==a7|b==b7)&(a==a8|b==b8)&(a==a9|b==b9)&(a==a10|b==b10)&(a==a11|b==b11)&(a==a12|b==b12)&(a==a13|b==b13)&(a==a14|b==b14)&(a==a15|b==b15)");
 		}
 	}
 
+	// Similar to `testAnd_Large_onlyOrs` but with a helping filter
 	@Test
 	public void testAnd_Large_andMatchOnlyOne() {
+		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
+
+		// In this case, given the hint, we do not need any cartesianProduct
+		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
+
+		// `(a0|b0)&(a1|b1)&(a2|b2)&...`
 		List<ISliceFilter> operands = IntStream.range(0, 16)
 				.mapToObj(i -> OrFilter.or(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
 				.collect(Collectors.toCollection(ArrayList::new));
@@ -639,7 +567,7 @@ public class TestAndFilter {
 		// Adding a simpler operand may help detecting this is matchNone
 		operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
 
-		Assertions.assertThat(AndFilter.and(operands)).isEqualTo(ISliceFilter.MATCH_NONE);
+		Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer)).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
@@ -713,5 +641,44 @@ public class TestAndFilter {
 		Assertions.assertThat(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), combined).optimize())
 				.isEqualTo(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), optimized).optimize());
 
+	}
+
+	@Test
+	public void testAndOr_contradictoryIns() {
+		// b has 3 options, c has 3 options, d has 2 options (post simplification by packing columns)
+		AdhocUnsafe.cartesianProductLimit = 3 * 3 * 2;
+
+		try {
+			FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
+			ISliceFilter combined =
+					FilterBuilder
+							.and(ColumnFilter.equalTo("a", "a1"),
+									ColumnFilter.matchIn("b", "b1", "b2", "b3"),
+									ColumnFilter.matchIn("c", "c1", "c2", "c3"),
+									ColumnFilter.notEqualTo("d", "d1"),
+									ColumnFilter.matchIn("d", "d1", "d2", "d3"))
+							.optimize(optimizer);
+
+			Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&d=in=(d2,d3)");
+			Assertions.assertThat(nbSkip).hasValue(0);
+		} finally {
+			AdhocUnsafe.resetProperties();
+		}
+	}
+
+	@Test
+	public void testAndOr_orStricterThanSimplerAnd() {
+		ISliceFilter combined =
+				FilterBuilder
+						.and(ColumnFilter.matchIn("a", "a1", "a2", "a3"),
+								ColumnFilter.matchIn("b", "b1", "b2", "b3"),
+								FilterBuilder
+										.or(ColumnFilter.matchIn("a", "a1", "a2", "a4"),
+												ColumnFilter.matchIn("b", "b1", "b2", "b4"))
+										.combine())
+						.optimize(optimizer);
+
+		Assertions.assertThat(combined).hasToString("a=in=(a1,a2,a3)&b=in=(b1,b2,b3)&(a=in=(a1,a2)|b=in=(b1,b2))");
+		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 }

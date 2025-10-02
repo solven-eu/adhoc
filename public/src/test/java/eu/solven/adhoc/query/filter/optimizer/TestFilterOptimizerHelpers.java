@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.query.filter.optimizer;
 
 import java.util.List;
 import java.util.Map;
@@ -32,11 +32,18 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestFilterOptimizerHelpers {
-	FilterOptimizerHelpers optimizer = new FilterOptimizerHelpers();
+	FilterOptimizer optimizer = FilterOptimizer.builder().build();
 
 	AtomicBoolean hasSimplified = new AtomicBoolean();
 
@@ -109,5 +116,14 @@ public class TestFilterOptimizerHelpers {
 		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
 		Assertions.assertThat(strippedOr)
 				.containsExactly(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1")));
+	}
+
+	@Test
+	public void testPack_InAndOutIsEmpty() {
+		FilterOptimizer helper = FilterOptimizer.builder().build();
+		ImmutableSet<? extends ISliceFilter> packed = helper.packColumnFilters(
+				ImmutableSet.of(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.matchIn("d", "d1", "d2", "d3")));
+
+		Assertions.assertThat((Set) packed).hasSize(1).containsExactly(ColumnFilter.matchIn("d", "d2", "d3"));
 	}
 }

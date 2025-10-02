@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -60,8 +61,10 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -71,7 +74,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
-
 	final AdhocFactories factories;
 	final String table;
 	final ICubeQuery query;
@@ -95,6 +97,12 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	// From cache
 	final Map<CubeQueryStep, ISliceToValue> stepToValue = new LinkedHashMap<>();
 
+	// Used to store transient information, like slow-to-evaluate information
+	// Should be a threadSafe implementation
+	// It is a unique instance, available to all CubeQuerySteps
+	@NonNull
+	Map<Object, Object> crossStepsCache = new ConcurrentHashMap<>();
+
 	final IMeasureResolver measureResolver;
 
 	public QueryStepsDagBuilder(AdhocFactories factories,
@@ -107,6 +115,10 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		this.measureResolver = canResolveMeasures;
 		this.query = query;
 		this.queryStepCache = queryStepCache;
+
+		// Rely on cache as this will be used only through a single query
+		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
+		crossStepsCache.put(CubeQueryStep.KEY_FILTER_OPTIMIZER, filterOptimizer);
 	}
 
 	protected void addRoot(IMeasure queriedMeasure) {
@@ -208,6 +220,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		if (addedDag != addedMultigraph) {
 			throw new IllegalStateException("Inconsistent vertices around step=%s".formatted(step));
 		}
+
+		// BEWARE Is this bad-design? Should the transverseCache be in its own field?
+		step.getCache().put(CubeQueryStep.KEY_CACHE_TRANSVERSE, crossStepsCache);
 
 		if (hasCache) {
 			// result from cache : no need to request for underlyings

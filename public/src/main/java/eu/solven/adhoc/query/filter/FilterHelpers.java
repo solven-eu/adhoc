@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,7 +32,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -41,6 +39,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -251,23 +250,7 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static ISliceFilter commonAnd(Set<? extends ISliceFilter> filters) {
-		if (filters.isEmpty()) {
-			return ISliceFilter.MATCH_ALL;
-		} else if (filters.size() == 1) {
-			return filters.iterator().next();
-		}
-
-		Iterator<? extends ISliceFilter> iterator = filters.iterator();
-		// Common parts are initialized with all parts of the first filter
-		Set<ISliceFilter> commonParts = new LinkedHashSet<>(splitAnd(iterator.next()));
-
-		while (iterator.hasNext()) {
-			Set<ISliceFilter> nextFilterParts = new LinkedHashSet<>(splitAnd(iterator.next()));
-
-			commonParts = Sets.intersection(commonParts, nextFilterParts);
-		}
-
-		return FilterBuilder.and(commonParts).optimize();
+		return new FilterUtility(AdhocUnsafe.sliceFilterOptimizer).commonAnd(filters);
 	}
 
 	/**
@@ -278,8 +261,7 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static ISliceFilter commonOr(ImmutableSet<? extends ISliceFilter> filters) {
-		// common `OR` in `a|b` and `a|c` is related with negation of the common `AND` between `!a&!b` and `!a&!c`
-		return commonAnd(filters.stream().map(ISliceFilter::negate).collect(Collectors.toSet())).negate();
+		return new FilterUtility(AdhocUnsafe.sliceFilterOptimizer).commonOr(filters);
 	}
 
 	/**
@@ -384,6 +366,9 @@ public class FilterHelpers {
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
 	 */
+	// if `a&b=a` then a is stricter than b, as a is enough to imply b
+	// then `a&b|b=a|b`
+	// then `b=a|b` then b is laxer than a, as b is enough to cover a
 	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
 		if (stricter instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
 			return isStricterThan(notLaxer.getNegated(), notStricter.getNegated());
@@ -455,13 +440,24 @@ public class FilterHelpers {
 	}
 
 	/**
+	 * `laxer` is laxer than `stricter` if any row matched by `stricter` it also matched by `laxer`.
+	 * 
+	 * @param laxer
+	 * @param stricter
+	 * @return
+	 */
+	public static boolean isLaxerThan(ISliceFilter laxer, ISliceFilter stricter) {
+		return isStricterThan(laxer.negate(), stricter.negate());
+	}
+
+	/**
 	 * 
 	 * @param where
 	 *            some `WHERE` clause
 	 * @param filter
 	 *            some `FILTER` clause
 	 * @return an equivalent `FILTER` clause, simplified given the `WHERE` clause, considering the WHERE and FILTER
-	 *         clauses are combined with`AND`. `WHERE` may or may not be laxer than `FILTER`.
+	 *         clauses are combined with`AND`. `WHERE` may or may not be laxer than `FILTER`. `output&where=filter`
 	 */
 	public static ISliceFilter stripWhereFromFilter(ISliceFilter where, ISliceFilter filter) {
 		if (where.isMatchAll()) {
@@ -484,13 +480,26 @@ public class FilterHelpers {
 
 			// For each part of `FILTER`, reject those already filtered in `WHERE`
 			for (ISliceFilter subFilter : andOperands) {
-				boolean whereCoversSubFilter = isStricterThan(where, subFilter);
+				ISliceFilter simplerSubFilter;
+				if (subFilter.equals(filter)) {
+					// Break cycle when we reach simplest filters
+					simplerSubFilter = subFilter;
+				} else {
+					simplerSubFilter = stripWhereFromFilter(where, subFilter);
+				}
 
-				if (!whereCoversSubFilter) {
-					notInWhere.add(subFilter);
+				if (andMatchNone(where, simplerSubFilter)) {
+					return ISliceFilter.MATCH_NONE;
+				} else {
+					boolean whereCoversSubFilter = isStricterThan(where, simplerSubFilter);
+
+					if (!whereCoversSubFilter) {
+						notInWhere.add(simplerSubFilter);
+					}
 				}
 			}
-			postAnd = FilterBuilder.and(notInWhere).optimize();
+			// `.combine` to break cycle, and output has not reason to be more optimized than input
+			postAnd = FilterBuilder.and(notInWhere).combine();
 		}
 
 		// Given the FILTER, we reject the OR operands already rejected by WHERE
@@ -503,23 +512,47 @@ public class FilterHelpers {
 			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
 			// For each part of `FILTER`, reject those already filtered in `WHERE`
 			for (ISliceFilter subFilter : orOperands) {
-				boolean whereRejectsSubFilter =
-						ISliceFilter.MATCH_NONE.equals(FilterBuilder.and(where, subFilter).optimize());
+				ISliceFilter simplerSubFilter;
+				if (subFilter.equals(filter)) {
+					// Break cycle when we reach simplest filters
+					simplerSubFilter = subFilter;
+				} else {
+					simplerSubFilter = stripWhereFromFilter(where, subFilter);
+				}
 
-				if (!whereRejectsSubFilter) {
-					notInWhere.add(subFilter);
+				if (andMatchNone(where, simplerSubFilter)) {
+					continue;
+				} else {
+					boolean whereRejectsSubFilter = isStricterThan(where, simplerSubFilter);
+
+					if (!whereRejectsSubFilter) {
+						notInWhere.add(simplerSubFilter);
+					}
 				}
 			}
 
-			postOr = FilterBuilder.or(notInWhere).optimize();
+			// `.combine` to break cycle, and output has not reason to be more optimized than input
+			postOr = FilterBuilder.or(notInWhere).combine();
 		}
 
 		return postOr;
 	}
 
-	public static ISliceFilter stripWhereFromFilterOr(ISliceFilter where, ISliceFilter filter) {
-		// Given `a`, turns `a|b|c&d` into `b|c&d`
-		return stripWhereFromFilter(where.negate(), filter.negate()).negate();
+	// `a&b=matchNone` is equivalent to `a includes !b`, which is equivalent to `a is stricter than !b`
+	protected static boolean andMatchNone(ISliceFilter left, ISliceFilter right) {
+		return isStricterThan(left, right.negate());
+	}
+
+	/**
+	 * Similar to {@link #stripWhereFromFilter(ISliceFilter, ISliceFilter)} but for an OR.
+	 * 
+	 * @param contribution
+	 * @param filter
+	 * @return a {@link ISliceFilter} so that `contribution|output=filter`.
+	 */
+	public static ISliceFilter simplifyOrGivenContribution(ISliceFilter contribution, ISliceFilter filter) {
+		// Given `WHERE:a`, turns `FILTER:a|b|c&d` into `FILTER:b|c&d`
+		return stripWhereFromFilter(contribution.negate(), filter.negate()).negate();
 	}
 
 }

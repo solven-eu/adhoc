@@ -25,25 +25,32 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Standard implementation for {@link ITableQueryOptimizerFactory}.
  * 
  * @author Benoit Lacelle
  */
+@RequiredArgsConstructor
 public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
+
+	// final IFilterOptimizerFactory filterOptimizerFactory;
 
 	@Override
 	public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
 		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
-			return new TableQueryOptimizerNone(factories);
+			IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
+			return new TableQueryOptimizerNone(factories, filterOptimizer);
 		} else {
 			return makeOptimizer(factories);
 		}
 	}
 
 	protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
-		return new TableQueryOptimizer(factories);
+		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
+		return new TableQueryOptimizer(factories, filterOptimizer);
 	}
 
 }

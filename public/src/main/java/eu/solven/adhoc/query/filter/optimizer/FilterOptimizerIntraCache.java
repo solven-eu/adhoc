@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.query.filter.optimizer;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import java.util.Collection;
+
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import lombok.Builder.Default;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * A boolean `not`/`!`.
+ * An {@link IFilterOptimizer} which relies on a cache for given `.optimize`, but do not cache anything o nthe
+ * long-running. It is especially relevant as the optimization are often recursive.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-@Jacksonized
-public class NotFilter implements INotFilter {
+@Slf4j
+@SuperBuilder
+public class FilterOptimizerIntraCache implements IFilterOptimizer {
+	@Default
+	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
-	@NonNull
-	final ISliceFilter negated;
+	};
 
-	@Override
-	public boolean isNot() {
-		return true;
+	protected FilterOptimizerWithCache makeWithCache() {
+		return FilterOptimizerWithCache.builder().listener(listener).build();
 	}
 
 	@Override
-	public String toString() {
-		return "!(%s)".formatted(negated);
+	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		return makeWithCache().and(filters, willBeNegated);
 	}
 
 	@Override
-	public ISliceFilter negate() {
-		return negated;
+	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+		return makeWithCache().or(filters);
 	}
 
-	public static ISliceFilter not(ISliceFilter filter) {
-		return FilterBuilder.not(filter).optimize();
+	@Override
+	public ISliceFilter not(ISliceFilter filter) {
+		return makeWithCache().not(filter);
 	}
-
 }

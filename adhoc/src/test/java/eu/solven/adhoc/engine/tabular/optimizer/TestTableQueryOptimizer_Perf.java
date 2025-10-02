@@ -49,6 +49,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTableQueryOptimizer_Perf {
@@ -56,7 +57,8 @@ public class TestTableQueryOptimizer_Perf {
 	int cardinalityIn = 1_000_000;
 	int cardinalityOut = 1000;
 
-	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build());
+	TableQueryOptimizer optimizer =
+			new TableQueryOptimizer(AdhocFactories.builder().build(), FilterOptimizer.builder().build());
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
 	Map<CubeQueryStep, ISliceToValue> inducers = new LinkedHashMap<>();
 

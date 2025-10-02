@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
@@ -37,7 +38,9 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +54,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class FiltratorQueryStep extends ATransformatorQueryStep {
+
 	final Filtrator filtrator;
 	@Getter(AccessLevel.PROTECTED)
 	final AdhocFactories factories;
@@ -64,10 +68,14 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		CubeQueryStep underlyingStep = CubeQueryStep.edit(step)
-				.filter(AndFilter.and(step.getFilter(), filtrator.getFilter()))
-				.measure(filtrator.getUnderlying())
-				.build();
+		// Do the filter optimizations within a single filterOptimizer through the whole query
+		Map<Object, Object> transverseCache = step.getTransverseCache();
+		IFilterOptimizer optimizer = (IFilterOptimizer) transverseCache.get(CubeQueryStep.KEY_FILTER_OPTIMIZER);
+
+		// the filter is optimized as it is used as key in a hashStructure
+		ISliceFilter combinedFilter = FilterBuilder.and(step.getFilter(), filtrator.getFilter()).optimize(optimizer);
+		CubeQueryStep underlyingStep =
+				CubeQueryStep.edit(step).filter(combinedFilter).measure(filtrator.getUnderlying()).build();
 		return Collections.singletonList(underlyingStep);
 	}
 

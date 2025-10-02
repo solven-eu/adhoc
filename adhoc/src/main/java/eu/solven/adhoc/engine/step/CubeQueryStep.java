@@ -42,6 +42,7 @@ import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
@@ -70,7 +71,10 @@ import lombok.Value;
 		"cache" })
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
-public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
+public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions, IHasCache {
+	public static final String KEY_CACHE_TRANSVERSE = "adhoc-transverseCache";
+	public static final String KEY_FILTER_OPTIMIZER = "adhoc-filterOptimizer";
+
 	private final long id = AdhocUnsafe.nextQueryStepIndex();
 
 	@NonNull
@@ -142,6 +146,17 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 	@Override
 	public boolean isDebug() {
 		return getOptions().contains(StandardQueryOptions.DEBUG) || measure.getTags().contains(IHasTags.TAG_DEBUG);
+	}
+
+	@Override
+	public void invalidateAll() {
+		Map<Object, Object> transverseCache = getTransverseCache();
+		cache.clear();
+		cache.put(KEY_CACHE_TRANSVERSE, transverseCache);
+	}
+
+	public Map<Object, Object> getTransverseCache() {
+		return (Map<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
 	}
 
 }

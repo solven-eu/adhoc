@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.query.filter.optimizer;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import java.util.Collection;
+
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 /**
- * A boolean `not`/`!`.
+ * Enable evaluating the complexity of a {@link ISliceFilter}. Typically used to choose a minimizing representation
+ * amongst equivalent ones.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-@Jacksonized
-public class NotFilter implements INotFilter {
+public interface IFilterCostFunction {
+	/**
+	 * Lower cost is better.
+	 * 
+	 * @param filter
+	 * @return
+	 */
+	long cost(ISliceFilter filter);
 
-	@NonNull
-	final ISliceFilter negated;
+	long cost(IValueMatcher m);
 
-	@Override
-	public boolean isNot() {
-		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "!(%s)".formatted(negated);
-	}
-
-	@Override
-	public ISliceFilter negate() {
-		return negated;
-	}
-
-	public static ISliceFilter not(ISliceFilter filter) {
-		return FilterBuilder.not(filter).optimize();
+	/**
+	 * Evaluate the cost of an `AND` given its operands
+	 * 
+	 * @param operands
+	 * @return the cost of given operands, considered as being AND together.
+	 */
+	default long cost(Collection<? extends ISliceFilter> operands) {
+		// By default, the cost is additive through AND operands
+		return operands.stream().mapToLong(this::cost).sum();
 	}
 
 }
