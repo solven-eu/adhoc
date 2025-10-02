@@ -33,12 +33,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
@@ -79,6 +81,7 @@ import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -89,13 +92,16 @@ import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Holds the execution logic related with an {@link ITableQueryEngine}, given a {@link ITableQueryOptimizer}.
+ * Holds the execution logic related with an {@link ITableQueryEngine}, given a {@link ITableQueryOptimizer} in the
+ * context of a single {@link TableQuery}.
  * 
  * @author Benoit Lacelle
  */
@@ -107,6 +113,7 @@ public class TableQueryEngineBootstrapped {
 
 	@NonNull
 	@Default
+	@Getter(AccessLevel.PRIVATE)
 	final AdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
@@ -115,6 +122,9 @@ public class TableQueryEngineBootstrapped {
 
 	@NonNull
 	final ITableQueryOptimizer optimizer;
+
+	final Supplier<IFilterOptimizer> filterOptimizerSupplier =
+			Suppliers.memoize(() -> this.getFactories().getFilterOptimizerFactory().makeOptimizerWithCache());
 
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures
@@ -617,7 +627,8 @@ public class TableQueryEngineBootstrapped {
 	}
 
 	protected ISliceFilter recombineWhereAndFilter(TableQueryV2 dagTableQuery, FilteredAggregator filteredAggregator) {
-		return FilterBuilder.and(dagTableQuery.getFilter(), filteredAggregator.getFilter()).optimize();
+		return FilterBuilder.and(dagTableQuery.getFilter(), filteredAggregator.getFilter())
+				.optimize(filterOptimizerSupplier.get());
 	}
 
 	/**

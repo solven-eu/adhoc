@@ -197,9 +197,15 @@ public class FilterOptimizer implements IFilterOptimizer {
 			ISliceFilter simpler =
 					FilterHelpers.stripWhereFromFilter(FilterBuilder.and(contextAsAnds).combine(), oneToSimplify);
 
-			if (costFunction.cost(simpler) < costFunction.cost(oneToSimplify)) {
-				asAnds.set(i, simpler);
-			}
+			// Optimize as `stripWhereFromFilter` may break some optimization
+			// Typically, `a=in=(a1,a2,a4)|b=in=(b1,b2,b4)` would be turned into `a==a1|a==a2|b==b1|b==b2` if a4 and b4
+			// are not relevant.
+			// It will help following `.stripWhereFromFilter`
+			simpler = optimizeOperand(simpler);
+
+			// `simpler` is simpler or same to the original expression: let's register it without trying it to compare
+			// with the original expression.
+			asAnds.set(i, simpler);
 		}
 
 		return ImmutableSet.copyOf(asAnds);
@@ -223,6 +229,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 		} else if (f instanceof INotFilter notFilter) {
 			return not(notFilter.getNegated());
 		} else {
+			// BEWARE Should we have optimizations for IColumnFilter/IValueMatchers?
 			return f;
 		}
 	}
