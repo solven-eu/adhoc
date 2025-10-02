@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -35,6 +36,7 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -145,6 +147,20 @@ public class TestTableQueryOptimizer {
 	}
 
 	@Test
+	public void testCanInduce_Same() {
+		Assertions.assertThat(optimizer.canInduce(
+				CubeQueryStep.edit(step)
+						.filter(ColumnFilter.equalTo("c", "c1"))
+						.groupBy(GroupByColumns.named("d"))
+						.build(),
+				CubeQueryStep.edit(step)
+						.filter(ColumnFilter.equalTo("c", "c1"))
+						.groupBy(GroupByColumns.named("d"))
+						.build()))
+				.isTrue();
+	}
+
+	@Test
 	public void testCanInduce_DifferentTopology() {
 		Assertions.assertThat(optimizer.canInduce(
 				// groupBy (g,h) matchAll
@@ -205,6 +221,52 @@ public class TestTableQueryOptimizer {
 										.build()))
 				// while we're guaranteed to see all input, which are not able to filter out irrelevant input
 				// given the filter on the not groupedBy column
+				.isFalse();
+	}
+
+	@Test
+	public void testCanInduce_inducedIsStricterOnGroupBy() {
+		Assertions
+				.assertThat(
+						optimizer.canInduce(
+								CubeQueryStep.edit(step)
+										.groupBy(GroupByColumns.named("a"))
+										.filter(FilterBuilder
+												.and(ColumnFilter.matchIn("a", "a1", "a2"),
+														ColumnFilter.equalTo("b", "b3"))
+												.combine())
+										.build(),
+								// induced has a stricter filter, based on a column which is groupedBy in the inducer
+								CubeQueryStep.edit(step)
+										.groupBy(GroupByColumns.grandTotal())
+										.filter(FilterBuilder
+												.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b3"))
+												.combine())
+										.build()))
+				// true because filter is inducable (given G is groupedBy, we can ensure to get ride of C rows)
+				.isTrue();
+	}
+
+	@Test
+	public void testCanInduce_inducedIsStricterOnGroupBy_OrDifferentColumns_groupByLaxerColumn() {
+		Assertions
+				.assertThat(
+						optimizer.canInduce(
+								CubeQueryStep.edit(step)
+										.groupBy(GroupByColumns.named("b"))
+										.filter(FilterBuilder
+												.and(OrFilter.or(Map.of("a", "a1", "b", "b2")),
+														ColumnFilter.equalTo("c", "c3"))
+												.combine())
+										.build(),
+								// induced has a stricter filter, based on a column which is groupedBy in the inducer
+								CubeQueryStep.edit(step)
+										.groupBy(GroupByColumns.grandTotal())
+										.filter(FilterBuilder
+												.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("c", "c3"))
+												.combine())
+										.build()))
+				// false as the removed column from the filter is not enough to check the induced filter
 				.isFalse();
 	}
 

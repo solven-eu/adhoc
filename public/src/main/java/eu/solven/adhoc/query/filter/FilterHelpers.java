@@ -439,6 +439,13 @@ public class FilterHelpers {
 		return AndMatcher.and(stricter, laxer).equals(stricter);
 	}
 
+	/**
+	 * `laxer` is laxer than `stricter` if any row matched by `stricter` it also matched by `laxer`.
+	 * 
+	 * @param laxer
+	 * @param stricter
+	 * @return
+	 */
 	public static boolean isLaxerThan(ISliceFilter laxer, ISliceFilter stricter) {
 		return isStricterThan(laxer.negate(), stricter.negate());
 	}
