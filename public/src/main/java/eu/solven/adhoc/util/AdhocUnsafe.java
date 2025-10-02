@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
 
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.pepper.thread.NamingForkJoinWorkerThreadFactory;
 import lombok.Getter;
@@ -220,7 +220,11 @@ public class AdhocUnsafe {
 	public static int cartesianProductLimit = 16 * 1024;
 	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
-	public static IFilterOptimizer sliceFilterOptimizer = FilterOptimizer.builder().build();
+	/**
+	 * Default {@link IFilterOptimizer}, used by static methods. As this one is maintained in the long-run, it should
+	 * have no persistent cache, or with a proper expiring policy.
+	 */
+	public static IFilterOptimizer sliceFilterOptimizer = FilterOptimizerIntraCache.builder().build();
 
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios

@@ -47,11 +47,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuperBuilder
 public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCache {
-	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNegated = CacheBuilder.newBuilder().build();
-	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNotNegated = CacheBuilder.newBuilder().build();
+	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNegated = CacheBuilder.newBuilder().build();
+	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNotNegated = CacheBuilder.newBuilder().build();
 
-	final Cache<Set<ISliceFilter>, ISliceFilter> optimizedOrs = CacheBuilder.newBuilder().build();
-	final Cache<ISliceFilter, ISliceFilter> optimizedNot = CacheBuilder.newBuilder().build();
+	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedOrs = CacheBuilder.newBuilder().build();
+	protected final Cache<ISliceFilter, ISliceFilter> optimizedNot = CacheBuilder.newBuilder().build();
 
 	@Override
 	public void invalidateAll() {

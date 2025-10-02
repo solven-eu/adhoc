@@ -45,6 +45,7 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.INotFilter;
@@ -110,10 +111,10 @@ public class FilterOptimizer implements IFilterOptimizer {
 	protected ISliceFilter notCachedAnd(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
 		// First, we ensure operands are themselves optimized. This may lead to duplicate work, as later step may
 		// themselves optimize. But it is useful to ensure consistency of equivalent inputs.
-		filters = optimizeOperands(filters);
+		ImmutableSet<? extends ISliceFilter> optimizedOperands = optimizeOperands(filters);
 
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
-		ImmutableSet<? extends ISliceFilter> flatten = splitAnd(ImmutableSet.copyOf(filters));
+		ImmutableSet<? extends ISliceFilter> flatten = splitAnd(optimizedOperands);
 
 		// Normalization refers to grouping columns together, and discarding irrelevant operands
 		// Do it before cartesianProduct, to simplify the cartesianProduct
@@ -139,11 +140,11 @@ public class FilterOptimizer implements IFilterOptimizer {
 
 		if (stripRedundancyPost.size() >= 2) {
 			// `!(a==a1&b==b1)&!(a==a1&b==b2)&!(a==a1&b==b3)` can be turned into `a!=a1|b=out=(b1,b2,b3)`
-			ISliceFilter commonOr = FilterHelpers.commonOr(stripRedundancyPost);
+			ISliceFilter commonOr = FilterUtility.builder().optimizer(this).build().commonOr(stripRedundancyPost);
 
 			if (!ISliceFilter.MATCH_NONE.equals(commonOr)) {
 				List<ISliceFilter> toAnd = stripRedundancyPost.stream()
-						.map(f -> FilterHelpers.stripWhereFromFilterOr(commonOr, f))
+						.map(f -> FilterHelpers.simplifyOrGivenContribution(commonOr, f))
 						.toList();
 
 				ISliceFilter others = and(toAnd, false);
@@ -210,7 +211,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 	 * @param filters
 	 * @return a {@link Set} of operands, guaranteed to be optimized.
 	 */
-	protected Set<? extends ISliceFilter> optimizeOperands(Collection<? extends ISliceFilter> filters) {
+	protected ImmutableSet<? extends ISliceFilter> optimizeOperands(Collection<? extends ISliceFilter> filters) {
 		return filters.stream().map(this::optimizeOperand).collect(ImmutableSet.toImmutableSet());
 	}
 
