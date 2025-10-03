@@ -68,8 +68,8 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 				.name("FRoverUS")
 				.underlying("d")
 				.combinationKey(DivideCombination.KEY)
-				.numeratorFilter(ColumnFilter.equalTo("country", "FR"))
-				.denominatorFilter(ColumnFilter.equalTo("country", "US"))
+				.numeratorFilter(ColumnFilter.matchEq("country", "FR"))
+				.denominatorFilter(ColumnFilter.matchEq("country", "US"))
 				.build());
 
 		forest.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());

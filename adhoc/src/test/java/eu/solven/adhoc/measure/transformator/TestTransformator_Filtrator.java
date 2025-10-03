@@ -58,7 +58,7 @@ public class TestTransformator_Filtrator extends ADagTest implements IAdhocTestC
 				.addMeasure(Filtrator.builder()
 						.name("filterK1onA1")
 						.underlying("k1")
-						.filter(ColumnFilter.equalTo("a", "a1"))
+						.filter(ColumnFilter.matchEq("a", "a1"))
 						.build())
 
 				.addMeasure(Filtrator.builder()

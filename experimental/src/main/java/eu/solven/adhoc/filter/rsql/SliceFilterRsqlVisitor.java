@@ -34,7 +34,6 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter.ColumnFilterBuilder;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 /**
@@ -67,17 +66,17 @@ public class SliceFilterRsqlVisitor implements RSQLVisitor<ISliceFilter, String>
 		Object argument = arguments.get(0);
 
 		if (RSQLOperators.EQUAL.equals(op)) {
-			return ColumnFilter.equalTo(column, argument);
+			return ColumnFilter.matchEq(column, argument);
 		}
 		if (RSQLOperators.NOT_EQUAL.equals(op)) {
-			return NotFilter.not(ColumnFilter.equalTo(column, argument));
+			return ColumnFilter.matchEq(column, argument).negate();
 		}
 
 		if (RSQLOperators.IN.equals(op)) {
 			return ColumnFilter.builder().column(column).matchIn(arguments).build();
 		}
 		if (RSQLOperators.NOT_IN.equals(op)) {
-			return NotFilter.not(ColumnFilter.builder().column(column).matchIn(arguments).build());
+			return ColumnFilter.builder().column(column).matchIn(arguments).build().negate();
 		}
 
 		// if (!Comparable.class.isAssignableFrom(type)) {

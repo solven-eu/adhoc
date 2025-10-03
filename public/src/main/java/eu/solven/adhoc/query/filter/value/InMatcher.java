@@ -110,7 +110,7 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 			return MATCH_NONE;
 		} else if (unnested.size() == 1) {
 			Object singleValue = AdhocCollectionHelpers.getFirst(unnested);
-			return EqualsMatcher.equalTo(singleValue);
+			return EqualsMatcher.matchEq(singleValue);
 		}
 
 		Map<Boolean, List<Object>> byValueMatcher =
@@ -131,7 +131,7 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 		if (!unnestedNotNull.isEmpty()) {
 			IValueMatcher matcher;
 			if (unnestedNotNull.size() == 1) {
-				matcher = EqualsMatcher.equalTo(unnestedNotNull.getFirst());
+				matcher = EqualsMatcher.matchEq(unnestedNotNull.getFirst());
 			} else {
 				matcher = InMatcher.builder().operands(unnestedNotNull).build();
 			}

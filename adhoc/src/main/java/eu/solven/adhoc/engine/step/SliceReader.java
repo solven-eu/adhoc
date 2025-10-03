@@ -32,7 +32,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -70,7 +70,7 @@ public class SliceReader implements ISliceReader {
 	public ISliceFilter asFilterNoCache() {
 		// AND the slice with the step as the step may express some filters which are not in the slice
 		// e.g. if we filter color=red and groupBy country: slice would express only country=FR
-		ISliceFilter filter = AndFilter.and(sliceFilter, stepFilter);
+		ISliceFilter filter = FilterBuilder.and(sliceFilter, stepFilter).optimize();
 
 		if (filter.isMatchNone()) {
 			// These cases are unclear.

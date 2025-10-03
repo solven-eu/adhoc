@@ -172,7 +172,7 @@ public class TestInMemoryTable {
 		ITabularRecordStream output = table.streamSlices(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.countAsterisk())
-						.filter(ColumnFilter.equalTo("unknownColumn", "someValue"))
+						.filter(ColumnFilter.matchEq("unknownColumn", "someValue"))
 						.build())
 				.build());
 

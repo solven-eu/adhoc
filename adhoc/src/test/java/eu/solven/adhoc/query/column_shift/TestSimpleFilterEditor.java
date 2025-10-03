@@ -40,12 +40,12 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testShiftAll() {
 		ISliceFilter filter = ISliceFilter.MATCH_ALL;
-		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(ColumnFilter.equalTo("c", "v1"));
+		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1")).isEqualTo(ColumnFilter.matchEq("c", "v1"));
 	}
 
 	@Test
 	public void testShiftColumn() {
-		ISliceFilter filter = ColumnFilter.equalTo("a", "a1");
+		ISliceFilter filter = ColumnFilter.matchEq("a", "a1");
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1"))
 				.isEqualTo(AndFilter.and(Map.of("a", "a1", "c", "v1")));
 	}

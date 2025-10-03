@@ -36,7 +36,7 @@ public class TestShiftedValueMatcher {
 	@Test
 	public void testShiftEquals() {
 		Function shiftFunction = (Function) l -> (((Number) l).longValue() + 1);
-		IValueMatcher shifted = ShiftedValueMatcher.shift(EqualsMatcher.equalTo(123), shiftFunction);
+		IValueMatcher shifted = ShiftedValueMatcher.shift(EqualsMatcher.matchEq(123), shiftFunction);
 
 		Assertions.assertThat(shifted)
 				.isInstanceOfSatisfying(EqualsMatcher.class,

@@ -54,7 +54,7 @@ public class TestDefaultQueryPreparator {
 		forest.addMeasure(Aggregator.sum("m"));
 
 		StandardQueryPreparator queryPreparator =
-				StandardQueryPreparator.builder().implicitFilter(f -> ColumnFilter.equalTo("c", "v")).build();
+				StandardQueryPreparator.builder().implicitFilter(f -> ColumnFilter.matchEq("c", "v")).build();
 
 		ICubeQuery query = CubeQuery.builder().measure("m").build();
 		AdhocSubQuery subQuery =

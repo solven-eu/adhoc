@@ -36,7 +36,7 @@ public class TestMeasurelessQuery {
 		// a measureLess with all fields being customized
 		MeasurelessQuery measureless = MeasurelessQuery.builder()
 				.groupBy(GroupByColumns.named("c"))
-				.filter(ColumnFilter.equalTo("a", "a1"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
 				.option(StandardQueryOptions.DEBUG)
 				.customMarker("somethingCustom")
 				.build();

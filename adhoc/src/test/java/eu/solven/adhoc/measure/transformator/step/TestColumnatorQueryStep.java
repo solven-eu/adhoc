@@ -54,8 +54,8 @@ public class TestColumnatorQueryStep {
 		// semantic?
 		Assertions.assertThat(queryStep.isMonoSelected(ISliceFilter.MATCH_NONE, "c")).isFalse();
 
-		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.equalTo("c", "foo"), "c")).isTrue();
-		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.equalTo("d", "foo"), "c")).isFalse();
+		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.matchEq("c", "foo"), "c")).isTrue();
+		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.matchEq("d", "foo"), "c")).isFalse();
 
 		Assertions.assertThat(queryStep.isMonoSelected(ColumnFilter.matchIn("c", "foo", "bar"), "c")).isFalse();
 	}

@@ -89,17 +89,17 @@ public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestCo
 	@BeforeEach
 	public void feedTable() {
 		manyToManyDefinition.putElementToGroup(
-				Map.of(cElementGender, EqualsMatcher.equalTo("male"), cElementAge, EqualsMatcher.equalTo("young")),
+				Map.of(cElementGender, EqualsMatcher.matchEq("male"), cElementAge, EqualsMatcher.matchEq("young")),
 				Set.of("blue", "yellow"));
 		manyToManyDefinition.putElementToGroup(
-				Map.of(cElementGender, EqualsMatcher.equalTo("male"), cElementAge, EqualsMatcher.equalTo("old")),
+				Map.of(cElementGender, EqualsMatcher.matchEq("male"), cElementAge, EqualsMatcher.matchEq("old")),
 				Set.of("blue"));
 
 		manyToManyDefinition.putElementToGroup(
-				Map.of(cElementGender, EqualsMatcher.equalTo("female"), cElementAge, EqualsMatcher.equalTo("young")),
+				Map.of(cElementGender, EqualsMatcher.matchEq("female"), cElementAge, EqualsMatcher.matchEq("young")),
 				Set.of("red", "yellow"));
 		manyToManyDefinition.putElementToGroup(
-				Map.of(cElementGender, EqualsMatcher.equalTo("female"), cElementAge, EqualsMatcher.equalTo("old")),
+				Map.of(cElementGender, EqualsMatcher.matchEq("female"), cElementAge, EqualsMatcher.matchEq("old")),
 				Set.of("red"));
 
 		table().add(Map.of("l", "A", cElementGender, "male", cElementAge, "young", "k1", 123));
@@ -272,7 +272,7 @@ public class TestCubeQuery_ManyToManyND extends ADagTest implements IAdhocTestCo
 				.measure(dispatchedMeasure)
 				.groupByAlso(cGroup)
 				.filter(FilterBuilder
-						.or(ColumnFilter.equalTo(cElementGender, "male"), ColumnFilter.equalTo(cElementAge, "young"))
+						.or(ColumnFilter.matchEq(cElementGender, "male"), ColumnFilter.matchEq(cElementAge, "young"))
 						.optimize())
 				.build());
 

@@ -53,7 +53,7 @@ public class ShiftedValueMatcher implements IValueMatcher {
 
 	public static IValueMatcher shift(IValueMatcher originalMatcher, Function<Object, ?> shift) {
 		if (originalMatcher instanceof EqualsMatcher equalsMatcher) {
-			return EqualsMatcher.equalTo(shift.apply(equalsMatcher.getOperand()));
+			return EqualsMatcher.matchEq(shift.apply(equalsMatcher.getOperand()));
 		} else if (originalMatcher instanceof InMatcher inMatcher) {
 			return InMatcher.isIn(inMatcher.getOperands().stream().map(shift::apply).toList());
 		} else {

@@ -324,8 +324,8 @@ public class TestAtotiMeasureToAdhoc {
 						Filtrator.builder()
 								.name("someLevelFilteringMeasure")
 								.underlying("someAggregatedMeasure")
-								.filter(AndFilter.and(ColumnFilter.equalTo("level0", "someValue"),
-										ColumnFilter.equalTo("level1", 123)))
+								.filter(AndFilter.and(ColumnFilter.matchEq("level0", "someValue"),
+										ColumnFilter.matchEq("level1", 123)))
 								.build());
 	}
 
