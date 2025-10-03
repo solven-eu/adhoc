@@ -65,6 +65,8 @@ public class TestAndFilter {
 
 		Assertions.assertThat(filter.toString()).isEqualTo("matchAll");
 		Assertions.assertThat(filter.isMatchAll()).isTrue();
+
+		Assertions.assertThat(AndFilter.and(Map.of())).isInstanceOf(AndFilter.class).hasToString("matchAll");
 	}
 
 	@Test

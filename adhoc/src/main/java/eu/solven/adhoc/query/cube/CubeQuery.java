@@ -42,7 +42,6 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -163,7 +162,8 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		 * @return the builder
 		 */
 		public CubeQueryBuilder andFilter(ISliceFilter filter) {
-			filter(FilterBuilder.and(build().getFilter(), filter).combine());
+			// BEWARE `.optimize` prevent unnecessary noise (like `.matchAll`), but one may prefer just a `.combine`
+			filter(FilterBuilder.and(build().getFilter(), filter).optimize());
 
 			return this;
 		}
