@@ -332,14 +332,20 @@ public class TestAndFilter {
 
 	@Test
 	public void testGroupByColumn_MultipleComplex_Out_withExplicitLeftover() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchIn("a", "a11", "a21", "b22").negate(),
-				ColumnFilter.matchLike("a", "a%"),
-				ColumnFilter.matchLike("a", "%1"));
+		ISliceFilter a1Anda2 =
+				FilterBuilder
+						.and(ColumnFilter.matchIn("a", "a11", "a21", "b22").negate(),
+								ColumnFilter.matchLike("a", "a%"),
+								ColumnFilter.matchLike("a", "%1"))
+						.optimize();
 
 		Assertions.assertThat(a1Anda2)
-				.isEqualTo(AndFilter.and(ColumnFilter.matchIn("a", "a11", "a21").negate(),
-						ColumnFilter.matchLike("a", "a%"),
-						ColumnFilter.matchLike("a", "%1")));
+				.isEqualTo(
+						FilterBuilder
+								.and(ColumnFilter.matchIn("a", "a11", "a21").negate(),
+										ColumnFilter.matchLike("a", "a%"),
+										ColumnFilter.matchLike("a", "%1"))
+								.optimize());
 	}
 
 	@Test
@@ -354,18 +360,23 @@ public class TestAndFilter {
 
 	@Test
 	public void testGroupByColumn_MultipleComplex_InAndOut() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2", "a21"),
-				ColumnFilter.matchIn("a", "a11", "a21").negate(),
-				ColumnFilter.matchLike("a", "a%"),
-				ColumnFilter.matchLike("a", "%1"));
+		ISliceFilter a1Anda2 =
+				FilterBuilder
+						.and(ColumnFilter.matchIn("a", "a1", "a2", "a21"),
+								ColumnFilter.matchIn("a", "a11", "a21").negate(),
+								ColumnFilter.matchLike("a", "a%"),
+								ColumnFilter.matchLike("a", "%1"))
+						.optimize();
 
 		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testEquals_differentOrders() {
-		ISliceFilter f1Then2 = AndFilter.and(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2"));
-		ISliceFilter f2Then1 = AndFilter.and(ColumnFilter.matchEq("c2", "v2"), ColumnFilter.matchEq("c1", "v1"));
+		ISliceFilter f1Then2 =
+				FilterBuilder.and(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")).optimize();
+		ISliceFilter f2Then1 =
+				FilterBuilder.and(ColumnFilter.matchEq("c2", "v2"), ColumnFilter.matchEq("c1", "v1")).optimize();
 
 		Assertions.assertThat(f1Then2).isEqualTo(f2Then1);
 	}
@@ -383,8 +394,9 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_allNotFilter() {
-		ISliceFilter notA1AndNotA2 = AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2").negate(),
-				ColumnFilter.matchIn("b", "b1", "b2").negate());
+		ISliceFilter notA1AndNotA2 = FilterBuilder
+				.and(ColumnFilter.matchIn("a", "a1", "a2").negate(), ColumnFilter.matchIn("b", "b1", "b2").negate())
+				.optimize();
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands())
@@ -397,7 +409,7 @@ public class TestAndFilter {
 	public void testAnd_allNotFilter_like_2() {
 		List<ISliceFilter> nots =
 				Arrays.asList(ColumnFilter.matchLike("a", "a%").negate(), ColumnFilter.matchLike("b", "b%").negate());
-		ISliceFilter notA1AndNotA2 = AndFilter.and(nots);
+		ISliceFilter notA1AndNotA2 = FilterBuilder.and(nots).optimize();
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands()).containsAll(nots);
@@ -406,7 +418,8 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_allNotMatcher() {
-		ISliceFilter notA1AndNotB1 = AndFilter.and(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1"));
+		ISliceFilter notA1AndNotB1 =
+				FilterBuilder.and(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1")).optimize();
 
 		// TODO Should we simplify the nots?
 		// Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
@@ -424,9 +437,10 @@ public class TestAndFilter {
 	@Test
 	public void testAnd_partialNot() {
 		ISliceFilter notA1AndNotA2 =
-				AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2").negate(), ColumnFilter.matchIn("b", "b1", "b2"));
+				FilterBuilder.and(ColumnFilter.matchIn("a", "a1", "a2").negate(), ColumnFilter.matchIn("b", "b1", "b2"))
+						.optimize();
 		Assertions.assertThat(notA1AndNotA2).isInstanceOf(AndFilter.class);
-		Assertions.assertThat(AndFilter.and(notA1AndNotA2, notA1AndNotA2)).isInstanceOf(AndFilter.class);
+		Assertions.assertThat(FilterBuilder.and(notA1AndNotA2, notA1AndNotA2).optimize()).isInstanceOf(AndFilter.class);
 	}
 
 	@Test
