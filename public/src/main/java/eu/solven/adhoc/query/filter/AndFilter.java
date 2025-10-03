@@ -161,7 +161,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public ISliceFilter negate() {
-		return FilterBuilder.or(getOperands().stream().map(NotFilter::not).toList()).combine();
+		return FilterBuilder.or(getOperands().stream().map(ISliceFilter::negate).toList()).combine();
 	}
 
 }

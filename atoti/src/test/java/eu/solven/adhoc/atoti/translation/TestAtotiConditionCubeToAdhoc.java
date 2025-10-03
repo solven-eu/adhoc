@@ -47,9 +47,9 @@ public class TestAtotiConditionCubeToAdhoc {
 	@Test
 	public void testConditionToFilter_Raw() {
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", "someString"))
-				.isEqualTo(ColumnFilter.equalTo("someLevel", "someString"));
+				.isEqualTo(ColumnFilter.matchEq("someLevel", "someString"));
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", 123))
-				.isEqualTo(ColumnFilter.equalTo("someLevel", 123));
+				.isEqualTo(ColumnFilter.matchEq("someLevel", 123));
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", Arrays.asList("someString", 123)))
 				.isEqualTo(ColumnFilter.matchIn("someLevel", Arrays.asList("someString", 123)));
 
@@ -65,7 +65,7 @@ public class TestAtotiConditionCubeToAdhoc {
 				.isEqualTo(ColumnFilter.MATCH_NONE);
 
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", new EqualCondition("someString")))
-				.isEqualTo(ColumnFilter.equalTo("someLevel", "someString"));
+				.isEqualTo(ColumnFilter.matchEq("someLevel", "someString"));
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", new InCondition("someString")))
 				.isEqualTo(ColumnFilter.matchIn("someLevel", "someString"));
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", new InCondition("someString", 123)))
@@ -93,8 +93,8 @@ public class TestAtotiConditionCubeToAdhoc {
 	@Test
 	public void testConditionToFilter_DatastoreConditions() {
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", BaseConditions.True()))
-				.isEqualTo(ColumnFilter.equalTo("someLevel", "TRUE"));
+				.isEqualTo(ColumnFilter.matchEq("someLevel", "TRUE"));
 		Assertions.assertThat(apConditionToAdhoc.convertToAdhoc("someLevel", BaseConditions.False()))
-				.isEqualTo(ColumnFilter.equalTo("someLevel", "FALSE"));
+				.isEqualTo(ColumnFilter.matchEq("someLevel", "FALSE"));
 	}
 }

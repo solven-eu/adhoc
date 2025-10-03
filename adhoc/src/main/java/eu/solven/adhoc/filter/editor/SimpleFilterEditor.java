@@ -106,7 +106,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 			return filter;
 		} else if (filter.isMatchAll()) {
 			if (filterMode == FilterMode.alwaysShift) {
-				return ColumnFilter.equalTo(column, value);
+				return ColumnFilter.matchEq(column, value);
 			} else {
 				return filter;
 			}
@@ -146,7 +146,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 			return ColumnFilter.builder().column(column).valueMatcher(shiftedValueMatcher).build();
 		} else {
 			// Replace the valueMatcher by the shift
-			return ColumnFilter.equalTo(column, value);
+			return ColumnFilter.matchEq(column, value);
 		}
 	}
 

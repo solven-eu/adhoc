@@ -91,7 +91,7 @@ public class TestComparingMatcher {
 	@Test
 	public void testComparing_equalsInt_compareLong() {
 		// >= 123
-		IValueMatcher equals123 = EqualsMatcher.equalTo(123);
+		IValueMatcher equals123 = EqualsMatcher.matchEq(123);
 		// >= 234
 		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
 
@@ -114,7 +114,7 @@ public class TestComparingMatcher {
 		// >= 123
 		ComparingMatcher comparing123 = ComparingMatcher.builder().greaterThan(true).operand(123).build();
 		// == 234
-		IValueMatcher equals234 = EqualsMatcher.equalTo(234);
+		IValueMatcher equals234 = EqualsMatcher.matchEq(234);
 
 		Assertions.assertThat(AndMatcher.and(comparing123, equals234)).isEqualTo(equals234);
 		Assertions.assertThat(OrMatcher.or(comparing123, equals234)).isEqualTo(comparing123);
@@ -123,7 +123,7 @@ public class TestComparingMatcher {
 	@Test
 	public void testComparing_and_greaterThan_Equals_incompatible() {
 		// == 123
-		IValueMatcher equals123 = EqualsMatcher.equalTo(123);
+		IValueMatcher equals123 = EqualsMatcher.matchEq(123);
 		// >= 234
 		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
 
@@ -200,7 +200,7 @@ public class TestComparingMatcher {
 		ComparingMatcher comparing234 =
 				ComparingMatcher.builder().greaterThan(true).matchIfEqual(false).operand(value).build();
 
-		IValueMatcher greaterOrEquals = OrMatcher.or(EqualsMatcher.equalTo(value), comparing234);
+		IValueMatcher greaterOrEquals = OrMatcher.or(EqualsMatcher.matchEq(value), comparing234);
 		Assertions.assertThat(greaterOrEquals).isInstanceOfSatisfying(ComparingMatcher.class, comparing -> {
 			Assertions.assertThat(comparing)
 					.isEqualTo(ComparingMatcher.builder().greaterThan(true).matchIfEqual(true).operand(value).build());

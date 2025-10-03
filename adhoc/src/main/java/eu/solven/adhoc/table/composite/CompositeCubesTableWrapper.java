@@ -80,7 +80,6 @@ import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -494,7 +493,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 				// BEWARE Filtering an unknown column?
 				return ISliceFilter.MATCH_ALL;
 			} else {
-				return NotFilter.not(negatedForColumns);
+				return negatedForColumns.negate();
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();

@@ -38,7 +38,7 @@ public class TestStandardCostFunction {
 
 	@Test
 	public void testCostFunction() {
-		Assertions.assertThat(costFunction.cost(ColumnFilter.equalTo("a", "a1"))).isEqualTo(3);
+		Assertions.assertThat(costFunction.cost(ColumnFilter.matchEq("a", "a1"))).isEqualTo(3);
 
 		Assertions
 				.assertThat(
@@ -59,9 +59,10 @@ public class TestStandardCostFunction {
 					Assertions.assertThat(costFunction.cost(f)).isEqualTo(3 + 5 + 3 + 3);
 				});
 
-		Assertions.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-				FilterBuilder.or(NotFilter.not(ColumnFilter.matchLike("b", "b%")), ColumnFilter.matchLike("c", "c%"))
-						.optimize()))
+		Assertions
+				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
+						FilterBuilder.or(ColumnFilter.matchLike("b", "b%").negate(), ColumnFilter.matchLike("c", "c%"))
+								.optimize()))
 				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
 				// `LikeMatcher(pattern=c%)`)")
 				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
@@ -73,24 +74,24 @@ public class TestStandardCostFunction {
 	@Test
 	public void testCostFunction_notOfNot() {
 		// `a==a1`
-		Assertions.assertThat(costFunction.cost(ColumnFilter.match("c", EqualsMatcher.equalTo(123L)))).isEqualTo(3);
+		Assertions.assertThat(costFunction.cost(ColumnFilter.match("c", EqualsMatcher.matchEq(123L)))).isEqualTo(3);
 
 		// `a!=a1`
 		Assertions
 				.assertThat(costFunction.cost(
-						ColumnFilter.match("c", NotMatcher.builder().negated(EqualsMatcher.equalTo(123L)).build())))
+						ColumnFilter.match("c", NotMatcher.builder().negated(EqualsMatcher.matchEq(123L)).build())))
 				.isEqualTo(5);
 
 		// `!(a==a1)`
 		Assertions
 				.assertThat(costFunction.cost(
-						NotFilter.builder().negated(ColumnFilter.match("c", EqualsMatcher.equalTo(123L))).build()))
+						NotFilter.builder().negated(ColumnFilter.match("c", EqualsMatcher.matchEq(123L))).build()))
 				.isEqualTo(2 * 3);
 
 		// `not(not(a==a1))`
 		Assertions.assertThat(costFunction.cost(ColumnFilter.match("c",
 				NotMatcher.builder()
-						.negated(NotMatcher.builder().negated(EqualsMatcher.equalTo(123L)).build())
+						.negated(NotMatcher.builder().negated(EqualsMatcher.matchEq(123L)).build())
 						.build())))
 				.isEqualTo(2 * 2 * 3);
 	}
@@ -100,7 +101,7 @@ public class TestStandardCostFunction {
 		List<ISliceFilter> likes = List.of(ColumnFilter.matchLike("a", "a%"),
 				ColumnFilter.matchLike("b", "b%"),
 				ColumnFilter.matchLike("c", "c%"));
-		List<ISliceFilter> nots = likes.stream().map(NotFilter::not).toList();
+		List<ISliceFilter> nots = likes.stream().map(ISliceFilter::negate).toList();
 
 		// And over 3 Not
 		Assertions.assertThat(costFunction.cost(AndFilter.builder().ands(nots).build())).isEqualTo(10 + 10 + 10);

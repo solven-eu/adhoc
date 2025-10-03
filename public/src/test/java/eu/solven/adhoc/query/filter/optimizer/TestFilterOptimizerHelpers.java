@@ -38,7 +38,6 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
@@ -70,8 +69,8 @@ public class TestFilterOptimizerHelpers {
 		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
 				AndFilter.and(Map.of("a", "a1")),
 				Set.of(FilterBuilder
-						.or(NotFilter.not(ColumnFilter.match("a", LikeMatcher.matching("a%"))),
-								ColumnFilter.equalTo("b", "b2"))
+						.or(ColumnFilter.match("a", LikeMatcher.matching("a%")).negate(),
+								ColumnFilter.matchEq("b", "b2"))
 						.combine()));
 
 		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or(Map.of("b", "b2")));
@@ -122,7 +121,7 @@ public class TestFilterOptimizerHelpers {
 	public void testPack_InAndOutIsEmpty() {
 		FilterOptimizer helper = FilterOptimizer.builder().build();
 		ImmutableSet<? extends ISliceFilter> packed = helper.packColumnFilters(
-				ImmutableSet.of(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.matchIn("d", "d1", "d2", "d3")));
+				ImmutableSet.of(ColumnFilter.notEq("d", "d1"), ColumnFilter.matchIn("d", "d1", "d2", "d3")));
 
 		Assertions.assertThat((Set) packed).hasSize(1).containsExactly(ColumnFilter.matchIn("d", "d2", "d3"));
 	}

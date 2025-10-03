@@ -82,7 +82,15 @@ public class FilterHelpers {
 		return getValueMatcherLax(filter, column, false);
 	}
 
-	@SuppressWarnings("PMD.CognitiveComplexity")
+	/**
+	 * 
+	 * @param filter
+	 * @param column
+	 * @param throwOnOr
+	 *            if true, we throw if the output {@link IValueMatcher} is not covering the whole matcher (i.e. if it is
+	 *            not a `AND`).
+	 * @return
+	 */
 	private static IValueMatcher getValueMatcherLax(ISliceFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
@@ -95,63 +103,46 @@ public class FilterHelpers {
 				// column is not filtered
 				return IValueMatcher.MATCH_ALL;
 			}
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			ISliceFilter negated = notFilter.getNegated();
-
-			// Some INotFilter may not be optimized into `matchAll` or `matchNone`
-			// We analyse these cases manually as we'll later keep `matchAll` if current column is unrelated to the
-			// filter
-			if (negated.isMatchAll()) {
-				return IValueMatcher.MATCH_NONE;
-			} else if (negated.isMatchNone()) {
-				return IValueMatcher.MATCH_ALL;
-			}
-			IValueMatcher valueMatcher = getValueMatcherLax(negated, column, throwOnOr);
-
-			if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-				// The underlying filter is unrelated to `column`: should not negate `matchAll`
-				return IValueMatcher.MATCH_ALL;
-			}
-
-			// This is a not trivial valueMatcher: negate it
-			return NotMatcher.not(valueMatcher);
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<IValueMatcher> filters = andFilter.getOperands()
-					.stream()
-					.map(f -> getValueMatcherLax(f, column, throwOnOr))
-					.collect(Collectors.toSet());
-
-			if (filters.isEmpty()) {
-				// This is a weird case as it should have been caught be initial `isMatchAll`
-				log.warn("Please report this case: column={} filter={}", column, filter);
-				return IValueMatcher.MATCH_ALL;
-			} else {
-				return AndMatcher.and(filters);
-			}
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			Set<IValueMatcher> matchers = orFilter.getOperands()
-					.stream()
-					.map(f -> getValueMatcherLax(f, column, throwOnOr))
-					.collect(Collectors.toSet());
-
-			if (matchers.isEmpty()) {
-				// This is a weird case as it should have been caught be initial `isMatchNone`
-				log.warn("Please report this case: column={} filter={}", column, filter);
-				return IValueMatcher.MATCH_ALL;
-			} else if (matchers.size() == 1 && matchers.contains(IValueMatcher.MATCH_ALL)) {
-				// There is an OR, but it does not refer the requested column
-				return IValueMatcher.MATCH_ALL;
-			} else {
-				if (throwOnOr) {
-					throw new UnsupportedOperationException(
-							"filter=%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
-				}
-
-				return OrMatcher.or(matchers.stream().filter(m -> !IValueMatcher.MATCH_ALL.equals(m)).toList());
-			}
 		} else {
-			throw new UnsupportedOperationException(
-					"filter=%s is not managed yet".formatted(PepperLogHelper.getObjectAndClass(filter)));
+			Set<ISliceFilter> splitAnds = splitAnd(filter);
+
+			if (splitAnds.isEmpty()) {
+				return IValueMatcher.MATCH_ALL;
+			} else if (splitAnds.size() == 1) {
+				// We receive a plain OR
+				Set<ISliceFilter> splitOrs = splitOr(splitAnds.iterator().next());
+
+				if (splitOrs.isEmpty()) {
+					return IValueMatcher.MATCH_NONE;
+				} else if (splitOrs.size() == 1) {
+					throw new UnsupportedOperationException(
+							"filter:%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+				} else {
+					Set<IValueMatcher> orMatchers = splitOrs.stream()
+							.map(f -> getValueMatcherLax(f, column, throwOnOr))
+							// .filter(f -> !IValueMatcher.MATCH_ALL.equals(f))
+							.collect(ImmutableSet.toImmutableSet());
+
+					if (orMatchers.size() == 1) {
+						// This is a common factor to all OR operands
+						return orMatchers.iterator().next();
+					} else if (throwOnOr) {
+						throw new UnsupportedOperationException(
+								"filter:%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+					} else {
+						return OrMatcher.or(orMatchers.stream()
+								// .filter(m -> !IValueMatcher.MATCH_ALL.equals(m))
+								.toList());
+					}
+				}
+			} else {
+				Set<IValueMatcher> matchers = splitAnds.stream()
+						.map(f -> getValueMatcherLax(f, column, throwOnOr))
+						.filter(f -> !IValueMatcher.MATCH_ALL.equals(f))
+						.collect(ImmutableSet.toImmutableSet());
+
+				return AndMatcher.and(matchers);
+			}
 		}
 	}
 
@@ -284,7 +275,7 @@ public class FilterHelpers {
 			if (notFilter.getNegated() instanceof IOrFilter orFilter) {
 				return orFilter.getOperands()
 						.stream()
-						.map(NotFilter::not)
+						.map(ISliceFilter::negate)
 						.flatMap(f -> splitAnd(f).stream())
 						.collect(ImmutableSet.toImmutableSet());
 			} else if (notFilter.getNegated() instanceof IColumnFilter columnFilter
@@ -309,7 +300,7 @@ public class FilterHelpers {
 						.stream()
 						.map(operand -> ColumnFilter.builder()
 								.column(column)
-								.valueMatcher(NotMatcher.not(EqualsMatcher.equalTo(operand)))
+								.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq(operand)))
 								.build())
 						.collect(ImmutableSet.toImmutableSet());
 			}
@@ -332,7 +323,7 @@ public class FilterHelpers {
 		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IAndFilter andFilter) {
 			return andFilter.getOperands()
 					.stream()
-					.map(NotFilter::not)
+					.map(ISliceFilter::negate)
 					.flatMap(f -> splitOr(f).stream())
 					.collect(ImmutableSet.toImmutableSet());
 		} else if (filter instanceof IColumnFilter columnFilter) {

@@ -52,7 +52,7 @@ public class NotMatcher implements IValueMatcher, IColumnToString {
 	}
 
 	public static IValueMatcher notEqualTo(Object matching) {
-		return not(EqualsMatcher.equalTo(matching));
+		return not(EqualsMatcher.matchEq(matching));
 	}
 
 	/**

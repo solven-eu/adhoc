@@ -59,7 +59,7 @@ public class AtotiConditionDatastoreToAdhoc {
 				ICondition[] subConditions = constantCondition.getSubConditions();
 
 				if (implementationCode == ImplementationCode.EQ) {
-					return ColumnFilter.equalTo(constantCondition.getFields()[0], constantCondition.getOperand());
+					return ColumnFilter.matchEq(constantCondition.getFields()[0], constantCondition.getOperand());
 				} else if (implementationCode == ImplementationCode.LIKE) {
 					String regex = String.valueOf(constantCondition.getOperand());
 					return ColumnFilter.matchPattern(constantCondition.getFields()[0], RegexMatcher.compile(regex));

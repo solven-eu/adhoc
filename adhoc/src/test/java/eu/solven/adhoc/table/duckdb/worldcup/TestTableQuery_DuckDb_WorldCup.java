@@ -234,7 +234,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 				.measure("coach_score")
 				.groupByAlso("minute")
 				.filter(AndFilter.and(ColumnFilter.matchLike("Coach name", "LORENZO%"),
-						ColumnFilter.equalTo("minute", 4)))
+						ColumnFilter.matchEq("minute", 4)))
 				.debug(true)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);

@@ -88,7 +88,7 @@ public interface IValueMatcher {
 			throw new IllegalArgumentException(
 					"Invalid matching: %s".formatted(PepperLogHelper.getObjectAndClass(matching)));
 		} else {
-			return EqualsMatcher.equalTo(matching);
+			return EqualsMatcher.matchEq(matching);
 		}
 	}
 }
