@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.query.filter.FilterEquivalencyHelpers;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -80,6 +79,7 @@ import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.FilterEquivalencyHelpers;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -750,7 +750,8 @@ public class TableQueryEngineBootstrapped {
 				}
 
 				// Take the shorter/simpler problematic entry
-				CubeQueryStep firstMissing = missingCubeRoots.stream().min(Comparator.comparing(s -> s.toString().length())).get();
+				CubeQueryStep firstMissing =
+						missingCubeRoots.stream().min(Comparator.comparing(s -> s.toString().length())).get();
 				log.warn("Analyzing one missing: {}", firstMissing);
 				Set<CubeQueryStep> impliedSameMeasure = stepsImpliedByTableQueries.stream()
 						.filter(s -> s.getMeasure().getName().equals(firstMissing.getMeasure().getName()))
@@ -758,19 +759,24 @@ public class TableQueryEngineBootstrapped {
 				log.warn("Missing has {} sameMeasure siblings", impliedSameMeasure.size());
 
 				Set<CubeQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
-						.filter(s -> s.getGroupBy().getGroupedByColumns().equals(firstMissing.getGroupBy().getGroupedByColumns()))
+						.filter(s -> s.getGroupBy()
+								.getGroupedByColumns()
+								.equals(firstMissing.getGroupBy().getGroupedByColumns()))
 						.collect(Collectors.toSet());
 				log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
 
 				Set<CubeQueryStep> impliedSameMeasureSameGroupBySameFilter = impliedSameMeasureSameGroupBy.stream()
 						.filter(s -> s.getFilter().equals(firstMissing.getFilter()))
 						.collect(Collectors.toSet());
-				log.warn("Missing has {} sameMeasureSameGroupBySameFilter siblings", impliedSameMeasureSameGroupBySameFilter.size());
+				log.warn("Missing has {} sameMeasureSameGroupBySameFilter siblings",
+						impliedSameMeasureSameGroupBySameFilter.size());
 
-				Set<CubeQueryStep> impliedSameMeasureSameGroupByEquivalentFilter = impliedSameMeasureSameGroupBy.stream()
+				Set<CubeQueryStep> impliedSameMeasureSameGroupByEquivalentFilter = impliedSameMeasureSameGroupBy
+						.stream()
 						.filter(s -> FilterEquivalencyHelpers.areEquivalent(s.getFilter(), firstMissing.getFilter()))
 						.collect(Collectors.toSet());
-				log.warn("Missing has {} sameMeasureSameGroupByEquivalentFilter siblings", impliedSameMeasureSameGroupByEquivalentFilter.size());
+				log.warn("Missing has {} sameMeasureSameGroupByEquivalentFilter siblings",
+						impliedSameMeasureSameGroupByEquivalentFilter.size());
 
 				// This typically happens due to inconsistency in equality if ISliceFiler (e.g. `a` and
 				// `Not(Not(a))`)
