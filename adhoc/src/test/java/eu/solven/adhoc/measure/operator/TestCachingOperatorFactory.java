@@ -79,4 +79,21 @@ public class TestCachingOperatorFactory {
 
 		Assertions.assertThat(aggregation1).isSameAs(aggregation2);
 	}
+
+	@Test
+	public void testInvalidateAll() {
+		// Initially the cache is empty
+		Assertions.assertThat(caching.aggregationsCache.asMap()).isEmpty();
+
+		// Do some operation
+		Mockito.when(notCaching.makeAggregation(SumAggregation.KEY, Map.of())).thenReturn(new SumAggregation());
+		caching.makeAggregation(SumAggregation.KEY);
+
+		// Ensure something is written in cache
+		Assertions.assertThat(caching.aggregationsCache.asMap()).isNotEmpty();
+
+		// Check invalidateAll clears the cache
+		caching.invalidateAll();
+		Assertions.assertThat(caching.aggregationsCache.asMap()).isEmpty();
+	}
 }

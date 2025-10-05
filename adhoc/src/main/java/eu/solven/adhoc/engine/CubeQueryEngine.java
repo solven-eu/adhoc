@@ -158,13 +158,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 			QueryStepsDag queryStepsDag = makeQueryStepsDag(queryPod);
 
-			if (queryPod.isExplain() || queryPod.isDebug()) {
+			if (queryPod.isDebugOrExplain()) {
 				explainDagSteps(queryPod, queryStepsDag);
 			}
 
 			ITabularView tabularView = executeDag(queryPod, queryStepsDag);
 
-			if (queryPod.isExplain() || queryPod.isDebug()) {
+			if (queryPod.isDebugOrExplain()) {
 				explainDagPerfs(queryPod, queryStepsDag);
 			}
 

@@ -29,7 +29,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 
 /**
- * A transcoder useful when it is known that all columns has a redundant prefix (e.g. from SQL schema).
+ * An aliaser useful when it is known that all columns has a redundant prefix (e.g. a database in an SQL schema).
  * 
  * @author Benoit Lacelle
  *

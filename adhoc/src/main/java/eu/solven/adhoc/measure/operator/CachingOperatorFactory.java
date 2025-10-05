@@ -33,6 +33,7 @@ import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -48,7 +49,7 @@ import lombok.Value;
  * @author Benoit Lacelle
  */
 @Builder(toBuilder = true)
-public class CachingOperatorFactory implements IOperatorFactory {
+public class CachingOperatorFactory implements IOperatorFactory, IHasCache {
 
 	@NonNull
 	IOperatorFactory operatorFactory;
@@ -78,6 +79,7 @@ public class CachingOperatorFactory implements IOperatorFactory {
 		ImmutableMap<String, ?> options;
 	}
 
+	@Override
 	public void invalidateAll() {
 		aggregationsCache.invalidateAll();
 		combinationsCache.invalidateAll();

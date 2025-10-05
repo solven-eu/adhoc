@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.query.cube;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
@@ -41,7 +39,6 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
  * @author Benoit Lacelle
  *
  */
-public interface ICubeQuery
-		extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IIsExplainable, IIsDebugable, IHasQueryOptions {
+public interface ICubeQuery extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IHasQueryOptions {
 
 }

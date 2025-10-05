@@ -41,7 +41,7 @@ import lombok.Singular;
 import lombok.ToString;
 
 /**
- * This is a simple way to storage the value for a {@link java.util.Set} of {@link SliceAsMap}.
+ * This is a simple way to store the value for a {@link java.util.Set} of {@link SliceAsMap}.
  * 
  * @author Benoit Lacelle
  */

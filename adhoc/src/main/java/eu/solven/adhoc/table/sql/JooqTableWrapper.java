@@ -253,7 +253,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 		IJooqTableQueryFactory.QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
 
-		if (tableQuery.isExplain() || tableQuery.isDebug()) {
+		if (tableQuery.isDebugOrExplain()) {
 			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}",
 					getName(),
 					resultQuery.getQuery().getSQL(ParamType.INLINED),

@@ -111,8 +111,6 @@ public interface IMultitypeColumn<T> {
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 			// As we assume there is no sorted leg, the complement is all
 			yield column.stream();
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + stragegy);
 		};
 	}
 

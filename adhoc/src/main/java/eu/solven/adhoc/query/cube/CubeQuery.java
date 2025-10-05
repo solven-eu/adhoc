@@ -250,13 +250,6 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		}
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
-		} else {
-			if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-				builder.option(StandardQueryOptions.EXPLAIN);
-			}
-			if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-				builder.option(StandardQueryOptions.DEBUG);
-			}
 		}
 
 		return builder;
