@@ -65,6 +65,8 @@ public class TestAndFilter {
 
 		Assertions.assertThat(filter.toString()).isEqualTo("matchAll");
 		Assertions.assertThat(filter.isMatchAll()).isTrue();
+
+		Assertions.assertThat(AndFilter.and(Map.of())).isInstanceOf(AndFilter.class).hasToString("matchAll");
 	}
 
 	@Test
@@ -116,15 +118,15 @@ public class TestAndFilter {
 
 	@Test
 	public void testAndFilters_oneGrandTotal() {
-		ISliceFilter filterAllAndA = AndFilter.and(ISliceFilter.MATCH_ALL, ColumnFilter.equalTo("a", "a1"));
+		ISliceFilter filterAllAndA = AndFilter.and(ISliceFilter.MATCH_ALL, ColumnFilter.matchEq("a", "a1"));
 
-		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testAndFilters_oneGrandTotal_forced() {
 		ISliceFilter filterAllAndA =
-				AndFilter.builder().and(ISliceFilter.MATCH_NONE).and(ColumnFilter.equalTo("a", "a1")).build();
+				AndFilter.builder().and(ISliceFilter.MATCH_NONE).and(ColumnFilter.matchEq("a", "a1")).build();
 
 		// We forced an AndFilter: It is not simplified into IAdhocFilter.MATCH_NONE but is is isMatchNone
 		Assertions.assertThat(filterAllAndA.isMatchNone()).isTrue();
@@ -146,9 +148,9 @@ public class TestAndFilter {
 	@Test
 	public void testMultipleSameColumn_equalsAndIn() {
 		ISliceFilter filterA1andInA12 =
-				AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.matchIn("a", "a1", "a2"));
+				AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchIn("a", "a1", "a2"));
 
-		Assertions.assertThat(filterA1andInA12).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(filterA1andInA12).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
@@ -156,7 +158,7 @@ public class TestAndFilter {
 		ISliceFilter filterA1andInA12 =
 				AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchIn("a", "a2", "a3"));
 
-		Assertions.assertThat(filterA1andInA12).isEqualTo(ColumnFilter.equalTo("a", "a2"));
+		Assertions.assertThat(filterA1andInA12).isEqualTo(ColumnFilter.matchEq("a", "a2"));
 	}
 
 	@Test
@@ -170,7 +172,7 @@ public class TestAndFilter {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		ISliceFilter filter = AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b2"));
+		ISliceFilter filter = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2"));
 
 		ObjectMapper objectMapper = JsonMapper.builder().build();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -231,8 +233,8 @@ public class TestAndFilter {
 
 	@Test
 	public void testChained() {
-		ISliceFilter a1Andb2 = AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b2"));
-		ISliceFilter a1Andb2AndC3 = AndFilter.and(a1Andb2, ColumnFilter.equalTo("c", "c3"));
+		ISliceFilter a1Andb2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2"));
+		ISliceFilter a1Andb2AndC3 = AndFilter.and(a1Andb2, ColumnFilter.matchEq("c", "c3"));
 
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands()).hasSize(3);
@@ -241,40 +243,40 @@ public class TestAndFilter {
 
 	@Test
 	public void testMultipleEqualsSameColumn_disjoint() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("a", "a2"));
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("a", "a2"));
 
 		Assertions.assertThat(a1Anda2).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
 	public void testMultipleEqualsSameColumn_joint() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("a", "a1"));
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("a", "a1"));
 
-		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testMultipleEqualsSameColumn_deep() {
-		ISliceFilter a1Andb1 = AndFilter.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b1"));
+		ISliceFilter a1Andb1 = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b1"));
 
-		ISliceFilter a1Andb1AndB2 = AndFilter.and(a1Andb1, ColumnFilter.equalTo("b", "b2"));
+		ISliceFilter a1Andb1AndB2 = AndFilter.and(a1Andb1, ColumnFilter.matchEq("b", "b2"));
 
 		Assertions.assertThat(a1Andb1AndB2).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
 	public void testMultipleEqualsSameColumn_joint_andComplexNotColumn() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.equalTo("a", "a1"),
-				ColumnFilter.equalTo("a", "a1"),
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"),
+				ColumnFilter.matchEq("a", "a1"),
 				FilterBuilder.or(ColumnFilter.matchLike("a", "%a"), ColumnFilter.matchLike("a", "a%")).optimize());
 
-		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testMultipleEqualsSameColumn_joint_andComplexColumn() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.equalTo("a", "a1"),
-				ColumnFilter.equalTo("a", "a1"),
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"),
+				ColumnFilter.matchEq("a", "a1"),
 				ColumnFilter.builder()
 						.column("a")
 						.valueMatcher(OrMatcher.builder()
@@ -283,18 +285,18 @@ public class TestAndFilter {
 								.build())
 						.build());
 
-		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testMultipleEqualsSameColumn_joint_withOr() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.equalTo("a", "a1"),
-				ColumnFilter.equalTo("a", "a1"),
-				FilterBuilder.or(ColumnFilter.equalTo("a", "a2"), ColumnFilter.equalTo("a", "a3")).optimize());
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"),
+				ColumnFilter.matchEq("a", "a1"),
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a2"), ColumnFilter.matchEq("a", "a3")).optimize());
 
 		Assertions.assertThat(a1Anda2)
-				.isEqualTo(AndFilter.and(ColumnFilter.equalTo("a", "a1"),
-						FilterBuilder.or(ColumnFilter.equalTo("a", "a2"), ColumnFilter.equalTo("a", "a3")).optimize()));
+				.isEqualTo(AndFilter.and(ColumnFilter.matchEq("a", "a1"),
+						FilterBuilder.or(ColumnFilter.matchEq("a", "a2"), ColumnFilter.matchEq("a", "a3")).optimize()));
 	}
 
 	@Test
@@ -310,7 +312,7 @@ public class TestAndFilter {
 		ISliceFilter a1Anda2 =
 				AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchIn("a", "a2", "a3"));
 
-		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.equalTo("a", "a2"));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a2"));
 	}
 
 	@Test
@@ -327,24 +329,30 @@ public class TestAndFilter {
 				ColumnFilter.matchLike("a", "a%"),
 				ColumnFilter.matchLike("a", "%1"));
 
-		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testGroupByColumn_MultipleComplex_Out_withExplicitLeftover() {
-		ISliceFilter a1Anda2 = AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "a11", "a21", "b22")),
-				ColumnFilter.matchLike("a", "a%"),
-				ColumnFilter.matchLike("a", "%1"));
+		ISliceFilter a1Anda2 =
+				FilterBuilder
+						.and(ColumnFilter.matchIn("a", "a11", "a21", "b22").negate(),
+								ColumnFilter.matchLike("a", "a%"),
+								ColumnFilter.matchLike("a", "%1"))
+						.optimize();
 
 		Assertions.assertThat(a1Anda2)
-				.isEqualTo(AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "a11", "a21")),
-						ColumnFilter.matchLike("a", "a%"),
-						ColumnFilter.matchLike("a", "%1")));
+				.isEqualTo(
+						FilterBuilder
+								.and(ColumnFilter.matchIn("a", "a11", "a21").negate(),
+										ColumnFilter.matchLike("a", "a%"),
+										ColumnFilter.matchLike("a", "%1"))
+								.optimize());
 	}
 
 	@Test
 	public void testGroupByColumn_MultipleComplex_Out_withoutExplicitLeftover() {
-		ISliceFilter a1Anda2 = AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "b2", "b22")),
+		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchIn("a", "b2", "b22").negate(),
 				ColumnFilter.matchLike("a", "a%"),
 				ColumnFilter.matchLike("a", "%1"));
 
@@ -354,18 +362,23 @@ public class TestAndFilter {
 
 	@Test
 	public void testGroupByColumn_MultipleComplex_InAndOut() {
-		ISliceFilter a1Anda2 = AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2", "a21"),
-				NotFilter.not(ColumnFilter.matchIn("a", "a11", "a21")),
-				ColumnFilter.matchLike("a", "a%"),
-				ColumnFilter.matchLike("a", "%1"));
+		ISliceFilter a1Anda2 =
+				FilterBuilder
+						.and(ColumnFilter.matchIn("a", "a1", "a2", "a21"),
+								ColumnFilter.matchIn("a", "a11", "a21").negate(),
+								ColumnFilter.matchLike("a", "a%"),
+								ColumnFilter.matchLike("a", "%1"))
+						.optimize();
 
-		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(a1Anda2).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testEquals_differentOrders() {
-		ISliceFilter f1Then2 = AndFilter.and(ColumnFilter.equalTo("c1", "v1"), ColumnFilter.equalTo("c2", "v2"));
-		ISliceFilter f2Then1 = AndFilter.and(ColumnFilter.equalTo("c2", "v2"), ColumnFilter.equalTo("c1", "v1"));
+		ISliceFilter f1Then2 =
+				FilterBuilder.and(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")).optimize();
+		ISliceFilter f2Then1 =
+				FilterBuilder.and(ColumnFilter.matchEq("c2", "v2"), ColumnFilter.matchEq("c1", "v1")).optimize();
 
 		Assertions.assertThat(f1Then2).isEqualTo(f2Then1);
 	}
@@ -375,29 +388,30 @@ public class TestAndFilter {
 		// size==0
 		Assertions.assertThat(AndFilter.and(Map.of())).isEqualTo(ISliceFilter.MATCH_ALL);
 		// size==1
-		Assertions.assertThat(AndFilter.and(Map.of("c1", "v1"))).isEqualTo(ColumnFilter.equalTo("c1", "v1"));
+		Assertions.assertThat(AndFilter.and(Map.of("c1", "v1"))).isEqualTo(ColumnFilter.matchEq("c1", "v1"));
 		// size==2
 		Assertions.assertThat(AndFilter.and(Map.of("c1", "v1", "c2", "v2")))
-				.isEqualTo(AndFilter.and(ColumnFilter.equalTo("c1", "v1"), ColumnFilter.equalTo("c2", "v2")));
+				.isEqualTo(AndFilter.and(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")));
 	}
 
 	@Test
 	public void testAnd_allNotFilter() {
-		ISliceFilter notA1AndNotA2 = AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
-				NotFilter.not(ColumnFilter.matchIn("b", "b1", "b2")));
+		ISliceFilter notA1AndNotA2 = FilterBuilder
+				.and(ColumnFilter.matchIn("a", "a1", "a2").negate(), ColumnFilter.matchIn("b", "b1", "b2").negate())
+				.optimize();
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands())
-					.contains(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
-							NotFilter.not(ColumnFilter.matchIn("b", "b1", "b2")));
+					.contains(ColumnFilter.matchIn("a", "a1", "a2").negate(),
+							ColumnFilter.matchIn("b", "b1", "b2").negate());
 		});
 	}
 
 	@Test
 	public void testAnd_allNotFilter_like_2() {
-		List<ISliceFilter> nots = Arrays.asList(NotFilter.not(ColumnFilter.matchLike("a", "a%")),
-				NotFilter.not(ColumnFilter.matchLike("b", "b%")));
-		ISliceFilter notA1AndNotA2 = AndFilter.and(nots);
+		List<ISliceFilter> nots =
+				Arrays.asList(ColumnFilter.matchLike("a", "a%").negate(), ColumnFilter.matchLike("b", "b%").negate());
+		ISliceFilter notA1AndNotA2 = FilterBuilder.and(nots).optimize();
 
 		Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands()).containsAll(nots);
@@ -407,7 +421,7 @@ public class TestAndFilter {
 	@Test
 	public void testAnd_allNotMatcher() {
 		ISliceFilter notA1AndNotB1 =
-				AndFilter.and(ColumnFilter.notEqualTo("a", "a1"), ColumnFilter.notEqualTo("b", "b1"));
+				FilterBuilder.and(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1")).optimize();
 
 		// TODO Should we simplify the nots?
 		// Assertions.assertThat(notA1AndNotA2).isInstanceOfSatisfying(NotFilter.class, notFilter -> {
@@ -418,22 +432,23 @@ public class TestAndFilter {
 
 		Assertions.assertThat(notA1AndNotB1).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands())
-					.contains(ColumnFilter.notEqualTo("a", "a1"), ColumnFilter.notEqualTo("b", "b1"));
+					.contains(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1"));
 		});
 	}
 
 	@Test
 	public void testAnd_partialNot() {
-		ISliceFilter notA1AndNotA2 = AndFilter.and(NotFilter.not(ColumnFilter.matchIn("a", "a1", "a2")),
-				ColumnFilter.matchIn("b", "b1", "b2"));
+		ISliceFilter notA1AndNotA2 =
+				FilterBuilder.and(ColumnFilter.matchIn("a", "a1", "a2").negate(), ColumnFilter.matchIn("b", "b1", "b2"))
+						.optimize();
 		Assertions.assertThat(notA1AndNotA2).isInstanceOf(AndFilter.class);
-		Assertions.assertThat(AndFilter.and(notA1AndNotA2, notA1AndNotA2)).isInstanceOf(AndFilter.class);
+		Assertions.assertThat(FilterBuilder.and(notA1AndNotA2, notA1AndNotA2).optimize()).isInstanceOf(AndFilter.class);
 	}
 
 	@Test
 	public void testAnd_orDifferentColumns_sameColumn() {
-		ISliceFilter left = ColumnFilter.equalTo("g", "c1");
-		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.equalTo("h", "c1")).combine();
+		ISliceFilter left = ColumnFilter.matchEq("g", "c1");
+		ISliceFilter leftOrRight = FilterBuilder.or(left, ColumnFilter.matchEq("h", "c1")).combine();
 
 		Assertions.assertThat(FilterBuilder.and(leftOrRight, left).optimize()).isEqualTo(left);
 	}
@@ -441,9 +456,9 @@ public class TestAndFilter {
 	@Test
 	public void testCostFunction_manyNot() {
 		ISliceFilter output = FilterBuilder.and()
-				.filter(ColumnFilter.notEqualTo("b", "b1"))
-				.filter(ColumnFilter.notEqualTo("c", "c1"))
-				.filter(ColumnFilter.notEqualTo("d", "d1"))
+				.filter(ColumnFilter.notEq("b", "b1"))
+				.filter(ColumnFilter.notEq("c", "c1"))
+				.filter(ColumnFilter.notEq("d", "d1"))
 				.optimize();
 
 		Assertions.assertThat(output).hasToString("b!=b1&c!=c1&d!=d1");
@@ -468,8 +483,8 @@ public class TestAndFilter {
 				.filter(ColumnFilter.notIn("b", "b1", "b2"))
 				.filter(ColumnFilter.notIn("c", "c1", "c2"))
 				.filter(ColumnFilter.notIn("b", "b3", "b4"))
-				.filter(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), notLikeA1).combine().negate())
-				.filter(FilterBuilder.and(ColumnFilter.notIn("b", "b3", "b4"), ColumnFilter.equalTo("d", "d2"))
+				.filter(FilterBuilder.and(ColumnFilter.matchEq("d", "d1"), notLikeA1).combine().negate())
+				.filter(FilterBuilder.and(ColumnFilter.notIn("b", "b3", "b4"), ColumnFilter.matchEq("d", "d2"))
 						.combine()
 						.negate())
 				.optimize();
@@ -481,15 +496,13 @@ public class TestAndFilter {
 
 	@Test
 	public void testAnd_manyNegationsAndRedundant_equal() {
-		ISliceFilter notA_and_notB = AndFilter.and(ColumnFilter.notEqualTo("a", "a1"),
-				ColumnFilter.notEqualTo("b", "b1"),
-				ColumnFilter.notEqualTo("c", "c1"));
+		ISliceFilter notA_and_notB = AndFilter
+				.and(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1"), ColumnFilter.notEq("c", "c1"));
 
 		// Ensure the wide AND of NOT is turned into a NOT of OR.
 		Assertions.assertThat(notA_and_notB).isInstanceOf(AndFilter.class).hasToString("a!=a1&b!=b1&c!=c1");
 
-		Assertions.assertThat(AndFilter.and(notA_and_notB, ColumnFilter.notEqualTo("a", "a1")))
-				.isEqualTo(notA_and_notB);
+		Assertions.assertThat(AndFilter.and(notA_and_notB, ColumnFilter.notEq("a", "a1"))).isEqualTo(notA_and_notB);
 	}
 
 	@Test
@@ -577,11 +590,12 @@ public class TestAndFilter {
 		outerAnds.add(AndFilter.and(Map.of("a", "a0")));
 		outerAnds.add(ColumnFilter.matchIn("b", "b1", "b2"));
 		// This following is always true given outer `b=in=b1,b2
-		outerAnds.add(NotFilter.not(AndFilter.builder()
-				.and(ColumnFilter.equalTo("c", "c1"))
+		outerAnds.add(AndFilter.builder()
+				.and(ColumnFilter.matchEq("c", "c1"))
 				// The following is always false given outer `b=in=b1,b2`
-				.and(NotFilter.not(ColumnFilter.matchIn("b", "b1", "b2", "b3")))
-				.build()));
+				.and(ColumnFilter.matchIn("b", "b1", "b2", "b3").negate())
+				.build()
+				.negate());
 
 		Assertions.assertThat(AndFilter.and(outerAnds)).hasToString("a==a0&b=in=(b1,b2)");
 	}
@@ -592,7 +606,7 @@ public class TestAndFilter {
 
 		outerAnds.add(AndFilter.and(Map.of("a", "a0")));
 		outerAnds.add(ColumnFilter.matchIn("b", "b1", "b2"));
-		outerAnds.add(NotFilter.not(ColumnFilter.matchIn("b", "b2", "b3")));
+		outerAnds.add(ColumnFilter.matchIn("b", "b2", "b3").negate());
 
 		Assertions.assertThat(AndFilter.and(outerAnds)).hasToString("a==a0&b==b1");
 	}
@@ -621,25 +635,19 @@ public class TestAndFilter {
 	// to ensure a single representation per boolean expression
 	@Test
 	public void testAnd_optimizeInputs() {
-		ISliceFilter combined =
-				FilterBuilder
-						.or(ColumnFilter.notEqualTo("a", "a1"),
-								ColumnFilter.notEqualTo("b", "b1"),
-								ColumnFilter.notEqualTo("c", "c1"))
-						.combine();
-		ISliceFilter optimized =
-				FilterBuilder
-						.or(ColumnFilter.notEqualTo("a", "a1"),
-								ColumnFilter.notEqualTo("b", "b1"),
-								ColumnFilter.notEqualTo("c", "c1"))
-						.optimize();
+		ISliceFilter combined = FilterBuilder
+				.or(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1"), ColumnFilter.notEq("c", "c1"))
+				.combine();
+		ISliceFilter optimized = FilterBuilder
+				.or(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1"), ColumnFilter.notEq("c", "c1"))
+				.optimize();
 
 		Assertions.assertThat(combined).isNotEqualTo(optimized);
 		// Commented as `FilterEquivalencyHelpers` does not manage this case, due to mis-management of `NOT`
 		// Assertions.assertThat(FilterEquivalencyHelpers.areEquivalent(combined, optimized)).isTrue();
 
-		Assertions.assertThat(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), combined).optimize())
-				.isEqualTo(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), optimized).optimize());
+		Assertions.assertThat(FilterBuilder.and(ColumnFilter.matchEq("d", "d1"), combined).optimize())
+				.isEqualTo(FilterBuilder.and(ColumnFilter.matchEq("d", "d1"), optimized).optimize());
 
 	}
 
@@ -652,10 +660,10 @@ public class TestAndFilter {
 			FilterOptimizer optimizer = FilterOptimizer.builder().listener(listener).build();
 			ISliceFilter combined =
 					FilterBuilder
-							.and(ColumnFilter.equalTo("a", "a1"),
+							.and(ColumnFilter.matchEq("a", "a1"),
 									ColumnFilter.matchIn("b", "b1", "b2", "b3"),
 									ColumnFilter.matchIn("c", "c1", "c2", "c3"),
-									ColumnFilter.notEqualTo("d", "d1"),
+									ColumnFilter.notEq("d", "d1"),
 									ColumnFilter.matchIn("d", "d1", "d2", "d3"))
 							.optimize(optimizer);
 

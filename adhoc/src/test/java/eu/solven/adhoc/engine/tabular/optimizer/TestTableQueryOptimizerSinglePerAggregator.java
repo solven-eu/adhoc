@@ -51,12 +51,12 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 	@Test
 	public void testCanInduce_OrDifferentColumns() {
 		TableQuery tq1 = TableQuery.edit(step)
-				.filter(ColumnFilter.equalTo("a", "a1"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
 				.groupBy(GroupByColumns.named("b"))
 				.aggregator(k1Sum)
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
-				.filter(ColumnFilter.equalTo("c", "c1"))
+				.filter(ColumnFilter.matchEq("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(k1Sum)
 				.build();
@@ -65,7 +65,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(CubeQueryStep.edit(step)
-						.filter(FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("c", "c1"))
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1"))
 								.optimize())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
 						.build());
@@ -73,11 +73,11 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		Assertions.assertThat(split.getInduceds())
 				.hasSize(2)
 				.contains(CubeQueryStep.edit(step)
-						.filter(ColumnFilter.equalTo("a", "a1"))
+						.filter(ColumnFilter.matchEq("a", "a1"))
 						.groupBy(GroupByColumns.named("b"))
 						.build())
 				.contains(CubeQueryStep.edit(step)
-						.filter(ColumnFilter.equalTo("c", "c1"))
+						.filter(ColumnFilter.matchEq("c", "c1"))
 						.groupBy(GroupByColumns.named("d"))
 						.build());
 	}
@@ -85,11 +85,11 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 	@Test
 	public void testCanInduce_OrDifferentColumns_noMeasure() {
 		TableQuery tq1 = TableQuery.edit(step)
-				.filter(ColumnFilter.equalTo("a", "a1"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
 				.groupBy(GroupByColumns.named("b"))
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
-				.filter(ColumnFilter.equalTo("c", "c1"))
+				.filter(ColumnFilter.matchEq("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
 				.build();
 		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
@@ -97,7 +97,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(CubeQueryStep.edit(step)
-						.filter(FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("c", "c1"))
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1"))
 								.optimize())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
 						.measure(Aggregator.empty())
@@ -106,12 +106,12 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		Assertions.assertThat(split.getInduceds())
 				.hasSize(2)
 				.contains(CubeQueryStep.edit(step)
-						.filter(ColumnFilter.equalTo("a", "a1"))
+						.filter(ColumnFilter.matchEq("a", "a1"))
 						.groupBy(GroupByColumns.named("b"))
 						.measure(Aggregator.empty())
 						.build())
 				.contains(CubeQueryStep.edit(step)
-						.filter(ColumnFilter.equalTo("c", "c1"))
+						.filter(ColumnFilter.matchEq("c", "c1"))
 						.groupBy(GroupByColumns.named("d"))
 						.measure(Aggregator.empty())
 						.build());
@@ -138,8 +138,8 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 								.filter(FilterBuilder
 										.and(AndFilter.and(Map.of("a", "a1")),
 												FilterBuilder
-														.or(ColumnFilter.equalTo("b", "b1"),
-																ColumnFilter.equalTo("c", "c1"))
+														.or(ColumnFilter.matchEq("b", "b1"),
+																ColumnFilter.matchEq("c", "c1"))
 														.optimize())
 										.optimize())
 								.groupBy(GroupByColumns.named("b", "c", "d"))
@@ -189,7 +189,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
 						.groupBy(GroupByColumns.named("d"))
 						.build())
-				.contains(CubeQueryStep.edit(step).filter(ColumnFilter.equalTo("a", "a1")).build());
+				.contains(CubeQueryStep.edit(step).filter(ColumnFilter.matchEq("a", "a1")).build());
 	}
 
 	@Test

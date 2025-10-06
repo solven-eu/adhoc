@@ -163,7 +163,7 @@ public class TestMoreFilterHelpers {
 
 	@Test
 	public void testIsDistinctFrom() {
-		ISliceFilter kIsNull = ColumnFilter.notEqualTo("k", "v");
+		ISliceFilter kIsNull = ColumnFilter.notEq("k", "v");
 
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isTrue();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
@@ -199,7 +199,7 @@ public class TestMoreFilterHelpers {
 		ISliceFilter matchNull = ColumnFilter.match("c", NullMatcher.matchNull());
 		Assertions.assertThat(MoreFilterHelpers.match(matchNull, Map.of())).isTrue();
 
-		ISliceFilter notMatchNull = NotFilter.not(matchNull);
+		ISliceFilter notMatchNull = matchNull.negate();
 		Assertions.assertThat(MoreFilterHelpers.match(notMatchNull, Map.of())).isFalse();
 	}
 }

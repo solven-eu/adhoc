@@ -64,7 +64,7 @@ public class MoreFilterHelpers {
 		}
 
 		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-			return EqualsMatcher.equalTo(customTypeManager.toTable(column, equalsMatcher.getOperand()));
+			return EqualsMatcher.matchEq(customTypeManager.toTable(column, equalsMatcher.getOperand()));
 		} else if (valueMatcher instanceof InMatcher inMatcher) {
 			List<Object> transcodedOperands = inMatcher.getOperands()
 					.stream()
@@ -120,7 +120,7 @@ public class MoreFilterHelpers {
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
 					.toList()).optimize();
 		} else if (filter instanceof INotFilter notFilter) {
-			return NotFilter.not(transcodeFilter(customTypeManager, tableTranscoder, notFilter.getNegated()));
+			return transcodeFilter(customTypeManager, tableTranscoder, notFilter.getNegated()).negate();
 		} else {
 			throw new UnsupportedOperationException(
 					"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));

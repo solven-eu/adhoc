@@ -142,7 +142,9 @@ public class AndFilter implements IAndFilter {
 
 		// BEWARE Do not call `.and` due to most optimizations/checks are irrelevant
 		// And this is a performance bottleneck in Shiftor
-		if (columnFilters.size() == 1) {
+		if (columnFilters.isEmpty()) {
+			return MATCH_ALL;
+		} else if (columnFilters.size() == 1) {
 			return columnFilters.getFirst();
 		} else {
 			return builder().ands(columnFilters).build();
@@ -161,7 +163,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public ISliceFilter negate() {
-		return FilterBuilder.or(getOperands().stream().map(NotFilter::not).toList()).combine();
+		return FilterBuilder.or(getOperands().stream().map(ISliceFilter::negate).toList()).combine();
 	}
 
 }

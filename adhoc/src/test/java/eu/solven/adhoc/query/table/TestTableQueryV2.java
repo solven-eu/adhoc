@@ -71,7 +71,7 @@ public class TestTableQueryV2 {
 			.groupBy(GroupByColumns.named("a"))
 			.aggregator(sumK1)
 			.filter(AndFilter.and(ImmutableMap.of("a",
-					AndMatcher.and(LikeMatcher.matching("a%"), NotMatcher.not(EqualsMatcher.equalTo("azerty"))))))
+					AndMatcher.and(LikeMatcher.matching("a%"), NotMatcher.not(EqualsMatcher.matchEq("azerty"))))))
 			.build();
 
 	Aggregator sumK2 = Aggregator.sum("k2");
@@ -144,7 +144,7 @@ public class TestTableQueryV2 {
 					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(ISliceFilter.MATCH_ALL).build())
 					.contains(FilteredAggregator.builder()
 							.aggregator(sumK1)
-							.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.equalTo("azerty")))))
+							.filter(AndFilter.and(Map.of("a", NotMatcher.not(EqualsMatcher.matchEq("azerty")))))
 							.index(1)
 							.build());
 		});

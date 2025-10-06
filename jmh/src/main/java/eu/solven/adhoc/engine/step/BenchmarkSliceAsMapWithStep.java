@@ -41,6 +41,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -62,7 +63,7 @@ public class BenchmarkSliceAsMapWithStep {
 	final ISliceFilter filterAB = AndFilter.and(Map.of("a", "a1", "b", "b1"));
 	final ISliceFilter filterBC = AndFilter.and(Map.of("b", "b1", "c", "c1"));
 
-	final ISliceFilter filterA_optimized = AndFilter.and(filterAB, filterBC);
+	final ISliceFilter filterA_optimized = FilterBuilder.and(filterAB, filterBC).combine();
 	final ISliceFilter filterA_notOptimized = AndFilter.builder().and(filterAB).and(filterBC).build();
 
 	final ISliceReader filterA_SliceFilter = SliceReader.builder().sliceFilter(filterAB).stepFilter(filterBC).build();
@@ -81,7 +82,7 @@ public class BenchmarkSliceAsMapWithStep {
 
 	@Benchmark
 	public ISliceFilter and_optimized() {
-		return AndFilter.and(filterAB, filterBC);
+		return FilterBuilder.and(filterAB, filterBC).optimize();
 	}
 
 	@Benchmark

@@ -33,7 +33,7 @@ public class TestFilterEquivalencyHelpers {
 	public void testEquivalent_inEquivalentOr() {
 		ISliceFilter in = ColumnFilter.matchIn("c", "c1", "c2");
 		ISliceFilter or =
-				OrFilter.builder().or(ColumnFilter.equalTo("c", "c1")).or(ColumnFilter.equalTo("c", "c2")).build();
+				OrFilter.builder().or(ColumnFilter.matchEq("c", "c1")).or(ColumnFilter.matchEq("c", "c2")).build();
 
 		Assertions.assertThat(in).isNotEqualTo(or);
 		Assertions.assertThat(FilterEquivalencyHelpers.areEquivalent(in, or)).isTrue();
@@ -59,11 +59,10 @@ public class TestFilterEquivalencyHelpers {
 	@Disabled("NOT is not properly managed when computing DNFs")
 	public void testAnd_oneEqualsOneNotEquals() {
 		ISliceFilter combined = NotFilter.builder()
-				.negated(FilterBuilder.and(ColumnFilter.equalTo("a", "a1"), ColumnFilter.notEqualTo("b", "b1"))
-						.combine())
+				.negated(FilterBuilder.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.notEq("b", "b1")).combine())
 				.build();
 		ISliceFilter optimized =
-				FilterBuilder.or(ColumnFilter.notEqualTo("a", "a1"), ColumnFilter.equalTo("b", "b1")).optimize();
+				FilterBuilder.or(ColumnFilter.notEq("a", "a1"), ColumnFilter.matchEq("b", "b1")).optimize();
 
 		Assertions.assertThat(combined).isNotEqualTo(optimized);
 		Assertions.assertThat(FilterEquivalencyHelpers.areEquivalent(combined, optimized)).isTrue();

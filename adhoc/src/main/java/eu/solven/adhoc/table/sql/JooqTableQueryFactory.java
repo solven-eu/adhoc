@@ -70,7 +70,6 @@ import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -508,7 +507,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				oneIsMatchAll = true;
 			} else {
 				// There is no postFilter: keep it as matchAll
-				negatedPostFilter = NotFilter.not(negated.getPostFilter());
+				negatedPostFilter = negated.getPostFilter().negate();
 			}
 
 			Condition negatedCondition;

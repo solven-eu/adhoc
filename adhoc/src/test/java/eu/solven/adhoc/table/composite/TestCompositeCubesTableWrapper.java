@@ -60,7 +60,6 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -225,24 +224,22 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Assertions
 				.assertThat(composite.filterForColumns(subCube,
 						OrFilter.builder()
-								.or(NotFilter.not(ColumnFilter.matchLike("c1", "a%")))
-								.or(NotFilter.not(ColumnFilter.matchLike("c2", "b%")))
+								.or(ColumnFilter.matchLike("c1", "a%").negate())
+								.or(ColumnFilter.matchLike("c2", "b%").negate())
 								.build(),
 						Set.of("c1", "c2")::contains))
 				// The expression is optimized, but still equivalent to the original
-				.isEqualTo(
-						FilterBuilder
-								.or(NotFilter.not(ColumnFilter.matchLike("c1", "a%")),
-										NotFilter.not(ColumnFilter.matchLike("c2", "b%")))
-								.optimize());
+				.isEqualTo(FilterBuilder
+						.or(ColumnFilter.matchLike("c1", "a%").negate(), ColumnFilter.matchLike("c2", "b%").negate())
+						.optimize());
 
 		// Or.Not: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
 				OrFilter.builder()
-						.or(NotFilter.not(ColumnFilter.matchLike("c1", "a%")))
-						.or(NotFilter.not(ColumnFilter.matchLike("c2", "b%")))
+						.or(ColumnFilter.matchLike("c1", "a%").negate())
+						.or(ColumnFilter.matchLike("c2", "b%").negate())
 						.build(),
-				Set.of("c1")::contains)).isEqualTo(NotFilter.not(ColumnFilter.matchLike("c1", "a%")));
+				Set.of("c1")::contains)).isEqualTo(ColumnFilter.matchLike("c1", "a%").negate());
 	}
 
 	@Test

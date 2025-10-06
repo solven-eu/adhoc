@@ -43,7 +43,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testJackson_equals() throws JsonProcessingException {
-		ISliceFilter ksEqualsV = ColumnFilter.equalTo("k", "v");
+		ISliceFilter ksEqualsV = ColumnFilter.matchEq("k", "v");
 
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -76,7 +76,7 @@ public class TestColumnFilter {
 
 	@Test
 	public void testToString_equals() {
-		ISliceFilter filter = ColumnFilter.equalTo("c", "v");
+		ISliceFilter filter = ColumnFilter.matchEq("c", "v");
 
 		Assertions.assertThat(filter).hasToString("c==v");
 	}
@@ -84,7 +84,7 @@ public class TestColumnFilter {
 	@Test
 	public void testToString_equals_not() {
 		ISliceFilter filter =
-				ColumnFilter.builder().column("c").matching(NotMatcher.not(EqualsMatcher.equalTo("v"))).build();
+				ColumnFilter.builder().column("c").matching(NotMatcher.not(EqualsMatcher.matchEq("v"))).build();
 
 		Assertions.assertThat(filter).hasToString("c!=v");
 	}
@@ -161,14 +161,14 @@ public class TestColumnFilter {
 
 	@Test
 	public void testEqualTo_matcher() {
-		ISliceFilter cIsMatchAll = ColumnFilter.equalTo("c", LikeMatcher.matching("a%"));
+		ISliceFilter cIsMatchAll = ColumnFilter.matchEq("c", LikeMatcher.matching("a%"));
 
 		Assertions.assertThat(cIsMatchAll).hasToString("c matches `LikeMatcher(pattern=a%)`");
 	}
 
 	@Test
 	public void testEqualTo_Set() {
-		ISliceFilter cIsMatchAll = ColumnFilter.equalTo("c", ImmutableSet.of("v1", "v2"));
+		ISliceFilter cIsMatchAll = ColumnFilter.matchEq("c", ImmutableSet.of("v1", "v2"));
 
 		Assertions.assertThat(cIsMatchAll).hasToString("c==[v1, v2]");
 	}

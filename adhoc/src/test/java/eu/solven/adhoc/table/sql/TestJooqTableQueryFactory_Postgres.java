@@ -40,7 +40,6 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -61,7 +60,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = queryFactory.toCondition(ColumnFilter.equalTo("k1", "v1")).getCondition();
+		Condition condition = queryFactory.toCondition(ColumnFilter.matchEq("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'
@@ -85,7 +84,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
-				FilterBuilder.or(ColumnFilter.equalTo("k1", "v1"), ColumnFilter.equalTo("k2", "v2")).optimize();
+				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).optimize();
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -98,8 +97,9 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testToCondition_Not() {
-		ISliceFilter filter = NotFilter
-				.not(FilterBuilder.or(ColumnFilter.equalTo("k1", "v1"), ColumnFilter.equalTo("k2", "v2")).optimize());
+		ISliceFilter filter = FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2"))
+				.optimize()
+				.negate();
 		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
 
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -195,7 +195,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testFilter_custom_OR() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.equalTo("d", "someD"), customFilter).optimize();
+		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).optimize();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
@@ -209,13 +209,12 @@ public class TestJooqTableQueryFactory_Postgres {
 	public void testFilter_custom_NOT() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter =
-				NotFilter.not(FilterBuilder.or(ColumnFilter.equalTo("d", "someD"), customFilter).optimize());
+		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).optimize().negate();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover())
-				.satisfies(l -> Assertions.assertThat(l).isEqualTo(NotFilter.not(customFilter)));
+				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select sum("k") as "k", "c" from "someTableName" where not ("d" = 'someD') group by "c"
 								""".trim());
@@ -223,7 +222,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testFilteredAggregator() {
-		ISliceFilter customFilter = ColumnFilter.equalTo("c", "c1");
+		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
@@ -234,7 +233,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testFilteredAggregator_rank() {
-		ISliceFilter customFilter = ColumnFilter.equalTo("c", "c1");
+		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.builder()

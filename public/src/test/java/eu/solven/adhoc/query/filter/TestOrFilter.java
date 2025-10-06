@@ -68,7 +68,7 @@ public class TestOrFilter {
 	@Test
 	public void toString_notEmpty() {
 		ISliceFilter a1orb2 =
-				FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b2")).optimize();
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).optimize();
 
 		Assertions.assertThat(a1orb2.isMatchAll()).isFalse();
 	}
@@ -109,7 +109,7 @@ public class TestOrFilter {
 	@Test
 	public void testAndFilters_oneGrandTotal() {
 		ISliceFilter filterAllAndA =
-				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.equalTo("a", "a1")).optimize();
+				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.matchEq("a", "a1")).optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
@@ -117,7 +117,7 @@ public class TestOrFilter {
 	@Test
 	public void testOr_oneGrandTotal_forced() {
 		ISliceFilter filterAllAndA =
-				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.equalTo("a", "a1")).combine();
+				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.matchEq("a", "a1")).combine();
 
 		// We forced an OrBuilder: It is not simplified into IAdhocFilter.MATCH_ALL but is is isMatchAll
 		Assertions.assertThat(filterAllAndA.isMatchAll()).isTrue();
@@ -127,23 +127,23 @@ public class TestOrFilter {
 	@Test
 	public void testOr_oneMatchNone() {
 		ISliceFilter filterAllAndA =
-				FilterBuilder.or(ISliceFilter.MATCH_NONE, ColumnFilter.equalTo("a", "a1")).optimize();
+				FilterBuilder.or(ISliceFilter.MATCH_NONE, ColumnFilter.matchEq("a", "a1")).optimize();
 
-		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void test_twiceSame() {
 		ISliceFilter filterAllAndA =
-				FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("a", "a1")).optimize();
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("a", "a1")).optimize();
 
-		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.equalTo("a", "a1"));
+		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testOr_oneGrandTotal_TwoCustom() {
 		ISliceFilter filterAllAndA = FilterBuilder
-				.or(ISliceFilter.MATCH_NONE, ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("a", "a2"))
+				.or(ISliceFilter.MATCH_NONE, ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("a", "a2"))
 				.optimize();
 
 		Assertions.assertThat(filterAllAndA).isEqualTo(ColumnFilter.matchIn("a", "a1", "a2"));
@@ -152,7 +152,7 @@ public class TestOrFilter {
 	@Test
 	public void testMultipleSameColumn_equalsAndIn() {
 		ISliceFilter filterA1andInA12 =
-				FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.matchIn("a", "a1", "a2")).optimize();
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchIn("a", "a1", "a2")).optimize();
 
 		// At some point, this may be optimized into `ColumnFilter.isEqualTo("a", "a1")`
 		Assertions.assertThat(filterA1andInA12).isEqualTo(filterA1andInA12);
@@ -173,7 +173,7 @@ public class TestOrFilter {
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		ISliceFilter filter =
-				FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b2")).optimize();
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).optimize();
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -222,8 +222,8 @@ public class TestOrFilter {
 	@Test
 	public void testChained() {
 		ISliceFilter a1Andb2 =
-				FilterBuilder.or(ColumnFilter.equalTo("a", "a1"), ColumnFilter.equalTo("b", "b2")).optimize();
-		ISliceFilter a1Andb2AndC3 = FilterBuilder.or(a1Andb2, ColumnFilter.equalTo("c", "c3")).optimize();
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).optimize();
+		ISliceFilter a1Andb2AndC3 = FilterBuilder.or(a1Andb2, ColumnFilter.matchEq("c", "c3")).optimize();
 
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(OrFilter.class, orFilter -> {
 			Assertions.assertThat(orFilter.getOperands()).hasSize(3);
@@ -302,7 +302,7 @@ public class TestOrFilter {
 	public void testOr_AndWithAnOrOfAnds_operandIsAlwaysTrueGivenAllOthers() {
 		List<ISliceFilter> operands = new ArrayList<ISliceFilter>();
 
-		operands.add(ColumnFilter.equalTo("a", "a1"));
+		operands.add(ColumnFilter.matchEq("a", "a1"));
 		ISliceFilter inB = ColumnFilter.matchIn("b", "b1", "b2", "b3");
 		operands.add(inB);
 		ISliceFilter inC = ColumnFilter.matchIn("c", "c1", "c2", "c3");
@@ -310,7 +310,7 @@ public class TestOrFilter {
 
 		// This is always true given previous operands
 		operands.add(OrFilter.builder()
-				.or(ColumnFilter.equalTo("d", "d1"))
+				.or(ColumnFilter.matchEq("d", "d1"))
 				.or(AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
 				.build());
 
@@ -322,7 +322,7 @@ public class TestOrFilter {
 	public void testOr_AndWithAnOrOfAnds_operandIsAlwaysTrueGivenAllOthers_not() {
 		List<ISliceFilter> operands = new ArrayList<ISliceFilter>();
 
-		operands.add(ColumnFilter.equalTo("a", "a1"));
+		operands.add(ColumnFilter.matchEq("a", "a1"));
 		ISliceFilter inB = ColumnFilter.matchIn("b", "b1", "b2", "b3");
 		operands.add(inB);
 		ISliceFilter inC = ColumnFilter.matchIn("c", "c1", "c2", "c3");
@@ -330,8 +330,8 @@ public class TestOrFilter {
 
 		// This is always true given previous operands
 		operands.add(OrFilter.builder()
-				.or(ColumnFilter.equalTo("d", "d1"))
-				.or(AndFilter.and(ColumnFilter.equalTo("b", "b1"), NotFilter.not(ColumnFilter.equalTo("c", "c1"))))
+				.or(ColumnFilter.matchEq("d", "d1"))
+				.or(AndFilter.and(ColumnFilter.matchEq("b", "b1"), ColumnFilter.matchEq("c", "c1").negate()))
 				.build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
@@ -342,23 +342,23 @@ public class TestOrFilter {
 	public void testOr_AndWithAnOrOfAnds_andLong() {
 		List<ISliceFilter> operands = new ArrayList<ISliceFilter>();
 
-		operands.add(ColumnFilter.equalTo("a", "a1"));
+		operands.add(ColumnFilter.matchEq("a", "a1"));
 		ISliceFilter inB = ColumnFilter.matchIn("b", "b1", "b2", "b3");
 		operands.add(inB);
 		ISliceFilter inC = ColumnFilter.matchIn("c", "c1", "c2", "c3");
 		operands.add(inC);
 
 		operands.add(OrFilter.builder()
-				.or(ColumnFilter.equalTo("d", "d1"))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c1"))))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c2"))))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c3"))))
+				.or(ColumnFilter.matchEq("d", "d1"))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c1").negate()))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c2").negate()))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c3").negate()))
 				// Following ORs are always true given inB and inC
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c4"))))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c5"))))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c6"))))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c7"))))
-				.or(ColumnFilter.equalTo("b", "b1").and(NotFilter.not(ColumnFilter.equalTo("c", "c8"))))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c4").negate()))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c5").negate()))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c6").negate()))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c7").negate()))
+				.or(ColumnFilter.matchEq("b", "b1").and(ColumnFilter.matchEq("c", "c8").negate()))
 				.build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
@@ -378,11 +378,11 @@ public class TestOrFilter {
 		List<ISliceFilter> tableOr = new ArrayList<ISliceFilter>();
 
 		// There is a common simple filter
-		operandsSlice.add(ColumnFilter.equalTo("a", "a1"));
-		tableWhere.add(ColumnFilter.equalTo("a", "a1"));
+		operandsSlice.add(ColumnFilter.matchEq("a", "a1"));
+		tableWhere.add(ColumnFilter.matchEq("a", "a1"));
 
 		// The OR has other cubeQueryStep referring to unrelated columns
-		tableOr.add(ColumnFilter.equalTo("d", "d1"));
+		tableOr.add(ColumnFilter.matchEq("d", "d1"));
 
 		// There is two common IN
 		ISliceFilter inB = ColumnFilter.matchIn("b", "b1", "b2", "b3");
@@ -391,8 +391,8 @@ public class TestOrFilter {
 		operandsSlice.add(inC);
 
 		// current cubeQueryStep has a filter to a column specific to it
-		operandsSlice.add(ColumnFilter.equalTo("e", "e1"));
-		tableOr.add(FilterBuilder.and(inB, inC, ColumnFilter.equalTo("e", "e1")).combine());
+		operandsSlice.add(ColumnFilter.matchEq("e", "e1"));
+		tableOr.add(FilterBuilder.and(inB, inC, ColumnFilter.matchEq("e", "e1")).combine());
 
 		ISliceFilter cubeQueryStep = FilterBuilder.and(operandsSlice).combine();
 		ISliceFilter tableQueryStep = FilterBuilder.and(tableWhere)
@@ -412,12 +412,12 @@ public class TestOrFilter {
 		// d==d1|b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1, b=in=(b1,b2,b3), c=in=(c1,c2,c3)
 
 		ISliceFilter output = FilterBuilder.and()
-				.filter(ColumnFilter.equalTo("a", "a1"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
 				.filter(ColumnFilter.matchIn("b", "b1", "b2", "b3"))
 				.filter(ColumnFilter.matchIn("c", "c1", "c2", "c3"))
 				// The following OR has an unrelated clause, and a clause which is implied by the other AND operands
 				.filter(FilterBuilder
-						.or(ColumnFilter.equalTo("e", "e1"),
+						.or(ColumnFilter.matchEq("e", "e1"),
 								FilterBuilder
 										.and(ColumnFilter.matchIn("b", "b1", "b2", "b3"),
 												ColumnFilter.matchIn("c", "c1", "c2", "c3"))
@@ -437,8 +437,8 @@ public class TestOrFilter {
 		ISliceFilter output = FilterBuilder.builder()
 				.andElseOr(Type.AND)
 				.build()
-				.filter(FilterBuilder.and(ColumnFilter.equalTo("d", "d1")).combine().negate())
-				.filter(FilterBuilder.and(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.equalTo("e", "e1"))
+				.filter(FilterBuilder.and(ColumnFilter.matchEq("d", "d1")).combine().negate())
+				.filter(FilterBuilder.and(ColumnFilter.notEq("d", "d1"), ColumnFilter.matchEq("e", "e1"))
 						.combine()
 						.negate())
 				.optimize(optimizer);
@@ -454,12 +454,11 @@ public class TestOrFilter {
 				.filter(ColumnFilter.notIn("b", "b1", "b2"))
 				.filter(ColumnFilter.notIn("c", "c1", "c2"))
 				.filter(ColumnFilter.notIn("b", "b3", "b4"))
-				.filter(FilterBuilder.and(ColumnFilter.equalTo("d", "d1"), notLikeA1).combine().negate())
-				.filter(FilterBuilder.and(ColumnFilter.notIn("b", "b3", "b4"), ColumnFilter.equalTo("d", "d2"))
+				.filter(FilterBuilder.and(ColumnFilter.matchEq("d", "d1"), notLikeA1).combine().negate())
+				.filter(FilterBuilder.and(ColumnFilter.notIn("b", "b3", "b4"), ColumnFilter.matchEq("d", "d2"))
 						.combine()
 						.negate())
-				.filter(FilterBuilder
-						.and(ColumnFilter.notEqualTo("d", "d1"), ColumnFilter.equalTo("e", "e1"), notLikeA1)
+				.filter(FilterBuilder.and(ColumnFilter.notEq("d", "d1"), ColumnFilter.matchEq("e", "e1"), notLikeA1)
 						.combine()
 						.negate())
 				.optimize();
@@ -472,9 +471,9 @@ public class TestOrFilter {
 	@Test
 	public void testOr_AndNotOr_2() {
 		ISliceFilter output = FilterBuilder.and()
-				.filter(ColumnFilter.equalTo("b", "b1"))
+				.filter(ColumnFilter.matchEq("b", "b1"))
 				.filter(ColumnFilter.notIn("c", "c1", "c2"))
-				.filter(ColumnFilter.equalTo("d", "d2"))
+				.filter(ColumnFilter.matchEq("d", "d2"))
 
 				.filter(FilterBuilder
 						.and(ColumnFilter.notIn("c", "c1", "c2", "c3", "c4"),
@@ -490,11 +489,10 @@ public class TestOrFilter {
 														ColumnFilter.matchLike("g", "g1"))
 												.combine())
 										.filter(FilterBuilder
-												.and(ColumnFilter.equalTo("d", "d3"), ColumnFilter.matchLike("g", "g1"))
+												.and(ColumnFilter.matchEq("d", "d3"), ColumnFilter.matchLike("g", "g1"))
 												.combine())
 										.filter(FilterBuilder
-												.and(ColumnFilter.notEqualTo("d", "d2"),
-														ColumnFilter.matchLike("g", "g1"))
+												.and(ColumnFilter.notEq("d", "d2"), ColumnFilter.matchLike("g", "g1"))
 												.combine())
 
 										.combine(),

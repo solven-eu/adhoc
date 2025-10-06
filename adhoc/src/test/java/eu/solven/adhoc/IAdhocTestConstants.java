@@ -73,9 +73,9 @@ public interface IAdhocTestConstants {
 			.build();
 
 	Filtrator filterK1onA1 =
-			Filtrator.builder().name("filterK1onA1").underlying("k1").filter(ColumnFilter.equalTo("a", "a1")).build();
+			Filtrator.builder().name("filterK1onA1").underlying("k1").filter(ColumnFilter.matchEq("a", "a1")).build();
 	Filtrator filterK1onB1 =
-			Filtrator.builder().name("filterK1onB1").underlying("k1").filter(ColumnFilter.equalTo("b", "b1")).build();
+			Filtrator.builder().name("filterK1onB1").underlying("k1").filter(ColumnFilter.matchEq("b", "b1")).build();
 
 	Unfiltrator unfilterOnA = Unfiltrator.builder().name("unfilterOnK1").underlying("k1").column("a").build();
 

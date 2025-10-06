@@ -40,8 +40,8 @@ public class TestCubeWrapperTypeTranscoder {
 
 		Assertions.assertThat(typeTranscoder.mayTranscode("c")).isTrue();
 		Assertions.assertThat(typeTranscoder.toTable("c", "someString")).isEqualTo("someString");
-		Assertions.assertThat(typeTranscoder.toTable("c", EqualsMatcher.equalTo("someString")))
-				.isEqualTo(EqualsMatcher.equalTo("someString"));
+		Assertions.assertThat(typeTranscoder.toTable("c", EqualsMatcher.matchEq("someString")))
+				.isEqualTo(EqualsMatcher.matchEq("someString"));
 	}
 
 	@Test
@@ -51,8 +51,8 @@ public class TestCubeWrapperTypeTranscoder {
 
 		Assertions.assertThat(typeTranscoder.mayTranscode("c")).isTrue();
 		Assertions.assertThat(typeTranscoder.toTable("c", "2025-06-04")).isEqualTo(LocalDate.parse("2025-06-04"));
-		Assertions.assertThat(typeTranscoder.toTable("c", EqualsMatcher.equalTo("2025-06-04")))
-				.isEqualTo(EqualsMatcher.equalTo(LocalDate.parse("2025-06-04")));
+		Assertions.assertThat(typeTranscoder.toTable("c", EqualsMatcher.matchEq("2025-06-04")))
+				.isEqualTo(EqualsMatcher.matchEq(LocalDate.parse("2025-06-04")));
 
 		Assertions.assertThat(typeTranscoder.toTable("c", InMatcher.matchIn("2025-06-04", "2025-06-05")))
 				.isEqualTo(InMatcher.matchIn(LocalDate.parse("2025-06-04"), LocalDate.parse("2025-06-05")));

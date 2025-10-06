@@ -32,41 +32,41 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
 public class TestNotFilter {
 	@Test
 	public void testNot() {
-		Assertions.assertThat(NotFilter.not(ISliceFilter.MATCH_ALL)).isEqualTo(ISliceFilter.MATCH_NONE);
-		Assertions.assertThat(NotFilter.not(ISliceFilter.MATCH_NONE)).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(ISliceFilter.MATCH_ALL.negate()).isEqualTo(ISliceFilter.MATCH_NONE);
+		Assertions.assertThat(ISliceFilter.MATCH_NONE.negate()).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testNotOr() {
-		ISliceFilter orFilter = NotFilter
-				.not(FilterBuilder.or(ColumnFilter.equalTo("c", "c1"), ColumnFilter.equalTo("d", "d1")).combine());
+		ISliceFilter orFilter =
+				FilterBuilder.or(ColumnFilter.matchEq("c", "c1"), ColumnFilter.matchEq("d", "d1")).combine().negate();
 
 		Assertions.assertThat(orFilter).isInstanceOfSatisfying(AndFilter.class, andMatcher -> {
 			Assertions.assertThat(andMatcher.getOperands())
 					.hasSize(2)
 					.contains(ColumnFilter.builder()
 							.column("c")
-							.valueMatcher(NotMatcher.not(EqualsMatcher.equalTo("c1")))
+							.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq("c1")))
 							.build())
 					.contains(ColumnFilter.builder()
 							.column("d")
-							.valueMatcher(NotMatcher.not(EqualsMatcher.equalTo("d1")))
+							.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq("d1")))
 							.build());
 		});
 	}
 
 	@Test
 	public void testNotNot_equals() {
-		ISliceFilter notFilter = NotFilter.not(ColumnFilter.equalTo("c", "c1"));
-		ISliceFilter notNotFilter = NotFilter.not(notFilter);
+		ISliceFilter notFilter = ColumnFilter.matchEq("c", "c1").negate();
+		ISliceFilter notNotFilter = notFilter.negate();
 
-		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.equalTo("c", "c1"));
+		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.matchEq("c", "c1"));
 	}
 
 	@Test
 	public void testNotNot_like() {
-		ISliceFilter notFilter = NotFilter.not(ColumnFilter.matchLike("c", "a%"));
-		ISliceFilter notNotFilter = NotFilter.not(notFilter);
+		ISliceFilter notFilter = ColumnFilter.matchLike("c", "a%").negate();
+		ISliceFilter notNotFilter = notFilter.negate();
 
 		Assertions.assertThat(notNotFilter).isEqualTo(ColumnFilter.matchLike("c", "a%"));
 	}
@@ -79,10 +79,10 @@ public class TestNotFilter {
 				.build();
 		Assertions.assertThat(and).isInstanceOf(AndFilter.class);
 
-		ISliceFilter notAnd = NotFilter.not(and);
-		Assertions.assertThat(notAnd).isInstanceOf(NotFilter.class);
+		ISliceFilter notAnd = and.negate();
+		Assertions.assertThat(notAnd).isInstanceOf(OrFilter.class);
 
-		ISliceFilter notNotAnd = NotFilter.not(notAnd);
+		ISliceFilter notNotAnd = notAnd.negate();
 		Assertions.assertThat(notNotAnd).isEqualTo(and);
 	}
 
@@ -93,7 +93,7 @@ public class TestNotFilter {
 			Assertions.assertThat(f.isNullIfAbsent()).isTrue();
 		});
 
-		ISliceFilter notNotFilter = NotFilter.not(matchNull);
+		ISliceFilter notNotFilter = matchNull.negate();
 		Assertions.assertThat(notNotFilter).isInstanceOfSatisfying(ColumnFilter.class, f -> {
 			Assertions.assertThat(f.isNullIfAbsent()).isTrue();
 		});

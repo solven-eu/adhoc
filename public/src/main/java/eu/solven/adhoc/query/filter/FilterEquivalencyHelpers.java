@@ -74,12 +74,12 @@ public class FilterEquivalencyHelpers {
 			if (valueMatcher instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
-						.map(o -> ColumnFilter.equalTo(column.getColumn(), o))
+						.map(o -> ColumnFilter.matchEq(column.getColumn(), o))
 						.collect(Collectors.toSet());
 			} else if (valueMatcher instanceof NotMatcher not && not.getNegated() instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
-						.map(o -> NotFilter.not(ColumnFilter.equalTo(column.getColumn(), o)))
+						.map(o -> ColumnFilter.matchEq(column.getColumn(), o).negate())
 						.collect(Collectors.toSet());
 			} else {
 				return Set.of(column);
@@ -107,7 +107,7 @@ public class FilterEquivalencyHelpers {
 			// TODO This is false: we must turn a `!(a&b)` into `!a|!b`
 			Set<ISliceFilter> negatedDnf = dnf(not.getNegated());
 
-			return negatedDnf.stream().map(NotFilter::not).collect(Collectors.toSet());
+			return negatedDnf.stream().map(ISliceFilter::negate).collect(Collectors.toSet());
 		} else {
 			throw new NotYetImplementedException("Not managed: %s".formatted(filter));
 		}

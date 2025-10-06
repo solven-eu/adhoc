@@ -138,7 +138,7 @@ public class PivotableQueryHandler {
 				List<IValueMatcher> filters = rawFilters.stream()
 						.distinct()
 						// This equalsMatcher may later be turned into a StringMatcher
-						.<IValueMatcher>map(EqualsMatcher::equalTo)
+						.<IValueMatcher>map(EqualsMatcher::matchEq)
 						.toList();
 
 				ColumnFilter columnFilter = ColumnFilter.builder()

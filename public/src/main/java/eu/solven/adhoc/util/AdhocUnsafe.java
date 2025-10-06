@@ -65,8 +65,13 @@ public class AdhocUnsafe {
 		parallelism = defaultParallelism();
 		defaultColumnCapacity = limitColumnSize;
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
+	}
+
+	public static void resetAll() {
+		resetProperties();
 
 		// TODO Should we also reset adhocCommonPool?
+		sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 	}
 
 	public static void reloadProperties() {
@@ -224,7 +229,8 @@ public class AdhocUnsafe {
 	 * Default {@link IFilterOptimizer}, used by static methods. As this one is maintained in the long-run, it should
 	 * have no persistent cache, or with a proper expiring policy.
 	 */
-	public static IFilterOptimizer sliceFilterOptimizer = FilterOptimizerIntraCache.builder().build();
+	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
+	public static IFilterOptimizer sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios

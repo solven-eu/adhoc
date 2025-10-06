@@ -64,7 +64,7 @@ public class AtotiConditionCubeToAdhoc {
 		} else if (rawCondition instanceof ICondition apCondition) {
 			if (rawCondition instanceof IMatchingCondition matchingCondition) {
 				if (matchingCondition instanceof EqualCondition apEqualCondition) {
-					return ColumnFilter.equalTo(level, apEqualCondition.getMatchingParameter());
+					return ColumnFilter.matchEq(level, apEqualCondition.getMatchingParameter());
 				} else if (matchingCondition instanceof InCondition apInCondition) {
 					Set<?> domain = (Set<?>) apInCondition.getMatchingParameter();
 					return ColumnFilter.builder().column(level).matchIn(domain).build();

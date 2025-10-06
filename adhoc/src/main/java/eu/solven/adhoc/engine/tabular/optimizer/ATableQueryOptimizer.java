@@ -105,7 +105,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 	protected Optional<ISliceFilter> makeLeftoverFilter(Collection<IAdhocColumn> inducerColumns,
 			ISliceFilter inducerFilter,
 			ISliceFilter inducedFilter) {
-		assert FilterHelpers.isLaxerThan(inducerFilter, inducedFilter);
+		// This assert can be quite slow
+		// assert FilterHelpers.isLaxerThan(inducerFilter, inducedFilter);
 
 		// BEWARE There is NOT two different ways to filters rows from inducer for induced:
 		// Either we reject the rows which are in inducer but not expected by induced,

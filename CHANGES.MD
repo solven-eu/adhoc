@@ -24,6 +24,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `AndFilterBuilder.filter` is renamed `AndFilterBuilder.and`.
 - `OrFilterBuilder.filter` is renamed `OrFilterBuilder.and`.
 - `TableQueryOptimizerSinglePerAggregator` now rely on `TableQueryOptimizer` to evaluate rootInducers.
+- `ColumnFilter.isEqualTo` is renamed `ColumnFilter.matchEq`.
 
 ### Fixed
 - Prevent `AdhocFactories` using an invalid `ICoordinateNormalizer` by default, using `StandardSliceFactory` own default.

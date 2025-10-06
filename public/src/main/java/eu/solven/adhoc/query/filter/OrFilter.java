@@ -87,7 +87,7 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public ISliceFilter negate() {
-		return FilterBuilder.and(getOperands().stream().map(NotFilter::not).toList()).combine();
+		return FilterBuilder.and(getOperands().stream().map(ISliceFilter::negate).toList()).combine();
 	}
 
 	@Override
