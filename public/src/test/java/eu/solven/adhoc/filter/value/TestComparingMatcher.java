@@ -139,14 +139,14 @@ public class TestComparingMatcher {
 		// >= 234
 		ComparingMatcher comparing234 = ComparingMatcher.builder().greaterThan(true).operand(234).build();
 		// in (123,345)
-		IValueMatcher in123_345 = InMatcher.isIn(123, 345);
+		IValueMatcher in123_345 = InMatcher.matchIn(123, 345);
 
-		Assertions.assertThat(AndMatcher.and(comparing234, in123_345)).isEqualTo(InMatcher.isIn(Set.of(345)));
+		Assertions.assertThat(AndMatcher.and(comparing234, in123_345)).isEqualTo(InMatcher.matchIn(Set.of(345)));
 		Assertions.assertThat(OrMatcher.or(comparing234, in123_345))
 				.isInstanceOfSatisfying(OrMatcher.class, orMatcher -> {
 					Assertions.assertThat(orMatcher.getOperands())
 							.hasSize(2)
-							.contains(InMatcher.isIn(Set.of(123)), comparing234);
+							.contains(InMatcher.matchIn(Set.of(123)), comparing234);
 				});
 	}
 

@@ -24,8 +24,6 @@ package eu.solven.adhoc.query;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;

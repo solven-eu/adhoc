@@ -100,7 +100,6 @@ public interface IMultitypeColumn<T> {
 	 * @param stragegy
 	 * @return a valid (yet possibly not optimal) {@link Stream} given the strategy, making no assumption on the column.
 	 */
-	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	static <T> Stream<SliceAndMeasure<T>> defaultStream(IMultitypeColumn<T> column, StreamStrategy stragegy) {
 		return switch (stragegy) {
 		case StreamStrategy.ALL:

@@ -126,7 +126,7 @@ public class ColumnFilter implements IColumnFilter {
 		}
 
 		public ColumnFilterBuilder matchIn(Collection<?> operands) {
-			this.valueMatcher = InMatcher.isIn(operands);
+			this.valueMatcher = InMatcher.matchIn(operands);
 			return this;
 		}
 
@@ -207,7 +207,7 @@ public class ColumnFilter implements IColumnFilter {
 		} else {
 			return ColumnFilter.builder()
 					.column(column)
-					.valueMatcher(NotMatcher.not(InMatcher.isIn(expandedList)))
+					.valueMatcher(NotMatcher.not(InMatcher.matchIn(expandedList)))
 					.build();
 		}
 	}

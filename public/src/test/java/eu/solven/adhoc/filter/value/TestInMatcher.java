@@ -48,24 +48,24 @@ import eu.solven.adhoc.query.filter.value.StringMatcher;
 public class TestInMatcher {
 	@Test
 	public void testNested() {
-		Assertions.assertThat(InMatcher.isIn("a", "b"))
+		Assertions.assertThat(InMatcher.matchIn("a", "b"))
 				.isInstanceOfSatisfying(InMatcher.class,
 						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
-		Assertions.assertThat(InMatcher.isIn(Set.of("a", "b")))
+		Assertions.assertThat(InMatcher.matchIn(Set.of("a", "b")))
 				.isInstanceOfSatisfying(InMatcher.class,
 						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
-		Assertions.assertThat(InMatcher.isIn(List.of("a", "b")))
+		Assertions.assertThat(InMatcher.matchIn(List.of("a", "b")))
 				.isInstanceOfSatisfying(InMatcher.class,
 						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b")));
 
-		Assertions.assertThat(InMatcher.isIn(List.of("a", "b"), "c"))
+		Assertions.assertThat(InMatcher.matchIn(List.of("a", "b"), "c"))
 				.isInstanceOfSatisfying(InMatcher.class,
 						in -> Assertions.assertThat(in.getOperands()).isEqualTo(Set.of("a", "b", "c")));
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		IValueMatcher matcher = InMatcher.isIn("a", "b");
+		IValueMatcher matcher = InMatcher.matchIn("a", "b");
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
@@ -89,7 +89,7 @@ public class TestInMatcher {
 		Set<Object> singletonNull = new HashSet<>();
 		singletonNull.add(null);
 
-		Assertions.assertThat(InMatcher.isIn(singletonNull)).isInstanceOf(NullMatcher.class);
+		Assertions.assertThat(InMatcher.matchIn(singletonNull)).isInstanceOf(NullMatcher.class);
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class TestInMatcher {
 		singletonNull.add(null);
 		singletonNull.add("notNull");
 
-		Assertions.assertThat(InMatcher.isIn(singletonNull))
+		Assertions.assertThat(InMatcher.matchIn(singletonNull))
 				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), EqualsMatcher.equalTo("notNull")));
 	}
 
@@ -108,8 +108,8 @@ public class TestInMatcher {
 		nestedMayNull.add(Arrays.asList("foo"));
 		nestedMayNull.add(Arrays.asList(null, "bar"));
 
-		Assertions.assertThat(InMatcher.isIn(nestedMayNull))
-				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), InMatcher.isIn("foo", "bar")));
+		Assertions.assertThat(InMatcher.matchIn(nestedMayNull))
+				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), InMatcher.matchIn("foo", "bar")));
 	}
 
 	@Test
@@ -119,8 +119,8 @@ public class TestInMatcher {
 		singletonNull.add("notNull1");
 		singletonNull.add("notNull2");
 
-		Assertions.assertThat(InMatcher.isIn(singletonNull))
-				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), InMatcher.isIn("notNull1", "notNull2")));
+		Assertions.assertThat(InMatcher.matchIn(singletonNull))
+				.isEqualTo(OrMatcher.or(NullMatcher.matchNull(), InMatcher.matchIn("notNull1", "notNull2")));
 	}
 
 	@Test
@@ -132,7 +132,7 @@ public class TestInMatcher {
 		// Incompatible class
 		Assertions.assertThat(InMatcher.extractOperands(EqualsMatcher.equalTo("foo"), LocalDate.class)).isEmpty();
 
-		Assertions.assertThat(InMatcher.extractOperands(InMatcher.isIn("foo", LocalDate.now(), "bar"), String.class))
+		Assertions.assertThat(InMatcher.extractOperands(InMatcher.matchIn("foo", LocalDate.now(), "bar"), String.class))
 				.containsExactly("foo", "bar");
 
 		Assertions.assertThat(InMatcher.extractOperands(NotMatcher.not(EqualsMatcher.equalTo("foo")), String.class))
@@ -143,7 +143,7 @@ public class TestInMatcher {
 	public void testValueMatcherOperand() {
 		IValueMatcher operandValueMatcher = StringMatcher.hasToString("foo");
 
-		IValueMatcher inMatcher = InMatcher.isIn(operandValueMatcher, "bar");
+		IValueMatcher inMatcher = InMatcher.matchIn(operandValueMatcher, "bar");
 
 		Assertions.assertThat(inMatcher)
 				.isEqualTo(
@@ -158,28 +158,28 @@ public class TestInMatcher {
 
 	@Test
 	public void testInIntMatchLong() {
-		Assertions.assertThat(InMatcher.isIn(123, 234).match(123L)).isTrue();
-		Assertions.assertThat(InMatcher.isIn(123L, 234L).match(123)).isTrue();
+		Assertions.assertThat(InMatcher.matchIn(123, 234).match(123L)).isTrue();
+		Assertions.assertThat(InMatcher.matchIn(123L, 234L).match(123)).isTrue();
 
-		Assertions.assertThat(InMatcher.isIn(12.34, 23.45).match(12.34D)).isTrue();
-		Assertions.assertThat(InMatcher.isIn(12.34D, 23.45D).match(12.34)).isTrue();
+		Assertions.assertThat(InMatcher.matchIn(12.34, 23.45).match(12.34D)).isTrue();
+		Assertions.assertThat(InMatcher.matchIn(12.34D, 23.45D).match(12.34)).isTrue();
 	}
 
 	@Test
 	public void testInDoubleMatchLong() {
-		Assertions.assertThat(InMatcher.isIn(123D, 234D).match(123L)).isFalse();
-		Assertions.assertThat(InMatcher.isIn(123L, 234L).match(123D)).isFalse();
+		Assertions.assertThat(InMatcher.matchIn(123D, 234D).match(123L)).isFalse();
+		Assertions.assertThat(InMatcher.matchIn(123L, 234L).match(123D)).isFalse();
 	}
 
 	@Test
 	public void testIn_positive_hardcoded() {
-		Assertions.assertThat(InMatcher.isIn(ComparingMatcher.builder().greaterThan(123).build(), 234D))
+		Assertions.assertThat(InMatcher.matchIn(ComparingMatcher.builder().greaterThan(123).build(), 234D))
 				.isInstanceOf(ComparingMatcher.class);
 	}
 
 	@Test
 	public void testToString_huge() {
-		IValueMatcher inMatcher = InMatcher.isIn(IntStream.range(0, 1024).mapToObj(i -> i).toList());
+		IValueMatcher inMatcher = InMatcher.matchIn(IntStream.range(0, 1024).mapToObj(i -> i).toList());
 
 		Assertions.assertThat(inMatcher)
 				.hasToString(

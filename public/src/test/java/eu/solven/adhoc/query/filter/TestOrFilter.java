@@ -166,7 +166,7 @@ public class TestOrFilter {
 
 		Assertions.assertThat(filterA1andInA12).isInstanceOfSatisfying(ColumnFilter.class, cf -> {
 			Assertions.assertThat(cf.getColumn()).isEqualTo("a");
-			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(InMatcher.isIn("a1", "a2", "a3"));
+			Assertions.assertThat(cf.getValueMatcher()).isEqualTo(InMatcher.matchIn("a1", "a2", "a3"));
 		});
 	}
 

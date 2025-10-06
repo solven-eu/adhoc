@@ -71,7 +71,7 @@ public class MoreFilterHelpers {
 					.map(operand -> customTypeManager.toTable(column, operand))
 					.toList();
 
-			return InMatcher.isIn(transcodedOperands);
+			return InMatcher.matchIn(transcodedOperands);
 		} else if (valueMatcher instanceof NotMatcher notMatcher) {
 			return NotMatcher.builder()
 					.negated(transcodeType(customTypeManager, column, notMatcher.getNegated()))

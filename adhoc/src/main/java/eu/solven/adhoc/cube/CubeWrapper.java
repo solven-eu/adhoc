@@ -210,7 +210,7 @@ public class CubeWrapper implements ICubeWrapper {
 
 		List<IColumnGenerator> columnGenerators = columnsManager.getGeneratedColumns(operatorFactory,
 				forest.getMeasures(),
-				InMatcher.isIn(columnToValueMatcher.keySet()));
+				InMatcher.matchIn(columnToValueMatcher.keySet()));
 
 		Set<String> generatedColumns = columnGenerators.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())

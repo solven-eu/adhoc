@@ -140,7 +140,7 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 	}
 
 	public void setCrossStepsCache(Map<Object, Object> transverseCache) {
-		getCache().put(CubeQueryStep.KEY_CACHE_TRANSVERSE, transverseCache);
+		getCache().put(KEY_CACHE_TRANSVERSE, transverseCache);
 	}
 
 	@Override

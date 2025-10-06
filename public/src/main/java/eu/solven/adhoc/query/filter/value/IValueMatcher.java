@@ -79,7 +79,7 @@ public interface IValueMatcher {
 		} else if (matching instanceof IValueMatcher vm) {
 			return vm;
 		} else if (matching instanceof Collection<?> c) {
-			return InMatcher.isIn(c);
+			return InMatcher.matchIn(c);
 		} else if (matching instanceof IColumnFilter) {
 			throw new IllegalArgumentException("Can not use a IColumnFilter as valueFilter: %s"
 					.formatted(PepperLogHelper.getObjectAndClass(matching)));

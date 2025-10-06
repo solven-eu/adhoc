@@ -51,7 +51,7 @@ public class TestOrMatcher {
 
 	@Test
 	public void testOr_InEq() {
-		IValueMatcher a_or_bc = OrMatcher.or(EqualsMatcher.equalTo("a"), InMatcher.isIn("b", "c"));
+		IValueMatcher a_or_bc = OrMatcher.or(EqualsMatcher.equalTo("a"), InMatcher.matchIn("b", "c"));
 
 		Assertions.assertThat(a_or_bc).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
 			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b", "c");
@@ -60,14 +60,14 @@ public class TestOrMatcher {
 
 	@Test
 	public void testOr_InEq_overlap() {
-		IValueMatcher a_or_ab = OrMatcher.or(EqualsMatcher.equalTo("a"), InMatcher.isIn("a", "b"));
+		IValueMatcher a_or_ab = OrMatcher.or(EqualsMatcher.equalTo("a"), InMatcher.matchIn("a", "b"));
 
-		Assertions.assertThat(a_or_ab).isEqualTo(InMatcher.isIn("a", "b"));
+		Assertions.assertThat(a_or_ab).isEqualTo(InMatcher.matchIn("a", "b"));
 	}
 
 	@Test
 	public void testOr_InIn() {
-		IValueMatcher a_or_bc = OrMatcher.or(InMatcher.isIn("a", "b"), InMatcher.isIn("b", "c"));
+		IValueMatcher a_or_bc = OrMatcher.or(InMatcher.matchIn("a", "b"), InMatcher.matchIn("b", "c"));
 
 		Assertions.assertThat(a_or_bc).isInstanceOfSatisfying(InMatcher.class, inMatcher -> {
 			Assertions.assertThat((Set) inMatcher.getOperands()).contains("a", "b", "c");

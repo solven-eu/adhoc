@@ -54,8 +54,8 @@ public class TestCubeWrapperTypeTranscoder {
 		Assertions.assertThat(typeTranscoder.toTable("c", EqualsMatcher.equalTo("2025-06-04")))
 				.isEqualTo(EqualsMatcher.equalTo(LocalDate.parse("2025-06-04")));
 
-		Assertions.assertThat(typeTranscoder.toTable("c", InMatcher.isIn("2025-06-04", "2025-06-05")))
-				.isEqualTo(InMatcher.isIn(LocalDate.parse("2025-06-04"), LocalDate.parse("2025-06-05")));
+		Assertions.assertThat(typeTranscoder.toTable("c", InMatcher.matchIn("2025-06-04", "2025-06-05")))
+				.isEqualTo(InMatcher.matchIn(LocalDate.parse("2025-06-04"), LocalDate.parse("2025-06-05")));
 	}
 
 	private static class CustomClass {

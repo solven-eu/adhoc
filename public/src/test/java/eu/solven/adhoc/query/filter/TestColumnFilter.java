@@ -132,7 +132,7 @@ public class TestColumnFilter {
 	@Test
 	public void testToString_out() {
 		ISliceFilter filter =
-				ColumnFilter.builder().column("c").matching(NotMatcher.not(InMatcher.isIn("v1", "v2"))).build();
+				ColumnFilter.builder().column("c").matching(NotMatcher.not(InMatcher.matchIn("v1", "v2"))).build();
 
 		Assertions.assertThat(filter).hasToString("c=out=(v1,v2)");
 	}

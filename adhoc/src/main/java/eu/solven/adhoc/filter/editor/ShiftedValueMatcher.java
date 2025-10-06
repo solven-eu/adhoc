@@ -55,7 +55,7 @@ public class ShiftedValueMatcher implements IValueMatcher {
 		if (originalMatcher instanceof EqualsMatcher equalsMatcher) {
 			return EqualsMatcher.equalTo(shift.apply(equalsMatcher.getOperand()));
 		} else if (originalMatcher instanceof InMatcher inMatcher) {
-			return InMatcher.isIn(inMatcher.getOperands().stream().map(shift::apply).toList());
+			return InMatcher.matchIn(inMatcher.getOperands().stream().map(shift::apply).toList());
 		} else {
 			return ShiftedValueMatcher.builder().originalMatcher(originalMatcher).shifter(shift).build();
 		}

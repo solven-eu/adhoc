@@ -60,7 +60,7 @@ public class BenchmarkInFilter {
 	List<?> asList = IntStream.range(0, 5).mapToObj(i -> i).toList();
 	List<?> asList2 = IntStream.range(0 + 2, 5 + 2).mapToObj(i -> i).toList();
 
-	IValueMatcher matcher = InMatcher.isIn(asList);
+	IValueMatcher matcher = InMatcher.matchIn(asList);
 
 	List<?> nestedLists = List.of(asList, asList2);
 
@@ -72,12 +72,12 @@ public class BenchmarkInFilter {
 	// This is called many times in Combinator for
 	@Benchmark
 	public IValueMatcher isIn_fromList() {
-		return InMatcher.isIn(asList);
+		return InMatcher.matchIn(asList);
 	}
 
 	@Benchmark
 	public IValueMatcher isIn_nestedLists() {
-		return InMatcher.isIn(nestedLists);
+		return InMatcher.matchIn(nestedLists);
 	}
 
 }

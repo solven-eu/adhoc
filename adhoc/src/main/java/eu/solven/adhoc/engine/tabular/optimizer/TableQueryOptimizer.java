@@ -65,13 +65,19 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 	 * @param tableQueries
 	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
 	 */
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	@Override
 	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
 		if (tableQueries.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
 
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = splitInducedAsDag(tableQueries);
+
+		return SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
+	}
+
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<TableQuery> tableQueries) {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
@@ -133,11 +139,12 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 				}
 			});
 		});
-
-		return SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
+		return inducedToInducer;
 	}
 
 	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`
+	// BEWARE This design prevents having an induced inferred by multiple inducers
+	// (e.g. `WHERE A` and `WHERE B` can induce `WHERE A OR B`)
 	protected boolean canInduce(CubeQueryStep inducer, CubeQueryStep induced) {
 		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
 			// Different measures: can not induce

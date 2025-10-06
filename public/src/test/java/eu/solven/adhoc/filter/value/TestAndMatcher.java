@@ -44,7 +44,7 @@ public class TestAndMatcher {
 	@Test
 	public void testAndInEq() {
 		AndMatcher a_and_aandb =
-				AndMatcher.builder().operand(EqualsMatcher.equalTo("a")).operand(InMatcher.isIn("a", "b")).build();
+				AndMatcher.builder().operand(EqualsMatcher.equalTo("a")).operand(InMatcher.matchIn("a", "b")).build();
 
 		// TODO Improve this when relevant
 		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
