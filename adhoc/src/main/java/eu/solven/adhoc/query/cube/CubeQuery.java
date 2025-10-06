@@ -33,8 +33,6 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -251,13 +249,6 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		}
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
-		} else {
-			if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-				builder.option(StandardQueryOptions.EXPLAIN);
-			}
-			if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-				builder.option(StandardQueryOptions.DEBUG);
-			}
 		}
 
 		return builder;

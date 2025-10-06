@@ -267,7 +267,7 @@ public class TableQueryEngineBootstrapped {
 		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
 		// Open the stream: the table may or may not return after the actual execution
 		try (ITabularRecordStream rowsStream = openTableStream(queryPod, suppressedQuery)) {
-			if (queryPod.isExplain() || queryPod.isDebug()) {
+			if (queryPod.isDebugOrExplain()) {
 				// JooQ may be slow to load some classes
 				// Slowness also due to fetching stream characteristics, which actually open the query
 				Duration openingElasped = openingStopwatch.elapsed();
@@ -495,7 +495,7 @@ public class TableQueryEngineBootstrapped {
 
 		// BEWARE This timing is independent of the table
 		Duration elapsed = singToAggregatedStarted.elapsed();
-		if (queryPod.isDebug() || queryPod.isExplain()) {
+		if (queryPod.isDebugOrExplain()) {
 			long[] sizes = immutableChunks.values().stream().mapToLong(ISliceToValue::size).toArray();
 
 			if (queryPod.isDebug()) {

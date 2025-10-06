@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.measure.aggregation;
 
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A aggregation query. It is configured by:
- * 
- * - a filtering condition as an {@link ISliceFilter}
- * 
- * - columns along which the result is sliced as an {@link IAdhocGroupBy}
- * 
- * - measures may be {@link Aggregator} or {@link ITransformatorQueryStep}
- * 
- * @author Benoit Lacelle
- *
- */
-public interface ICubeQuery extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IHasQueryOptions {
+import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 
+public class TestExpressionAggregation {
+	ExpressionAggregation agg = new ExpressionAggregation();
+
+	@Test
+	public void testAggregtion() {
+		Assertions.assertThat(agg.aggregate((Object) null, null)).isNull();
+
+		Assertions.assertThat(agg.aggregate("left", null)).isEqualTo("left");
+		Assertions.assertThat(agg.aggregate(null, "right")).isEqualTo("right");
+
+		Assertions.assertThatThrownBy(() -> agg.aggregate("left", "right"))
+				.isInstanceOf(UnsupportedOperationException.class);
+	}
 }

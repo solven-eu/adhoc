@@ -206,4 +206,21 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.hasSize(1)
 				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
 	}
+
+	@Test
+	public void testCanInduce_chainOfInducers() {
+		TableQuery tqABC = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).aggregator(k1Sum).build();
+		TableQuery tqAB = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
+		TableQuery tqA = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tqABC, tqAB, tqA));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(2)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build())
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+	}
 }

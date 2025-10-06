@@ -42,6 +42,7 @@ public class ExpressionAggregation implements IAggregation {
 		} else if (right == null) {
 			return left;
 		} else {
+			// Should this case be supported for CompositeCubes ?
 			throw new UnsupportedOperationException("Can not be evaluated. left=%s right=%s".formatted(left, right));
 		}
 	}

@@ -252,12 +252,12 @@ public class MatcherOptimizerHelpers {
 			if (other instanceof NotMatcher otherNot) {
 				if (otherNot.getNegated() instanceof EqualsMatcher otherNotNegated) {
 					// `!= x && != y`
-					return Optional.of(
-							NotMatcher.not(InMatcher.isIn(negatedEquals.getOperand(), otherNotNegated.getOperand())));
+					return Optional.of(NotMatcher
+							.not(InMatcher.matchIn(negatedEquals.getOperand(), otherNotNegated.getOperand())));
 				} else if (otherNot.getNegated() instanceof InMatcher otherNotNegated) {
 					// `!= x && =out= y`
-					return Optional.of(
-							NotMatcher.not(InMatcher.isIn(negatedEquals.getOperand(), otherNotNegated.getOperands())));
+					return Optional.of(NotMatcher
+							.not(InMatcher.matchIn(negatedEquals.getOperand(), otherNotNegated.getOperands())));
 				}
 			}
 
@@ -268,11 +268,11 @@ public class MatcherOptimizerHelpers {
 				if (otherNot.getNegated() instanceof EqualsMatcher otherNotNegated) {
 					// `=out= x && != y`
 					return Optional
-							.of(NotMatcher.not(InMatcher.isIn(disallowedElements, otherNotNegated.getOperand())));
+							.of(NotMatcher.not(InMatcher.matchIn(disallowedElements, otherNotNegated.getOperand())));
 				} else if (otherNot.getNegated() instanceof InMatcher otherNotNegated) {
 					// `!= x && =out= y`
 					return Optional
-							.of(NotMatcher.not(InMatcher.isIn(disallowedElements, otherNotNegated.getOperands())));
+							.of(NotMatcher.not(InMatcher.matchIn(disallowedElements, otherNotNegated.getOperands())));
 				}
 			}
 
@@ -286,7 +286,7 @@ public class MatcherOptimizerHelpers {
 			if (disallowedButAllowedByOther.size() < disallowedElements.size()) {
 				AndMatcher simplerWithNotAndIn = AndMatcher.builder()
 						// Reject individually the elements not already rejected by other
-						.operand(NotMatcher.not(InMatcher.isIn(disallowedButAllowedByOther), false))
+						.operand(NotMatcher.not(InMatcher.matchIn(disallowedButAllowedByOther), false))
 						.operand(other)
 						.build();
 				return Optional.of(simplerWithNotAndIn);
@@ -308,6 +308,6 @@ public class MatcherOptimizerHelpers {
 
 		List<?> allowedInBoth = inOperands.stream().filter(other::match).toList();
 
-		return InMatcher.isIn(allowedInBoth);
+		return InMatcher.matchIn(allowedInBoth);
 	}
 }

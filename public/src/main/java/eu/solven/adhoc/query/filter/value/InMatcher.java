@@ -102,8 +102,7 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 	 *            {@link Collection} will be unnested. `null` and `IValueMatchers` are managed specifically.
 	 * @return
 	 */
-	@SuppressWarnings("PMD.LinguisticNaming")
-	public static IValueMatcher isIn(Collection<?> allowedValues) {
+	public static IValueMatcher matchIn(Collection<?> allowedValues) {
 		Collection<?> unnested = AdhocCollectionHelpers.unnestAsCollection(allowedValues);
 
 		if (unnested.isEmpty()) {
@@ -147,9 +146,8 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 	 *
 	 * @return
 	 */
-	@SuppressWarnings("PMD.LinguisticNaming")
-	public static IValueMatcher isIn(Object first, Object second, Object... more) {
-		return isIn(Lists.asList(first, second, more));
+	public static IValueMatcher matchIn(Object first, Object second, Object... more) {
+		return matchIn(Lists.asList(first, second, more));
 	}
 
 	/**

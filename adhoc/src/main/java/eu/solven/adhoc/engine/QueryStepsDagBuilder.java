@@ -222,7 +222,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		}
 
 		// BEWARE Is this bad-design? Should the transverseCache be in its own field?
-		step.getCache().put(CubeQueryStep.KEY_CACHE_TRANSVERSE, crossStepsCache);
+		step.setCrossStepsCache(crossStepsCache);
 
 		if (hasCache) {
 			// result from cache : no need to request for underlyings

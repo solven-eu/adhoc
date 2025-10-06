@@ -24,8 +24,6 @@ package eu.solven.adhoc.query;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
@@ -68,13 +66,6 @@ public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, I
 		}
 		if (step instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
-		} else {
-			if (step instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-				builder.option(StandardQueryOptions.EXPLAIN);
-			}
-			if (step instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-				builder.option(StandardQueryOptions.DEBUG);
-			}
 		}
 
 		return builder;

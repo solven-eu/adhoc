@@ -233,7 +233,7 @@ public class TestEqualsMatcher {
 	@Test
 	public void testExtractOperand() {
 		// Not EqualsMatcher
-		Assertions.assertThat(EqualsMatcher.extractOperand(InMatcher.isIn("a", "b"))).isEmpty();
+		Assertions.assertThat(EqualsMatcher.extractOperand(InMatcher.matchIn("a", "b"))).isEmpty();
 
 		// Simple matching case
 		Assertions.assertThat(EqualsMatcher.extractOperand(EqualsMatcher.matchEq("a"), String.class)).contains("a");

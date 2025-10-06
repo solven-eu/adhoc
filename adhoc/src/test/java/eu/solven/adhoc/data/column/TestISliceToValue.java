@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import java.util.Map;
 
-/**
- * A aggregation query. It is configured by:
- * 
- * - a filtering condition as an {@link ISliceFilter}
- * 
- * - columns along which the result is sliced as an {@link IAdhocGroupBy}
- * 
- * - measures may be {@link Aggregator} or {@link ITransformatorQueryStep}
- * 
- * @author Benoit Lacelle
- *
- */
-public interface ICubeQuery extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IHasQueryOptions {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+
+public class TestISliceToValue {
+	@Test
+	public void testGetValue() {
+		IMultitypeColumnFastGet<IAdhocSlice> values = MultitypeHashColumn.<IAdhocSlice>builder().capacity(1).build();
+		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("a", "a1", "b", "b1"));
+		values.append(slice).onLong(123);
+
+		ISliceToValue sliceToValue = SliceToValue.builder().column("a").column("b").values(values).build();
+
+		Assertions.assertThat(ISliceToValue.getValue(sliceToValue, slice)).isEqualTo(123L);
+	}
 }

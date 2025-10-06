@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IHasTags;
@@ -72,7 +70,7 @@ import lombok.Value;
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
 public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions, IHasCache {
-	public static final String KEY_CACHE_TRANSVERSE = "adhoc-transverseCache";
+	private static final String KEY_CACHE_TRANSVERSE = "adhoc-transverseCache";
 	public static final String KEY_FILTER_OPTIMIZER = "adhoc-filterOptimizer";
 
 	private final long id = AdhocUnsafe.nextQueryStepIndex();
@@ -131,13 +129,6 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 		}
 		if (step instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
-		} else {
-			if (step instanceof IIsExplainable explainable && explainable.isExplain()) {
-				builder.option(StandardQueryOptions.EXPLAIN);
-			}
-			if (step instanceof IIsDebugable debuggable && debuggable.isDebug()) {
-				builder.option(StandardQueryOptions.DEBUG);
-			}
 		}
 
 		return builder;
@@ -148,15 +139,24 @@ public class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHas
 		return getOptions().contains(StandardQueryOptions.DEBUG) || measure.getTags().contains(IHasTags.TAG_DEBUG);
 	}
 
+	public void setCrossStepsCache(Map<Object, Object> transverseCache) {
+		getCache().put(KEY_CACHE_TRANSVERSE, transverseCache);
+	}
+
 	@Override
 	public void invalidateAll() {
 		Map<Object, Object> transverseCache = getTransverseCache();
 		cache.clear();
-		cache.put(KEY_CACHE_TRANSVERSE, transverseCache);
+		setCrossStepsCache(transverseCache);
 	}
 
 	public Map<Object, Object> getTransverseCache() {
-		return (Map<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
+		Map<Object, Object> transverseCache = (Map<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
+
+		if (transverseCache == null) {
+			throw new IllegalStateException("Missing call to `setCrossStepsCache` on %s".formatted(this));
+		}
+		return transverseCache;
 	}
 
 }

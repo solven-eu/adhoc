@@ -49,7 +49,7 @@ public class TestFilterHelpers {
 	@Test
 	public void testGetValueMatcher_in() {
 		ColumnFilter inV1OrV2 = ColumnFilter.builder().column("c").matching(Set.of("v1", "v2")).build();
-		Assertions.assertThat(FilterHelpers.getValueMatcher(inV1OrV2, "c")).isEqualTo(InMatcher.isIn("v1", "v2"));
+		Assertions.assertThat(FilterHelpers.getValueMatcher(inV1OrV2, "c")).isEqualTo(InMatcher.matchIn("v1", "v2"));
 		Assertions.assertThat(FilterHelpers.getValueMatcher(inV1OrV2, "unknownColumn"))
 				.isEqualTo(IValueMatcher.MATCH_ALL);
 	}

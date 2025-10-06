@@ -28,13 +28,10 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
@@ -106,13 +103,6 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 		}
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
-		} else {
-			if (query instanceof IIsExplainable isExplainable && isExplainable.isExplain()) {
-				builder.option(StandardQueryOptions.EXPLAIN);
-			}
-			if (query instanceof IIsDebugable isDebugable && isDebugable.isDebug()) {
-				builder.option(StandardQueryOptions.DEBUG);
-			}
 		}
 
 		return builder;

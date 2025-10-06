@@ -35,9 +35,8 @@ import com.google.common.collect.MultimapBuilder;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -60,37 +59,63 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer {
+public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer {
 
 	public TableQueryOptimizerSinglePerAggregator(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		super(factories, filterOptimizer);
 	}
 
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
-		if (tableQueries.isEmpty()) {
-			return SplitTableQueries.empty();
-		}
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<TableQuery> tableQueries) {
+		// This dag optimized `induced->inducer` by minimizing the number of inducers, considering only inducers from
+		// the initial TableQueries
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = super.splitInducedAsDag(tableQueries);
 
+		Set<CubeQueryStep> rootInducers = inducedToInducer.vertexSet()
+				.stream()
+				.filter(s -> inducedToInducer.inDegreeOf(s) == 0)
+				.collect(ImmutableSet.toImmutableSet());
+
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> moreInducedToInducer = more(rootInducers);
+
+		moreInducedToInducer.vertexSet().forEach(inducedToInducer::addVertex);
+		moreInducedToInducer.edgeSet()
+				.forEach(e -> inducedToInducer.addEdge(moreInducedToInducer.getEdgeSource(e),
+						moreInducedToInducer.getEdgeTarget(e)));
+
+		return inducedToInducer;
+	}
+
+	/**
+	 * The splitting strategy is based on:
+	 * <ul>
+	 * <li>Doing a single query per Aggregator. It will keep a low number of queries</li>
+	 * <li>For an aggregator, do a query able to induce all steps (typically by querying the union of groupBy and
+	 * filters)</li>
+	 * </ul>
+	 * 
+	 * From an implementation perspective, this re-use the standard optimization process, then compute a single
+	 * CubeQueryStep by Aggregator given the root inducers.
+	 */
+	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> more(Set<CubeQueryStep> rootInducers) {
 		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
 				MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
-		tableQueries.forEach(tq -> {
-			tq.getAggregators().forEach(agg -> {
-				// Typically holds options and customMarkers
-				CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
+		rootInducers.forEach(tq -> {
+			IMeasure agg = tq.getMeasure();
+			// Typically holds options and customMarkers
+			CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
 
-				// consider a single context per measure
-				CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
+			// consider a single context per measure
+			CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
 
-				CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
-						.measure(agg)
-						.groupBy(tq.getGroupBy())
-						.filter(tq.getFilter())
-						.build();
+			CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
+					.measure(agg)
+					.groupBy(tq.getGroupBy())
+					.filter(tq.getFilter())
+					.build();
 
-				contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
-			});
+			contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
 		});
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
@@ -100,7 +125,6 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 		// a single query, leading to a very large OR.
 		FilterOptimizer optimizer = FilterOptimizerWithCache.builder().build();
 
-		SplitTableQueriesBuilder split = SplitTableQueries.builder();
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
 
 			Set<? extends ISliceFilter> filters =
@@ -144,7 +168,7 @@ public class TableQueryOptimizerSinglePerAggregator extends ATableQueryOptimizer
 			});
 		});
 
-		return split.inducedToInducer(inducedToInducer).build();
+		return inducedToInducer;
 	}
 
 }

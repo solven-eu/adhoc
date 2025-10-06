@@ -23,6 +23,8 @@
 package eu.solven.adhoc.engine.step;
 
 import java.time.LocalDate;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -42,5 +44,24 @@ public class TestCubeQueryStep {
 		LocalDate today = LocalDate.now();
 		step.getCache().put(today, 12.34D);
 		Assertions.assertThat(step.getCache()).containsEntry("k", "v").containsEntry(today, 12.34D);
+	}
+
+	@Test
+	public void testCrossStepsCache() {
+		CubeQueryStep step = CubeQueryStep.builder().measure("m").build();
+
+		// Issue if the cache is not initializer
+		Assertions.assertThatThrownBy(() -> step.getTransverseCache()).isInstanceOf(IllegalStateException.class);
+
+		// Initialize the cache
+		ConcurrentMap<Object, Object> transverseCache = new ConcurrentHashMap<>();
+		step.setCrossStepsCache(transverseCache);
+
+		// Check the cache is properly behaving
+		Assertions.assertThat(step.getTransverseCache()).isSameAs(transverseCache);
+
+		// transverseCache is still valid after an `invalidateAll`
+		step.invalidateAll();
+		Assertions.assertThat(step.getTransverseCache()).isSameAs(transverseCache);
 	}
 }

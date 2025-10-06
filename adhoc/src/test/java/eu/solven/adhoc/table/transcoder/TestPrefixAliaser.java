@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.table.transcoder;
 
-import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import java.util.Set;
 
-/**
- * A aggregation query. It is configured by:
- * 
- * - a filtering condition as an {@link ISliceFilter}
- * 
- * - columns along which the result is sliced as an {@link IAdhocGroupBy}
- * 
- * - measures may be {@link Aggregator} or {@link ITransformatorQueryStep}
- * 
- * @author Benoit Lacelle
- *
- */
-public interface ICubeQuery extends IWhereGroupByQuery, IHasMeasures, IHasCustomMarker, IHasQueryOptions {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+public class TestPrefixAliaser {
+	PrefixAliaser aliaser = PrefixAliaser.builder().prefix("p_").build();
+
+	@Test
+	public void testAlias() {
+		Assertions.assertThat(aliaser.underlying("k")).isEqualTo("p_k");
+		Assertions.assertThat(aliaser.underlying("p_k")).isEqualTo("p_p_k");
+
+		Assertions.assertThat(aliaser.queried("p_k")).containsExactly("k");
+
+		Assertions.assertThatThrownBy(() -> aliaser.queried("k")).isInstanceOf(IllegalArgumentException.class);
+
+		Assertions.assertThat(aliaser.estimateQueriedSize(Set.of("k"))).isEqualTo(1);
+	}
 }
