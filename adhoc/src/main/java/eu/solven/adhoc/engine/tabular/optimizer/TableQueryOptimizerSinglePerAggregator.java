@@ -71,10 +71,8 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		// the initial TableQueries
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = super.splitInducedAsDag(tableQueries);
 
-		Set<CubeQueryStep> rootInducers = inducedToInducer.vertexSet()
-				.stream()
-				.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
-				.collect(ImmutableSet.toImmutableSet());
+		Set<CubeQueryStep> rootInducers =
+				SplitTableQueries.builder().inducedToInducer(inducedToInducer).build().getInducers();
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> moreInducedToInducer = getGroupedInducers(rootInducers);
 
