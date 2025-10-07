@@ -73,10 +73,10 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 
 		Set<CubeQueryStep> rootInducers = inducedToInducer.vertexSet()
 				.stream()
-				.filter(s -> inducedToInducer.inDegreeOf(s) == 0)
+				.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
 				.collect(ImmutableSet.toImmutableSet());
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> moreInducedToInducer = more(rootInducers);
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> moreInducedToInducer = getGroupedInducers(rootInducers);
 
 		moreInducedToInducer.vertexSet().forEach(inducedToInducer::addVertex);
 		moreInducedToInducer.edgeSet()
@@ -97,7 +97,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 	 * From an implementation perspective, this re-use the standard optimization process, then compute a single
 	 * CubeQueryStep by Aggregator given the root inducers.
 	 */
-	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> more(Set<CubeQueryStep> rootInducers) {
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getGroupedInducers(Set<CubeQueryStep> rootInducers) {
 		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
 				MultimapBuilder.linkedHashKeys().arrayListValues().build();
 

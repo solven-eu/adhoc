@@ -64,20 +64,11 @@ public interface ITableQueryOptimizer {
 	@Value
 	@Builder
 	class SplitTableQueries implements IHasDagFromInducedToInducer {
-		// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
-		// @Singular
-		// @NonNull
-		// ImmutableSet<CubeQueryStep> inducers;
-		//
-		// // Holds the TableQuery which can be evaluated implicitly from underlyings
-		// @Singular
-		// @NonNull
-		// ImmutableSet<CubeQueryStep> induceds;
-
 		// From induced to inducer
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
+		// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
 		public ImmutableSet<CubeQueryStep> getInducers() {
 			return inducedToInducer.vertexSet()
 					.stream()
@@ -85,16 +76,13 @@ public interface ITableQueryOptimizer {
 					.collect(ImmutableSet.toImmutableSet());
 		}
 
+		// Holds the TableQuery which can be evaluated implicitly from underlyings
 		public ImmutableSet<CubeQueryStep> getInduceds() {
 			return ImmutableSet.copyOf(Sets.difference(inducedToInducer.vertexSet(), getInducers()));
 		}
 
 		public static SplitTableQueries empty() {
-			return SplitTableQueries.builder()
-					// .induceds(Set.of())
-					// .inducers(Set.of())
-					.inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class))
-					.build();
+			return SplitTableQueries.builder().inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class)).build();
 		}
 	}
 
