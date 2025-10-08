@@ -135,7 +135,10 @@ public class ColumnsManager implements IColumnsManager {
 			Set<String> calculatedColumns = getFiltrableCalculatedColumns(query);
 
 			// Exclude the calculatedColumns as they can not be evaluated by the ITableWrapper
-			ISliceFilter preFilter = SimpleFilterEditor.suppressColumn(notTranscodedFilter, calculatedColumns);
+			// BEWARE Optimization is skipped as we expect low amount of optimizations, and it may be coslty to
+			// re-optimize in case of large `OR` (e.g. TableQueryOptimizeSingleAggregator)
+			ISliceFilter preFilter =
+					SimpleFilterEditor.suppressColumn(notTranscodedFilter, calculatedColumns, Optional.empty());
 
 			// We'll have to filter manually the rows given the calculated columns
 			// BEWARE This may rely on standard columns, for filters like `custom=c1&standard=s1|custom=c2&standard=s2`

@@ -90,6 +90,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		tableQueries.forEach(tq -> {
 			tq.getAggregators().stream().forEach(agg -> {
 				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
+				// BEWARE step.filter must be optimized as it is inserted in a hashStructure
 				inducedToInducer.addVertex(step);
 				aggregatorToQueries.put(agg, step);
 			});

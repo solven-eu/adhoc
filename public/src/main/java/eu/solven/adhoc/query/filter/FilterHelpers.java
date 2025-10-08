@@ -241,7 +241,7 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static ISliceFilter commonAnd(Set<? extends ISliceFilter> filters) {
-		return new FilterUtility(AdhocUnsafe.sliceFilterOptimizer).commonAnd(filters);
+		return new FilterUtility(AdhocUnsafe.filterOptimizer).commonAnd(filters);
 	}
 
 	/**
@@ -252,7 +252,7 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static ISliceFilter commonOr(ImmutableSet<? extends ISliceFilter> filters) {
-		return new FilterUtility(AdhocUnsafe.sliceFilterOptimizer).commonOr(filters);
+		return new FilterUtility(AdhocUnsafe.filterOptimizer).commonOr(filters);
 	}
 
 	/**

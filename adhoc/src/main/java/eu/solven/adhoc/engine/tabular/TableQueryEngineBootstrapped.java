@@ -450,8 +450,9 @@ public class TableQueryEngineBootstrapped {
 
 		if (!generatedColumnToSuppressFromFilter.isEmpty()) {
 			ISliceFilter originalFilter = tableQuery.getFilter();
-			ISliceFilter suppressedFilter =
-					SimpleFilterEditor.suppressColumn(originalFilter, generatedColumnToSuppressFromFilter);
+			ISliceFilter suppressedFilter = SimpleFilterEditor.suppressColumn(originalFilter,
+					generatedColumnToSuppressFromFilter,
+					Optional.of(filterOptimizerSupplier.get()));
 
 			if (queryPod.isDebugOrExplain()) {
 				eventBus.post(AdhocLogEvent.builder()

@@ -98,7 +98,7 @@ public class FilterBuilder {
 	 * @return a {@link ISliceFilter} which is optimized.
 	 */
 	public ISliceFilter optimize() {
-		return optimize(AdhocUnsafe.sliceFilterOptimizer);
+		return optimize(AdhocUnsafe.filterOptimizer);
 	}
 
 	public ISliceFilter optimize(IFilterOptimizer optimizer) {

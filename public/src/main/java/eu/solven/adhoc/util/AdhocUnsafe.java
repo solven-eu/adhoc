@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.util;
 
-import java.time.Clock;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -74,7 +73,7 @@ public class AdhocUnsafe {
 		resetProperties();
 
 		// TODO Should we also reset adhocCommonPool?
-		sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
+		filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 	}
 
 	public static void reloadProperties() {
@@ -233,7 +232,7 @@ public class AdhocUnsafe {
 	 * have no persistent cache, or with a proper expiring policy.
 	 */
 	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
-	public static IFilterOptimizer sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
+	public static IFilterOptimizer filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 
 	/**
 	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it

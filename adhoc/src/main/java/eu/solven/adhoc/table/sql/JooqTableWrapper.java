@@ -141,13 +141,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 		// https://duckdb.org/docs/sql/expressions/star.html
 		Map<String, ColumnMetadata> columnToType = new HashMap<>();
 
-        // TODO Qualify columns with table
-        // https://duckdbsnippets.com/snippets/204/label-columns-based-on-source-table
-        // SELECT
-        //    COLUMNS(t1.*) AS 't1_\0',
-        //    COLUMNS(t2.*) AS 't2_\0'
-        //FROM range(10) t1
-        //JOIN range(10) t2 ON t1.range = t2.range
+		// TODO Qualify columns with table
+		// https://duckdbsnippets.com/snippets/204/label-columns-based-on-source-table
+		// SELECT
+		// COLUMNS(t1.*) AS 't1_\0',
+		// COLUMNS(t2.*) AS 't2_\0'
+		// FROM range(10) t1
+		// JOIN range(10) t2 ON t1.range = t2.range
 
 		fields.forEach(field -> {
 			String fieldName = field.getName();

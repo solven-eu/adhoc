@@ -446,7 +446,7 @@ public class TestFilterHelpers {
 	// Ensure `.splitAnd` must not do any optimization
 	@Test
 	public void testSplitAnd_checkNoOptimize() {
-		AdhocUnsafe.sliceFilterOptimizer = forbidOptimizations;
+		AdhocUnsafe.filterOptimizer = forbidOptimizations;
 
 		try {
 
@@ -471,7 +471,7 @@ public class TestFilterHelpers {
 	// Ensure `.splitOr` must not do any optimization
 	@Test
 	public void testSplitOr_checkNoOptimize() {
-		AdhocUnsafe.sliceFilterOptimizer = forbidOptimizations;
+		AdhocUnsafe.filterOptimizer = forbidOptimizations;
 
 		try {
 

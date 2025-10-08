@@ -24,6 +24,7 @@ package eu.solven.adhoc.filter.editor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -36,7 +37,9 @@ import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Singular;
@@ -186,12 +189,18 @@ public class SimpleFilterEditor implements IFilterEditor {
 		return filter -> retainsColumns(filter, retainedColumns);
 	}
 
+	public static ISliceFilter suppressColumn(ISliceFilter filter, Set<String> suppressedColumns) {
+		return suppressColumn(filter, suppressedColumns, Optional.of(AdhocUnsafe.filterOptimizer));
+	}
+
 	/**
 	 * 
 	 * @param suppressedColumns
 	 * @return a filter where suppressedColumns columns are turned into `matchAll`
 	 */
-	public static ISliceFilter suppressColumn(ISliceFilter filter, Set<String> suppressedColumns) {
+	public static ISliceFilter suppressColumn(ISliceFilter filter,
+			Set<String> suppressedColumns,
+			Optional<IFilterOptimizer> optOptimizer) {
 		if (filter instanceof IColumnFilter columnFilter) {
 			boolean isSuppressed = suppressedColumns.contains(columnFilter.getColumn());
 
@@ -203,21 +212,29 @@ public class SimpleFilterEditor implements IFilterEditor {
 		} else if (filter instanceof IAndFilter andFilter) {
 			List<ISliceFilter> unfiltered = andFilter.getOperands()
 					.stream()
-					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
+					.map(subFilter -> suppressColumn(subFilter, suppressedColumns, optOptimizer))
 					.toList();
 
 			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
 			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
-			return FilterBuilder.and(unfiltered).combine();
+			if (optOptimizer.isPresent()) {
+				return FilterBuilder.and(unfiltered).optimize(optOptimizer.get());
+			} else {
+				return FilterBuilder.and(unfiltered).combine();
+			}
 		} else if (filter instanceof IOrFilter orFilter) {
 			List<ISliceFilter> unfiltered = orFilter.getOperands()
 					.stream()
-					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
+					.map(subFilter -> suppressColumn(subFilter, suppressedColumns, optOptimizer))
 					.toList();
 
 			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
 			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
-			return FilterBuilder.or(unfiltered).combine();
+			if (optOptimizer.isPresent()) {
+				return FilterBuilder.or(unfiltered).optimize(optOptimizer.get());
+			} else {
+				return FilterBuilder.or(unfiltered).combine();
+			}
 		} else {
 			throw new NotYetImplementedException("filter:%s".formatted(filter));
 		}
