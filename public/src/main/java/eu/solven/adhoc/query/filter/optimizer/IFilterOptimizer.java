@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter.optimizer;
 
+import java.time.Duration;
 import java.util.Collection;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -59,6 +60,10 @@ public interface IFilterOptimizer {
 		}
 
 		default void onSkip(ISliceFilter filter) {
+			// swallowed
+		}
+
+		default void onOptimizationDone(ISliceFilter input, Duration duration) {
 			// swallowed
 		}
 	}
