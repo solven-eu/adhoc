@@ -42,6 +42,8 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.filter.stripper.FilterStripper;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -127,12 +129,14 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 			ISliceFilter rawCommonAnd = FilterHelpers.commonAnd(filters);
 			ISliceFilter commonFilter = FilterBuilder.and(rawCommonAnd).optimize(filterOptimizer);
 
+			IFilterStripper commonStripper = new FilterStripper(commonFilter);
+
 			Set<String> inducerColumns = new TreeSet<>();
 			Set<ISliceFilter> eachInducedFilters = new LinkedHashSet<>();
 			filterGroupBy.forEach(tq -> {
 				inducerColumns.addAll(tq.getGroupBy().getGroupedByColumns());
 
-				ISliceFilter strippedFromWhere = FilterHelpers.stripWhereFromFilter(commonFilter, tq.getFilter());
+				ISliceFilter strippedFromWhere = commonStripper.strip(tq.getFilter());
 				// We need these additional columns for proper filtering
 				inducerColumns.addAll(FilterHelpers.getFilteredColumns(strippedFromWhere));
 
@@ -142,8 +146,9 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 			// OR between each inducer own filter
 			// induced will fetch the union of rows for all induced
 			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).optimize(filterOptimizer);
-			// BEWARE This `AND` is not optimized as we expect no optimization.
-			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).combine();
+			// BEWARE This `AND` is optimized even if we expect no optimization.
+			// Even if we would expect low amount of optimizations, it require optimization in a later step
+			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize(filterOptimizer);
 
 			CubeQueryStep inducer = CubeQueryStep.edit(contextualAggregate)
 					.filter(inducerFilter)
