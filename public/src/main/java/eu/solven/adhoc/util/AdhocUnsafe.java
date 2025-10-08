@@ -33,6 +33,8 @@ import com.google.common.base.Strings;
 
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.pepper.thread.NamingForkJoinWorkerThreadFactory;
 import lombok.Getter;
 import lombok.Setter;
@@ -231,6 +233,14 @@ public class AdhocUnsafe {
 	 */
 	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
 	public static IFilterOptimizer sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
+
+	/**
+	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it
+	 * should have no persistent cache, or with a proper expiring policy.
+	 */
+	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY =
+			FilterStripperFactory.builder().build();
+	public static IFilterStripperFactory filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
 
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios
