@@ -24,9 +24,12 @@ package eu.solven.adhoc.query.filter.stripper;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -36,6 +39,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 
 /**
  * Default implementation of IFilterStripper
@@ -51,6 +55,11 @@ public class FilterStripper implements IFilterStripper {
 	protected final Supplier<Set<ISliceFilter>> whereAnds = Suppliers.memoize(this::splitWhereAnd);
 	protected final Supplier<Set<ISliceFilter>> whereOrs = Suppliers.memoize(this::splitWhereOr);
 
+	// Cache isStricterThan as due to the recursivity of the argument, we often call on the same input
+	protected final Cache<ISliceFilter, Boolean> knownAsStricter = CacheBuilder.newBuilder().build();
+	// Cache filterStripper to benefit from the subWhere stripper own cache
+	protected final Cache<ISliceFilter, IFilterStripper> filterToStripper = CacheBuilder.newBuilder().build();
+
 	protected Set<ISliceFilter> splitWhereAnd() {
 		return FilterHelpers.splitAnd(where);
 	}
@@ -59,8 +68,9 @@ public class FilterStripper implements IFilterStripper {
 		return FilterHelpers.splitOr(where);
 	}
 
+	@SneakyThrows(ExecutionException.class)
 	protected IFilterStripper makeStripper(ISliceFilter subWhere) {
-		return new FilterStripper(subWhere);
+		return filterToStripper.get(subWhere, () -> new FilterStripper(subWhere));
 	}
 
 	@Override
@@ -153,7 +163,14 @@ public class FilterStripper implements IFilterStripper {
 	}
 
 	@Override
+	@SneakyThrows(ExecutionException.class)
 	public boolean isStricterThan(ISliceFilter laxer) {
+		return knownAsStricter.get(laxer, () -> {
+			return noCacheIsStricterThan(laxer);
+		});
+	}
+
+	protected boolean noCacheIsStricterThan(ISliceFilter laxer) {
 		if (where instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
 			return makeStripper(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
 		} else if (where instanceof IColumnFilter stricterColumn && laxer instanceof IColumnFilter laxerFilter) {

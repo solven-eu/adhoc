@@ -217,7 +217,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 
 			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
 			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
-			return FilterBuilder.or(unfiltered).optimize();
+			return FilterBuilder.or(unfiltered).combine();
 		} else {
 			throw new NotYetImplementedException("filter:%s".formatted(filter));
 		}

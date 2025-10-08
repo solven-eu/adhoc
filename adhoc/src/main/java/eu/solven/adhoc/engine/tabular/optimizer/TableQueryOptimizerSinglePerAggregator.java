@@ -39,6 +39,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -121,12 +122,12 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
+		FilterUtility filterUtility = FilterUtility.builder().optimizer(filterOptimizer).build();
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
-
 			Set<? extends ISliceFilter> filters =
 					filterGroupBy.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 
-			ISliceFilter rawCommonAnd = FilterHelpers.commonAnd(filters);
+			ISliceFilter rawCommonAnd = filterUtility.commonAnd(filters);
 			ISliceFilter commonFilter = FilterBuilder.and(rawCommonAnd).optimize(filterOptimizer);
 
 			IFilterStripper commonStripper = new FilterStripper(commonFilter);
