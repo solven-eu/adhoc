@@ -206,13 +206,17 @@ public class SimpleFilterEditor implements IFilterEditor {
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();
 
-			return FilterBuilder.and(unfiltered).optimize();
+			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
+			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
+			return FilterBuilder.and(unfiltered).combine();
 		} else if (filter instanceof IOrFilter orFilter) {
 			List<ISliceFilter> unfiltered = orFilter.getOperands()
 					.stream()
 					.map(subFilter -> suppressColumn(subFilter, suppressedColumns))
 					.toList();
 
+			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
+			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
 			return FilterBuilder.or(unfiltered).optimize();
 		} else {
 			throw new NotYetImplementedException("filter:%s".formatted(filter));

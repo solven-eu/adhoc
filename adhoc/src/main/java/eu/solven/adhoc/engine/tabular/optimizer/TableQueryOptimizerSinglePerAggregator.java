@@ -41,8 +41,6 @@ import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -61,6 +59,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer {
 
+	// Rely on an filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
+	// a single query, leading to a very large OR.
 	public TableQueryOptimizerSinglePerAggregator(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		super(factories, filterOptimizer);
 	}
@@ -119,15 +119,13 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
-		// Rely on an filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
-		// a single query, leading to a very large OR.
-		FilterOptimizer optimizer = FilterOptimizerWithCache.builder().build();
-
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
 
 			Set<? extends ISliceFilter> filters =
 					filterGroupBy.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
-			ISliceFilter commonFilter = FilterHelpers.commonAnd(filters);
+
+			ISliceFilter rawCommonAnd = FilterHelpers.commonAnd(filters);
+			ISliceFilter commonFilter = FilterBuilder.and(rawCommonAnd).optimize(filterOptimizer);
 
 			Set<String> inducerColumns = new TreeSet<>();
 			Set<ISliceFilter> eachInducedFilters = new LinkedHashSet<>();
@@ -143,8 +141,9 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 
 			// OR between each inducer own filter
 			// induced will fetch the union of rows for all induced
-			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).optimize(optimizer);
-			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).optimize(optimizer);
+			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).optimize(filterOptimizer);
+			// BEWARE This `AND` is not optimized as we expect no optimization.
+			ISliceFilter inducerFilter = FilterBuilder.and(commonFilter, combinedOr).combine();
 
 			CubeQueryStep inducer = CubeQueryStep.edit(contextualAggregate)
 					.filter(inducerFilter)
@@ -152,7 +151,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 					.build();
 
 			filterGroupBy.forEach(tq -> {
-				ISliceFilter inducedFilter = FilterBuilder.and(inducerFilter, tq.getFilter()).optimize(optimizer);
+				ISliceFilter inducedFilter = FilterBuilder.and(inducerFilter, tq.getFilter()).optimize(filterOptimizer);
 				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(inducedFilter).build();
 
 				if (inducer.equals(induced)) {
