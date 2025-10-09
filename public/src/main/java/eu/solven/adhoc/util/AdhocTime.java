@@ -20,51 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.optimizer;
+package eu.solven.adhoc.util;
 
+import java.time.Clock;
 import java.time.Duration;
-import java.util.Collection;
+import java.time.Instant;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import lombok.experimental.UtilityClass;
 
 /**
- * Holds the optimization of {@link ISliceFilter}
+ * Helps working with time through Adhoc.
  * 
  * @author Benoit Lacelle
  */
-public interface IFilterOptimizer {
+@UtilityClass
+@SuppressWarnings("PMD.MutableStaticState")
+public class AdhocTime {
 
-	/**
-	 * 
-	 * @param filters
-	 * @param willBeNegated
-	 *            true if this expression will be negated (e.g. when being called by `OR`)
-	 * @return
-	 */
-	ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated);
+	public static Clock clock = Clock.systemUTC();
 
-	ISliceFilter or(Collection<? extends ISliceFilter> filters);
+	public static Instant now() {
+		return Instant.now(clock);
+	}
 
-	ISliceFilter not(ISliceFilter first);
-
-	/**
-	 * Enable receiving event related to the optimization process.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	// Methods are defaulted to prevent breaking code when adding events
-	interface IOptimizerEventListener {
-
-		default void onOptimize(ISliceFilter filter) {
-			// swallowed
-		}
-
-		default void onSkip(ISliceFilter filter) {
-			// swallowed
-		}
-
-		default void onOptimizationDone(ISliceFilter input, Duration duration) {
-			// swallowed
-		}
+	public static Duration untilNow(Instant start) {
+		return Duration.between(start, now());
 	}
 }

@@ -20,51 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.optimizer;
-
-import java.time.Duration;
-import java.util.Collection;
+package eu.solven.adhoc.query.filter.stripper;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
- * Holds the optimization of {@link ISliceFilter}
+ * Helps simplifying a {@link ISliceFilter} relatively to another one representing a `WHERE` clause.
  * 
  * @author Benoit Lacelle
  */
-public interface IFilterOptimizer {
+public interface IFilterStripper {
+	ISliceFilter strip(ISliceFilter filter);
 
 	/**
 	 * 
-	 * @param filters
-	 * @param willBeNegated
-	 *            true if this expression will be negated (e.g. when being called by `OR`)
-	 * @return
+	 * @param filter
+	 * @return true if the input filter is laxer than the `WHERE` clause represented by this.
 	 */
-	ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated);
-
-	ISliceFilter or(Collection<? extends ISliceFilter> filters);
-
-	ISliceFilter not(ISliceFilter first);
-
-	/**
-	 * Enable receiving event related to the optimization process.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	// Methods are defaulted to prevent breaking code when adding events
-	interface IOptimizerEventListener {
-
-		default void onOptimize(ISliceFilter filter) {
-			// swallowed
-		}
-
-		default void onSkip(ISliceFilter filter) {
-			// swallowed
-		}
-
-		default void onOptimizationDone(ISliceFilter input, Duration duration) {
-			// swallowed
-		}
-	}
+	boolean isStricterThan(ISliceFilter filter);
 }

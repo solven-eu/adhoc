@@ -110,15 +110,19 @@ public class MoreFilterHelpers {
 					.valueMatcher(transcodeType(customTypeManager, column, columnFilter.getValueMatcher()))
 					.build();
 		} else if (filter instanceof IAndFilter andFilter) {
+			// Combine as we keep the original optimizations, not to risk a slow optimize in `transcodeFilter`
+			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
 			return FilterBuilder.and(andFilter.getOperands()
 					.stream()
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
-					.toList()).optimize();
+					.toList()).combine();
 		} else if (filter instanceof IOrFilter orFilter) {
+			// Combine as we keep the original optimizations, not to risk a slow optimize in `transcodeFilter`
+			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
 			return FilterBuilder.or(orFilter.getOperands()
 					.stream()
 					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
-					.toList()).optimize();
+					.toList()).combine();
 		} else if (filter instanceof INotFilter notFilter) {
 			return transcodeFilter(customTypeManager, tableTranscoder, notFilter.getNegated()).negate();
 		} else {

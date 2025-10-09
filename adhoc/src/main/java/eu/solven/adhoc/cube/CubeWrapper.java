@@ -121,6 +121,16 @@ public class CubeWrapper implements ICubeWrapper {
 			ColumnMetadata originalMetadata = columnToType.get(tableName);
 
 			if (originalMetadata == null) {
+				// Typically happens on JOINs
+				// SQL engines generally returns unqualified columnName
+				// Hence, `joinA.columnC` is returned as `columnC` by SQL.
+				// But `columnC` is an alias for `joinA.columnC` according to the aliaser.
+				// In most situations, we prefer to fallback on the alias, as the project alias is often the same as the
+				// SQL alias (i.e. unqualified columnName).
+				originalMetadata = columnToType.get(columnAlias);
+			}
+
+			if (originalMetadata == null) {
 				log.debug("Unclear alias=%s as it has no underlying column", columnAlias);
 				columnToType.put(columnAlias,
 						ColumnMetadata.builder().name(columnAlias).tag("alias").type(Object.class).build());

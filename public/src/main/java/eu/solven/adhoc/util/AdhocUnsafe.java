@@ -33,6 +33,8 @@ import com.google.common.base.Strings;
 
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.pepper.thread.NamingForkJoinWorkerThreadFactory;
 import lombok.Getter;
 import lombok.Setter;
@@ -71,7 +73,7 @@ public class AdhocUnsafe {
 		resetProperties();
 
 		// TODO Should we also reset adhocCommonPool?
-		sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
+		filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 	}
 
 	public static void reloadProperties() {
@@ -217,7 +219,7 @@ public class AdhocUnsafe {
 	 * @return
 	 */
 	private static ForkJoinPool newWorkStealingPool() {
-		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
+		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common"), null, true);
 	}
 
 	// Typically used as limit to prevent iterating over large cartesian products
@@ -230,7 +232,15 @@ public class AdhocUnsafe {
 	 * have no persistent cache, or with a proper expiring policy.
 	 */
 	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
-	public static IFilterOptimizer sliceFilterOptimizer = DEFAULT_FILTER_OPTIMIZER;
+	public static IFilterOptimizer filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
+
+	/**
+	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it
+	 * should have no persistent cache, or with a proper expiring policy.
+	 */
+	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY =
+			FilterStripperFactory.builder().build();
+	public static IFilterStripperFactory filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
 
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios

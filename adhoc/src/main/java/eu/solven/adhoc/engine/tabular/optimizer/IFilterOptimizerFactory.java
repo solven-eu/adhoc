@@ -26,6 +26,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.table.TableQuery;
 
 /**
  * Helps creating a {@link IFilterOptimizer}.
@@ -37,8 +38,19 @@ import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
  * @author Benoit Lacelle
  */
 public interface IFilterOptimizerFactory {
+	/**
+	 * This should be used for long-running cases (e.g. some Spring bean).
+	 * 
+	 * @return a {@link IFilterOptimizer} without any cache policy.
+	 */
 	IFilterOptimizer makeOptimizer();
 
+	/**
+	 * This should be preferred when we know the {@link IFilterOptimizer} is used for a specific context (e.g. a
+	 * specific {@link TableQuery}).
+	 * 
+	 * @return a {@link IFilterOptimizer} with a cache policy.
+	 */
 	IFilterOptimizer makeOptimizerWithCache();
 
 	static IFilterOptimizerFactory standard() {

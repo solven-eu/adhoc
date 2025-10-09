@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.filter.optimizer;
 
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -57,6 +58,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
+import eu.solven.adhoc.util.AdhocTime;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -89,23 +91,41 @@ public class FilterOptimizer implements IFilterOptimizer {
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
-		listener.onOptimize(AndFilter.builder().ands(filters).build());
+		AndFilter filterForEvent = AndFilter.builder().ands(filters).build();
+		listener.onOptimize(filterForEvent);
 
-		return notCachedAnd(filters, willBeNegated);
+		Instant start = Instant.now(AdhocTime.clock);
+		try {
+			return notCachedAnd(filters, willBeNegated);
+		} finally {
+			listener.onOptimizationDone(filterForEvent, AdhocTime.untilNow(start));
+		}
 	}
 
 	@Override
 	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
-		listener.onOptimize(OrFilter.builder().ors(filters).build());
+		OrFilter filterForEvent = OrFilter.builder().ors(filters).build();
+		listener.onOptimize(filterForEvent);
 
-		return notCachedOr(filters);
+		Instant start = Instant.now(AdhocTime.clock);
+		try {
+			return notCachedOr(filters);
+		} finally {
+			listener.onOptimizationDone(filterForEvent, AdhocTime.untilNow(start));
+		}
 	}
 
 	@Override
 	public ISliceFilter not(ISliceFilter filter) {
-		listener.onOptimize(NotFilter.builder().negated(filter).build());
+		NotFilter filterForEvent = NotFilter.builder().negated(filter).build();
+		listener.onOptimize(filterForEvent);
 
-		return notCachedNot(filter);
+		Instant start = Instant.now(AdhocTime.clock);
+		try {
+			return notCachedNot(filter);
+		} finally {
+			listener.onOptimizationDone(filterForEvent, AdhocTime.untilNow(start));
+		}
 	}
 
 	protected ISliceFilter notCachedAnd(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {

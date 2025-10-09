@@ -20,51 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.optimizer;
-
-import java.time.Duration;
-import java.util.Collection;
+package eu.solven.adhoc.query.filter.stripper;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
- * Holds the optimization of {@link ISliceFilter}
+ * Enables customizing the {@link IFilterStripper} instances.
  * 
  * @author Benoit Lacelle
  */
-public interface IFilterOptimizer {
-
-	/**
-	 * 
-	 * @param filters
-	 * @param willBeNegated
-	 *            true if this expression will be negated (e.g. when being called by `OR`)
-	 * @return
-	 */
-	ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated);
-
-	ISliceFilter or(Collection<? extends ISliceFilter> filters);
-
-	ISliceFilter not(ISliceFilter first);
-
-	/**
-	 * Enable receiving event related to the optimization process.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	// Methods are defaulted to prevent breaking code when adding events
-	interface IOptimizerEventListener {
-
-		default void onOptimize(ISliceFilter filter) {
-			// swallowed
-		}
-
-		default void onSkip(ISliceFilter filter) {
-			// swallowed
-		}
-
-		default void onOptimizationDone(ISliceFilter input, Duration duration) {
-			// swallowed
-		}
-	}
+@FunctionalInterface
+public interface IFilterStripperFactory {
+	IFilterStripper makeFilterStripper(ISliceFilter where);
 }

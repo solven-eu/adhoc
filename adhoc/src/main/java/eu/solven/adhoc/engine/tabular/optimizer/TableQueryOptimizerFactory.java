@@ -36,12 +36,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 
-	// final IFilterOptimizerFactory filterOptimizerFactory;
+	protected IFilterOptimizer makeFilterOptimizer(AdhocFactories factories) {
+		// WithCache as this optimize will be used for a single query
+		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
+	}
 
 	@Override
 	public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
 		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
-			IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
+			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 			return new TableQueryOptimizerNone(factories, filterOptimizer);
 		} else {
 			return makeOptimizer(factories);
@@ -49,7 +52,8 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 	}
 
 	protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
-		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
+		// WithCache as this optimize will be used for a single query
+		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 		return new TableQueryOptimizer(factories, filterOptimizer);
 	}
 

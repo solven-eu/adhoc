@@ -23,12 +23,12 @@
 package eu.solven.adhoc.query.filter;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
@@ -241,7 +241,7 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static ISliceFilter commonAnd(Set<? extends ISliceFilter> filters) {
-		return new FilterUtility(AdhocUnsafe.sliceFilterOptimizer).commonAnd(filters);
+		return new FilterUtility(AdhocUnsafe.filterOptimizer).commonAnd(filters);
 	}
 
 	/**
@@ -252,7 +252,7 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static ISliceFilter commonOr(ImmutableSet<? extends ISliceFilter> filters) {
-		return new FilterUtility(AdhocUnsafe.sliceFilterOptimizer).commonOr(filters);
+		return new FilterUtility(AdhocUnsafe.filterOptimizer).commonOr(filters);
 	}
 
 	/**
@@ -262,28 +262,21 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
-		if (filter.isMatchAll()) {
-			return ImmutableSet.of();
-		} else if (filter.isMatchNone()) {
-			return ImmutableSet.of(filter);
-		} else if (filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands()
-					.stream()
-					.flatMap(f -> splitAnd(f).stream())
-					.collect(ImmutableSet.toImmutableSet());
+		return splitAndStream(filter).collect(ImmutableSet.toImmutableSet());
+	}
+
+	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
+	protected static Stream<ISliceFilter> splitAndStream(ISliceFilter filter) {
+		if (filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().flatMap(FilterHelpers::splitAndStream);
 		} else if (filter instanceof INotFilter notFilter) {
 			if (notFilter.getNegated() instanceof IOrFilter orFilter) {
-				return orFilter.getOperands()
-						.stream()
-						.map(ISliceFilter::negate)
-						.flatMap(f -> splitAnd(f).stream())
-						.collect(ImmutableSet.toImmutableSet());
+				return orFilter.getOperands().stream().map(ISliceFilter::negate).flatMap(FilterHelpers::splitAndStream);
 			} else if (notFilter.getNegated() instanceof IColumnFilter columnFilter
 					&& columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
 				return inMatcher.getOperands()
 						.stream()
-						.map(o -> ColumnFilter.match(columnFilter.getColumn(), NotMatcher.notEqualTo(o)))
-						.collect(ImmutableSet.toImmutableSet());
+						.map(o -> ColumnFilter.match(columnFilter.getColumn(), NotMatcher.notEqualTo(o)));
 			}
 		} else if (filter instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
@@ -292,8 +285,7 @@ public class FilterHelpers {
 			if (valueMatcher instanceof AndMatcher andMatcher) {
 				return andMatcher.getOperands()
 						.stream()
-						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
-						.collect(ImmutableSet.toImmutableSet());
+						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build());
 			} else if (valueMatcher instanceof NotMatcher notMatcher
 					&& notMatcher.getNegated() instanceof InMatcher notInMatcher) {
 				return notInMatcher.getOperands()
@@ -301,31 +293,29 @@ public class FilterHelpers {
 						.map(operand -> ColumnFilter.builder()
 								.column(column)
 								.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq(operand)))
-								.build())
-						.collect(ImmutableSet.toImmutableSet());
+								.build());
 			}
 		}
 
 		// Not splittable
-		return ImmutableSet.of(filter);
+		return Stream.of(filter);
 	}
 
+	/**
+	 * 
+	 * @param filter
+	 * @return a Set of {@link ISliceFilter} which, combined with OR, is equivalent to the input
+	 */
+	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
 	public static Set<ISliceFilter> splitOr(ISliceFilter filter) {
-		if (filter.isMatchNone()) {
-			return ImmutableSet.of();
-		} else if (filter.isMatchAll()) {
-			return ImmutableSet.of(filter);
-		} else if (filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands()
-					.stream()
-					.flatMap(f -> splitOr(f).stream())
-					.collect(ImmutableSet.toImmutableSet());
+		return splitOrStream(filter).collect(ImmutableSet.toImmutableSet());
+	}
+
+	public static Stream<ISliceFilter> splitOrStream(ISliceFilter filter) {
+		if (filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().flatMap(FilterHelpers::splitOrStream);
 		} else if (filter instanceof INotFilter notFilter && notFilter.getNegated() instanceof IAndFilter andFilter) {
-			return andFilter.getOperands()
-					.stream()
-					.map(ISliceFilter::negate)
-					.flatMap(f -> splitOr(f).stream())
-					.collect(ImmutableSet.toImmutableSet());
+			return andFilter.getOperands().stream().map(ISliceFilter::negate).flatMap(FilterHelpers::splitOrStream);
 		} else if (filter instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 
@@ -333,18 +323,16 @@ public class FilterHelpers {
 			if (valueMatcher instanceof OrMatcher orMatcher) {
 				return orMatcher.getOperands()
 						.stream()
-						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
-						.collect(ImmutableSet.toImmutableSet());
+						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build());
 			} else if (valueMatcher instanceof InMatcher inMatcher) {
 				return inMatcher.getOperands()
 						.stream()
-						.map(operand -> ColumnFilter.builder().column(column).matchEquals(operand).build())
-						.collect(ImmutableSet.toImmutableSet());
+						.map(operand -> ColumnFilter.builder().column(column).matchEquals(operand).build());
 			}
 		}
 
 		// Not splittable
-		return ImmutableSet.of(filter);
+		return Stream.of(filter);
 	}
 
 	/**
@@ -361,73 +349,7 @@ public class FilterHelpers {
 	// then `a&b|b=a|b`
 	// then `b=a|b` then b is laxer than a, as b is enough to cover a
 	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
-		if (stricter instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
-			return isStricterThan(notLaxer.getNegated(), notStricter.getNegated());
-		} else if (stricter instanceof IColumnFilter stricterColumn && laxer instanceof IColumnFilter laxerFilter) {
-			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
-			if (!isSameColumn) {
-				return false;
-			}
-			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
-		}
-
-		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
-		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
-		// BEWARE Do not rely on AndFilter either, else it may lead on further cycles
-		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
-
-		{
-			Set<ISliceFilter> allStricters = splitAnd(stricter);
-			Set<ISliceFilter> allLaxers = splitAnd(laxer);
-			if (allStricters.containsAll(allLaxers)) {
-				// true if `stricter:A=a1&B=b1` and `laxer:B=b1`
-				return true;
-			}
-			// true if `a==a1&b==b1&c==c1` and `a=in=(a1,a2)&b=in=(b1,b2)`.
-			boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
-				return allStricters.stream().anyMatch(oneStricter -> {
-					if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
-						// break cycle in recursivity
-						return false;
-					}
-
-					return isStricterThan(oneStricter, oneLaxer);
-				});
-			});
-			if (allLaxersHasStricter) {
-				return true;
-			}
-		}
-
-		{
-			Set<ISliceFilter> allStricters = splitOr(stricter);
-			Set<ISliceFilter> allLaxers = splitOr(laxer);
-			if (allLaxers.containsAll(allStricters)) {
-				// true if `stricter:A=a1` and `laxer:A=a1|B=b1`.
-				return true;
-			}
-
-			// true if `stricter:A=7` and `laxer:A>5|B=b1`.
-			boolean allLaxersInStricter = allStricters.stream().allMatch(oneStricter -> {
-				return allLaxers.stream().anyMatch(oneLaxer -> {
-					if (oneStricter.equals(stricter) && oneLaxer.equals(laxer)) {
-						// break cycle in recursivity
-						return false;
-					}
-
-					return isStricterThan(oneStricter, oneLaxer);
-				});
-			});
-			if (allLaxersInStricter) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private static boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
-		return AndMatcher.and(stricter, laxer).equals(stricter);
+		return AdhocUnsafe.filterStripperFactory.makeFilterStripper(stricter).isStricterThan(laxer);
 	}
 
 	/**
@@ -451,87 +373,7 @@ public class FilterHelpers {
 	 *         clauses are combined with`AND`. `WHERE` may or may not be laxer than `FILTER`. `output&where=filter`
 	 */
 	public static ISliceFilter stripWhereFromFilter(ISliceFilter where, ISliceFilter filter) {
-		if (where.isMatchAll()) {
-			// `WHERE` has no clause: `FILTER` has to keep all clauses
-			return filter;
-		} else if (isStricterThan(where, filter)) {
-			// Catch some edge-case like `where.equals(filter)`
-			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
-			return ISliceFilter.MATCH_ALL;
-		}
-
-		// Given the FILTER, we reject the AND operands already covered by WHERE
-		ISliceFilter postAnd;
-		{
-
-			// Split the FILTER in parts
-			Set<? extends ISliceFilter> andOperands = splitAnd(filter);
-
-			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
-
-			// For each part of `FILTER`, reject those already filtered in `WHERE`
-			for (ISliceFilter subFilter : andOperands) {
-				ISliceFilter simplerSubFilter;
-				if (subFilter.equals(filter)) {
-					// Break cycle when we reach simplest filters
-					simplerSubFilter = subFilter;
-				} else {
-					simplerSubFilter = stripWhereFromFilter(where, subFilter);
-				}
-
-				if (andMatchNone(where, simplerSubFilter)) {
-					return ISliceFilter.MATCH_NONE;
-				} else {
-					boolean whereCoversSubFilter = isStricterThan(where, simplerSubFilter);
-
-					if (!whereCoversSubFilter) {
-						notInWhere.add(simplerSubFilter);
-					}
-				}
-			}
-			// `.combine` to break cycle, and output has not reason to be more optimized than input
-			postAnd = FilterBuilder.and(notInWhere).combine();
-		}
-
-		// Given the FILTER, we reject the OR operands already rejected by WHERE
-		// TODO Why managing OR after AND? (and not the inverse)
-		ISliceFilter postOr;
-		{
-
-			Set<ISliceFilter> orOperands = splitOr(postAnd);
-
-			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
-			// For each part of `FILTER`, reject those already filtered in `WHERE`
-			for (ISliceFilter subFilter : orOperands) {
-				ISliceFilter simplerSubFilter;
-				if (subFilter.equals(filter)) {
-					// Break cycle when we reach simplest filters
-					simplerSubFilter = subFilter;
-				} else {
-					simplerSubFilter = stripWhereFromFilter(where, subFilter);
-				}
-
-				if (andMatchNone(where, simplerSubFilter)) {
-					continue;
-				} else {
-					boolean whereRejectsSubFilter = isStricterThan(where, simplerSubFilter);
-
-					if (!whereRejectsSubFilter) {
-						notInWhere.add(simplerSubFilter);
-					}
-				}
-			}
-
-			// `.combine` to break cycle, and output has not reason to be more optimized than input
-			postOr = FilterBuilder.or(notInWhere).combine();
-		}
-
-		return postOr;
-	}
-
-	// `a&b=matchNone` is equivalent to `a includes !b`, which is equivalent to `a is stricter than !b`
-	protected static boolean andMatchNone(ISliceFilter left, ISliceFilter right) {
-		return isStricterThan(left, right.negate());
+		return AdhocUnsafe.filterStripperFactory.makeFilterStripper(where).strip(filter);
 	}
 
 	/**

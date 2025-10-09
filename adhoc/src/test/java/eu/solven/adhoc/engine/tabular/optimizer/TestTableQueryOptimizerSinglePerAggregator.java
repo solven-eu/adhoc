@@ -209,7 +209,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 
 	@Test
 	public void testCanInduce_chainOfInducers() {
-		TableQuery tqABC = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).aggregator(k1Sum).build();
+		TableQuery tqABC = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "c")).aggregator(k1Sum).build();
 		TableQuery tqAB = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
 		TableQuery tqA = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
 		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tqABC, tqAB, tqA));
@@ -219,8 +219,41 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
 
 		Assertions.assertThat(split.getInduceds())
-				.hasSize(2)
+				.hasSize(3)
 				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build())
-				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build())
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
+
+		Assertions.assertThat(split.getInducedToInducer().edgeSet())
+				// `a,b,c->a,b`, `a,b,c->a,c`, `a,c->a`
+				.hasSize(3)
+				.anySatisfy(e -> {
+					CubeQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
+					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
+
+					Assertions.assertThat(inducer)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+					Assertions.assertThat(induced)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+				})
+				.anySatisfy(e -> {
+					CubeQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
+					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
+
+					Assertions.assertThat(inducer)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+					Assertions.assertThat(induced)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
+				})
+				.anySatisfy(e -> {
+					CubeQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
+					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
+
+					// BEWARE `a,b` could also induce `a`, but it must not be `a,b,c`
+					Assertions.assertThat(inducer)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
+					Assertions.assertThat(induced)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
+				});
 	}
 }

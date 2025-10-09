@@ -111,4 +111,34 @@ public class TestCubeWrapper {
 					.hasSize(2);
 		}
 	}
+
+	@Test
+	public void testAliasedColumns_withDot() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		table.add(Map.of("rawC", "someV"));
+
+		ICubeWrapper rawCube = CubeWrapper.builder()
+				.name(this.getClass().getSimpleName())
+				.forest(MeasureForest.empty())
+				.table(table)
+				.build();
+
+		ICubeWrapper cube = CubeWrapperEditor.edit(rawCube)
+				.aliaser(MapTableAliaser.builder()
+						// A renaming alias
+						.aliasToOriginal("aliasC", "join.rawC")
+						// a not-renaming alias (like to SQL returning `rawC` as columnName for `join.rawC`)
+						.aliasToOriginal("rawC", "join.rawC")
+						.build())
+				.build();
+
+		Assertions.assertThat(cube.getColumnsAsMap())
+				.containsEntry("rawC", ColumnMetadata.builder().name("rawC").type(String.class).alias("rawC").build())
+				// `aliasC` is dangling with no explicit type as `tableColumn=join.rawC` did not match the unqualified
+				// name `rawC` from table.
+				.containsEntry("aliasC",
+						ColumnMetadata.builder().name("aliasC").type(Object.class).tag("alias").build())
+				.hasSize(2);
+	}
 }

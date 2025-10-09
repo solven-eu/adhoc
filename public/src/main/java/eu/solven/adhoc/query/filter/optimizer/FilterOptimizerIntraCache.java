@@ -30,8 +30,8 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * An {@link IFilterOptimizer} which relies on a cache for given `.optimize`, but do not cache anything o nthe
- * long-running. It is especially relevant as the optimization are often recursive.
+ * An {@link IFilterOptimizer} which relies on a cache for given `.optimize`, but do not cache anything on the long-run.
+ * It is especially relevant as the optimization are often recursive.
  * 
  * @author Benoit Lacelle
  */
