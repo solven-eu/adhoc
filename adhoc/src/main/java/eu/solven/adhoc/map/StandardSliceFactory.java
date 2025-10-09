@@ -546,9 +546,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			if (this == other) {
 				// Typically happens when iterating along queryStep underlyings, as we often
-				// expect 2 underlyings to
-				// provide
-				// same sliceAsMap
+				// expect 2 underlyings to provide same sliceAsMap
 				return 0;
 			}
 

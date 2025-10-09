@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -250,8 +251,8 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
 
 					// BEWARE `a,b` could also induce `a`, but it must not be `a,b,c`
-					Assertions.assertThat(inducer)
-							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
+					NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
+					Assertions.assertThat(inducerColumns).hasSize(2).contains("a").containsAnyOf("b", "c");
 					Assertions.assertThat(induced)
 							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
 				});
