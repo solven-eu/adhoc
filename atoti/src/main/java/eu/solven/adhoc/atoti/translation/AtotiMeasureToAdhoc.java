@@ -533,7 +533,7 @@ public class AtotiMeasureToAdhoc {
 
 		List<String> underlyingNames = List.copyOf(ReversePolishCombination.parseUnderlyingMeasures(notation));
 
-		List<IMeasure> combinator = onCombinator(measure, underlyingNames, b -> {
+		return onCombinator(measure, underlyingNames, b -> {
 			b.combinationKey(ReversePolishCombination.class.getName());
 		}, options -> {
 			options.remove(ArithmeticFormulaPostProcessor.FORMULA_PROPERTY);
@@ -541,7 +541,6 @@ public class AtotiMeasureToAdhoc {
 
 			return options;
 		});
-		return combinator;
 	}
 
 	protected IMeasure onColumnator(IPostProcessorDescription measure,

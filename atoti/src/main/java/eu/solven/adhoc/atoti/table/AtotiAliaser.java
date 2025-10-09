@@ -27,8 +27,8 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This {@link ITableAliaser} is useful into translating from levelNames as configured in ActivePivot processors,
- * into fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the
+ * This {@link ITableAliaser} is useful into translating from levelNames as configured in ActivePivot processors, into
+ * fieldName used in underlying {@link eu.solven.adhoc.table.ITableWrapper}. It assumes the fieldName matched the
  * levelName.
  *
  * This is useful when loading an ActivePivot configuration (e.g. transcoded from ActivePivot postprocessor properties).

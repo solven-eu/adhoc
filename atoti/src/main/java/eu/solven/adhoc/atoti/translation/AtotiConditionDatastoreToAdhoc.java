@@ -32,7 +32,6 @@ import com.qfs.condition.ImplementationCode;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import lombok.extern.slf4j.Slf4j;
 

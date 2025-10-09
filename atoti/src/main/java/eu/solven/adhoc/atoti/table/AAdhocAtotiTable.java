@@ -113,8 +113,7 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 
 		Object[] args = { getPivotId(), locations, measureSelections, contextValues };
 
-		IQuery<ICellSet> gaq = Registry.createExtendedPluginValue(IQuery.class, IGetAggregatesQuery.PLUGIN_KEY, args);
-		return gaq;
+		return Registry.createExtendedPluginValue(IQuery.class, IGetAggregatesQuery.PLUGIN_KEY, args);
 	}
 
 	protected ITabularRecord asMap(TableQueryV2 tableQuery, ICellSet result, int locationIndex) {
