@@ -190,7 +190,7 @@ public final class SliceAsMap implements IAdhocSlice {
 			// if (asMap instanceof IAdhocMap)
 			ImmutableMap.Builder<String, Object> builder =
 					ImmutableMap.builderWithExpectedSize(asMap.size() + mask.size());
-			return fromMap(builder.putAll(asMap).putAll(mask).build());
+			return fromMap(factory, builder.putAll(asMap).putAll(mask).build());
 		}
 	}
 
