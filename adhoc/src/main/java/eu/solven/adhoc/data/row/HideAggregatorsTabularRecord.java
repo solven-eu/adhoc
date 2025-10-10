@@ -83,8 +83,8 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public Set<String> groupByKeySet() {
-		return decorated.groupByKeySet();
+	public Set<String> columnsKeySet() {
+		return decorated.columnsKeySet();
 	}
 
 	@Override
@@ -96,7 +96,7 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	public Map<String, ?> asMap() {
 		Map<String, Object> copy = new LinkedHashMap<>(aggregatesAsMap());
 
-		groupByKeySet().forEach(columnName -> {
+		columnsKeySet().forEach(columnName -> {
 			copy.put(columnName, getGroupBy(columnName));
 		});
 

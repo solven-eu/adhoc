@@ -24,6 +24,7 @@ package eu.solven.adhoc.util;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -34,7 +35,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IHasColumns extends IHasColumnTypes {
+public interface IHasColumns extends IHasColumnsKeySet, IHasColumnTypes {
 
 	/**
 	 * Must be distinct per name.
@@ -50,5 +51,10 @@ public interface IHasColumns extends IHasColumnTypes {
 	@Override
 	default Map<String, Class<?>> getColumnTypes() {
 		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
+	}
+
+	@Override
+	default Set<String> columnsKeySet() {
+		return getColumnsAsMap().keySet();
 	}
 }

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.pivotable.oauth2.authorizationserver;
 
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -82,13 +83,13 @@ public class PivotableTokenService {
 	}
 
 	public static void main(String[] args) {
-		JWK secretKey = generateSignatureSecret(new JdkUuidGenerator());
+		JWK secretKey = generateSignatureSecret(new SecureRandom(), new JdkUuidGenerator());
 		log.info("Secret key for JWT signing: {}", secretKey.toJSONString());
 	}
 
 	@SneakyThrows(JOSEException.class)
 	// @SuppressWarnings("PMD.ReplaceJavaUtilDate")
-	public static JWK generateSignatureSecret(IUuidGenerator uuidGenerator) {
+	public static JWK generateSignatureSecret(SecureRandom secureRandom, IUuidGenerator uuidGenerator) {
 		// https://connect2id.com/products/nimbus-jose-jwt/examples/jws-with-hmac
 		// Generate random 256-bit (32-byte) shared secret
 		// SecureRandom random = new SecureRandom();
@@ -96,7 +97,8 @@ public class PivotableTokenService {
 		String rawNbBits = PivotableResourceServerConfiguration.MAC_ALGORITHM.getName().substring("HS".length());
 		int nbBits = Integer.parseInt(rawNbBits);
 
-		OctetSequenceKey jwk = new OctetSequenceKeyGenerator(nbBits).keyID(uuidGenerator.randomUUID().toString())
+		OctetSequenceKey jwk = new OctetSequenceKeyGenerator(nbBits).secureRandom(secureRandom)
+				.keyID(uuidGenerator.randomUUID().toString())
 				.algorithm(JWSAlgorithm.parse(PivotableResourceServerConfiguration.MAC_ALGORITHM.getName()))
 				.issueTime(Date.from(Instant.now()))
 				.generate();

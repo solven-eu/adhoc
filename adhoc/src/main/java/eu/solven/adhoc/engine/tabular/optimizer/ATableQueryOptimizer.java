@@ -191,7 +191,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
 		var induced = factories.getSliceFactory().newMapBuilder(groupedByColumns);
 
 		groupedByColumns.forEach(inducedColumn -> {
-			induced.append(inducer.getRawSliced(inducedColumn));
+			induced.append(inducer.getGroupBy(inducedColumn));
 		});
 
 		return induced.build().asSlice();

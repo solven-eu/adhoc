@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.map;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -30,8 +30,8 @@ import java.util.Set;
 
 import com.google.common.collect.Iterators;
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 
@@ -42,7 +42,7 @@ import lombok.Builder;
  * @author Benoit Lacelle
  */
 @Builder
-public class MaskedSliceAsMap extends AbstractMap<String, Object> implements IAdhocMap {
+public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
 	final IAdhocMap decorated;
 	final Map<String, ?> mask;
 
@@ -53,9 +53,10 @@ public class MaskedSliceAsMap extends AbstractMap<String, Object> implements IAd
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
 
+	@SuppressWarnings({ "PMD.OverrideBothEqualsAndHashCodeOnComparable", "PMD.LooseCoupling" })
 	@Override
 	public int compareTo(IAdhocMap o) {
-		if (o instanceof MaskedSliceAsMap otherMasked) {
+		if (o instanceof MaskedAdhocMap otherMasked) {
 			if (otherMasked.mask.equals(this.mask)) {
 				return this.decorated.compareTo(otherMasked.decorated);
 			} else {
@@ -88,8 +89,23 @@ public class MaskedSliceAsMap extends AbstractMap<String, Object> implements IAd
 		}
 	}
 
+	@Override
+	public Object get(Object key) {
+		Object fromDecorated = decorated.get(key);
+		if (fromDecorated != null) {
+			return fromDecorated;
+		} else {
+			return mask.get(key);
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return decorated.hashCode() + mask.hashCode();
+	}
+
 	/**
-	 * A {@link Set} for {@link Entry} of {@link MaskedSliceAsMap}.
+	 * A {@link Set} for {@link Entry} of {@link MaskedAdhocMap}.
 	 * 
 	 * @author Benoit Lacelle
 	 * 
@@ -109,6 +125,16 @@ public class MaskedSliceAsMap extends AbstractMap<String, Object> implements IAd
 			Iterator<Map.Entry<String, Object>> maskIteratorTyped =
 					Iterators.transform(maskIterator, e -> Map.entry(e.getKey(), e.getValue()));
 			return Iterators.concat(decoratedIterator, maskIteratorTyped);
+		}
+
+		@Override
+		public void clear() {
+			throw new UnsupportedAsImmutableException();
+		}
+
+		@Override
+		public boolean remove(Object o) {
+			throw new UnsupportedAsImmutableException();
 		}
 
 	}

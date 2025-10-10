@@ -94,6 +94,16 @@ public class StandardSliceFactory implements ISliceFactory {
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
+	private static final IAdhocMap EMPTY = MapOverLists.builder()
+			.factory(StandardSliceFactory.builder().build())
+			.keys(EnrichedNavigableSet.fromSet(Set.of()))
+			.unorderedValues(ImmutableList.of())
+			.build();
+
+	public static IAdhocMap of() {
+		return EMPTY;
+	}
+
 	public Object normalizeCoordinate(Object raw) {
 		return valueNormalizer.normalizeCoordinate(raw);
 	}
@@ -473,7 +483,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			@Override
 			public final void clear() {
-				throw new UnsupportedOperationException("Immutable");
+				throw new UnsupportedAsImmutableException();
 			}
 
 			@Override
@@ -511,7 +521,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			@Override
 			public final boolean remove(Object o) {
-				throw new UnsupportedOperationException("Immutable");
+				throw new UnsupportedAsImmutableException();
 			}
 
 			@Override
@@ -526,7 +536,8 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			@Override
 			public final void forEach(Consumer<? super Map.Entry<String, Object>> action) {
-				for (int i = 0; i < size(); i++) {
+				int size = size();
+				for (int i = 0; i < size; i++) {
 					action.accept(entry(i));
 				}
 			}
@@ -758,5 +769,11 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {
 		return ImmutableList.copyOf(keys);
+	}
+
+	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
+		MapBuilderThroughKeys builder = factory.newMapBuilder();
+		asMap.forEach(builder::put);
+		return builder.build();
 	}
 }

@@ -109,7 +109,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public Set<String> groupByKeySet() {
+		public Set<String> columnsKeySet() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
 

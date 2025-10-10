@@ -29,15 +29,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.MapComparators;
+import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
@@ -58,7 +58,7 @@ public final class SliceAsMap implements IAdhocSlice {
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	// Implementations is generally a AdhocMap
-	final Map<String, ?> asMap;
+	final IAdhocMap asMap;
 
 	@Deprecated(since = "Should use a ISliceFactory")
 	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
@@ -66,10 +66,7 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	public static IAdhocSlice fromMap(ISliceFactory factory, Map<String, ?> asMap) {
-		MapBuilderThroughKeys builder = factory.newMapBuilder();
-
-		asMap.forEach(builder::put);
-		return builder.build().asSlice();
+		return StandardSliceFactory.fromMap(factory, asMap).asSlice();
 	}
 
 	/**
@@ -88,17 +85,8 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public Set<String> getColumns() {
+	public Set<String> columnsKeySet() {
 		return asMap.keySet();
-	}
-
-	@Override
-	public Object getRawSliced(String column) {
-		if (asMap.containsKey(column)) {
-			return explicitNull(asMap.get(column));
-		} else {
-			throw new IllegalArgumentException("%s is not a sliced column, amongst %s".formatted(column, getColumns()));
-		}
 	}
 
 	@Override
@@ -183,19 +171,16 @@ public final class SliceAsMap implements IAdhocSlice {
 	public IAdhocSlice addColumns(Map<String, ?> mask) {
 		if (mask.isEmpty()) {
 			return this;
+		} else if (!Sets.intersection(mask.keySet(), columnsKeySet()).isEmpty()) {
+			throw new IllegalArgumentException("Conflicting key between slice=%s and mask=%s".formatted(this, mask));
 		} else {
-			// TODO There should probably be a branch dedicated for IAdhocMap, as we would
-			// generate generate many Map
-			// with given mask.
-			// if (asMap instanceof IAdhocMap)
-			ImmutableMap.Builder<String, Object> builder =
-					ImmutableMap.builderWithExpectedSize(asMap.size() + mask.size());
-			return fromMap(factory, builder.putAll(asMap).putAll(mask).build());
+			// This branch has to be optimized as we tend to generate large number of slice with such masked columns
+			return MaskedAdhocMap.builder().decorated(asMap).mask(mask).build().asSlice();
 		}
 	}
 
 	public static SliceAsMap grandTotal() {
-		return new SliceAsMap(StandardSliceFactory.builder().build(), ImmutableMap.of());
+		return new SliceAsMap(StandardSliceFactory.builder().build(), StandardSliceFactory.of());
 	}
 
 	@Override
@@ -209,12 +194,12 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public Set<String> groupByKeySet() {
-		return getColumns();
-	}
-
-	@Override
-	public Object getGroupBy(String columnName) {
-		return getRawSliced(columnName);
+	public Object getGroupBy(String column) {
+		if (asMap.containsKey(column)) {
+			return explicitNull(asMap.get(column));
+		} else {
+			throw new IllegalArgumentException(
+					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
+		}
 	}
 }

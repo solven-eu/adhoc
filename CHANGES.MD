@@ -7,6 +7,12 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - Introduced `InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR` to force `TableQueryOptimizerSinglePerAggregator` from the options.
 
+### Changed
+- Renamed `ITabularGroupByRecord.groupByKeySet()` into `ITabularGroupByRecord.columnsKeySet()`.
+
+### Removed
+- Removed `IAdhocSlice.getRawSliced(String)`. Prefer `IAdhocSlice.getGroupBy(String)`.
+
 ## [0.0.11]
 
 ### Added
