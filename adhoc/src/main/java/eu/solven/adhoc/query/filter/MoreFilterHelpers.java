@@ -216,7 +216,7 @@ public class MoreFilterHelpers {
 			Object value = input.getGroupBy(underlyingColumn);
 
 			if (value == null) {
-				if (input.groupByKeySet().contains(underlyingColumn)) {
+				if (input.columnsKeySet().contains(underlyingColumn)) {
 					log.trace("Key to null-ref");
 				} else {
 					log.trace("Missing key");

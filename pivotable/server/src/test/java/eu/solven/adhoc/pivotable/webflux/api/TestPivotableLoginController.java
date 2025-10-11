@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.pivotable.webflux.api;
 
+import java.security.SecureRandom;
+
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
@@ -61,8 +63,9 @@ public class TestPivotableLoginController {
 
 	{
 		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.adhoc");
+		SecureRandom secureRandom = new SecureRandom(new byte[] { 0, 1, 2 });
 		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY,
-				PivotableTokenService.generateSignatureSecret(JdkUuidGenerator.INSTANCE).toJSONString());
+				PivotableTokenService.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE).toJSONString());
 
 		kumiteTokenService = new PivotableTokenService(env, uuidGenerator);
 		controller = new PivotableLoginController(clientRegistrationRepository, usersRegistry, env, kumiteTokenService);

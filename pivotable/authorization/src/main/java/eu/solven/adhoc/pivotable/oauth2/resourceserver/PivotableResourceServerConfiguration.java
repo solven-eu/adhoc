@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.pivotable.oauth2.resourceserver;
 
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,6 +38,7 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
@@ -74,6 +76,7 @@ public class PivotableResourceServerConfiguration {
 	}
 
 	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
+	@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE")
 	public static OctetSequenceKey loadOAuth2SigningKey(Environment env, IUuidGenerator uuidGenerator)
 			throws ParseException {
 		String secretKeySpec = env.getRequiredProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY);
@@ -84,14 +87,22 @@ public class PivotableResourceServerConfiguration {
 					+ IPivotableSpringProfiles.P_UNSAFE_SERVER);
 		} else if (IPivotableOAuth2Constants.GENERATE.equals(secretKeySpec)) {
 			if (env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_PRDMODE))) {
-				throw new IllegalStateException("Can not GENERATE oauth2 signingKey in `prodmode`");
+				throw new IllegalStateException(
+						"Can not GENERATE oauth2 signingKey with -P%s".formatted(IPivotableSpringProfiles.P_PRDMODE));
 			}
 			// Ensure we generate a signingKey only once, so that the key in IJwtDecoder and the token in Bearer token
 			// are based on the same signingKey
 			synchronized (PivotableResourceServerConfiguration.class) {
 				if (GENERATED_SIGNINGKEY.get() == null) {
-					log.warn("We generate a random signingKey");
-					secretKeySpec = PivotableTokenService.generateSignatureSecret(uuidGenerator).toJSONString();
+					// Rely on the PID so that the signingKey is not changed on a SpringBootDevMode reload
+					long pid = getPID();
+
+					SecureRandom secureRandom = new SecureRandom();
+					secureRandom.setSeed(pid);
+
+					log.warn("We generate a random signingKey based on PID={}", pid);
+					secretKeySpec =
+							PivotableTokenService.generateSignatureSecret(secureRandom, uuidGenerator).toJSONString();
 					GENERATED_SIGNINGKEY.set(secretKeySpec);
 				} else {
 					secretKeySpec = GENERATED_SIGNINGKEY.get();
@@ -102,5 +113,9 @@ public class PivotableResourceServerConfiguration {
 		OctetSequenceKey octetSequenceKey = OctetSequenceKey.parse(secretKeySpec);
 		log.info("Loaded or generated octetSequenceKey with kid={}", octetSequenceKey.getKeyID());
 		return octetSequenceKey;
+	}
+
+	protected static long getPID() {
+		return ProcessHandle.current().pid();
 	}
 }

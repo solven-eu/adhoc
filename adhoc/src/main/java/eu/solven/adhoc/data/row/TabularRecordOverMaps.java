@@ -82,8 +82,8 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public Set<String> groupByKeySet() {
-		return groupBy.groupByKeySet();
+	public Set<String> columnsKeySet() {
+		return groupBy.columnsKeySet();
 	}
 
 	@Override
@@ -145,7 +145,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		StringBuilder string = new StringBuilder();
 
 		string.append("slice:{");
-		string.append(tabularRecord.groupByKeySet()
+		string.append(tabularRecord.columnsKeySet()
 				.stream()
 				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
 				.collect(Collectors.joining(", ")));

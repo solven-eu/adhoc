@@ -155,7 +155,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 
 		IAdhocSlice slice = bucketedSlice.getSlice();
 		groupedByColumns.forEach(groupBy -> {
-			Object value = slice.getRawSliced(groupBy);
+			Object value = slice.getGroupBy(groupBy);
 
 			if (value == null) {
 				value = NullMatcher.NULL_HOLDER;

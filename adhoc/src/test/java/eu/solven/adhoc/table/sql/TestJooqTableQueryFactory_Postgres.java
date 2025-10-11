@@ -40,6 +40,8 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -105,8 +107,14 @@ public class TestJooqTableQueryFactory_Postgres {
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
-				  not ("k1" = 'v1')
-				  and not ("k2" = 'v2')
+				  not (
+				    "k1" is not null
+				    and "k1" = 'v1'
+				  )
+				  and not (
+				    "k2" is not null
+				    and "k2" = 'v2'
+				  )
 				)""");
 	}
 
@@ -215,9 +223,12 @@ public class TestJooqTableQueryFactory_Postgres {
 
 		Assertions.assertThat(condition.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
-		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") as "k", "c" from "someTableName" where not ("d" = 'someD') group by "c"
-								""".trim());
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select sum("k") as "k", "c" from "someTableName" where not ("d" is not null and "d" = 'someD') group by "c"
+												"""
+								.trim());
 	}
 
 	@Test
@@ -276,6 +287,39 @@ public class TestJooqTableQueryFactory_Postgres {
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
 				select arg_min("krank", "krank", 3) as "kRank" from "someTableName" group by ()""");
+	}
+
+	@Test
+	public void testToCondition_IsNull() {
+		ISliceFilter filter = ColumnFilter.match("k1", NullMatcher.matchNull());
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+
+		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
+				"k1" is null""");
+	}
+
+	@Test
+	public void testToCondition_IsNotNull() {
+		ISliceFilter filter = ColumnFilter.match("k1", NotMatcher.not(NullMatcher.matchNull()));
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+
+		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
+				not ("k1" is null)""");
+	}
+
+	@Test
+	public void testToCondition_IsNotValue() {
+		ISliceFilter filter = ColumnFilter.matchEq("k1", "v1").negate();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+
+		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
+				not (
+				  "k1" is not null
+				  and "k1" = 'v1'
+				)""");
 	}
 
 }

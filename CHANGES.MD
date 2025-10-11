@@ -2,6 +2,20 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.12]
+
+### Added
+- Introduced `InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR` to force `TableQueryOptimizerSinglePerAggregator` from the options.
+
+### Changed
+- Renamed `ITabularGroupByRecord.groupByKeySet()` into `ITabularGroupByRecord.columnsKeySet()`.
+
+### Removed
+- Removed `IAdhocSlice.getRawSliced(String)`. Prefer `IAdhocSlice.getGroupBy(String)`.
+
+### Fixed
+- Fix but in SQL condition with NOT given NULL. (Typically `NOT(c = 'v')` is turned into `NOT(c IS NOT NULL AND c = 'v')`).
+
 ## [0.0.11]
 
 ### Added

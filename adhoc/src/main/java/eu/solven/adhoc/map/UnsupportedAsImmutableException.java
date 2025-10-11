@@ -22,30 +22,15 @@
  */
 package eu.solven.adhoc.map;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-
 /**
- * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a
- * {@link IAdhocGroupBy}.
- * 
- * It requires {@link String} keys and {@link Object} values, as columns are always referred by their {@link String}
- * name.
- * 
- * It is immutable as it is used as key in some {@link Map}, and it may cache the hashCode.
- * 
- * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
- * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn
+ * Used for operations forbidden due to immutability.
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<IAdhocMap> {
+public class UnsupportedAsImmutableException extends UnsupportedOperationException {
+	private static final long serialVersionUID = 5673313093256614656L;
 
-	IAdhocSlice asSlice();
-
-	ISliceFactory getFactory();
-
+	public UnsupportedAsImmutableException() {
+		super("Immutable");
+	}
 }

@@ -20,32 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.data.row.slice;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a
- * {@link IAdhocGroupBy}.
- * 
- * It requires {@link String} keys and {@link Object} values, as columns are always referred by their {@link String}
- * name.
- * 
- * It is immutable as it is used as key in some {@link Map}, and it may cache the hashCode.
- * 
- * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
- * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn
- * 
- * @author Benoit Lacelle
- */
-public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<IAdhocMap> {
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.MaskedAdhocMap;
+import eu.solven.adhoc.map.StandardSliceFactory;
 
-	IAdhocSlice asSlice();
+public class TestMaskedSliceAsMap {
+	@Test
+	public void testEquals() {
+		IAdhocMap decorated = StandardSliceFactory.fromMap(StandardSliceFactory.builder().build(), Map.of("a", "a1"));
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
-	ISliceFactory getFactory();
+		// `.equals` any Map
+		Assertions.assertThat((Map) masked).isEqualTo(Map.of("a", "a1", "b", "b2"));
+		Assertions.assertThat(masked.hashCode()).isEqualTo(Map.of("a", "a1", "b", "b2").hashCode());
 
+		// `.get` any key
+		Assertions.assertThat(masked.get("a")).isEqualTo("a1");
+		Assertions.assertThat(masked.get("b")).isEqualTo("b2");
+		Assertions.assertThat(masked.get("c")).isEqualTo(null);
+	}
 }
