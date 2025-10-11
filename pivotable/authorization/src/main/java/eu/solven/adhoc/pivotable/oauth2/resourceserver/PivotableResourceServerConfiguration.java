@@ -38,6 +38,7 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
@@ -75,6 +76,7 @@ public class PivotableResourceServerConfiguration {
 	}
 
 	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
+	@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE")
 	public static OctetSequenceKey loadOAuth2SigningKey(Environment env, IUuidGenerator uuidGenerator)
 			throws ParseException {
 		String secretKeySpec = env.getRequiredProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY);
@@ -94,6 +96,7 @@ public class PivotableResourceServerConfiguration {
 				if (GENERATED_SIGNINGKEY.get() == null) {
 					// Rely on the PID so that the signingKey is not changed on a SpringBootDevMode reload
 					long pid = getPID();
+
 					SecureRandom secureRandom = new SecureRandom();
 					secureRandom.setSeed(pid);
 

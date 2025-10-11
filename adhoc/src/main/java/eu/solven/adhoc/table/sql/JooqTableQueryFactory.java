@@ -496,7 +496,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
 			ConditionWithFilter negated = toCondition(notFilter.getNegated());
 
-			// `!(sqlCondition && postFilter) === !sqlCondition || !postFilter`
 			// ConditionWithFilter can not express an OR, so we just ensure one of `sqlCondition` or `postFilter` is
 			// `matchAll`.
 			boolean oneIsMatchAll = false;
@@ -586,8 +585,12 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * @param columnFilter
 	 * @return if empty, it means the {@link IColumnFilter} can not be transcoded into a {@link Condition}.
 	 */
-	@SuppressWarnings("PMD.AssignmentInOperand")
 	protected Optional<Condition> toCondition(IColumnFilter columnFilter) {
+		return toCondition(columnFilter, false);
+	}
+
+	@SuppressWarnings("PMD.AssignmentInOperand")
+	protected Optional<Condition> toCondition(IColumnFilter columnFilter, boolean hasParentNot) {
 		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 		String column = columnFilter.getColumn();
 
@@ -604,12 +607,12 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				throw new UnsupportedOperationException("There is a IValueMatcher amongst " + operands);
 			}
 
-			condition = DSL.condition(field.in(operands));
+			condition = wrap(hasParentNot, field, field.in(operands));
 		}
-		case EqualsMatcher equalsMatcher -> condition = DSL.condition(field.eq(equalsMatcher.getOperand()));
-		case LikeMatcher likeMatcher -> condition = DSL.condition(field.like(likeMatcher.getPattern()));
+		case EqualsMatcher equalsMatcher -> condition = wrap(hasParentNot, field, field.eq(equalsMatcher.getOperand()));
+		case LikeMatcher likeMatcher -> condition = wrap(hasParentNot, field, field.like(likeMatcher.getPattern()));
 		case StringMatcher stringMatcher -> condition =
-				DSL.condition(field.cast(String.class).eq(stringMatcher.getString()));
+				wrap(hasParentNot, field, field.cast(String.class).eq(stringMatcher.getString()));
 
 		case ComparingMatcher comparingMatcher -> {
 			Object operand = comparingMatcher.getOperand();
@@ -628,11 +631,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					jooqCondition = field.lessThan(operand);
 				}
 			}
-			condition = DSL.condition(jooqCondition);
+			condition = wrap(hasParentNot, field, jooqCondition);
 		}
 
 		case AndMatcher andMatcher -> {
-			List<Optional<Condition>> optConditions = toConditions(column, andMatcher);
+			List<Optional<Condition>> optConditions = toConditions(column, andMatcher, hasParentNot);
 
 			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
 				return Optional.empty();
@@ -641,7 +644,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			condition = DSL.and(optConditions.stream().map(Optional::get).toList());
 		}
 		case OrMatcher orMatcher -> {
-			List<Optional<Condition>> optConditions = toConditions(column, orMatcher);
+			List<Optional<Condition>> optConditions = toConditions(column, orMatcher, hasParentNot);
 
 			if (optConditions.stream().anyMatch(Optional::isEmpty)) {
 				return Optional.empty();
@@ -651,7 +654,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 		case NotMatcher notMatcher -> {
 			Optional<Condition> optConditions =
-					toCondition(ColumnFilter.builder().column(column).valueMatcher(notMatcher.getNegated()).build());
+					toCondition(ColumnFilter.builder().column(column).valueMatcher(notMatcher.getNegated()).build(),
+							true);
 
 			if (optConditions.isEmpty()) {
 				return Optional.empty();
@@ -659,15 +663,31 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 			condition = DSL.not(optConditions.get());
 		}
-		default -> condition = onCustomCondition(column, valueMatcher);
+		default -> condition = onCustomCondition(column, valueMatcher, hasParentNot);
 		}
 
 		return Optional.ofNullable(condition);
 	}
 
-	protected List<Optional<Condition>> toConditions(String column, IHasOperands<IValueMatcher> hasOperands) {
+	protected Condition wrap(boolean hasParentNot, Field<Object> field, Condition condition) {
+		if (hasParentNot) {
+			// https://www.w3schools.com/sql/sql_not.asp
+			// https://dba.stackexchange.com/questions/333948/not-equal-to-operator-is-not-returning-null-values-in-sql-server
+			// https://stackoverflow.com/questions/5658457/not-equal-operator-on-null
+
+			// Typically `not(c = 'v')` returns false if `c IS NULL` while `not(c IS NOT NULL AND c = 'v')` returns true
+			return DSL.and(field.isNotNull(), condition);
+		} else {
+			return DSL.condition(condition);
+		}
+	}
+
+	protected List<Optional<Condition>> toConditions(String column,
+			IHasOperands<IValueMatcher> hasOperands,
+			boolean hasParentNot) {
 		return hasOperands.getOperands().stream().map(subValueMatcher -> {
-			return toCondition(ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build());
+			ColumnFilter subFilter = ColumnFilter.builder().column(column).valueMatcher(subValueMatcher).build();
+			return toCondition(subFilter, hasParentNot);
 		}).toList();
 	}
 
@@ -675,10 +695,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * 
 	 * @param column
 	 * @param valueMatcher
+	 * @param hasParentNot
 	 * @return By default, we return null so that this {@link IValueMatcher} is managed as post-filtering by Adhoc, over
 	 *         the {@link ITableWrapper} result.
 	 */
-	protected Condition onCustomCondition(String column, IValueMatcher valueMatcher) {
+	protected Condition onCustomCondition(String column, IValueMatcher valueMatcher, boolean hasParentNot) {
 		// throw new UnsupportedOperationException(
 		// "Not handled: %s matches %s".formatted(column, PepperLogHelper.getObjectAndClass(valueMatcher)));
 		return null;

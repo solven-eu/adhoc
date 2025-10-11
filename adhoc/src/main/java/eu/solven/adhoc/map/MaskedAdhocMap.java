@@ -53,7 +53,7 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
 
-	@SuppressWarnings({ "PMD.OverrideBothEqualsAndHashCodeOnComparable", "PMD.LooseCoupling" })
+	@SuppressWarnings("PMD.LooseCoupling")
 	@Override
 	public int compareTo(IAdhocMap o) {
 		if (o instanceof MaskedAdhocMap otherMasked) {
@@ -102,6 +102,24 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	@Override
 	public int hashCode() {
 		return decorated.hashCode() + mask.hashCode();
+	}
+
+	@SuppressWarnings("PMD.LooseCoupling")
+	@Override
+	public boolean equals(Object o) {
+		if (o == null) {
+			return false;
+		} else if (o == this) {
+			return true;
+		} else if (o instanceof MaskedAdhocMap otherMasked) {
+			if (this.mask.equals(otherMasked.mask)) {
+				return this.decorated.equals(otherMasked.decorated);
+			} else {
+				return super.equals(o);
+			}
+		} else {
+			return super.equals(o);
+		}
 	}
 
 	/**
