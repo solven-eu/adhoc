@@ -26,7 +26,6 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -529,7 +528,7 @@ public class StandardSliceFactory implements ISliceFactory {
 			// Compare values
 			List<Object> thisOrderedValues = this.orderedValues();
 			List<Object> otherOrderedValues = other.orderedValues();
-			
+
 			return AdhocMapComparisonHelpers.compareValues(thisOrderedValues, otherOrderedValues);
 		}
 	}

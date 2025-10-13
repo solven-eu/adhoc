@@ -32,7 +32,6 @@ import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 
 /**
