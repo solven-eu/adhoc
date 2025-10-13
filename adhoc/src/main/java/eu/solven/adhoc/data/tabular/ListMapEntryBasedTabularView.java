@@ -42,6 +42,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -56,6 +57,7 @@ import lombok.extern.jackson.Jacksonized;
  */
 @SuperBuilder
 @Jacksonized
+@EqualsAndHashCode(callSuper = false)
 public class ListMapEntryBasedTabularView extends ATabularView implements ITabularView, IWritableTabularView {
 
 	// Split into 2 lists as a List of Map.Entry is not easy to serialize
@@ -73,6 +75,7 @@ public class ListMapEntryBasedTabularView extends ATabularView implements ITabul
 	 */
 	@Value
 	@Builder
+	@Jacksonized
 	public static class TabularEntry {
 		Map<String, ?> coordinates;
 		Map<String, ?> values;
