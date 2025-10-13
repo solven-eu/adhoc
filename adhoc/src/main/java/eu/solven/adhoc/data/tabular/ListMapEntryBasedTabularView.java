@@ -24,11 +24,9 @@ package eu.solven.adhoc.data.tabular;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -58,7 +56,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @EqualsAndHashCode(callSuper = false)
-public class ListMapEntryBasedTabularView extends ATabularView implements ITabularView, IWritableTabularView {
+public class ListMapEntryBasedTabularView extends AListBasedTabularView implements ITabularView, IWritableTabularView {
 
 	// Split into 2 lists as a List of Map.Entry is not easy to serialize
 	@Default
@@ -149,18 +147,6 @@ public class ListMapEntryBasedTabularView extends ATabularView implements ITabul
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
 		entries.add(TabularEntry.builder().coordinates(slice.getCoordinates()).values(mToValues).build());
-	}
-
-	@Deprecated(since = "Unclear use. This would be false on DrillThrough views")
-	public void checkIsDistinct() {
-		Set<Map<String, ?>> slices = new HashSet<>();
-
-		entries.stream().map(TabularEntry::getCoordinates).forEach(coordinate -> {
-			if (!slices.add(coordinate)) {
-				throw new IllegalStateException("Multiple slices with c=%s. It is illegal in %s".formatted(coordinate,
-						this.getClass().getName()));
-			}
-		});
 	}
 
 	@Override

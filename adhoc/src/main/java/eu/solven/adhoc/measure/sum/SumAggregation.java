@@ -178,4 +178,9 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	public long neutralLong() {
 		return 0L;
 	}
+
+	@Override
+	public double neutralDouble() {
+		return 0D;
+	}
 }

@@ -22,13 +22,16 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularView.TabularEntry;
 
 public class TestListMapEntryBasedTabularView {
 
@@ -38,7 +41,60 @@ public class TestListMapEntryBasedTabularView {
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
 
-		TestMapBasedTabularView.verifyJackson(ListMapEntryBasedTabularView.class, view);
+		String asString = TestMapBasedTabularView.verifyJackson(ListMapEntryBasedTabularView.class, view);
+
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "entries" : [ {
+				    "coordinates" : {
+				      "c1" : "v1"
+				    },
+				    "values" : {
+				      "m" : 123
+				    }
+				  } ]
+				}""");
+
+		Assertions.assertThat(view.toString())
+				.isEqualTo("ListMapEntryBasedTabularView{size=1, #0=slice:{c1=v1}={m=123}}");
+	}
+
+	@Test
+	public void testEmpty() throws JsonProcessingException {
+		Assertions.assertThat(ListMapEntryBasedTabularView.empty().isEmpty()).isTrue();
+	}
+
+	@Test
+	public void testLoad() {
+		MapBasedTabularView mapBased =
+				MapBasedTabularView.builder().coordinatesToValues(Map.of(Map.of("c", "c1"), Map.of("m", 123))).build();
+
+		ListMapEntryBasedTabularView loadedAsList = ListMapEntryBasedTabularView.load(mapBased);
+		ListMapEntryBasedTabularView loadedAsList2 =
+				ListMapEntryBasedTabularView.load(mapBased, ListMapEntryBasedTabularView.builder().build());
+
+		Assertions.assertThat(loadedAsList).isEqualTo(loadedAsList2);
+
+		Assertions.assertThat(loadedAsList.slices().toList()).hasSize(1).anySatisfy(slice -> {
+			Assertions.assertThat((Map) slice.getCoordinates()).containsEntry("c", "c1").hasSize(1);
+		});
+
+		// Should not fail on a valid set of slices
+		loadedAsList.checkIsDistinct();
+
+	}
+
+	@Test
+	public void testDuplicateSlices() {
+		ListMapEntryBasedTabularView view = ListMapEntryBasedTabularView.builder()
+				.entries(List.of(TabularEntry.builder().coordinates(Map.of("c", "c1")).build(),
+						TabularEntry.builder().coordinates(Map.of("c", "c1")).build()))
+				.build();
+
+		Assertions.assertThatThrownBy(() -> view.checkIsDistinct())
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("Multiple slices")
+				.hasMessageContaining("c=c1");
 	}
 
 }

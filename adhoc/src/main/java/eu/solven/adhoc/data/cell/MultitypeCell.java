@@ -134,4 +134,18 @@ public class MultitypeCell implements IMultitypeCell, IValueReceiver, IValueProv
 	public int getType() {
 		return types;
 	}
+
+	public static MultitypeCell fromAggregation(IAggregation aggregation) {
+		MultitypeCellBuilder builder = MultitypeCell.builder().aggregation(aggregation);
+
+		if (aggregation instanceof ILongAggregation longAggregation) {
+			builder.asLong(longAggregation.neutralLong());
+		}
+
+		if (aggregation instanceof IDoubleAggregation doubleAggregation) {
+			builder.asDouble(doubleAggregation.neutralDouble());
+		}
+
+		return builder.build();
+	}
 }

@@ -40,8 +40,11 @@ public interface IMultitypeCell {
 	 */
 	IValueReceiver merge();
 
-	default void merge(Object o) {
+	@Deprecated(since = "Prefer .merge()")
+	default IMultitypeCell merge(Object o) {
 		merge().onObject(o);
+
+		return this;
 	}
 
 	/**

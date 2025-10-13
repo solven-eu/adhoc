@@ -54,14 +54,19 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 	}
 
 	@Override
+	public long neutralLong() {
+		return 0;
+	}
+
+	@Override
 	public double aggregateDoubles(double left, double right) {
 		// BEWARE SHould we throw?
 		return 0;
 	}
 
 	@Override
-	public long neutralLong() {
-		return 0;
+	public double neutralDouble() {
+		return 0D;
 	}
 
 	/**

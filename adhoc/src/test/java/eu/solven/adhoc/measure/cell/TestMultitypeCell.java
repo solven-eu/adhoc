@@ -29,6 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.cell.MultitypeCell;
+import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -194,9 +195,28 @@ public class TestMultitypeCell {
 
 	@Test
 	public void testEmpty() {
-		MultitypeCell cell =
-				MultitypeCell.builder().aggregation(new ProductAggregation(Map.of())).asLong(1L).asDouble(1D).build();
+		MultitypeCell cell = MultitypeCell.fromAggregation(new ProductAggregation(Map.of()));
 
 		Assertions.assertThat(IValueProvider.getValue(cell.reduce())).isNull();
+	}
+
+	@Test
+	public void testMerge() {
+		MultitypeCell cell = MultitypeCell.fromAggregation(MaxAggregation.builder().build());
+
+		cell.merge(123L);
+
+		Assertions.assertThat(IValueProvider.getValue(cell.reduce())).isEqualTo(123L);
+	}
+
+	@Test
+	public void testMerge_chained() {
+		MultitypeCell cell = MultitypeCell.fromAggregation(MaxAggregation.builder().build());
+
+		cell.merge(123L).merge(12.34D);
+		Assertions.assertThat(IValueProvider.getValue(cell.reduce())).isEqualTo(123D);
+
+		cell.merge(1234.56);
+		Assertions.assertThat(IValueProvider.getValue(cell.reduce())).isEqualTo(1234.56D);
 	}
 }
