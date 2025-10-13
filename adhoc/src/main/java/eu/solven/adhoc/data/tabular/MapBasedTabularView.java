@@ -26,11 +26,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
@@ -39,11 +36,10 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.measure.aggregation.collection.MapAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -53,10 +49,10 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@Builder
-@EqualsAndHashCode
+@SuperBuilder
+@EqualsAndHashCode(callSuper = false)
 @Slf4j
-public class MapBasedTabularView implements ITabularView {
+public class MapBasedTabularView extends ATabularView implements ITabularView, IWritableTabularView {
 	@Default
 	@Getter
 	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());
@@ -82,7 +78,8 @@ public class MapBasedTabularView implements ITabularView {
 
 				Object previousValue = to.coordinatesToValues.put(coordinatesAsMap, oAsMap);
 				if (previousValue != null) {
-					throw new IllegalArgumentException("Already has value for %s".formatted(coordinates));
+					throw new IllegalArgumentException("Already has value for %s (updating from %s to %s)"
+							.formatted(coordinates, previousValue, oAsMap));
 				}
 			};
 		};
@@ -130,6 +127,7 @@ public class MapBasedTabularView implements ITabularView {
 		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), MapAggregation::aggregateMaps);
 	}
 
+	@Override
 	public IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull) {
 		return o -> {
 			if (o == null) {
@@ -145,19 +143,6 @@ public class MapBasedTabularView implements ITabularView {
 
 	public static ITabularView empty() {
 		return MapBasedTabularView.builder().coordinatesToValues(Collections.emptyMap()).build();
-	}
-
-	@Override
-	public String toString() {
-		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", coordinatesToValues.size());
-
-		AtomicInteger index = new AtomicInteger();
-		coordinatesToValues.entrySet()
-				.stream()
-				.limit(AdhocUnsafe.limitOrdinalToString)
-				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
-
-		return toStringHelper.toString();
 	}
 
 }

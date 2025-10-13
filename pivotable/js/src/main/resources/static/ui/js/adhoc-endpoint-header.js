@@ -36,9 +36,9 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-		<div v-if="!endpoint || endpoint.error">
-		    <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-		</div>
+        <div v-if="!endpoint || endpoint.error">
+            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+        </div>
         <div v-else>
             <span>
                 <span v-if="withDescription">

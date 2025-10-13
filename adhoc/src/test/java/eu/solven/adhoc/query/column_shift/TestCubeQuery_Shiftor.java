@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
@@ -41,6 +42,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -214,6 +216,19 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		});
 	}
 
+	private void toAvg() {
+		forest.acceptVisitor(new IMeasureForestVisitor() {
+			@Override
+			public Set<IMeasure> mapMeasure(IMeasure measure) {
+				if (measure instanceof Aggregator aggregator) {
+					return Set.of(aggregator.toBuilder().aggregationKey(AvgAggregation.KEY).build());
+				} else {
+					return Set.of(measure);
+				}
+			}
+		});
+	}
+
 	// Shiftor over an IHasCarrier may lead to issues. Most of them are not specific to Shiftor.
 	@Test
 	public void testGroupByColor_avg() {
@@ -244,16 +259,20 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		});
 	}
 
-	private void toAvg() {
-		forest.acceptVisitor(new IMeasureForestVisitor() {
-			@Override
-			public Set<IMeasure> mapMeasure(IMeasure measure) {
-				if (measure instanceof Aggregator aggregator) {
-					return Set.of(aggregator.toBuilder().aggregationKey(AvgAggregation.KEY).build());
-				} else {
-					return Set.of(measure);
-				}
-			}
+	@Test
+	public void testDrillthrough_GrandTotal_avg() {
+		toAvg();
+		ITabularView output =
+				cube().execute(CubeQuery.builder().measure(mName).option(StandardQueryOptions.DRILLTHROUGH).build());
+
+		ListMapEntryBasedTabularViewDrillThrough mapBased = ListMapEntryBasedTabularViewDrillThrough.load(output);
+
+		Assertions.assertThat(mapBased.getEntries()).hasSize(2).anySatisfy(entry -> {
+			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of());
+			Assertions.assertThat(entry.getValues()).isEqualTo(Map.of("k1", 234L));
+		}).anySatisfy(entry -> {
+			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of());
+			Assertions.assertThat(entry.getValues()).isEqualTo(Map.of("k1", 345L));
 		});
 	}
 

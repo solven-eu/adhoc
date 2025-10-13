@@ -528,7 +528,7 @@ export default {
             <div>props.tabularView.timing={{tabularView.timing}}</div>
             <AdhocGridExportCsv :array="data.array" />
 
-			<AdhocGridFormatModal :formatOptions="formatOptions" />
+            <AdhocGridFormatModal :formatOptions="formatOptions" />
         </div>
     `,
 };

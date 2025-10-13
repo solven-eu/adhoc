@@ -150,6 +150,28 @@ export default {
 
 		const latestSentQueryId = ref(-1);
 
+		const onView = function (queryForApi, responseTabularView, stringifiedQuery, startDownloading) {
+			props.tabularView.timing.downloading = new Date() - startDownloading;
+
+			// This will be cancelled in the finally block: the rendering status is managed autonomously by the grid
+
+			// The submitted move may have impacted the leaderboard
+			store.$patch((state) => {
+				store.queries["" + stringifiedQuery.hashCode()].result = responseTabularView;
+				//state.contests[contestId].stale = true;
+			});
+			sendQueryError.value = "";
+
+			// We need to couple the columns with the result
+			// as the wizard may have been edited while receiving the result
+			// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
+			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView });
+			// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
+
+			// TODO Rely on a named route and params
+			// router.push({ name: "board" });
+		};
+
 		const sendQueryError = ref("");
 		function sendQuery() {
 			let queryForApi = {};
@@ -188,48 +210,120 @@ export default {
 					const startSending = new Date();
 					props.tabularView.loading.sending = true;
 
-					const response = await userStore.authenticatedFetch(url, fetchOptions);
-					if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
-						console.warn(`Received response for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
-						return;
+					const synchronous = false;
+
+					if (synchronous) {
+						const response = await userStore.authenticatedFetch(url, fetchOptions);
+						if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
+							console.warn(`Received response for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
+							return;
+						}
+
+						props.tabularView.loading.sending = false;
+						props.tabularView.timing.sending = new Date() - startSending;
+
+						if (!response.ok) {
+							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
+						}
+
+						const startDownloading = new Date();
+						props.tabularView.loading.downloading = true;
+
+						const responseTabularView = await response.json();
+						if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
+							console.warn(`Received response.json for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
+							return;
+						}
+
+						onView(queryForApi, responseTabularView, stringifiedQuery, startDownloading);
+					} else {
+						const response = await userStore.authenticatedFetch(url + "/asynchronous", fetchOptions);
+						if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
+							console.warn(`Received response for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
+							return;
+						}
+
+						props.tabularView.loading.sending = false;
+						props.tabularView.timing.sending = new Date() - startSending;
+
+						if (!response.ok) {
+							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
+						}
+
+						const startDownloading = new Date();
+						props.tabularView.loading.downloading = true;
+
+						const queryResultId = await response.json();
+						console.info("Query has been registered as queryid=", queryResultId);
+
+						const fetchStateOnlyOptions = {
+							method: "GET",
+							headers: { "Content-Type": "application/json" },
+						};
+						while (true) {
+							// https://stackoverflow.com/questions/35038857/setting-query-string-using-fetch-get-request
+							const responseStateOnly = await userStore.authenticatedFetch(
+								url +
+									"/result?" +
+									new URLSearchParams({
+										query_id: queryResultId,
+										with_view: false,
+									}).toString(),
+								fetchStateOnlyOptions,
+							);
+
+							if (responseStateOnly.status !== 200) {
+								const errorBody = await responseStateOnly.json();
+								throw new Error("Issue fetch result: " + JSON.stringify(errorBody));
+							}
+
+							const responseStateOnlyJson = await responseStateOnly.json();
+							console.debug("queryResult is", responseStateOnlyJson);
+
+							if (responseStateOnlyJson.state == "SERVED") {
+								console.log("query is SERVED");
+								break;
+							} else if (responseStateOnlyJson.retry_in) {
+								console.log("result should be retried");
+
+								// https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
+								// sleep time expects milliseconds
+								function sleep(time) {
+									return new Promise((resolve) => setTimeout(resolve, time));
+								}
+								await sleep(responseStateOnlyJson.retry_in);
+
+								break;
+							}
+						}
+
+						const fetchViewOptions = {
+							method: "GET",
+							headers: { "Content-Type": "application/json" },
+						};
+						// https://stackoverflow.com/questions/35038857/setting-query-string-using-fetch-get-request
+						const responseView = await userStore.authenticatedFetch(
+							url +
+								"/result?" +
+								new URLSearchParams({
+									query_id: queryResultId,
+									with_view: true,
+								}).toString(),
+							fetchViewOptions,
+						);
+						if (responseView.status !== 200) {
+							const errorBody = await responseView.json();
+							throw new Error("Issue fetch result: " + JSON.stringify(errorBody));
+						}
+
+						const responseTabularView = await responseView.json();
+						if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
+							console.warn(`Received response.json for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
+							return;
+						}
+
+						onView(queryForApi, responseTabularView.view, stringifiedQuery, startDownloading);
 					}
-
-					props.tabularView.loading.sending = false;
-					props.tabularView.timing.sending = new Date() - startSending;
-
-					if (!response.ok) {
-						throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
-					}
-
-					const startDownloading = new Date();
-					props.tabularView.loading.downloading = true;
-
-					const responseTabularView = await response.json();
-					if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
-						console.warn(`Received response.json for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
-						return;
-					}
-
-					props.tabularView.loading.downloading = false;
-					props.tabularView.timing.downloading = new Date() - startDownloading;
-
-					// This will be cancelled in the finally block: the rendering status is managed autonomously by the grid
-
-					// The submitted move may have impacted the leaderboard
-					store.$patch((state) => {
-						store.queries["" + stringifiedQuery.hashCode()].result = responseTabularView;
-						//state.contests[contestId].stale = true;
-					});
-					sendQueryError.value = "";
-
-					// We need to couple the columns with the result
-					// as the wizard may have been edited while receiving the result
-					// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
-					Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView });
-					// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
-
-					// TODO Rely on a named route and params
-					// router.push({ name: "board" });
 				} catch (e) {
 					console.error("Issue on Network:", e);
 					sendQueryError.value = e.message;

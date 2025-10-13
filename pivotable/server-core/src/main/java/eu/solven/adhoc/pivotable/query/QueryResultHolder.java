@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.pivotable.query;
 
-import java.util.Set;
+import java.time.Duration;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.data.tabular.IReadableTabularView;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
- * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
+ * Holds the details for the queryResult API
  * 
- * {@link ITabularView} implementations are generally immutable.
- *
  * @author Benoit Lacelle
- *
  */
-public interface ITabularView extends IReadableTabularView, IWritableTabularView {
+@Value
+@Builder
+public class QueryResultHolder {
+	@NonNull
+	AsynchronousStatus state;
+
+	IReadableTabularView view;
+
+	Duration retryIn;
+
+	public static QueryResultHolder served(AsynchronousStatus state, IReadableTabularView view) {
+		return QueryResultHolder.builder().state(state).view(view).build();
+	}
+
+	public static QueryResultHolder retry(AsynchronousStatus state, Duration retryIn) {
+		return QueryResultHolder.builder().state(state).retryIn(retryIn).build();
+	}
+
+	// May have been cancelled, or done but result is discarded
+	public static QueryResultHolder discarded(AsynchronousStatus state) {
+		return QueryResultHolder.builder().state(state).build();
+	}
 }

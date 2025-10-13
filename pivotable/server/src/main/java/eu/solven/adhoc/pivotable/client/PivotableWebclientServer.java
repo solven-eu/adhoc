@@ -37,7 +37,6 @@ import com.nimbusds.jwt.SignedJWT;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
@@ -223,7 +222,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 					throw new IllegalArgumentException("Request rejected: " + r.statusCode());
 				}
 				log.info("Execute a query: {}", r.statusCode());
-				return r.bodyToMono(ListBasedTabularView.class);
+				return r.bodyToMono(ITabularView.class);
 			});
 		});
 	}

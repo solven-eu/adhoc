@@ -60,9 +60,9 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-		<div v-if="!schema || schema.error">
-		    <AdhocLoading :id="endpointId" type="schema" :loading="nbSchemaFetching > 0" :error="schema.error" />
-		</div>
+        <div v-if="!schema || schema.error">
+            <AdhocLoading :id="endpointId" type="schema" :loading="nbSchemaFetching > 0" :error="schema.error" />
+        </div>
         <div v-else>
             <span v-if="showSchema">
                 Tables:

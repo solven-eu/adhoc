@@ -133,9 +133,16 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		}
 	}
 
+	/**
+	 * If the query is simple, this holds a single MeasurelessQuery. However, some groupedBy columns would imply
+	 * additional {@link MeasurelessQuery} (e.g. some column, if groupedBy, adds calculated coordinates which are
+	 * additional filters.)
+	 * 
+	 * @return a {@link Set} of {@link MeasurelessQuery}.
+	 */
 	protected Set<MeasurelessQuery> rootMeasureless() {
 		// May refer some calculatedCoordinates as groupBy
-		NavigableMap<String, IAdhocColumn> nameToColumns = query.getGroupBy().getNameToColumn();
+		NavigableMap<String, IAdhocColumn> nameToColumn = query.getGroupBy().getNameToColumn();
 
 		// Each index is associated to a groupedBy column
 		// Each groupedBy column is associated to the list of column definitions
@@ -145,7 +152,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		// calculated coordinates
 		List<List<Map.Entry<IAdhocColumn, ISliceFilter>>> indexToGroupBys = new ArrayList<>();
 
-		nameToColumns.values().forEach(column -> {
+		nameToColumn.values().forEach(column -> {
 			if (column instanceof ColumnWithCalculatedCoordinates hasCalculated) {
 				List<Map.Entry<IAdhocColumn, ISliceFilter>> subColumns = new ArrayList<>();
 

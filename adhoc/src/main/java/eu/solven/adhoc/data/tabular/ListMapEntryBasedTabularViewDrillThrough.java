@@ -20,49 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation.collection;
+package eu.solven.adhoc.data.tabular;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.query.StandardQueryOptions;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * Aggregate inputs as {@link Map}, doing the union as aggregation.
+ * Extends {@link ListMapEntryBasedTabularView}, but will not align input values along slices.
  * 
- * @param <K>
- * @param <V>
+ * It is especially useful for {@link StandardQueryOptions#DRILLTHROUGH}.
+ * 
  * @author Benoit Lacelle
  */
-public class MapAggregation<K, V> implements IAggregation {
+@SuperBuilder
+@Jacksonized
+public class ListMapEntryBasedTabularViewDrillThrough extends ListMapEntryBasedTabularView {
 
-	public static final String KEY = "UNION_MAP";
-
-	public boolean acceptAggregate(Object o) {
-		return o instanceof Map || o == null;
+	public static ListMapEntryBasedTabularViewDrillThrough withCapacity(long expectedOutputCardinality) {
+		List<TabularEntry> rawArray = new ArrayList<>(Ints.checkedCast(expectedOutputCardinality));
+		return builder().entries(rawArray).build();
 	}
 
+	public static ListMapEntryBasedTabularViewDrillThrough load(ITabularView from) {
+		long capacity = from.size();
+		ListMapEntryBasedTabularViewDrillThrough newView = withCapacity(capacity);
+
+		return load(from, newView);
+	}
+
+	/**
+	 * Will write each entry in the next row, hence preventing any conflict/aggregation on slices.
+	 */
 	@Override
-	public Map<K, V> aggregate(Object l, Object r) {
-		Map<?, ?> lAsMap = asMap(l);
-		Map<?, ?> rAsMap = asMap(r);
-
-		return aggregateMaps(lAsMap, rAsMap);
-	}
-
-	protected Map<?, ?> asMap(Object o) {
-		return (Map<?, ?>) o;
-	}
-
-	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
-		if (lAsMap == null || lAsMap.isEmpty()) {
-			return (Map<K, V>) rAsMap;
-		} else if (rAsMap == null || rAsMap.isEmpty()) {
-			return (Map<K, V>) lAsMap;
-		} else {
-			// BEWARE In case on conflict, ImmutableMap.builder() will throw
-			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
-		}
+	protected int getIndexForSlice(Map<String, ?> coordinates) {
+		return entries.size();
 	}
 }

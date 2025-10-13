@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
-
-import java.util.Set;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.ICubeQuery;
+package eu.solven.adhoc.pivotable.query;
 
 /**
- * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
- * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
+ * The different state of a query execution.
  * 
- * {@link ITabularView} implementations are generally immutable.
- *
  * @author Benoit Lacelle
- *
  */
-public interface ITabularView extends IReadableTabularView, IWritableTabularView {
+public enum AsynchronousStatus {
+	// the queryId is unknown
+	UNKNOWN,
+	// the query is running
+	RUNNING,
+	// the query is completed and its result is available
+	SERVED,
+	// the query ended with a failure
+	FAILED,
+	// the view is not available anymore, or it has been cancelled
+	DISCARDED
 }

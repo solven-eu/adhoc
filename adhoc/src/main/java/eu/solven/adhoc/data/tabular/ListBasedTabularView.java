@@ -28,23 +28,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 
 /**
@@ -54,10 +50,10 @@ import lombok.extern.jackson.Jacksonized;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@SuperBuilder
 @Jacksonized
-@EqualsAndHashCode
-public class ListBasedTabularView implements ITabularView {
+@EqualsAndHashCode(callSuper = false)
+public class ListBasedTabularView extends ATabularView implements IReadableTabularView {
 
 	// Split into 2 lists as a List of Map.Entry is not easy to serialize
 	@Default
@@ -133,25 +129,11 @@ public class ListBasedTabularView implements ITabularView {
 		});
 	}
 
-	public static ITabularView empty() {
+	public static ListBasedTabularView empty() {
 		return ListBasedTabularView.builder()
 				.coordinates(Collections.emptyList())
 				.values(Collections.emptyList())
 				.build();
-	}
-
-	@Override
-	public String toString() {
-		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size());
-
-		AtomicInteger index = new AtomicInteger();
-
-		stream((slice) -> {
-			return value -> Map.entry(slice, value);
-		}).limit(AdhocUnsafe.limitOrdinalToString)
-				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
-
-		return toStringHelper.toString();
 	}
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {

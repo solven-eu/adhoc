@@ -25,6 +25,8 @@ package eu.solven.adhoc.pivotable.webflux.api;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
+import java.util.UUID;
+
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,6 +44,7 @@ import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
+import eu.solven.adhoc.pivotable.query.QueryResultHolder;
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
 
@@ -61,6 +64,13 @@ public class PivotableApiRouter {
 		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(json);
 	}
 
+	/**
+	 * Register the routes of the standard Pivotable API, dicovering the schema and executing queries.
+	 * 
+	 * @param endpointsHandler
+	 * @param queryHandler
+	 * @return
+	 */
 	// https://github.com/springdoc/springdoc-openapi-demos/tree/2.x/springdoc-openapi-spring-boot-2-webflux-functional
 	// https://stackoverflow.com/questions/6845772/should-i-use-singular-or-plural-name-convention-for-rest-resources
 	@Bean
@@ -73,14 +83,14 @@ public class PivotableApiRouter {
 
 		var cubeId = parameterBuilder().name("cube")
 				.description("Search for a specific cube by its name")
-				.example("somreCubeName");
+				.example("someCubeName");
 
 		var table =
 				parameterBuilder().name("table").description("Search for a specific table").example("somreCubeName");
 
 		var name = parameterBuilder().name("name")
 				.description("A specific name, for the main requested type")
-				.example("somreCubeName");
+				.example("someCubeName");
 
 		var coordinate = parameterBuilder().name("coordinate")
 				.description("Search for a specific coordinate, along one or more column")
@@ -155,10 +165,36 @@ public class PivotableApiRouter {
 				.POST(json("/cubes/query"),
 						queryHandler::executeQuery,
 						ops -> ops.operationId("executeQuery")
+								// .parameter(parameterBuilder().name("synchronous")
+								// .description("If false, returns a resultId to be polled")
+								// .implementation(Boolean.class)
+								// .example("true")
+								// .example("false"))
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
 										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200")
 										.implementation(ListBasedTabularView.class)))
+				.POST(json("/cubes/query/asynchronous"),
+						queryHandler::executeAsynchronousQuery,
+						ops -> ops.operationId("executeQuery")
+								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
+										.implementation(TargetedCubeQuery.class))
+								.response(responseBuilder().responseCode("200").implementation(UUID.class)))
+
+				.GET(json("/cubes/query/result"),
+						queryHandler::fetchQueryResult,
+						ops -> ops.operationId("fetchQueryResult")
+								.parameter(parameterBuilder().name("result_id")
+										.description("id of the query result")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
+								.parameter(parameterBuilder().name("with_view")
+										.description("Should the view be returned if state is SERVED? Default is true")
+										.implementation(Boolean.class)
+										.example("true")
+										.example("false"))
+								.response(
+										responseBuilder().responseCode("200").implementation(QueryResultHolder.class)))
 
 				.build();
 

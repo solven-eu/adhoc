@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,49 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation.collection;
+package eu.solven.adhoc.data.tabular;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.experimental.SuperBuilder;
 
 /**
- * Aggregate inputs as {@link Map}, doing the union as aggregation.
+ * Holds common behavior to all {@link IReadableTabularView}.
  * 
- * @param <K>
- * @param <V>
  * @author Benoit Lacelle
  */
-public class MapAggregation<K, V> implements IAggregation {
-
-	public static final String KEY = "UNION_MAP";
-
-	public boolean acceptAggregate(Object o) {
-		return o instanceof Map || o == null;
-	}
+@SuperBuilder
+public abstract class ATabularView implements IReadableTabularView {
 
 	@Override
-	public Map<K, V> aggregate(Object l, Object r) {
-		Map<?, ?> lAsMap = asMap(l);
-		Map<?, ?> rAsMap = asMap(r);
+	public String toString() {
+		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size());
 
-		return aggregateMaps(lAsMap, rAsMap);
-	}
+		AtomicInteger index = new AtomicInteger();
 
-	protected Map<?, ?> asMap(Object o) {
-		return (Map<?, ?>) o;
-	}
+		stream((slice) -> {
+			return value -> Map.entry(slice, value);
+		}).limit(AdhocUnsafe.limitOrdinalToString)
+				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 
-	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
-		if (lAsMap == null || lAsMap.isEmpty()) {
-			return (Map<K, V>) rAsMap;
-		} else if (rAsMap == null || rAsMap.isEmpty()) {
-			return (Map<K, V>) lAsMap;
-		} else {
-			// BEWARE In case on conflict, ImmutableMap.builder() will throw
-			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
-		}
+		return toStringHelper.toString();
 	}
 }

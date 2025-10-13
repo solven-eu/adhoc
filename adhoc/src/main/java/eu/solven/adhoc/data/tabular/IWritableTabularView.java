@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,16 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.Set;
-
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
- * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
+ * The writing contract of a {@link ITabularView}.
  * 
- * {@link ITabularView} implementations are generally immutable.
- *
  * @author Benoit Lacelle
- *
  */
-public interface ITabularView extends IReadableTabularView, IWritableTabularView {
+@FunctionalInterface
+public interface IWritableTabularView {
+
+	IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull);
 }

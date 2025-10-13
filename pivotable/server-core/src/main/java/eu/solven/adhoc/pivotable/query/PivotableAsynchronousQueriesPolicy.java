@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.pivotable.query;
 
-import java.util.Set;
+import java.time.Duration;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.ICubeQuery;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Value;
 
 /**
- * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
- * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
+ * Holds details about how asynchronous queries are managed. Typically for how long the results remains available, and
+ * the expected frequency of polling.
  * 
- * {@link ITabularView} implementations are generally immutable.
- *
  * @author Benoit Lacelle
- *
  */
-public interface ITabularView extends IReadableTabularView, IWritableTabularView {
+@Value
+@Builder
+public class PivotableAsynchronousQueriesPolicy {
+	final Duration expireAfterWrite = Duration.ofMinutes(1);
+
+	// the maximum number of queries and state being available
+	@Default
+	final long maxSize = 16 * 1024;
+
+	@Default
+	final long factorForState = 10;
 }
