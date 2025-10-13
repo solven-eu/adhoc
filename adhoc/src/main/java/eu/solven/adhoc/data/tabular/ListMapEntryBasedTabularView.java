@@ -83,14 +83,14 @@ public class ListMapEntryBasedTabularView extends ATabularView implements ITabul
 		return ListMapEntryBasedTabularView.builder().entries(rawArray).build();
 	}
 
-	public static ListMapEntryBasedTabularView load(ITabularView from) {
+	public static ListMapEntryBasedTabularView load(IReadableTabularView from) {
 		long capacity = from.size();
 		ListMapEntryBasedTabularView newView = withCapacity(capacity);
 
 		return load(from, newView);
 	}
 
-	public static <T extends ListMapEntryBasedTabularView> T load(ITabularView from, T to) {
+	public static <T extends ListMapEntryBasedTabularView> T load(IReadableTabularView from, T to) {
 		if (to.getClass().isAssignableFrom(from.getClass())) {
 			return (T) to.getClass().cast(from);
 		}

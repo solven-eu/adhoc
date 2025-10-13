@@ -63,7 +63,7 @@ public class ListBasedTabularView extends ATabularView implements IReadableTabul
 	@Getter
 	final List<Map<String, ?>> values = new ArrayList<>();
 
-	public static ListBasedTabularView load(ITabularView from) {
+	public static ListBasedTabularView load(IReadableTabularView from) {
 		int capacity = Ints.checkedCast(from.size());
 		ListBasedTabularView newView = ListBasedTabularView.builder()
 				.coordinates(new ArrayList<>(capacity))
@@ -73,7 +73,7 @@ public class ListBasedTabularView extends ATabularView implements IReadableTabul
 		return load(from, newView);
 	}
 
-	public static ListBasedTabularView load(ITabularView from, ListBasedTabularView to) {
+	public static ListBasedTabularView load(IReadableTabularView from, ListBasedTabularView to) {
 		if (from instanceof ListBasedTabularView asMapBased) {
 			return asMapBased;
 		}

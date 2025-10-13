@@ -41,7 +41,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.IReadableTabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.client.IPivotableServer;
@@ -85,7 +85,7 @@ public class TestQueryGrandTotalsThroughRouter {
 
 		AtomicInteger nbViews = new AtomicInteger();
 
-		ITabularView lastView = pivotableServer
+		IReadableTabularView lastView = pivotableServer
 				// Search for self endpoint
 				.searchEntrypoints(AdhocEndpointSearch.builder()
 						.endpointId(Optional.of(PivotableAdhocEndpointMetadata.SELF_ENTRYPOINT_ID))

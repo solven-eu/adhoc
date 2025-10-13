@@ -57,7 +57,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 	@Getter
 	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());
 
-	public static MapBasedTabularView load(ITabularView from) {
+	public static MapBasedTabularView load(IReadableTabularView from) {
 		int capacity = Ints.checkedCast(from.size());
 		Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = LinkedHashMap.newLinkedHashMap(capacity);
 		MapBasedTabularView newView = MapBasedTabularView.builder().coordinatesToValues(coordinatesToValues).build();
@@ -65,7 +65,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 		return load(from, newView);
 	}
 
-	public static MapBasedTabularView load(ITabularView from, MapBasedTabularView to) {
+	public static MapBasedTabularView load(IReadableTabularView from, MapBasedTabularView to) {
 		if (from instanceof MapBasedTabularView asMapBased) {
 			return asMapBased;
 		}
