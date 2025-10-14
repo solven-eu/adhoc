@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class TestMaskedAdhocMap {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
@@ -64,5 +65,34 @@ public class TestMaskedAdhocMap {
 		Assertions.assertThatThrownBy(() -> masked1.put("k", "v")).isInstanceOf(UnsupportedOperationException.class);
 		// new key
 		Assertions.assertThatThrownBy(() -> masked1.put("k3", "v3")).isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	@Test
+	public void testEquals() {
+		IAdhocMap decorated = StandardSliceFactory.fromMap(StandardSliceFactory.builder().build(), Map.of("a", "a1"));
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		// `.equals` any Map
+		Assertions.assertThat((Map) masked).isEqualTo(Map.of("a", "a1", "b", "b2"));
+		Assertions.assertThat(masked.hashCode()).isEqualTo(Map.of("a", "a1", "b", "b2").hashCode());
+
+		// `.get` any key
+		Assertions.assertThat(masked.get("a")).isEqualTo("a1");
+		Assertions.assertThat(masked.get("b")).isEqualTo("b2");
+		Assertions.assertThat(masked.get("c")).isEqualTo(null);
+	}
+
+	@Test
+	public void testContainsKey() {
+		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		Assertions.assertThat((Map) masked).doesNotContainKey("a");
+		Mockito.verify(decorated, Mockito.times(1)).containsKey("a");
+
+		Assertions.assertThat((Map) masked).containsKey("b");
+		Mockito.verify(decorated, Mockito.times(1)).containsKey("b");
 	}
 }

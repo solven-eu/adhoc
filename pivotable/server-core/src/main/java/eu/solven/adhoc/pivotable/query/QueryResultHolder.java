@@ -24,10 +24,15 @@ package eu.solven.adhoc.pivotable.query;
 
 import java.time.Duration;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import eu.solven.adhoc.data.tabular.IReadableTabularView;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Holds the details for the queryResult API
@@ -36,6 +41,8 @@ import lombok.Value;
  */
 @Value
 @Builder
+@Jacksonized
+@JsonInclude(Include.NON_NULL)
 public class QueryResultHolder {
 	@NonNull
 	AsynchronousStatus state;
@@ -43,6 +50,15 @@ public class QueryResultHolder {
 	IReadableTabularView view;
 
 	Duration retryIn;
+
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	public Long getRetryInMs() {
+		// Make it easier in language like Javascript to get the retry duration
+		if (retryIn == null) {
+			return null;
+		}
+		return retryIn.toMillis();
+	}
 
 	public static QueryResultHolder served(AsynchronousStatus state, IReadableTabularView view) {
 		return QueryResultHolder.builder().state(state).view(view).build();

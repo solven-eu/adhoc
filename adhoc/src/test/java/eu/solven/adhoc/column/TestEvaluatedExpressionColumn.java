@@ -31,8 +31,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestEvaluatedExpressionColumn {
@@ -46,7 +46,7 @@ public class TestEvaluatedExpressionColumn {
 	public void testJackson() throws JsonProcessingException {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + b").build();
-		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class, column);
+		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class, column);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

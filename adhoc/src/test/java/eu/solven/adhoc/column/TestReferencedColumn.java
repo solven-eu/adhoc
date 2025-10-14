@@ -33,9 +33,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -43,7 +43,7 @@ import lombok.extern.jackson.Jacksonized;
 public class TestReferencedColumn {
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class, ReferencedColumn.ref("someColumn"));
+		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class, ReferencedColumn.ref("someColumn"));
 
 		Assertions.assertThat(asString).isEqualTo("""
 				"someColumn"

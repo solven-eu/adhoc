@@ -32,6 +32,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularView.TabularEntry;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestListMapEntryBasedTabularView {
 
@@ -41,7 +42,7 @@ public class TestListMapEntryBasedTabularView {
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
 
-		String asString = TestMapBasedTabularView.verifyJackson(ListMapEntryBasedTabularView.class, view);
+		String asString = PepperJacksonTestHelper.verifyJackson(ListMapEntryBasedTabularView.class, view);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

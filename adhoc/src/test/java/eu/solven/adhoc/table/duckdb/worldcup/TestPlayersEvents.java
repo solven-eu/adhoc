@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.example.worldcup.PlayersEvents;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestPlayersEvents {
@@ -42,7 +42,7 @@ public class TestPlayersEvents {
 	public void testJackson() throws JsonProcessingException {
 		AtomicLongMap<Integer> goalEvents = AtomicLongMap.create();
 		goalEvents.put(12, 23);
-		String toString = TestMapBasedTabularView.objectMapper()
+		String toString = PepperJacksonTestHelper.makeObjectMapper()
 				.writeValueAsString(PlayersEvents.builder().typeToMinuteToCount("G", goalEvents).build());
 
 		Assertions.assertThat(toString).isEqualTo("""
@@ -70,7 +70,7 @@ public class TestPlayersEvents {
 						.typeToMinuteToCount("Y", yellowEvents)
 						.build());
 
-		String toString = TestMapBasedTabularView.objectMapper().writeValueAsString(merged);
+		String toString = PepperJacksonTestHelper.makeObjectMapper().writeValueAsString(merged);
 
 		Assertions.assertThat(toString).isEqualTo("""
 				{
@@ -101,7 +101,7 @@ public class TestPlayersEvents {
 						.typeToMinuteToCount("Y", yellowEvents)
 						.build());
 
-		String toString = TestMapBasedTabularView.objectMapper().writeValueAsString(merged);
+		String toString = PepperJacksonTestHelper.makeObjectMapper().writeValueAsString(merged);
 
 		Assertions.assertThat(toString).isEqualTo("""
 				{

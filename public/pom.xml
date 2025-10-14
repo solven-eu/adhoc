@@ -28,7 +28,7 @@
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper</artifactId>
-			<version>5.1</version>
+			<version>${pepper.version}</version>
 		</dependency>
 
 		<dependency>

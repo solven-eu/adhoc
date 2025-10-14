@@ -29,10 +29,10 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestTargetedCubeQuery {
@@ -50,7 +50,7 @@ public class TestTargetedCubeQuery {
 				.query(CubeQuery.builder().measure(Aggregator.countAsterisk()).groupByAlso("someColumn").build())
 				.build();
 
-		String asString = TestMapBasedTabularView.verifyJackson(TargetedCubeQuery.class, query);
+		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

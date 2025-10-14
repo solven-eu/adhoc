@@ -351,6 +351,7 @@ public class StandardSliceFactory implements ISliceFactory {
 			return unorderedValues.get(index);
 		}
 
+		// Called by `SliceAsMap` so it needs to be fast
 		@Override
 		public boolean containsKey(Object key) {
 			return keys.keySet.keysAsHashSet.get().contains(key);

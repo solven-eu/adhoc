@@ -88,6 +88,12 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 		}
 	}
 
+	// Called by `SliceAsMap` so it needs to be fast
+	@Override
+	public boolean containsKey(Object key) {
+		return decorated.containsKey(key) || mask.containsKey(key);
+	}
+
 	@Override
 	public Object get(Object key) {
 		Object fromDecorated = decorated.get(key);

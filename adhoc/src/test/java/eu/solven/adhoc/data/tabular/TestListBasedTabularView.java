@@ -36,6 +36,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -47,7 +48,7 @@ public class TestListBasedTabularView {
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
 
-		String asString = TestMapBasedTabularView.verifyJackson(ListBasedTabularView.class, view);
+		String asString = PepperJacksonTestHelper.verifyJackson(ListBasedTabularView.class, view);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
@@ -109,7 +110,7 @@ public class TestListBasedTabularView {
 				.values(List.of(Map.of("m", new RuntimeException("someIssue"))))
 				.build();
 
-		ObjectMapper objectMapper = AdhocPublicJackson.indentArrayWithEol(TestMapBasedTabularView.objectMapper());
+		ObjectMapper objectMapper = AdhocPublicJackson.indentArrayWithEol(PepperJacksonTestHelper.makeObjectMapper());
 
 		SimpleModule adhocModule = new SimpleModule("Adhoc");
 		adhocModule.addSerializer(new ThrowableAsStackSerializer());

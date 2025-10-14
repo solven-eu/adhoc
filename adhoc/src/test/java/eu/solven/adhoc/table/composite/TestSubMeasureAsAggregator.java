@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestSubMeasureAsAggregator {
@@ -46,7 +46,7 @@ public class TestSubMeasureAsAggregator {
 				.underlyings(Arrays.asList("u1", "u2"))
 				.build();
 
-		String asString = TestMapBasedTabularView.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
+		String asString = PepperJacksonTestHelper.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
