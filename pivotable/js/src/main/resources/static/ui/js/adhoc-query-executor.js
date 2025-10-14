@@ -280,18 +280,48 @@ export default {
 							const responseStateOnlyJson = await responseStateOnly.json();
 							console.debug("queryResult is", responseStateOnlyJson);
 
-							if (responseStateOnlyJson.state == "SERVED") {
+							if (responseStateOnlyJson.state === "SERVED") {
 								console.log("query is SERVED");
 								break;
 							} else if (responseStateOnlyJson.retry_in) {
-								console.log("result should be retried");
+								console.log("result should be retried in ", responseStateOnlyJson.retry_in);
+
+								// https://stackoverflow.com/questions/14934089/convert-iso-8601-duration-with-javascript
+								const iso8601DurationRegex = /(-)?P(?:([.,\d]+)Y)?(?:([.,\d]+)M)?(?:([.,\d]+)W)?(?:([.,\d]+)D)?(?:T(?:([.,\d]+)H)?(?:([.,\d]+)M)?(?:([.,\d]+)S)?)?/;
+								const parseISO8601Duration = function (iso8601Duration) {
+									const matches = iso8601Duration.match(iso8601DurationRegex);
+
+									return {
+										sign: matches[1] === undefined ? '+' : '-',
+										years: matches[2] === undefined ? 0 : matches[2],
+										months: matches[3] === undefined ? 0 : matches[3],
+										weeks: matches[4] === undefined ? 0 : matches[4],
+										days: matches[5] === undefined ? 0 : matches[5],
+										hours: matches[6] === undefined ? 0 : matches[6],
+										minutes: matches[7] === undefined ? 0 : matches[7],
+										seconds: matches[8] === undefined ? 0 : matches[8]
+									};
+								};
+
+								const parsedRetryIn = parseISO8601Duration(responseStateOnlyJson.retry_in);
+								const retryInMs =
+									(parsedRetryIn.years * 365 * 24 * 3600 +
+										parsedRetryIn.months * 30 * 24 * 3600 +
+										parsedRetryIn.weeks * 7 * 24 * 3600 +
+										parsedRetryIn.days * 24 * 3600 +
+										parsedRetryIn.hours * 3600 +
+										parsedRetryIn.minutes * 60 +
+										parseFloat(parsedRetryIn.seconds)) *
+									1000 *
+									(parsedRetryIn.sign === '-' ? -1 : 1);
+								console.log("Will retry in", responseStateOnlyJson.retry_in, "=>", retryInMs, "ms");
 
 								// https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
 								// sleep time expects milliseconds
 								function sleep(time) {
 									return new Promise((resolve) => setTimeout(resolve, time));
 								}
-								await sleep(responseStateOnlyJson.retry_in);
+								await sleep(retryInMs);
 
 								break;
 							}
