@@ -11,7 +11,7 @@
 
 	<groupId>eu.solven.adhoc</groupId>
 	<artifactId>aggregator-adhoc</artifactId>
-	<version>0.0.11-SNAPSHOT</version>
+	<version>0.0.12-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 
@@ -92,11 +92,11 @@
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<!-- https://mvnrepository.com/artifact/com.puppycrawl.tools/checkstyle -->
-		<checkstyle.version>11.1.0</checkstyle.version>
+		<checkstyle.version>12.0.1</checkstyle.version>
 		<!-- https://mvnrepository.com/artifact/info.novatec.ita/stereotype.check.plugin -->
 		<stereotype.check.plugin.version>4.0.0</stereotype.check.plugin.version>
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-pmd-plugin -->
-		<maven-pmd-plugin.version>3.27.0</maven-pmd-plugin.version>
+		<maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
 		<!-- https://mvnrepository.com/artifact/net.sourceforge.pmd/pmd -->
 		<pmd.version>7.17.0</pmd.version>
 	</properties>
@@ -579,7 +579,7 @@
 				<plugin>
 					<groupId>org.jacoco</groupId>
 					<artifactId>jacoco-maven-plugin</artifactId>
-					<version>0.8.13</version>
+					<version>0.8.14</version>
 					<executions>
 						<execution>
 							<id>default-prepare-agent</id>
