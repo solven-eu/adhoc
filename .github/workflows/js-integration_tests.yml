@@ -21,7 +21,7 @@ jobs:
     - name: Install Adhoc Server
       # `install` so that each module is available in local repository, as later mvn command will not be executed on the root
       run: mvn install -Pfast -pl :pivotable-server -am
-    - uses: actions/setup-node@v5
+    - uses: actions/setup-node@v6
       with:
         node-version: lts/*
     - name: Install NPM dependencies
