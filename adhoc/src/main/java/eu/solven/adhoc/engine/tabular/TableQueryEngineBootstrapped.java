@@ -180,7 +180,7 @@ public class TableQueryEngineBootstrapped {
 					return rowValue -> {
 						eventBus.post(AdhocLogEvent.builder()
 								.debug(true)
-								.message("%s -> %s".formatted(rowValue, row))
+								.messageT("%s -> %s", rowValue, row)
 								.source(queryStep)
 								.build());
 					};

@@ -121,13 +121,6 @@ public class MultitypeArray implements IMultitypeArray {
 	}
 
 	@Override
-	public IValueReceiver add() {
-		int insertionIndex = size();
-
-		return add(insertionIndex);
-	}
-
-	@Override
 	public IValueReceiver add(int insertionIndex) {
 		return new IValueReceiver() {
 			@Override

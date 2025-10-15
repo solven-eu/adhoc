@@ -165,4 +165,5 @@ public class TestMultitypeArray {
 
 		Assertions.assertThat(array.toString()).isEqualTo("type=object values=[345, 345]");
 	}
+
 }
