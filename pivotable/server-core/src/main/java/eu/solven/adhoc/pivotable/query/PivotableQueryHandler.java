@@ -152,6 +152,7 @@ public class PivotableQueryHandler {
 		}
 	}
 
+	@SuppressWarnings("checkstyle:MagicNumber")
 	protected Optional<Duration> getRetryIn(UUID queryId, AsynchronousStatus state) {
 		return switch (state) {
 		case AsynchronousStatus.DISCARDED:
