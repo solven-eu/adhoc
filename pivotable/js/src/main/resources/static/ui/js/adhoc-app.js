@@ -42,14 +42,9 @@ export default {
 		store.loadMetadata();
 
 		// We may not be logged-in
-		userStore
-			.initializeUser()
-			.then(() => {
-				return userStore.loadUserTokens();
-			})
-			.catch((error) => {
-				userStore.onSwallowedError(error);
-			});
+		userStore.initializeUserTokens().catch((error) => {
+			userStore.onSwallowedError(error);
+		});
 
 		return {};
 	},

@@ -24,7 +24,6 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
@@ -33,6 +32,7 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TransverseCacheHelper;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -69,8 +69,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		// Do the filter optimizations within a single filterOptimizer through the whole query
-		Map<Object, Object> transverseCache = step.getTransverseCache();
-		IFilterOptimizer optimizer = (IFilterOptimizer) transverseCache.get(CubeQueryStep.KEY_FILTER_OPTIMIZER);
+		IFilterOptimizer optimizer = TransverseCacheHelper.getFilterOptimizer(step);
 
 		// the filter is optimized as it is used as key in a hashStructure
 		ISliceFilter combinedFilter = FilterBuilder.and(step.getFilter(), filtrator.getFilter()).optimize(optimizer);

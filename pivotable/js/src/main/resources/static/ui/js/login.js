@@ -36,10 +36,8 @@ export default {
 		const hintLoginSuccess = props.success;
 		const hintLoggedOut = props.logout;
 
-		userStore.initializeUser().then(() => {
-			// load tokens for current user
-			userStore.loadUserTokens();
-		});
+		// load tokens for current user
+		userStore.initializeUserTokens();
 
 		return { userStore, hintLoginSuccess, hintLoggedOut };
 	},

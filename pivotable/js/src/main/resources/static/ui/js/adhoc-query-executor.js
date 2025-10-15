@@ -250,9 +250,6 @@ export default {
 							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
 						}
 
-						const startDownloading = new Date();
-						props.tabularView.loading.downloading = true;
-
 						const queryResultId = await response.json();
 						console.info("Query has been registered as queryid=", queryResultId);
 
@@ -260,6 +257,9 @@ export default {
 							method: "GET",
 							headers: { "Content-Type": "application/json" },
 						};
+
+						const startExecuting = new Date();
+						props.tabularView.loading.executing = true;
 						while (true) {
 							// https://stackoverflow.com/questions/35038857/setting-query-string-using-fetch-get-request
 							const responseStateOnly = await userStore.authenticatedFetch(
@@ -295,6 +295,11 @@ export default {
 								await sleep(retryInMs);
 							}
 						}
+						props.tabularView.loading.executing = false;
+						props.tabularView.timing.executing = new Date() - startExecuting;
+
+						const startDownloading = new Date();
+						props.tabularView.loading.downloading = true;
 
 						const fetchViewOptions = {
 							method: "GET",

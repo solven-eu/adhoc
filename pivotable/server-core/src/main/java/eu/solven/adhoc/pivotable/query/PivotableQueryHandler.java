@@ -32,6 +32,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import com.google.common.util.concurrent.AtomicLongMap;
+
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
@@ -63,6 +65,8 @@ public class PivotableQueryHandler {
 	final AdhocCubesRegistry cubesRegistry;
 
 	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
+
+	final AtomicLongMap<UUID> queryIdPolls = AtomicLongMap.create();
 
 	public Mono<ServerResponse> loadCubeSchema(ServerRequest serverRequest) {
 		UUID endpointId = AdhocHandlerHelper.uuid(serverRequest, "endpoint_id");
@@ -136,7 +140,7 @@ public class PivotableQueryHandler {
 		} else {
 			AsynchronousStatus state = asynchronousQueriesManager.getState(queryId);
 
-			Optional<Duration> optRetryIn = getRetryIn(state);
+			Optional<Duration> optRetryIn = getRetryIn(queryId, state);
 
 			if (optRetryIn.isPresent()) {
 				QueryResultHolder body = QueryResultHolder.retry(state, optRetryIn.get());
@@ -148,7 +152,7 @@ public class PivotableQueryHandler {
 		}
 	}
 
-	protected Optional<Duration> getRetryIn(AsynchronousStatus state) {
+	protected Optional<Duration> getRetryIn(UUID queryId, AsynchronousStatus state) {
 		return switch (state) {
 		case AsynchronousStatus.DISCARDED:
 		case AsynchronousStatus.UNKNOWN:
@@ -160,7 +164,14 @@ public class PivotableQueryHandler {
 		}
 		case AsynchronousStatus.RUNNING: {
 			// TODO Introduce exponential back-off
-			yield Optional.of(Duration.ofSeconds(1));
+			long nbPoll = queryIdPolls.getAndIncrement(queryId);
+
+			// On first try, delay is `1`
+			// On second try, delay is `1.5`
+			// On third try, delay is `2.25`
+			double exponentialBackoff = Math.pow(1.5, nbPoll);
+			long millis = (long) (100L * exponentialBackoff);
+			yield Optional.of(Duration.ofMillis(millis));
 		}
 		};
 	}

@@ -42,6 +42,11 @@ export const useUserStore = defineStore("user", {
 		// We loads information about various accounts (e.g. current account, through contests and leaderboards)
 		// Playing players are stores in contests
 		nbLoginLoading: 0,
+
+		// Promise loading the userDetails
+		// Used to prevent fetching concurrently information about current
+		initializingUserPromise: null,
+		initializingUserTokensPromise: null,
 	}),
 	getters: {
 		// If true, we have an account details. We typically have a session. Hence we can logout.
@@ -126,7 +131,7 @@ export const useUserStore = defineStore("user", {
 		// This would not fail if the User needs to login.
 		// Hence, this method does not turn `needsToLogin` to true
 		// Callers would generally rely on `ensureUser()` which may turn `needsToLogin` to true
-		async loadUser() {
+		async forceLoadUser() {
 			const store = this;
 
 			async function fetchFromUrl(url) {
@@ -203,26 +208,7 @@ export const useUserStore = defineStore("user", {
 				.catch((e) => {
 					console.warn("Issue while checking login status", e);
 					store.needsToCheckLogin = true;
-				})
-				.finally(() => {
-					console.info("reset initializeUserPromise");
-					this.initializeUserPromise = null;
 				});
-		},
-
-		/**
-		 * Calls this method from any component needed to know about the User.
-		 *
-		 * Contrary to `loadUser`, this will not trigger the loading of login state and userInfo on each call. It is especially userful not to have a spike of `loadUser` at startup.
-		 */
-		async initializeUser() {
-			if (this.initializeUserPromise) {
-				console.log(`Skip initializeUser as hasTriedLoadingUser=${this.initializeUserPromise}`);
-			} else {
-				console.log(`Doing initializeUser as hasTriedLoadingUser=${this.initializeUserPromise}`);
-				this.initializeUserPromise = this.loadUserIfMissing();
-			}
-			return this.initializeUserPromise;
 		},
 
 		// do not throw if not logged-in
@@ -231,17 +217,26 @@ export const useUserStore = defineStore("user", {
 				// We have loaded a user: we assume it does not need to login
 				return Promise.resolve(this.account);
 			} else if (!this.isLoggedOut) {
-				// We are not logged-out
-				return this.loadUser();
+				// We are not logged-out, but not logged-in
+				return this.forceLoadUser();
 			} else {
 				// The user may not need to login: we're loading if missing
 				return Promise.resolve({ error: "UserIsLoggedOut" });
 			}
 		},
 
+		/**
+		 * Calls this method from any component needed to know about the User.
+		 *
+		 * Contrary to `forceLoadUser`, this will not trigger the loading of login state and userInfo on each call. It is especially userful not to have a spike of `loadUser` at startup.
+		 */
+		async initializeUser() {
+			return this.sharedPromise("initializeUser", this.initializingUserPromise, this.loadUserIfMissing, (p) => (this.initializingUserPromise = p));
+		},
+
 		// @throws UserNeedsToLoginError if not logged-in
 		async ensureUser() {
-			return this.loadUserIfMissing().then((user) => {
+			return this.initializeUser().then((user) => {
 				if (user.error) {
 					// We are not logged-in
 					this.needsToLogin = true;
@@ -250,95 +245,133 @@ export const useUserStore = defineStore("user", {
 			});
 		},
 
-		async loadUserTokens() {
+		async forceLoadUserTokens() {
 			const store = this;
 
-			async function fetchFromUrl(url) {
-				store.nbLoginLoading++;
-				try {
-					// Rely on session for authentication
-					const response = await fetch(url);
-					if (response.status === 401) {
-						// This call was done as the application believed we were logged-in
-						// But we we receive a 401, it means we're not logged-in
+			const user = await this.initializeUser();
 
-						// This will update the logout status
-						// store.loadUser();
-
-						store.needsToLogin = true;
-						throw new UserNeedsToLoginError("User needs to login");
-					} else if (!response.ok) {
-						throw new NetworkError("Rejected request for tokens", url, response);
-					}
-
-					const responseJson = await response.json();
-					const tokens = responseJson;
-
-					{
-						tokens.access_token_expired = false;
-
-						// https://stackoverflow.com/questions/7687884/add-10-seconds-to-a-date
-						const expiresAt = new Date();
-						expiresAt.setSeconds(expiresAt.getSeconds() + tokens.expires_in);
-
-						tokens.expires_at = expiresAt;
-					}
-
-					console.log("Tokens are stored. Expires at", tokens.expires_at);
-					store.$patch({ tokens: tokens });
-
-					watch(
-						() => store.tokens.access_token_expired,
-						(access_token_expired) => {
-							if (access_token_expired) {
-								console.log("access_token is expired. Triggering loadUserTokens");
-								store.loadUserTokens();
-							}
-						},
-					);
-
-					return tokens;
-				} catch (e) {
-					store.onSwallowedError(e);
-					return { error: e };
-				} finally {
-					store.nbLoginLoading--;
-				}
+			if (!store.isLoggedIn) {
+				return { error: "not_logged_in" };
 			}
+			console.log("We do have a User. Let's fetch tokens", user);
 
-			return this.loadUserIfMissing().then((user) => {
-				if (store.isLoggedIn) {
-					console.log("We do have a User. Let's fetch tokens", user);
-					return fetchFromUrl(`/api/login/v1/oauth2/token`);
-				} else {
-					return { error: "not_logged_in" };
+			const url = `/api/login/v1/oauth2/token`;
+			store.nbLoginLoading++;
+			try {
+				// Rely on session for authentication
+				const response = await fetch(url);
+				if (response.status === 401) {
+					// This call was done as the application believed we were logged-in
+					// But we we receive a 401, it means we're not logged-in
+
+					// This will update the logout status
+					// store.loadUser();
+
+					store.needsToLogin = true;
+					throw new UserNeedsToLoginError("User needs to login");
+				} else if (!response.ok) {
+					throw new NetworkError("Rejected request for tokens", url, response);
 				}
-			});
+
+				const responseJson = await response.json();
+				const tokens = responseJson;
+
+				{
+					tokens.access_token_expired = false;
+
+					// https://stackoverflow.com/questions/7687884/add-10-seconds-to-a-date
+					const expiresAt = new Date();
+					expiresAt.setSeconds(expiresAt.getSeconds() + tokens.expires_in);
+
+					tokens.expires_at = expiresAt;
+				}
+
+				console.log("Tokens are stored. Expires at", tokens.expires_at);
+				store.$patch({ tokens: tokens });
+
+				watch(
+					() => store.tokens.access_token_expired,
+					(access_token_expired) => {
+						if (access_token_expired) {
+							console.log("access_token is expired. Triggering .forceLoadUserTokens");
+							store.forceLoadUserTokens();
+						}
+					},
+				);
+
+				return tokens;
+			} catch (e) {
+				store.onSwallowedError(e);
+				return { error: e };
+			} finally {
+				store.nbLoginLoading--;
+			}
 		},
 
-		async loadIfMissingUserTokens() {
-			if (
-				// We do have an accessToken
-				this.tokens.access_token &&
+		async loadUserTokensIfMissing() {
+			var doForceLoadUserTokens;
+			if (!this.tokens.access_token) {
+				doForceLoadUserTokens = true;
+				console.info("Missing access_token", this.tokens.access_token);
+			} else if (this.tokens.access_token_expired) {
 				// We did not detect an expiry (e.g. receiving a 401)
-				!this.tokens.access_token_expired &&
-				// The token should not expire within 15 seconds
-				new Date() - this.tokens.expires_at > 15
-			) {
-				console.debug("Authenticated and a valid access_tokenTokens is stored", this.tokens.access_token);
+				doForceLoadUserTokens = true;
+				console.info("Expired access_token", this.tokens.access_token);
 			} else {
-				await this.loadUserTokens();
+				const expiresIn = this.tokens.expires_at - new Date();
+
+				if (expiresIn < 15) {
+					// The token should not expire within 15 seconds
+					doForceLoadUserTokens = true;
+					console.info("About to expiry ", expiresIn, " access_token", this.tokens.access_token);
+				} else {
+					doForceLoadUserTokens = false;
+					console.debug("Authenticated and a valid access_tokenTokens is stored", this.tokens.access_token);
+				}
 			}
 
-			return this.tokens;
+			if (doForceLoadUserTokens) {
+				return this.forceLoadUserTokens();
+			} else {
+				return Promise.resolve(this.tokens);
+			}
 		},
+
+		async sharedPromise(name, currentPromise, asyncFunction, setPromise) {
+			if (currentPromise) {
+				console.log(`Re-using sharedPromise ($name)`);
+				return currentPromise;
+			} else {
+				console.log(`Initializing currentPromise ($name)`);
+				const nextPromise = asyncFunction();
+
+				nextPromise.finally(() => {
+					console.info("reset sharedPromise ($name)");
+					setPromise(null);
+				});
+
+				setPromise(nextPromise);
+
+				return nextPromise;
+			}
+		},
+
+		async initializeUserTokens() {
+			return this.sharedPromise(
+				"initializeUserTokens",
+				this.initializingUserTokensPromise,
+				this.loadUserTokensIfMissing,
+				(p) => (this.initializingUserTokensPromise = p),
+			);
+		},
+
 		async authenticatedFetch(url, fetchOptions) {
 			if (url.startsWith("/api")) {
 				throw new Error("Invalid URL as '/api' is added automatically");
 			}
 
 			// loading missing tokens will ensure login status
-			await this.loadIfMissingUserTokens();
+			await this.loadUserTokensIfMissing();
 
 			if (this.isLoggedOut) {
 				this.needsToLogin = true;
