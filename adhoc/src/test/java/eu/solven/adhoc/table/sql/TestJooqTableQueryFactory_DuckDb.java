@@ -215,7 +215,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" group by ALL""");
+				select sum("k") "k", "d", "c" from "someTableName" group by ALL""");
 	}
 
 	@Test

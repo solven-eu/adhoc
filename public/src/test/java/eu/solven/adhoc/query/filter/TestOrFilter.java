@@ -362,7 +362,10 @@ public class TestOrFilter {
 				.build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
-				.hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)");
+				// BEWARE Order is changed by some optimization (here
+				// `FilterOptimizer.partitionByPotentialInteraction`)
+				// .hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)")
+				.hasToString("a==a1&c=in=(c1,c2,c3)&b=in=(b1,b2,b3)&(d==d1|b==b1)");
 	}
 
 	@Test

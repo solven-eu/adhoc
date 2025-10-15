@@ -293,7 +293,7 @@ public class TableQueryEngineBootstrapped {
 	protected String toPerfLog(TableQueryV2 tableQuery) {
 		String groupBy =
 				tableQuery.getGroupBy().getGroupedByColumns().stream().collect(Collectors.joining(",", "(", ")"));
-		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining());
+		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
 		return "SELECT " + measures + " WHERE " + tableQuery.getFilter() + " GROUP BY " + groupBy;
 	}
 

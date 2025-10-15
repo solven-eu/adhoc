@@ -41,6 +41,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.math.LongMath;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -473,26 +474,56 @@ public class FilterOptimizer implements IFilterOptimizer {
 	 * @param removeLaxerElseStricter
 	 * @return
 	 */
-	@SuppressWarnings("checkstyle:MagicNumber")
 	protected ImmutableSet<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
+		Map<Boolean, List<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(operands);
+
+		List<ISliceFilter> toIgnore = ignorableToOperands.get(true);
+		List<ISliceFilter> toProcess = ignorableToOperands.get(false);
+
 		// Remove the operands which are induced by 1 other operand
-		ImmutableSet<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(operands, removeLaxerElseStricter);
+		ImmutableSet<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(removeLaxerElseStricter, toProcess);
 
-		// The following phase is applied only if at least 3 operands, else previous step would have stripped it
-		if (strippedAgainst1.size() < 3) {
-			return strippedAgainst1;
-		}
+		Collection<ISliceFilter> strippedAgainstAll =
+				removeLaxerOrStricterGivenAll(removeLaxerElseStricter, strippedAgainst1);
 
-		List<ISliceFilter> strippedAgainstAll =
-				removeLaxerOrStricterGivenAll(operands, removeLaxerElseStricter, strippedAgainst1);
-
-		return ImmutableSet.copyOf(strippedAgainstAll);
+		return ImmutableSet.<ISliceFilter>builder().addAll(toIgnore).addAll(strippedAgainstAll).build();
 	}
 
-	protected List<ISliceFilter> removeLaxerOrStricterGivenAll(Collection<? extends ISliceFilter> operands,
-			boolean removeLaxerElseStricter,
+	protected Map<Boolean, List<ISliceFilter>> partitionByPotentialInteraction(
+			Collection<? extends ISliceFilter> operands) {
+		AtomicLongMap<String> columnToNbOperands = AtomicLongMap.create();
+
+		operands.forEach(filter -> {
+			FilterHelpers.getFilteredColumns(filter).forEach(column -> {
+				columnToNbOperands.incrementAndGet(column);
+			});
+		});
+
+		return operands.stream().collect(Collectors.partitioningBy(operand -> {
+			ISliceFilter o = operand;
+			Set<String> columns = FilterHelpers.getFilteredColumns(o);
+
+			for (String column : columns) {
+				if (columnToNbOperands.get(column) != 1L) {
+					// This operand may interact with another operand
+					return false;
+				}
+			}
+
+			return true;
+		}));
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	protected Collection<ISliceFilter> removeLaxerOrStricterGivenAll(boolean removeLaxerElseStricter,
 			Set<ISliceFilter> stripped1By1) {
+
+		// The following phase is applied only if at least 3 operands, else previous step would have stripped it
+		if (stripped1By1.size() < 3) {
+			return stripped1By1;
+		}
+
 		// Remove the operands which are induced by the other operands
 		// This second passes would cover the 1by1 pass. We keep at assuming it helps performances.
 		List<ISliceFilter> asList = new ArrayList<>(stripped1By1);
@@ -523,7 +554,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 						.anyMatch(orOperand -> FilterHelpers.isStricterThan(otherAsAnd, orOperand));
 
 				if (orIsImplied) {
-					log.trace("Discarded {} in {}", mayBeDiscarded, operands);
+					log.trace("Discarded {} in {}", mayBeDiscarded, stripped1By1);
 				} else {
 					notDiscarded.add(mayBeDiscarded);
 				}
@@ -550,8 +581,8 @@ public class FilterOptimizer implements IFilterOptimizer {
 	// In `AND`, `removeLaxerElseStricter` is true as `a&(a|b)==a` and `a|b` is laxer than `a`
 	// In `OR`, `removeLaxerElseStricter` is false as `a|a&b==a` and `a&b` is stricter than `a`
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected ImmutableSet<ISliceFilter> removeLaxerOrStricterGivenOne(Collection<? extends ISliceFilter> operands,
-			boolean removeLaxerElseStricter) {
+	protected ImmutableSet<ISliceFilter> removeLaxerOrStricterGivenOne(boolean removeLaxerElseStricter,
+			Collection<? extends ISliceFilter> operands) {
 		if (operands.size() <= 1) {
 			// Need at least 2 operands to compare each other
 			return ImmutableSet.copyOf(operands);
@@ -678,15 +709,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 
 	// Like `and` but skipping the optimization. May be useful for debugging
 	protected ImmutableSet<? extends ISliceFilter> splitAnd(ImmutableSet<? extends ISliceFilter> filters) {
-		if (filters.stream().anyMatch(ISliceFilter::isMatchNone)) {
-			return ImmutableSet.of(IAndFilter.MATCH_NONE);
-		}
-
-		// Skipping matchAll is useful on `.edit`
-		return filters.stream()
-				.filter(f -> !f.isMatchAll())
-				.flatMap(operand -> FilterHelpers.splitAnd(operand).stream())
-				.collect(ImmutableSet.toImmutableSet());
+		return ImmutableSet.copyOf(FilterHelpers.splitAnd(filters));
 	}
 
 	/**

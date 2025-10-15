@@ -209,7 +209,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") as "k", "c", "d" from "someTableName" group by "c", "d"
+				select sum("k") as "k", "d", "c" from "someTableName" group by "d", "c"
 				""".trim());
 	}
 
