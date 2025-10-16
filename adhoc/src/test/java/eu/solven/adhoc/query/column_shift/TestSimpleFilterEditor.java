@@ -112,13 +112,29 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testSuppressColumns_and_allSuppressed() {
 		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testSuppressColumns_or() {
 		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1", "c", "c1"));
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ColumnFilter.matchEq("a", "a1"));
+	}
+
+	@Test
+	public void testSuppressColumns_or_empty() {
+		ISliceFilter filter = ISliceFilter.MATCH_NONE;
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ISliceFilter.MATCH_NONE);
+	}
+
+
+	@Test
+	public void testSuppressColumns_or_hasMatchAll() {
+		ISliceFilter filter = FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).combine();
+		// Make sur this is really a OrFilter, i.e. it has not been optimized into something else
+		Assertions.assertThat(filter).isInstanceOf(OrFilter.class);
+
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a"))).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
@@ -140,6 +156,16 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testSuppressColumns_not_allSuppressed() {
 		ISliceFilter filter = NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
+		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
+		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
+
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
+	}
+
+
+	@Test
+	public void testSuppressColumns_not_matchAll() {
+		ISliceFilter filter = NotFilter.builder().negated(ISliceFilter.MATCH_ALL).build();
 		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
 

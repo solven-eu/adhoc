@@ -233,6 +233,14 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return FilterBuilder.and(unfiltered).combine();
 			}
 		} else if (filter instanceof IOrFilter orFilter) {
+			if (orFilter.isMatchAll()) {
+				// As we will later discard `.matchAll` operands, we need to handle this case explicitly
+				// Getting in this case means the input is not optimized
+				return ISliceFilter.MATCH_ALL;
+			} else if (orFilter.isMatchNone()) {
+				return ISliceFilter.MATCH_NONE;
+			}
+
 			List<ISliceFilter> unfiltered = orFilter.getOperands()
 					.stream()
 					.map(subFilter -> suppressColumn(subFilter, isSuppressedColumns, onSuppressed, optOptimizer))
@@ -241,6 +249,11 @@ public class SimpleFilterEditor implements IFilterEditor {
 					// OrFilter.isMatchAll
 					.filter(f -> !f.isMatchAll())
 					.toList();
+
+			if (unfiltered.isEmpty()) {
+				// All orOperands has been suppressed: this is a matchAll
+				return ISliceFilter.MATCH_ALL;
+			}
 
 			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
 			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
