@@ -60,6 +60,7 @@ import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -123,10 +124,17 @@ public class TableQueryEngineBootstrapped {
 	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
 
 	@NonNull
+	@Getter(AccessLevel.PRIVATE)
 	final ITableQueryOptimizer optimizer;
 
-	final Supplier<IFilterOptimizer> filterOptimizerSupplier =
-			Suppliers.memoize(() -> this.getFactories().getFilterOptimizerFactory().makeOptimizerWithCache());
+	final Supplier<IFilterOptimizer> filterOptimizerSupplier = Suppliers.memoize(() -> {
+		if (getOptimizer() instanceof IHasFilterOptimizer hasFilterOptimizer) {
+			// Most ITableQueryOptimizer has a filterOptimizerWithCache
+			return hasFilterOptimizer.getFilterOptimizer();
+		} else {
+			return this.getFactories().getFilterOptimizerFactory().makeOptimizerWithCache();
+		}
+	});
 
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures

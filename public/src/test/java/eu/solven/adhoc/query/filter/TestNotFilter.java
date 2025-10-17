@@ -104,4 +104,13 @@ public class TestNotFilter {
 		});
 	}
 
+	@Test
+	public void testNot_andOptimizable() {
+		AndFilter unoptimizedAnd =
+				AndFilter.builder().and(ColumnFilter.matchEq("a", "a1")).and(ColumnFilter.matchLike("a", "a%")).build();
+		ISliceFilter optimizedNotAnd = FilterBuilder.not(unoptimizedAnd).optimize();
+
+		Assertions.assertThat(optimizedNotAnd).hasToString("a!=a1");
+	}
+
 }

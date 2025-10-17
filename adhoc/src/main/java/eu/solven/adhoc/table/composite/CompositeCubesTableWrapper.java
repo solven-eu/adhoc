@@ -74,12 +74,8 @@ import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.INotFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -87,8 +83,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
-import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -105,7 +99,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-@SuppressWarnings("PMD.GodClass")
 public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@NonNull
@@ -481,7 +474,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	 * @return the equivalent {@link ISliceFilter} given the subset of columns
 	 */
 	protected ISliceFilter filterForColumns(ICubeWrapper subCube, ISliceFilter filter, Predicate<String> isSubColumn) {
-		return SimpleFilterEditor.suppressColumn(filter, isSubColumn.negate(), f -> onMissingFilterColumn(subCube, f), Optional.empty());
+		return SimpleFilterEditor
+				.suppressColumn(filter, isSubColumn.negate(), f -> onMissingFilterColumn(subCube, f), Optional.empty());
 	}
 
 	protected ISliceFilter onMissingFilterColumn(ICubeWrapper subCube, IColumnFilter columnFilter) {

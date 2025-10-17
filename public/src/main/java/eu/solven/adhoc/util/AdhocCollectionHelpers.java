@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableSet;
 
 import lombok.experimental.UtilityClass;
 
@@ -143,6 +144,25 @@ public class AdhocCollectionHelpers {
 			return listOfSets.stream()
 					.map(c -> BigInteger.valueOf(c.size()))
 					.reduce(BigInteger.ONE, BigInteger::multiply);
+		}
+	}
+
+	/**
+	 * Merge input Collections into an {@link ImmutableSet}, skipping `ImmutableSet.builder()` if possible as
+	 * `ImmutableSet.copyOf` can be a no-op.
+	 * 
+	 * @param <T>
+	 * @param left
+	 * @param right
+	 * @return
+	 */
+	public static <T> ImmutableSet<T> copyOfSets(Collection<? extends T> left, Collection<? extends T> right) {
+		if (left.isEmpty()) {
+			return ImmutableSet.copyOf(right);
+		} else if (right.isEmpty()) {
+			return ImmutableSet.copyOf(left);
+		} else {
+			return ImmutableSet.<T>builder().addAll(left).addAll(right).build();
 		}
 	}
 }

@@ -121,8 +121,11 @@ public class FilterBuilder {
 	 * 
 	 * @return a {@link ISliceFilter} skipping all optimizations.
 	 */
-	// Should we `Keep simple optimizations like stripping `matchNone` from `OR`.`?
 	public ISliceFilter combine() {
+		// Keep trivial optimizations as in various occasions, we may use `.combine` as we rely on optimized expressions
+		// but we tend to forget about `.matchAll` edge-case
+		removeTrivialFilters();
+
 		if (filters.isEmpty()) {
 			if (andElseOr == Type.AND) {
 				return ISliceFilter.MATCH_ALL;
@@ -145,6 +148,24 @@ public class FilterBuilder {
 				return OrFilter.builder().ors(filters).build();
 			} else {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
+			}
+		}
+	}
+
+	protected void removeTrivialFilters() {
+		if (andElseOr == Type.AND) {
+			if (filters.contains(ISliceFilter.MATCH_NONE)) {
+				filters.clear();
+				filters.add(ISliceFilter.MATCH_NONE);
+			} else {
+				filters.removeIf(ISliceFilter.MATCH_ALL::equals);
+			}
+		} else if (andElseOr == Type.OR) {
+			if (filters.contains(ISliceFilter.MATCH_ALL)) {
+				filters.clear();
+				filters.add(ISliceFilter.MATCH_ALL);
+			} else {
+				filters.removeIf(ISliceFilter.MATCH_NONE::equals);
 			}
 		}
 	}

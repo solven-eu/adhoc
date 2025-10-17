@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import eu.solven.adhoc.query.filter.NotFilter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +35,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
+import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestSimpleFilterEditor {
@@ -106,32 +106,39 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testSuppressColumns_and() {
 		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ColumnFilter.matchEq("a", "a1"));
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c")))
+				.isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testSuppressColumns_and_allSuppressed() {
 		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testSuppressColumns_or() {
 		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1", "c", "c1"));
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ColumnFilter.matchEq("a", "a1"));
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c")))
+				.isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testSuppressColumns_or_empty() {
 		ISliceFilter filter = ISliceFilter.MATCH_NONE;
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ISliceFilter.MATCH_NONE);
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c")))
+				.isEqualTo(ISliceFilter.MATCH_NONE);
 	}
-
 
 	@Test
 	public void testSuppressColumns_or_hasMatchAll() {
-		ISliceFilter filter = FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).combine();
-		// Make sur this is really a OrFilter, i.e. it has not been optimized into something else
+		ISliceFilter filter = OrFilter.builder()
+				.or(ISliceFilter.MATCH_ALL)
+				.or(ColumnFilter.matchEq("a", "a1"))
+				.or(ColumnFilter.matchEq("b", "b2"))
+				.build();
+		// Make sure this is really a OrFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).isInstanceOf(OrFilter.class);
 
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a"))).isEqualTo(ISliceFilter.MATCH_ALL);
@@ -140,28 +147,31 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testSuppressColumns_or_allSuppressed() {
 		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1", "c", "c1"));
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testSuppressColumns_not() {
-		ISliceFilter filter = NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
+		ISliceFilter filter =
+				NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
 		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
 
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c"))).isEqualTo(ColumnFilter.notEq("a", "a1"));
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c")))
+				.isEqualTo(ColumnFilter.notEq("a", "a1"));
 	}
-
 
 	@Test
 	public void testSuppressColumns_not_allSuppressed() {
-		ISliceFilter filter = NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
+		ISliceFilter filter =
+				NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
 		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
 
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
-
 
 	@Test
 	public void testSuppressColumns_not_matchAll() {
@@ -169,6 +179,7 @@ public class TestSimpleFilterEditor {
 		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
 
-		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c"))).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 }

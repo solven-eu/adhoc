@@ -206,11 +206,10 @@ public class SimpleFilterEditor implements IFilterEditor {
 		return suppressColumn(filter, suppressedColumns::contains, cf -> ISliceFilter.MATCH_ALL, optOptimizer);
 	}
 
-
 	public static ISliceFilter suppressColumn(ISliceFilter filter,
-											  Predicate<String> isSuppressedColumns,
-											  Function<IColumnFilter, ISliceFilter> onSuppressed,
-											  Optional<IFilterOptimizer> optOptimizer) {
+			Predicate<String> isSuppressedColumns,
+			Function<IColumnFilter, ISliceFilter> onSuppressed,
+			Optional<IFilterOptimizer> optOptimizer) {
 		if (filter instanceof IColumnFilter columnFilter) {
 			boolean isSuppressed = isSuppressedColumns.test(columnFilter.getColumn());
 
@@ -263,7 +262,8 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return FilterBuilder.or(unfiltered).combine();
 			}
 		} else if (filter instanceof INotFilter notFilter) {
-			ISliceFilter negatedForColumns = suppressColumn(notFilter.getNegated(), isSuppressedColumns, onSuppressed, optOptimizer);
+			ISliceFilter negatedForColumns =
+					suppressColumn(notFilter.getNegated(), isSuppressedColumns, onSuppressed, optOptimizer);
 			if (ISliceFilter.MATCH_ALL.equals(negatedForColumns)) {
 				// BEWARE Filtering an unknown column?
 				return ISliceFilter.MATCH_ALL;

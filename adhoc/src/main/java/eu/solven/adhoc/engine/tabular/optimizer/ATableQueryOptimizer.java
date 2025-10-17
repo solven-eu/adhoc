@@ -50,6 +50,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -58,9 +59,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public abstract class ATableQueryOptimizer implements ITableQueryOptimizer {
+public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHasFilterOptimizer {
 	final AdhocFactories factories;
 
+	@Getter
 	final IFilterOptimizer filterOptimizer;
 
 	final FilterUtility filterHelper;

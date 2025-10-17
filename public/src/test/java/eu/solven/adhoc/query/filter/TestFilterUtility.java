@@ -20,37 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.optimizer;
+package eu.solven.adhoc.query.filter;
+
+import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import com.google.common.collect.ImmutableSet;
 
-public class TestFilterOptimizerCache {
-	FilterOptimizer optimizer = FilterOptimizer.builder().build();
-	FilterOptimizerWithCache optimizerWithCache = FilterOptimizerWithCache.builder().build();
+public class TestFilterUtility {
+	FilterUtility filterUtility = FilterUtility.builder().build();
 
 	@Test
-	public void testAnd() {
-		ISliceFilter combined =
-				FilterBuilder
-						.and(ColumnFilter.matchIn("a", "a1", "a2", "a3"),
-								ColumnFilter.matchIn("b", "b1", "b2", "b3"),
-								FilterBuilder
-										.or(ColumnFilter.matchIn("a", "a1", "a2", "a4"),
-												ColumnFilter.matchIn("b", "b1", "b2", "b4"))
-										.combine())
-						.optimize(optimizerWithCache);
+	public void testCommonOr() {
+		Set<ISliceFilter> filters =
+				ImmutableSet.of(OrFilter.or(Map.of("a", "a1", "b", "b1")), OrFilter.or(Map.of("a", "a1", "b", "b2")));
 
-		Assertions.assertThat(optimizerWithCache.optimizedAndNegated.asMap()).hasSize(4);
-		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(8);
-		Assertions.assertThat(optimizerWithCache.optimizedOrs.asMap()).hasSize(4);
-		Assertions.assertThat(optimizerWithCache.optimizedNot.asMap()).hasSize(6);
+		ISliceFilter commonOr = filterUtility.commonOr(filters);
 
-		Assertions.assertThat(combined).hasToString("a=in=(a1,a2,a3)&b=in=(b1,b2,b3)&(a=in=(a1,a2)|b=in=(b1,b2))");
+		Assertions.assertThat(commonOr).isEqualTo(OrFilter.or(Map.of("a", "a1")));
 	}
 
+	@Test
+	public void testCommonOr_matchAll() {
+		Set<ISliceFilter> filters = ImmutableSet.of(ISliceFilter.MATCH_ALL,
+				OrFilter.or(Map.of("a", "a1", "b", "b1")),
+				OrFilter.or(Map.of("a", "a1", "b", "b2")));
+
+		ISliceFilter commonOr = filterUtility.commonOr(filters);
+
+		Assertions.assertThat(commonOr)
+				// TODO Should we treat `.matchAll` as some wildcard regarding parts?
+				// .isEqualTo(OrFilter.or(Map.of("a", "a1")))
+				.isEqualTo(ISliceFilter.MATCH_NONE);
+	}
 }

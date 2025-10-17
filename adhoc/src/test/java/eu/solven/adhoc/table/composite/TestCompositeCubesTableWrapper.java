@@ -231,7 +231,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				// The expression is optimized, but still equivalent to the original
 				.isEqualTo(FilterBuilder
 						.or(ColumnFilter.matchLike("c1", "a%").negate(), ColumnFilter.matchLike("c2", "b%").negate())
-						.optimize());
+						.combine());
 
 		// Or.Not: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
