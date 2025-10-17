@@ -79,7 +79,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 
 			@Override
 			public void close() {
-
+				// nothing to close
 			}
 		};
 	}
