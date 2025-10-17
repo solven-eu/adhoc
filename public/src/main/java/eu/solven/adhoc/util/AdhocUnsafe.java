@@ -35,7 +35,6 @@ import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
-import eu.solven.pepper.thread.NamingForkJoinWorkerThreadFactory;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;
@@ -219,7 +218,7 @@ public class AdhocUnsafe {
 	 * @return
 	 */
 	private static ForkJoinPool newWorkStealingPool() {
-		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common"), null, true);
+		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
 	}
 
 	// Typically used as limit to prevent iterating over large cartesian products
