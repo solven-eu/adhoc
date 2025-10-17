@@ -220,7 +220,7 @@ public class TableQueryEngineBootstrapped {
 
 					Duration elapsed = stopWatch.elapsed();
 					eventBus.post(TableStepIsCompleted.builder()
-							.querystep(tableQuery)
+							.tableQuery(tableQuery)
 							.nbCells(queryStepToValues.values().stream().mapToLong(ISliceToValue::size).sum())
 							.source(this)
 							.duration(elapsed)

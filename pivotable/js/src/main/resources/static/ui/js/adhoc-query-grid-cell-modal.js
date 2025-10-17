@@ -31,6 +31,27 @@ export default {
 			props.queryModel.filter.filters.push(columnFilter);
 			console.log("Added filter", columnFilter);
 		};
+		const applyNotEqualsFilter = function (column, coordinate) {
+			// BEWARE This is poor design. We should send some event  managing the queryModel/filters
+			if (!props.queryModel.filter || !props.queryModel.filter.type) {
+				props.queryModel.filter = {};
+				props.queryModel.filter.type = "and";
+				props.queryModel.filter.filters = [];
+			} else if (props.queryModel.filter.type !== "and") {
+				throw new Error("We support only 'and'");
+			}
+
+			const columnFilter = {
+				type: "column",
+				column: column,
+				valueMatcher: {
+					type: "not",
+					negated: coordinate,
+				},
+			};
+			props.queryModel.filter.filters.push(columnFilter);
+			console.log("Added filter", columnFilter);
+		};
 
 		const columnIsFilterable = function (column) {
 			return props.queryModel.selectedColumnsOrdered.includes(column);
@@ -61,6 +82,7 @@ export default {
 
 		return {
 			applyEqualsFilter,
+			applyNotEqualsFilter,
 			columnIsFilterable,
 			getUnderlyingsIfMeasure,
 			addMeasure,
@@ -81,6 +103,9 @@ export default {
                                 <span v-if="columnIsFilterable(column)">
                                     <button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
                                         <i class="bi bi-filter-circle"></i>
+                                    </button>
+                                    <button type="button" class="btn" @click="applyNotEqualsFilter(column, coordinate)">
+                                        <i class="bi bi-filter-circle-fill"></i>
                                     </button>
                                 </span>
                                 <ul v-if="getUnderlyingsIfMeasure(column)">

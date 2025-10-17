@@ -25,9 +25,12 @@ package eu.solven.adhoc.query.filter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestNotFilter {
 	@Test
@@ -111,6 +114,23 @@ public class TestNotFilter {
 		ISliceFilter optimizedNotAnd = FilterBuilder.not(unoptimizedAnd).optimize();
 
 		Assertions.assertThat(optimizedNotAnd).hasToString("a!=a1");
+	}
+
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		ISliceFilter filter = FilterBuilder.not(ColumnFilter.matchEq("a", "a1")).optimize();
+
+		String asString = PepperJacksonTestHelper.verifyJackson(ISliceFilter.class, filter);
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				{
+				  "type" : "column",
+				  "column" : "a",
+				  "valueMatcher" : {
+				    "type" : "not",
+				    "negated" : "a1"
+				  },
+				  "nullIfAbsent" : true
+				}""");
 	}
 
 }

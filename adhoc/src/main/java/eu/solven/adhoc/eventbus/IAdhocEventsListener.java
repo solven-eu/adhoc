@@ -66,4 +66,8 @@ public interface IAdhocEventsListener {
 	 */
 	void onAdhocLogEvent(AdhocLogEvent event);
 
+	void onTableStepIsEvaluating(TableStepIsEvaluating event);
+
+	void onTableStepIsCompleted(TableStepIsCompleted event);
+
 }

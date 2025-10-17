@@ -38,7 +38,7 @@ import lombok.Value;
 @Builder
 public class TableStepIsCompleted implements IAdhocEvent {
 	@NonNull
-	TableQueryV2 querystep;
+	TableQueryV2 tableQuery;
 
 	long nbCells;
 

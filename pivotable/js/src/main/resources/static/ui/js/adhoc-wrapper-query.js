@@ -1,4 +1,4 @@
-import { watch } from "vue";
+import { watch, provide } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -80,6 +80,9 @@ export default {
 			},
 			{ deep: true },
 		);
+
+		// https://vuejs.org/guide/components/provide-inject.html
+		provide("ids", { cubeId: props.cubeId, endpointId: props.endpointId });
 
 		return { store };
 	},

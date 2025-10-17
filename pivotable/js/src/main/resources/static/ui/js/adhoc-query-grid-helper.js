@@ -207,6 +207,24 @@ export default {
 								console.log("Requested removal of groupBy=" + args.column.name);
 							},
 						},
+						{
+							command: "filter-column",
+							tooltip: "Filter over c=" + columnName,
+							cssClass: "bi bi-filter-circle",
+							itemVisibilityOverride: function (args) {
+								// for example don't show the header button on column "E"
+								return args.column.name !== "E";
+							},
+							itemUsabilityOverride: function (args) {
+								// for example the button usable everywhere except on last column "J"
+								return args.column.name !== "J";
+							},
+							action: function (e, args) {
+								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
+								// do something
+								console.log("Open Filter modal for c=" + args.column.name);
+							},
+						},
 					],
 				};
 			}

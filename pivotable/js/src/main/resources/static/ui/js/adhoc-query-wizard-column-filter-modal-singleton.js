@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, inject } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -11,39 +11,43 @@ export default {
 		AdhocQueryWizardColumnFilter,
 	},
 	props: {
-		cubeId: {
-			type: String,
-			required: true,
-		},
-		endpointId: {
-			type: String,
-			required: true,
-		},
-
-		queryModel: {
+		//		cubeId: {
+		//			type: String,
+		//			required: true,
+		//		},
+		//		endpointId: {
+		//			type: String,
+		//			required: true,
+		//		},
+		//
+		//		queryModel: {
+		//			type: Object,
+		//			required: true,
+		//		},
+		//
+		//		column: {
+		//			type: String,
+		//			required: true,
+		//		},
+		//		type: {
+		//			type: String,
+		//			required: true,
+		//		},
+		columnFilterModel: {
 			type: Object,
-			required: true,
-		},
-
-		column: {
-			type: String,
-			required: true,
-		},
-		type: {
-			type: String,
 			required: true,
 		},
 	},
 	computed: {
 		...mapState(useAdhocStore, {
 			endpoint(store) {
-				return store.endpoints[this.endpointId] || { error: "not_loaded" };
+				return store.endpoints[this.columnFilterModel.endpointId] || { error: "not_loaded" };
 			},
 			schema(store) {
-				return store.schemas[this.endpointId] || { error: "not_loaded" };
+				return store.schemas[this.columnFilterModel.endpointId] || { error: "not_loaded" };
 			},
 			cube(store) {
-				return store.schemas[this.endpointId]?.cubes[this.cubeId] || { error: "not_loaded" };
+				return store.schemas[this.columnFilterModel.endpointId]?.cubes[this.columnFilterModel.cubeId] || { error: "not_loaded" };
 			},
 		}),
 	},
@@ -57,25 +61,35 @@ export default {
 			filterRef.value.saveFilter();
 		}
 
+		const ids = inject("ids");
+		const endpointId = ids.endpointId;
+		const cubeId = ids.cubeId;
+
+		const queryModel = inject("queryModel");
+
 		return {
 			filterRef,
 
 			saveFilter,
+
+			endpointId,
+			cubeId,
+			queryModel,
 		};
 	},
 	template: /* HTML */ `
-        <div class="modal fade" :id="'columnFilterModal_' + column" tabindex="-1" aria-labelledby="columnFilterModalLabel" aria-hidden="true">
+        <div class="modal fade" id="columnFilterModal" tabindex="-1" aria-labelledby="columnFilterModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="columnFilterModalLabel">Filtering column={{column}}</h5>
+                        <h5 class="modal-title" id="columnFilterModalLabel">Filtering column={{columnFilterModel.column}}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <AdhocQueryWizardColumnFilter
                             :queryModel="queryModel"
-                            :column="column"
-                            :type="type"
+                            :column="columnFilterModel.column"
+                            :type="columnFilterModel.type || 'String'"
                             :endpointId="endpointId"
                             :cubeId="cubeId"
                             ref="filterRef"

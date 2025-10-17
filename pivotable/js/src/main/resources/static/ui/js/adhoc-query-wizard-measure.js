@@ -2,7 +2,6 @@ import { ref, inject } from "vue";
 
 import { markMatchingWizard } from "./adhoc-query-wizard-search-helpers.js";
 
-import AdhocMeasuresDag from "./adhoc-measures-dag.js";
 import AdhocQueryWizardMeasureTag from "./adhoc-query-wizard-measure-tag.js";
 
 import { Modal } from "bootstrap";
@@ -10,7 +9,6 @@ import { Modal } from "bootstrap";
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
-		AdhocMeasuresDag,
 		AdhocQueryWizardMeasureTag,
 	},
 	props: {

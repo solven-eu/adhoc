@@ -44,6 +44,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestOrFilter {
 	AtomicInteger nbSkip = new AtomicInteger();
@@ -165,11 +166,7 @@ public class TestOrFilter {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).optimize();
 
-		ObjectMapper objectMapper = new ObjectMapper();
-		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-		String asString = objectMapper.writeValueAsString(filter);
+		String asString = PepperJacksonTestHelper.verifyJackson(ISliceFilter.class, filter);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "or",
@@ -184,12 +181,7 @@ public class TestOrFilter {
 				    "valueMatcher" : "b2",
 				    "nullIfAbsent" : true
 				  } ]
-				}
-				""".trim());
-
-		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
-
-		Assertions.assertThat(fromString).isEqualTo(filter);
+				}""");
 	}
 
 	@Test
@@ -199,14 +191,10 @@ public class TestOrFilter {
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 		objectMapper.registerModule(AdhocPublicJackson.makeModule());
 
-		String asString = objectMapper.writeValueAsString(ISliceFilter.MATCH_NONE);
+		String asString = PepperJacksonTestHelper.asString(objectMapper, ISliceFilter.class, ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(asString).isEqualTo("""
 				"matchNone"
 								""".trim());
-
-		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
-
-		Assertions.assertThat(fromString).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
