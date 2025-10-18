@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestFunctionCalculatedColumn {
@@ -40,7 +40,7 @@ public class TestFunctionCalculatedColumn {
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		Assertions
-				.assertThatThrownBy(() -> TestMapBasedTabularView.verifyJackson(FunctionCalculatedColumn.class,
+				.assertThatThrownBy(() -> PepperJacksonTestHelper.verifyJackson(FunctionCalculatedColumn.class,
 						FunctionCalculatedColumn.builder()
 								.name("someColumn")
 								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.model;
 
 import java.util.List;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -34,7 +33,10 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
+import lombok.With;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,20 +53,14 @@ import lombok.extern.slf4j.Slf4j;
 public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 	String name;
 
-	@Override
-	public Set<String> getTags() {
-		return Set.of("technical");
-	}
+	@NonNull
+	@Default
+	@With
+	ImmutableSet<String> tags = ImmutableSet.of("technical");
 
 	@Override
 	public List<String> getUnderlyingNames() {
 		return List.of();
-	}
-
-	@Override
-	public IMeasure withTags(ImmutableSet<String> tags) {
-		log.warn("Can not edit tags of {}", this);
-		return this;
 	}
 
 	@Override
@@ -79,7 +75,9 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 			@Override
 			public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
 				if (!underlyings.isEmpty()) {
-					throw new UnsupportedOperationException("Should not be called as we do not have any underlyings");
+					throw new IllegalArgumentException(
+							"Should not be called as we do not have any underlyings. Received %s"
+									.formatted(underlyings.size()));
 				}
 				return SliceToValue.empty();
 			}

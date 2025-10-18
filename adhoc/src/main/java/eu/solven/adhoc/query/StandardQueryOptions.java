@@ -78,6 +78,18 @@ public enum StandardQueryOptions implements IQueryOption {
 	 */
 	AGGREGATION_CARRIERS_STAY_WRAPPED,
 
+	/**
+	 * Returns the rows from the table and do not process any measures
+	 */
+	// Current DT design is broken
+	// `TableQueryEngineBootstrapped.toSortedColumns` will split the multi-column table output into a Set of
+	// mono-columns. However, these columns can not be joined again, as multiple rows may have the same coordinate, from
+	// different table queries. In the meantime, we keep this design, leading to each row having a single aggregator.
+	// We may also need 2 kinds of DT: one standard DT, returning the notGroupedBy rows;and another DT returning the
+	// groupedBy rows as returned by the table, without any measure processing.
+	@Deprecated(since = "Not Ready")
+	DRILLTHROUGH,
+
 	;
 
 	@JsonCreator

@@ -62,10 +62,11 @@ export default {
 		// Do not load here, else all columns would be loaded when loading the wizard even if columns are not visible
 		// store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
 
-		const filterTypes = ["equals", "like", "json"];
+		const filterTypes = ["equals", "not_equals", "like", "json"];
 		const filterType = ref("no_filter");
 
 		const equalsValue = ref("");
+		const likePattern = ref("");
 
 		const rawFilterAsJson = ref("rawFilterAsJson");
 
@@ -80,11 +81,14 @@ export default {
 			pendingChanges.value = true;
 
 			// The User selected `equals` filter: ensure we have a subset of coordinate to help him making his filter
-			if (filterType.value === "equals" && columnMeta.value.error === "not_loaded") {
+			if ((filterType.value === "equals" || filterType.value === "not_equals") && columnMeta.value.error === "not_loaded") {
 				store.loadColumnCoordinatesIfMissing(props.cubeId, props.endpointId, props.column);
 			}
 		});
 		watch(equalsValue, () => {
+			pendingChanges.value = true;
+		});
+		watch(likePattern, () => {
 			pendingChanges.value = true;
 		});
 		watch(rawFilterAsJson, () => {
@@ -125,23 +129,58 @@ export default {
 				const columnFilter = { type: "column", column: props.column, valueMatcher: equalsValue.value };
 				props.queryModel.filter.filters.push(columnFilter);
 				rawFilterAsJson.value = JSON.stringify(columnFilter);
+			} else if (filterType.value == "not_equals") {
+				console.log("filter", props.column, "not_equals", equalsValue.value);
+				const columnFilter = {
+					type: "column",
+					column: props.column,
+					valueMatcher: {
+						type: "not",
+						negated: equalsValue.value,
+					},
+				};
+				props.queryModel.filter.filters.push(columnFilter);
+				rawFilterAsJson.value = JSON.stringify(columnFilter);
+			} else if (filterType.value == "like") {
+				console.log("filter", props.column, "like", likePattern.value);
+				const columnFilter = {
+					type: "column",
+					column: props.column,
+					valueMatcher: {
+						type: "like",
+						pattern: likePattern.value,
+					},
+				};
+				props.queryModel.filter.filters.push(columnFilter);
+				rawFilterAsJson.value = JSON.stringify(columnFilter);
 			} else {
-				props.queryModel.filter.filters.push(JSON.parse(rawFilterAsJson));
+				props.queryModel.filter.filters.push(JSON.parse(rawFilterAsJson.value));
 			}
 
 			pendingChanges.value = false;
 		}
+
+		const sort = function (array) {
+			if (!array) {
+				// empty, null, undefined
+				return array;
+			}
+			return array.slice().sort();
+		};
 
 		return {
 			filterTypes,
 			filterType,
 
 			equalsValue,
+			likePattern,
 
 			rawFilterAsJson,
 
 			pendingChanges,
 			saveFilter,
+
+			sort,
 		};
 	},
 	template: /* HTML */ `
@@ -158,8 +197,19 @@ export default {
 
                 <select class="form-select" aria-label="Filter type" v-model="equalsValue">
                     <option disabled value="no_value">Please select a value</option>
-                    <option v-for="coordinate in columnMeta.coordinates" :value="coordinate">{{coordinate}}</option>
+                    <option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
                 </select>
+            </div>
+            <div v-else-if="filterType == 'not_equals'">
+                <input v-model="equalsValue" placeholder="single value" />
+
+                <select class="form-select" aria-label="Filter type" v-model="equalsValue">
+                    <option disabled value="no_value">Please select a value</option>
+                    <option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
+                </select>
+            </div>
+            <div v-else-if="filterType == 'like'">
+                <input v-model="likePattern" placeholder="Like (e.g. 'FRA%')" />
             </div>
             <div v-else>
                 <textarea v-model="rawFilterAsJson" placeholder="raw filter as json"></textarea>

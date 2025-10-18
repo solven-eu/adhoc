@@ -565,7 +565,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								/-- time=6ms for openingStream
 								|/- time=8ms for mergingAggregates
 								|/- time=9ms sizes=[0, 0] for sortingColumns
-								\\------ time=35ms for tableQuery on SELECT k1:SUM(k1)k2:SUM(k2) WHERE b==red GROUP BY (a)
+								\\------ time=35ms for tableQuery on SELECT k1:SUM(k1), k2:SUM(k2) WHERE b==red GROUP BY (a)
 								/-- #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info
 								|\\- #1 m=k1(SUM) filter=b==red groupBy=(a) customMarker=JPY
@@ -576,7 +576,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								/-- time=12ms for openingStream
 								|/- time=14ms for mergingAggregates
 								|/- time=15ms sizes=[0, 0] for sortingColumns
-								\\------ time=65ms for tableQuery on SELECT k1:SUM(k1)k3:SUM(k3) WHERE matchNone GROUP BY (a)
+								\\------ time=65ms for tableQuery on SELECT k1:SUM(k1), k3:SUM(k3) WHERE matchNone GROUP BY (a)
 								/-- #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info
 								|\\- #1 m=k1(SUM) filter=matchNone groupBy=(a) customMarker=JPY
@@ -587,7 +587,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								/-- time=117ms for openingStream
 								|/- time=17ms for mergingAggregates
 								|/- time=18ms sizes=[0, 0, 0] for sortingColumns
-								\\------ time=170ms for tableQuery on SELECT k1:SUM(k1)k2:SUM(k2)k3:SUM(k3) WHERE b==red GROUP BY (a)
+								\\------ time=170ms for tableQuery on SELECT k1:SUM(k1), k2:SUM(k2), k3:SUM(k3) WHERE b==red GROUP BY (a)
 								/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
 								|      No cost info
 								|\\- #1 m=k1(SUM) filter=b==red groupBy=(a) customMarker=JPY
@@ -659,7 +659,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								/-- time=150ms for openingStream
 								|/- time=19ms for mergingAggregates
 								|/- time=20ms sizes=[1, 1] for sortingColumns
-								\\------ time=209ms for tableQuery on SELECT k1:MAX(k1)k1.someTableName1.cube:SUM(k1) WHERE b==b1 GROUP BY (a)
+								\\------ time=209ms for tableQuery on SELECT k1:MAX(k1), k1.someTableName1.cube:SUM(k1) WHERE b==b1 GROUP BY (a)
 								/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
 								|      No cost info
 								|\\- #1 m=k1(MAX) filter=b==b1 groupBy=(a) customMarker=JPY

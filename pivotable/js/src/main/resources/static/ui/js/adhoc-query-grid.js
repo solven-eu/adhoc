@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, reactive, inject } from "vue";
+import { ref, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
@@ -263,8 +263,14 @@ export default {
 			{
 				var headerButtonsPlugin = new SlickHeaderButtons();
 
+				const ids = inject("ids");
+
+				// a ref to create a single Modal object
 				const refDagModal = ref(null);
 				const measuresDagModel = inject("measuresDagModel");
+
+				const refColumnFilterModal = ref(null);
+				const columnFilterModel = inject("columnFilterModel");
 
 				headerButtonsPlugin.onCommand.subscribe(function (e, args) {
 					var column = args.column;
@@ -277,6 +283,14 @@ export default {
 
 						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
 						// grid.invalidate();
+					} else if (command == "filter-column") {
+						if (!refColumnFilterModal.value) {
+							let modal = new Modal(document.getElementById("columnFilterModal"), {});
+							refColumnFilterModal.value = modal;
+						}
+
+						columnFilterModel.column = column.name;
+						refColumnFilterModal.value.show();
 					} else if (command == "remove-measure") {
 						props.queryModel.selectedMeasures[column.name] = false;
 
@@ -286,8 +300,8 @@ export default {
 						console.log("Info measure", column.name);
 
 						if (!refDagModal.value) {
-							let measureDagModal = new Modal(document.getElementById("measureDag"), {});
-							refDagModal.value = measureDagModal;
+							let modal = new Modal(document.getElementById("measureDag"), {});
+							refDagModal.value = modal;
 						}
 
 						measuresDagModel.main = column.name;
@@ -401,8 +415,6 @@ export default {
 				openCellModal(clickedCell.value);
 			});
 
-			const refDagModal = ref(null);
-			const measuresDagModel = inject("measuresDagModel");
 			grid.onHeaderClick.subscribe(function (e, args) {
 				const column = args.column.id;
 				console.log("Header clicked", column);
@@ -528,7 +540,7 @@ export default {
             <div>props.tabularView.timing={{tabularView.timing}}</div>
             <AdhocGridExportCsv :array="data.array" />
 
-			<AdhocGridFormatModal :formatOptions="formatOptions" />
+            <AdhocGridFormatModal :formatOptions="formatOptions" />
         </div>
     `,
 };

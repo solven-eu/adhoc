@@ -1,7 +1,9 @@
-import { watch } from "vue";
+import { watch, provide } from "vue";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
+
+import LoginRef from "./login-ref.js";
 
 import { useUserStore } from "./store-user.js";
 
@@ -11,6 +13,7 @@ import AdhocLoading from "./adhoc-loading.js";
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
+		LoginRef,
 		AdhocQuery,
 		AdhocLoading,
 	},
@@ -78,10 +81,13 @@ export default {
 			{ deep: true },
 		);
 
+		// https://vuejs.org/guide/components/provide-inject.html
+		provide("ids", { cubeId: props.cubeId, endpointId: props.endpointId });
+
 		return { store };
 	},
 	template: /* HTML */ `
-		<div v-if="!isLoggedIn"><LoginRef /></div>
+        <div v-if="!isLoggedIn"><LoginRef /></div>
         <div v-else-if="!endpoint || endpoint.error || !cube || cube.error">
             <AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
             <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />

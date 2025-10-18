@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -46,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility method to help doing operations on {@link ISliceFilter}.
- * 
+ *
  * @author Benoit Lacelle
  * @see SimpleFilterEditor for write operations.
  */
@@ -70,7 +70,7 @@ public class FilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param filter
 	 * @param column
 	 * @return a lax matching {@link IValueMatcher}. By lax, we mean the received filter may be actually applied from
@@ -83,7 +83,7 @@ public class FilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param filter
 	 * @param column
 	 * @param throwOnOr
@@ -179,27 +179,21 @@ public class FilterHelpers {
 	}
 
 	public static Set<String> getFilteredColumns(ISliceFilter filter) {
-		if (filter.isMatchAll() || filter.isMatchNone()) {
-			return Set.of();
+		return streamFilteredColumns(filter).collect(ImmutableSet.toImmutableSet());
+	}
+
+	static Stream<String> streamFilteredColumns(ISliceFilter filter) {
+		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			return Stream.of(columnFilter.getColumn());
+		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().flatMap(FilterHelpers::streamFilteredColumns);
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().flatMap(FilterHelpers::streamFilteredColumns);
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return streamFilteredColumns(notFilter.getNegated());
 		} else {
-			if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-				return Set.of(columnFilter.getColumn());
-			} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-				return getFilteredColumns(notFilter.getNegated());
-			} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-				return andFilter.getOperands()
-						.stream()
-						.flatMap(operand -> getFilteredColumns(operand).stream())
-						.collect(Collectors.toSet());
-			} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-				return orFilter.getOperands()
-						.stream()
-						.flatMap(operand -> getFilteredColumns(operand).stream())
-						.collect(Collectors.toSet());
-			} else {
-				throw new UnsupportedOperationException(
-						"Not managed yet: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-			}
+			throw new UnsupportedOperationException(
+					"Not managed yet: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
 	}
 
@@ -236,7 +230,7 @@ public class FilterHelpers {
 	 * Given the input filters, considered to be `AND` together, this returns a `WHERE` filter, common to all input
 	 * filters. It would typically extracted from each filter with
 	 * {@link #stripWhereFromFilter(ISliceFilter, ISliceFilter)}.
-	 * 
+	 *
 	 * @param filters
 	 * @return
 	 */
@@ -247,7 +241,7 @@ public class FilterHelpers {
 	/**
 	 * Given the input filters, considered to be `OR` together, this returns a `WHERE` filter, common to all input
 	 * filters.
-	 * 
+	 *
 	 * @param filters
 	 * @return
 	 */
@@ -257,12 +251,35 @@ public class FilterHelpers {
 
 	/**
 	 * Split the filter in a Set of {@link ISliceFilter}, equivalent by AND to the original filter.
-	 * 
+	 *
 	 * @param filter
 	 * @return
 	 */
 	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
-		return splitAndStream(filter).collect(ImmutableSet.toImmutableSet());
+		Set<ISliceFilter> asSet = splitAndStream(filter)
+				// Skipping matchAll is useful on `.edit`
+				.filter(f -> !f.isMatchAll())
+				.collect(ImmutableSet.toImmutableSet());
+
+		if (asSet.contains(ISliceFilter.MATCH_NONE)) {
+			return ImmutableSet.of(ISliceFilter.MATCH_NONE);
+		}
+
+		return asSet;
+	}
+
+	public static Set<ISliceFilter> splitAnd(Collection<? extends ISliceFilter> filters) {
+		Set<ISliceFilter> asSet = filters.stream()
+				.flatMap(FilterHelpers::splitAndStream)
+				// Skipping matchAll is useful on `.edit`
+				.filter(f -> !f.isMatchAll())
+				.collect(ImmutableSet.toImmutableSet());
+
+		if (asSet.contains(ISliceFilter.MATCH_NONE)) {
+			return ImmutableSet.of(ISliceFilter.MATCH_NONE);
+		}
+
+		return asSet;
 	}
 
 	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
@@ -302,7 +319,7 @@ public class FilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param filter
 	 * @return a Set of {@link ISliceFilter} which, combined with OR, is equivalent to the input
 	 */
@@ -336,11 +353,11 @@ public class FilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * Typically true if `stricter:A=a1&B=b1` and `laxer:B=b1` or `stricter:A=a1` and `laxer:A=a1|B=b1`.
-	 * 
+	 *
 	 * True if stricter and laxer are equivalent.
-	 * 
+	 *
 	 * @param stricter
 	 * @param laxer
 	 * @return true if all rows matched by `stricter` are matched by `laxer`.
@@ -354,7 +371,7 @@ public class FilterHelpers {
 
 	/**
 	 * `laxer` is laxer than `stricter` if any row matched by `stricter` it also matched by `laxer`.
-	 * 
+	 *
 	 * @param laxer
 	 * @param stricter
 	 * @return
@@ -364,7 +381,7 @@ public class FilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param where
 	 *            some `WHERE` clause
 	 * @param filter
@@ -378,7 +395,7 @@ public class FilterHelpers {
 
 	/**
 	 * Similar to {@link #stripWhereFromFilter(ISliceFilter, ISliceFilter)} but for an OR.
-	 * 
+	 *
 	 * @param contribution
 	 * @param filter
 	 * @return a {@link ISliceFilter} so that `contribution|output=filter`.

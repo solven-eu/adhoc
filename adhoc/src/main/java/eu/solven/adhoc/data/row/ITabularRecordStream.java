@@ -63,4 +63,24 @@ public interface ITabularRecordStream extends AutoCloseable {
 	// Force not to throw an explicit Exception
 	@Override
 	void close();
+
+	static ITabularRecordStream empty() {
+		return new ITabularRecordStream() {
+
+			@Override
+			public Stream<ITabularRecord> records() {
+				return Stream.empty();
+			}
+
+			@Override
+			public boolean isDistinctSlices() {
+				return true;
+			}
+
+			@Override
+			public void close() {
+				// nothing to close
+			}
+		};
+	}
 }

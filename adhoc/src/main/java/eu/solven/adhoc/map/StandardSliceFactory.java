@@ -26,7 +26,6 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +93,16 @@ public class StandardSliceFactory implements ISliceFactory {
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
+	private static final IAdhocMap EMPTY = MapOverLists.builder()
+			.factory(StandardSliceFactory.builder().build())
+			.keys(EnrichedNavigableSet.fromSet(Set.of()))
+			.unorderedValues(ImmutableList.of())
+			.build();
+
+	public static IAdhocMap of() {
+		return EMPTY;
+	}
+
 	public Object normalizeCoordinate(Object raw) {
 		return valueNormalizer.normalizeCoordinate(raw);
 	}
@@ -109,7 +118,7 @@ public class StandardSliceFactory implements ISliceFactory {
 	@Builder
 	public static class EnrichedKeySet {
 
-		// the keySet as an unordered Set
+		// the keySet as an ordered Set
 		// Useful for quick `.equals` operations
 		ImmutableSortedSet<String> keysAsSet;
 
@@ -256,49 +265,7 @@ public class StandardSliceFactory implements ISliceFactory {
 			var thisKeysIterator = this.orderedKeys().iterator();
 			var otherKeysIterator = keys.orderedKeys().iterator();
 
-			// Loop until the iterator has values.
-			while (true) {
-				boolean thisHasNext = thisKeysIterator.hasNext();
-				boolean otherHasNext = otherKeysIterator.hasNext();
-
-				if (!thisHasNext) {
-					if (!otherHasNext) {
-						// Same keys
-						break;
-					} else {
-						// other has more entries: this is smaller
-						return -1;
-					}
-				} else if (!otherHasNext) {
-					// this has more entries: this is bigger
-					return 1;
-				} else {
-					String thisKey = thisKeysIterator.next();
-					String otherKey = otherKeysIterator.next();
-					int compareKey = compareKey(thisKey, otherKey);
-
-					if (compareKey != 0) {
-						return compareKey;
-					}
-				}
-			}
-
-			// Equivalent keySets but ordered differently
-			return 0;
-		}
-
-		// We expect most key comparison to be reference comparisons as columnNames as
-		// defined once, should be
-		// internalized, and keySet are identical in most cases
-		// `java:S4973` is about the reference comparison, which is done on purpose to
-		// potentially skip the `.compareTo`
-		@SuppressWarnings({ "java:S4973", "PMD.CompareObjectsWithEquals", "PMD.UseEqualsToCompareStrings" })
-		private int compareKey(String thisKey, String otherKey) {
-			if (thisKey == otherKey) {
-				return 0;
-			} else {
-				return thisKey.compareTo(otherKey);
-			}
+			return AdhocMapComparisonHelpers.compareKeySet(thisKeysIterator, otherKeysIterator);
 		}
 	}
 
@@ -310,7 +277,6 @@ public class StandardSliceFactory implements ISliceFactory {
 	@SuppressWarnings("PMD.LooseCoupling")
 	@Builder
 	public static class MapOverLists extends AbstractMap<String, Object> implements IAdhocMap {
-		private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2();
 
 		@Getter
 		@NonNull
@@ -385,6 +351,7 @@ public class StandardSliceFactory implements ISliceFactory {
 			return unorderedValues.get(index);
 		}
 
+		// Called by `SliceAsMap` so it needs to be fast
 		@Override
 		public boolean containsKey(Object key) {
 			return keys.keySet.keysAsHashSet.get().contains(key);
@@ -473,7 +440,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			@Override
 			public final void clear() {
-				throw new UnsupportedOperationException("Immutable");
+				throw new UnsupportedAsImmutableException();
 			}
 
 			@Override
@@ -511,7 +478,7 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			@Override
 			public final boolean remove(Object o) {
-				throw new UnsupportedOperationException("Immutable");
+				throw new UnsupportedAsImmutableException();
 			}
 
 			@Override
@@ -526,7 +493,8 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			@Override
 			public final void forEach(Consumer<? super Map.Entry<String, Object>> action) {
-				for (int i = 0; i < size(); i++) {
+				int size = size();
+				for (int i = 0; i < size; i++) {
 					action.accept(entry(i));
 				}
 			}
@@ -550,7 +518,7 @@ public class StandardSliceFactory implements ISliceFactory {
 				return 0;
 			}
 
-			// compare keys
+			// compare sorted keys
 			int compareKeys = keys.compareTo(other.keys);
 			if (compareKeys != 0) {
 				return compareKeys;
@@ -558,20 +526,9 @@ public class StandardSliceFactory implements ISliceFactory {
 
 			// Compare values
 			List<Object> thisOrderedValues = this.orderedValues();
-			int size = thisOrderedValues.size();
 			List<Object> otherOrderedValues = other.orderedValues();
-			assert size == otherOrderedValues.size();
-			for (int i = 0; i < size; i++) {
-				Object thisCoordinate = thisOrderedValues.get(i);
-				Object otherCoordinate = otherOrderedValues.get(i);
-				int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
 
-				if (valueCompare != 0) {
-					return valueCompare;
-				}
-			}
-
-			return 0;
+			return AdhocMapComparisonHelpers.compareValues(thisOrderedValues, otherOrderedValues);
 		}
 	}
 
@@ -756,5 +713,11 @@ public class StandardSliceFactory implements ISliceFactory {
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {
 		return ImmutableList.copyOf(keys);
+	}
+
+	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
+		MapBuilderThroughKeys builder = factory.newMapBuilder();
+		asMap.forEach(builder::put);
+		return builder.build();
 	}
 }

@@ -85,6 +85,11 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	}
 
 	@Override
+	public double neutralDouble() {
+		return Double.MIN_VALUE;
+	}
+
+	@Override
 	public long aggregateLongs(long left, long right) {
 		return Long.max(left, right);
 	}

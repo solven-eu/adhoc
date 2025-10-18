@@ -65,9 +65,9 @@ export default {
 					console.info("Logged-in with BASIC", json);
 
 					// force loading updated user (given we have received a fresh session cookie)
-					userStore.loadUser().then(() => {
+					userStore.forceLoadUser().then(() => {
 						// load tokens for current user
-						userStore.loadUserTokens();
+						userStore.forceLoadUserTokens();
 					});
 
 					if (props.modal) {

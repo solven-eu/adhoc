@@ -17,6 +17,7 @@ import AdhocQueryGrid from "./adhoc-query-grid.js";
 import { useRouter } from "vue-router";
 
 import AdhocMeasuresDag from "./adhoc-measures-dag.js";
+import AdhocQueryWizardColumnFilterModalSingleton from "./adhoc-query-wizard-column-filter-modal-singleton.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -26,7 +27,9 @@ export default {
 		AdhocQueryWizard,
 		AdhocQueryExecutor,
 		AdhocQueryGrid,
+
 		AdhocMeasuresDag,
+		AdhocQueryWizardColumnFilterModalSingleton,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -73,15 +76,21 @@ export default {
 			{ deep: true },
 		);
 
+		// https://vuejs.org/guide/components/provide-inject.html
+		provide("queryModel", queryModel);
+		provide("cube", props.cube);
+
 		const measuresDagModel = reactive({
 			main: "",
 			highlight: [],
 		});
-
-		// https://vuejs.org/guide/components/provide-inject.html
-		provide("queryModel", queryModel);
-		provide("cube", props.cube);
 		provide("measuresDagModel", measuresDagModel);
+
+		const columnFilterModel = reactive({
+			column: "",
+		});
+		// https://vuejs.org/guide/components/provide-inject.html
+		provide("columnFilterModel", columnFilterModel);
 
 		const tabularView = reactive({});
 
@@ -127,7 +136,9 @@ export default {
 			recentlyUsed,
 			tabularView,
 			domId,
+
 			measuresDagModel,
+			columnFilterModel,
 		};
 	},
 	template: /* HTML */ `
@@ -147,6 +158,7 @@ export default {
             </div>
 
             <AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
+            <AdhocQueryWizardColumnFilterModalSingleton :columnFilterModel="columnFilterModel" />
         </div>
     `,
 };

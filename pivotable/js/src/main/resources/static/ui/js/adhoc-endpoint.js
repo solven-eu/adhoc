@@ -71,9 +71,9 @@ export default {
 		return { nbCubes };
 	},
 	template: /* HTML */ `
-		<div v-if="!endpoint || endpoint.error">
-		    <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-		</div>
+        <div v-if="!endpoint || endpoint.error">
+            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+        </div>
         <div v-else>
             <AdhocEndpointHeader :endpointId="endpointId" />
 

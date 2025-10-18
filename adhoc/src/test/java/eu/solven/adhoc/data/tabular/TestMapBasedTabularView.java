@@ -28,11 +28,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestMapBasedTabularView {
 
@@ -43,36 +42,7 @@ public class TestMapBasedTabularView {
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), "m", 123);
 
 		// Serialization fails as we consider a Map with complex keys (Maps) which is not trivial to represent in a JSON
-		Assertions.assertThatThrownBy(() -> verifyJackson(MapBasedTabularView.class, view))
+		Assertions.assertThatThrownBy(() -> PepperJacksonTestHelper.verifyJackson(MapBasedTabularView.class, view))
 				.hasRootCauseInstanceOf(InvalidDefinitionException.class);
-	}
-
-	// To be removed by `PepperJacksonTestHelper` in Pepper 5.2
-	public static <T> String verifyJackson(Class<T> clazz, T object) throws JsonProcessingException {
-		ObjectMapper om = objectMapper();
-
-		String asString = om.writeValueAsString(object);
-
-		Object fromString;
-		try {
-			fromString = om.readValue(asString, clazz);
-		} catch (RuntimeException | JsonProcessingException e) {
-			throw new IllegalArgumentException(
-					"Issue deserializing to class=%s from `%s`".formatted(clazz.getName(), asString),
-					e);
-		}
-
-		Assertions.assertThat(fromString).isEqualTo(object);
-
-		return asString;
-	}
-
-	public static ObjectMapper objectMapper() {
-		ObjectMapper om = new ObjectMapper();
-
-		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		om.enable(SerializationFeature.INDENT_OUTPUT);
-
-		return om;
 	}
 }

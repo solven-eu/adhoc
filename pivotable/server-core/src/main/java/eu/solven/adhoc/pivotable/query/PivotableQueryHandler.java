@@ -22,13 +22,17 @@
  */
 package eu.solven.adhoc.pivotable.query;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+
+import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
@@ -37,6 +41,7 @@ import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager.StateAndView;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -58,6 +63,10 @@ import reactor.core.publisher.Mono;
 public class PivotableQueryHandler {
 	final PivotableAdhocSchemaRegistry schemaRegistry;
 	final AdhocCubesRegistry cubesRegistry;
+
+	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
+
+	final AtomicLongMap<UUID> queryIdPolls = AtomicLongMap.create();
 
 	public Mono<ServerResponse> loadCubeSchema(ServerRequest serverRequest) {
 		UUID endpointId = AdhocHandlerHelper.uuid(serverRequest, "endpoint_id");
@@ -81,6 +90,18 @@ public class PivotableQueryHandler {
 						.body(BodyInserters.fromValue(view)));
 	}
 
+	protected Mono<ServerResponse> executeAsynchronousQuery(Mono<TargetedCubeQuery> queryOnSchemaMono) {
+		return queryOnSchemaMono.map(queryOnSchema -> {
+			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
+
+			return asynchronousQueriesManager.execute(schema, queryOnSchema);
+
+		})
+				.flatMap(view -> ServerResponse.ok()
+						.contentType(MediaType.APPLICATION_JSON)
+						.body(BodyInserters.fromValue(view)));
+	}
+
 	/**
 	 * Execute an {@link eu.solven.adhoc.query.cube.IAdhocQuery} defined through POST parameter.
 	 *
@@ -90,6 +111,70 @@ public class PivotableQueryHandler {
 	public Mono<ServerResponse> executeQuery(ServerRequest serverRequest) {
 		Mono<TargetedCubeQuery> queryOnSchemaMono = serverRequest.bodyToMono(TargetedCubeQuery.class);
 		return executeQuery(queryOnSchemaMono);
+	}
+
+	/**
+	 * Execute an {@link eu.solven.adhoc.query.cube.IAdhocQuery} defined through POST parameter.
+	 *
+	 * @param serverRequest
+	 * @return
+	 */
+	public Mono<ServerResponse> executeAsynchronousQuery(ServerRequest serverRequest) {
+		Mono<TargetedCubeQuery> queryOnSchemaMono = serverRequest.bodyToMono(TargetedCubeQuery.class);
+		return executeAsynchronousQuery(queryOnSchemaMono);
+	}
+
+	public Mono<ServerResponse> fetchQueryResult(ServerRequest serverRequest) {
+		UUID queryId = AdhocHandlerHelper.uuid(serverRequest, "query_id");
+		boolean withView = AdhocHandlerHelper.optBoolean(serverRequest, "with_view").orElse(true);
+
+		StateAndView optView = asynchronousQueriesManager.getStateAndView(queryId);
+
+		if (withView && optView.getOptView().isPresent()) {
+
+			// ListBasedTabularView is serializable with Jackson
+			ListBasedTabularView view = ListBasedTabularView.load(optView.getOptView().get());
+
+			QueryResultHolder body = QueryResultHolder.served(optView.getState(), view);
+			return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
+		} else {
+			AsynchronousStatus state = asynchronousQueriesManager.getState(queryId);
+
+			Optional<Duration> optRetryIn = getRetryIn(queryId, state);
+
+			if (optRetryIn.isPresent()) {
+				QueryResultHolder body = QueryResultHolder.retry(state, optRetryIn.get());
+				return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
+			} else {
+				QueryResultHolder body = QueryResultHolder.discarded(state);
+				return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromValue(body));
+			}
+		}
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	protected Optional<Duration> getRetryIn(UUID queryId, AsynchronousStatus state) {
+		return switch (state) {
+		case AsynchronousStatus.DISCARDED:
+		case AsynchronousStatus.UNKNOWN:
+		case AsynchronousStatus.FAILED: {
+			yield Optional.empty();
+		}
+		case AsynchronousStatus.SERVED: {
+			yield Optional.of(Duration.ofSeconds(0));
+		}
+		case AsynchronousStatus.RUNNING: {
+			// TODO Introduce exponential back-off
+			long nbPoll = queryIdPolls.getAndIncrement(queryId);
+
+			// On first try, delay is `1`
+			// On second try, delay is `1.5`
+			// On third try, delay is `2.25`
+			double exponentialBackoff = Math.pow(1.5, nbPoll);
+			long millis = (long) (100L * exponentialBackoff);
+			yield Optional.of(Duration.ofMillis(millis));
+		}
+		};
 	}
 
 	/**

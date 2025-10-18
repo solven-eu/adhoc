@@ -94,7 +94,7 @@ public class CumulatingDecomposition extends DuplicatingDecomposition {
 				sliceToValue.slices().forEach(slice -> {
 					relevantColumns.forEach(column -> {
 						columnToCoordinatesFromUndelryings.computeIfAbsent(column, k -> new ArrayList<>())
-								.add(slice.getRawSliced(column));
+								.add(slice.getGroupBy(column));
 					});
 				});
 			});

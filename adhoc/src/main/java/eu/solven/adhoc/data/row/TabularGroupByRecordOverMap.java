@@ -44,13 +44,13 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 	final IAdhocSlice slice;
 
 	@Override
-	public Set<String> groupByKeySet() {
-		return slice.getColumns();
+	public Set<String> columnsKeySet() {
+		return slice.columnsKeySet();
 	}
 
 	@Override
 	public Object getGroupBy(String columnName) {
-		return slice.getRawSliced(columnName);
+		return slice.getGroupBy(columnName);
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 		StringBuilder string = new StringBuilder();
 
 		string.append("slice:{");
-		string.append(tabularRecord.groupByKeySet()
+		string.append(tabularRecord.columnsKeySet()
 				.stream()
 				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
 				.collect(Collectors.joining(", ")));

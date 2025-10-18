@@ -215,7 +215,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c", "d" from "someTableName" group by ALL""");
+				select sum("k") "k", "d", "c" from "someTableName" group by ALL""");
 	}
 
 	@Test
@@ -243,8 +243,10 @@ public class TestJooqTableQueryFactory_DuckDb {
 		Assertions.assertThat(condition.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
 		// native part is managed by SQL: requesting `c` as groupBy to enable late filtering
-		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
-				select sum("k") "k", "c" from "someTableName" where not ("d" = 'someD') group by ALL""");
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select sum("k") "k", "c" from "someTableName" where not ("d" is not null and "d" = 'someD') group by ALL""");
 	}
 
 	@Test
@@ -344,7 +346,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
 						"""
-								select sum("k") filter (where not (cast("c" as varchar) = 'c1')) "k" from "someTableName" group by ALL""");
+								select sum("k") filter (where not ("c" is not null and cast("c" as varchar) = 'c1')) "k" from "someTableName" group by ALL""");
 	}
 
 }

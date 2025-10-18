@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -35,6 +36,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -201,18 +203,25 @@ public class SimpleFilterEditor implements IFilterEditor {
 	public static ISliceFilter suppressColumn(ISliceFilter filter,
 			Set<String> suppressedColumns,
 			Optional<IFilterOptimizer> optOptimizer) {
+		return suppressColumn(filter, suppressedColumns::contains, cf -> ISliceFilter.MATCH_ALL, optOptimizer);
+	}
+
+	public static ISliceFilter suppressColumn(ISliceFilter filter,
+			Predicate<String> isSuppressedColumns,
+			Function<IColumnFilter, ISliceFilter> onSuppressed,
+			Optional<IFilterOptimizer> optOptimizer) {
 		if (filter instanceof IColumnFilter columnFilter) {
-			boolean isSuppressed = suppressedColumns.contains(columnFilter.getColumn());
+			boolean isSuppressed = isSuppressedColumns.test(columnFilter.getColumn());
 
 			if (isSuppressed) {
-				return ISliceFilter.MATCH_ALL;
+				return onSuppressed.apply(columnFilter);
 			} else {
 				return filter;
 			}
 		} else if (filter instanceof IAndFilter andFilter) {
 			List<ISliceFilter> unfiltered = andFilter.getOperands()
 					.stream()
-					.map(subFilter -> suppressColumn(subFilter, suppressedColumns, optOptimizer))
+					.map(subFilter -> suppressColumn(subFilter, isSuppressedColumns, onSuppressed, optOptimizer))
 					.toList();
 
 			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
@@ -223,10 +232,27 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return FilterBuilder.and(unfiltered).combine();
 			}
 		} else if (filter instanceof IOrFilter orFilter) {
+			if (orFilter.isMatchAll()) {
+				// As we will later discard `.matchAll` operands, we need to handle this case explicitly
+				// Getting in this case means the input is not optimized
+				return ISliceFilter.MATCH_ALL;
+			} else if (orFilter.isMatchNone()) {
+				return ISliceFilter.MATCH_NONE;
+			}
+
 			List<ISliceFilter> unfiltered = orFilter.getOperands()
 					.stream()
-					.map(subFilter -> suppressColumn(subFilter, suppressedColumns, optOptimizer))
+					.map(subFilter -> suppressColumn(subFilter, isSuppressedColumns, onSuppressed, optOptimizer))
+					// In a OR, matchAll should be discarded individually, else the whole OR is matchAll
+					// It assumes the initial operands where not matchAll: this is guaranteed by previous call to
+					// OrFilter.isMatchAll
+					.filter(f -> !f.isMatchAll())
 					.toList();
+
+			if (unfiltered.isEmpty()) {
+				// All orOperands has been suppressed: this is a matchAll
+				return ISliceFilter.MATCH_ALL;
+			}
 
 			// Combine as we keep the original optimizations, not to risk a slow optimize in `suppressColumns`
 			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
@@ -234,6 +260,15 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return FilterBuilder.or(unfiltered).optimize(optOptimizer.get());
 			} else {
 				return FilterBuilder.or(unfiltered).combine();
+			}
+		} else if (filter instanceof INotFilter notFilter) {
+			ISliceFilter negatedForColumns =
+					suppressColumn(notFilter.getNegated(), isSuppressedColumns, onSuppressed, optOptimizer);
+			if (ISliceFilter.MATCH_ALL.equals(negatedForColumns)) {
+				// BEWARE Filtering an unknown column?
+				return ISliceFilter.MATCH_ALL;
+			} else {
+				return negatedForColumns.negate();
 			}
 		} else {
 			throw new NotYetImplementedException("filter:%s".formatted(filter));

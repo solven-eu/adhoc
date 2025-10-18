@@ -689,4 +689,18 @@ public class TestAndFilter {
 		Assertions.assertThat(combined).hasToString("a=in=(a1,a2,a3)&b=in=(b1,b2,b3)&(a=in=(a1,a2)|b=in=(b1,b2))");
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
+
+	@Test
+	public void testAnd_between2Large() {
+		int size = 256;
+		ISliceFilter left =
+				FilterBuilder.and(IntStream.range(0, size).mapToObj(i -> ColumnFilter.matchEq("a" + i, i)).toList())
+						.combine();
+
+		ISliceFilter right =
+				FilterBuilder.and(IntStream.range(0, size).mapToObj(i -> ColumnFilter.matchEq("b" + i, i)).toList())
+						.combine();
+
+		FilterBuilder.and(left, right).optimize();
+	}
 }

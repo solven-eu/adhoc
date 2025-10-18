@@ -108,8 +108,14 @@ public class TestJooqTableQueryFactory_MySql {
 		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
-				  not ("k1" = 'v1')
-				  and not ("k2" = 'v2')
+				  not (
+				    "k1" is not null
+				    and "k1" = 'v1'
+				  )
+				  and not (
+				    "k2" is not null
+				    and "k2" = 'v2'
+				  )
 				)""");
 	}
 
@@ -210,7 +216,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
-				.isEqualTo("select sum(`k`) as `k`, `c`, `d` from `someTableName` group by `c`, `d`");
+				.isEqualTo("select sum(`k`) as `k`, `d`, `c` from `someTableName` group by `d`, `c`");
 	}
 
 	@Test
@@ -239,7 +245,8 @@ public class TestJooqTableQueryFactory_MySql {
 				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
 		// native part is managed by SQL: requesting `c` as groupBy to enable late filtering
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
-				.isEqualTo("select sum(`k`) as `k`, `c` from `someTableName` where not (`d` = 'someD') group by `c`");
+				.isEqualTo(
+						"select sum(`k`) as `k`, `c` from `someTableName` where not (`d` is not null and `d` = 'someD') group by `c`");
 	}
 
 	@Test
@@ -354,7 +361,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
 				.isEqualTo(
-						"select sum(case when not (cast(`c` as char) = 'c1') then `k` end) as `k` from `someTableName` group by (select 1)");
+						"select sum(case when not (`c` is not null and cast(`c` as char) = 'c1') then `k` end) as `k` from `someTableName` group by (select 1)");
 	}
 
 }

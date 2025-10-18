@@ -50,6 +50,4 @@ public interface ISliceFactory {
 	 */
 	MapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
 
-	// Object getNullPlaceholder();
-
 }

@@ -56,9 +56,9 @@ public class MapAggregation<K, V> implements IAggregation {
 	}
 
 	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
-		if (lAsMap == null) {
+		if (lAsMap == null || lAsMap.isEmpty()) {
 			return (Map<K, V>) rAsMap;
-		} else if (rAsMap == null) {
+		} else if (rAsMap == null || rAsMap.isEmpty()) {
 			return (Map<K, V>) lAsMap;
 		} else {
 			// BEWARE In case on conflict, ImmutableMap.builder() will throw

@@ -30,13 +30,13 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestColumnWithCalculatedCoordinates {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
+		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class,
 				ColumnWithCalculatedCoordinates.builder()
 						.column("d")
 						.calculatedCoordinate(CalculatedCoordinate.star())
@@ -59,7 +59,7 @@ public class TestColumnWithCalculatedCoordinates {
 
 	@Test
 	public void testImplicitMatchAll() throws JsonMappingException, JsonProcessingException {
-		IAdhocColumn column = TestMapBasedTabularView.objectMapper().readValue("""
+		IAdhocColumn column = PepperJacksonTestHelper.makeObjectMapper().readValue("""
 				{
 				  "type" : ".ColumnWithCalculatedCoordinates",
 				  "column" : "d",

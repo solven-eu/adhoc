@@ -30,14 +30,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestReferencedMeasure {
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		String asString =
-				TestMapBasedTabularView.verifyJackson(ReferencedMeasure.class, ReferencedMeasure.ref("someMeasure"));
+				PepperJacksonTestHelper.verifyJackson(ReferencedMeasure.class, ReferencedMeasure.ref("someMeasure"));
 
 		Assertions.assertThat(asString).isEqualTo("""
 				"someMeasure"

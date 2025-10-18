@@ -24,7 +24,7 @@ package eu.solven.adhoc.pivotable.client;
 
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.IReadableTabularView;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
@@ -48,6 +48,6 @@ public interface IPivotableServer {
 
 	Flux<ColumnStatistics> searchMembers(AdhocCoordinatesSearch search);
 
-	Mono<ITabularView> executeQuery(TargetedCubeQuery query);
+	Mono<IReadableTabularView> executeQuery(TargetedCubeQuery query);
 
 }

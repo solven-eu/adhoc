@@ -41,22 +41,22 @@ public class TestSliceAsMap {
 	public void testRequireFilter_String() {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
 
-		Assertions.assertThat(slice.getColumns()).containsExactly("k");
+		Assertions.assertThat(slice.columnsKeySet()).containsExactly("k");
 
 		{
-			Assertions.assertThat(slice.getRawSliced("k")).isEqualTo("v");
-			Assertions.assertThat(slice.getSliced("k", Object.class)).isEqualTo("v");
-			Assertions.assertThat(slice.getSliced("k", String.class)).isEqualTo("v");
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k", Number.class))
+			Assertions.assertThat(slice.getGroupBy("k")).isEqualTo("v");
+			Assertions.assertThat(slice.getGroupBy("k", Object.class)).isEqualTo("v");
+			Assertions.assertThat(slice.getGroupBy("k", String.class)).isEqualTo("v");
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThat(slice.optSliced("k")).contains("v");
 		}
 
 		{
-			Assertions.assertThatThrownBy(() -> slice.getRawSliced("k2")).isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Object.class))
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Object.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Number.class))
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
 		}
@@ -67,25 +67,25 @@ public class TestSliceAsMap {
 	public void testRequireFilter_Collection() {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", Arrays.asList("v1", "v2")));
 
-		Assertions.assertThat(slice.getColumns()).containsExactly("k");
+		Assertions.assertThat(slice.columnsKeySet()).containsExactly("k");
 
 		{
-			Assertions.assertThat(slice.getRawSliced("k")).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getSliced("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getSliced("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getSliced("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k", String.class))
+			Assertions.assertThat(slice.getGroupBy("k")).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getGroupBy("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getGroupBy("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.getGroupBy("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", String.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k", Number.class))
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThat(slice.optSliced("k")).contains(Arrays.asList("v1", "v2"));
 		}
 
 		{
-			Assertions.assertThatThrownBy(() -> slice.getRawSliced("k2")).isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Object.class))
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Object.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getSliced("k2", Number.class))
+			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
 		}

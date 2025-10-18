@@ -60,6 +60,7 @@ import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -123,10 +124,17 @@ public class TableQueryEngineBootstrapped {
 	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
 
 	@NonNull
+	@Getter(AccessLevel.PRIVATE)
 	final ITableQueryOptimizer optimizer;
 
-	final Supplier<IFilterOptimizer> filterOptimizerSupplier =
-			Suppliers.memoize(() -> this.getFactories().getFilterOptimizerFactory().makeOptimizerWithCache());
+	final Supplier<IFilterOptimizer> filterOptimizerSupplier = Suppliers.memoize(() -> {
+		if (getOptimizer() instanceof IHasFilterOptimizer hasFilterOptimizer) {
+			// Most ITableQueryOptimizer has a filterOptimizerWithCache
+			return hasFilterOptimizer.getFilterOptimizer();
+		} else {
+			return this.getFactories().getFilterOptimizerFactory().makeOptimizerWithCache();
+		}
+	});
 
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures
@@ -180,7 +188,7 @@ public class TableQueryEngineBootstrapped {
 					return rowValue -> {
 						eventBus.post(AdhocLogEvent.builder()
 								.debug(true)
-								.message("%s -> %s".formatted(rowValue, row))
+								.messageT("%s -> %s", rowValue, row)
 								.source(queryStep)
 								.build());
 					};
@@ -212,7 +220,7 @@ public class TableQueryEngineBootstrapped {
 
 					Duration elapsed = stopWatch.elapsed();
 					eventBus.post(TableStepIsCompleted.builder()
-							.querystep(tableQuery)
+							.tableQuery(tableQuery)
 							.nbCells(queryStepToValues.values().stream().mapToLong(ISliceToValue::size).sum())
 							.source(this)
 							.duration(elapsed)
@@ -293,7 +301,7 @@ public class TableQueryEngineBootstrapped {
 	protected String toPerfLog(TableQueryV2 tableQuery) {
 		String groupBy =
 				tableQuery.getGroupBy().getGroupedByColumns().stream().collect(Collectors.joining(",", "(", ")"));
-		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining());
+		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
 		return "SELECT " + measures + " WHERE " + tableQuery.getFilter() + " GROUP BY " + groupBy;
 	}
 

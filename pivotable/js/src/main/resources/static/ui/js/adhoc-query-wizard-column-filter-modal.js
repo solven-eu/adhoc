@@ -35,7 +35,6 @@ export default {
 		},
 	},
 	computed: {
-		...mapState(useAdhocStore, ["nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoint(store) {
 				return store.endpoints[this.endpointId] || { error: "not_loaded" };

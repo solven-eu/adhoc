@@ -42,7 +42,6 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
  * 
  * @author Benoit Lacelle
  */
-// @SuppressWarnings("PMD.LooseCoupling")
 public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<IAdhocMap> {
 
 	IAdhocSlice asSlice();

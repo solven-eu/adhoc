@@ -23,11 +23,7 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -41,49 +37,5 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
  * @author Benoit Lacelle
  *
  */
-public interface ITabularView {
-
-	/**
-	 *
-	 * @return an empty and immutable {@link ITabularView}
-	 */
-	static ITabularView empty() {
-		return MapBasedTabularView.empty();
-	}
-
-	/**
-	 *
-	 * @return the number of slices in this view
-	 */
-	long size();
-
-	/**
-	 *
-	 * @return true if this view is empty.
-	 */
-	@JsonIgnore
-	boolean isEmpty();
-
-	/**
-	 *
-	 * @return a distinct stream of slices
-	 */
-	Stream<IAdhocSlice> slices();
-
-	/**
-	 * Will apply the rowScanner to each distinct slice.
-	 * 
-	 * @param rowScanner
-	 */
-	void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner);
-
-	/**
-	 *
-	 * @param rowConverter
-	 *            convert each distinct slice and associated values.
-	 * @return
-	 * @param <U>
-	 *            the output type of the rowConvertor
-	 */
-	<U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowConverter);
+public interface ITabularView extends IReadableTabularView, IWritableTabularView {
 }

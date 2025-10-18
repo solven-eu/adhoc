@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -38,17 +39,25 @@ import eu.solven.adhoc.query.filter.INotFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Default implementation of IFilterStripper
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 @RequiredArgsConstructor
 public class FilterStripper implements IFilterStripper {
+	@Getter(AccessLevel.PROTECTED)
 	protected final ISliceFilter where;
+
+	protected final Supplier<Set<String>> whereColumns =
+			Suppliers.memoize(() -> FilterHelpers.getFilteredColumns(getWhere()));
 
 	// Splitting `WHERE` is memoized as it is called many times, as `isStricterThan` is recursive.
 	// TODO Should we merge in a single supplier?
@@ -78,7 +87,17 @@ public class FilterStripper implements IFilterStripper {
 		if (where.isMatchAll()) {
 			// `WHERE` has no clause: `FILTER` has to keep all clauses
 			return filter;
-		} else if (isStricterThan(filter)) {
+		} else if (where.isMatchNone()) {
+			return ISliceFilter.MATCH_ALL;
+		}
+
+		Set<String> filterColumns = FilterHelpers.getFilteredColumns(filter);
+		if (Sets.intersection(whereColumns.get(), filterColumns).isEmpty()) {
+			// The FILTER is unrelated with the WHERE
+			return filter;
+		}
+
+		if (isStricterThan(filter)) {
 			// Catch some edge-case like `where.equals(filter)`
 			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
 			return ISliceFilter.MATCH_ALL;
@@ -181,12 +200,17 @@ public class FilterStripper implements IFilterStripper {
 			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
 		}
 
+		Set<String> filterColumns = FilterHelpers.getFilteredColumns(laxer);
+
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
 		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
 		// BEWARE Do not rely on AndFilter either, else it may lead on further cycles
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
-		{
+		if (!Sets.difference(filterColumns, whereColumns.get()).isEmpty()) {
+			// BEWARE if laxer is a ColumnFilter with a matchAll matcher
+			log.trace("Some filter in laxer are necessarily not present in WHERE");
+		} else {
 			Set<ISliceFilter> allStricters = whereAnds.get();
 			Set<ISliceFilter> allLaxers = FilterHelpers.splitAnd(laxer);
 

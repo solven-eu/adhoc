@@ -29,12 +29,12 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestStandardQueryOptions {
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String option = TestMapBasedTabularView.verifyJackson(IQueryOption.class, StandardQueryOptions.EXPLAIN);
+		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class, StandardQueryOptions.EXPLAIN);
 
 		Assertions.assertThat(option).isEqualTo("""
 				"EXPLAIN"
@@ -51,7 +51,7 @@ public class TestStandardQueryOptions {
 	@Disabled("TODO Custom options can not be (de)serialized properly for now")
 	@Test
 	public void testJackson_internalQueryOption() throws JsonProcessingException {
-		String option = TestMapBasedTabularView.verifyJackson(IQueryOption.class,
+		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
 				InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION);
 
 		Assertions.assertThat(option).isEqualTo("""

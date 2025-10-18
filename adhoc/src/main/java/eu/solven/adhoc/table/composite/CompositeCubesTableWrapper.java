@@ -59,6 +59,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -73,12 +74,8 @@ import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.IAndFilter;
 import eu.solven.adhoc.query.filter.IColumnFilter;
-import eu.solven.adhoc.query.filter.INotFilter;
-import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -86,7 +83,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -103,7 +99,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-@SuppressWarnings("PMD.GodClass")
 public class CompositeCubesTableWrapper implements ITableWrapper {
 
 	@NonNull
@@ -479,40 +474,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 	 * @return the equivalent {@link ISliceFilter} given the subset of columns
 	 */
 	protected ISliceFilter filterForColumns(ICubeWrapper subCube, ISliceFilter filter, Predicate<String> isSubColumn) {
-		if (filter.isMatchAll() || filter.isMatchNone()) {
-			return filter;
-		} else if (filter instanceof IColumnFilter columnFilter) {
-			if (isSubColumn.test(columnFilter.getColumn())) {
-				return columnFilter;
-			} else {
-				return onMissingFilterColumn(subCube, columnFilter);
-			}
-		} else if (filter instanceof INotFilter notFilter) {
-			ISliceFilter negatedForColumns = filterForColumns(subCube, notFilter.getNegated(), isSubColumn);
-			if (ISliceFilter.MATCH_ALL.equals(negatedForColumns)) {
-				// BEWARE Filtering an unknown column?
-				return ISliceFilter.MATCH_ALL;
-			} else {
-				return negatedForColumns.negate();
-			}
-		} else if (filter instanceof IAndFilter andFilter) {
-			Set<ISliceFilter> operands = andFilter.getOperands();
-			List<ISliceFilter> filteredOperands =
-					operands.stream().map(f -> filterForColumns(subCube, f, isSubColumn)).toList();
-			return FilterBuilder.and(filteredOperands).optimize();
-		} else if (filter instanceof IOrFilter orFilter) {
-			Set<ISliceFilter> operands = orFilter.getOperands();
-			List<ISliceFilter> filteredOperands = operands.stream()
-					.map(f -> filterForColumns(subCube, f, isSubColumn))
-					// In a OR, matchAll should be discarded individually, else the whole OR is matchAll
-					// It assumes the initial operands where not matchAll: this is guaranteed by previous call to
-					// OrFilter.isMatchAll
-					.filter(f -> !f.isMatchAll())
-					.toList();
-			return FilterBuilder.or(filteredOperands).optimize();
-		} else {
-			throw new NotYetImplementedException("Not handled: %s".formatted(filter));
-		}
+		return SimpleFilterEditor
+				.suppressColumn(filter, isSubColumn.negate(), f -> onMissingFilterColumn(subCube, f), Optional.empty());
 	}
 
 	protected ISliceFilter onMissingFilterColumn(ICubeWrapper subCube, IColumnFilter columnFilter) {

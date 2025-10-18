@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.data.tabular.TestMapBasedTabularView;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestExpressionColumn {
@@ -38,7 +38,7 @@ public class TestExpressionColumn {
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		String asString = TestMapBasedTabularView.verifyJackson(IAdhocColumn.class,
+		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class,
 				TableExpressionColumn.builder().name("someColumn").sql("someSQL").build());
 
 		Assertions.assertThat(asString).isEqualTo("""

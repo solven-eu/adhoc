@@ -153,8 +153,10 @@ public class ColumnsManager implements IColumnsManager {
 				if (queried.size() >= 2) {
 					eventBus.post(AdhocLogEvent.builder()
 							.warn(true)
-							.message("Ambiguous filtered column: %s -> %s (filter=%s)"
-									.formatted(underlying, queried, notTranscodedFilter)));
+							.messageT("Ambiguous filtered column: %s -> %s (filter=%s)",
+									underlying,
+									queried,
+									notTranscodedFilter));
 				}
 			});
 		}
@@ -185,14 +187,14 @@ public class ColumnsManager implements IColumnsManager {
 		if (queryPod.isDebug()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.debug(true)
-					.message("Transcoded query is `%s` given `%s`".formatted(transcodedQuery, query))
+					.messageT("Transcoded query is `%s` given `%s`", transcodedQuery, query)
 					.source(this)
 					.build());
 		}
 		if (queryPod.isExplain() && !transcodingContext.isOnlyIdentity()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)
-					.message("Transcoded context is %s".formatted(transcodingContext))
+					.messageT("Transcoded context is %s", transcodingContext)
 					.source(this)
 					.build());
 		}
@@ -394,7 +396,7 @@ public class ColumnsManager implements IColumnsManager {
 						// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
 						eventBus.post(AdhocLogEvent.builder()
 								.warn(true)
-								.message("BEWARE If %s should be impacted by transcoding".formatted(expressionColumn))
+								.messageT("BEWARE If %s should be impacted by transcoding", expressionColumn)
 								.source(this)
 								.build());
 						return Stream.of(expressionColumn);

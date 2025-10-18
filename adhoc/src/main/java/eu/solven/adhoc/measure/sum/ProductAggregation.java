@@ -93,4 +93,9 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	public long neutralLong() {
 		return 1L;
 	}
+
+	@Override
+	public double neutralDouble() {
+		return 1D;
+	}
 }

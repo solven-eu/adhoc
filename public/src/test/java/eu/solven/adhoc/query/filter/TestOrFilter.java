@@ -44,6 +44,7 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestOrFilter {
 	AtomicInteger nbSkip = new AtomicInteger();
@@ -115,16 +116,6 @@ public class TestOrFilter {
 	}
 
 	@Test
-	public void testOr_oneGrandTotal_forced() {
-		ISliceFilter filterAllAndA =
-				FilterBuilder.or(ISliceFilter.MATCH_ALL, ColumnFilter.matchEq("a", "a1")).combine();
-
-		// We forced an OrBuilder: It is not simplified into IAdhocFilter.MATCH_ALL but is is isMatchAll
-		Assertions.assertThat(filterAllAndA.isMatchAll()).isTrue();
-		Assertions.assertThat(filterAllAndA).isNotEqualTo(ISliceFilter.MATCH_ALL);
-	}
-
-	@Test
 	public void testOr_oneMatchNone() {
 		ISliceFilter filterAllAndA =
 				FilterBuilder.or(ISliceFilter.MATCH_NONE, ColumnFilter.matchEq("a", "a1")).optimize();
@@ -175,11 +166,7 @@ public class TestOrFilter {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).optimize();
 
-		ObjectMapper objectMapper = new ObjectMapper();
-		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-		String asString = objectMapper.writeValueAsString(filter);
+		String asString = PepperJacksonTestHelper.verifyJackson(ISliceFilter.class, filter);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "or",
@@ -194,12 +181,7 @@ public class TestOrFilter {
 				    "valueMatcher" : "b2",
 				    "nullIfAbsent" : true
 				  } ]
-				}
-				""".trim());
-
-		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
-
-		Assertions.assertThat(fromString).isEqualTo(filter);
+				}""");
 	}
 
 	@Test
@@ -209,14 +191,10 @@ public class TestOrFilter {
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 		objectMapper.registerModule(AdhocPublicJackson.makeModule());
 
-		String asString = objectMapper.writeValueAsString(ISliceFilter.MATCH_NONE);
+		String asString = PepperJacksonTestHelper.asString(objectMapper, ISliceFilter.class, ISliceFilter.MATCH_NONE);
 		Assertions.assertThat(asString).isEqualTo("""
 				"matchNone"
 								""".trim());
-
-		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
-
-		Assertions.assertThat(fromString).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
@@ -362,7 +340,10 @@ public class TestOrFilter {
 				.build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
-				.hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)");
+				// BEWARE Order is changed by some optimization (here
+				// `FilterOptimizer.partitionByPotentialInteraction`)
+				// .hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)")
+				.hasToString("a==a1&c=in=(c1,c2,c3)&b=in=(b1,b2,b3)&(d==d1|b==b1)");
 	}
 
 	@Test

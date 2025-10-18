@@ -231,7 +231,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				// The expression is optimized, but still equivalent to the original
 				.isEqualTo(FilterBuilder
 						.or(ColumnFilter.matchLike("c1", "a%").negate(), ColumnFilter.matchLike("c2", "b%").negate())
-						.optimize());
+						.combine());
 
 		// Or.Not: some columns are unknown
 		Assertions.assertThat(composite.filterForColumns(subCube,
@@ -695,7 +695,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										/-- time=150ms for openingStream
 										|/- time=19ms for mergingAggregates
 										|/- time=20ms sizes=[1, 1] for sortingColumns
-										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2)table2_k_minus3:SUM(table2_k_minus3) WHERE matchAll GROUP BY ()
+										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2), table2_k_minus3:SUM(table2_k_minus3) WHERE matchAll GROUP BY ()
 										/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
 										|      No cost info
 										\\-- #1 m=compositeSum(Combinator[SUM]) filter=matchAll groupBy=grandTotal

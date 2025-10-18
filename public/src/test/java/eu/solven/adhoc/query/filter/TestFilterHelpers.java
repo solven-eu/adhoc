@@ -296,6 +296,12 @@ public class TestFilterHelpers {
 				.isEqualTo(ColumnFilter.matchEq("b", "b1"));
 	}
 
+	@Test
+	public void testStripFilterFromWhere_matchNone_filterNatchNone() {
+		Assertions.assertThat(FilterHelpers.stripWhereFromFilter(ISliceFilter.MATCH_NONE, ISliceFilter.MATCH_NONE))
+				.isEqualTo(ISliceFilter.MATCH_ALL);
+	}
+
 	// This case may underline a subtle edge-case:
 	// In this process, we will try each FILTER operator with the WHERE, to see if they are part of the WHERE or not.
 	// This process may fail due to optimizations, and and `AND(...)` may be turned into a `!OR(...)`, which are then

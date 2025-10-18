@@ -36,7 +36,7 @@ import com.nimbusds.jwt.SignedJWT;
 
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.IReadableTabularView;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocCoordinatesSearch;
@@ -212,7 +212,7 @@ public class PivotableWebclientServer implements IPivotableServer {
 	}
 
 	@Override
-	public Mono<ITabularView> executeQuery(TargetedCubeQuery query) {
+	public Mono<IReadableTabularView> executeQuery(TargetedCubeQuery query) {
 		return accessToken().map(accessToken -> {
 			return getWebClient().post().uri(uriBuilder -> {
 				return uriBuilder.path(PREFIX + "/cubes/query").build();

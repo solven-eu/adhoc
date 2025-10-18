@@ -221,7 +221,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			} else {
 				if (value == null) {
 					// Happens on groupBy along not-generated columns
-					value = slice.getSlice().getRawSliced(groupByColumn);
+					value = slice.getSlice().getGroupBy(groupByColumn);
 				}
 
 				if (value == null) {

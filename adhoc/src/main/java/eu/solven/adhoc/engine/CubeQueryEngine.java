@@ -40,8 +40,11 @@ import java.util.stream.IntStream;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -52,6 +55,7 @@ import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -261,7 +265,40 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 		queryStepsDagBuilder.registerRootWithDescendants(queriedMeasures);
 
-		return queryStepsDagBuilder.getQueryDag();
+		QueryStepsDag queryDag = queryStepsDagBuilder.getQueryDag();
+
+		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
+			// IQueryStepsDagBuilder dtQueryStepsDagBuilder = makeQueryStepsDagsBuilder(queryPod);
+			// dtQueryStepsDagBuilder.
+			// return dtQueryStepsDagBuilder.getQueryDag();
+
+			// dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
+			// Inducers are tableQueries
+			ImmutableSet<CubeQueryStep> inducers = queryDag.getInducedToInducer()
+					.vertexSet()
+					.stream()
+					.filter(s -> queryDag.getInducedToInducer().outDegreeOf(s) == 0)
+					.collect(ImmutableSet.toImmutableSet());
+
+			final DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+			final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph =
+					new DirectedMultigraph<>(DefaultEdge.class);
+
+			inducers.forEach(s -> {
+				dag.addVertex(s);
+				multigraph.addVertex(s);
+			});
+
+			// Similar to eu.solven.adhoc.engine.IQueryStepsDagBuilder.getQueryDag()
+			return QueryStepsDag.builder()
+					.inducedToInducer(dag)
+					.multigraph(multigraph)
+					.queried(ImmutableSet.copyOf(inducers))
+					.stepToValues(queryDag.getStepToValues())
+					.build();
+		}
+
+		return queryDag;
 	}
 
 	/**
@@ -345,7 +382,12 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				// Else it may force keeping the entry
 			} else {
 				SizeAndDuration cost = queryStepsDag.getStepToCost().get(step);
-				queryStepCache.pushValue(step, queryStepToValues.get(step), cost);
+				ISliceToValue value = queryStepToValues.get(step);
+				if (value == null) {
+					log.debug("This happens in {}", StandardQueryOptions.DRILLTHROUGH);
+				} else {
+					queryStepCache.pushValue(step, value, cost);
+				}
 			}
 		});
 	}
@@ -384,6 +426,11 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected void walkUpDag(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
+			// In case of drillthrough, we do not process any measure
+			return;
+		}
+
 		Consumer<? super CubeQueryStep> queryStepConsumer = queryStep -> {
 			try {
 				onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
@@ -583,6 +630,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	/**
+	 * This step will align the different measure on a per-slice basis.
 	 * 
 	 * @param queryPod
 	 * @param queryStepsDag
@@ -601,10 +649,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		long expectedOutputCardinality =
 				queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
 
-		MapBasedTabularView mapBasedTabularView = MapBasedTabularView.builder()
-				// Force a HashMap not to rely on default TreeMap
-				.coordinatesToValues(LinkedHashMap.newLinkedHashMap(Ints.saturatedCast(expectedOutputCardinality)))
-				.build();
+		ITabularView mapBasedTabularView = makeTabularView(queryPod, expectedOutputCardinality);
 
 		stepsToReturn.forEachRemaining(step -> {
 			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
@@ -626,6 +671,17 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			}
 		});
 		return mapBasedTabularView;
+	}
+
+	private ITabularView makeTabularView(QueryPod queryPod, long expectedOutputCardinality) {
+		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
+			return ListMapEntryBasedTabularViewDrillThrough.withCapacity(expectedOutputCardinality);
+		} else {
+			return MapBasedTabularView.builder()
+					// Force a HashMap not to rely on default TreeMap
+					.coordinatesToValues(LinkedHashMap.newLinkedHashMap(Ints.saturatedCast(expectedOutputCardinality)))
+					.build();
+		}
 	}
 
 	protected IColumnScanner<IAdhocSlice> scannerForTabularView(boolean isEmptyMeasure,

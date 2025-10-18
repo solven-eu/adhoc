@@ -1,3 +1,5 @@
+import { provide } from "vue";
+
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
@@ -51,20 +53,22 @@ export default {
 
 		store.loadCubeSchemaIfMissing(props.cubeId, props.endpointId);
 
+		// https://vuejs.org/guide/components/provide-inject.html
+		provide("ids", { cubeId: props.cubeId, endpointId: props.endpointId });
+
 		return {};
 	},
 	template: /* HTML */ `
-		<div v-if="!endpoint || endpoint.error || !cube || cube.error">
-			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-			<AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
-		</div>
+        <div v-if="!endpoint || endpoint.error || !cube || cube.error">
+            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+            <AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
+        </div>
         <div v-else>
             <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 
-			<ul>
-				<li><AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
-			</ul>
-            
+            <ul>
+                <li><AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
+            </ul>
         </div>
     `,
 };

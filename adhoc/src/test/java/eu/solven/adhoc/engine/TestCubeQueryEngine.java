@@ -34,9 +34,11 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -205,6 +207,22 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 				.build();
 
 		Assertions.assertThat(cubeWrapper.getTable()).isNotNull();
+	}
+
+	@Test
+	public void testUnsafeExecute() {
+		CubeQueryEngine engine = CubeQueryEngine.builder().build();
+
+		{
+			ITabularView view = engine.executeUnsafe(CubeQuery.builder().build(), forest, table());
+			Assertions.assertThat(view.isEmpty()).isTrue();
+		}
+
+		{
+			ITabularView view = engine
+					.executeUnsafe(CubeQuery.builder().build(), forest, table(), ColumnsManager.builder().build());
+			Assertions.assertThat(view.isEmpty()).isTrue();
+		}
 	}
 
 }

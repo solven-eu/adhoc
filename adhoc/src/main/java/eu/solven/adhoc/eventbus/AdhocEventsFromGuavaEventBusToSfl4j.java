@@ -47,6 +47,10 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 			onAdhocQueryPhaseIsCompleted(queryPhaseIsCompleted);
 		} else if (event instanceof QueryStepIsEvaluating queryStepIsEvaluating) {
 			onQueryStepIsEvaluating(queryStepIsEvaluating);
+		} else if (event instanceof TableStepIsCompleted queryPhaseIsCompleted) {
+			onTableStepIsCompleted(queryPhaseIsCompleted);
+		} else if (event instanceof TableStepIsEvaluating queryStepIsEvaluating) {
+			onTableStepIsEvaluating(queryStepIsEvaluating);
 		} else if (event instanceof AdhocLogEvent logEvent) {
 			onAdhocLogEvent(logEvent);
 		} else if (event instanceof QueryLifecycleEvent lifecycleEvent) {
@@ -82,6 +86,18 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	@Override
 	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
 		log.debug("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
+	}
+
+	@Subscribe
+	@Override
+	public void onTableStepIsEvaluating(TableStepIsEvaluating event) {
+		log.debug("tableStep={} is evaluating (source={})", event.getTableQuery(), event.getSource());
+	}
+
+	@Subscribe
+	@Override
+	public void onTableStepIsCompleted(TableStepIsCompleted event) {
+		log.debug("tableStep={} is completed (source={})", event.getTableQuery(), event.getSource());
 	}
 
 	@Subscribe

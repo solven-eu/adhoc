@@ -134,9 +134,14 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver {
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	public static QueryPod forTable(ITableWrapper table) {
+		return forTable(table, CubeQuery.builder().build());
+	}
+
+	@Deprecated(since = "Used for tests, or edge-cases")
+	public static QueryPod forTable(ITableWrapper table, ICubeQuery query) {
 		return QueryPod.builder()
 				.table(table)
-				.query(CubeQuery.builder().build())
+				.query(query)
 				.forest(MeasureForest.empty())
 				.queryId(AdhocQueryId.builder().cube(table.getName()).build())
 				.build();
