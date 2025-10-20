@@ -43,6 +43,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.With;
@@ -59,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FilterStripper implements IFilterStripper {
 	@Getter(AccessLevel.PROTECTED)
 	@With
+	@NonNull
 	protected final ISliceFilter where;
 
 	protected final Supplier<Set<String>> whereColumns =

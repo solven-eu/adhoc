@@ -36,7 +36,7 @@ public class FilterStripperFactory implements IFilterStripperFactory {
 	@Override
 	public IFilterStripper makeFilterStripper(ISliceFilter where) {
 		// BEWARE Do not rely on a shared filterToStripper it it would introduce a memory leak
-		return FilterStripper.builder().build();
+		return FilterStripper.builder().where(where).build();
 	}
 
 }
