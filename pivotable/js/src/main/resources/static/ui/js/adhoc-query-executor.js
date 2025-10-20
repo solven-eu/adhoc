@@ -327,7 +327,7 @@ export default {
 						}
 
 						if (responseTabularView.view) {
-							onView(queryForApi, responseTabularView.view, stringifiedQuery, startDownloading);	
+							onView(queryForApi, responseTabularView.view, stringifiedQuery, startDownloading);
 						} else {
 							// Typically happens on a failure
 							throw new Error("Query has state=" + responseTabularView.state);

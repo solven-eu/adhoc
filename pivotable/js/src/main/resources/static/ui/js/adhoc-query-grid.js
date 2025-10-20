@@ -255,11 +255,11 @@ export default {
 		onMounted(() => {
 			// SlickGrid requires the DOM to be ready: `onMounted` is needed
 			grid = new SlickGrid("#" + props.domId, dataView, gridColumns, options);
-			
+
 			gridHelper.registerHeaderButtons(grid, props.queryModel);
 
 			dataView.refresh();
-			
+
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
 			// Register the watch once the grid is mounted and initialized

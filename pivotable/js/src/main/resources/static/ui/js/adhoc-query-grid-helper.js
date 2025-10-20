@@ -424,7 +424,7 @@ export default {
 			}
 		}
 	},
-	
+
 	registerHeaderButtons(grid, queryModel) {
 		// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
 		var headerButtonsPlugin = new SlickHeaderButtons();
@@ -442,7 +442,6 @@ export default {
 			var column = args.column;
 			var button = args.button;
 			var command = args.command;
-			
 
 			if (command == "remove-column") {
 				queryModel.selectedColumns[column.name] = false;
@@ -468,7 +467,7 @@ export default {
 
 		grid.registerPlugin(headerButtonsPlugin);
 	},
-	
+
 	registerEventSubscribers(grid, dataView, currentSortCol, clickedCell) {
 		// https://github.com/6pac/SlickGrid/wiki/DataView#sorting
 		{
@@ -560,15 +559,15 @@ export default {
 
 				console.log("Showing modal for cell", cell);
 			}
-			
+
 			// https://stackoverflow.com/questions/8365139/slickgrid-how-to-get-the-grid-item-on-click-event
 			grid.onDblClick.subscribe(function (e, args) {
 				var item = dataView.getItem(args.row);
-	
+
 				// Update a reactive: Used to feel the modal content, but not to trigger its opening.
 				// It is not used for opening event, else clicking again the same cell would not trigger an event, hence no re-opening of the modal
 				clickedCell.value = item;
-	
+
 				openCellModal(clickedCell.value);
 			});
 		}
@@ -577,10 +576,10 @@ export default {
 			const column = args.column.id;
 			console.log("Header clicked", column);
 		});
-		
+
 		// https://stackoverflow.com/questions/24050923/slickgrid-mouseleave-event-not-fired-when-row-invalidated-after-mouseenter-f
-		grid.onMouseEnter.subscribe(function(e, args){
-		    const cell = grid.getCellFromEvent(e);
+		grid.onMouseEnter.subscribe(function (e, args) {
+			const cell = grid.getCellFromEvent(e);
 			if (!cell) {
 				return;
 			}
@@ -588,17 +587,17 @@ export default {
 			// https://stackoverflow.com/questions/19701048/slickgrid-getting-selected-cell-value-id-and-field
 			var item = grid.getDataItem(cell.row);
 			console.debug(item);
-			
-		         const param = {};
-		        const columnCss = {};
 
-		      for(const column in grid.columns){
-		          var id = column.id;
-				  // https://stackoverflow.com/questions/15327990/generate-random-color-with-pure-css-no-javascript
-		          columnCss[id] = 'my_highlighter_style'
-		      }
-		      param[cell.row] = columnCss;
-		      args.grid.setCellCssStyles("row_highlighter", param);
-		  })
-	}
+			const param = {};
+			const columnCss = {};
+
+			for (const column in grid.columns) {
+				var id = column.id;
+				// https://stackoverflow.com/questions/15327990/generate-random-color-with-pure-css-no-javascript
+				columnCss[id] = "my_highlighter_style";
+			}
+			param[cell.row] = columnCss;
+			args.grid.setCellCssStyles("row_highlighter", param);
+		});
+	},
 };
