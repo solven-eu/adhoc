@@ -38,4 +38,6 @@ public interface IFilterStripper {
 	 * @return true if the input filter is laxer than the `WHERE` clause represented by this.
 	 */
 	boolean isStricterThan(ISliceFilter filter);
+
+	IFilterStripper withWhere(ISliceFilter subWhere);
 }

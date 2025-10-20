@@ -40,9 +40,12 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,8 +55,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
+@Builder
 public class FilterStripper implements IFilterStripper {
 	@Getter(AccessLevel.PROTECTED)
+	@With
 	protected final ISliceFilter where;
 
 	protected final Supplier<Set<String>> whereColumns =
@@ -64,7 +69,9 @@ public class FilterStripper implements IFilterStripper {
 
 	// Cache isStricterThan as due to the recursivity of the argument, we often call on the same input
 	protected final Cache<ISliceFilter, Boolean> knownAsStricter = CacheBuilder.newBuilder().build();
+
 	// Cache filterStripper to benefit from the subWhere stripper own cache
+	@Default
 	protected final Cache<ISliceFilter, FilterStripper> filterToStripper = CacheBuilder.newBuilder().build();
 
 	protected Set<String> getColumns() {
@@ -75,13 +82,9 @@ public class FilterStripper implements IFilterStripper {
 		return FilterHelpers.splitAnd(where);
 	}
 
-	protected Set<ISliceFilter> splitWhereOr() {
-		return FilterHelpers.splitOr(where);
-	}
-
 	@SneakyThrows(ExecutionException.class)
 	protected FilterStripper makeStripper(ISliceFilter subWhere) {
-		return filterToStripper.get(subWhere, () -> new FilterStripper(subWhere));
+		return filterToStripper.get(subWhere, () -> this.withWhere(subWhere));
 	}
 
 	@Override

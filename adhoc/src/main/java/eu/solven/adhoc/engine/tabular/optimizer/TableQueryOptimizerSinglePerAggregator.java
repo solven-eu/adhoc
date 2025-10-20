@@ -43,11 +43,13 @@ import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.filter.optimizer.IHasFilterStripperFactory;
 import eu.solven.adhoc.query.filter.stripper.FilterStripper;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -122,6 +124,8 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
+		IFilterStripper sharedStripper = makeShareFilterStripper();
+
 		FilterUtility filterUtility = FilterUtility.builder().optimizer(filterOptimizer).build();
 		contextualAggregateToQueries.asMap().forEach((contextualAggregate, filterGroupBy) -> {
 			Set<? extends ISliceFilter> filters =
@@ -130,7 +134,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 			ISliceFilter rawCommonAnd = filterUtility.commonAnd(filters);
 			ISliceFilter commonFilter = FilterBuilder.and(rawCommonAnd).optimize(filterOptimizer);
 
-			IFilterStripper commonStripper = new FilterStripper(commonFilter);
+			IFilterStripper commonStripper = sharedStripper.withWhere(commonFilter);
 
 			Set<String> inducerColumns = new TreeSet<>();
 			Set<ISliceFilter> eachInducedFilters = new LinkedHashSet<>();
@@ -172,6 +176,14 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		});
 
 		return inducedToInducer;
+	}
+
+	protected IFilterStripper makeShareFilterStripper() {
+		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
+			return hasFilterStripperFactory.getFilterStripperFactory().makeFilterStripper(ISliceFilter.MATCH_ALL);
+		} else {
+			return AdhocUnsafe.filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
+		}
 	}
 
 }

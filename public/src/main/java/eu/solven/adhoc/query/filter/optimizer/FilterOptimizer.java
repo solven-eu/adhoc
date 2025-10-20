@@ -65,6 +65,7 @@ import eu.solven.adhoc.util.AdhocTime;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +82,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("PMD.GodClass")
 @SuperBuilder
-public class FilterOptimizer implements IFilterOptimizer {
+public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFactory {
 	@Default
 	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
@@ -91,6 +92,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 	final IFilterCostFunction costFunction = new StandardFilterCostFunction();
 
 	@Default
+	@Getter
 	IFilterStripperFactory filterStripperFactory = AdhocUnsafe.filterStripperFactory;
 
 	final boolean withCartesianProductsAndOr;
