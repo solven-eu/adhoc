@@ -57,15 +57,16 @@ public class QueryEngineConcurrencyHelper {
 					// multi-threaded
 					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
 
-					List<CubeQueryStep> roots =
-							dag.vertexSet().stream().filter(step -> dag.getAncestors(step).isEmpty()).toList();
+					// list root induced
+					List<CubeQueryStep> rootInduced =
+							dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
 
 					QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
 							.fromQueriedToDependancies(dag)
 							.queryStepToValues(queryStepToValues)
 							.onReadyStep(queryStepConsumer);
 					List<QueryStepRecursiveAction> actions =
-							roots.stream().map(step -> actionTemplate.step(step).build()).toList();
+							rootInduced.stream().map(step -> actionTemplate.step(step).build()).toList();
 
 					ForkJoinTask.invokeAll(actions);
 				} else {

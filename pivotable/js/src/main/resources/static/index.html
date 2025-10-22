@@ -23,18 +23,19 @@
             .vh-75 {
                 height: 75vh;
             }
-			/* https://github.com/6pac/SlickGrid/blob/master/examples/example-0031-row-span-employees.html */
-			.slickgrid-grid {
-			  --alpine-odd-row-color: #fff;
-			  --alpine-cell-border-width: 0 1px 1px 0;
-			  /* --alpine-row-mouse-hover-color: transparent; */
-			}
-			.slick-cell {
-			  display: flex;
-			  align-items: center;
-			  /* justify-content: center; */
-			  /*background-color: lightblue;*/
-			}
+            /* https://github.com/6pac/SlickGrid/blob/master/examples/example-0031-row-span-employees.html */
+            .slickgrid-grid {
+                --alpine-odd-row-color: #fff;
+                --alpine-cell-border-width: 0 1px 1px 0;
+                /* --alpine-row-mouse-hover-color: transparent; */
+            }
+            .slick-cell {
+                /* Not flex else measures a left-eligned while we want them right-aligned */
+                /* display: flex; */
+                align-items: center;
+                /* justify-content: center; */
+                /*background-color: lightblue;*/
+            }
         </style>
     </head>
     <body>
