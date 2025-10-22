@@ -165,4 +165,11 @@ public class AdhocCollectionHelpers {
 			return ImmutableSet.<T>builder().addAll(left).addAll(right).build();
 		}
 	}
+
+	@SuppressWarnings("PMD.LooseCoupling")
+	public static void trimToSize(Collection<?> collection) {
+		if (collection instanceof ArrayList arrayList) {
+			arrayList.trimToSize();
+		}
+	}
 }

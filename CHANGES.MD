@@ -18,6 +18,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Fixed
 - Fix bug in SQL condition with NOT given NULL. (Typically `NOT(c = 'v')` is turned into `NOT(c IS NOT NULL AND c = 'v')`).
 - Actuator configuration in Pivotable has been reviewed. `/actuator/info` and `/actuator/health` are public.
+- Memory-leak in `CachingOperatorsFactory` due to `DispatchorQueryStep` adding values as option, for `CumulatingDecomposition`.
+- Improve compaction in `IMultitypeMergeableGrid.closeColumn`
 
 ## [0.0.11]
 

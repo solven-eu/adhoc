@@ -534,7 +534,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.build();
 	}
 
-	@SuppressWarnings("PMD.CognitiveComplexity")
 	protected ConditionWithFilter toCondition(ISliceFilter filter) {
 		return toCondition(filter, false);
 	}
@@ -547,6 +546,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 *            `NOT(c = 'v')` is false if c is `NULL`).
 	 * @return
 	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	protected ConditionWithFilter toCondition(ISliceFilter filter, boolean hasParentNot) {
 		if (filter.isMatchAll()) {
 			return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();

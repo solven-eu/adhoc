@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -36,7 +37,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.transformator.step.DispatchorQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -48,6 +48,7 @@ import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -60,49 +61,49 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class CumulatingDecomposition extends DuplicatingDecomposition {
+public class CumulatingDecomposition extends DuplicatingDecomposition implements IDecompositionFactory {
 	public static final String K_FILTER_EDITOR = "filterEditor";
 
 	@NonNull
 	@Getter(AccessLevel.PROTECTED)
 	IFilterEditor filterEditor;
 
+	@Singular
+	ImmutableMap<String, ?> options;
+
 	public CumulatingDecomposition(Map<String, ?> options) {
-		super(prepare(options));
+		super(options);
+		this.options = ImmutableMap.copyOf(options);
 
 		filterEditor = MapPathGet.getRequiredAs(options, K_FILTER_EDITOR);
 	}
 
-	protected static Map<String, Object> prepare(Map<String, ?> options) {
-		Map<String, Object> processedOptions = new LinkedHashMap<>(options);
-
+	@Override
+	public IDecomposition makeWithSlices(List<? extends ISliceToValue> underlyings) {
 		// This will evaluate the relevant cumulated columns given the underlying slices
-		if (processedOptions.containsKey(DispatchorQueryStep.P_UNDERLYINGS)) {
-			List<ISliceToValue> underlyings =
-					MapPathGet.getRequiredAs(processedOptions, DispatchorQueryStep.P_UNDERLYINGS);
 
-			Map<String, ?> columnToCoordinates = MapPathGet.getRequiredAs(processedOptions, K_COLUMN_TO_COORDINATES);
-			Set<String> columns = columnToCoordinates.keySet();
+		Map<String, ?> columnToCoordinates = MapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
+		Set<String> columns = columnToCoordinates.keySet();
 
-			Map<String, List<Object>> columnToCoordinatesFromUndelryings = new LinkedHashMap<>();
-			columns.forEach(column -> columnToCoordinatesFromUndelryings.put(column, new ArrayList<>()));
+		Map<String, List<Object>> columnToCoordinatesFromUnderlyings = new LinkedHashMap<>();
+		columns.forEach(column -> columnToCoordinatesFromUnderlyings.put(column, new ArrayList<>()));
 
-			underlyings.forEach(sliceToValue -> {
-				Set<String> relevantColumns =
-						ImmutableSet.copyOf(Sets.intersection(columns, sliceToValue.getColumns()));
+		underlyings.forEach(sliceToValue -> {
+			Set<String> relevantColumns = ImmutableSet.copyOf(Sets.intersection(columns, sliceToValue.getColumns()));
 
-				sliceToValue.slices().forEach(slice -> {
-					relevantColumns.forEach(column -> {
-						columnToCoordinatesFromUndelryings.computeIfAbsent(column, k -> new ArrayList<>())
-								.add(slice.getGroupBy(column));
-					});
+			sliceToValue.slices().forEach(slice -> {
+				relevantColumns.forEach(column -> {
+					columnToCoordinatesFromUnderlyings.computeIfAbsent(column, k -> new ArrayList<>())
+							.add(slice.getGroupBy(column));
 				});
 			});
+		});
 
-			processedOptions.put(K_COLUMN_TO_COORDINATES, columnToCoordinatesFromUndelryings);
-		}
+		Map<String, Object> processedOptions = new LinkedHashMap<>(this.options);
 
-		return processedOptions;
+		processedOptions.put(K_COLUMN_TO_COORDINATES, columnToCoordinatesFromUnderlyings);
+
+		return new CumulatingDecomposition(processedOptions);
 	}
 
 	@Override
