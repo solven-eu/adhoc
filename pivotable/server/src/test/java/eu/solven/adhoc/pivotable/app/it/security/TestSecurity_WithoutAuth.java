@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springdoc.webflux.core.providers.ActuatorWebFluxProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -438,5 +439,25 @@ public class TestSecurity_WithoutAuth {
 				webTestClient.get().uri("/v3/api-docs").accept(MediaType.APPLICATION_JSON).exchange().expectStatus();
 
 		expectStatus.isOk();
+	}
+
+	@Test
+	public void testActuator() {
+		log.debug("About {}", ActuatorWebFluxProvider.class);
+
+		webTestClient.get().uri("/actuator").accept(MediaType.APPLICATION_JSON).exchange().expectStatus().isOk();
+		webTestClient.get().uri("/actuator/info").accept(MediaType.APPLICATION_JSON).exchange().expectStatus().isOk();
+		webTestClient.get()
+				.uri("/actuator/health")
+				.accept(MediaType.APPLICATION_JSON)
+				.exchange()
+				.expectStatus()
+				.is5xxServerError();
+		webTestClient.get()
+				.uri("/actuator/beans")
+				.accept(MediaType.APPLICATION_JSON)
+				.exchange()
+				.expectStatus()
+				.isUnauthorized();
 	}
 }
