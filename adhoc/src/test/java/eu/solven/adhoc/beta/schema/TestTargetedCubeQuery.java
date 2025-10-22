@@ -25,11 +25,11 @@ package eu.solven.adhoc.beta.schema;
 import java.util.UUID;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
@@ -42,12 +42,56 @@ public class TestTargetedCubeQuery {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		TargetedCubeQuery query = TargetedCubeQuery.builder()
 				.cube("someCube")
 				.endpointId(UUID.fromString("12345678-1234-1234-1234-12345678abcd"))
-				.option(StandardQueryOptions.EXPLAIN)
-				.query(CubeQuery.builder().measure(Aggregator.countAsterisk()).groupByAlso("someColumn").build())
+				.query(CubeQuery.builder()
+						.measure(Aggregator.countAsterisk())
+						.groupByAlso("someColumn")
+						.option(StandardQueryOptions.EXPLAIN)
+						.build())
+				.build();
+
+		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);
+
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "endpointId" : "12345678-1234-1234-1234-12345678abcd",
+				  "cube" : "someCube",
+				  "query" : {
+				    "filter" : {
+				      "type" : "and",
+				      "filters" : [ ]
+				    },
+				    "groupBy" : {
+				      "columns" : [ "someColumn" ]
+				    },
+				    "measures" : [ {
+				      "type" : ".Aggregator",
+				      "name" : "count(*)",
+				      "tags" : [ ],
+				      "columnName" : "*",
+				      "aggregationKey" : "COUNT",
+				      "aggregationOptions" : { }
+				    } ],
+				    "customMarker" : null,
+				    "options" : [ "EXPLAIN" ]
+				  }
+				}""");
+	}
+
+	@Disabled("Broken due to InternalQueryOptions serialization")
+	@Test
+	public void testJackson_InternalOption() {
+		TargetedCubeQuery query = TargetedCubeQuery.builder()
+				.cube("someCube")
+				.endpointId(UUID.fromString("12345678-1234-1234-1234-12345678abcd"))
+				.query(CubeQuery.builder()
+						.measure(Aggregator.countAsterisk())
+						.groupByAlso("someColumn")
+						.option(InternalQueryOptions.ONE_TABLE_QUERY_PER_OPTIMAL_INDUCER)
+						.build())
 				.build();
 
 		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);

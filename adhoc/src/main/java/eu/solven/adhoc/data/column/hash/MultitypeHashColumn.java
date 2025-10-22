@@ -100,11 +100,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		}
 	}
 
-	// @Override
-	// public void ensureCapacity(int capacity) {
-	// this.capacity = capacity;
-	// }
-
 	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
 	protected void ensureCapacityForType(int type) {
 		if (type == IMultitypeConstants.MASK_LONG) {

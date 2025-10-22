@@ -327,6 +327,9 @@ export default {
 			if (props.tabularView.loading.sending) {
 				return "Sending the query";
 			}
+			if (props.tabularView.loading.executing) {
+				return "Executing the query";
+			}
 			if (props.tabularView.loading.downloading) {
 				return "Downloading the result";
 			}
