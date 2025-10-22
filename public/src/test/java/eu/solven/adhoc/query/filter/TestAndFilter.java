@@ -280,8 +280,8 @@ public class TestAndFilter {
 				ColumnFilter.builder()
 						.column("a")
 						.valueMatcher(OrMatcher.builder()
-								.operand(LikeMatcher.matching("%ab"))
-								.operand(LikeMatcher.matching("a%"))
+								.or(LikeMatcher.matching("%ab"))
+								.or(LikeMatcher.matching("a%"))
 								.build())
 						.build());
 
@@ -489,9 +489,7 @@ public class TestAndFilter {
 						.negate())
 				.optimize();
 
-		Assertions.assertThat(output)
-				.hasToString(
-						"b=out=(b1,b2,b3,b4)&c=out=(c1,c2)&d=out=(d1,d2)&a does NOT match `LikeMatcher(pattern=a1)`");
+		Assertions.assertThat(output).hasToString("b=out=(b1,b2,b3,b4)&c=out=(c1,c2)&d=out=(d1,d2)&a NOT LIKE 'a1'");
 	}
 
 	@Test
@@ -510,9 +508,7 @@ public class TestAndFilter {
 		ISliceFilter notAB = AndFilter.and(ColumnFilter.notLike("a", "a%"), ColumnFilter.notLike("b", "b%"));
 
 		// In not many negated operators, we stick to an AND(many nots)
-		Assertions.assertThat(notAB)
-				.isInstanceOf(AndFilter.class)
-				.hasToString("a does NOT match `LikeMatcher(pattern=a%)`&b does NOT match `LikeMatcher(pattern=b%)`");
+		Assertions.assertThat(notAB).isInstanceOf(AndFilter.class).hasToString("a NOT LIKE 'a%'&b NOT LIKE 'b%'");
 
 		ISliceFilter notABC = AndFilter
 				.and(ColumnFilter.notLike("a", "a%"), ColumnFilter.notLike("b", "b%"), ColumnFilter.notLike("c", "c%"));
@@ -520,8 +516,7 @@ public class TestAndFilter {
 		// In enough negated operators, we prefer a NOT of positive operators
 		Assertions.assertThat(notABC)
 				.isInstanceOf(NotFilter.class)
-				.hasToString(
-						"!(a matches `LikeMatcher(pattern=a%)`|b matches `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)");
+				.hasToString("!(a LIKE 'a%'|b LIKE 'b%'|c LIKE 'c%')");
 	}
 
 	@Test

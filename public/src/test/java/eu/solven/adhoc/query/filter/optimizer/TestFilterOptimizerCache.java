@@ -47,8 +47,6 @@ public class TestFilterOptimizerCache {
 
 		Assertions.assertThat(optimizerWithCache.optimizedAndNegated.asMap()).hasSize(4);
 		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(8);
-		Assertions.assertThat(optimizerWithCache.optimizedOrs.asMap()).hasSize(4);
-		Assertions.assertThat(optimizerWithCache.optimizedNot.asMap()).hasSize(6);
 
 		Assertions.assertThat(combined).hasToString("a=in=(a1,a2,a3)&b=in=(b1,b2,b3)&(a=in=(a1,a2)|b=in=(b1,b2))");
 	}

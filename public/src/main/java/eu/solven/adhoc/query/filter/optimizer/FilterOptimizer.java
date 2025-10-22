@@ -185,8 +185,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 					// Ensure this path also go through the `preferNotOrOverAndNot`
 					// return FilterBuilder.or(commonOr, others).combine();
 					ISliceFilter orToNegate = preferNotOrOverAndNot(!willBeNegated,
-							ImmutableSet.of(simpleNot(commonOr), simpleNot(others)));
-					return simpleNot(orToNegate);
+							ImmutableSet.of(NotFilter.simpleNot(commonOr), NotFilter.simpleNot(others)));
+					return NotFilter.simpleNot(orToNegate);
 				}
 
 			}
@@ -283,22 +283,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		ISliceFilter negatedOptimized = and(negated, true);
 
 		// Unroll without optimization
-		return simpleNot(negatedOptimized);
-	}
-
-	protected ISliceFilter simpleNot(ISliceFilter filter) {
-		if (ISliceFilter.MATCH_ALL.equals(filter)) {
-			return ISliceFilter.MATCH_NONE;
-		} else if (ISliceFilter.MATCH_NONE.equals(filter)) {
-			return ISliceFilter.MATCH_ALL;
-		} else if (filter instanceof INotFilter notFilter) {
-			return notFilter.getNegated();
-		} else if (filter instanceof IColumnFilter columnFilter) {
-			return columnFilter.negate();
-		} else {
-			// `.negate` would turn an `AND` into an `OR` which is not desired here
-			return NotFilter.builder().negated(filter).build();
-		}
+		return NotFilter.simpleNot(negatedOptimized);
 	}
 
 	/**
@@ -757,6 +742,21 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		return ImmutableSet.copyOf(FilterHelpers.splitAnd(filters));
 	}
 
+	protected ISliceFilter negatePreferNotOrOverAndNot(ISliceFilter filter) {
+		if (filter instanceof IOrFilter orFilter) {
+			return preferNotOrOverAndNot(false,
+					orFilter.getOperands()
+							.stream()
+							.map(this::negatePreferNotOrOverAndNot)
+							.collect(ImmutableSet.toImmutableSet()));
+		} else if (filter instanceof IAndFilter andFilter) {
+			return NotFilter.simpleNot(preferNotOrOverAndNot(true,
+					andFilter.getOperands().stream().collect(ImmutableSet.toImmutableSet())));
+		} else {
+			return filter.negate();
+		}
+	}
+
 	/**
 	 * BEWARE This method is quite dangerous/sensitive. Given a {@link ISliceFilter} is used as key in hashed structure,
 	 * and {@link ISliceFilter} may be recombined through operations (e.g. split between `WHERE` and `FILTER` which are
@@ -774,7 +774,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	// equivalent representations.
 	protected ISliceFilter preferNotOrOverAndNot(boolean willBeNegated, Set<? extends ISliceFilter> and) {
 		// Consider returning a `!(a|b)` instead of `!a&!b`
-		ISliceFilter orCandidate = FilterBuilder.or(and.stream().map(ISliceFilter::negate).toList()).combine();
+		ISliceFilter orCandidate =
+				FilterBuilder.or(and.stream().map(this::negatePreferNotOrOverAndNot).toList()).combine();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 
 		long costOrCandidate;
@@ -1032,25 +1033,21 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	}
 
 	protected ISliceFilter notCachedNot(ISliceFilter filter) {
-		if (filter.isMatchAll()) {
-			return ISliceFilter.MATCH_NONE;
-		} else if (filter.isMatchNone()) {
-			return ISliceFilter.MATCH_ALL;
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return optimizeOperand(notFilter.getNegated());
-		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
-			// Prefer `c!=c1` over `!(c==c1)`
-			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
+		if (filter instanceof IAndFilter andFilter) {
+			ISliceFilter negated = and(andFilter.getOperands(), true);
+
+			return NotFilter.simpleNot(negated);
 		} else if (filter instanceof IOrFilter orFilter) {
 			// Plays optimizations given an `AND` of `NOT`s.
 			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
 			return and(orFilter.getOperands().stream().map(ISliceFilter::negate).toList(), false);
-		} else if (filter instanceof IAndFilter andFilter) {
-			ISliceFilter negated = and(andFilter.getOperands(), true);
+			// ISliceFilter negated = or(orFilter.getOperands());
 
-			return simpleNot(negated);
+			// return NotFilter.simpleNot(negated);
+		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
+			// Prefer `c!=c1` over `!(c==c1)`
+			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
 		}
-
-		return NotFilter.builder().negated(filter).build();
+		return NotFilter.simpleNot(filter);
 	}
 }

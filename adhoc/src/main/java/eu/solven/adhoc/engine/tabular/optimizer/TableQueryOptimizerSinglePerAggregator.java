@@ -44,7 +44,6 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.optimizer.IHasFilterStripperFactory;
-import eu.solven.adhoc.query.filter.stripper.FilterStripper;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;

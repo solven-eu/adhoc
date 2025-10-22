@@ -253,7 +253,8 @@ public class FilterHelpers {
 	 * Split the filter in a Set of {@link ISliceFilter}, equivalent by AND to the original filter.
 	 *
 	 * @param filter
-	 * @return
+	 * @return a Set of {@link ISliceFilter} equivalent with `AND`, guaranteed to be be themselves neither `AND` not
+	 *         `NOT(OR(...))`
 	 */
 	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
 		Set<ISliceFilter> asSet = splitAndStream(filter)

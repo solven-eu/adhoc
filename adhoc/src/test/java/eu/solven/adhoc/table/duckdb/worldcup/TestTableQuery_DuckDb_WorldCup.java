@@ -348,4 +348,20 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		}).hasSize(4 + 1);
 	}
 
+	@Test
+	public void testEventCount_LIKE_AwayTeamGoals() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("event_count")
+				.groupByAlso("Away Team Goals")
+				.filter(ColumnFilter.matchLike("Away Team Goals", "%7%"))
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasEntrySatisfying(Map.of("Away Team Goals", 7L), v -> {
+					Assertions.assertThat(v).isEqualTo(Map.of("event_count", 100L));
+				})
+				.hasSize(1);
+	}
+
 }

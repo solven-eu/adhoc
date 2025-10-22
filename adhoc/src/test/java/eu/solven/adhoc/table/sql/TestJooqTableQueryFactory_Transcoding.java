@@ -61,9 +61,9 @@ public class TestJooqTableQueryFactory_Transcoding {
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				queryFactory.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				queryFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'

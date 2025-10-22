@@ -53,7 +53,7 @@ public class TestCubeQuery_DuckDb_Integer extends ADuckDbJooqTest implements IAd
 	@BeforeEach
 	public void initDataAndMeasures() {
 		dsl.createTableIfNotExists(tableName)
-				.column("I", SQLDataType.INTEGER)
+				.column("I", SQLDataType.BIGINT)
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
 		dsl.insertInto(DSL.table(tableName), DSL.field("I"), DSL.field("k1")).values(1, 123).execute();
@@ -70,7 +70,7 @@ public class TestCubeQuery_DuckDb_Integer extends ADuckDbJooqTest implements IAd
 			Assertions.assertThat(c.getType()).isEqualTo(Integer.class);
 		}).anySatisfy(c -> {
 			Assertions.assertThat(c.getName()).isEqualTo("I");
-			Assertions.assertThat(c.getType()).isEqualTo(Integer.class);
+			Assertions.assertThat(c.getType()).isEqualTo(Long.class);
 		}).hasSize(2);
 	}
 

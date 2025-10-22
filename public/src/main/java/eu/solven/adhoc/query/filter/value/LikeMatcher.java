@@ -40,7 +40,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class LikeMatcher implements IValueMatcher {
+public class LikeMatcher implements IValueMatcher, IColumnToString {
 	String pattern;
 
 	/**
@@ -80,6 +80,11 @@ public class LikeMatcher implements IValueMatcher {
 		return like(getPattern(), asCharSequence);
 	}
 
+	@Override
+	public String toString() {
+		return "LIKE '%s'".formatted(pattern);
+	}
+
 	/**
 	 * 
 	 * @param likePattern
@@ -88,5 +93,14 @@ public class LikeMatcher implements IValueMatcher {
 	 */
 	public static IValueMatcher matching(String likePattern) {
 		return LikeMatcher.builder().pattern(likePattern).build();
+	}
+
+	@Override
+	public String toString(String column, boolean negated) {
+		if (negated) {
+			return column + " NOT LIKE '" + pattern + "'";
+		} else {
+			return column + " LIKE '" + pattern + "'";
+		}
 	}
 }

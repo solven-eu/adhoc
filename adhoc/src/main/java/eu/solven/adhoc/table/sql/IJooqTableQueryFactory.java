@@ -25,10 +25,13 @@ package eu.solven.adhoc.table.sql;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -49,7 +52,14 @@ public interface IJooqTableQueryFactory {
 	class QueryWithLeftover {
 		ResultQuery<Record> query;
 
+		/**
+		 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which
+		 * can not be translated into the SQL engine.
+		 */
 		ISliceFilter leftover;
+
+		@Singular
+		ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
 
 		AggregatedRecordFields fields;
 	}
