@@ -96,7 +96,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public Set<ISliceFilter> getOperands() {
-		return ImmutableSet.copyOf(ands);
+		return ands;
 	}
 
 	@Override

@@ -44,8 +44,8 @@ public class GeneratedColumnsPreparator extends StandardQueryPreparator {
 	Set<String> generatedColumnsMeasures;
 
 	@Override
-	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
-		MeasureForestBuilder filteredForest = super.filterForest(forest, preparedQuery);
+	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery query) {
+		MeasureForestBuilder filteredForest = super.filterForest(forest, query);
 
 		generatedColumnsMeasures.forEach(calculatedMeasure -> filteredForest
 				.measure(forest.resolveIfRef(ReferencedMeasure.ref(calculatedMeasure))));

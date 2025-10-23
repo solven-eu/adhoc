@@ -90,7 +90,7 @@ public class TestTargetedCubeQuery {
 				.query(CubeQuery.builder()
 						.measure(Aggregator.countAsterisk())
 						.groupByAlso("someColumn")
-						.option(InternalQueryOptions.ONE_TABLE_QUERY_PER_OPTIMAL_INDUCER)
+						.option(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)
 						.build())
 				.build();
 

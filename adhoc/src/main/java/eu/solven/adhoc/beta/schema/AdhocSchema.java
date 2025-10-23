@@ -34,6 +34,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.springframework.core.env.Environment;
+
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -50,6 +52,10 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.context.IImplicitOptions;
+import eu.solven.adhoc.engine.context.IQueryPreparator;
+import eu.solven.adhoc.engine.context.SpringImplicitOptions;
+import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -77,6 +83,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class AdhocSchema implements IAdhocSchema {
+	final Environment env;
+
 	@Builder.Default
 	@NonNull
 	final ICubeQueryEngine engine = CubeQueryEngine.builder().build();
@@ -170,11 +178,19 @@ public class AdhocSchema implements IAdhocSchema {
 			throw new IllegalArgumentException(
 					"No forest named %s amongst %s".formatted(forestName, nameToForest.keySet()));
 		}
-		CubeWrapper cube = CubeWrapper.builder().name(cubeName).engine(engine).table(table).forest(forest).build();
+		CubeWrapper cube = openCubeWrapperBuilder().name(cubeName).table(table).forest(forest).build();
 
 		nameToCube.put(cubeName, cube);
 
 		return cube;
+	}
+
+	private IQueryPreparator makeQueryPreparator() {
+		return StandardQueryPreparator.builder().implicitOptions(makeImplicitOptions()).build();
+	}
+
+	protected IImplicitOptions makeImplicitOptions() {
+		return new SpringImplicitOptions(env);
 	}
 
 	@Override
@@ -377,7 +393,7 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	public CubeWrapperBuilder openCubeWrapperBuilder() {
-		return CubeWrapper.builder().engine(engine);
+		return CubeWrapper.builder().engine(engine).queryPreparator(makeQueryPreparator());
 	}
 
 	public void tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags) {

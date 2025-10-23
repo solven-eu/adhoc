@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -179,9 +180,31 @@ public class FilterHelpers {
 	}
 
 	public static Set<String> getFilteredColumns(ISliceFilter filter) {
+		// Implementation rely on `.mapMulti` for better performance, not needed to create a `Stream.of` on
+		// IColumnFilter
+		return Stream.of(filter).mapMulti(FilterHelpers::emitFilteredColumns).collect(ImmutableSet.toImmutableSet());
+	}
+
+	// This has been coded with the help of ChatGPT...
+	private static void emitFilteredColumns(ISliceFilter filter, Consumer<String> downstream) {
+		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			downstream.accept(columnFilter.getColumn());
+		} else if (filter instanceof IHasOperands<?> hasOperands) {
+			hasOperands.getOperands().forEach(operand -> emitFilteredColumns((ISliceFilter) operand, downstream));
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			emitFilteredColumns(notFilter.getNegated(), downstream);
+		} else {
+			throw new UnsupportedOperationException(
+					"Not managed yet: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
+	}
+
+	@Deprecated
+	public static Set<String> getFilteredColumnsFlatMap(ISliceFilter filter) {
 		return streamFilteredColumns(filter).collect(ImmutableSet.toImmutableSet());
 	}
 
+	@Deprecated
 	static Stream<String> streamFilteredColumns(ISliceFilter filter) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			return Stream.of(columnFilter.getColumn());

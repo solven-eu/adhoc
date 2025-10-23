@@ -14,7 +14,7 @@ public class TestInternalQueryOptions {
 	@Test
 	public void testJackson() throws JsonProcessingException {
 		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
-				InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION);
+				InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
 
 		Assertions.assertThat(option).isEqualTo("""
 				"EXPLAIN"

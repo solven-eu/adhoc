@@ -50,7 +50,7 @@ public enum InternalQueryOptions implements IQueryOption {
 	 * 
 	 * This option disables this behavior.
 	 */
-	DISABLE_AGGREGATOR_INDUCTION,
+	ONE_TABLE_QUERY_PER_INDUCER,
 
 	/**
 	 * Enable the use of {@link TableQueryOptimizerSinglePerAggregator}, which will do one {@link TableQuery} per
@@ -65,7 +65,7 @@ public enum InternalQueryOptions implements IQueryOption {
 	 * all the others. This option is useful if the default behavior has been customized.
 	 */
 	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_OPTIMAL_INDUCER,
+	ONE_TABLE_QUERY_PER_ROOT_INDUCER,
 
 	;
 

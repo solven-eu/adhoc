@@ -241,7 +241,7 @@ public class FilterStripper implements IFilterStripper {
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
 		Set<String> filterColumns = laxerStripper.getColumns();
-		if (!Sets.difference(filterColumns, whereColumns.get()).isEmpty()) {
+		if (!whereColumns.get().containsAll(filterColumns)) {
 			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1&c=c3` due to `c`
 			// BEWARE if laxer is a ColumnFilter with a `matchAll` matcher
 			log.trace("Some filter in laxer are necessarily not present in WHERE");

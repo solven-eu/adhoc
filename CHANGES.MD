@@ -21,6 +21,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Memory-leak in `CachingOperatorsFactory` due to `DispatchorQueryStep` adding values as option, for `CumulatingDecomposition`.
 - Improve compaction in `IMultitypeMergeableGrid.closeColumn`
 
+### Improved
+- `FilterHelpers.getFilteredColumns` is faster by relying on `Stream.mapMulti`
+
 ## [0.0.11]
 
 ### Added
