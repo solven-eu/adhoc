@@ -94,4 +94,13 @@ public class SpringImplicitOptions implements IImplicitOptions {
 	protected Boolean isActive(String prefix, IQueryOption o) {
 		return env.getProperty(prefix + o.toString().toLowerCase(Locale.US), Boolean.class, false);
 	}
+
+	public String optionKey(InternalQueryOptions option) {
+		return nameToPriority.entrySet()
+				.stream()
+				.filter(e -> e.getValue().contains(option))
+				.map(e -> e.getKey() + option.name().toLowerCase(Locale.US))
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("Invalid option: " + option));
+	}
 }
