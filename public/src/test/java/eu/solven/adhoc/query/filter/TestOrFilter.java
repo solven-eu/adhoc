@@ -385,7 +385,7 @@ public class TestOrFilter {
 		// Check AND between the wide tableQuery and the cubeQueryStep gives
 		ISliceFilter combined = FilterBuilder.and(tableQueryStep, cubeQueryStep).optimize();
 
-		Assertions.assertThat(combined).hasToString("a==a1&e==e1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)");
+		Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1");
 	}
 
 	@Test
@@ -445,7 +445,7 @@ public class TestOrFilter {
 				.optimize();
 
 		Assertions.assertThat(output)
-				.hasToString("b=out=(b1,b2,b3,b4)&c=out=(c1,c2)&d=out=(d1,d2)&e!=e1&a NOT LIKE 'a1'");
+				.hasToString("c=out=(c1,c2)&e!=e1&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'");
 	}
 
 	@Test
@@ -482,7 +482,7 @@ public class TestOrFilter {
 						.negate())
 				.optimize();
 
-		Assertions.assertThat(output).hasToString("b==b1&c=out=(c1,c2)&d==d2");
+		Assertions.assertThat(output).hasToString("b==b1&d==d2&c=out=(c1,c2)");
 	}
 
 	@Test

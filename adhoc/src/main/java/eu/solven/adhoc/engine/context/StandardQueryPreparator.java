@@ -30,8 +30,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
@@ -131,6 +133,30 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
 		Set<IMeasure> relevantMeasures = new LinkedHashSet<>();
 
+		addSubForest(forest, preparedQuery, relevantMeasures);
+		addColumnGenerators(forest, relevantMeasures);
+
+		return MeasureForest.builder().measures(relevantMeasures);
+	}
+
+	protected void addColumnGenerators(IMeasureResolver forest, Set<IMeasure> relevantMeasures) {
+		// Add all IMayHaveColumnGenerator independantly of the measures
+		// This is useful to make measures like `COUNT(*)` functional (instead of throwing `UnknownMeasure`)
+		if (forest instanceof IHasMeasures hasMeasures) {
+			hasMeasures.getMeasures()
+					.stream()
+					.filter(IMayHaveColumnGenerator.class::isInstance)
+					.map(IMayHaveColumnGenerator.class::cast)
+					.forEach(mayHaveColumngenerator -> {
+						relevantMeasures.add((IMeasure) mayHaveColumngenerator);
+					});
+		} else {
+			throw new IllegalArgumentException(
+					"%s does not implements %s".formatted(forest.getClass().getName(), IHasMeasures.class.getName()));
+		}
+	}
+
+	protected void addSubForest(IMeasureResolver forest, ICubeQuery preparedQuery, Set<IMeasure> relevantMeasures) {
 		Set<IMeasure> measuresToAdd = new LinkedHashSet<>(preparedQuery.getMeasures());
 		while (!measuresToAdd.isEmpty()) {
 			Set<String> nextMeasuresToAdd = new LinkedHashSet<>();
@@ -140,8 +166,10 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 				if (relevantMeasures.add(resolvedMeasure)) {
 
-					// BEWARE Not `IHasUnderlyingNames` as it is informative. e.g. in Composite Cube, measure may list
-					// underlying measures in underlying cubes, while in compositeCube.queryPlan, these are irrelevant.
+					// BEWARE Not `IHasUnderlyingNames` as it is informative. e.g. in Composite Cube, measure may
+					// list
+					// underlying measures in underlying cubes, while in compositeCube.queryPlan, these are
+					// irrelevant.
 					if (resolvedMeasure instanceof IHasUnderlyingMeasures hasUnderlyings) {
 						nextMeasuresToAdd.addAll(hasUnderlyings.getUnderlyingNames());
 					}
@@ -151,8 +179,6 @@ public class StandardQueryPreparator implements IQueryPreparator {
 			measuresToAdd.clear();
 			nextMeasuresToAdd.forEach(m -> measuresToAdd.add(forest.resolveIfRef(ReferencedMeasure.ref(m))));
 		}
-
-		return MeasureForest.builder().measures(relevantMeasures);
 	}
 
 	protected ExecutorService getExecutorService(ICubeQuery preparedQuery) {

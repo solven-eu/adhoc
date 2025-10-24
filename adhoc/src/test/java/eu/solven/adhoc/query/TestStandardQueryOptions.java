@@ -43,7 +43,7 @@ public class TestStandardQueryOptions {
 
 	@Test
 	public void testJackson_readLowerCase() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = PepperJacksonTestHelper.makeObjectMapper();
 
 		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
 	}

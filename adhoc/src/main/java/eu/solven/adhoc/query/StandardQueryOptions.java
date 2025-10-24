@@ -93,7 +93,7 @@ public enum StandardQueryOptions implements IQueryOption {
 	;
 
 	@JsonCreator
-	public static IQueryOption forValue(String value) {
+	public static StandardQueryOptions forValue(String value) {
 		return StandardQueryOptions.valueOf(value.toUpperCase(Locale.US));
 	}
 }

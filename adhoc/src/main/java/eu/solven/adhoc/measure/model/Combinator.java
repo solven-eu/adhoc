@@ -25,19 +25,14 @@ package eu.solven.adhoc.measure.model;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.generated_column.IColumnGenerator;
-import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
@@ -64,7 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
-public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColumnGenerator {
+public class Combinator implements ICombinator, IHasCombinationKey {
 	@NonNull
 	String name;
 
@@ -133,17 +128,6 @@ public class Combinator implements ICombinator, IHasCombinationKey, IMayHaveColu
 			throw new IllegalArgumentException("Conflict %s != %s".formatted(getName(), step.getMeasure().getName()));
 		}
 		return new CombinatorQueryStep(this, factories, step);
-	}
-
-	@Override
-	public Optional<IColumnGenerator> optColumnGenerator(IOperatorFactory operatorFactory) {
-		ICombination combination = operatorFactory.makeCombination(this);
-
-		if (combination instanceof IColumnGenerator columnGenerator) {
-			return Optional.of(columnGenerator);
-		} else {
-			return Optional.empty();
-		}
 	}
 
 	public static IMeasure sum(String first, String second) {

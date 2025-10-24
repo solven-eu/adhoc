@@ -45,8 +45,6 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
-import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -101,11 +99,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	@Override
 	public ICubeWrapper cube() {
 		// Calling `.editCube` would lead to a cycle `.cube->.editCube->.cube`
-		return ((CubeWrapper) super.cube()).toBuilder().queryPreparator(customQueryPreparator()).build();
-	}
-
-	private IQueryPreparator customQueryPreparator() {
-		return GeneratedColumnsPreparator.builder().generatedColumnsMeasure(mArray).build();
+		return ((CubeWrapper) super.cube()).toBuilder().build();
 	}
 
 	String mArray = "k1Array";

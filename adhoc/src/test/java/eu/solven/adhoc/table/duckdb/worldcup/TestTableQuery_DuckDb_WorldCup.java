@@ -48,7 +48,6 @@ import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -82,8 +81,8 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 
 	@Override
 	public CubeWrapperBuilder makeCube() {
-		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine()).build(), worldCupSchema, table(), forest)
-				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build());
+		return worldCupSchema
+				.makeCube(AdhocSchema.builder().engine(engine()).env(env).build(), worldCupSchema, table(), forest);
 	}
 
 	// count rows
