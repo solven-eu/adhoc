@@ -43,10 +43,10 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 
 	@Override
 	public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
-		if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+		if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER)) {
 			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 			return new TableQueryOptimizerNone(factories, filterOptimizer);
-		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_OPTIMAL_INDUCER)) {
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)) {
 			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 			return new TableQueryOptimizer(factories, filterOptimizer);
 		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR)) {

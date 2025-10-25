@@ -146,7 +146,8 @@ public class TableQueryEngineBootstrapped {
 		logInducedSteps(queryPod, inducerAndInduced);
 
 		// Given the inducers, group them by groupBy, to leverage FILTER per measure
-		Set<TableQueryV2> tableQueriesV2 = groupByEnablingFilterPerMeasure(optimizer, inducerAndInduced.getInducers());
+		Set<TableQueryV2> tableQueriesV2 =
+				packStepsIntoTableQueries(queryPod.getTable(), optimizer, inducerAndInduced.getInducers());
 
 		sanityChecks(queryPod, queryStepsDag, inducerAndInduced, tableQueriesV2);
 
@@ -687,9 +688,30 @@ public class TableQueryEngineBootstrapped {
 		return suppressedColumns.stream().collect(Collectors.toMap(c -> c, c -> IColumnGenerator.COORDINATE_GENERATED));
 	}
 
-	protected Set<TableQueryV2> groupByEnablingFilterPerMeasure(ITableQueryOptimizer tableQueryOptimizer,
-			Set<CubeQueryStep> tableQueries) {
-		return tableQueryOptimizer.groupByEnablingFilterPerMeasure(tableQueries);
+	/**
+	 * 
+	 * @param tableWrapper
+	 *            the tableWrapper plays a role as some filter may or may not be translatable into the table own engine,
+	 *            hence changing how steps are grouped into queries.
+	 * @param tableQueryOptimizer
+	 * @param tableSteps
+	 *            the {@link CubeQueryStep} expected to be fed by the {@link ITableWrapper}
+	 * @return
+	 */
+	protected Set<TableQueryV2> packStepsIntoTableQueries(ITableWrapper tableWrapper,
+			ITableQueryOptimizer tableQueryOptimizer,
+			Set<CubeQueryStep> tableSteps) {
+		// TODO There is a design-flaw here
+		// In the context of customFilters, we may want to suppress the leftover filters as early as here
+		// Indeed, if 2 cubeQuerySteps differs only by a customFilter, they should rely on a single shared TableQuery.
+		// This effect is not very wide as such customFilter tends to appear in the FILTER clause. However, as leftover
+		// FILTER will also skew the groupByColumns (as we need the leftover columns to be added in the groupBy), this
+		// is another reason for 2 CubeQueryStep which could be merged in the same TableQuery if the leftover where
+		// computed as early as here.
+		// e.g `SUM(a) FILTER (c matches customFunction), SUM(b) GROUP BY c` could be a TableQuery like `SUM(a), SUM(b)
+		// GROUP BY c` while current logic will do 2 different TableQueries as we do not know the final groupBy is the
+		// same.
+		return tableQueryOptimizer.packStepsIntoTableQueries(tableWrapper, tableSteps);
 	}
 
 	/**

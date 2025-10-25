@@ -80,6 +80,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 			}
 			schema.registerTable(table);
 
+			// TODO StandardImplicitOptions to rely on environment options
 			CubeWrapper cube = CubeWrapper.builder().name(tableName).engine(aqe).forest(amb).table(table).build();
 			schema.registerCube(cube);
 		});

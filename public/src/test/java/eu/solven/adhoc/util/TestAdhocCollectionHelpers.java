@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -34,6 +35,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.ContiguousSet;
 
 public class TestAdhocCollectionHelpers {
 	LocalDate now = LocalDate.now();
@@ -42,6 +44,23 @@ public class TestAdhocCollectionHelpers {
 	public void testUnnestCollection_noNested() {
 		List<Object> noNested = Arrays.asList(123, 12.34, "foo", now);
 		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(noNested)).isEqualTo(noNested);
+	}
+
+	@Test
+	public void testUnnestEmpty() {
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(List.of())).isEmpty();
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(List.of(List.of()))).isEmpty();
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(List.of(List.of(List.of())))).isEmpty();
+	}
+
+	@Test
+	public void testUnnestSingleton() {
+		Assertions.assertThat((Collection) AdhocCollectionHelpers.unnestAsCollection(List.of("a")))
+				.containsExactly("a");
+		Assertions.assertThat((Collection) AdhocCollectionHelpers.unnestAsCollection(List.of(List.of("a"))))
+				.containsExactly("a");
+		Assertions.assertThat((Collection) AdhocCollectionHelpers.unnestAsCollection(List.of(List.of(List.of("a")))))
+				.containsExactly("a");
 	}
 
 	@Test
@@ -81,5 +100,13 @@ public class TestAdhocCollectionHelpers {
 				.collect(Collectors.toCollection(ArrayList::new));
 		Assertions.assertThat(AdhocCollectionHelpers.cartesianProductSize(size1024))
 				.hasToString("11790184577738583171520872861412518665678211592275841109096961");
+	}
+
+	@Test
+	@PerformanceGateway
+	public void testUnsetLargeSingleCollection() {
+		int size = 16 * 1024;
+		Assertions.assertThat(AdhocCollectionHelpers.unnestAsCollection(ContiguousSet.closedOpen(0, size)))
+				.hasSize(size);
 	}
 }

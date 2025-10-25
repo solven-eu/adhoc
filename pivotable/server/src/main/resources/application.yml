@@ -43,6 +43,9 @@ server.error.includeStacktrace: ALWAYS
 spring.pid.fail-on-write-error:
   true
 
+# https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
+management.endpoints.web.exposure.include: health,info,beans
+
 logging:
     level:
         org.springframework.security: INFO

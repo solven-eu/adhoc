@@ -20,50 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.query.filter.stripper;
 
-import org.jooq.Record;
-import org.jooq.ResultQuery;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
-
+import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
-import lombok.Builder;
-import lombok.Singular;
-import lombok.Value;
 
-/**
- * Converts a {@link TableQuery} into a sql {@link ResultQuery}
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IJooqTableQueryFactory {
-	/**
-	 * The result of splitting an {@link TableQueryV2} into a leg executable by the SQL database, and a filter to be
-	 * applied manually over the output from the database.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	@Value
-	@Builder
-	class QueryWithLeftover {
-		ResultQuery<Record> query;
+public class TestFilterStripperFactory {
+	@Test
+	public void testMake() {
+		FilterStripperFactory factory = FilterStripperFactory.builder().build();
+		ISliceFilter filter = ColumnFilter.matchEq("c", "v");
+		IFilterStripper stripper = factory.makeFilterStripper(filter);
 
-		/**
-		 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which
-		 * can not be translated into the SQL engine.
-		 */
-		ISliceFilter leftover;
-
-		@Singular
-		ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
-
-		AggregatedRecordFields fields;
+		Assertions.assertThat(stripper).isInstanceOfSatisfying(FilterStripper.class, s -> {
+			Assertions.assertThat(s.getWhere()).isEqualTo(filter);
+		});
 	}
-
-	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);
-
 }

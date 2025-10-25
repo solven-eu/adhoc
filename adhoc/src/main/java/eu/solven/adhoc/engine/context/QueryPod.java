@@ -36,6 +36,7 @@ import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -61,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements IHasQueryOptions, IMeasureResolver {
+public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasures {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -108,6 +109,12 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver {
 		} else {
 			return this.forest.resolveIfRef(measure);
 		}
+	}
+
+	// Poor Design, but used by `StandardQueryPreparator.filterForest`
+	@Override
+	public Set<IMeasure> getMeasures() {
+		return forest.getMeasures();
 	}
 
 	@Override

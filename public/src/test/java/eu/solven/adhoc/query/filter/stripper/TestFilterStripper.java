@@ -20,50 +20,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.query.filter.stripper;
 
-import org.jooq.Record;
-import org.jooq.ResultQuery;
+import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
-import lombok.Builder;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
 
-/**
- * Converts a {@link TableQuery} into a sql {@link ResultQuery}
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IJooqTableQueryFactory {
-	/**
-	 * The result of splitting an {@link TableQueryV2} into a leg executable by the SQL database, and a filter to be
-	 * applied manually over the output from the database.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	@Value
-	@Builder
-	class QueryWithLeftover {
-		ResultQuery<Record> query;
+public class TestFilterStripper {
+	@Test
+	public void testSharedCache() {
+		FilterStripper stripper = FilterStripper.builder().where(AndFilter.and(Map.of("c", "c1", "d", "d2"))).build();
+		Assertions.assertThat(stripper.filterToStripper.asMap()).isEmpty();
 
-		/**
-		 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which
-		 * can not be translated into the SQL engine.
-		 */
-		ISliceFilter leftover;
+		Assertions.assertThat(stripper.isStricterThan(ColumnFilter.matchEq("c", "c1"))).isTrue();
+		Assertions.assertThat(stripper.filterToStripper.asMap()).hasSize(1);
 
-		@Singular
-		ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
-
-		AggregatedRecordFields fields;
+		FilterStripper relatedStripper = stripper.withWhere(ColumnFilter.matchEq("e", "e3"));
+		// Ensure the cache unrelated to current WHERE is shared
+		Assertions.assertThat(relatedStripper.filterToStripper.asMap()).hasSize(1);
+		// Ensure the cache related to current WHERE is not-shared
+		Assertions.assertThat(relatedStripper.knownAsStricter.asMap()).isEmpty();
 	}
-
-	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);
-
 }

@@ -46,7 +46,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
-import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -284,7 +283,6 @@ public class WorldCupPlayersSchema {
 				.name(worldCupSchema.getName())
 				.forest(forest)
 				.table(table)
-				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build())
 				.columnsManager(ColumnsManager.builder()
 						.aliaser(MapTableAliaser.builder()
 								.aliasToOriginals(snowflakeBuilder().getAliasToOriginal())

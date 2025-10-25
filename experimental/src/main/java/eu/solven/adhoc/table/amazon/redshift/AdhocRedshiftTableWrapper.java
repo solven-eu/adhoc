@@ -159,8 +159,8 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		if (!sqlQuery.getFields().getLateColumns().isEmpty()) {
-			throw new NotYetImplementedException("lateColumns=%s".formatted(sqlQuery.getFields().getLateColumns()));
+		if (!sqlQuery.getFields().getLeftovers().isEmpty()) {
+			throw new NotYetImplementedException("leftovers=%s".formatted(sqlQuery.getFields().getLeftovers()));
 		}
 
 		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();

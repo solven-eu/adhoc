@@ -39,7 +39,7 @@
 		</dependency>
 
 		<dependency>
-			<!-- Used by GitPorpertySourceConfig (@PropertySource)-->
+			<!-- Used by GitPropertySourceConfig (@PropertySource)-->
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 		</dependency>

@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestNotFilter {
@@ -44,18 +44,7 @@ public class TestNotFilter {
 		ISliceFilter orFilter =
 				FilterBuilder.or(ColumnFilter.matchEq("c", "c1"), ColumnFilter.matchEq("d", "d1")).combine().negate();
 
-		Assertions.assertThat(orFilter).isInstanceOfSatisfying(AndFilter.class, andMatcher -> {
-			Assertions.assertThat(andMatcher.getOperands())
-					.hasSize(2)
-					.contains(ColumnFilter.builder()
-							.column("c")
-							.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq("c1")))
-							.build())
-					.contains(ColumnFilter.builder()
-							.column("d")
-							.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq("d1")))
-							.build());
-		});
+		Assertions.assertThat(orFilter).isInstanceOf(NotFilter.class).hasToString("!(c==c1|d==d1)");
 	}
 
 	@Test
@@ -83,7 +72,7 @@ public class TestNotFilter {
 		Assertions.assertThat(and).isInstanceOf(AndFilter.class);
 
 		ISliceFilter notAnd = and.negate();
-		Assertions.assertThat(notAnd).isInstanceOf(OrFilter.class);
+		Assertions.assertThat(notAnd).isInstanceOf(NotFilter.class);
 
 		ISliceFilter notNotAnd = notAnd.negate();
 		Assertions.assertThat(notNotAnd).isEqualTo(and);
@@ -111,9 +100,22 @@ public class TestNotFilter {
 	public void testNot_andOptimizable() {
 		AndFilter unoptimizedAnd =
 				AndFilter.builder().and(ColumnFilter.matchEq("a", "a1")).and(ColumnFilter.matchLike("a", "a%")).build();
+		Assertions.assertThat(unoptimizedAnd).hasToString("a==a1&a LIKE 'a%'");
+
 		ISliceFilter optimizedNotAnd = FilterBuilder.not(unoptimizedAnd).optimize();
 
 		Assertions.assertThat(optimizedNotAnd).hasToString("a!=a1");
+	}
+
+	@Test
+	public void testNot_columnOptimizable() {
+		ISliceFilter unoptimizedColumn = ColumnFilter.match("a",
+				OrMatcher.builder().or(EqualsMatcher.matchEq("a1")).or(EqualsMatcher.matchEq("a2")).build());
+		Assertions.assertThat(unoptimizedColumn).hasToString("a matches `==a1|==a2`");
+
+		ISliceFilter optimizedNotAnd = FilterBuilder.not(unoptimizedColumn).optimize();
+
+		Assertions.assertThat(optimizedNotAnd).hasToString("a=out=(a2,a1)");
 	}
 
 	@Test

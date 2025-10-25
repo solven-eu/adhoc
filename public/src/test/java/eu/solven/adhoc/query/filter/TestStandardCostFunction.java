@@ -65,7 +65,7 @@ public class TestStandardCostFunction {
 								.optimize()))
 				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches
 				// `LikeMatcher(pattern=c%)`)")
-				.hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)")
+				.hasToString("a==a1&(b NOT LIKE 'b%'|c LIKE 'c%')")
 				.satisfies(f -> {
 					Assertions.assertThat(costFunction.cost(f)).isEqualTo(3 + 5 + 10 + 3);
 				});

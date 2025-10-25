@@ -47,18 +47,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuperBuilder
 public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCache {
+	// Optimize only `AND` as `OR` and `NOT` are based on `AND`
 	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNegated = CacheBuilder.newBuilder().build();
 	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNotNegated = CacheBuilder.newBuilder().build();
-
-	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedOrs = CacheBuilder.newBuilder().build();
-	protected final Cache<ISliceFilter, ISliceFilter> optimizedNot = CacheBuilder.newBuilder().build();
 
 	@Override
 	public void invalidateAll() {
 		optimizedAndNegated.invalidateAll();
 		optimizedAndNotNegated.invalidateAll();
-		optimizedOrs.invalidateAll();
-		optimizedNot.invalidateAll();
 	}
 
 	@Override
@@ -76,28 +72,6 @@ public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCac
 			});
 		} catch (ExecutionException e) {
 			throw new IllegalArgumentException("Issue on AND over %s".formatted(filters), e);
-		}
-	}
-
-	@Override
-	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
-		try {
-			return optimizedOrs.get(ImmutableSet.copyOf(filters), () -> {
-				return notCachedOr(filters);
-			});
-		} catch (ExecutionException e) {
-			throw new IllegalArgumentException("Issue on OR over %s".formatted(filters), e);
-		}
-	}
-
-	@Override
-	public ISliceFilter not(ISliceFilter filter) {
-		try {
-			return optimizedNot.get(filter, () -> {
-				return notCachedNot(filter);
-			});
-		} catch (ExecutionException e) {
-			throw new IllegalArgumentException("Issue on NOT over %s".formatted(filter), e);
 		}
 	}
 

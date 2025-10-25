@@ -22,12 +22,19 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.lang.reflect.Field;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.ReflectionUtils;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 
 public class TestAggregatingColumns {
 	Aggregator a = Aggregator.sum("c");
@@ -45,5 +52,52 @@ public class TestAggregatingColumns {
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();
 
+	}
+
+	@Test
+	public void testClose_empty() {
+		AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
+
+		Assertions.assertThat(aggregatingColumns.sliceToIndex)
+				.isInstanceOfSatisfying(Object2IntOpenHashMap.class, openHashMap -> {
+					Field field = ReflectionUtils.findField(Object2IntOpenHashMap.class, "value");
+					field.setAccessible(true);
+					int[] value = (int[]) ReflectionUtils.getField(field, openHashMap);
+					Assertions.assertThat(value).hasSizeGreaterThan(1024);
+				});
+
+		IMultitypeColumnFastGet<String> closed = aggregatingColumns.closeColumn(Aggregator.sum("k"));
+		Assertions.assertThat(closed).isInstanceOfSatisfying(MultitypeHashColumn.class, closed2 -> {
+			Field field = ReflectionUtils.findField(MultitypeHashColumn.class, "sliceToValueL");
+			field.setAccessible(true);
+			Object2LongMap<?> sliceToValueL = (Object2LongMap<?>) ReflectionUtils.getField(field, closed2);
+			Assertions.assertThat(sliceToValueL.getClass().getName())
+					.hasToString("it.unimi.dsi.fastutil.objects.Object2LongMaps$EmptyMap");
+		});
+	}
+
+	@Test
+	public void testClose_has1() {
+		AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
+
+		aggregatingColumns.openSlice("row").contribute(a).onDouble(123D);
+
+		Assertions.assertThat(aggregatingColumns.sliceToIndex)
+				.isInstanceOfSatisfying(Object2IntOpenHashMap.class, openHashMap -> {
+					Field field = ReflectionUtils.findField(Object2IntOpenHashMap.class, "value");
+					field.setAccessible(true);
+					int[] value = (int[]) ReflectionUtils.getField(field, openHashMap);
+					Assertions.assertThat(value).hasSizeGreaterThan(1024);
+				});
+
+		IMultitypeColumnFastGet<String> closed = aggregatingColumns.closeColumn(a);
+		Assertions.assertThat(closed).isInstanceOfSatisfying(UndictionarizedColumn.class, closed2 -> {
+			Field field = ReflectionUtils.findField(UndictionarizedColumn.class, "column");
+			field.setAccessible(true);
+			MultitypeNavigableElseHashMergeableColumn<?> sliceToValueL =
+					(MultitypeNavigableElseHashMergeableColumn<?>) ReflectionUtils.getField(field, closed2);
+			Assertions.assertThat(sliceToValueL.getClass().getName())
+					.hasToString(MultitypeNavigableElseHashMergeableColumn.class.getName());
+		});
 	}
 }

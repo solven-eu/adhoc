@@ -36,8 +36,10 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -52,12 +54,19 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class OrFilter implements IOrFilter {
 
 	@JsonProperty("filters")
 	@Singular
 	@NonNull
 	final ImmutableSet<ISliceFilter> ors;
+
+	// This constructor helps not copying ImmutableSet, as `@Singular` always generates a builder, preventing `.copyOf`
+	// optimization
+	public static IOrFilter copyOf(Collection<? extends ISliceFilter> ands) {
+		return new OrFilter(ImmutableSet.copyOf(ands));
+	}
 
 	@Override
 	public boolean isNot() {
@@ -87,7 +96,8 @@ public class OrFilter implements IOrFilter {
 
 	@Override
 	public ISliceFilter negate() {
-		return FilterBuilder.and(getOperands().stream().map(ISliceFilter::negate).toList()).combine();
+		// A simple `NOT` to prevent having to `.negate` all operands
+		return FilterBuilder.not(this).combine();
 	}
 
 	@Override
@@ -96,11 +106,15 @@ public class OrFilter implements IOrFilter {
 			return "matchNone";
 		}
 
+		return toString2(this, getOperands());
+	}
+
+	public static String toString2(Object o, Set<?> ors) {
 		int size = ors.size();
 		if (size <= AdhocUnsafe.limitOrdinalToString) {
 			return ors.stream().map(Object::toString).collect(Collectors.joining("|"));
 		} else {
-			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", ors.size());
+			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(o).add("size", ors.size());
 
 			AtomicInteger index = new AtomicInteger();
 			ors.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
@@ -124,12 +138,6 @@ public class OrFilter implements IOrFilter {
 				.stream()
 				.map(e -> ColumnFilter.matchLax(e.getKey(), e.getValue()))
 				.collect(Collectors.toCollection(ArrayList::new));
-
-		if (asList.contains(MATCH_ALL)) {
-			return MATCH_ALL;
-		}
-
-		asList.removeIf(MATCH_NONE::equals);
 
 		return FilterBuilder.or(asList).combine();
 	}

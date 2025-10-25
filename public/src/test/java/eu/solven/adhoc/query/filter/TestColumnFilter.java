@@ -141,7 +141,7 @@ public class TestColumnFilter {
 	public void testToString_likes() {
 		ISliceFilter ksEqualsV = ColumnFilter.builder().column("c").matching(LikeMatcher.matching("a%")).build();
 
-		Assertions.assertThat(ksEqualsV).hasToString("c matches `LikeMatcher(pattern=a%)`");
+		Assertions.assertThat(ksEqualsV).hasToString("c LIKE 'a%'");
 	}
 
 	@Test
@@ -149,7 +149,7 @@ public class TestColumnFilter {
 		ISliceFilter ksEqualsV =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(LikeMatcher.matching("a%"))).build();
 
-		Assertions.assertThat(ksEqualsV).hasToString("c does NOT match `LikeMatcher(pattern=a%)`");
+		Assertions.assertThat(ksEqualsV).hasToString("c NOT LIKE 'a%'");
 	}
 
 	@Test
@@ -163,7 +163,7 @@ public class TestColumnFilter {
 	public void testEqualTo_matcher() {
 		ISliceFilter cIsMatchAll = ColumnFilter.matchEq("c", LikeMatcher.matching("a%"));
 
-		Assertions.assertThat(cIsMatchAll).hasToString("c matches `LikeMatcher(pattern=a%)`");
+		Assertions.assertThat(cIsMatchAll).hasToString("c LIKE 'a%'");
 	}
 
 	@Test

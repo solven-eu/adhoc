@@ -95,7 +95,7 @@ public interface ITableQueryOptimizer {
 	 */
 	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries);
 
-	Set<TableQueryV2> groupByEnablingFilterPerMeasure(Set<CubeQueryStep> tableQueries);
+	Set<TableQueryV2> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableQueries);
 
 	/**
 	 * 

@@ -38,11 +38,13 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -245,8 +247,8 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 234).execute();
 
 		ITabularView result = cube().execute(CubeQuery.builder().build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -260,8 +262,8 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 234).execute();
 
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
@@ -332,7 +334,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -349,7 +351,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -366,8 +368,8 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 234).execute();
 
 		Aggregator kSumOverk1 =
 				Aggregator.builder().name("k").columnName("k1").aggregationKey(SumAggregation.KEY).build();
@@ -387,9 +389,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a12", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -409,9 +411,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a12", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a12", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -428,7 +430,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -448,7 +450,7 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -470,8 +472,8 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
 
 		forest.addMeasure(countAsterisk);
 
@@ -493,9 +495,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -516,9 +518,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -539,9 +541,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -563,9 +565,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -581,9 +583,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 345).execute();
 
 		forest.addMeasure(k1Sum);
 
@@ -612,9 +614,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("a", SQLDataType.VARCHAR)
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a2", 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values("a1", 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 345).execute();
 
 		Aggregator k1Sum =
 				Aggregator.builder().name("k1_SUM").aggregationKey(SumAggregation.KEY).columnName("k1").build();
@@ -643,9 +645,9 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 				.column("k1", SQLDataType.DOUBLE)
 				.execute();
 		LocalDate today = LocalDate.now();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values(today, 123).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values(today.plusDays(1), 234).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("a"), DSL.field("k1")).values(today, 345).execute();
+		dsl.insertInto(DSL.table(tableName)).values(today, 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values(today.plusDays(1), 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values(today, 345).execute();
 
 		Aggregator k1Sum =
 				Aggregator.builder().name("k1_SUM").aggregationKey(SumAggregation.KEY).columnName("k1").build();
@@ -658,6 +660,84 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0D + 123 + 345))
+				.hasSize(1);
+	}
+
+	@Test
+	public void testFilter_custom_explicitColumns() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName)).values("foo", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("bar", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("foobar", 345).execute();
+
+		Aggregator k1Sum = Aggregator.sum("k1");
+		forest.addMeasure(k1Sum);
+
+		IValueMatcher customValueMatcher = new IValueMatcher() {
+
+			@Override
+			public boolean match(Object value) {
+				return value != null && value.toString().length() == 3;
+			}
+		};
+
+		Filtrator k1SumFiltered = Filtrator.builder()
+				.name("k1_filtered")
+				.underlying(k1Sum.getName())
+				.filter(ColumnFilter.match("a", customValueMatcher))
+				.build();
+
+		// This query should lead to querying `k1.SUM` both with and without the customFilter
+		ITabularView result =
+				cube().execute(CubeQuery.builder().measure(k1Sum).measure(k1SumFiltered).groupByAlso("a").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of("a", "foo"), Map.of(k1Sum.getName(), 0D + 123, k1SumFiltered.getName(), 0D + 123))
+				.containsEntry(Map.of("a", "bar"), Map.of(k1Sum.getName(), 0D + 234, k1SumFiltered.getName(), 0D + 234))
+				.containsEntry(Map.of("a", "foobar"), Map.of(k1Sum.getName(), 0D + 345))
+				.hasSize(3);
+	}
+
+	@Test
+	public void testFilter_custom_implicitColumns() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.DOUBLE)
+				.execute();
+		dsl.insertInto(DSL.table(tableName)).values("foo", 123).execute();
+		dsl.insertInto(DSL.table(tableName)).values("bar", 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("foobar", 345).execute();
+
+		Aggregator k1Sum = Aggregator.sum("k1");
+		forest.addMeasure(k1Sum);
+
+		IValueMatcher customValueMatcher = new IValueMatcher() {
+
+			@Override
+			public boolean match(Object value) {
+				return value != null && value.toString().length() == 3;
+			}
+		};
+
+		Filtrator k1SumFiltered = Filtrator.builder()
+				.name("k1_filtered")
+				.underlying(k1Sum.getName())
+				.filter(ColumnFilter.match("a", customValueMatcher))
+				.build();
+
+		// This query should lead to querying `k1.SUM` both with and without the customFilter
+		ITabularView result = cube().execute(CubeQuery.builder().measure(k1Sum).measure(k1SumFiltered).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(),
+						Map.of(k1Sum.getName(), 0D + 123 + 234 + 345, k1SumFiltered.getName(), 0D + 123 + 234))
 				.hasSize(1);
 	}
 }

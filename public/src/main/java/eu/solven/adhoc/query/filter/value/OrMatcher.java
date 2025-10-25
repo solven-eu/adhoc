@@ -25,20 +25,21 @@ package eu.solven.adhoc.query.filter.value;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.MoreObjects;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
-import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -54,19 +55,33 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
+
+	// @JsonProperty("matchers")
+	@JsonProperty("operands")
 	@NonNull
 	@Singular
-	ImmutableSet<IValueMatcher> operands;
+	ImmutableSet<IValueMatcher> ors;
+
+	public static IValueMatcher copyOf(Collection<? extends IValueMatcher> ors) {
+		return new OrMatcher(ImmutableSet.copyOf(ors));
+	}
+
+	@JsonIgnore
+	@Override
+	public Set<IValueMatcher> getOperands() {
+		return getOrs();
+	}
 
 	@JsonIgnore
 	public boolean isMatchNone() {
-		return operands.isEmpty();
+		return ors.isEmpty();
 	}
 
 	@Override
 	public boolean match(Object value) {
-		return operands.stream().anyMatch(operand -> operand.match(value));
+		return ors.stream().anyMatch(operand -> operand.match(value));
 	}
 
 	@Override
@@ -75,19 +90,7 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 			return "matchNone";
 		}
 
-		int size = operands.size();
-		if (size <= AdhocUnsafe.limitOrdinalToString) {
-			return operands.stream().map(Object::toString).collect(Collectors.joining("|"));
-		} else {
-			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", operands.size());
-
-			AtomicInteger index = new AtomicInteger();
-			operands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
-				toStringHelper.add("#" + index.getAndIncrement(), filter);
-			});
-
-			return toStringHelper.toString();
-		}
+		return OrFilter.toString2(this, ors);
 	}
 
 	// `first, second, more` syntax to push providing at least 2 arguments
@@ -106,7 +109,7 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 
 		// OR of ORs
 		List<? extends IValueMatcher> notMatchNone = AdhocCollectionHelpers.unnestAsList(OrMatcher.class,
-				OrMatcher.builder().operands(filters).build(),
+				OrMatcher.builder().ors(filters).build(),
 				f -> f.getOperands().size(),
 				OrMatcher::getOperands,
 				// Skipping matchAll is useful on `.edit`
@@ -120,7 +123,7 @@ public class OrMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
 			} else if (notMatchNone.size() == 1) {
 				return notMatchNone.getFirst();
 			} else {
-				return OrMatcher.builder().operands(notMatchNone).build();
+				return OrMatcher.builder().ors(notMatchNone).build();
 			}
 		}
 	}

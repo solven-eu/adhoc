@@ -55,8 +55,19 @@ public class NotFilter implements INotFilter {
 		return negated;
 	}
 
-	// public static ISliceFilter not(ISliceFilter filter) {
-	// return FilterBuilder.not(filter).optimize();
-	// }
+	public static ISliceFilter simpleNot(ISliceFilter filter) {
+		if (MATCH_ALL.equals(filter)) {
+			return MATCH_NONE;
+		} else if (MATCH_NONE.equals(filter)) {
+			return MATCH_ALL;
+		} else if (filter instanceof INotFilter notFilter) {
+			return notFilter.getNegated();
+		} else if (filter instanceof IColumnFilter columnFilter) {
+			return columnFilter.negate();
+		} else {
+			// `.negate` may turn an `AND` into an `OR` which is not desired here
+			return NotFilter.builder().negated(filter).build();
+		}
+	}
 
 }

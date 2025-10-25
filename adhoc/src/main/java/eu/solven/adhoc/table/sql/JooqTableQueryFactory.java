@@ -24,10 +24,13 @@ package eu.solven.adhoc.table.sql;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jooq.AggregateFunction;
 import org.jooq.Condition;
@@ -47,6 +50,8 @@ import org.jooq.SortField;
 import org.jooq.TableLike;
 import org.jooq.True;
 import org.jooq.impl.DSL;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -153,13 +158,32 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// Holds the filter of the conditions which were not translated into SQL
 		@NonNull
 		@Builder.Default
-		ISliceFilter postFilter = ISliceFilter.MATCH_ALL;
+		ISliceFilter leftover = ISliceFilter.MATCH_ALL;
 	}
 
 	@Override
 	public QueryWithLeftover prepareQuery(TableQueryV2 tableQuery) {
 		ConditionWithFilter conditionAndLeftover = toConditions(tableQuery);
-		AggregatedRecordFields fields = makeSelectedColumns(tableQuery, conditionAndLeftover.getPostFilter());
+
+		// Leftover in FILTER clause
+		Map<String, ISliceFilter> aggregateToLeftover = new LinkedHashMap<>();
+
+		{
+			tableQuery.getAggregators().forEach(filtered -> {
+				ISliceFilter aggregatorFilter = filtered.getFilter();
+				ConditionWithFilter conditionWithFilter = toConditionSplitLeftover(aggregatorFilter);
+
+				if (!conditionWithFilter.getLeftover().isMatchAll()) {
+					aggregateToLeftover.put(filtered.getAlias(), conditionWithFilter.getLeftover());
+				}
+			});
+		}
+
+		ImmutableSet<ISliceFilter> leftovers = ImmutableSet.<ISliceFilter>builder()
+				.add(conditionAndLeftover.getLeftover())
+				.addAll(aggregateToLeftover.values())
+				.build();
+		AggregatedRecordFields fields = makeSelectedColumns(tableQuery, leftovers);
 
 		// `SELECT ...`
 		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(tableQuery, fields);
@@ -176,7 +200,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		// `GROUP BY ...`
-		Collection<GroupField> groupFields = makeGroupingFields(tableQuery, conditionAndLeftover.getPostFilter());
+		Collection<GroupField> groupFields = makeGroupingFields(tableQuery, conditionAndLeftover.getLeftover());
 		SelectHavingStep<Record> selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
 
 		// `ORDER BY ...`
@@ -191,7 +215,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		return QueryWithLeftover.builder()
 				.query(resultQuery)
-				.leftover(conditionAndLeftover.getPostFilter())
+				.leftover(conditionAndLeftover.getLeftover())
+				.aggregatorToLeftovers(aggregateToLeftover)
 				.fields(fields)
 				.build();
 	}
@@ -203,10 +228,10 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// Conditions from filters
 		{
 			ISliceFilter filter = tableQuery.getFilter();
-			ConditionWithFilter conditionWithFilter = toCondition(filter);
+			ConditionWithFilter conditionWithFilter = toConditionSplitLeftover(filter);
 
 			conditions.add(conditionWithFilter.getCondition());
-			leftoverFilters.add(conditionWithFilter.getPostFilter());
+			leftoverFilters.add(conditionWithFilter.getLeftover());
 		}
 
 		// AND conditions from measures and from filters
@@ -231,8 +256,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			selectedFields.add(field);
 		});
 
-		fields.getLateColumns().forEach(lateColumn -> {
-			Field<Object> field = columnAsField(ReferencedColumn.ref(lateColumn));
+		fields.getLeftovers().forEach(leftover -> {
+			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
 			selectedFields.add(field);
 		});
 
@@ -248,8 +273,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	// @Override
-	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, ISliceFilter leftover) {
-		return TableQuery.makeSelectedColumns(tableQuery, leftover);
+	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
+		return TableQuery.makeSelectedColumns(tableQuery, leftovers);
 	}
 
 	/**
@@ -368,13 +393,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			} else {
 				Name namedColumn = name(columnName);
 
-				ConditionWithFilter condition = toCondition(filteredAggregator.getFilter());
-				if (!condition.getPostFilter().isMatchAll()) {
-					throw new NotYetImplementedException("FILTER with a postFilter. filter="
-							+ PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
+				ConditionWithFilter condition = toConditionSplitLeftover(filteredAggregator.getFilter());
+				if (!condition.getLeftover().isMatchAll()) {
+					log.debug("FILTER with a postFilter. filter={}",
+							PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
 				}
 
-				boolean needCase = !filteredAggregator.getFilter().isMatchAll() && !canFilterAggregates();
+				boolean needCase = !(condition.getCondition() instanceof True) && !canFilterAggregates();
 				Condition conditionInCase;
 				if (needCase) {
 					conditionInCase = condition.getCondition();
@@ -428,14 +453,14 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					sqlAggFunction = onCustomAggregation(a, namedColumn, conditionInCase);
 				}
 
-				if (filteredAggregator.getFilter().isMatchAll()) {
+				if (condition.getCondition() instanceof True) {
 					unaliasedField = sqlAggFunction;
 				} else {
-					if (canFilterAggregates()) {
-						unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
-					} else {
+					if (needCase) {
 						// FILTER is already applied through a `CASE` as aggregated expression
 						unaliasedField = sqlAggFunction;
+					} else {
+						unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
 					}
 				}
 			}
@@ -479,34 +504,76 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		throw new UnsupportedOperationException("SQL does not support aggregationKey=%s".formatted(aggregationKey));
 	}
 
-	@SuppressWarnings("PMD.CognitiveComplexity")
+	protected ConditionWithFilter toConditionSplitLeftover(ISliceFilter filter) {
+		// Split `AND` to enable `preFilter AND postFilter`
+		// This will also cover `NOT(OR(...))`
+		Set<ISliceFilter> ands = FilterHelpers.splitAnd(filter);
+
+		// Partition conditions which can be translated into SQL or not.
+		// BEWARE It will lead to translating twice to SQL
+		Map<Boolean, List<ISliceFilter>> conditionAndFilters =
+				ands.stream().collect(Collectors.partitioningBy(f -> this.toCondition(f).getLeftover().isMatchAll()));
+
+		ISliceFilter withoutPostFilter = FilterBuilder.and(conditionAndFilters.get(true)).optimize();
+		ISliceFilter withPostFilter = FilterBuilder.and(conditionAndFilters.get(false)).optimize();
+
+		if (ISliceFilter.MATCH_ALL.equals(withPostFilter)) {
+			// There is no customCondition: restore the original condition as it may have be changed by the
+			// `partitioninBy` and the `optimize`
+			withoutPostFilter = filter;
+		}
+
+		ConditionWithFilter conditionWithout = toCondition(withoutPostFilter);
+		if (!ISliceFilter.MATCH_ALL.equals(conditionWithout.getLeftover())) {
+			throw new IllegalStateException("Expected no postFilter from %s".formatted(withoutPostFilter));
+		}
+
+		return ConditionWithFilter.builder()
+				.condition(conditionWithout.getCondition())
+				.leftover(withPostFilter)
+				.build();
+	}
+
 	protected ConditionWithFilter toCondition(ISliceFilter filter) {
+		return toCondition(filter, false);
+	}
+
+	/**
+	 * 
+	 * @param filter
+	 * @param hasParentNot
+	 *            indicates if this expression is wrapped into a `NOT` which requires specific `NULL` management (e.g.
+	 *            `NOT(c = 'v')` is false if c is `NULL`).
+	 * @return
+	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
+	protected ConditionWithFilter toCondition(ISliceFilter filter, boolean hasParentNot) {
 		if (filter.isMatchAll()) {
 			return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();
 		} else if (filter.isMatchNone()) {
 			return ConditionWithFilter.builder().condition(DSL.falseCondition()).build();
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			Optional<Condition> optColumnFilterAsCondition = toCondition(columnFilter);
+			Optional<Condition> optColumnFilterAsCondition = toCondition(columnFilter, hasParentNot);
 			if (optColumnFilterAsCondition.isEmpty()) {
 				log.debug("{} will be applied manually", columnFilter);
-				return ConditionWithFilter.builder().postFilter(columnFilter).build();
+				return ConditionWithFilter.builder().leftover(columnFilter).build();
 			} else {
 				return ConditionWithFilter.builder().condition(optColumnFilterAsCondition.get()).build();
 			}
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			ConditionWithFilter negated = toCondition(notFilter.getNegated());
+			ConditionWithFilter negated = toCondition(notFilter.getNegated(), true);
 
 			// ConditionWithFilter can not express an OR, so we just ensure one of `sqlCondition` or `postFilter` is
 			// `matchAll`.
 			boolean oneIsMatchAll = false;
 
 			ISliceFilter negatedPostFilter;
-			if (negated.getPostFilter().isMatchAll()) {
+			if (negated.getLeftover().isMatchAll()) {
+				// There is no leftover: keep it as matchAll
 				negatedPostFilter = ISliceFilter.MATCH_ALL;
 				oneIsMatchAll = true;
 			} else {
-				// There is no postFilter: keep it as matchAll
-				negatedPostFilter = negated.getPostFilter().negate();
+				negatedPostFilter = negated.getLeftover().negate();
 			}
 
 			Condition negatedCondition;
@@ -521,36 +588,35 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				throw new NotYetImplementedException("Converting `%s` to SQL".formatted(filter));
 			}
 
-			return ConditionWithFilter.builder().postFilter(negatedPostFilter).condition(negatedCondition).build();
+			return ConditionWithFilter.builder().leftover(negatedPostFilter).condition(negatedCondition).build();
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();
 			// TODO Detect and report if multiple conditions hits the same column
 			// It would be the symptom of conflicting transcoding
-			List<ConditionWithFilter> conditions = operands.stream().map(this::toCondition).toList();
+			List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
 
 			List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
-			List<ISliceFilter> leftoversConditions =
-					conditions.stream().map(ConditionWithFilter::getPostFilter).toList();
+			List<ISliceFilter> leftoversConditions = conditions.stream().map(ConditionWithFilter::getLeftover).toList();
 
 			return and(sqlConditions, leftoversConditions);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			Set<ISliceFilter> operands = orFilter.getOperands();
 
-			List<ConditionWithFilter> conditions = operands.stream().map(this::toCondition).toList();
+			List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
 
 			boolean anyPostFilter =
-					conditions.stream().map(ConditionWithFilter::getPostFilter).anyMatch(f -> !f.isMatchAll());
+					conditions.stream().map(ConditionWithFilter::getLeftover).anyMatch(f -> !f.isMatchAll());
 
 			if (anyPostFilter) {
 				log.debug("A postFilter with OR (`{}`) leads to no table filtering", filter);
-				return ConditionWithFilter.builder().condition(DSL.trueCondition()).postFilter(filter).build();
+				return ConditionWithFilter.builder().condition(DSL.trueCondition()).leftover(filter).build();
 			} else {
 				List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
 
 				// There is no postFilter: table will handle the filter
 				return ConditionWithFilter.builder()
 						.condition(DSL.or(sqlConditions))
-						.postFilter(ISliceFilter.MATCH_ALL)
+						.leftover(ISliceFilter.MATCH_ALL)
 						.build();
 			}
 		} else {
@@ -563,7 +629,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			Collection<ISliceFilter> leftoversConditions) {
 		return ConditionWithFilter.builder()
 				.condition(andSql(sqlConditions))
-				.postFilter(FilterBuilder.and(leftoversConditions).optimize())
+				.leftover(FilterBuilder.and(leftoversConditions).optimize())
 				.build();
 	}
 

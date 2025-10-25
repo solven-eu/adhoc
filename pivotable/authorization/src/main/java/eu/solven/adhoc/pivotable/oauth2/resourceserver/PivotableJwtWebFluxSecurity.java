@@ -92,8 +92,10 @@ public class PivotableJwtWebFluxSecurity {
 				.requestCache(cache -> cache.requestCache(NoOpServerRequestCache.getInstance()))
 
 				.authorizeExchange(auth -> auth
-						// Actuator is partly public
-						.pathMatchers("/actuator/health/readiness", "/actuator/health/liveness")
+						// Actuator is partly public: we allow access to `/actuator` as an easy way to navigate, but not
+						// to all sub-routes
+						// https://docs.spring.io/spring-boot/api/rest/actuator/index.html
+						.pathMatchers("/actuator", "/actuator/health/**", "/actuator/info")
 						.permitAll()
 						// Swagger/OpenAPI is public
 						.pathMatchers("/v3/api-docs/**")

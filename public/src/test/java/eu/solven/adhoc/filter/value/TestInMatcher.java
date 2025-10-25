@@ -146,8 +146,7 @@ public class TestInMatcher {
 		IValueMatcher inMatcher = InMatcher.matchIn(operandValueMatcher, "bar");
 
 		Assertions.assertThat(inMatcher)
-				.isEqualTo(
-						OrMatcher.builder().operand(operandValueMatcher).operand(EqualsMatcher.matchEq("bar")).build());
+				.isEqualTo(OrMatcher.builder().or(operandValueMatcher).or(EqualsMatcher.matchEq("bar")).build());
 	}
 
 	@Test

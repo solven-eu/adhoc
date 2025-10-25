@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -111,13 +112,14 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 	/**
 	 * @param tableQuery
 	 *            the initial tableQuery
-	 * @param leftover
+	 * @param leftovers
 	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
-	 *            not be transcoded for given table)
+	 *            not be transcoded for given table). As a set as there may be a leftover on the common `WHERE` clause,
+	 *            and on each `FILTER` clause.
 	 * @return the {@link List} of the columns to be output by the tableQuery
 	 */
 	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, ISliceFilter leftover) {
+	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
 		List<String> aggregatorNames = tableQuery.getAggregators()
 				.stream()
 				.distinct()
@@ -125,23 +127,22 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 				.map(FilteredAggregator::getAlias)
 				.toList();
 
-		List<String> columns = new ArrayList<>();
+		List<String> groupByColumns = new ArrayList<>();
 		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			columns.add(column.getName());
+			groupByColumns.add(column.getName());
 		});
 
-		List<String> lateColumns = new ArrayList<>();
-		FilterHelpers.getFilteredColumns(leftover).forEach(lateColumn -> {
-			lateColumns.add(lateColumn);
-		});
+		List<String> leftoversColumns = leftovers.stream()
+				.flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream())
+				.collect(Collectors.toCollection(ArrayList::new));
 
 		// Make sure a latecolumn is not also a normal groupBy column
-		lateColumns.removeAll(columns);
+		leftoversColumns.removeAll(groupByColumns);
 
 		return AggregatedRecordFields.builder()
 				.aggregates(aggregatorNames)
-				.columns(columns)
-				.lateColumns(lateColumns)
+				.columns(groupByColumns)
+				.leftovers(leftoversColumns)
 				.build();
 	}
 

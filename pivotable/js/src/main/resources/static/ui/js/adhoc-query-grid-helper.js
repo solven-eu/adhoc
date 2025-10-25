@@ -1,7 +1,15 @@
+import { ref, inject } from "vue";
+
 // Ordering of rows
 import _ from "lodashEs";
 
 import Sortable from "sortablejs";
+
+// Formatters
+import { SlickHeaderButtons } from "slickgrid";
+
+// BEWARE: Should probably push an event to the Modal component so it open itself
+import { Modal } from "bootstrap";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
 window.Sortable = Sortable;
@@ -415,5 +423,181 @@ export default {
 				columnElement.textContent = footerText;
 			}
 		}
+	},
+
+	registerHeaderButtons(grid, queryModel) {
+		// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
+		var headerButtonsPlugin = new SlickHeaderButtons();
+
+		const ids = inject("ids");
+
+		// a ref to create a single Modal object
+		const measuresDagModal = new Modal(document.getElementById("measureDag"), {});
+		const measuresDagModel = inject("measuresDagModel");
+
+		const columnFilterModal = new Modal(document.getElementById("columnFilterModal"), {});
+		const columnFilterModel = inject("columnFilterModel");
+
+		headerButtonsPlugin.onCommand.subscribe(function (e, args) {
+			var column = args.column;
+			var button = args.button;
+			var command = args.command;
+
+			if (command == "remove-column") {
+				queryModel.selectedColumns[column.name] = false;
+				queryModel.onColumnToggled(column.name);
+
+				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
+				// grid.invalidate();
+			} else if (command == "filter-column") {
+				columnFilterModel.column = column.name;
+				columnFilterModal.show();
+			} else if (command == "remove-measure") {
+				queryModel.selectedMeasures[column.name] = false;
+
+				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
+				// grid.invalidate();
+			} else if (command == "info-measure") {
+				console.log("Info measure", column.name);
+
+				measuresDagModel.main = column.name;
+				measuresDagModal.show();
+			}
+		});
+
+		grid.registerPlugin(headerButtonsPlugin);
+	},
+
+	registerEventSubscribers(grid, dataView, currentSortCol, clickedCell) {
+		// https://github.com/6pac/SlickGrid/wiki/DataView#sorting
+		{
+			// TODO Refactor this with `gridHelper.sortRows`
+			const comparer = function (left, right) {
+				const x = left[currentSortCol.sortId];
+				const y = right[currentSortCol.sortId];
+
+				const xIsNullOrUndefined = x === null || typeof x === "undefined";
+				const yIsNullOrUndefined = y === null || typeof y === "undefined";
+
+				// nullOrUndefined are lower than notNullOrUndefined
+				if (xIsNullOrUndefined && yIsNullOrUndefined) {
+					return 0;
+				} else if (xIsNullOrUndefined) {
+					return -1;
+				} else if (yIsNullOrUndefined) {
+					return 1;
+				}
+
+				// `*` represents the grandTotal calculatedMember
+				// BEWARE it may lead to confusion if there is an actual `*` coordinate
+				const xIsStar = x === "*";
+				const yIsStar = y === "*";
+
+				if (xIsStar && yIsStar) {
+					return 0;
+				} else if (xIsStar) {
+					return -1;
+				} else if (yIsStar) {
+					return 1;
+				}
+
+				return x === y ? 0 : x > y ? 1 : -1;
+			};
+
+			grid.onSort.subscribe(function (e, args) {
+				currentSortCol.sortId = args.sortCol.field;
+				currentSortCol.sortAsc = args.sortAsc;
+
+				// using native sort with comparer
+				// preferred method but can be very slow in IE with huge datasets
+				dataView.sort(comparer, args.sortAsc);
+
+				// Drop the rowSpans until we know how to compute them properly given sortOrders
+				// BEWARE It is ugly, but it shows correct figures.
+				const metadata = {};
+				dataView.getItemMetadata = (row) => {
+					return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+				};
+
+				// https://github.com/6pac/SlickGrid/issues/1114
+				grid.remapAllColumnsRowSpan();
+
+				grid.invalidateAllRows();
+				grid.render();
+			});
+		}
+
+		{
+			grid.onColumnsReordered.subscribe(function (e, args) {
+				console.log("reOrdered columns:", grid.getColumns());
+
+				// Drop the rowSpans until we know how to compute them properly given reorderedColumns
+				// BEWARE It is ugly, but it shows correct figures.
+				const metadata = {};
+				dataView.getItemMetadata = (row) => {
+					return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
+				};
+
+				// https://github.com/6pac/SlickGrid/issues/1114
+				grid.remapAllColumnsRowSpan();
+
+				grid.invalidateAllRows();
+				grid.render();
+			});
+		}
+
+		{
+			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
+			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
+			// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
+			let cellModal = new Modal(document.getElementById("cellModal"), {});
+
+			// Cell Modal
+			function openCellModal(cell) {
+				// https://getbootstrap.com/docs/5.0/components/modal/#show
+				cellModal.show();
+
+				console.log("Showing modal for cell", cell);
+			}
+
+			// https://stackoverflow.com/questions/8365139/slickgrid-how-to-get-the-grid-item-on-click-event
+			grid.onDblClick.subscribe(function (e, args) {
+				var item = dataView.getItem(args.row);
+
+				// Update a reactive: Used to feel the modal content, but not to trigger its opening.
+				// It is not used for opening event, else clicking again the same cell would not trigger an event, hence no re-opening of the modal
+				clickedCell.value = item;
+
+				openCellModal(clickedCell.value);
+			});
+		}
+
+		grid.onHeaderClick.subscribe(function (e, args) {
+			const column = args.column.id;
+			console.log("Header clicked", column);
+		});
+
+		// https://stackoverflow.com/questions/24050923/slickgrid-mouseleave-event-not-fired-when-row-invalidated-after-mouseenter-f
+		grid.onMouseEnter.subscribe(function (e, args) {
+			const cell = grid.getCellFromEvent(e);
+			if (!cell) {
+				return;
+			}
+
+			// https://stackoverflow.com/questions/19701048/slickgrid-getting-selected-cell-value-id-and-field
+			var item = grid.getDataItem(cell.row);
+			console.debug(item);
+
+			const param = {};
+			const columnCss = {};
+
+			for (const column in grid.columns) {
+				var id = column.id;
+				// https://stackoverflow.com/questions/15327990/generate-random-color-with-pure-css-no-javascript
+				columnCss[id] = "my_highlighter_style";
+			}
+			param[cell.row] = columnCss;
+			args.grid.setCellCssStyles("row_highlighter", param);
+		});
 	},
 };

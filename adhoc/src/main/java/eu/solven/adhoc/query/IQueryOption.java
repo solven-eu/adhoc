@@ -35,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * @author Benoit Lacelle
  *
  */
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",

@@ -5,12 +5,9 @@ import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
 import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
 
 // Formatters
-import { SlickGrid, SlickDataView, SlickHeaderButtons } from "slickgrid";
+import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
-
-// BEWARE: Should probably push an event to the Modal component so it open itself
-import { Modal } from "bootstrap";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -259,166 +256,11 @@ export default {
 			// SlickGrid requires the DOM to be ready: `onMounted` is needed
 			grid = new SlickGrid("#" + props.domId, dataView, gridColumns, options);
 
-			// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
-			{
-				var headerButtonsPlugin = new SlickHeaderButtons();
-
-				const ids = inject("ids");
-
-				// a ref to create a single Modal object
-				const refDagModal = ref(null);
-				const measuresDagModel = inject("measuresDagModel");
-
-				const refColumnFilterModal = ref(null);
-				const columnFilterModel = inject("columnFilterModel");
-
-				headerButtonsPlugin.onCommand.subscribe(function (e, args) {
-					var column = args.column;
-					var button = args.button;
-					var command = args.command;
-
-					if (command == "remove-column") {
-						props.queryModel.selectedColumns[column.name] = false;
-						props.queryModel.onColumnToggled(column.name);
-
-						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
-						// grid.invalidate();
-					} else if (command == "filter-column") {
-						if (!refColumnFilterModal.value) {
-							let modal = new Modal(document.getElementById("columnFilterModal"), {});
-							refColumnFilterModal.value = modal;
-						}
-
-						columnFilterModel.column = column.name;
-						refColumnFilterModal.value.show();
-					} else if (command == "remove-measure") {
-						props.queryModel.selectedMeasures[column.name] = false;
-
-						// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
-						// grid.invalidate();
-					} else if (command == "info-measure") {
-						console.log("Info measure", column.name);
-
-						if (!refDagModal.value) {
-							let modal = new Modal(document.getElementById("measureDag"), {});
-							refDagModal.value = modal;
-						}
-
-						measuresDagModel.main = column.name;
-						refDagModal.value.show();
-					}
-				});
-
-				grid.registerPlugin(headerButtonsPlugin);
-			}
-
-			// https://stackoverflow.com/questions/11404711/how-can-i-trigger-a-bootstrap-modal-programmatically
-			// https://stackoverflow.com/questions/71432924/vuejs-3-and-bootstrap-5-modal-reusable-component-show-programmatically
-			// https://getbootstrap.com/docs/5.0/components/modal/#via-javascript
-			let cellModal = new Modal(document.getElementById("cellModal"), {});
-
-			// Cell Modal
-			function openCellModal(cell) {
-				// https://getbootstrap.com/docs/5.0/components/modal/#show
-				cellModal.show();
-
-				console.log("Showing modal for cell", cell);
-			}
+			gridHelper.registerHeaderButtons(grid, props.queryModel);
 
 			dataView.refresh();
 
-			// https://github.com/6pac/SlickGrid/wiki/DataView#sorting
-			{
-				// TODO Refactor this with `gridHelper.sortRows`
-				const comparer = function (left, right) {
-					const x = left[currentSortCol.sortId];
-					const y = right[currentSortCol.sortId];
-
-					const xIsNullOrUndefined = x === null || typeof x === "undefined";
-					const yIsNullOrUndefined = y === null || typeof y === "undefined";
-
-					// nullOrUndefined are lower than notNullOrUndefined
-					if (xIsNullOrUndefined && yIsNullOrUndefined) {
-						return 0;
-					} else if (xIsNullOrUndefined) {
-						return -1;
-					} else if (yIsNullOrUndefined) {
-						return 1;
-					}
-
-					// `*` represents the grandTotal calculatedMember
-					// BEWARE it may lead to confusion if there is an actual `*` coordinate
-					const xIsStar = x === "*";
-					const yIsStar = y === "*";
-
-					if (xIsStar && yIsStar) {
-						return 0;
-					} else if (xIsStar) {
-						return -1;
-					} else if (yIsStar) {
-						return 1;
-					}
-
-					return x === y ? 0 : x > y ? 1 : -1;
-				};
-
-				grid.onSort.subscribe(function (e, args) {
-					currentSortCol.sortId = args.sortCol.field;
-					currentSortCol.sortAsc = args.sortAsc;
-
-					// using native sort with comparer
-					// preferred method but can be very slow in IE with huge datasets
-					dataView.sort(comparer, args.sortAsc);
-
-					// Drop the rowSpans until we know how to compute them properly given sortOrders
-					// BEWARE It is ugly, but it shows correct figures.
-					const metadata = {};
-					dataView.getItemMetadata = (row) => {
-						return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
-					};
-
-					// https://github.com/6pac/SlickGrid/issues/1114
-					grid.remapAllColumnsRowSpan();
-
-					grid.invalidateAllRows();
-					grid.render();
-				});
-			}
-
-			{
-				grid.onColumnsReordered.subscribe(function (e, args) {
-					console.log("reOrdered columns:", grid.getColumns());
-
-					// Drop the rowSpans until we know how to compute them properly given reorderedColumns
-					// BEWARE It is ugly, but it shows correct figures.
-					const metadata = {};
-					dataView.getItemMetadata = (row) => {
-						return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
-					};
-
-					// https://github.com/6pac/SlickGrid/issues/1114
-					grid.remapAllColumnsRowSpan();
-
-					grid.invalidateAllRows();
-					grid.render();
-				});
-			}
-
-			// https://stackoverflow.com/questions/8365139/slickgrid-how-to-get-the-grid-item-on-click-event
-			grid.onDblClick.subscribe(function (e, args) {
-				var item = dataView.getItem(args.row);
-
-				// Update a reactive: Used to feel the modal content, but not to trigger its opening.
-				// It is not used for opening event, else clicking again the same cell would not trigger an event, hence no re-opening of the modal
-				clickedCell.value = item;
-
-				openCellModal(clickedCell.value);
-			});
-
-			grid.onHeaderClick.subscribe(function (e, args) {
-				const column = args.column.id;
-				console.log("Header clicked", column);
-			});
+			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
 			// Register the watch once the grid is mounted and initialized
 			watch(
@@ -460,14 +302,17 @@ export default {
 			if (props.tabularView.loading.sending) {
 				return 10;
 			}
+			if (props.tabularView.loading.executing) {
+				return 20;
+			}
 			if (props.tabularView.loading.downloading) {
-				return 35;
+				return 75;
 			}
 			if (props.tabularView.loading.preparingGrid) {
-				return 55;
+				return 85;
 			}
 			if (props.tabularView.loading.rendering) {
-				return 75;
+				return 90;
 			}
 
 			console.log("Unclear loading state", props.tabularView.loading);
@@ -481,6 +326,9 @@ export default {
 
 			if (props.tabularView.loading.sending) {
 				return "Sending the query";
+			}
+			if (props.tabularView.loading.executing) {
+				return "Executing the query";
 			}
 			if (props.tabularView.loading.downloading) {
 				return "Downloading the result";
@@ -518,7 +366,7 @@ export default {
             <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 
             <span style="width:100%;" class="position-relative">
-                <div :id="domId" class="vh-75"></div>
+                <div :id="domId" class="vh-75 slickgrid-grid"></div>
 
                 <div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
                     <div

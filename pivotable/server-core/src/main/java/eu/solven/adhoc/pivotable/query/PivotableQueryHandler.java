@@ -226,10 +226,8 @@ public class PivotableQueryHandler {
 						.<IValueMatcher>map(EqualsMatcher::matchEq)
 						.toList();
 
-				ColumnFilter columnFilter = ColumnFilter.builder()
-						.column(filteredColumn)
-						.valueMatcher(OrMatcher.builder().operands(filters).build())
-						.build();
+				ColumnFilter columnFilter =
+						ColumnFilter.builder().column(filteredColumn).valueMatcher(OrMatcher.copyOf(filters)).build();
 				andBuilder.and(columnFilter);
 			});
 			queryBuilder.filter(andBuilder.build());

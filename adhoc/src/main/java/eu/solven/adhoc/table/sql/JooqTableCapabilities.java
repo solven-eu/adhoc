@@ -42,6 +42,8 @@ public class JooqTableCapabilities {
 	boolean ableToGroupByAll = false;
 
 	// Typically used for RedShift when it is queried with PostgreSQL dialect
+	// If true, one can `SUM(v) FILTER (c > 123)`
+	// If false, we typically fallback on `CASE`
 	// https://modern-sql.com/feature/filter
 	@Default
 	boolean ableToFilterAggregates = false;

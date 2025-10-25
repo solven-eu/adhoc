@@ -64,7 +64,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = queryFactory.toCondition(ColumnFilter.matchEq("k1", "v1")).getCondition();
+		Condition condition = queryFactory.toConditionSplitLeftover(ColumnFilter.matchEq("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'""");
@@ -74,9 +74,9 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				queryFactory.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				queryFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -87,10 +87,10 @@ public class TestJooqTableQueryFactory_MySql {
 	@Test
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
-				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).optimize();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -99,13 +99,32 @@ public class TestJooqTableQueryFactory_MySql {
 	}
 
 	@Test
-	public void testToCondition_Not() {
-		ISliceFilter filter = FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2"))
-				.optimize()
-				.negate();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+	public void testToCondition_NotFilter() {
+		ISliceFilter filter =
+				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine().negate();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
+				not (
+				  (
+				    "k1" is not null
+				    and "k1" = 'v1'
+				  )
+				  or (
+				    "k2" is not null
+				    and "k2" = 'v2'
+				  )
+				)""");
+	}
+
+	@Test
+	public void testToCondition_NotMatcher() {
+		ISliceFilter filter =
+				FilterBuilder.and(ColumnFilter.notEq("k1", "v1"), ColumnFilter.notEq("k2", "v2")).combine();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
+
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  not (
@@ -210,7 +229,7 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testFilter_custom_OR() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).optimize();
+		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
@@ -236,7 +255,7 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testFilter_custom_NotOr() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter notFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).optimize().negate();
+		ISliceFilter notFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine().negate();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 

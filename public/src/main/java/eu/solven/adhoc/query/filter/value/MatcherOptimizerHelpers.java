@@ -286,8 +286,8 @@ public class MatcherOptimizerHelpers {
 			if (disallowedButAllowedByOther.size() < disallowedElements.size()) {
 				AndMatcher simplerWithNotAndIn = AndMatcher.builder()
 						// Reject individually the elements not already rejected by other
-						.operand(NotMatcher.not(InMatcher.matchIn(disallowedButAllowedByOther), false))
-						.operand(other)
+						.and(NotMatcher.not(InMatcher.matchIn(disallowedButAllowedByOther), false))
+						.and(other)
 						.build();
 				return Optional.of(simplerWithNotAndIn);
 			}

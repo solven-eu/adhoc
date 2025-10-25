@@ -101,17 +101,4 @@ public class PivotableSecuritySpringConfig {
 
 		return null;
 	}
-
-	// We print a refreshToken at startup, as it makes it easier to configure a player
-	// @Bean
-	// public Void printRandomPlayerRefreshToken(@Qualifier("random") AdhocUser user, PivotableTokenService
-	// tokenService) {
-	// UUID accountId = user.getAccountId();
-	//
-	// RefreshTokenWrapper refreshToken = tokenService.wrapInJwtRefreshToken(accountId);
-	//
-	// log.info("refresh_token for accountId={}: {}", user.getAccountId(), refreshToken);
-	//
-	// return null;
-	// }
 }

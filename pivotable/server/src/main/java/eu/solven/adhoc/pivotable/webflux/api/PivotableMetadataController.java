@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.pepper.mappath.MapPathGet;
 
@@ -91,6 +93,17 @@ public class PivotableMetadataController {
 					queryOptions.add(ImmutableMap.<String, Object>builder()
 							.put(K_NAME, option.toString())
 							.put(K_DESC, "Missing description for " + option.toString())
+							.build());
+				}
+			}
+
+			for (InternalQueryOptions option : InternalQueryOptions.values()) {
+				if (queryOptions.stream()
+						.noneMatch(m -> MapPathGet.getRequiredString(m, K_NAME).equalsIgnoreCase(option.toString()))) {
+					queryOptions.add(ImmutableMap.<String, Object>builder()
+							.put(K_NAME, option.toString())
+							.put(K_DESC, "Missing description for " + option.toString())
+							.put("tags", Set.of("internal"))
 							.build());
 				}
 			}

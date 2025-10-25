@@ -31,6 +31,7 @@ import com.google.common.collect.Iterables;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
+import lombok.ToString;
 import lombok.Value;
 
 /**
@@ -40,6 +41,7 @@ import lombok.Value;
  */
 @Value
 @Builder
+@ToString(exclude = "allColumns")
 public class AggregatedRecordFields {
 	@NonNull
 	@Singular
@@ -47,12 +49,13 @@ public class AggregatedRecordFields {
 	@NonNull
 	@Singular
 	ImmutableList<String> columns;
+	// Additional columns for the leftover filters
 	@NonNull
 	@Singular
-	ImmutableList<String> lateColumns;
+	ImmutableList<String> leftovers;
 
 	private Supplier<ImmutableList<String>> allColumns =
-			Suppliers.memoize(() -> ImmutableList.copyOf(Iterables.concat(getColumns(), getLateColumns())));
+			Suppliers.memoize(() -> ImmutableList.copyOf(Iterables.concat(getColumns(), getLeftovers())));
 
 	public ImmutableList<String> getAllColumns() {
 		return allColumns.get();

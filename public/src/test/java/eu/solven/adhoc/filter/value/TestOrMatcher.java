@@ -88,12 +88,10 @@ public class TestOrMatcher {
 
 	@Test
 	public void testEqualsDifferentOrder() {
-		OrMatcher aThenB =
-				OrMatcher.builder().operand(LikeMatcher.matching("a%")).operand(LikeMatcher.matching("%b")).build();
-		OrMatcher bThenA =
-				OrMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
+		OrMatcher aThenB = OrMatcher.builder().or(LikeMatcher.matching("a%")).or(LikeMatcher.matching("%b")).build();
+		OrMatcher bThenA = OrMatcher.builder().or(LikeMatcher.matching("%b")).or(LikeMatcher.matching("a%")).build();
 
-		Assertions.assertThat(aThenB).isEqualTo(bThenA).hasToString("LikeMatcher(pattern=a%)|LikeMatcher(pattern=%b)");
+		Assertions.assertThat(aThenB).isEqualTo(bThenA).hasToString("LIKE 'a%'|LIKE '%b'");
 	}
 
 	@Test

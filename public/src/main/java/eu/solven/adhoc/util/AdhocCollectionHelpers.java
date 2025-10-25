@@ -57,6 +57,19 @@ public class AdhocCollectionHelpers {
 	}
 
 	public static Collection<?> unnestAsCollection(Collection<?> collection, Predicate<Object> acceptElement) {
+		if (collection.isEmpty()) {
+			return collection;
+		}
+
+		// Optimistic path: manage the case we receive a single entry
+		{
+			if (collection.size() == 1) {
+				Object singleElement = collection.iterator().next();
+				if (singleElement instanceof Collection<?> singleCollection) {
+					return unnestAsCollection(singleCollection);
+				}
+			}
+		}
 		// Optimistic path: in most cases, there is no nesting
 		{
 			boolean hasNested = false;
@@ -163,6 +176,13 @@ public class AdhocCollectionHelpers {
 			return ImmutableSet.copyOf(left);
 		} else {
 			return ImmutableSet.<T>builder().addAll(left).addAll(right).build();
+		}
+	}
+
+	@SuppressWarnings("PMD.LooseCoupling")
+	public static void trimToSize(Collection<?> collection) {
+		if (collection instanceof ArrayList arrayList) {
+			arrayList.trimToSize();
 		}
 	}
 }

@@ -23,11 +23,11 @@
 package eu.solven.adhoc.engine;
 
 import java.util.ArrayList;
-import java.util.Deque;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -88,8 +88,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph = new DirectedMultigraph<>(DefaultEdge.class);
 
 	// Holds the querySteps which underlying steps are pending for processing
-	// Not a Set as we want FIFO behavior, for reproducability
-	final Deque<CubeQueryStep> pending = new LinkedList<>();
+	// Not a HashSet as we want FIFO behavior, for reproducibility
+	// Not a LinkedList as we'll do many `.contains`
+	final Collection<CubeQueryStep> pending = new LinkedHashSet<>();
 
 	// Holds the querySteps which underlying steps are processed
 	final Set<CubeQueryStep> processed = new HashSet<>();
@@ -244,7 +245,15 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	}
 
 	protected CubeQueryStep pollLeftover() {
-		return pending.poll();
+		// Equivalent with `Deque.poll()`
+		if (pending.isEmpty()) {
+			return null;
+		} else {
+			Iterator<CubeQueryStep> iterator = pending.iterator();
+			CubeQueryStep polled = iterator.next();
+			iterator.remove();
+			return polled;
+		}
 	}
 
 	/**

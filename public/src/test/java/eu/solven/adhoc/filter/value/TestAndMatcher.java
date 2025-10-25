@@ -25,7 +25,6 @@ package eu.solven.adhoc.filter.value;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -38,16 +37,13 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 
 public class TestAndMatcher {
-	@Disabled("TODO Implement this optimization")
 	@Test
 	public void testAndInEq() {
-		AndMatcher a_and_aandb =
-				AndMatcher.builder().operand(EqualsMatcher.matchEq("a")).operand(InMatcher.matchIn("a", "b")).build();
+		IValueMatcher a_and_aandb = AndMatcher.and(EqualsMatcher.matchEq("a"), InMatcher.matchIn("a", "b"));
 
-		// TODO Improve this when relevant
-		// Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.isEqualTo("a"));
 		Assertions.assertThat(a_and_aandb).isEqualTo(EqualsMatcher.matchEq("a"));
 	}
 
@@ -66,9 +62,9 @@ public class TestAndMatcher {
 	@Test
 	public void testEqualsDifferentOrder() {
 		AndMatcher aThenB =
-				AndMatcher.builder().operand(LikeMatcher.matching("a%")).operand(LikeMatcher.matching("%b")).build();
+				AndMatcher.builder().and(LikeMatcher.matching("a%")).and(LikeMatcher.matching("%b")).build();
 		AndMatcher bThenA =
-				AndMatcher.builder().operand(LikeMatcher.matching("%b")).operand(LikeMatcher.matching("a%")).build();
+				AndMatcher.builder().and(LikeMatcher.matching("%b")).and(LikeMatcher.matching("a%")).build();
 
 		Assertions.assertThat(aThenB).isEqualTo(bThenA);
 	}
@@ -113,12 +109,20 @@ public class TestAndMatcher {
 				    "type" : "like",
 				    "pattern" : "a%"
 				  } ]
-				}
-																""".trim());
+				}""");
 
 		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
 
 		Assertions.assertThat(fromString).isEqualTo(matcher);
+	}
+
+	@Test
+	public void testToString_or() {
+		IValueMatcher matcher = AndMatcher.and(LikeMatcher.matching("a%"),
+				OrMatcher.or(LikeMatcher.matching("%b%"), LikeMatcher.matching("%c%")));
+
+		Assertions.assertThat(matcher).hasToString("LIKE 'a%'&(LIKE '%b%'|LIKE '%c%')");
+
 	}
 
 }

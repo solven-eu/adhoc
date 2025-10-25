@@ -20,37 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.context;
-
-import java.util.Set;
-
-import eu.solven.adhoc.engine.IMeasureResolver;
-import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.query.cube.ICubeQuery;
-import lombok.Singular;
-import lombok.experimental.SuperBuilder;
+package eu.solven.adhoc.util;
 
 /**
- * This {@link IQueryPreparator} helps always keeping given measures, generating given columns. It helps
+ * To be added on method which ensures given behavior is very fast. Such tests generally relies on a large size, to
+ * demonstrate it remains fast even on a large input.
  * 
  * @author Benoit Lacelle
  */
-@SuperBuilder
-@Deprecated(since = "Poor designs. Some IColumnGenerator should not come from measures")
-public class GeneratedColumnsPreparator extends StandardQueryPreparator {
-
-	@Singular
-	Set<String> generatedColumnsMeasures;
-
-	@Override
-	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
-		MeasureForestBuilder filteredForest = super.filterForest(forest, preparedQuery);
-
-		generatedColumnsMeasures.forEach(calculatedMeasure -> filteredForest
-				.measure(forest.resolveIfRef(ReferencedMeasure.ref(calculatedMeasure))));
-
-		return filteredForest;
-	}
+public @interface PerformanceGateway {
 
 }

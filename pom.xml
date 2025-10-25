@@ -62,6 +62,10 @@
 
 		<pepper.version>5.2</pepper.version>
 
+		<!-- Used by Adhoc as a library, and Pivotable -->
+		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
+		<jooq.version>3.20.8</jooq.version>
+
 		<spotless.version>3.0.0</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 

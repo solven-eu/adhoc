@@ -685,8 +685,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
 - [Concurrency] Prevent `QueryStepRecursiveAction` to request multiple times the same underlying queryStep
 - [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
-- [Feature] Pivotable should enable to filter-out easily a single member (similarly to existing filtering feature).
-- [Feature] Pivotable should query asynchronously. It would enable cancellation of previous queries when editing the wizard.
+- [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
 
 # Sponsors
 

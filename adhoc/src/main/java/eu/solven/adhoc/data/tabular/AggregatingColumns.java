@@ -137,7 +137,10 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			notFinalColumn = MultitypeHashColumn.empty();
 		}
 
-		if (notFinalColumn instanceof ICompactable compactable) {
+		if (notFinalColumn.isEmpty()) {
+			// RAM optimization
+			return MultitypeHashColumn.empty();
+		} else if (notFinalColumn instanceof ICompactable compactable) {
 			compactable.compact();
 		}
 

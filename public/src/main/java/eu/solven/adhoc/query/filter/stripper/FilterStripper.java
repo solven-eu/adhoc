@@ -40,9 +40,13 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,34 +56,37 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
+@Builder
 public class FilterStripper implements IFilterStripper {
 	@Getter(AccessLevel.PROTECTED)
+	@With
+	@NonNull
 	protected final ISliceFilter where;
 
 	protected final Supplier<Set<String>> whereColumns =
 			Suppliers.memoize(() -> FilterHelpers.getFilteredColumns(getWhere()));
 
 	// Splitting `WHERE` is memoized as it is called many times, as `isStricterThan` is recursive.
-	// TODO Should we merge in a single supplier?
 	protected final Supplier<Set<ISliceFilter>> whereAnds = Suppliers.memoize(this::splitWhereAnd);
-	protected final Supplier<Set<ISliceFilter>> whereOrs = Suppliers.memoize(this::splitWhereOr);
 
 	// Cache isStricterThan as due to the recursivity of the argument, we often call on the same input
 	protected final Cache<ISliceFilter, Boolean> knownAsStricter = CacheBuilder.newBuilder().build();
+
 	// Cache filterStripper to benefit from the subWhere stripper own cache
-	protected final Cache<ISliceFilter, IFilterStripper> filterToStripper = CacheBuilder.newBuilder().build();
+	@Default
+	protected final Cache<ISliceFilter, FilterStripper> filterToStripper = CacheBuilder.newBuilder().build();
+
+	protected Set<String> getColumns() {
+		return whereColumns.get();
+	}
 
 	protected Set<ISliceFilter> splitWhereAnd() {
 		return FilterHelpers.splitAnd(where);
 	}
 
-	protected Set<ISliceFilter> splitWhereOr() {
-		return FilterHelpers.splitOr(where);
-	}
-
 	@SneakyThrows(ExecutionException.class)
-	protected IFilterStripper makeStripper(ISliceFilter subWhere) {
-		return filterToStripper.get(subWhere, () -> new FilterStripper(subWhere));
+	protected FilterStripper makeStripper(ISliceFilter subWhere) {
+		return filterToStripper.get(subWhere, () -> this.withWhere(subWhere));
 	}
 
 	@Override
@@ -189,10 +196,10 @@ public class FilterStripper implements IFilterStripper {
 		});
 	}
 
-	protected boolean noCacheIsStricterThan(ISliceFilter laxer) {
-		if (where instanceof INotFilter notStricter && laxer instanceof INotFilter notLaxer) {
+	protected boolean noCacheIsStricterThan(ISliceFilter filter) {
+		if (where instanceof INotFilter notStricter && filter instanceof INotFilter notLaxer) {
 			return makeStripper(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
-		} else if (where instanceof IColumnFilter stricterColumn && laxer instanceof IColumnFilter laxerFilter) {
+		} else if (where instanceof IColumnFilter stricterColumn && filter instanceof IColumnFilter laxerFilter) {
 			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
 			if (!isSameColumn) {
 				return false;
@@ -200,72 +207,73 @@ public class FilterStripper implements IFilterStripper {
 			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
 		}
 
-		Set<String> filterColumns = FilterHelpers.getFilteredColumns(laxer);
+		FilterStripper filterStripper = makeStripper(filter.negate());
 
+		boolean isStricterThanAnd = isStricerThanSplitAnd(filter, filterStripper);
+		if (isStricterThanAnd) {
+			return true;
+		}
+
+		// `WHERE isStricterThan FILTER` is equivalent with `!FILTER isStricterThan !WHERE`
+		// `!` turns `OR into `AND`, which enables reusing previous block, and implementing only `AND`
+		boolean isStricterThanOr = filterStripper.isStricerThanSplitAnd(where.negate(), this);
+		if (isStricterThanOr) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * `isStricterThan` comparing the operands following a `splitAnd` operations. `WHERE` is stricter than `FILTER` if
+	 * all `FILTER` operand is covered by one `WHERE` operand.
+	 * 
+	 * Typical example is `WHERE:a=a1&b=7&c=c3` versus `FILTER:a=in=(a1,a2)&b>=5`
+	 * 
+	 * @param laxer
+	 * @param laxerStripper
+	 * @return
+	 */
+	protected boolean isStricerThanSplitAnd(ISliceFilter laxer, FilterStripper laxerStripper) {
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
 		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
 		// BEWARE Do not rely on AndFilter either, else it may lead on further cycles
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
-		if (!Sets.difference(filterColumns, whereColumns.get()).isEmpty()) {
-			// BEWARE if laxer is a ColumnFilter with a matchAll matcher
+		Set<String> filterColumns = laxerStripper.getColumns();
+		if (!whereColumns.get().containsAll(filterColumns)) {
+			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1&c=c3` due to `c`
+			// BEWARE if laxer is a ColumnFilter with a `matchAll` matcher
 			log.trace("Some filter in laxer are necessarily not present in WHERE");
-		} else {
-			Set<ISliceFilter> allStricters = whereAnds.get();
-			Set<ISliceFilter> allLaxers = FilterHelpers.splitAnd(laxer);
-
-			if (allStricters.containsAll(allLaxers)) {
-				// true if `stricter:A=a1&B=b1` and `laxer:B=b1`
-				return true;
-			}
-			// true if `a==a1&b==b1&c==c1` and `a=in=(a1,a2)&b=in=(b1,b2)`.
-			boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
-				if (allStricters.contains(oneLaxer)) {
-					// Fast track for `a==a1` in `a==a1&b==b1&c==c1` and `a==a1&b=in=(b1,b2)`
-					return true;
-				}
-
-				return allStricters.stream().anyMatch(oneStricter -> {
-					if (oneStricter.equals(where) && oneLaxer.equals(laxer)) {
-						// break cycle in recursivity
-						return false;
-					}
-
-					return makeStripper(oneStricter).isStricterThan(oneLaxer);
-				});
-			});
-			if (allLaxersHasStricter) {
-				return true;
-			}
+			return false;
 		}
 
-		{
-			Set<ISliceFilter> allStricters = whereOrs.get();
-			Set<ISliceFilter> allLaxers = FilterHelpers.splitOr(laxer);
-			if (allLaxers.containsAll(allStricters)) {
-				// true if `stricter:A=a1` and `laxer:A=a1|B=b1`.
+		Set<ISliceFilter> allStricters = whereAnds.get();
+		Set<ISliceFilter> allLaxers = FilterHelpers.splitAnd(laxer);
+
+		if (allStricters.containsAll(allLaxers)) {
+			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1`
+			return true;
+		}
+		// true if `WHERE:a==a1&b==b1&c==c1` and `FILTER:a=in=(a1,a2)&b=in=(b1,b2)`.
+		boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
+			if (allStricters.contains(oneLaxer)) {
+				// Fast track for `a==a1` in `WHERE:a==a1&b==b1&c==c1` and `FILTER:a==a1&b=in=(b1,b2)`
 				return true;
 			}
 
-			// true if `stricter:A=7` and `laxer:A>5|B=b1`.
-			boolean allLaxersInStricter = allStricters.stream().allMatch(oneStricter -> {
-				if (allLaxers.contains(oneStricter)) {
-					// Fast track for `a==a1` in `a==a1&b==b1&c==c1` and `a==a1&b=in=(b1,b2)`
-					return true;
+			return allStricters.stream().anyMatch(oneStricter -> {
+				if (oneStricter.equals(where) && oneLaxer.equals(laxer)) {
+					// break cycle in recursivity
+					return false;
 				}
 
-				return allLaxers.stream().anyMatch(oneLaxer -> {
-					if (oneStricter.equals(where) && oneLaxer.equals(laxer)) {
-						// break cycle in recursivity
-						return false;
-					}
-
-					return makeStripper(oneStricter).isStricterThan(oneLaxer);
-				});
+				// true if `WHERE:a==a1` and `FILTER:a=in=(a1,a2)`.
+				return makeStripper(oneStricter).isStricterThan(oneLaxer);
 			});
-			if (allLaxersInStricter) {
-				return true;
-			}
+		});
+		if (allLaxersHasStricter) {
+			return true;
 		}
 
 		return false;

@@ -24,10 +24,12 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -36,8 +38,10 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.IHasOperands;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -52,14 +56,28 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatcher> {
+
+	// @JsonProperty("matchers")
+	@JsonProperty("operands")
 	@NonNull
 	@Singular
-	ImmutableSet<IValueMatcher> operands;
+	ImmutableSet<IValueMatcher> ands;
+
+	public static IValueMatcher copyOf(Collection<? extends IValueMatcher> ands) {
+		return new AndMatcher(ImmutableSet.copyOf(ands));
+	}
+
+	@JsonIgnore
+	@Override
+	public Set<IValueMatcher> getOperands() {
+		return getAnds();
+	}
 
 	@JsonIgnore
 	public boolean isMatchAll() {
-		return operands.isEmpty();
+		return ands.isEmpty();
 	}
 
 	@Override
@@ -68,14 +86,21 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 			return "matchAll";
 		}
 
-		int size = operands.size();
+		int size = ands.size();
 		if (size <= AdhocUnsafe.limitOrdinalToString) {
-			return operands.stream().map(Object::toString).collect(Collectors.joining("&"));
+			return ands.stream().map(o -> {
+				if (o instanceof OrMatcher orMatcher) {
+					// Add parenthesis
+					return "(%s)".formatted(orMatcher);
+				} else {
+					return o.toString();
+				}
+			}).collect(Collectors.joining("&"));
 		} else {
 			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size);
 
 			AtomicInteger index = new AtomicInteger();
-			operands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+			ands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 
@@ -85,7 +110,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 
 	@Override
 	public boolean match(Object value) {
-		return operands.stream().allMatch(operand -> operand.match(value));
+		return ands.stream().allMatch(operand -> operand.match(value));
 	}
 
 	// `first, second, more` syntax to push providing at least 2 arguments
@@ -104,7 +129,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 
 		// AND of ANDs
 		List<? extends IValueMatcher> notMatchAll = AdhocCollectionHelpers.unnestAsList(AndMatcher.class,
-				AndMatcher.builder().operands(filters).build(),
+				AndMatcher.builder().ands(filters).build(),
 				f -> f.getOperands().size(),
 				AndMatcher::getOperands,
 				// Skipping matchAll is useful on `.edit`
@@ -119,7 +144,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 		} else if (notMatchAll.size() == 1) {
 			return notMatchAll.getFirst();
 		} else {
-			return AndMatcher.builder().operands(notMatchAll).build();
+			return AndMatcher.builder().ands(notMatchAll).build();
 		}
 	}
 }

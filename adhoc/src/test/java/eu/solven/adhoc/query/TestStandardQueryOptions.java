@@ -43,7 +43,7 @@ public class TestStandardQueryOptions {
 
 	@Test
 	public void testJackson_readLowerCase() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = PepperJacksonTestHelper.makeObjectMapper();
 
 		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
 	}
@@ -52,7 +52,7 @@ public class TestStandardQueryOptions {
 	@Test
 	public void testJackson_internalQueryOption() throws JsonProcessingException {
 		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
-				InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION);
+				InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
 
 		Assertions.assertThat(option).isEqualTo("""
 				"DISABLE_AGGREGATOR_INDUCTION"

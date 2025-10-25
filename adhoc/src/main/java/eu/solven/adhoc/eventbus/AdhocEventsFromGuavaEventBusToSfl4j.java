@@ -23,6 +23,7 @@
 package eu.solven.adhoc.eventbus;
 
 import java.util.function.BiConsumer;
+import java.util.regex.Pattern;
 
 import com.google.common.eventbus.Subscribe;
 
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener {
 	public static final String EOL = System.lineSeparator();
+	private static final Pattern EOL_PATTERN = Pattern.compile(System.lineSeparator());
 
 	// This must not have `@Subscribe`, else events would be processed multiple times
 	// This is useful when the EventBus is not Guava
@@ -134,12 +136,12 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 					event.getMessage(),
 					event.getSource() };
 			// In EXPLAIN, we want rows to be well aligned, as we print some sort of ascii-graph
-			for (String messageRow : event.getMessage().split(EOL)) {
+			EOL_PATTERN.splitAsStream(event.getMessage()).forEach(messageRow -> {
 				arguments[2] = messageRow;
 
 				// BEWARE Do not use `Stream.of` else the logger would refer a different class, and break the alignment
 				logMethod.accept("{}{} {} (source={})", arguments);
-			}
+			});
 		} else {
 			Object[] arguments = { event.isDebug() ? "[DEBUG]" : "",
 					event.isExplain() ? "[EXPLAIN]" : "",
