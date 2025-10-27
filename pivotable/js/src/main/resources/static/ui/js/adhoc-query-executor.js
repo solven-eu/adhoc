@@ -282,7 +282,7 @@ export default {
 
 							if (responseStateOnlyJson.retryInMs) {
 								// Retry in at most 15 seconds
-								const retryInMs =Math.min(15000, responseStateOnlyJson.retryInMs);
+								const retryInMs = Math.min(15000, responseStateOnlyJson.retryInMs);
 								console.log("Will retry in", retryInMs, "ms");
 
 								// https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
