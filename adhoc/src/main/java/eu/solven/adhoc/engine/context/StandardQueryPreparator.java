@@ -129,7 +129,6 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	 * @param preparedQuery
 	 * @return a {@link MeasureForest} restricted to the measures playing a role in {@link ICubeQuery}.
 	 */
-	@SuppressWarnings("PMD.CollapsibleIfStatements")
 	protected MeasureForestBuilder filterForest(IMeasureResolver forest, ICubeQuery preparedQuery) {
 		Set<IMeasure> relevantMeasures = new LinkedHashSet<>();
 
@@ -156,6 +155,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 		}
 	}
 
+	@SuppressWarnings("PMD.CollapsibleIfStatements")
 	protected void addSubForest(IMeasureResolver forest, ICubeQuery preparedQuery, Set<IMeasure> relevantMeasures) {
 		Set<IMeasure> measuresToAdd = new LinkedHashSet<>(preparedQuery.getMeasures());
 		while (!measuresToAdd.isEmpty()) {
