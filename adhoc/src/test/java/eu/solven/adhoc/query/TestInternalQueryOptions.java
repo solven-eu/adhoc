@@ -20,50 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.query;
 
-import org.jooq.Record;
-import org.jooq.ResultQuery;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
-import lombok.Builder;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
-/**
- * Converts a {@link TableQuery} into a sql {@link ResultQuery}
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IJooqTableQueryFactory {
-	/**
-	 * The result of splitting an {@link TableQueryV2} into a leg executable by the SQL database, and a filter to be
-	 * applied manually over the output from the database.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	@Value
-	@Builder
-	class QueryWithLeftover {
-		ResultQuery<Record> query;
+public class TestInternalQueryOptions {
 
-		/**
-		 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which
-		 * can not be translated into the SQL engine.
-		 */
-		ISliceFilter leftover;
+	@Disabled("TODO")
+	@Test
+	public void testJackson() throws JsonProcessingException {
+		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
+				InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
 
-		@Singular
-		ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
-
-		AggregatedRecordFields fields;
+		Assertions.assertThat(option).isEqualTo("""
+				"EXPLAIN"
+				""".trim());
 	}
-
-	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);
 
 }

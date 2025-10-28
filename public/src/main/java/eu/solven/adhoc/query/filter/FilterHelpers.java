@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -40,6 +41,7 @@ import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +54,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @UtilityClass
 @Slf4j
-@SuppressWarnings("PMD.GodClass")
+// `filter=%s` is duplicated
+@SuppressWarnings({ "PMD.GodClass", "PMD.AvoidDuplicateLiterals" })
 public class FilterHelpers {
 
 	/**
@@ -154,7 +157,7 @@ public class FilterHelpers {
 			if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
 				return Map.of(columnFilter.getColumn(), equalsMatcher.getWrapped());
 			} else {
-				throw new UnsupportedOperationException("Not managed yet: %s".formatted(slice));
+				throw new NotYetImplementedException("filter=%s".formatted(slice));
 			}
 		} else if (slice.isAnd() && slice instanceof IAndFilter andFilter) {
 			if (andFilter.getOperands().stream().anyMatch(f -> !f.isColumnFilter())) {
@@ -174,14 +177,35 @@ public class FilterHelpers {
 		} else if (slice.isOr()) {
 			throw new IllegalArgumentException("OrMatcher can not be turned into a Map");
 		} else {
-			throw new UnsupportedOperationException("Not managed yet: %s".formatted(slice));
+			throw new NotYetImplementedException("filter=%s".formatted(slice));
 		}
 	}
 
 	public static Set<String> getFilteredColumns(ISliceFilter filter) {
+		// Implementation rely on `.mapMulti` for better performance, not needed to create a `Stream.of` on
+		// IColumnFilter
+		return Stream.of(filter).mapMulti(FilterHelpers::emitFilteredColumns).collect(ImmutableSet.toImmutableSet());
+	}
+
+	// This has been coded with the help of ChatGPT...
+	private static void emitFilteredColumns(ISliceFilter filter, Consumer<String> downstream) {
+		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			downstream.accept(columnFilter.getColumn());
+		} else if (filter instanceof IHasOperands<?> hasOperands) {
+			hasOperands.getOperands().forEach(operand -> emitFilteredColumns((ISliceFilter) operand, downstream));
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			emitFilteredColumns(notFilter.getNegated(), downstream);
+		} else {
+			throw new NotYetImplementedException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
+	}
+
+	@Deprecated
+	public static Set<String> getFilteredColumnsFlatMap(ISliceFilter filter) {
 		return streamFilteredColumns(filter).collect(ImmutableSet.toImmutableSet());
 	}
 
+	@Deprecated
 	static Stream<String> streamFilteredColumns(ISliceFilter filter) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			return Stream.of(columnFilter.getColumn());
@@ -192,8 +216,7 @@ public class FilterHelpers {
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
 			return streamFilteredColumns(notFilter.getNegated());
 		} else {
-			throw new UnsupportedOperationException(
-					"Not managed yet: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+			throw new NotYetImplementedException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
 	}
 
@@ -222,7 +245,7 @@ public class FilterHelpers {
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
 			return filterVisitor.testNegatedOperand(notFilter.getNegated());
 		} else {
-			throw new UnsupportedOperationException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+			throw new NotYetImplementedException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
 	}
 
@@ -253,24 +276,20 @@ public class FilterHelpers {
 	 * Split the filter in a Set of {@link ISliceFilter}, equivalent by AND to the original filter.
 	 *
 	 * @param filter
-	 * @return
+	 * @return a Set of {@link ISliceFilter} equivalent with `AND`, guaranteed to be be themselves neither `AND` not
+	 *         `NOT(OR(...))`
 	 */
 	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
-		Set<ISliceFilter> asSet = splitAndStream(filter)
-				// Skipping matchAll is useful on `.edit`
-				.filter(f -> !f.isMatchAll())
-				.collect(ImmutableSet.toImmutableSet());
-
-		if (asSet.contains(ISliceFilter.MATCH_NONE)) {
-			return ImmutableSet.of(ISliceFilter.MATCH_NONE);
-		}
-
-		return asSet;
+		return splitAnd(Set.of(filter));
 	}
 
 	public static Set<ISliceFilter> splitAnd(Collection<? extends ISliceFilter> filters) {
+		return splitAnd(filters, true);
+	}
+
+	public static Set<ISliceFilter> splitAnd(Collection<? extends ISliceFilter> filters, boolean splitMatchers) {
 		Set<ISliceFilter> asSet = filters.stream()
-				.flatMap(FilterHelpers::splitAndStream)
+				.<ISliceFilter>mapMulti((f, downstream) -> emitAndOperands(f, downstream, splitMatchers))
 				// Skipping matchAll is useful on `.edit`
 				.filter(f -> !f.isMatchAll())
 				.collect(ImmutableSet.toImmutableSet());
@@ -283,39 +302,62 @@ public class FilterHelpers {
 	}
 
 	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
-	protected static Stream<ISliceFilter> splitAndStream(ISliceFilter filter) {
+	// OPTIMIZTION: mapMulti is faster (but more cumbersome) than flatMap
+	protected static void emitAndOperands(ISliceFilter filter,
+			Consumer<ISliceFilter> downstream,
+			boolean splitMatchers) {
+		boolean emitted;
 		if (filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands().stream().flatMap(FilterHelpers::splitAndStream);
+			andFilter.getOperands().forEach(o -> emitAndOperands(o, downstream, splitMatchers));
+			emitted = true;
 		} else if (filter instanceof INotFilter notFilter) {
 			if (notFilter.getNegated() instanceof IOrFilter orFilter) {
-				return orFilter.getOperands().stream().map(ISliceFilter::negate).flatMap(FilterHelpers::splitAndStream);
-			} else if (notFilter.getNegated() instanceof IColumnFilter columnFilter
-					&& columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
-				return inMatcher.getOperands()
+				orFilter.getOperands()
 						.stream()
-						.map(o -> ColumnFilter.match(columnFilter.getColumn(), NotMatcher.notEqualTo(o)));
+						.map(ISliceFilter::negate)
+						.forEach(o -> emitAndOperands(o, downstream, splitMatchers));
+				emitted = true;
+			} else if (splitMatchers && notFilter.getNegated() instanceof IColumnFilter columnFilter
+					&& columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
+				inMatcher.getOperands()
+						.stream()
+						.map(o -> ColumnFilter.match(columnFilter.getColumn(), NotMatcher.notEqualTo(o)))
+						.forEach(o -> emitAndOperands(o, downstream, splitMatchers));
+				emitted = true;
+			} else {
+				emitted = false;
 			}
-		} else if (filter instanceof IColumnFilter columnFilter) {
+		} else if (splitMatchers && filter instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 
 			String column = columnFilter.getColumn();
 			if (valueMatcher instanceof AndMatcher andMatcher) {
-				return andMatcher.getOperands()
+				andMatcher.getOperands()
 						.stream()
-						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build());
+						.map(operand -> ColumnFilter.builder().column(column).valueMatcher(operand).build())
+						.forEach(o -> emitAndOperands(o, downstream, splitMatchers));
+				emitted = true;
 			} else if (valueMatcher instanceof NotMatcher notMatcher
 					&& notMatcher.getNegated() instanceof InMatcher notInMatcher) {
-				return notInMatcher.getOperands()
+				notInMatcher.getOperands()
 						.stream()
 						.map(operand -> ColumnFilter.builder()
 								.column(column)
 								.valueMatcher(NotMatcher.not(EqualsMatcher.matchEq(operand)))
-								.build());
+								.build())
+						.forEach(o -> emitAndOperands(o, downstream, splitMatchers));
+				emitted = true;
+			} else {
+				emitted = false;
 			}
+		} else {
+			emitted = false;
 		}
 
 		// Not splittable
-		return Stream.of(filter);
+		if (!emitted) {
+			downstream.accept(filter);
+		}
 	}
 
 	/**

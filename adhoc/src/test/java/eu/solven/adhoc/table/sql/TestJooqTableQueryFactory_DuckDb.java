@@ -41,7 +41,6 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
@@ -71,7 +70,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = queryFactory.toCondition(ColumnFilter.matchEq("k1", "v1")).getCondition();
+		Condition condition = queryFactory.toConditionSplitLeftover(ColumnFilter.matchEq("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'""");
@@ -81,9 +80,9 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				queryFactory.toCondition(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				queryFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -94,10 +93,10 @@ public class TestJooqTableQueryFactory_DuckDb {
 	@Test
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
-				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).optimize();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				(
 				  "k1" = 'v1'
@@ -106,15 +105,42 @@ public class TestJooqTableQueryFactory_DuckDb {
 	}
 
 	@Test
-	public void testToCondition_Not() {
-		ISliceFilter filter = NotFilter.builder().negated(OrFilter.or(ImmutableMap.of("k1", "v1", "k2", "v2"))).build();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toCondition(filter);
+	public void testToCondition_NotFilter() {
+		ISliceFilter filter =
+				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine().negate();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
 
-		Assertions.assertThat(condition.getPostFilter()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
 				not (
-				  "k1" = 'v1'
-				  or "k2" = 'v2'
+				  (
+				    "k1" is not null
+				    and "k1" = 'v1'
+				  )
+				  or (
+				    "k2" is not null
+				    and "k2" = 'v2'
+				  )
+				)""");
+	}
+
+	@Test
+	public void testToCondition_NotMatcher() {
+		ISliceFilter filter =
+				FilterBuilder.and(ColumnFilter.notEq("k1", "v1"), ColumnFilter.notEq("k2", "v2")).combine();
+		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
+
+		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
+				(
+				  not (
+				    "k1" is not null
+				    and "k1" = 'v1'
+				  )
+				  and not (
+				    "k2" is not null
+				    and "k2" = 'v2'
+				  )
 				)""");
 	}
 
@@ -209,7 +235,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_custom_OR() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).optimize();
+		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
@@ -231,11 +257,14 @@ public class TestJooqTableQueryFactory_DuckDb {
 				select sum("k") "k", "c" from "someTableName" group by ALL""");
 	}
 
+	// BEWARE This ensures the `NOT(OR(...))` is turned into an `AND()` for proper splitting of `postFilter`
 	@Test
 	public void testFilter_custom_NotOr() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		ISliceFilter notFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).optimize().negate();
+		ISliceFilter notFilter = NotFilter.builder()
+				.negated(FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine())
+				.build();
 		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
@@ -347,6 +376,30 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.isEqualTo(
 						"""
 								select sum("k") filter (where not ("c" is not null and cast("c" as varchar) = 'c1')) "k" from "someTableName" group by ALL""");
+	}
+
+	@Test
+	public void testFilteredAggregator_custom() {
+		ISliceFilter nativeFilter = ColumnFilter.matchEq("c", "c1");
+		ColumnFilter customFilter =
+				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
+		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.sum("k"))
+						.filter(nativeFilter)
+						.index(0)
+						.build())
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.sum("k"))
+						.filter(customFilter)
+						.index(1)
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
+				.isEqualTo(
+						"""
+								select sum("k") filter (where "c" = 'c1') "k", sum("k") "k_1", "c" from "someTableName" group by ALL""");
 	}
 
 }

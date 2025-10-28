@@ -153,7 +153,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 				}
 			}
 
-			if (!sqlQuery.getFields().getLateColumns().isEmpty()) {
+			if (!sqlQuery.getFields().getLeftovers().isEmpty()) {
 				throw new NotYetImplementedException("TODO");
 			}
 

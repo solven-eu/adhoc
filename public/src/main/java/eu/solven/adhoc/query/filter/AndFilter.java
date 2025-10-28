@@ -38,8 +38,10 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -57,6 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class AndFilter implements IAndFilter {
 
 	@JsonProperty("filters")
@@ -66,9 +69,8 @@ public class AndFilter implements IAndFilter {
 
 	// This constructor helps not copying ImmutableSet, as `@Singular` always generates a builder, preventing `.copyOf`
 	// optimization
-	@Deprecated(since = "Legit API?")
-	AndFilter(Collection<? extends ISliceFilter> ands) {
-		this.ands = ImmutableSet.copyOf(ands);
+	public static IAndFilter copyOf(Collection<? extends ISliceFilter> ands) {
+		return new AndFilter(ImmutableSet.copyOf(ands));
 	}
 
 	@Override
@@ -94,7 +96,7 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public Set<ISliceFilter> getOperands() {
-		return ImmutableSet.copyOf(ands);
+		return ands;
 	}
 
 	@Override
@@ -106,7 +108,8 @@ public class AndFilter implements IAndFilter {
 		int size = ands.size();
 		if (size <= AdhocUnsafe.limitOrdinalToString) {
 			return ands.stream().map(o -> {
-				if (o instanceof OrFilter orFilter) {
+				if (o instanceof IOrFilter orFilter) {
+					// Add parenthesis
 					return "(%s)".formatted(orFilter);
 				} else {
 					return o.toString();
@@ -140,15 +143,9 @@ public class AndFilter implements IAndFilter {
 			columnFilters.add(ColumnFilter.builder().column(k).matching(v).build());
 		});
 
-		// BEWARE Do not call `.and` due to most optimizations/checks are irrelevant
+		// BEWARE Do not call `.optimize` due to most optimizations/checks are irrelevant
 		// And this is a performance bottleneck in Shiftor
-		if (columnFilters.isEmpty()) {
-			return MATCH_ALL;
-		} else if (columnFilters.size() == 1) {
-			return columnFilters.getFirst();
-		} else {
-			return builder().ands(columnFilters).build();
-		}
+		return FilterBuilder.and(columnFilters).combine();
 	}
 
 	@Deprecated(since = "FilterBuilder.and")
@@ -163,7 +160,8 @@ public class AndFilter implements IAndFilter {
 
 	@Override
 	public ISliceFilter negate() {
-		return FilterBuilder.or(getOperands().stream().map(ISliceFilter::negate).toList()).combine();
+		// A simple `NOT` to prevent having to `.negate` all operands
+		return FilterBuilder.not(this).combine();
 	}
 
 }

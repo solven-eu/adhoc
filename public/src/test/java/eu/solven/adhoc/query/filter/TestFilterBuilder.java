@@ -75,4 +75,15 @@ public class TestFilterBuilder {
 		}
 	}
 
+	@Test
+	public void testNot_combine() {
+		ISliceFilter filter = ColumnFilter.matchEq("c", "v");
+
+		ISliceFilter notFilter = FilterBuilder.not(filter).combine();
+		Assertions.assertThat(notFilter).hasToString("c!=v");
+
+		ISliceFilter notNotFilter = FilterBuilder.not(notFilter).combine();
+		Assertions.assertThat(notNotFilter).hasToString("c==v");
+	}
+
 }

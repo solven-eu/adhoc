@@ -48,9 +48,7 @@ public class TestRsqlToAdhocFilter {
 		ISliceFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action);(director=='Christopher Nolan',actor==*Bale);year=ge=2000");
 		Assertions.assertThat(filter.toString())
-				// TODO Ordering issue
-				// .isEqualTo("genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)&year>=2000")
-				.isEqualTo("year>=2000&genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)");
+				.isEqualTo("genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)&year>=2000");
 	}
 
 	@Test
@@ -58,9 +56,7 @@ public class TestRsqlToAdhocFilter {
 		ISliceFilter filter = rsqlToAdhocFilter
 				.rsql("genres=in=(sci-fi,action) and (director=='Christopher Nolan' or actor==*Bale) and year>=2000");
 		Assertions.assertThat(filter.toString())
-				// TODO Ordering issue
-				// .isEqualTo("genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)&year>=2000")
-				.isEqualTo("year>=2000&genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)");
+				.isEqualTo("genres=in=(sci-fi,action)&(director==Christopher Nolan|actor==*Bale)&year>=2000");
 	}
 
 	@Test

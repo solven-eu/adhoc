@@ -37,7 +37,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.filter.FilterBuilder.Type;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
@@ -46,6 +48,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.PerformanceGateway;
 
 public class TestAndFilter {
 	AtomicInteger nbSkip = new AtomicInteger();
@@ -233,8 +236,9 @@ public class TestAndFilter {
 
 	@Test
 	public void testChained() {
-		ISliceFilter a1Andb2 = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2"));
-		ISliceFilter a1Andb2AndC3 = AndFilter.and(a1Andb2, ColumnFilter.matchEq("c", "c3"));
+		ISliceFilter a1Andb2 =
+				FilterBuilder.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2")).combine();
+		ISliceFilter a1Andb2AndC3 = FilterBuilder.and(a1Andb2, ColumnFilter.matchEq("c", "c3")).optimize();
 
 		Assertions.assertThat(a1Andb2AndC3).isInstanceOfSatisfying(AndFilter.class, andFilter -> {
 			Assertions.assertThat(andFilter.getOperands()).hasSize(3);
@@ -280,8 +284,8 @@ public class TestAndFilter {
 				ColumnFilter.builder()
 						.column("a")
 						.valueMatcher(OrMatcher.builder()
-								.operand(LikeMatcher.matching("%ab"))
-								.operand(LikeMatcher.matching("a%"))
+								.or(LikeMatcher.matching("%ab"))
+								.or(LikeMatcher.matching("a%"))
 								.build())
 						.build());
 
@@ -489,9 +493,7 @@ public class TestAndFilter {
 						.negate())
 				.optimize();
 
-		Assertions.assertThat(output)
-				.hasToString(
-						"b=out=(b1,b2,b3,b4)&c=out=(c1,c2)&d=out=(d1,d2)&a does NOT match `LikeMatcher(pattern=a1)`");
+		Assertions.assertThat(output).hasToString("c=out=(c1,c2)&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'");
 	}
 
 	@Test
@@ -510,9 +512,7 @@ public class TestAndFilter {
 		ISliceFilter notAB = AndFilter.and(ColumnFilter.notLike("a", "a%"), ColumnFilter.notLike("b", "b%"));
 
 		// In not many negated operators, we stick to an AND(many nots)
-		Assertions.assertThat(notAB)
-				.isInstanceOf(AndFilter.class)
-				.hasToString("a does NOT match `LikeMatcher(pattern=a%)`&b does NOT match `LikeMatcher(pattern=b%)`");
+		Assertions.assertThat(notAB).isInstanceOf(AndFilter.class).hasToString("a NOT LIKE 'a%'&b NOT LIKE 'b%'");
 
 		ISliceFilter notABC = AndFilter
 				.and(ColumnFilter.notLike("a", "a%"), ColumnFilter.notLike("b", "b%"), ColumnFilter.notLike("c", "c%"));
@@ -520,8 +520,7 @@ public class TestAndFilter {
 		// In enough negated operators, we prefer a NOT of positive operators
 		Assertions.assertThat(notABC)
 				.isInstanceOf(NotFilter.class)
-				.hasToString(
-						"!(a matches `LikeMatcher(pattern=a%)`|b matches `LikeMatcher(pattern=b%)`|c matches `LikeMatcher(pattern=c%)`)");
+				.hasToString("!(a LIKE 'a%'|b LIKE 'b%'|c LIKE 'c%')");
 	}
 
 	@Test
@@ -691,7 +690,8 @@ public class TestAndFilter {
 	}
 
 	@Test
-	public void testAnd_between2Large() {
+	@PerformanceGateway
+	public void testAnd_between2Large_differentColumns() {
 		int size = 256;
 		ISliceFilter left =
 				FilterBuilder.and(IntStream.range(0, size).mapToObj(i -> ColumnFilter.matchEq("a" + i, i)).toList())
@@ -702,5 +702,49 @@ public class TestAndFilter {
 						.combine();
 
 		FilterBuilder.and(left, right).optimize();
+	}
+
+	@Test
+	@PerformanceGateway
+	public void testAnd_OneLargeIn() {
+		int size = 256 * 1024;
+
+		ISliceFilter left = ColumnFilter.matchEq("a", "a0");
+
+		// Need at least 2 OR to trigger some optimization pathes in `optimizeAndOfOr`
+		ISliceFilter middle = ColumnFilter.matchIn("b", ImmutableSet.of("b1", "b2"));
+		ISliceFilter right = ColumnFilter.matchIn("c", ContiguousSet.closedOpen(0, size));
+
+		FilterBuilder.and(left, middle, right).optimize();
+	}
+
+	@Test
+	@PerformanceGateway
+	public void testAnd_OneLargeIn_crossWithSimpleOr() {
+		int size = 256 * 1024;
+
+		ISliceFilter left = ColumnFilter.matchEq("a", "a0");
+
+		// Need at least 2 OR to trigger some optimization pathes in `optimizeAndOfOr`
+		ISliceFilter middle = ColumnFilter.matchIn("c", ImmutableSet.of(0, 1));
+		ISliceFilter right = ColumnFilter.matchIn("c", ContiguousSet.closedOpen(0, size));
+
+		FilterBuilder.and(left, middle, right).optimize();
+	}
+
+	@Test
+	@PerformanceGateway
+	public void testAnd_OneLargeNotIn() {
+		int size = 256 * 1024;
+
+		// ISliceFilter left = ColumnFilter.matchEq("a", "a0");
+
+		// Need at least 2 OR to trigger some optimization pathes in `optimizeAndOfOr`
+		// ISliceFilter middle = ColumnFilter.matchIn("c", ImmutableSet.of(0, 1));
+		ISliceFilter right = ColumnFilter.matchIn("c", ContiguousSet.closedOpen(0, size)).negate();
+
+		FilterBuilder.and(
+				// left, middle,
+				right).optimize();
 	}
 }

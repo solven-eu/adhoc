@@ -280,11 +280,9 @@ export default {
 							const responseStateOnlyJson = await responseStateOnly.json();
 							console.debug("queryResult is", responseStateOnlyJson);
 
-							if (responseStateOnlyJson.state === "SERVED") {
-								console.log("query is SERVED");
-								break;
-							} else if (responseStateOnlyJson.retryInMs) {
-								const retryInMs = responseStateOnlyJson.retryInMs;
+							if (responseStateOnlyJson.retryInMs) {
+								// Retry in at most 15 seconds
+								const retryInMs = Math.min(15000, responseStateOnlyJson.retryInMs);
 								console.log("Will retry in", retryInMs, "ms");
 
 								// https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
@@ -293,6 +291,9 @@ export default {
 									return new Promise((resolve) => setTimeout(resolve, time));
 								}
 								await sleep(retryInMs);
+							} else {
+								console.log("query has state", responseStateOnlyJson.state);
+								break;
 							}
 						}
 						props.tabularView.loading.executing = false;
@@ -326,7 +327,12 @@ export default {
 							return;
 						}
 
-						onView(queryForApi, responseTabularView.view, stringifiedQuery, startDownloading);
+						if (responseTabularView.view) {
+							onView(queryForApi, responseTabularView.view, stringifiedQuery, startDownloading);
+						} else {
+							// Typically happens on a failure
+							throw new Error("Query has state=" + responseTabularView.state);
+						}
 					}
 				} catch (e) {
 					console.error("Issue on Network:", e);

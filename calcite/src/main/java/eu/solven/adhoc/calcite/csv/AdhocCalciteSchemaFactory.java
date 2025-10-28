@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
+import org.springframework.core.env.StandardEnvironment;
 
 import com.google.common.eventbus.EventBus;
 
@@ -71,7 +72,9 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 
 		// IAdhocTableWrapper adw = makeTableWrapper(name, operand);
 
-		AdhocSchema schema = AdhocSchema.builder().build();
+		// TODO Clarify the env to use
+		StandardEnvironment env = new StandardEnvironment();
+		AdhocSchema schema = AdhocSchema.builder().env(env).build();
 
 		nameToTable.forEach((tableName, table) -> {
 			if (!table.getName().equals(tableName)) {
@@ -80,6 +83,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 			}
 			schema.registerTable(table);
 
+			// TODO StandardImplicitOptions to rely on environment options
 			CubeWrapper cube = CubeWrapper.builder().name(tableName).engine(aqe).forest(amb).table(table).build();
 			schema.registerCube(cube);
 		});

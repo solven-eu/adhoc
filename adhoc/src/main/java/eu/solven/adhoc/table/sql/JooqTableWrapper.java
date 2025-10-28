@@ -288,11 +288,12 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	protected boolean areDistinctSliced(TableQueryV2 tableQuery, QueryWithLeftover resultQuery) {
-		if (resultQuery.getLeftover().isMatchAll()) {
+		if (resultQuery.getLeftover().isMatchAll() && resultQuery.getAggregatorToLeftovers().isEmpty()) {
+			// SQL Engines guarantee a single record per groupBy
 			return true;
 		} else {
 			// We may have queried columns which are not part of the groupBy
-			// TODO We may return true if we know the lateFiltered columns are also in the groupBy
+			// TODO We may return true if we know the leftovers columns are also in the groupBy
 			return false;
 		}
 	}
@@ -330,9 +331,35 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		// Field<?>[] fields = sqlQuery.getQuery().fields();
-		return sqlQuery.getQuery().stream().map(r -> intoMap(sqlQuery.getFields(), r)).filter(row -> {
-			return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
-		});
+		return sqlQuery.getQuery()
+				.stream()
+				.map(r -> intoMap(sqlQuery.getFields(), r))
+				// leftover in WHERE
+				.filter(row -> {
+					return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
+				})
+				// leftover in FILTER
+				.map(row -> {
+					if (sqlQuery.getAggregatorToLeftovers().isEmpty()) {
+						return row;
+					} else {
+						// Copy aggregates as we may remove if the leftover does not match
+						Map<String, ?> aggregates = new LinkedHashMap<>(row.aggregatesAsMap());
+
+						sqlQuery.getAggregatorToLeftovers().forEach((measure, leftover) -> {
+							Object currentValue = aggregates.get(measure);
+
+							if (currentValue == null) {
+								// Aggregate is null: no point in checking the leftover on FILTER
+								log.trace("Skip removing null aggregate");
+							} else if (!MoreFilterHelpers.match(leftover, row)) {
+								aggregates.remove(measure);
+							}
+						});
+
+						return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
+					}
+				});
 
 	}
 
@@ -384,7 +411,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 		columnShift += fields.getColumns().size();
 		{
-			List<String> groupByFields = fields.getLateColumns();
+			List<String> groupByFields = fields.getLeftovers();
 			int size = groupByFields.size();
 
 			for (int i = 0; i < size; i++) {

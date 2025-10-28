@@ -23,11 +23,9 @@
 package eu.solven.adhoc.cube;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -40,7 +38,6 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
-import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
@@ -152,8 +149,8 @@ public class CubeWrapper implements ICubeWrapper {
 		return columnToType.values();
 	}
 
-	private Map<String, ColumnMetadata> getColumnsWithoutAliases() {
-		Map<String, ColumnMetadata> columnToType = new HashMap<>();
+	protected Map<String, ColumnMetadata> getColumnsWithoutAliases() {
+		Map<String, ColumnMetadata> columnToType = new LinkedHashMap<>();
 
 		// First, register table columns
 		table.getColumns().forEach((table) -> {
@@ -168,31 +165,26 @@ public class CubeWrapper implements ICubeWrapper {
 
 		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
 		forest.getMeasures().forEach(measure -> {
-			if (measure instanceof IMayHaveColumnGenerator mayHaveColumnGenerator) {
-				try {
-
-					Optional<IColumnGenerator> optColumnGenerator =
-							mayHaveColumnGenerator.optColumnGenerator(operatorFactory);
-
-					optColumnGenerator.ifPresent(columnGenerator -> {
-						// TODO How conflicts should be handled?
-						columnGenerator.getColumnTypes().forEach((columnName, type) -> {
-							columnToType.put(columnName,
-									ColumnMetadata.builder().name(columnName).tag("generated").type(type).build());
+			try {
+				ColumnGeneratorHelpers.getColumnGenerators(operatorFactory, Set.of(measure), IValueMatcher.MATCH_ALL)
+						.forEach(columnGenerator -> {
+							// TODO How conflicts should be handled? `ColumnMetadata.merge`?
+							columnGenerator.getColumnTypes().forEach((columnName, type) -> {
+								columnToType.put(columnName,
+										ColumnMetadata.builder().name(columnName).tag("generated").type(type).build());
+							});
 						});
-					});
-				} catch (Exception e) {
-					if (AdhocUnsafe.isFailFast()) {
-						String msg = "Issue looking for an %s in m=%s c=%s"
-								.formatted(IColumnGenerator.class.getSimpleName(), measure, this.getName());
-						throw new IllegalStateException(msg, e);
-					} else {
-						log.warn("Issue looking for an {} in m={} c={}",
-								IColumnGenerator.class.getSimpleName(),
-								measure,
-								this.getName(),
-								e);
-					}
+			} catch (RuntimeException e) {
+				if (AdhocUnsafe.isFailFast()) {
+					String msg = "Issue looking for an %s in m=%s c=%s"
+							.formatted(IColumnGenerator.class.getSimpleName(), measure, this.getName());
+					throw new IllegalStateException(msg, e);
+				} else {
+					log.warn("Issue looking for an {} in m={} c={}",
+							IColumnGenerator.class.getSimpleName(),
+							measure,
+							this.getName(),
+							e);
 				}
 			}
 		});

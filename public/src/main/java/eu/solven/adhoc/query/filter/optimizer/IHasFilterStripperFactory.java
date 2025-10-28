@@ -20,50 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.query.filter.optimizer;
 
-import org.jooq.Record;
-import org.jooq.ResultQuery;
-
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
-import lombok.Builder;
-import lombok.Singular;
-import lombok.Value;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 
 /**
- * Converts a {@link TableQuery} into a sql {@link ResultQuery}
+ * Helps re-using an {@link IFilterStripperFactory}.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IJooqTableQueryFactory {
-	/**
-	 * The result of splitting an {@link TableQueryV2} into a leg executable by the SQL database, and a filter to be
-	 * applied manually over the output from the database.
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	@Value
-	@Builder
-	class QueryWithLeftover {
-		ResultQuery<Record> query;
-
-		/**
-		 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which
-		 * can not be translated into the SQL engine.
-		 */
-		ISliceFilter leftover;
-
-		@Singular
-		ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
-
-		AggregatedRecordFields fields;
-	}
-
-	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);
-
+public interface IHasFilterStripperFactory {
+	IFilterStripperFactory getFilterStripperFactory();
 }

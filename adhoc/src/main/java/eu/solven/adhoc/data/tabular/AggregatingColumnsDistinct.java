@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
@@ -36,6 +37,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -122,6 +124,15 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			// measure, and not a single aggregate was written
 			notFinalColumn = MultitypeHashColumn.empty();
 		}
+
+		if (notFinalColumn.isEmpty()) {
+			// RAM optimization
+			return MultitypeHashColumn.empty();
+		} else if (notFinalColumn instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+
+		AdhocCollectionHelpers.trimToSize(indexToSlice);
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 

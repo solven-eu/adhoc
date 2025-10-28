@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.query.filter;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -41,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 @Builder
 public class FilterBuilder {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	final List<ISliceFilter> filters = new ArrayList<>();
+	final Set<ISliceFilter> filters = new LinkedHashSet<>();
 
 	final Type andElseOr;
 
@@ -111,7 +111,7 @@ public class FilterBuilder {
 			if (filters.size() != 1) {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
-			return optimizer.not(filters.getFirst());
+			return optimizer.not(filters.iterator().next());
 		}
 	}
 
@@ -135,9 +135,9 @@ public class FilterBuilder {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
 		} else if (filters.size() == 1) {
-			ISliceFilter singleFilter = filters.getFirst();
+			ISliceFilter singleFilter = filters.iterator().next();
 			if (andElseOr == Type.NOT) {
-				return NotFilter.builder().negated(singleFilter).build();
+				return NotFilter.simpleNot(singleFilter);
 			} else {
 				return singleFilter;
 			}
@@ -158,14 +158,16 @@ public class FilterBuilder {
 				filters.clear();
 				filters.add(ISliceFilter.MATCH_NONE);
 			} else {
-				filters.removeIf(ISliceFilter.MATCH_ALL::equals);
+				// `.remove` as `filters` is a Set
+				filters.remove(ISliceFilter.MATCH_ALL);
 			}
 		} else if (andElseOr == Type.OR) {
 			if (filters.contains(ISliceFilter.MATCH_ALL)) {
 				filters.clear();
 				filters.add(ISliceFilter.MATCH_ALL);
 			} else {
-				filters.removeIf(ISliceFilter.MATCH_NONE::equals);
+				// `.remove` as `filters` is a Set
+				filters.remove(ISliceFilter.MATCH_NONE);
 			}
 		}
 	}

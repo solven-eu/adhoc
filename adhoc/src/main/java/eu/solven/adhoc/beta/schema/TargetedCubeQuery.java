@@ -24,13 +24,10 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.UUID;
 
-import com.google.common.collect.ImmutableSet;
-
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -52,8 +49,4 @@ public class TargetedCubeQuery {
 
 	@NonNull
 	CubeQuery query;
-
-	@Singular
-	@NonNull
-	ImmutableSet<IQueryOption> options;
 }

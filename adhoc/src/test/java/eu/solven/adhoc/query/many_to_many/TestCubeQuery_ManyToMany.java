@@ -48,6 +48,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestCubeQuery_ManyToMany extends ADagTest implements IAdhocTestConstants {
 
@@ -356,5 +357,19 @@ public class TestCubeQuery_ManyToMany extends ADagTest implements IAdhocTestCons
 								    \\-- #2 m=k1(SUM) filter=matchAll groupBy=(country)""");
 
 		Assertions.assertThat(messages).hasSize(3);
+	}
+
+	@Test
+	public void testFilterGroups_pattern() {
+		prepareMeasures();
+
+		ITabularView output = cube().execute(
+				CubeQuery.builder().measure(dispatchedMeasure).andFilter(cGroup, LikeMatcher.matching("%20")).build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of(dispatchedMeasure, 0L + 123 + 234));
 	}
 }

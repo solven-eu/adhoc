@@ -6,15 +6,26 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Introduced `InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR` to force `TableQueryOptimizerSinglePerAggregator` from the options.
+- Enable custom `ISliceFilter` in `FILTER` in `TableQueryV2`
+- `AndFilter.copyOf` and `OrFilter.copyOf` enables very fast creation of `AndFilter` and `OrFilter` is all optimizations ahs to be skipped.
 
 ### Changed
 - Renamed `ITabularGroupByRecord.groupByKeySet()` into `ITabularGroupByRecord.columnsKeySet()`.
 
 ### Removed
 - Removed `IAdhocSlice.getRawSliced(String)`. Prefer `IAdhocSlice.getGroupBy(String)`.
+- Removed `Combinator implements IMayHaveColumnGenerator` as only `IDecomposition` seems a reasonable option. 
+- Removed `GeneratedColumnsPreparator` as `IMayHaveColumnGenerator` are automatically added by `StandardQueryPreparator`
 
 ### Fixed
-- Fix but in SQL condition with NOT given NULL. (Typically `NOT(c = 'v')` is turned into `NOT(c IS NOT NULL AND c = 'v')`).
+- Fix bug in SQL condition with NOT given NULL. (Typically `NOT(c = 'v')` is turned into `NOT(c IS NOT NULL AND c = 'v')`).
+- Actuator configuration in Pivotable has been reviewed. `/actuator/info` and `/actuator/health` are public.
+- Memory-leak in `CachingOperatorsFactory` due to `DispatchorQueryStep` adding values as option, for `CumulatingDecomposition`.
+- Improve compaction in `IMultitypeMergeableGrid.closeColumn`
+
+### Improved
+- `FilterHelpers.getFilteredColumns` is faster by relying on `Stream.mapMulti`
+- `FilterOptimizer.optimizeAndOfOr` skips operands which are alone on given column, even if they hold an `OR`.
 
 ## [0.0.11]
 

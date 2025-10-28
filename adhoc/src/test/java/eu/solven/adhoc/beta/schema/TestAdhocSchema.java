@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.env.MockEnvironment;
 
 import eu.solven.adhoc.beta.schema.IAdhocSchema.AdhocSchemaQuery;
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -43,9 +44,10 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {
+	AdhocSchema schema = AdhocSchema.builder().env(new MockEnvironment()).build();
+
 	@Test
 	public void testColumns() {
-		AdhocSchema schema = AdhocSchema.builder().build();
 
 		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
 		schema.registerTable(table);
@@ -58,8 +60,6 @@ public class TestAdhocSchema {
 
 	@Test
 	public void testColumns_notAll() {
-		AdhocSchema schema = AdhocSchema.builder().build();
-
 		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
 		schema.registerTable(table);
 
@@ -76,7 +76,6 @@ public class TestAdhocSchema {
 		LocalDate today = LocalDate.now();
 		table.add(Map.of("k", "v", "date", today));
 
-		AdhocSchema schema = AdhocSchema.builder().build();
 		schema.registerTable(table);
 		schema.registerForest(MeasureForest.builder().name("simple").measure(Aggregator.countAsterisk()).build());
 
@@ -97,8 +96,6 @@ public class TestAdhocSchema {
 
 	@Test
 	public void testGetSchema() {
-		AdhocSchema schema = AdhocSchema.builder().build();
-
 		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
 		table.add(Map.of("k", "v"));
 		schema.registerTable(table);
@@ -134,8 +131,6 @@ public class TestAdhocSchema {
 
 	@Test
 	public void testGetCoordinates() {
-		AdhocSchema schema = AdhocSchema.builder().build();
-
 		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
 		schema.registerTable(table);
 
@@ -151,8 +146,6 @@ public class TestAdhocSchema {
 
 	@Test
 	public void testAdditionalTags() {
-		AdhocSchema schema = AdhocSchema.builder().build();
-
 		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
 		schema.registerTable(table);
 

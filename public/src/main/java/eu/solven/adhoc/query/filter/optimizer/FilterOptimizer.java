@@ -65,6 +65,7 @@ import eu.solven.adhoc.util.AdhocTime;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +82,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings("PMD.GodClass")
 @SuperBuilder
-public class FilterOptimizer implements IFilterOptimizer {
+public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFactory {
 	@Default
 	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
@@ -91,6 +92,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 	final IFilterCostFunction costFunction = new StandardFilterCostFunction();
 
 	@Default
+	@Getter
 	IFilterStripperFactory filterStripperFactory = AdhocUnsafe.filterStripperFactory;
 
 	final boolean withCartesianProductsAndOr;
@@ -135,6 +137,11 @@ public class FilterOptimizer implements IFilterOptimizer {
 	}
 
 	protected ISliceFilter notCachedAnd(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		if (filters.contains(ISliceFilter.MATCH_NONE)) {
+			// This is covered by FilterBuilder, but FilterOptimizer does not rely on it for its recursive calls
+			return ISliceFilter.MATCH_NONE;
+		}
+
 		// First, we ensure operands are themselves optimized. This may lead to duplicate work, as later step may
 		// themselves optimize. But it is useful to ensure consistency of equivalent inputs.
 		ImmutableSet<? extends ISliceFilter> optimizedOperands = optimizeOperands(filters);
@@ -183,8 +190,8 @@ public class FilterOptimizer implements IFilterOptimizer {
 					// Ensure this path also go through the `preferNotOrOverAndNot`
 					// return FilterBuilder.or(commonOr, others).combine();
 					ISliceFilter orToNegate = preferNotOrOverAndNot(!willBeNegated,
-							ImmutableSet.of(simpleNot(commonOr), simpleNot(others)));
-					return simpleNot(orToNegate);
+							ImmutableSet.of(NotFilter.simpleNot(commonOr), NotFilter.simpleNot(others)));
+					return NotFilter.simpleNot(orToNegate);
 				}
 
 			}
@@ -281,22 +288,7 @@ public class FilterOptimizer implements IFilterOptimizer {
 		ISliceFilter negatedOptimized = and(negated, true);
 
 		// Unroll without optimization
-		return simpleNot(negatedOptimized);
-	}
-
-	protected ISliceFilter simpleNot(ISliceFilter filter) {
-		if (ISliceFilter.MATCH_ALL.equals(filter)) {
-			return ISliceFilter.MATCH_NONE;
-		} else if (ISliceFilter.MATCH_NONE.equals(filter)) {
-			return ISliceFilter.MATCH_ALL;
-		} else if (filter instanceof INotFilter notFilter) {
-			return notFilter.getNegated();
-		} else if (filter instanceof IColumnFilter columnFilter) {
-			return columnFilter.negate();
-		} else {
-			// `.negate` would turn an `AND` into an `OR` which is not desired here
-			return NotFilter.builder().negated(filter).build();
-		}
+		return NotFilter.simpleNot(negatedOptimized);
 	}
 
 	/**
@@ -318,8 +310,14 @@ public class FilterOptimizer implements IFilterOptimizer {
 		// OR-like filters will be combined with a cartesian product, in the hope of rejecting many irrelevant
 		// combinations. The others are combined as a single AND.
 
-		Map<Boolean, List<ISliceFilter>> orNotOr =
-				andOperands.stream().collect(Collectors.partitioningBy(this::hasOrOperands));
+		// Group by operand which may interact with others, as an OR can not be simplified if its column does not appear
+		// anywhere else
+		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(andOperands);
+
+		// Group by operands which are splitable by OR, as we hope to detect combinations which are useless
+		Map<Boolean, List<ISliceFilter>> orNotOr = andOperands.stream()
+				.collect(
+						Collectors.partitioningBy(f -> hasOrOperands(f) && ignorableToOperands.get(false).contains(f)));
 
 		List<ISliceFilter> orOperands = orNotOr.get(true);
 		if (orOperands.isEmpty()) {
@@ -385,8 +383,8 @@ public class FilterOptimizer implements IFilterOptimizer {
 		// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
 		List<List<ISliceFilter>> cartesianProduct = Lists.cartesianProduct(strippedOrFilters);
 
-		Set<ISliceFilter> ors = cartedianProductAndStripOrs(where, hasSimplified, cartesianProduct);
-		if (hasSimplified.get()) {
+		Set<ISliceFilter> ors = cartedianProductAndStripOrs(where, cartesianProduct);
+		if (ors.size() < cartesianProductSize.intValueExact()) {
 			// At least one simplification occurred: it is relevant to build and optimize an OR over the leftover
 			// operands
 
@@ -394,12 +392,12 @@ public class FilterOptimizer implements IFilterOptimizer {
 			// better/simpler/faster. Generally speaking, we prefer AND over OR.
 			// BEWARE We go into another batch of optimization for OR, which is safe as this is strictly simpler than
 			// current input
-			ISliceFilter orCandidate = and(List.of(where, or(ors)), false);
+			ISliceFilter orCandidate = and(List.of(where, OrFilter.copyOf(ors)), false);
 			long costSimplifiedOr = costFunction.cost(orCandidate);
 			long costInputAnd = costFunction.cost(andOperands);
 
 			if (costSimplifiedOr < costInputAnd) {
-				return ImmutableSet.copyOf(FilterHelpers.splitAnd(orCandidate));
+				return ImmutableSet.copyOf(splitAnd(ImmutableSet.of(orCandidate)));
 			}
 		}
 
@@ -408,10 +406,10 @@ public class FilterOptimizer implements IFilterOptimizer {
 	}
 
 	protected Set<ISliceFilter> cartedianProductAndStripOrs(ISliceFilter commonAnd,
-			AtomicBoolean hasSimplified,
 			List<List<ISliceFilter>> cartesianProduct) {
 		return cartesianProduct.stream()
 				.map(t -> and(t, false))
+				.filter(sf -> !sf.isMatchNone())
 				// Combine the simple AND (based on not OR operands) with the orEntry.
 				// Keep the simple AND on the left, as they are common to all entries, hence easier to be read
 				// if first
@@ -424,7 +422,6 @@ public class FilterOptimizer implements IFilterOptimizer {
 					if (combinedOrOperand.isMatchNone()) {
 						// Reject this OR which is irrelevant
 						// (e.g. flattening `AND(OR(...))`, it generated a filter like `a&!a`)
-						hasSimplified.set(true);
 						return false;
 					} else {
 						return true;
@@ -538,14 +535,11 @@ public class FilterOptimizer implements IFilterOptimizer {
 		AtomicLongMap<String> columnToNbOperands = AtomicLongMap.create();
 
 		operands.forEach(filter -> {
-			FilterHelpers.getFilteredColumns(filter).forEach(column -> {
-				columnToNbOperands.incrementAndGet(column);
-			});
+			FilterHelpers.getFilteredColumns(filter).forEach(columnToNbOperands::incrementAndGet);
 		});
 
 		return operands.stream().collect(Collectors.partitioningBy(operand -> {
-			ISliceFilter o = operand;
-			Set<String> columns = FilterHelpers.getFilteredColumns(o);
+			Set<String> columns = FilterHelpers.getFilteredColumns(operand);
 
 			for (String column : columns) {
 				if (columnToNbOperands.get(column) != 1L) {
@@ -586,9 +580,6 @@ public class FilterOptimizer implements IFilterOptimizer {
 				// optimization. Given an input with N operands, this would optimize `N-1` other components, itself
 				// testing `N-2` other components, etc, leading to `!N` optimizations.
 				ISliceFilter otherAsAnd = FilterBuilder.and(others).combine();
-				// Set<ISliceFilter> asAnd = others.stream()
-				// .flatMap(f -> FilterHelpers.splitAnd(orMayBeDiscarded).stream())
-				// .collect(Collectors.toSet());
 
 				// `a&b&e&(c|a&b)` -> `a&b`
 				boolean orIsImplied = orMayBeDiscarded.getOperands()
@@ -750,9 +741,39 @@ public class FilterOptimizer implements IFilterOptimizer {
 		return FilterHelpers.splitOr(f);
 	}
 
-	// Like `and` but skipping the optimization. May be useful for debugging
+	/**
+	 * 
+	 * @param filters
+	 * @return `splitAnd` input filters, excluding filters which would not interact with others
+	 */
 	protected ImmutableSet<? extends ISliceFilter> splitAnd(ImmutableSet<? extends ISliceFilter> filters) {
-		return ImmutableSet.copyOf(FilterHelpers.splitAnd(filters));
+		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(filters);
+
+		ImmutableSet<ISliceFilter> toIgnore = ignorableToOperands.get(true);
+		ImmutableSet<ISliceFilter> toProcess = ignorableToOperands.get(false);
+
+		return ImmutableSet.<ISliceFilter>builder()
+				// SplitAnd to flatten imbricated `AND`, but keep matchers (e.g. `Not(In(...))`) as this split is
+				// typically used to detect future interactions
+				.addAll(FilterHelpers.splitAnd(toIgnore, false))
+				// filters which may interact are fully split.
+				.addAll(FilterHelpers.splitAnd(toProcess))
+				.build();
+	}
+
+	protected ISliceFilter negatePreferNotOrOverAndNot(ISliceFilter filter) {
+		if (filter instanceof IOrFilter orFilter) {
+			return preferNotOrOverAndNot(false,
+					orFilter.getOperands()
+							.stream()
+							.map(this::negatePreferNotOrOverAndNot)
+							.collect(ImmutableSet.toImmutableSet()));
+		} else if (filter instanceof IAndFilter andFilter) {
+			return NotFilter.simpleNot(preferNotOrOverAndNot(true,
+					andFilter.getOperands().stream().collect(ImmutableSet.toImmutableSet())));
+		} else {
+			return filter.negate();
+		}
 	}
 
 	/**
@@ -772,7 +793,8 @@ public class FilterOptimizer implements IFilterOptimizer {
 	// equivalent representations.
 	protected ISliceFilter preferNotOrOverAndNot(boolean willBeNegated, Set<? extends ISliceFilter> and) {
 		// Consider returning a `!(a|b)` instead of `!a&!b`
-		ISliceFilter orCandidate = FilterBuilder.or(and.stream().map(ISliceFilter::negate).toList()).combine();
+		ISliceFilter orCandidate =
+				FilterBuilder.or(and.stream().map(this::negatePreferNotOrOverAndNot).toList()).combine();
 		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
 
 		long costOrCandidate;
@@ -1030,25 +1052,21 @@ public class FilterOptimizer implements IFilterOptimizer {
 	}
 
 	protected ISliceFilter notCachedNot(ISliceFilter filter) {
-		if (filter.isMatchAll()) {
-			return ISliceFilter.MATCH_NONE;
-		} else if (filter.isMatchNone()) {
-			return ISliceFilter.MATCH_ALL;
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return optimizeOperand(notFilter.getNegated());
-		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
-			// Prefer `c!=c1` over `!(c==c1)`
-			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
+		if (filter instanceof IAndFilter andFilter) {
+			ISliceFilter negated = and(andFilter.getOperands(), true);
+
+			return NotFilter.simpleNot(negated);
 		} else if (filter instanceof IOrFilter orFilter) {
 			// Plays optimizations given an `AND` of `NOT`s.
 			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
 			return and(orFilter.getOperands().stream().map(ISliceFilter::negate).toList(), false);
-		} else if (filter instanceof IAndFilter andFilter) {
-			ISliceFilter negated = and(andFilter.getOperands(), true);
+			// ISliceFilter negated = or(orFilter.getOperands());
 
-			return simpleNot(negated);
+			// return NotFilter.simpleNot(negated);
+		} else if (filter.isColumnFilter() && filter instanceof ColumnFilter columnFilter) {
+			// Prefer `c!=c1` over `!(c==c1)`
+			return columnFilter.toBuilder().matching(NotMatcher.not(columnFilter.getValueMatcher())).build();
 		}
-
-		return NotFilter.builder().negated(filter).build();
+		return NotFilter.simpleNot(filter);
 	}
 }

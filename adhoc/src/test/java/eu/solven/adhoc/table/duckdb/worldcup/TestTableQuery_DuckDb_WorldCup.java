@@ -48,7 +48,6 @@ import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.context.GeneratedColumnsPreparator;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -82,8 +81,8 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 
 	@Override
 	public CubeWrapperBuilder makeCube() {
-		return worldCupSchema.makeCube(AdhocSchema.builder().engine(engine()).build(), worldCupSchema, table(), forest)
-				.queryPreparator(GeneratedColumnsPreparator.builder().generatedColumnsMeasure("event_count").build());
+		return worldCupSchema
+				.makeCube(AdhocSchema.builder().engine(engine()).env(env).build(), worldCupSchema, table(), forest);
 	}
 
 	// count rows
@@ -346,6 +345,22 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		}).hasEntrySatisfying(MapWithNulls.of("Position", null), v -> {
 			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 10569L));
 		}).hasSize(4 + 1);
+	}
+
+	@Test
+	public void testEventCount_LIKE_AwayTeamGoals() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("event_count")
+				.groupByAlso("Away Team Goals")
+				.filter(ColumnFilter.matchLike("Away Team Goals", "%7%"))
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasEntrySatisfying(Map.of("Away Team Goals", 7L), v -> {
+					Assertions.assertThat(v).isEqualTo(Map.of("event_count", 100L));
+				})
+				.hasSize(1);
 	}
 
 }

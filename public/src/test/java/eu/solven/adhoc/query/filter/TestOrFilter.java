@@ -61,9 +61,12 @@ public class TestOrFilter {
 	@Test
 	public void toString_empty() {
 		ISliceFilter matchNone = ISliceFilter.MATCH_NONE;
-		Assertions.assertThat(matchNone.toString()).isEqualTo("matchNone");
 
+		Assertions.assertThat(matchNone.toString()).isEqualTo("matchNone");
 		Assertions.assertThat(matchNone.isMatchAll()).isFalse();
+
+		Assertions.assertThat(matchNone.negate().toString()).isEqualTo("matchAll");
+		Assertions.assertThat(matchNone.negate().isMatchAll()).isTrue();
 	}
 
 	@Test
@@ -82,10 +85,7 @@ public class TestOrFilter {
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(FilterBuilder.or(filters).combine().toString())
-				.isEqualTo("k0 matches `LikeMatcher(pattern=%0)`" + "|k1 matches `LikeMatcher(pattern=%1)`"
-						+ "|k2 matches `LikeMatcher(pattern=%2)`"
-						+ "|k3 matches `LikeMatcher(pattern=%3)`"
-						+ "|k4 matches `LikeMatcher(pattern=%4)`");
+				.isEqualTo("k0 LIKE '%0'|k1 LIKE '%1'|k2 LIKE '%2'|k3 LIKE '%3'|k4 LIKE '%4'");
 	}
 
 	@Test
@@ -95,7 +95,7 @@ public class TestOrFilter {
 				.collect(Collectors.toList());
 
 		Assertions.assertThat(FilterBuilder.or(filters).combine().toString())
-				.contains("#0=k matches `LikeMatcher(pattern=%0)`, #1=k matches `LikeMatcher(pattern=%1)`")
+				.contains("#0=k LIKE '%0', #1=k LIKE '%1'")
 				.doesNotContain("64")
 				.hasSizeLessThan(1024);
 	}
@@ -309,7 +309,7 @@ public class TestOrFilter {
 		// This is always true given previous operands
 		operands.add(OrFilter.builder()
 				.or(ColumnFilter.matchEq("d", "d1"))
-				.or(AndFilter.and(ColumnFilter.matchEq("b", "b1"), ColumnFilter.matchEq("c", "c1").negate()))
+				.or(AndFilter.and(ColumnFilter.matchEq("b", "b1"), ColumnFilter.notEq("c", "c1")))
 				.build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
@@ -385,7 +385,7 @@ public class TestOrFilter {
 		// Check AND between the wide tableQuery and the cubeQueryStep gives
 		ISliceFilter combined = FilterBuilder.and(tableQueryStep, cubeQueryStep).optimize();
 
-		Assertions.assertThat(combined).hasToString("a==a1&e==e1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)");
+		Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1");
 	}
 
 	@Test
@@ -445,8 +445,7 @@ public class TestOrFilter {
 				.optimize();
 
 		Assertions.assertThat(output)
-				.hasToString(
-						"b=out=(b1,b2,b3,b4)&c=out=(c1,c2)&d=out=(d1,d2)&e!=e1&a does NOT match `LikeMatcher(pattern=a1)`");
+				.hasToString("c=out=(c1,c2)&e!=e1&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'");
 	}
 
 	@Test
@@ -483,7 +482,7 @@ public class TestOrFilter {
 						.negate())
 				.optimize();
 
-		Assertions.assertThat(output).hasToString("b==b1&c=out=(c1,c2)&d==d2");
+		Assertions.assertThat(output).hasToString("b==b1&d==d2&c=out=(c1,c2)");
 	}
 
 	@Test
@@ -593,6 +592,13 @@ public class TestOrFilter {
 
 		Assertions.assertThat(combined.filters(ands).optimize(optimizer)).hasToString("0==v");
 		Assertions.assertThat(nbSkip).hasValue(0);
+	}
+
+	@Test
+	public void testNegate() {
+		ISliceFilter a1orb2 = OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1"));
+
+		Assertions.assertThat(a1orb2.negate()).hasToString("!(a==a1|b==b1)");
 	}
 
 }

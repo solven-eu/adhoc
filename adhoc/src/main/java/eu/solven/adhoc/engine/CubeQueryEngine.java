@@ -589,7 +589,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}).toList();
 	}
 
-	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
+			"PMD.ConsecutiveAppendsShouldReuse",
+			"checkstyle:MagicNumber" })
 	protected IllegalStateException rethrowWithDetails(CubeQueryStep queryStep,
 			QueryStepsDag queryStepsDag,
 			RuntimeException e) {
@@ -606,25 +608,31 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
 				underlyingSteps.stream().map(this::dense).toList())).append(System.lineSeparator());
 
-		ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
-				new JohnsonShortestPaths<>(queryStepsDag.getInducedToInducer());
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducers = queryStepsDag.getInducedToInducer();
+		if (inducedToInducers.edgeSet().size() > 1024) {
+			// `shortestPaths.getPaths` may consume a lot of RAM: we skip this step if the DAG is too big
+			describeStep.append("#steps=").append(inducedToInducers.edgeSet().size());
+		} else {
+			ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
+					new JohnsonShortestPaths<>(inducedToInducers);
 
-		queryStepsDag.getQueried()
-				.stream()
-				.map(queriedStep -> shortestPaths.getPaths(queriedStep).getPath(queryStep))
-				.filter(Objects::nonNull)
-				// Return the shorted path, as it is the simpler to analyze by a human
-				.min(Comparator.comparing(gp -> gp.getVertexList().size()))
-				.ifPresent(shortestPath -> {
-					describeStep.append("Path from root:");
+			queryStepsDag.getQueried()
+					.stream()
+					.map(queriedStep -> shortestPaths.getPaths(queriedStep).getPath(queryStep))
+					.filter(Objects::nonNull)
+					// Return the shorted path, as it is the simpler to analyze by a human
+					.min(Comparator.comparing(gp -> gp.getVertexList().size()))
+					.ifPresent(shortestPath -> {
+						describeStep.append("Path from root:");
 
-					List<CubeQueryStep> vertexList = shortestPath.getVertexList();
-					for (int i = 0; i < vertexList.size(); i++) {
-						describeStep.append(System.lineSeparator());
-						IntStream.range(0, i).forEach(tabIndex -> describeStep.append('\t'));
-						describeStep.append("\\-").append(vertexList.get(i));
-					}
-				});
+						List<CubeQueryStep> vertexList = shortestPath.getVertexList();
+						for (int i = 0; i < vertexList.size(); i++) {
+							describeStep.append(System.lineSeparator());
+							IntStream.range(0, i).forEach(tabIndex -> describeStep.append('\t'));
+							describeStep.append("\\-").append(vertexList.get(i));
+						}
+					});
+		}
 
 		return new IllegalStateException(describeStep.toString(), e);
 	}

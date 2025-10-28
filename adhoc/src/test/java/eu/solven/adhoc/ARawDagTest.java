@@ -25,6 +25,7 @@ package eu.solven.adhoc;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.mock.env.MockEnvironment;
 
 import com.google.common.base.Suppliers;
 import com.google.common.eventbus.EventBus;
@@ -52,6 +53,8 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  */
 public abstract class ARawDagTest {
 	public final EventBus eventBus = AdhocTestHelper.eventBus();
+	public final MockEnvironment env = new MockEnvironment();
+
 	public final UnsafeMeasureForest forest =
 			UnsafeMeasureForest.builder().name(this.getClass().getSimpleName()).build();
 

@@ -74,6 +74,10 @@ public class TableQueryEngine implements ITableQueryEngine {
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		ITableQueryOptimizer optimizer = optimizerFactory.makeOptimizer(factories, queryPod);
 
+		if (queryPod.isDebugOrExplain()) {
+			log.info("[EXPLAIN] Using optimizer={} for query={}", optimizer, queryPod.getQueryId());
+		}
+
 		return bootstrap(optimizer).executeTableQueries(queryPod, queryStepsDag);
 	}
 

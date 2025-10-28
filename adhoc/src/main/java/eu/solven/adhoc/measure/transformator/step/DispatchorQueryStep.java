@@ -48,6 +48,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
+import eu.solven.adhoc.measure.decomposition.IDecompositionFactory;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.AdhocDebug;
@@ -106,15 +107,23 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		Map<String, Object> options = new LinkedHashMap<>();
 
 		options.putAll(dispatchor.getDecompositionOptions());
-		options.put(P_UNDERLYINGS, underlyings);
 
-		return factories.getOperatorFactory().makeDecomposition(dispatchor.getDecompositionKey(), options);
+		IDecomposition decomposition =
+				factories.getOperatorFactory().makeDecomposition(dispatchor.getDecompositionKey(), options);
+
+		// We must not add underlyings as options, else it would corrupt cache mechanisms on decompositions
+		if (decomposition instanceof IDecompositionFactory adjustWithSlices) {
+			// Hence we provide underlyings in a later step, with a Factory-like pattern
+			decomposition = adjustWithSlices.makeWithSlices(underlyings);
+		}
+
+		return decomposition;
 	}
 
 	@Override
 	protected void onSlice(SliceAndMeasures slice, ICombination combination, ISliceAndValueConsumer output) {
 		throw new UnsupportedOperationException(
-				"Unclear how to refactor IDispator in AHasUnderlyingQuerySteps.onSlice");
+				"Unclear how to refactor IDispatchor in AHasUnderlyingQuerySteps.onSlice");
 	}
 
 	@Override
