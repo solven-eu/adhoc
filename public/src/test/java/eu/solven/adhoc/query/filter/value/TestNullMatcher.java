@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,51 +22,28 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * To be used with {@link ColumnFilter}, for null-based matchers.
- * 
- * @author Benoit Lacelle
- *
- */
-@Value
-@Builder
-@Jacksonized
-public class NullMatcher implements IValueMatcher, IColumnToString {
-	public static final Object NULL_HOLDER = new Object() {
-		@Override
-		public String toString() {
-			// https://stackoverflow.com/questions/22802078/how-does-the-group-by-clause-manage-the-null-values
-			// `NULL` is upperCase helps not being confused with `String.valueOf(null)`.
-			return "NULL";
-		}
-	};
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-	public static @NonNull IValueMatcher matchNull() {
-		return NullMatcher.builder().build();
+public class TestNullMatcher {
+	@Test
+	public void testHashCodeEquals() {
+		EqualsVerifier.forClass(NullMatcher.class).verify();
 	}
 
-	@Override
-	public boolean match(Object value) {
-		return value == null;
+	@Test
+	public void testToString() {
+		NullMatcher matcher = NullMatcher.builder().build();
+
+		Assertions.assertThat(matcher.toString()).isEqualTo("===null");
+		Assertions.assertThat(matcher.toString("c", false)).isEqualTo("c IS NULL");
+		Assertions.assertThat(matcher.toString("c", true)).isEqualTo("c IS NOT NULL");
 	}
 
-	@Override
-	public String toString(String column, boolean negated) {
-		if (negated) {
-			return column + " IS NOT NULL";
-		} else {
-			return column + " IS NULL";
-		}
-	}
-
-	@Override
-	public String toString() {
-		return "===null";
+	@Test
+	public void testNullMarker() {
+		Assertions.assertThat(NullMatcher.NULL_HOLDER).hasToString("NULL");
 	}
 }

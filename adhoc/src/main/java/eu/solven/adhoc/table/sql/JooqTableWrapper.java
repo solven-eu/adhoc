@@ -56,14 +56,17 @@ import com.google.common.cache.RemovalNotification;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordFactory;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.data.row.slice.ISliceCompressor;
+import eu.solven.adhoc.data.row.slice.NoopSliceCompressor;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -92,9 +95,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ToString(of = "name")
 public class JooqTableWrapper implements ITableWrapper, IHasCache {
-	// TODO Investigate the benefit of String internalization
-	// May be propagated into a more general dictionarization
-	private static final boolean DO_INTERN_STRINGS = false;
 
 	@NonNull
 	final String name;
@@ -330,23 +330,35 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		// Field<?>[] fields = sqlQuery.getQuery().fields();
+		ITabularRecordFactory tabularRecordFactory = new JooqTabularRecordFactory(sqlQuery.getFields(), sliceFactory);
+
+		ISliceCompressor sliceCompressor = makeSliceDictionarize();
+
 		return sqlQuery.getQuery()
 				.stream()
-				.map(r -> intoMap(sqlQuery.getFields(), r))
+				.map(r -> intoTabularRecord(tabularRecordFactory, r))
 				// leftover in WHERE
 				.filter(row -> {
 					return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
 				})
+				// DESIGN NOTE: we dictionarize after the leftover filter. Is it premature? It fits with
+				// dictionarization being fully independant of slice initial creation.
+				.map(row -> {
+					return TabularRecordOverMaps.builder()
+							.aggregates(row.aggregatesAsMap())
+							.slice(sliceCompressor.compress(row.getGroupBys()))
+							.build();
+				})
 				// leftover in FILTER
 				.map(row -> {
-					if (sqlQuery.getAggregatorToLeftovers().isEmpty()) {
+					Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();
+					if (aggregatorToLeftovers.isEmpty()) {
 						return row;
 					} else {
 						// Copy aggregates as we may remove if the leftover does not match
 						Map<String, ?> aggregates = new LinkedHashMap<>(row.aggregatesAsMap());
 
-						sqlQuery.getAggregatorToLeftovers().forEach((measure, leftover) -> {
+						aggregatorToLeftovers.forEach((measure, leftover) -> {
 							Object currentValue = aggregates.get(measure);
 
 							if (currentValue == null) {
@@ -363,68 +375,47 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 	}
 
+	protected ISliceCompressor makeSliceDictionarize() {
+		// ByPageSliceDictionarizer.builder().build()
+		return new NoopSliceCompressor();
+	}
+
 	// Inspired from AbstractRecord.intoMap
 	// Take original `queriedColumns` as the record may not clearly express aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
-	protected ITabularRecord intoMap(AggregatedRecordFields fields, Record r) {
-		Map<String, Object> aggregates;
+	protected ITabularRecord intoTabularRecord(ITabularRecordFactory tabularRecordFactory, Record r) {
+		TabularRecordBuilder recordBuilder = tabularRecordFactory.makeTabularRecordBuilder();
 
 		int columnShift = 0;
 
-		List<String> aggregateFields = fields.getAggregates();
+		List<String> aggregateFields = tabularRecordFactory.getAggregates();
 		{
 			int size = aggregateFields.size();
-			aggregates = LinkedHashMap.newLinkedHashMap(size);
 
 			for (int i = 0; i < size; i++) {
-				String columnName = aggregateFields.get(i);
-
 				Object value = r.get(columnShift + i);
 				if (value != null) {
-					if (DO_INTERN_STRINGS && value instanceof String string) {
-						// We argue that given coordinate will be generated many times by the application:
-						// We'd like to enable reference-check on it
-						value = string.intern();
-					}
+					String columnName = aggregateFields.get(i);
+					Object previousValue = recordBuilder.appendAggregate(columnName, value);
 
-					value = cleanAggregateValue(value);
-
-					Object previousValue = aggregates.put(columnName, value);
 					if (previousValue != null) {
 						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
 					}
 				}
 			}
+
+			columnShift += size;
 		}
 
-		MapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(fields.getAllColumns());
-
-		columnShift += fields.getAggregates().size();
 		{
-			List<String> groupByFields = fields.getColumns();
-			int size = groupByFields.size();
+			int size = tabularRecordFactory.getColumns().size();
 
 			for (int i = 0; i < size; i++) {
-				sliceBuilder.append(r.get(columnShift + i));
+				recordBuilder.appendGroupBy(r.get(columnShift + i));
 			}
 		}
 
-		columnShift += fields.getColumns().size();
-		{
-			List<String> groupByFields = fields.getLeftovers();
-			int size = groupByFields.size();
-
-			for (int i = 0; i < size; i++) {
-				sliceBuilder.append(r.get(columnShift + i));
-			}
-		}
-
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(sliceBuilder.build().asSlice()).build();
-	}
-
-	protected Object cleanAggregateValue(Object value) {
-		// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
-		return AdhocPrimitiveHelpers.normalizeValue(value);
+		return recordBuilder.build();
 	}
 
 	@Override

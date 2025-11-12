@@ -182,10 +182,4 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 			compactable.compact();
 		}
 	}
-
-	// @Override
-	// public void ensureCapacity(int capacity) {
-	// navigable.ensureCapacity(capacity);
-	// hash.ensureCapacity(capacity);
-	// }
 }

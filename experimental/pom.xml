@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.21</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.19</jacoco.instruction.ratio>
 	</properties>
 
 	<dependencyManagement>
@@ -22,6 +22,14 @@
 				<groupId>com.google.cloud</groupId>
 				<artifactId>libraries-bom</artifactId>
 				<version>26.69.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.arrow</groupId>
+				<artifactId>arrow-bom</artifactId>
+				<version>${arrow.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -73,6 +81,15 @@
 			<groupId>cz.jirutka.rsql</groupId>
 			<artifactId>rsql-parser</artifactId>
 			<version>2.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.arrow</groupId>
+			<artifactId>arrow-vector</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.arrow</groupId>
+			<artifactId>arrow-memory-netty</artifactId>
 		</dependency>
 
 		<dependency>

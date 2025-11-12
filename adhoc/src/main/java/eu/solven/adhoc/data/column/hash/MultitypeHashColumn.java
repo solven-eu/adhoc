@@ -91,10 +91,10 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	 */
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
-		if (size >= AdhocUnsafe.limitColumnSize) {
+		if (size >= AdhocUnsafe.getLimitColumnSize()) {
 			// TODO Log the first and last elements
 			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.getLimitColumnSize()));
 		} else if (size == 0) {
 			ensureCapacityForType(type);
 		}
@@ -318,7 +318,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
+		keyStream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
 
 			onValue(key).acceptReceiver(o -> {
 				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));

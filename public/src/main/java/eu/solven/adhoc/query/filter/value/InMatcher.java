@@ -85,12 +85,12 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 		MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", operands.size());
 
 		AtomicInteger index = new AtomicInteger();
-		operands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+		operands.stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(filter -> {
 			toStringHelper.add("#" + index.getAndIncrement(), filter);
 		});
-		if (operands.size() > AdhocUnsafe.limitOrdinalToString) {
-			int nbMore = operands.size() - AdhocUnsafe.limitOrdinalToString;
-			toStringHelper.add("#" + AdhocUnsafe.limitOrdinalToString, nbMore + " more entries");
+		if (operands.size() > AdhocUnsafe.getLimitOrdinalToString()) {
+			int nbMore = operands.size() - AdhocUnsafe.getLimitOrdinalToString();
+			toStringHelper.add("#" + AdhocUnsafe.getLimitOrdinalToString(), nbMore + " more entries");
 		}
 
 		return toStringHelper.toString();
@@ -176,11 +176,11 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 		// https://github.com/jirutka/rsql-parser?tab=readme-ov-file#grammar-and-semantic
 		String operandsToString = operands.stream()
 				.map(String::valueOf)
-				.limit(AdhocUnsafe.limitOrdinalToString)
+				.limit(AdhocUnsafe.getLimitOrdinalToString())
 				.collect(Collectors.joining(",", "(", ""));
 
-		if (operands.size() > AdhocUnsafe.limitOrdinalToString) {
-			int nbMore = operands.size() - AdhocUnsafe.limitOrdinalToString;
+		if (operands.size() > AdhocUnsafe.getLimitOrdinalToString()) {
+			int nbMore = operands.size() - AdhocUnsafe.getLimitOrdinalToString();
 			operandsToString += ", and " + nbMore + " more entries";
 		}
 

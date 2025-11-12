@@ -97,7 +97,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", nameToColumn.size());
 
 		AtomicInteger index = new AtomicInteger();
-		nameToColumn.entrySet().stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+		nameToColumn.entrySet().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(filter -> {
 			toStringHelper.add("#" + index.getAndIncrement(), filter);
 		});
 

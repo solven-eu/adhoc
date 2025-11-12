@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.data.row;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import java.util.List;
 
 /**
- * To be used with {@link ColumnFilter}, for null-based matchers.
+ * Helps creating a stream of {@link ITabularRecord}.
  * 
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-@Jacksonized
-public class NullMatcher implements IValueMatcher, IColumnToString {
-	public static final Object NULL_HOLDER = new Object() {
-		@Override
-		public String toString() {
-			// https://stackoverflow.com/questions/22802078/how-does-the-group-by-clause-manage-the-null-values
-			// `NULL` is upperCase helps not being confused with `String.valueOf(null)`.
-			return "NULL";
-		}
-	};
+public interface ITabularRecordFactory {
 
-	public static @NonNull IValueMatcher matchNull() {
-		return NullMatcher.builder().build();
-	}
+	List<String> getAggregates();
 
-	@Override
-	public boolean match(Object value) {
-		return value == null;
-	}
+	List<String> getColumns();
 
-	@Override
-	public String toString(String column, boolean negated) {
-		if (negated) {
-			return column + " IS NOT NULL";
-		} else {
-			return column + " IS NULL";
-		}
-	}
+	TabularRecordBuilder makeTabularRecordBuilder();
 
-	@Override
-	public String toString() {
-		return "===null";
-	}
 }

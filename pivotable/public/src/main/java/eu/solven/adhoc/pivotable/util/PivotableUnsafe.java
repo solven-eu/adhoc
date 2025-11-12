@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter.value;
+package eu.solven.adhoc.pivotable.util;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * To be used with {@link ColumnFilter}, for null-based matchers.
+ * Holds sensitive configuration for Pivotable module.
  * 
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-@Jacksonized
-public class NullMatcher implements IValueMatcher, IColumnToString {
-	public static final Object NULL_HOLDER = new Object() {
-		@Override
-		public String toString() {
-			// https://stackoverflow.com/questions/22802078/how-does-the-group-by-clause-manage-the-null-values
-			// `NULL` is upperCase helps not being confused with `String.valueOf(null)`.
-			return "NULL";
-		}
-	};
+@UtilityClass
+@Slf4j
+@SuppressWarnings("PMD.FieldDeclarationsShouldBeAtStartOfClass")
+public class PivotableUnsafe {
 
-	public static @NonNull IValueMatcher matchNull() {
-		return NullMatcher.builder().build();
+	public static void resetProperties() {
+		log.info("Resetting PivotableUnsafe configuration");
+
+		limitCoordinates = DEFAULT_LIMIT_COORDINATES;
 	}
 
-	@Override
-	public boolean match(Object value) {
-		return value == null;
+	public static void resetAll() {
+		resetProperties();
 	}
 
-	@Override
-	public String toString(String column, boolean negated) {
-		if (negated) {
-			return column + " IS NOT NULL";
-		} else {
-			return column + " IS NULL";
-		}
+	public static void reloadProperties() {
+		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
+		limitCoordinates =
+				AdhocUnsafe.safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", DEFAULT_LIMIT_COORDINATES);
 	}
 
-	@Override
-	public String toString() {
-		return "===null";
-	}
+	private static final int DEFAULT_LIMIT_COORDINATES = 100;
+	/**
+	 * Used as default number of examples coordinates when fetching columns by API.
+	 */
+	// TODO This should be a pivotable custom parameter
+	@Setter
+	@Getter
+	private static int limitCoordinates = DEFAULT_LIMIT_COORDINATES;
 }

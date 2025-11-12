@@ -107,7 +107,7 @@ public class TestMoreFilterHelpers {
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
 
-		Assertions.assertThat(kIsNull.toString()).isEqualTo("k===null");
+		Assertions.assertThat(kIsNull.toString()).isEqualTo("k IS NULL");
 	}
 
 	@Test

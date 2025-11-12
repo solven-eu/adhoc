@@ -27,10 +27,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -49,7 +51,7 @@ public class TestSliceAsMap {
 			Assertions.assertThat(slice.getGroupBy("k", String.class)).isEqualTo("v");
 			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optSliced("k")).contains("v");
+			Assertions.assertThat(slice.optGroupBy("k")).contains("v");
 		}
 
 		{
@@ -58,11 +60,11 @@ public class TestSliceAsMap {
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
+			Assertions.assertThat(slice.optGroupBy("k2")).isEmpty();
 		}
 	}
 
-	@Disabled("AdhocSliceAsMap does not accept Collection sliced")
+	// @Disabled("AdhocSliceAsMap does not accept Collection sliced")
 	@Test
 	public void testRequireFilter_Collection() {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", Arrays.asList("v1", "v2")));
@@ -78,7 +80,7 @@ public class TestSliceAsMap {
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optSliced("k")).contains(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(slice.optGroupBy("k")).contains(Arrays.asList("v1", "v2"));
 		}
 
 		{
@@ -87,8 +89,18 @@ public class TestSliceAsMap {
 					.isInstanceOf(IllegalArgumentException.class);
 			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Number.class))
 					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optSliced("k2")).isEmpty();
+			Assertions.assertThat(slice.optGroupBy("k2")).isEmpty();
 		}
+	}
+
+	@Test
+	public void testOptGroupBy_multipleKeys() {
+		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("k", "v"));
+
+		Assertions.assertThat((Map) slice.optGroupBy(Set.of("k"))).containsExactlyEntriesOf(ImmutableMap.of("k", "v"));
+		Assertions.assertThat((Map) slice.optGroupBy(Set.of("k2"))).containsExactlyEntriesOf(ImmutableMap.of());
+		Assertions.assertThat((Map) slice.optGroupBy(Set.of("k", "k2")))
+				.containsExactlyEntriesOf(ImmutableMap.of("k", "v"));
 	}
 
 	@Test

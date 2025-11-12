@@ -111,13 +111,13 @@ public class OrFilter implements IOrFilter {
 
 	public static String toString2(Object o, Set<?> ors) {
 		int size = ors.size();
-		if (size <= AdhocUnsafe.limitOrdinalToString) {
+		if (size <= AdhocUnsafe.getLimitOrdinalToString()) {
 			return ors.stream().map(Object::toString).collect(Collectors.joining("|"));
 		} else {
 			MoreObjects.ToStringHelper toStringHelper = MoreObjects.toStringHelper(o).add("size", ors.size());
 
 			AtomicInteger index = new AtomicInteger();
-			ors.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+			ors.stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 

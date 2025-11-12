@@ -106,7 +106,7 @@ public class AndFilter implements IAndFilter {
 		}
 
 		int size = ands.size();
-		if (size <= AdhocUnsafe.limitOrdinalToString) {
+		if (size <= AdhocUnsafe.getLimitOrdinalToString()) {
 			return ands.stream().map(o -> {
 				if (o instanceof IOrFilter orFilter) {
 					// Add parenthesis
@@ -119,7 +119,7 @@ public class AndFilter implements IAndFilter {
 			ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", size);
 
 			AtomicInteger index = new AtomicInteger();
-			ands.stream().limit(AdhocUnsafe.limitOrdinalToString).forEach(filter -> {
+			ands.stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(filter -> {
 				toStringHelper.add("#" + index.getAndIncrement(), filter);
 			});
 

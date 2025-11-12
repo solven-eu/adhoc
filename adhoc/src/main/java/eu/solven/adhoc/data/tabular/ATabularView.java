@@ -47,7 +47,7 @@ public abstract class ATabularView implements IReadableTabularView {
 
 		stream((slice) -> {
 			return value -> Map.entry(slice, value);
-		}).limit(AdhocUnsafe.limitOrdinalToString)
+		}).limit(AdhocUnsafe.getLimitOrdinalToString())
 				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 
 		return toStringHelper.toString();

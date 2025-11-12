@@ -129,7 +129,7 @@ export default {
 
 		// SlickGrid requires a cssSelector
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
-		console.log("SlickGrid id is", "#" + domId);
+		console.log("SlickGrid id is", "#" + domId.value);
 
 		return {
 			loading,

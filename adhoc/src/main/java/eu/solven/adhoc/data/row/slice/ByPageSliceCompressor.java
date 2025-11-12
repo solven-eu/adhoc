@@ -20,43 +20,64 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
+package eu.solven.adhoc.data.row.slice;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
-import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.Builder.Default;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Used to separate aggregates from groupBy from {@link ITableWrapper}
+ * Enable {@link IAdhocSlice} to be compressed by pages. The compression algorithm is delegated to another class.
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularRecord extends ITabularGroupByRecord {
-	Set<String> aggregateKeySet();
-
-	IValueProvider onAggregate(String aggregateName);
-
-	@Deprecated(since = "Prefer `IValueProvider onAggregate(String aggregateName)`")
-	default Object getAggregate(String aggregateName) {
-		return IValueProvider.getValue(onAggregate(aggregateName));
-	}
-
-	@Deprecated(since = "Prefer `IValueProvider onAggregate(String aggregateName)`")
-	Map<String, ?> aggregatesAsMap();
+@Deprecated(since = "Not-Ready")
+@SuperBuilder
+@Slf4j
+public class ByPageSliceCompressor implements ISliceCompressor {
 
 	/**
-	 * 
-	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
+	 * Number of rows to accumulate in a page
 	 */
-	@Deprecated(since = "Prefer processing aggregates then values")
-	Map<String, ?> asMap();
+	@Default
+	final int pageSize = AdhocUnsafe.pageSize;
 
-	ITabularRecord transcode(ITableReverseAliaser transcodingContext);
+	/**
+	 * Current page
+	 */
+	final List<ProxiedSlice> page = new ArrayList<>();
 
-	ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder);
+	@Override
+	public IAdhocSlice compress(IAdhocSlice slice) {
+		ProxiedSlice proxiedSlice = new ProxiedSlice(slice);
+
+		page.add(proxiedSlice);
+
+		if (isFull()) {
+			compressPage();
+		}
+
+		return proxiedSlice;
+	}
+
+	protected void compressPage() {
+		final List<ProxiedSlice> toCompress = new ArrayList<>(page);
+		page.clear();
+
+		doCompress(toCompress);
+
+	}
+
+	protected void doCompress(List<ProxiedSlice> toCompress) {
+		log.info("Compressing a page with with={}", toCompress.size());
+	}
+
+	protected boolean isFull() {
+		return page.size() >= pageSize;
+	}
 
 }

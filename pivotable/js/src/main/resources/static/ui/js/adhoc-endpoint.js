@@ -56,19 +56,12 @@ export default {
 	setup(props) {
 		const store = useAdhocStore();
 
-		const nbCubes = ref("...");
-
-		store.loadEndpointSchemaIfMissing(props.endpointId).then((schema) => {
-			var endpointSchema = schema || { cubes: {} };
-			nbCubes.value = Object.keys(endpointSchema.cubes).length;
-		});
-
 		// https://getbootstrap.com/docs/5.3/components/tooltips/
 		// https://stackoverflow.com/questions/69053972/adding-bootstrap-5-tooltip-to-vue-3
 		// NOSONAR
 		new Tooltip(document.body, { selector: "[data-bs-toggle='tooltip']" });
 
-		return { nbCubes };
+		return {};
 	},
 	template: /* HTML */ `
         <div v-if="!endpoint || endpoint.error">

@@ -20,45 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.endpoint;
+package eu.solven.adhoc.pivotable.util;
 
-import java.util.Optional;
-import java.util.UUID;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.pivotable.util.PivotableUnsafe;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Value;
+public class TestPivotableUnsafe {
+	@BeforeEach
+	public void resetProperties() {
+		PivotableUnsafe.reloadProperties();
+	}
 
-/**
- * Options to search through columns.
- * 
- * @author Benoit Lacelle
- */
-@Value
-@Builder
-public class AdhocColumnSearch {
-	@Default
-	Optional<UUID> endpointId = Optional.empty();
-
-	// If both table and cube are expressed, we search through both of them
-	@Default
-	Optional<String> table = Optional.empty();
-
-	// If both table and cube are expressed, we search through both of them
-	@Default
-	Optional<String> cube = Optional.empty();
-
-	// Search for a matching name
-	@Default
-	Optional<IValueMatcher> name = Optional.empty();
-
-	// Search for columns with a matching coordinate
-	@Default
-	Optional<IValueMatcher> coordinate = Optional.empty();
-
-	@Default
-	int limitCoordinates = PivotableUnsafe.getLimitCoordinates();
+	@Test
+	public void testDefaults() {
+		Assertions.assertThat(PivotableUnsafe.getLimitCoordinates()).isEqualTo(100);
+	}
 
 }
