@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 
@@ -123,7 +124,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 		boolean hasLeftoverFilteringColumns = inducerColumns.stream()
 				.map(IAdhocColumn::getName)
-				.toList()
+				.collect(Collectors.toSet())
 				.containsAll(FilterHelpers.getFilteredColumns(inducedLeftoverFilter));
 
 		if (hasLeftoverFilteringColumns) {
