@@ -36,7 +36,8 @@ public interface IMeasureForestVisitor {
 	/**
 	 *
 	 * @param name
-	 * @return the name of the output {@link IMeasureForest}. May not be applicable (e.g. {@link UnsafeMeasureForest is modified in-place, but its name is immutable}).
+	 * @return the name of the output {@link IMeasureForest}. May not be applicable (e.g. {@link UnsafeMeasureForest is
+	 *         modified in-place, but its name is immutable}).
 	 */
 	default String editName(String name) {
 		return name;
