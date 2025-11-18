@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.observability;
 
-import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.util.IAdhocEventBus;
 
@@ -34,6 +34,6 @@ import eu.solven.adhoc.util.IAdhocEventBus;
 @FunctionalInterface
 public interface IDagExplainer {
 
-	void explain(AdhocQueryId queryId, QueryStepsDag dag);
+	void explain(AdhocQueryId queryId, IHasDagFromInducedToInducer hasDag);
 
 }

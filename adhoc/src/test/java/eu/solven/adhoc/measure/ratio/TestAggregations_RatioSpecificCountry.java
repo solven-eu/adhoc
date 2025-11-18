@@ -129,15 +129,22 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 			cube().execute(adhocQuery);
 		}
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=d_country=FR_ratio(Combinator[DIVIDE]) filter=color==blue groupBy=grandTotal
-				    |\\- #2 m=d_country=FR_slice(Filtrator) filter=color==blue groupBy=grandTotal
-				    |   \\-- #3 m=d(SUM) filter=color==blue&country==FR groupBy=grandTotal
-				    \\-- #4 m=d_country=FR_whole(Unfiltrator) filter=color==blue groupBy=grandTotal
-				        \\-- #5 m=d_country=FR_slice(Filtrator) filter=matchAll groupBy=grandTotal
-				            \\-- #6 m=d(SUM) filter=country==FR groupBy=grandTotal""");
-
-		Assertions.assertThat(messages).hasSize(7);
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
+								\\-- #1 m=d_country=FR_ratio(Combinator[DIVIDE]) filter=color==blue groupBy=grandTotal
+								    |\\- #2 m=d_country=FR_slice(Filtrator) filter=color==blue groupBy=grandTotal
+								    |   \\-- #3 m=d(SUM) filter=color==blue&country==FR groupBy=grandTotal
+								    \\-- #4 m=d_country=FR_whole(Unfiltrator) filter=color==blue groupBy=grandTotal
+								        \\-- #5 m=d_country=FR_slice(Filtrator) filter=matchAll groupBy=grandTotal
+								            \\-- #6 m=d(SUM) filter=country==FR groupBy=grandTotal
+								/-- 2 inducers from SELECT d:SUM(d) FILTER(color==blue), d:SUM(d) WHERE country==FR GROUP BY ()
+								|\\- step SELECT d:SUM(d) WHERE country==FR&color==blue GROUP BY ()
+								\\-- step SELECT d:SUM(d) WHERE country==FR GROUP BY ()
+								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|\\- #1 m=d(SUM) filter=color==blue&country==FR groupBy=grandTotal
+								\\-- #2 m=d(SUM) filter=country==FR groupBy=grandTotal""")
+				.hasLineCount(7 + 3 + 3);
 	}
 }

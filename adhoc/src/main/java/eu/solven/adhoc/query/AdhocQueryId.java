@@ -58,6 +58,9 @@ public class AdhocQueryId {
 	@Default
 	String queryHash = "";
 
+	@Default
+	boolean cubeElseTable = true;
+
 	@NonNull
 	String cube;
 
@@ -69,8 +72,8 @@ public class AdhocQueryId {
 	 * @return
 	 */
 	public static AdhocQueryId from(String cubeOrTable, ICubeQuery query) {
-		AdhocQueryIdBuilder builder =
-				AdhocQueryId.builder().queryHash(Integer.toHexString(query.toString().hashCode())).cube(cubeOrTable);
+		String queryHash = Integer.toHexString(query.toString().hashCode());
+		AdhocQueryIdBuilder builder = AdhocQueryId.builder().queryHash(queryHash).cube(cubeOrTable);
 
 		if (query instanceof IHasParentQueryId hasParentQueryId) {
 			builder.parentQueryId(hasParentQueryId.getParentQueryId().getQueryId());

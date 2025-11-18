@@ -32,7 +32,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.table.TableQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -54,7 +53,7 @@ public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
 	 */
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
+	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQueries) {
 		if (tableQueries.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
@@ -65,11 +64,8 @@ public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 		SplitTableQueriesBuilder split = SplitTableQueries.builder();
 
 		// Register all tableQueries as a vertex
-		tableQueries.forEach(tq -> {
-			tq.getAggregators().stream().forEach(agg -> {
-				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
-				inducedToInducer.addVertex(step);
-			});
+		tableQueries.forEach(step -> {
+			inducedToInducer.addVertex(step);
 		});
 
 		return split.inducedToInducer(inducedToInducer).build();

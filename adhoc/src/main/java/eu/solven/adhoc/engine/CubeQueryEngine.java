@@ -227,20 +227,20 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				.build());
 	}
 
-	protected void explainDagSteps(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		makeDagExplainer().explain(queryPod.getQueryId(), queryStepsDag);
-	}
-
-	protected void explainDagPerfs(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		makeDagExplainerForPerfs().explain(queryPod.getQueryId(), queryStepsDag);
-	}
-
 	protected DagExplainer makeDagExplainer() {
 		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
+	protected void explainDagSteps(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		makeDagExplainer().explain(queryPod.getQueryId(), queryStepsDag);
+	}
+
 	protected DagExplainerForPerfs makeDagExplainerForPerfs() {
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
+	}
+
+	protected void explainDagPerfs(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		makeDagExplainerForPerfs().explain(queryPod.getQueryId(), queryStepsDag);
 	}
 
 	@VisibleForTesting
@@ -274,11 +274,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 			// dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
 			// Inducers are tableQueries
-			ImmutableSet<CubeQueryStep> inducers = queryDag.getInducedToInducer()
-					.vertexSet()
-					.stream()
-					.filter(s -> queryDag.getInducedToInducer().outDegreeOf(s) == 0)
-					.collect(ImmutableSet.toImmutableSet());
+			ImmutableSet<CubeQueryStep> inducers = queryDag.getInducers();
 
 			final DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 			final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph =
@@ -293,7 +289,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			return QueryStepsDag.builder()
 					.inducedToInducer(dag)
 					.multigraph(multigraph)
-					.queried(ImmutableSet.copyOf(inducers))
+					.explicits(inducers)
 					.stepToValues(queryDag.getStepToValues())
 					.build();
 		}
@@ -393,6 +389,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		// queryPod.with
+		// AdhocSubQuery.builder().subQuery(qu).parentQueryId(queryPod.getQueryId()).build();
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
 	}
 
@@ -616,7 +614,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			ShortestPathAlgorithm<CubeQueryStep, DefaultEdge> shortestPaths =
 					new JohnsonShortestPaths<>(inducedToInducers);
 
-			queryStepsDag.getQueried()
+			queryStepsDag.getExplicits()
 					.stream()
 					.map(queriedStep -> shortestPaths.getPaths(queriedStep).getPath(queryStep))
 					.filter(Objects::nonNull)
@@ -653,7 +651,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}
 
 		// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
-		Iterator<CubeQueryStep> stepsToReturn = queryStepsDag.getQueried().iterator();
+		Iterator<CubeQueryStep> stepsToReturn = queryStepsDag.getExplicits().iterator();
 		long expectedOutputCardinality =
 				queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
 

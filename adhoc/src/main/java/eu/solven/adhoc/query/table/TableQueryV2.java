@@ -93,6 +93,13 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 				.topClause(tableQuery.getTopClause());
 	}
 
+	/**
+	 * As {@link TableQueryV2} enables {@link FilteredAggregator}, it may pack multiple {@link TableQuery} into the same
+	 * {@link TableQueryV2}.
+	 * 
+	 * @param tableQueries
+	 * @return
+	 */
 	public static Set<TableQueryV2> fromV1(Set<TableQuery> tableQueries) {
 		Multimap<TableQuery, FilteredAggregator> groupByToFilteredAggregators =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();

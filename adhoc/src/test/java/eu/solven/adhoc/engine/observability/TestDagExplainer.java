@@ -100,7 +100,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				builder.getQueryDag());
 
 		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000001
+				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
 				\\-- #1 m=k(SUM) filter=matchAll groupBy=grandTotal""");
 	}
 
@@ -125,7 +125,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				builder.getQueryDag());
 
 		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000001
+				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
 				\\-- #1 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 				    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
@@ -152,7 +152,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				builder.getQueryDag());
 
 		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				/-- #0 s=someCube id=00000000-0000-0000-0000-000000000001
+				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
 				|\\- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal
 				|\\- #2 m=k2(SUM) filter=matchAll groupBy=grandTotal
 				\\-- #3 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal

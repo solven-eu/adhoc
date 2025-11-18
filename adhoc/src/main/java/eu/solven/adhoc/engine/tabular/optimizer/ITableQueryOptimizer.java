@@ -24,23 +24,28 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.engine.ISinkExecutionFeedback;
+import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -60,25 +65,26 @@ public interface ITableQueryOptimizer {
 	 * Induced {@link TableQuery} are evaluated given the results associated to the inducers.
 	 * 
 	 * @author Benoit Lacelle
+	 * @see QueryStepsDag
 	 */
 	@Value
 	@Builder
-	class SplitTableQueries implements IHasDagFromInducedToInducer {
+	class SplitTableQueries implements IHasDagFromInducedToInducer, ISinkExecutionFeedback {
 		// From induced to inducer
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
-		// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
-		public ImmutableSet<CubeQueryStep> getInducers() {
-			return inducedToInducer.vertexSet()
-					.stream()
-					.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
-					.collect(ImmutableSet.toImmutableSet());
-		}
+		@NonNull
+		@Singular
+		ImmutableSet<CubeQueryStep> explicits;
 
-		// Holds the TableQuery which can be evaluated implicitly from underlyings
-		public ImmutableSet<CubeQueryStep> getInduceds() {
-			return ImmutableSet.copyOf(Sets.difference(inducedToInducer.vertexSet(), getInducers()));
+		@NonNull
+		@Default
+		Map<CubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
+
+		@Override
+		public void registerExecutionFeedback(CubeQueryStep queryStep, SizeAndDuration sizeAndDuration) {
+			stepToCost.put(queryStep, sizeAndDuration);
 		}
 
 		public static SplitTableQueries empty() {
@@ -88,12 +94,21 @@ public interface ITableQueryOptimizer {
 
 	/**
 	 * 
-	 * @param tableQueries
-	 *            the {@link TableQuery} needed to be evaluated
+	 * @param tableQuerySteps
+	 *            the {@link CubeQueryStep} needed to be evaluated by the {@link ITableWrapper}
 	 * @return an {@link SplitTableQueries} defining a {@link Set} of {@link TableQuery} from which all necessary
 	 *         {@link TableQuery} can not be induced.
 	 */
-	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries);
+	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQuerySteps);
+
+	@Deprecated(since = ".splitInduced", forRemoval = true)
+	default SplitTableQueries splitInducedLegacy(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
+		Set<CubeQueryStep> steps = tableQueries.stream().flatMap(tq -> {
+			return tq.getAggregators().stream().map(agg -> CubeQueryStep.edit(tq).measure(agg).build());
+		}).collect(ImmutableSet.toImmutableSet());
+
+		return splitInduced(hasOptions, steps);
+	}
 
 	Set<TableQueryV2> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableQueries);
 

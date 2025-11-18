@@ -24,12 +24,17 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
+import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 
@@ -38,14 +43,21 @@ import eu.solven.adhoc.measure.model.Aggregator;
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
 public interface IHasDagFromInducedToInducer {
+	/**
+	 * 
+	 * @return the CubeQuerySteps which are explicitly requested. In the DAG, some of these steps may have parents.
+	 */
+	ImmutableSet<CubeQueryStep> getExplicits();
+
 	/**
 	 * This DAG has edges from the queried/output/induced to the underlyings/input/inducer.
 	 * 
 	 * @return
 	 */
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getInducedToInducer();
+
+	Map<CubeQueryStep, SizeAndDuration> getStepToCost();
 
 	/**
 	 * 
@@ -64,5 +76,19 @@ public interface IHasDagFromInducedToInducer {
 	default List<CubeQueryStep> getInducers(CubeQueryStep induced) {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = getInducedToInducer();
 		return dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
+	}
+
+	// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
+	default ImmutableSet<CubeQueryStep> getInducers() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = getInducedToInducer();
+		return inducedToInducer.vertexSet()
+				.stream()
+				.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
+				.collect(ImmutableSet.toImmutableSet());
+	}
+
+	// Holds the TableQuery which can be evaluated implicitly from underlyings
+	default ImmutableSet<CubeQueryStep> getInduceds() {
+		return ImmutableSet.copyOf(Sets.difference(getInducedToInducer().vertexSet(), getInducers()));
 	}
 }

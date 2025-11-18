@@ -72,7 +72,8 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 	// We keep a separate list of queried steps, as some queried may not be roots in the DAG (e.g. when the query
 	// requests both a measure and one of its underlying)
 	@NonNull
-	ImmutableSet<CubeQueryStep> queried;
+	@Singular
+	ImmutableSet<CubeQueryStep> explicits;
 
 	@NonNull
 	@Default

@@ -61,7 +61,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(k1Sum)
 				.build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -93,7 +93,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.filter(ColumnFilter.matchEq("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
 				.build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -130,7 +130,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(k1Sum)
 				.build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -171,7 +171,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.aggregator(k1Sum)
 				.build();
 		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and(Map.of("a", "a1"))).aggregator(k1Sum).build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2, tq3));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -197,7 +197,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 	public void testCanInduce_SelfAndGranular() {
 		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
 		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -213,7 +213,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		TableQuery tqABC = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "c")).aggregator(k1Sum).build();
 		TableQuery tqAB = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
 		TableQuery tqA = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tqABC, tqAB, tqA));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tqABC, tqAB, tqA));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)

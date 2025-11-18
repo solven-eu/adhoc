@@ -49,7 +49,6 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
 
@@ -77,7 +76,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 		CubeQuery cubeQuery = CubeQuery.builder().measure("byCcy", k1Sum.getName()).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(2);
 
 		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
@@ -142,7 +141,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				CubeQuery.builder().measure("byCcyCountry", "byCcy", k1Sum.getName()).explain(true).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(3);
 
 		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
