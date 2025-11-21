@@ -140,6 +140,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			CubeQueryStep induced) {
+		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking the one with the less rows)
 		List<CubeQueryStep> inducers = inducerAndInduced.getInducers(induced);
 		if (inducers.size() != 1) {
 			throw new IllegalStateException(
@@ -155,15 +156,16 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
 		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
-		Optional<ISliceFilter> sliceFilter =
+		Optional<ISliceFilter> optSliceFilter =
 				makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
-		if (sliceFilter.isEmpty()) {
+		if (optSliceFilter.isEmpty()) {
 			throw new IllegalStateException(
 					"Can not make a leftover filter given inducer=%s and induced=%s".formatted(inducer, induced));
 		}
 
+		ISliceFilter sliceFilter = optSliceFilter.get();
 		FilterMatcher filterMatcher = FilterMatcher.builder()
-				.filter(sliceFilter.get())
+				.filter(sliceFilter)
 				.onMissingColumn(FilterMatcher.failOnMissing())
 				.build();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
@@ -189,10 +191,11 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		if (hasOptions.isDebugOrExplain()) {
 			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
 					induced.getGroupBy().getGroupedByColumns());
-			log.info("[EXPLAIN] size={} induced size={} on agg={} by removing groupBy={} ({} induced {})",
+			log.info("[EXPLAIN] size={} induced size={} on agg={} by filtering f={} and reducing groupBy={} ({} induced {})",
 					inducerValues.size(),
 					inducedValues.size(),
 					aggregator.getName(),
+					sliceFilter,
 					removedGroupBys,
 					inducer,
 					induced);
