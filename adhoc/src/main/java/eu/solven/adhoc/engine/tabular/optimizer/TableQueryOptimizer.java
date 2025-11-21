@@ -27,14 +27,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -71,79 +72,119 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = splitInducedAsDag(tablequerySteps);
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+				splitInducedAsDag(hasOptions, tablequerySteps);
 
 		return SplitTableQueries.builder().explicits(tablequerySteps).inducedToInducer(inducedToInducer).build();
 	}
 
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<CubeQueryStep> tableQueries) {
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<CubeQueryStep> tableQueries) {
+		ListMultimap<CubeQueryStep, CubeQueryStep> aggregatorToQueries = packByAggregator(tableQueries);
+
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
-		// Inference in aggregator based: `k1` does not imply `k2`, `k1.SUM` does not imply `k1.MAX`
-		// TODO The key should includes options and customMarker
-		SetMultimap<Aggregator, CubeQueryStep> aggregatorToQueries =
-				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		aggregatorToQueries.asMap().forEach((a, steps) -> {
+			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> aInducedToInducer =
+					new DirectedAcyclicGraph<>(DefaultEdge.class);
 
-		tableQueries.forEach(step -> {
-			IMeasure measure = step.getMeasure();
+			// BEWARE step.filter must be optimized as it is inserted in a hashStructure
+			steps.forEach(aInducedToInducer::addVertex);
+			splitInducedDag(steps, aInducedToInducer::addEdge);
 
-			if (measure instanceof Aggregator agg) {
-				// BEWARE step.filter must be optimized as it is inserted in a hashStructure
-				inducedToInducer.addVertex(step);
-				aggregatorToQueries.put(agg, step);
-			} else {
-				throw new IllegalArgumentException(
-						"TableQueryOptimizer require steps to be on Aggregator. Was " + step);
+			if (hasOptions.isDebugOrExplain()) {
+				SplitTableQueries aTableQueries =
+						SplitTableQueries.builder().inducedToInducer(aInducedToInducer).build();
+				log.info("[EXPLAIN] inducers={} induceds={} for agg={}",
+						aTableQueries.getInducers().size(),
+						aTableQueries.getInduceds().size(),
+						a);
 			}
+
+			Graphs.addGraph(inducedToInducer, aInducedToInducer);
+		});
+
+		return inducedToInducer;
+	}
+
+	protected ListMultimap<CubeQueryStep, CubeQueryStep> packByAggregator(Set<CubeQueryStep> rootInducers) {
+		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
+				MultimapBuilder.linkedHashKeys().arrayListValues().build();
+
+		rootInducers.forEach(tq -> {
+			IMeasure measure = tq.getMeasure();
+
+			if (!(measure instanceof Aggregator agg)) {
+				throw new IllegalArgumentException("TableQueryOptimizer require steps to be on Aggregator. Was " + tq);
+			}
+
+			// Typically holds options and customMarkers
+			CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
+
+			// consider a single context per measure
+			CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
+
+			CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
+					.measure(agg)
+					.groupBy(tq.getGroupBy())
+					.filter(tq.getFilter())
+					.build();
+
+			contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
+		});
+		return contextualAggregateToQueries;
+	}
+
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected void splitInducedDag(Collection<CubeQueryStep> steps,
+			BiConsumer<CubeQueryStep, CubeQueryStep> onInducedToInducer) {
+		if (steps.isEmpty()) {
+			return;
+		}
+
+		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
+		int maxGroupBy = steps.stream().mapToInt(tb -> tb.getGroupBy().getGroupedByColumns().size()).max().getAsInt();
+		List<Set<CubeQueryStep>> nbGroupByToQueries =
+				IntStream.rangeClosed(0, maxGroupBy).<Set<CubeQueryStep>>mapToObj(i -> new LinkedHashSet<>()).toList();
+
+		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
+		// not be inferred by a tableQUery with less groupBys.
+		steps.forEach(step -> {
+			nbGroupByToQueries.get(step.getGroupBy().getGroupedByColumns().size()).add(step);
 		});
 
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
-		aggregatorToQueries.asMap().forEach((a, steps) -> {
-			// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
-			int maxGroupBy =
-					steps.stream().mapToInt(tb -> tb.getGroupBy().getGroupedByColumns().size()).max().getAsInt();
-			List<Set<CubeQueryStep>> nbGroupByToQueries = IntStream.rangeClosed(0, maxGroupBy)
-					.<Set<CubeQueryStep>>mapToObj(i -> new LinkedHashSet<>())
-					.toList();
+		// We observed up to 1k steps.
+		steps.forEach(induced -> {
+			// inducer must have more groupBys than induced
+			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
+			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
+				Optional<CubeQueryStep> optInducer = nbGroupByToQueries.get(inducerGroupBy)
+						.stream()
+						// No edge to itself
+						.filter(inducer -> inducer != induced)
+						// Same context (i.e. same filter, customMarker, options)
+						.filter(inducer -> canInduce(inducer, induced))
+						// as soon as left is induced, we do not need to search for alternative inducer
+						// BEWARE As we find first, we'll spot the inducer with a minimal additional groupBy, hence
+						// probably a smaller induced, hence probably a better inducer
+						.findFirst();
 
-			// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
-			// not be inferred by a tableQUery with less groupBys.
-			steps.forEach(step -> {
-				nbGroupByToQueries.get(step.getGroupBy().getGroupedByColumns().size()).add(step);
-			});
+				if (optInducer.isPresent()) {
+					CubeQueryStep inducer = optInducer.get();
+					// right can be used to compute left
+					onInducedToInducer.accept(induced, inducer);
+					log.trace("Induced -> Inducer ({} -> {})", induced, inducer);
 
-			steps.forEach(induced -> {
-				AtomicBoolean hasFoundInducer = new AtomicBoolean();
-
-				// right must have more groupBys than left, else right can not induce left
-				for (int inducerGroupByCardinality = induced.getGroupBy()
-						.getGroupedByColumns()
-						.size(); inducerGroupByCardinality < nbGroupByToQueries.size(); inducerGroupByCardinality++) {
-					nbGroupByToQueries.get(inducerGroupByCardinality)
-							.stream()
-							// No edge to itself
-							.filter(inducer -> inducer != induced)
-							// Same context (i.e. same filter, customMarker, options)
-							.filter(inducer -> canInduce(inducer, induced))
-							// as soon as left is induced, we do not need to search for alternative inducer
-							// BEWARE As we find first, we'll spot the inducer with a minimal additional groupBy, hence
-							// probably a smaller induced, hence probably a better inducer
-							.findFirst()
-							.ifPresent(inducer -> {
-								// right can be used to compute left
-								inducedToInducer.addEdge(induced, inducer);
-								hasFoundInducer.set(true);
-							});
-
-					if (hasFoundInducer.get()) {
-						break;
-					}
+					break;
+				} else {
+					log.trace("Scan along candidates with more groupBys");
 				}
-			});
+			}
+
+			log.trace("No inducer (as it is a root inducer) for {}", induced);
 		});
-		return inducedToInducer;
 	}
 
 	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`

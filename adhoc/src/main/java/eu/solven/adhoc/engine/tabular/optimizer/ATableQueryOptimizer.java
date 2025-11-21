@@ -189,9 +189,10 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		if (hasOptions.isDebugOrExplain()) {
 			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
 					induced.getGroupBy().getGroupedByColumns());
-			log.info("[EXPLAIN] size={} induced size={} by removing groupBy={} ({} induced {})",
+			log.info("[EXPLAIN] size={} induced size={} on agg={} by removing groupBy={} ({} induced {})",
 					inducerValues.size(),
 					inducedValues.size(),
+					aggregator.getName(),
 					removedGroupBys,
 					inducer,
 					induced);

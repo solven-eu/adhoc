@@ -29,10 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -93,11 +89,7 @@ public class DagExplainer implements IDagExplainer {
 				return dag.getExplicits().stream().sorted(this.orderForExplain()).toList();
 			} else {
 				// Return the actual underlying steps
-				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> rawDag = dag.getInducedToInducer();
-				return rawDag.outgoingEdgesOf(step)
-						.stream()
-						.map(edge -> Graphs.getOppositeVertex(rawDag, edge, step))
-						.toList();
+				return dag.getInducers(step);
 			}
 		}
 

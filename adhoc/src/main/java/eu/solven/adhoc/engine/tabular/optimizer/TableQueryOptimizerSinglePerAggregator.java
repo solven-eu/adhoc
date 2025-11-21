@@ -22,10 +22,12 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -35,8 +37,8 @@ import com.google.common.collect.MultimapBuilder;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterUtility;
@@ -45,6 +47,7 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.optimizer.IHasFilterStripperFactory;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -70,10 +73,12 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 	}
 
 	@Override
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<CubeQueryStep> tableQueries) {
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<CubeQueryStep> tableQueries) {
 		// This dag optimized `induced->inducer` by minimizing the number of inducers, considering only inducers from
 		// the initial TableQueries
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = super.splitInducedAsDag(tableQueries);
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+				super.splitInducedAsDag(hasOptions, tableQueries);
 
 		// rootInducers can imply all other steps
 		Set<CubeQueryStep> rootInducers =
@@ -83,11 +88,16 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		// e.g. groupBy aggregators, and union the GROUP_BY and FILTER clauses.
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> moreInducedToInducer = getGroupedInducers(rootInducers);
 
+		if (hasOptions.isDebugOrExplain()) {
+			SplitTableQueries preSingle = SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
+			SplitTableQueries postSingle = SplitTableQueries.builder().inducedToInducer(moreInducedToInducer).build();
+			log.info("[EXPLAIN] singleAggregator from inducers={} to inducers={}",
+					preSingle.getInducers().size(),
+					postSingle.getInducers().size());
+		}
+
 		// Extend the DAG with this new DAG
-		moreInducedToInducer.vertexSet().forEach(inducedToInducer::addVertex);
-		moreInducedToInducer.edgeSet()
-				.forEach(e -> inducedToInducer.addEdge(moreInducedToInducer.getEdgeSource(e),
-						moreInducedToInducer.getEdgeTarget(e)));
+		Graphs.addGraph(inducedToInducer, moreInducedToInducer);
 
 		return inducedToInducer;
 	}
@@ -104,25 +114,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 	 * CubeQueryStep by Aggregator given the root inducers.
 	 */
 	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getGroupedInducers(Set<CubeQueryStep> rootInducers) {
-		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
-				MultimapBuilder.linkedHashKeys().arrayListValues().build();
-
-		rootInducers.forEach(tq -> {
-			IMeasure agg = tq.getMeasure();
-			// Typically holds options and customMarkers
-			CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
-
-			// consider a single context per measure
-			CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
-
-			CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
-					.measure(agg)
-					.groupBy(tq.getGroupBy())
-					.filter(tq.getFilter())
-					.build();
-
-			contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
-		});
+		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries = packByAggregator(rootInducers);
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
@@ -139,8 +131,11 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 
 			IFilterStripper commonStripper = sharedStripper.withWhere(commonFilter);
 
+			// Do the UNION of `GROUP BY` and `FILTER`
 			Set<String> inducerColumns = new TreeSet<>();
 			Set<ISliceFilter> eachInducedFilters = new LinkedHashSet<>();
+			ListMultimap<ISliceFilter, CubeQueryStep> strippedFilterToStep =
+					MultimapBuilder.linkedHashKeys().arrayListValues().build();
 			filterGroupBy.forEach(tq -> {
 				inducerColumns.addAll(tq.getGroupBy().getGroupedByColumns());
 
@@ -148,11 +143,12 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 				// We need these additional columns for proper filtering
 				inducerColumns.addAll(FilterHelpers.getFilteredColumns(strippedFromWhere));
 
+				strippedFilterToStep.put(strippedFromWhere, tq);
+
 				eachInducedFilters.add(strippedFromWhere);
 			});
 
-			// OR between each inducer own filter
-			// induced will fetch the union of rows for all induced
+			// OR between each inducer own filter induced will fetch the union of rows for all induced
 			ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).optimize(filterOptimizer);
 			// BEWARE This `AND` is optimized even if we expect no optimization.
 			// Even if we would expect low amount of optimizations, it require optimization in a later step
@@ -163,30 +159,80 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 					.groupBy(GroupByColumns.named(inducerColumns))
 					.build();
 
-			filterGroupBy.forEach(tq -> {
-				ISliceFilter inducedFilter = FilterBuilder.and(inducerFilter, tq.getFilter()).optimize(filterOptimizer);
-				CubeQueryStep induced = CubeQueryStep.edit(tq).filter(inducedFilter).build();
-
-				if (inducer.equals(induced)) {
-					// e.g. `GROUP BY a,b` and `GROUP BY a`
-					log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
+			strippedFilterToStep.asMap().forEach((strippedFilter, steps) -> {
+				if (steps.isEmpty()) {
+					// Should not happen by construction
+					log.warn("Empty steps?");
+				} else if (ISliceFilter.MATCH_ALL.equals(strippedFilter) || steps.size() == 1) {
+					steps.forEach(induced -> {
+						addInducerToInduced(inducedToInducer, inducer, induced);
+					});
 				} else {
-					inducedToInducer.addVertex(inducer);
-					inducedToInducer.addVertex(induced);
-					inducedToInducer.addEdge(induced, inducer);
+					// There is 2 steps with the same strippedFilter: let's add an intermediate step applying given
+					// filter
+					CubeQueryStep intermediate = makeIntermediateStep(commonFilter, inducer, strippedFilter, steps);
+
+					addInducerToInduced(inducedToInducer, inducer, intermediate);
+					steps.forEach(induced -> {
+						addInducerToInduced(inducedToInducer, intermediate, induced);
+					});
 				}
 			});
+
 		});
 
 		return inducedToInducer;
 	}
 
-	protected IFilterStripper makeShareFilterStripper() {
-		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
-			return hasFilterStripperFactory.getFilterStripperFactory().makeFilterStripper(ISliceFilter.MATCH_ALL);
+	/**
+	 * 
+	 * @param commonFilter
+	 * @param inducer
+	 * @param strippedFilter
+	 * @param steps
+	 * @return a {@link CubeQueryStep} which can be used as intermediate to the input steps.
+	 */
+	protected CubeQueryStep makeIntermediateStep(ISliceFilter commonFilter,
+			CubeQueryStep inducer,
+			ISliceFilter strippedFilter,
+			Collection<CubeQueryStep> steps) {
+		ISliceFilter intermediateFilter = FilterBuilder.and(commonFilter, strippedFilter).optimize(filterOptimizer);
+
+		// Do the UNION of `GROUP BY` and `FILTER`
+		Set<String> intermediateColumns = new TreeSet<>();
+		steps.forEach(tq -> {
+			intermediateColumns.addAll(tq.getGroupBy().getGroupedByColumns());
+			// We need these additional columns for proper filtering
+			intermediateColumns.addAll(FilterHelpers.getFilteredColumns(strippedFilter));
+		});
+
+		return CubeQueryStep.edit(inducer)
+				.filter(intermediateFilter)
+				.groupBy(GroupByColumns.named(intermediateColumns))
+				.build();
+	}
+
+	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,
+			CubeQueryStep inducer,
+			CubeQueryStep induced) {
+		if (inducer.equals(induced)) {
+			// e.g. `GROUP BY a,b WHERE b` and `GROUP BY a WHERE b`
+			log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
 		} else {
-			return AdhocUnsafe.filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
+			inducedToInducer.addVertex(inducer);
+			inducedToInducer.addVertex(induced);
+			inducedToInducer.addEdge(induced, inducer);
 		}
+	}
+
+	protected IFilterStripper makeShareFilterStripper() {
+		IFilterStripperFactory filterStripperFactory;
+		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
+			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
+		} else {
+			filterStripperFactory = AdhocUnsafe.filterStripperFactory;
+		}
+		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
 	}
 
 }

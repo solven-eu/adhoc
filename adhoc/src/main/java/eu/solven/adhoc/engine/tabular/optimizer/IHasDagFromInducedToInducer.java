@@ -81,6 +81,8 @@ public interface IHasDagFromInducedToInducer {
 	// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
 	default ImmutableSet<CubeQueryStep> getInducers() {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = getInducedToInducer();
+
+		// relates with `Graphs.vertexHasSuccessors`
 		return inducedToInducer.vertexSet()
 				.stream()
 				.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
