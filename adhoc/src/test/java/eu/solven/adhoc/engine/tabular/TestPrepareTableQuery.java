@@ -40,7 +40,6 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
-import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
@@ -70,13 +69,13 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
 			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
 
-			Assertions.assertThat(dbQuery.getAggregators()).hasSize(1).contains(k1Sum);
+			Assertions.assertThat(dbQuery.getMeasure()).isEqualTo(k1Sum);
 		});
 	}
 
@@ -96,13 +95,18 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
-		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
+		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
 			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
 
-			Assertions.assertThat(dbQuery.getAggregators()).hasSize(2).contains(k1Sum, k2Sum);
+			Assertions.assertThat(dbQuery.getMeasure()).isEqualTo(k1Sum);
+		}).anySatisfy(dbQuery -> {
+			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
+			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
+
+			Assertions.assertThat(dbQuery.getMeasure()).isEqualTo(k2Sum);
 		});
 	}
 
@@ -122,13 +126,18 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
-		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
+		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
 			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
 
-			Assertions.assertThat(dbQuery.getAggregators()).hasSize(2).contains(k1Sum, k2Sum);
+			Assertions.assertThat(dbQuery.getMeasure()).isEqualTo(k1Sum);
+		}).anySatisfy(dbQuery -> {
+			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
+			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
+
+			Assertions.assertThat(dbQuery.getMeasure()).isEqualTo(k2Sum);
 		});
 	}
 
@@ -147,14 +156,14 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.table(table())
 				.queryStepCache(queryStepCache)
 				.build();
-		Set<TableQuery> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
 			Assertions.assertThat(dbQuery.getGroupBy().isGrandTotal()).isTrue();
 
 			// query only k2Sum as k1Sum is in cache
-			Assertions.assertThat(dbQuery.getAggregators()).hasSize(1).contains(k2Sum);
+			Assertions.assertThat(dbQuery.getMeasure()).isEqualTo(k2Sum);
 		});
 	}
 }

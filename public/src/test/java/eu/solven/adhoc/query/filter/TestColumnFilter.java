@@ -111,7 +111,7 @@ public class TestColumnFilter {
 	public void testToString_null() {
 		ISliceFilter filter = ColumnFilter.builder().column("c").matching(NullMatcher.matchNull()).build();
 
-		Assertions.assertThat(filter).hasToString("c===null");
+		Assertions.assertThat(filter).hasToString("c IS NULL");
 	}
 
 	@Test
@@ -119,7 +119,7 @@ public class TestColumnFilter {
 		ISliceFilter filter =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(NullMatcher.matchNull())).build();
 
-		Assertions.assertThat(filter).hasToString("c!==null");
+		Assertions.assertThat(filter).hasToString("c IS NOT NULL");
 	}
 
 	@Test

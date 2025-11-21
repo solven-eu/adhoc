@@ -673,30 +673,44 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										/-- time=6ms for openingStream
 										|/- time=8ms for mergingAggregates
 										|/- time=9ms sizes=[1] for sortingColumns
-										\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) WHERE matchAll GROUP BY ()
-										/-- #0 s=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+										\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) GROUP BY ()
+										/-- #0 t=someTableName1 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000001)
+										|      No cost info
+										\\-- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal
+										    \\  size=1 duration=24ms
+										/-- #0 c=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 										|      No cost info
 										\\-- #1 m=table1_k_minus2(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
 										    |  size=1 duration=10ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 										        \\  size=1 duration=24ms
-										Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cubeElseTable=true, cube=composite))
 										/-- time=13ms for openingStream
 										|/- time=15ms for mergingAggregates
 										|/- time=16ms sizes=[1] for sortingColumns
-										\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) WHERE matchAll GROUP BY ()
-										/-- #0 s=someTableName2 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000000)
+										\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) GROUP BY ()
+										/-- #0 t=someTableName2 id=00000000-0000-0000-0000-000000000004 (parentId=00000000-0000-0000-0000-000000000003)
+										|      No cost info
+										\\-- #1 m=k1(SUM) filter=matchAll groupBy=grandTotal
+										    \\  size=1 duration=45ms
+										/-- #0 c=someTableName2 id=00000000-0000-0000-0000-000000000003 (parentId=00000000-0000-0000-0000-000000000000)
 										|      No cost info
 										\\-- #1 m=table2_k_minus3(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
 										    |  size=1 duration=17ms
 										    \\-- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 										        \\  size=1 duration=45ms
-										Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cube=composite))
+										Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cubeElseTable=true, cube=composite))
 										/-- time=150ms for openingStream
 										|/- time=19ms for mergingAggregates
 										|/- time=20ms sizes=[1, 1] for sortingColumns
-										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2), table2_k_minus3:SUM(table2_k_minus3) WHERE matchAll GROUP BY ()
-										/-- #0 s=composite id=00000000-0000-0000-0000-000000000000
+										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2), table2_k_minus3:SUM(table2_k_minus3) GROUP BY ()
+										/-- #0 t=composite id=00000000-0000-0000-0000-000000000005 (parentId=00000000-0000-0000-0000-000000000000)
+										|      No cost info
+										|\\- #1 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
+										|   \\  size=1 duration=57ms
+										\\-- #2 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
+										    \\  size=1 duration=57ms
+										/-- #0 c=composite id=00000000-0000-0000-0000-000000000000
 										|      No cost info
 										\\-- #1 m=compositeSum(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 										    |  size=1 duration=23ms
@@ -709,7 +723,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										        \\-- #5 m=table2_k_minus3(SUM) filter=matchAll groupBy=grandTotal
 										            \\  size=1 duration=57ms
 										Executed status=OK duration=276ms on table=composite forest=composite-filtered query=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=compositeSum)], customMarker=null, options=[EXPLAIN])""")
-						.hasLineCount(39);
+						.hasLineCount(53);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
 						.containsEntry(Map.of(),

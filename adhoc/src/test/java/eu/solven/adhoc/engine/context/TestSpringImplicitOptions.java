@@ -34,7 +34,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestSpringImplicitOptions {
 	MockEnvironment env = new MockEnvironment();
-	SpringImplicitOptions implicit = new SpringImplicitOptions(env);
+	SpringImplicitOptions implicit = SpringImplicitOptions.builder().env(env).build();
 
 	@Test
 	public void test_noEnvOption_noQueryOption() {
@@ -45,6 +45,22 @@ public class TestSpringImplicitOptions {
 	@Test
 	public void testEnv_hasEnvOption_noQueryOption() {
 		env.setProperty(implicit.optionKey(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER), true);
+
+		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+		Assertions.assertThat(implicitOptions).containsExactly(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
+	}
+
+	@Test
+	public void testEnv_hasEnvOption_logDefault() {
+		env.setProperty(implicit.optionKey(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER), true);
+
+		Assertions.assertThat(implicit.logDefaultOptions())
+				.containsExactly(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
+	}
+
+	@Test
+	public void testEnv_hasEnvOption_UPPERCASE() {
+		env.setProperty("adhoc.query.table." + InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER, true);
 
 		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 		Assertions.assertThat(implicitOptions).containsExactly(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
@@ -85,5 +101,27 @@ public class TestSpringImplicitOptions {
 		Set<IQueryOption> implicitOptions = implicit
 				.getOptions(CubeQuery.builder().option(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR).build());
 		Assertions.assertThat(implicitOptions).isEmpty();
+	}
+
+	@Test
+	public void testEnv_hasEnvOption_hasDefaultOption() {
+		implicit = SpringImplicitOptions.builder()
+				.env(env)
+				.defaultOption(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)
+				.build();
+
+		// No env
+		{
+			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+			Assertions.assertThat(implicitOptions)
+					.containsExactly(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER);
+		}
+
+		// with env
+		env.setProperty(implicit.optionKey(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER), true);
+		{
+			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+			Assertions.assertThat(implicitOptions).containsExactly(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
+		}
 	}
 }

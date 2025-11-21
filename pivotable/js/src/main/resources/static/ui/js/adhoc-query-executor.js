@@ -251,7 +251,7 @@ export default {
 						}
 
 						const queryResultId = await response.json();
-						console.info("Query has been registered as queryid=", queryResultId);
+						console.info("Query #", latestSendQueryIdSnapshot, " has been registered as queryid=", queryResultId);
 
 						const fetchStateOnlyOptions = {
 							method: "GET",
@@ -283,7 +283,7 @@ export default {
 							if (responseStateOnlyJson.retryInMs) {
 								// Retry in at most 15 seconds
 								const retryInMs = Math.min(15000, responseStateOnlyJson.retryInMs);
-								console.log("Will retry in", retryInMs, "ms");
+								console.log("Will retry #", latestSendQueryIdSnapshot, " in", retryInMs, "ms");
 
 								// https://stackoverflow.com/questions/951021/what-is-the-javascript-version-of-sleep
 								// sleep time expects milliseconds
@@ -292,7 +292,7 @@ export default {
 								}
 								await sleep(retryInMs);
 							} else {
-								console.log("query has state", responseStateOnlyJson.state);
+								console.log("query #", latestSendQueryIdSnapshot, " has state", responseStateOnlyJson.state);
 								break;
 							}
 						}

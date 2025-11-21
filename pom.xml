@@ -74,6 +74,8 @@
 		<evalex.ezylang.version>3.5.0</evalex.ezylang.version>
 		<duckdb.version>1.4.2.0</duckdb.version>
 
+		<arrow.version>18.3.0</arrow.version>
+
 		<!-- Jacoco requirements on a per-module basis-->
 		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.70</jacoco.instruction.ratio>

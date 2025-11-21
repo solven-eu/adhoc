@@ -71,7 +71,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 		log.info("{} is evaluated on cardinality={}",
 				TestTransformator_Partitionor_Perf.class.getName(),
 				maxCardinality);
-		AdhocUnsafe.limitColumnSize = maxCardinality + 10;
+		AdhocUnsafe.setLimitColumnSize(maxCardinality + 10);
 	}
 
 	@AfterAll

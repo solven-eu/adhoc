@@ -151,10 +151,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	@SuppressWarnings("PMD.LooseCoupling")
 	protected void checkSizeBeforeAdd() {
 		long size = size();
-		if (size >= AdhocUnsafe.limitColumnSize) {
+		if (size >= AdhocUnsafe.getLimitColumnSize()) {
 			// TODO Log the first and last elements
 			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.getLimitColumnSize()));
 		} else if (size == 0) {
 			if (keys instanceof ArrayList<?> arrayList) {
 				arrayList.ensureCapacity(capacity);
@@ -375,7 +375,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		AtomicInteger index = new AtomicInteger();
 
-		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v)).limit(AdhocUnsafe.limitOrdinalToString)
+		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v))
+				.limit(AdhocUnsafe.getLimitOrdinalToString())
 				.forEach(sliceToValue -> {
 					T k = sliceToValue.getKey();
 					Object o = sliceToValue.getValue();

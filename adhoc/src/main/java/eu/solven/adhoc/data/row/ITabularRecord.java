@@ -55,8 +55,6 @@ public interface ITabularRecord extends ITabularGroupByRecord {
 	@Deprecated(since = "Prefer processing aggregates then values")
 	Map<String, ?> asMap();
 
-	// boolean isEmpty();
-
 	ITabularRecord transcode(ITableReverseAliaser transcodingContext);
 
 	ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder);

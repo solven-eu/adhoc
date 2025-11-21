@@ -61,11 +61,11 @@ public class AdhocUnsafe {
 		// Typically, 5 is too small as many projects generates more than 5 filtered columns
 		limitOrdinalToString = 16;
 		limitColumnSize = 1_000_000;
-		limitCoordinates = 100;
 		failFast = true;
 		parallelism = defaultParallelism();
 		defaultColumnCapacity = limitColumnSize;
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
+		pageSize = DEFAULT_PAGE_SIZE;
 	}
 
 	public static void resetAll() {
@@ -81,7 +81,6 @@ public class AdhocUnsafe {
 		// Customize with `-Dadhoc.limitColumnSize=10000`
 		limitColumnSize = safeLoadIntegerProperty("adhoc.limitColumnSize", 1_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
-		limitCoordinates = safeLoadIntegerProperty("adhoc.pivotable.limitCoordinates", 100);
 		// Customize with `-Dadhoc.failfast=false`
 		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
 		// Customize with `-Dadhoc.parallelism=16`
@@ -89,9 +88,10 @@ public class AdhocUnsafe {
 		// Customize with `-Dadhoc.defaultColumnCapacity=100_000`
 		defaultColumnCapacity = safeLoadIntegerProperty("adhoc.defaultColumnCapacity", limitColumnSize);
 		cartesianProductLimit = safeLoadIntegerProperty("adhoc.cartesianProductLimit", DEFAULT_CARTESIAN_PRODUCT_LIMIT);
+		pageSize = safeLoadIntegerProperty("adhoc.pageSize", DEFAULT_PAGE_SIZE);
 	}
 
-	static int safeLoadIntegerProperty(String key, int defaultValue) {
+	public static int safeLoadIntegerProperty(String key, int defaultValue) {
 		try {
 			return Integer.getInteger(key, defaultValue);
 		} catch (RuntimeException e) {
@@ -122,13 +122,9 @@ public class AdhocUnsafe {
 	/**
 	 * In various `.toString`, we print only a given number of elements, to prevent the {@link String} to grow too big.
 	 */
-	public static int limitOrdinalToString;
-
-	/**
-	 * Used as default number of examples coordinates when fetching columns by API.
-	 */
-	// TODO This should be a pivotable custom parameter
-	public static int limitCoordinates;
+	@Setter
+	@Getter
+	private static int limitOrdinalToString;
 
 	/**
 	 * This will limit data-structures to go over this size.
@@ -136,7 +132,9 @@ public class AdhocUnsafe {
 	 * Used to prevent one query consuming too much memory. This applied to both pre-aggregated columns, and
 	 * transformator columns.
 	 */
-	public static int limitColumnSize;
+	@Setter
+	@Getter
+	private static int limitColumnSize;
 
 	/**
 	 * On multiple occasions, we encounter exceptions which are not fatal. Should we be resilient, or fail-fast?
@@ -152,6 +150,11 @@ public class AdhocUnsafe {
 	 */
 	@Setter
 	private static int defaultColumnCapacity;
+
+	private static final int DEFAULT_PAGE_SIZE = 16 * 1024;
+	@Setter
+	@Getter
+	public static int pageSize = DEFAULT_PAGE_SIZE;
 
 	/**
 	 * Used for unitTests

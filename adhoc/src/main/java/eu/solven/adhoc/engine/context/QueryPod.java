@@ -93,7 +93,7 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
 
 	/**
-	 * Once turned to nut-null, can not be nulled again.
+	 * Once turned to not-null, can not be nulled again.
 	 */
 	AtomicReference<OffsetDateTime> cancellationDate = new AtomicReference<>();
 
@@ -219,6 +219,17 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 
 			return new QueryPod(query, queryId, forest, table, columnsManager, executorService, queryStepCache);
 		}
+	}
+
+	// This should be called only once per queryPod, as the queryId id would changed on each call.
+	// Should this be cached?
+	public QueryPod asTableQuery() {
+		AdhocQueryId tableQueryId = AdhocQueryId.builder()
+				.cube(getTable().getName())
+				.parentQueryId(getQueryId().getQueryId())
+				.cubeElseTable(false)
+				.build();
+		return this.toBuilder().queryId(tableQueryId).build();
 	}
 
 }

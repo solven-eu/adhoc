@@ -28,10 +28,12 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -122,7 +124,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 		boolean hasLeftoverFilteringColumns = inducerColumns.stream()
 				.map(IAdhocColumn::getName)
-				.toList()
+				.collect(Collectors.toSet())
 				.containsAll(FilterHelpers.getFilteredColumns(inducedLeftoverFilter));
 
 		if (hasLeftoverFilteringColumns) {
@@ -175,6 +177,14 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 					IAdhocSlice inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
 					slice.getValueProvider().acceptReceiver(inducedValues.merge(inducedGroupBy));
 				});
+
+		// Given we reduced to a lower number of slices, it is relevant to compact
+		// Though, make sure AggregationHolders are kept in place
+		if (inducedValues instanceof ICompactable compactable) {
+			log.debug("Compacting {}", compactable);
+			compactable.compact();
+			log.debug("Compacted {}", compactable);
+		}
 
 		if (hasOptions.isDebugOrExplain()) {
 			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),

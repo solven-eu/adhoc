@@ -42,6 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestAggregations_RatioCurrentCountry extends ADagTest {
+	String underlying = "d";
 
 	@Override
 	@BeforeEach
@@ -55,7 +56,6 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@BeforeEach
 	public void registerMeasures() {
-		String underlying = "d";
 		forest.addMeasure(Aggregator.builder().name(underlying).aggregationKey(SumAggregation.KEY).build());
 
 		forest.acceptVisitor(new RatioOverCurrentColumnValueCompositor().asCombinator("country", underlying));
@@ -164,14 +164,53 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
 				.isEqualTo(
 						"""
-								/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
+								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=d_country=current_ratio(Columnator[SUM]) filter=country==US groupBy=grandTotal
 								    \\-- #2 m=d_country=current_ratio_postcheck(Combinator[DIVIDE]) filter=country==US groupBy=grandTotal
 								        |\\- #3 m=d_country=current_slice(Partitionor[SUM][SUM]) filter=country==US groupBy=grandTotal
 								        |   \\-- #4 m=d(SUM) filter=country==US groupBy=(country)
 								        \\-- #5 m=d_country=current_whole(Unfiltrator) filter=country==US groupBy=grandTotal
-								            \\-- !3""");
+								            \\-- !3
+								/-- 1 inducers from SELECT d:SUM(d) WHERE country==US GROUP BY (country)
+								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY (country)
+								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								\\-- #1 m=d(SUM) filter=country==US groupBy=(country)""");
 
-		Assertions.assertThat(messages).hasSize(7);
+		Assertions.assertThat(messages).hasSize(7 + 2 + 2);
+	}
+
+	@Test
+	public void testExplain_filterUs_andWhole() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+
+		{
+			CubeQuery adhocQuery = CubeQuery.builder()
+					.measure("d_country=current_ratio")
+					.measure(underlying)
+					.andFilter("country", "US")
+					.explain(true)
+					.build();
+			cube().execute(adhocQuery);
+		}
+
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
+								|\\- #1 m=d(SUM) filter=country==US groupBy=grandTotal
+								\\-- #2 m=d_country=current_ratio(Columnator[SUM]) filter=country==US groupBy=grandTotal
+								    \\-- #3 m=d_country=current_ratio_postcheck(Combinator[DIVIDE]) filter=country==US groupBy=grandTotal
+								        |\\- #4 m=d_country=current_slice(Partitionor[SUM][SUM]) filter=country==US groupBy=grandTotal
+								        |   \\-- #5 m=d(SUM) filter=country==US groupBy=(country)
+								        \\-- #6 m=d_country=current_whole(Unfiltrator) filter=country==US groupBy=grandTotal
+								            \\-- !4
+								/-- 1 inducers from SELECT d:SUM(d) WHERE country==US GROUP BY (country)
+								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY (country)
+								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|\\- #1 m=d(SUM) filter=country==US groupBy=(country)
+								\\-- #2 m=d(SUM) filter=country==US groupBy=grandTotal
+								    \\-- !1""");
+
+		Assertions.assertThat(messages).hasSize(8 + 2 + 4);
 	}
 }

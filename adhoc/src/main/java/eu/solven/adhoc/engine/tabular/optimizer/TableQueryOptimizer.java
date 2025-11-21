@@ -40,11 +40,11 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.table.TableQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -62,38 +62,41 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 
 	/**
 	 * 
-	 * @param tableQueries
+	 * @param tablequerySteps
 	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
 	 */
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
-		if (tableQueries.isEmpty()) {
+	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tablequerySteps) {
+		if (tablequerySteps.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = splitInducedAsDag(tableQueries);
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = splitInducedAsDag(tablequerySteps);
 
-		return SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
+		return SplitTableQueries.builder().explicits(tablequerySteps).inducedToInducer(inducedToInducer).build();
 	}
 
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<TableQuery> tableQueries) {
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<CubeQueryStep> tableQueries) {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		// Inference in aggregator based: `k1` does not imply `k2`, `k1.SUM` does not imply `k1.MAX`
 		// TODO The key should includes options and customMarker
 		SetMultimap<Aggregator, CubeQueryStep> aggregatorToQueries =
-				MultimapBuilder.hashKeys().linkedHashSetValues().build();
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
-		// Register all tableQueries as a vertex
-		tableQueries.forEach(tq -> {
-			tq.getAggregators().stream().forEach(agg -> {
-				CubeQueryStep step = CubeQueryStep.edit(tq).measure(agg).build();
+		tableQueries.forEach(step -> {
+			IMeasure measure = step.getMeasure();
+
+			if (measure instanceof Aggregator agg) {
 				// BEWARE step.filter must be optimized as it is inserted in a hashStructure
 				inducedToInducer.addVertex(step);
 				aggregatorToQueries.put(agg, step);
-			});
+			} else {
+				throw new IllegalArgumentException(
+						"TableQueryOptimizer require steps to be on Aggregator. Was " + step);
+			}
 		});
 
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.

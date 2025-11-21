@@ -25,8 +25,8 @@ package eu.solven.adhoc.pivotable.endpoint;
 import java.util.Optional;
 import java.util.UUID;
 
+import eu.solven.adhoc.pivotable.util.PivotableUnsafe;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Value;
@@ -59,6 +59,6 @@ public class AdhocColumnSearch {
 	Optional<IValueMatcher> coordinate = Optional.empty();
 
 	@Default
-	int limitCoordinates = AdhocUnsafe.limitCoordinates;
+	int limitCoordinates = PivotableUnsafe.getLimitCoordinates();
 
 }

@@ -191,7 +191,7 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	protected IImplicitOptions makeImplicitOptions() {
-		return new SpringImplicitOptions(env);
+		return SpringImplicitOptions.builder().env(env).build();
 	}
 
 	@Override

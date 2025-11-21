@@ -90,8 +90,30 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	@Override
-	public Optional<Object> optSliced(String column) {
-		return Optional.ofNullable(asMap.get(column));
+	public Object getGroupBy(String column) {
+		if (asMap.containsKey(column)) {
+			return explicitNull(asMap.get(column));
+		} else {
+			throw new IllegalArgumentException(
+					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
+		}
+	}
+
+	@Override
+	public Optional<Object> optGroupBy(String column) {
+		return Optional.ofNullable(explicitNull(asMap.get(column)));
+	}
+
+	@Override
+	public Map<String, ?> optGroupBy(Set<String> columns) {
+		// Keep requested columns ordering
+		Map<String, Object> filters = new LinkedHashMap<>();
+
+		columns.forEach(column -> {
+			optGroupBy(column).ifPresent(v -> filters.put(column, v));
+		});
+
+		return filters;
 	}
 
 	@Override
@@ -105,18 +127,6 @@ public final class SliceAsMap implements IAdhocSlice {
 		} else {
 			return v;
 		}
-	}
-
-	@Override
-	public Map<String, ?> optSliced(Set<String> columns) {
-		// Keep requested columns ordering
-		Map<String, Object> filters = new LinkedHashMap<>();
-
-		columns.forEach(column -> {
-			optSliced(column).ifPresent(v -> filters.put(column, explicitNull(v)));
-		});
-
-		return filters;
 	}
 
 	@Override
@@ -191,15 +201,5 @@ public final class SliceAsMap implements IAdhocSlice {
 	@Override
 	public IAdhocSlice getGroupBys() {
 		return this;
-	}
-
-	@Override
-	public Object getGroupBy(String column) {
-		if (asMap.containsKey(column)) {
-			return explicitNull(asMap.get(column));
-		} else {
-			throw new IllegalArgumentException(
-					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
-		}
 	}
 }

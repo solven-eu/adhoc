@@ -50,13 +50,12 @@ public class AdhocTranscodingHelper {
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
 	// TODO Should return original Map is there is no actual transcoding
-	public static Map<String, ?> transcodeColumns(ITableReverseAliaser reverseTranscoder,
-			Map<String, ?> underlyingMap) {
-		int initialCapacity = reverseTranscoder.estimateQueriedSize(underlyingMap.keySet());
+	public static Map<String, ?> transcodeColumns(ITableReverseAliaser reverseAliaser, Map<String, ?> underlyingMap) {
+		int initialCapacity = reverseAliaser.estimateQueriedSize(underlyingMap.keySet());
 		Map<String, Object> transcoded = HashMap.newHashMap(initialCapacity);
 
 		underlyingMap.forEach((underlyingKey, v) -> {
-			Set<String> queriedKeys = reverseTranscoder.queried(underlyingKey);
+			Set<String> queriedKeys = reverseAliaser.queried(underlyingKey);
 
 			if (queriedKeys.isEmpty()) {
 				// This output column was not requested, but it has been received. The DB returns unexpected columns?

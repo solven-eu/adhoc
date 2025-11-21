@@ -39,7 +39,10 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
+import lombok.extern.slf4j.Slf4j;
+
 // https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
+@Slf4j
 public class TestDuckDbJooqAggregate {
 	@Test
 	public void testAggregate() throws SQLException {
@@ -74,7 +77,7 @@ public class TestDuckDbJooqAggregate {
 
 		queryInteger.stream().findAny().ifPresent(row -> {
 			// prints `class java.math.BigDecimal`
-			System.out.println(row.get(0).getClass());
+			log.info("SUM aggregate type is {}", row.get(0).getClass());
 		});
 	}
 }

@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -124,6 +125,11 @@ public final class UnsafeMeasureForest implements IMeasureForest {
 	 */
 	@Override
 	public IMeasureForest acceptVisitor(IMeasureForestVisitor visitor) {
+		String editedName = visitor.editName(getName());
+		if (Objects.equals(editedName, getName())) {
+			log.warn("Can not edit the name of {}", this);
+		}
+
 		Set<IMeasure> measures = new LinkedHashSet<>();
 
 		measures.addAll(visitor.addMeasures());

@@ -134,8 +134,23 @@ flowchart TD
     ITableWrapper --> DuckDB
     ITableWrapper --> RedShift
     ITableWrapper --> BigQuery
-  
 ```
+
+## General Query Flow
+
+``` mermaid
+flowchart TD
+    CubeQuery --> CubeQueryStep_userMeasure
+    CubeQueryStep_userMeasure --> CubeQueryStep_underlyingMeasure
+    CubeQueryStep_underlyingMeasure --> CubeQueryStep_aggregator
+    CubeQueryStep_aggregator --> SplitTableQueries
+    SplitTableQueries --> TableQueryV2>
+```
+
+- `CubeQuery --> CubeQueryStep_userMeasure` is mostly managed by `CubeQueryEngine.getRootMeasures(...)`
+- `CubeQueryStep_userMeasure --> CubeQueryStep_underlyingMeasure` is mostly managed by `CubeQueryEngine.makeQueryStepsDag(...)`.
+- `CubeQueryStep_aggregator --> SplitTableQueries` is mostly managed in `ITableQueryOptimizer.splitInduced(...)`. It build a DAG of `Aggregator-CubeQueryStep`. The roots of this DAG are `inducers`, able to infer `induced`.
+- `SplitTableQueries --> TableQueryV2` is mostly managed in `ITableQueryOptimizer.packStepsIntoTableQueries(...)`. It defines `TableQueryV2` able to infer the `inducers`.`
 
 ## CubeQuery
 

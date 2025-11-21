@@ -70,16 +70,20 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 	}
 
 	@Override
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<TableQuery> tableQueries) {
+	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(Set<CubeQueryStep> tableQueries) {
 		// This dag optimized `induced->inducer` by minimizing the number of inducers, considering only inducers from
 		// the initial TableQueries
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = super.splitInducedAsDag(tableQueries);
 
+		// rootInducers can imply all other steps
 		Set<CubeQueryStep> rootInducers =
 				SplitTableQueries.builder().inducedToInducer(inducedToInducer).build().getInducers();
 
+		// Make an alternative graph, computing rootInducers from another set of steps
+		// e.g. groupBy aggregators, and union the GROUP_BY and FILTER clauses.
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> moreInducedToInducer = getGroupedInducers(rootInducers);
 
+		// Extend the DAG with this new DAG
 		moreInducedToInducer.vertexSet().forEach(inducedToInducer::addVertex);
 		moreInducedToInducer.edgeSet()
 				.forEach(e -> inducedToInducer.addEdge(moreInducedToInducer.getEdgeSource(e),

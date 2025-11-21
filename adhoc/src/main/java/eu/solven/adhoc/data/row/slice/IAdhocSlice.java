@@ -56,13 +56,19 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRec
 	ISliceFilter asFilter();
 
 	/**
+	 * Differs from {@link #getGroupBy(String)} as it will not fail if the column is not groupedBy.
 	 *
 	 * @param column
 	 * @return the {@link Optional} filtered value along given column.
 	 */
-	Optional<Object> optSliced(String column);
+	Optional<Object> optGroupBy(String column);
 
-	Map<String, ?> optSliced(Set<String> columns);
+	/**
+	 * 
+	 * @param columns
+	 * @return a {@link Map} of available columns.
+	 */
+	Map<String, ?> optGroupBy(Set<String> columns);
 
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated

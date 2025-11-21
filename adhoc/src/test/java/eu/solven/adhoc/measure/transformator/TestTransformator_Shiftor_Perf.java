@@ -64,7 +64,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 	@BeforeAll
 	public static void setLimits() {
 		log.info("{} is evaluated on cardinality={}", TestTransformator_Shiftor_Perf.class.getName(), maxCardinality);
-		AdhocUnsafe.limitColumnSize = maxCardinality * nbDays + 10;
+		AdhocUnsafe.setLimitColumnSize(maxCardinality * nbDays + 10);
 	}
 
 	@AfterAll

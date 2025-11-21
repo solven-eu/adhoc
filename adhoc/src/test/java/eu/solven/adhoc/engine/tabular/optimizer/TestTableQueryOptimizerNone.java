@@ -58,7 +58,7 @@ public class TestTableQueryOptimizerNone {
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(Aggregator.sum("m1"))
 				.build();
-		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(2)

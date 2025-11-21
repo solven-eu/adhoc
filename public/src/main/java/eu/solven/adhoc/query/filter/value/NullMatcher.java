@@ -59,9 +59,9 @@ public class NullMatcher implements IValueMatcher, IColumnToString {
 	@Override
 	public String toString(String column, boolean negated) {
 		if (negated) {
-			return column + "!==null";
+			return column + " IS NOT NULL";
 		} else {
-			return column + "===null";
+			return column + " IS NULL";
 		}
 	}
 

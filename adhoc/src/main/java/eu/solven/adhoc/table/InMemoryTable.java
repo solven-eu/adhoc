@@ -355,7 +355,7 @@ public class InMemoryTable implements ITableWrapper {
 
 		AtomicInteger index = new AtomicInteger();
 
-		stream().limit(AdhocUnsafe.limitOrdinalToString)
+		stream().limit(AdhocUnsafe.getLimitOrdinalToString())
 				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 
 		return toStringHelper.toString();

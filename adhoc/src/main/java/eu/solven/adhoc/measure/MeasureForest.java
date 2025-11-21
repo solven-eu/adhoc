@@ -120,7 +120,7 @@ public class MeasureForest implements IMeasureForest {
 		measures.addAll(visitor.addMeasures());
 		getMeasures().forEach(m -> measures.addAll(visitor.mapMeasure(m)));
 
-		return MeasureForest.builder().name(getName()).measures(measures).build();
+		return MeasureForest.builder().name(visitor.editName(getName())).measures(measures).build();
 	}
 
 	public static MeasureForestBuilder edit(IMeasureForest measures) {

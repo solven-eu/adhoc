@@ -9,8 +9,9 @@ spring:
             default:
                 # unsafe provides various unsafe default parameters (like an unsafe signingKey)
                 - unsafe
-                # fakeuser introduces a default fakeAccount with a default fakePlayer
+                # fakeuser introduces a default fakeAccount able to login with BASIC
                 - fakeuser
+                # inmemory will make the application independant of any persistence layer
                 - inmemory
             default_server:
                 - self_endpoint

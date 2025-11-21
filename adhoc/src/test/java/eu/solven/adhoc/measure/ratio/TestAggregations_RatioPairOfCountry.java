@@ -178,14 +178,21 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 			cube().execute(adhocQuery);
 		}
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
-				/-- #0 s=inMemory id=00000000-0000-0000-0000-000000000000
-				\\-- #1 m=FRoverUS(Combinator[DIVIDE]) filter=matchAll groupBy=grandTotal
-				    |\\- #2 m=onFR(Filtrator) filter=matchAll groupBy=grandTotal
-				    |   \\-- #3 m=d(SUM) filter=country==FR groupBy=grandTotal
-				    \\-- #4 m=onUS(Filtrator) filter=matchAll groupBy=grandTotal
-				        \\-- #5 m=d(SUM) filter=country==US groupBy=grandTotal""");
-
-		Assertions.assertThat(messages).hasSize(6);
+		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				.isEqualTo(
+						"""
+								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
+								\\-- #1 m=FRoverUS(Combinator[DIVIDE]) filter=matchAll groupBy=grandTotal
+								    |\\- #2 m=onFR(Filtrator) filter=matchAll groupBy=grandTotal
+								    |   \\-- #3 m=d(SUM) filter=country==FR groupBy=grandTotal
+								    \\-- #4 m=onUS(Filtrator) filter=matchAll groupBy=grandTotal
+								        \\-- #5 m=d(SUM) filter=country==US groupBy=grandTotal
+								/-- 2 inducers from SELECT d:SUM(d) FILTER(country==FR), d:SUM(d) FILTER(country==US) GROUP BY ()
+								|\\- step SELECT d:SUM(d) WHERE country==FR GROUP BY ()
+								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY ()
+								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
+								|\\- #1 m=d(SUM) filter=country==FR groupBy=grandTotal
+								\\-- #2 m=d(SUM) filter=country==US groupBy=grandTotal""")
+				.hasLineCount(6 + 3 + 3);
 	}
 }

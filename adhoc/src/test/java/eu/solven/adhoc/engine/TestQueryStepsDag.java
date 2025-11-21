@@ -56,7 +56,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(1);
+		Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(1);
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(0);
@@ -73,7 +73,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(1);
+		Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
@@ -108,7 +108,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(1);
+		Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(4);
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(3);
@@ -132,7 +132,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(2);
+		Assertions.assertThat(dag.getExplicits()).hasSize(2);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
@@ -152,7 +152,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(2);
+		Assertions.assertThat(dag.getExplicits()).hasSize(2);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(3);
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(2);
@@ -166,7 +166,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(1);
+		Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
 
@@ -195,7 +195,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 				.table(InMemoryTable.builder().build())
 				.build());
 
-		Assertions.assertThat(dag.getQueried()).hasSize(1);
+		Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(3);
 		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(3);
@@ -219,7 +219,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 					.queryStepCache(queryStepCache)
 					.build());
 
-			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
+			Assertions.assertThat(dagPre.getExplicits()).hasSize(1);
 
 			Assertions.assertThat(dagPre.getInducedToInducer().vertexSet()).hasSize(1);
 			Assertions.assertThat(dagPre.getInducedToInducer().edgeSet()).hasSize(0);
@@ -231,7 +231,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		// Simulate the registration of a value in the cache
 		ISliceToValue sliceToValue = SliceToValue.empty();
-		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getQueried()), sliceToValue));
+		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getExplicits()), sliceToValue));
 		Assertions.assertThat(queryStepCache.map).hasSize(1);
 
 		// After filling the cache
@@ -243,7 +243,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 					.queryStepCache(queryStepCache)
 					.build());
 
-			Assertions.assertThat(dag.getQueried()).hasSize(1);
+			Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 			Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(1);
 			Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(0);
@@ -269,7 +269,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 					.queryStepCache(queryStepCache)
 					.build());
 
-			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
+			Assertions.assertThat(dagPre.getExplicits()).hasSize(1);
 
 			Assertions.assertThat(dagPre.getInducedToInducer().vertexSet()).hasSize(1);
 			Assertions.assertThat(dagPre.getInducedToInducer().edgeSet()).hasSize(0);
@@ -279,7 +279,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		// Simulate the registration of a value in the cache
 		ISliceToValue sliceToValue = SliceToValue.empty();
-		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getQueried()), sliceToValue));
+		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getExplicits()), sliceToValue));
 		Assertions.assertThat(queryStepCache.map).hasSize(1);
 
 		// After filling the cache with an underlying measure, we query a dependant measure
@@ -291,7 +291,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 					.queryStepCache(queryStepCache)
 					.build());
 
-			Assertions.assertThat(dag.getQueried()).hasSize(1);
+			Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 			// Dependant and underlying: the underlying has a value in cache
 			Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
@@ -320,7 +320,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 					.queryStepCache(queryStepCache)
 					.build());
 
-			Assertions.assertThat(dagPre.getQueried()).hasSize(1);
+			Assertions.assertThat(dagPre.getExplicits()).hasSize(1);
 
 			Assertions.assertThat(dagPre.getInducedToInducer().vertexSet()).hasSize(2);
 			Assertions.assertThat(dagPre.getInducedToInducer().edgeSet()).hasSize(1);
@@ -331,7 +331,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		// Simulate the registration of a value in the cache
 		ISliceToValue sliceToValue = SliceToValue.empty();
-		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getQueried()), sliceToValue));
+		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getExplicits()), sliceToValue));
 		Assertions.assertThat(queryStepCache.map).hasSize(1);
 
 		// After filling the cache with an underlying measure, we query a dependant measure
@@ -343,7 +343,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 					.queryStepCache(queryStepCache)
 					.build());
 
-			Assertions.assertThat(dag.getQueried()).hasSize(1);
+			Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
 			// Given the dependent is in cache, the dependency is not added as vertex
 			Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(1);

@@ -33,15 +33,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
@@ -58,8 +58,11 @@ import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.observability.DagExplainer;
+import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
@@ -70,12 +73,10 @@ import eu.solven.adhoc.eventbus.TableStepIsCompleted;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.aggregation.collection.UnionSetAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
@@ -107,6 +108,7 @@ import lombok.extern.slf4j.Slf4j;
  * context of a single {@link TableQuery}.
  * 
  * @author Benoit Lacelle
+ * @see TableQueryEngine
  */
 @Slf4j
 @Builder
@@ -138,12 +140,10 @@ public class TableQueryEngineBootstrapped {
 
 	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures
-		Set<TableQuery> tableQueries = prepareForTable(queryPod, queryStepsDag);
+		Set<CubeQueryStep> tableQuerySteps = prepareForTable(queryPod, queryStepsDag);
 
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
-		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, tableQueries);
-
-		logInducedSteps(queryPod, inducerAndInduced);
+		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, tableQuerySteps);
 
 		// Given the inducers, group them by groupBy, to leverage FILTER per measure
 		Set<TableQueryV2> tableQueriesV2 =
@@ -152,51 +152,53 @@ public class TableQueryEngineBootstrapped {
 		sanityChecks(queryPod, queryStepsDag, inducerAndInduced, tableQueriesV2);
 
 		// Execute the actual tableQueries
-		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(queryPod, queryStepsDag, tableQueriesV2);
+		Map<CubeQueryStep, ISliceToValue> stepToValues =
+				executeTableQueries(queryPod, inducerAndInduced, tableQueriesV2);
 
-		// Evaluated the induced tableQueries
-		walkUpInducedDag(queryPod, stepToValues, inducerAndInduced);
+		QueryPod tableQueryPod = queryPod.asTableQuery();
 
-		reportAfterTableQueries(queryPod, stepToValues);
+		{
+			if (queryPod.isDebugOrExplain()) {
+				explainDagSteps(tableQueryPod, inducerAndInduced);
+			}
+
+			// Evaluated the induced tableQueries
+			walkUpInducedDag(queryPod, stepToValues, inducerAndInduced);
+
+			if (queryPod.isDebugOrExplain()) {
+				explainDagPerfs(tableQueryPod, inducerAndInduced);
+			}
+		}
+
+		// This is probably bad design
+		// Needed to transfer the explicitNodes from tableSteps into the rootNodes in cubeSteps
+		transferSizeAndCost(inducerAndInduced, queryStepsDag);
 
 		return stepToValues;
 	}
 
-	protected void logInducedSteps(QueryPod queryPod, SplitTableQueries inducerAndInduced) {
-		if (queryPod.isDebugOrExplain()) {
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = inducerAndInduced.getInducedToInducer();
-			log.info(
-					"[EXPLAIN] querySteps on table={} inducers is composed of {} inducers steps leading to {} induced steps",
-					queryPod.getTable().getName(),
-					inducerAndInduced.getInducers().size(),
-					inducerAndInduced.getInduceds().size());
-
-			// TODO We want to print the graph of induced steps. There should be something to refactor with DagExplainer
-			// new TopologicalOrderIterator<>(inducerAndInduced.getDagToDependancies()).fo
-			dag.edgeSet().forEach(edge -> {
-				CubeQueryStep inducer = dag.getEdgeSource(edge);
-				CubeQueryStep induced = dag.getEdgeTarget(edge);
-				log.info("[EXPLAIN] {} will induce {}", inducer, induced);
-			});
-		}
+	protected void transferSizeAndCost(SplitTableQueries inducerAndInduced, QueryStepsDag queryStepsDag) {
+		inducerAndInduced.getStepToCost()
+				.entrySet()
+				.stream()
+				.filter(e -> queryStepsDag.getMultigraph().containsVertex(e.getKey()))
+				.forEach(e -> queryStepsDag.registerExecutionFeedback(e.getKey(), e.getValue()));
 	}
 
-	protected void reportAfterTableQueries(QueryPod queryPod,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValuesOuter) {
-		if (queryPod.isDebug()) {
-			queryStepToValuesOuter.forEach((queryStep, values) -> {
-				values.forEachSlice(row -> {
-					return rowValue -> {
-						eventBus.post(AdhocLogEvent.builder()
-								.debug(true)
-								.messageT("%s -> %s", rowValue, row)
-								.source(queryStep)
-								.build());
-					};
-				});
+	protected DagExplainer makeDagExplainer() {
+		return DagExplainer.builder().eventBus(eventBus).build();
+	}
 
-			});
-		}
+	protected void explainDagSteps(QueryPod queryPod, IHasDagFromInducedToInducer queryStepsDag) {
+		makeDagExplainer().explain(queryPod.getQueryId(), queryStepsDag);
+	}
+
+	protected DagExplainer makeDagExplainerForPerfs() {
+		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
+	}
+
+	protected void explainDagPerfs(QueryPod queryPod, IHasDagFromInducedToInducer queryStepsDag) {
+		makeDagExplainerForPerfs().explain(queryPod.getQueryId(), queryStepsDag);
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
@@ -235,6 +237,7 @@ public class TableQueryEngineBootstrapped {
 							.source(this)
 							.build());
 
+					// BEWARE Could we have multiple TableQueryV2 computing the same CubeQueryStep?
 					queryStepToValuesInner.putAll(queryStepToValues);
 				});
 
@@ -294,16 +297,34 @@ public class TableQueryEngineBootstrapped {
 		}
 
 		Duration elapsed = stopWatchSinking.elapsed();
-		reportAboutDoneAggregators(sinkExecutionFeedback, elapsed, stepToValues);
+		reportOnTableQuery(queryPod, tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
 
 		return stepToValues;
 	}
 
+	// `InsufficientStringBufferDeclaration`: Unclear if we prefer a MagicNumber
+	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
 	protected String toPerfLog(TableQueryV2 tableQuery) {
+		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("SELECT ").append(measures);
+
+		if (!ISliceFilter.MATCH_ALL.equals(tableQuery.getFilter())) {
+			sb.append(" WHERE ").append(tableQuery.getFilter());
+		}
+
 		String groupBy =
 				tableQuery.getGroupBy().getGroupedByColumns().stream().collect(Collectors.joining(",", "(", ")"));
-		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
-		return "SELECT " + measures + " WHERE " + tableQuery.getFilter() + " GROUP BY " + groupBy;
+		sb.append(" GROUP BY ").append(groupBy);
+
+		return sb.toString();
+	}
+
+	protected String toPerfLog(CubeQueryStep cubeQueryStep) {
+		Set<TableQueryV2> tableQueriesV2 = TableQueryV2.fromV1(TableQuery.fromSteps(Set.of(cubeQueryStep)));
+		return toPerfLog(Iterables.getOnlyElement(tableQueriesV2));
 	}
 
 	protected String toPerfLog(FilteredAggregator fa) {
@@ -314,9 +335,25 @@ public class TableQueryEngineBootstrapped {
 		}
 	}
 
-	protected void reportAboutDoneAggregators(ISinkExecutionFeedback sinkExecutionFeedback,
+	protected void reportOnTableQuery(QueryPod queryPod,
+			TableQueryV2 tableQuery,
+			ISinkExecutionFeedback sinkExecutionFeedback,
 			Duration elapsed,
 			Map<CubeQueryStep, ISliceToValue> oneQueryStepToValues) {
+		boolean isExplain = queryPod.isDebugOrExplain();
+
+		if (isExplain) {
+			eventBus.post(AdhocLogEvent.builder()
+					.debug(queryPod.isDebug())
+					.explain(queryPod.isExplain())
+					.message("/-- %s inducers from %s".formatted(oneQueryStepToValues.size(), toPerfLog(tableQuery)))
+					.source(this)
+					.build());
+		}
+
+		int lastStepIndex = oneQueryStepToValues.size() - 1;
+		AtomicInteger queryStepIndex = new AtomicInteger();
+
 		oneQueryStepToValues.forEach((queryStep, column) -> {
 			eventBus.post(QueryStepIsCompleted.builder()
 					.querystep(queryStep)
@@ -328,6 +365,23 @@ public class TableQueryEngineBootstrapped {
 
 			sinkExecutionFeedback.registerExecutionFeedback(queryStep,
 					SizeAndDuration.builder().size(column.size()).duration(elapsed).build());
+
+			if (isExplain) {
+				boolean isLast = queryStepIndex.getAndIncrement() == lastStepIndex;
+
+				String template;
+				if (isLast) {
+					template = "\\-- step %s";
+				} else {
+					template = "|\\- step %s";
+				}
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(queryPod.isDebug())
+						.explain(queryPod.isExplain())
+						.message(template.formatted(toPerfLog(queryStep)))
+						.source(this)
+						.build());
+			}
 		});
 	}
 
@@ -338,15 +392,10 @@ public class TableQueryEngineBootstrapped {
 	 * @return a Stream over {@link CubeQueryStep} with resolved measures, guaranteed to be an {@link Aggregator}.
 	 */
 	protected Stream<CubeQueryStep> streamMissingRoots(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		// https://stackoverflow.com/questions/57134161/how-to-find-roots-and-leaves-set-in-jgrapht-directedacyclicgraph
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
-
-		return dag.vertexSet()
+		// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
+		// `Transformator` with no undelryingSteps
+		return queryStepsDag.getInducers()
 				.stream()
-				// Consider only leaves steps.
-				// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
-				// `Transformator` with no undelryingSteps
-				.filter(step -> dag.outDegreeOf(step) == 0)
 				// Skip steps with a value in cache
 				.filter(step -> !queryStepsDag.getStepToValues().containsKey(step))
 				.map(step -> {
@@ -376,29 +425,16 @@ public class TableQueryEngineBootstrapped {
 	 * @param queryStepsDag
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	protected Set<TableQuery> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
-		// Pack each steps targeting the same groupBy+filters. Multiple measures can be evaluated on such packs.
-		Map<MeasurelessQuery, Set<Aggregator>> measurelessToAggregators = new LinkedHashMap<>();
-
-		streamMissingRoots(queryPod, queryStepsDag).forEach(step -> {
+	protected Set<CubeQueryStep> prepareForTable(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		return streamMissingRoots(queryPod, queryStepsDag).map(step -> {
 			IMeasure measure = step.getMeasure();
 
-			if (measure instanceof Aggregator leafAggregator) {
-				MeasurelessQuery measureless = MeasurelessQuery.edit(step).build();
-
-				// Aggregator leaves are groupedBy context (groupBy+filter+customMarker)
-				// They may be later grouped by different granularities (e.g. to leverage `FILTER` per measure)
-				measurelessToAggregators.merge(measureless, Set.of(leafAggregator), UnionSetAggregation::unionSet);
+			if (measure instanceof Aggregator) {
+				return step;
 			} else {
 				throw new IllegalStateException("%s is not an Aggregator".formatted(step));
 			}
-		});
-
-		return measurelessToAggregators.entrySet().stream().map(e -> {
-			MeasurelessQuery measurelessQuery = e.getKey();
-			Set<Aggregator> leafAggregators = e.getValue();
-			return TableQuery.edit(measurelessQuery).aggregators(leafAggregators).build();
-		}).collect(Collectors.toCollection(LinkedHashSet::new));
+		}).collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
@@ -421,7 +457,7 @@ public class TableQueryEngineBootstrapped {
 						IValueMatcher.MATCH_ALL)
 				.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 
 		Set<String> groupedByCubeColumns = tableQuery.getGroupBy().getGroupedByColumns();
 
@@ -453,7 +489,7 @@ public class TableQueryEngineBootstrapped {
 		}
 
 		Set<String> filteredCubeColumnsToSuppress =
-				FilterHelpers.getFilteredColumns(tableQuery.getFilter()).stream().collect(Collectors.toSet());
+				ImmutableSet.copyOf(FilterHelpers.getFilteredColumns(tableQuery.getFilter()));
 		Set<String> generatedColumnToSuppressFromFilter =
 				Sets.intersection(filteredCubeColumnsToSuppress, generatedColumns);
 
@@ -739,12 +775,7 @@ public class TableQueryEngineBootstrapped {
 
 		// tableDag will evaluate from table querySteps to cubeDag root querySteps
 		{
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> tableInducedToInducer =
-					inducerAndInduced.getInducedToInducer();
-			Set<CubeQueryStep> tableRoots = tableInducedToInducer.vertexSet()
-					.stream()
-					.filter(key -> tableInducedToInducer.outDegreeOf(key) == 0)
-					.collect(Collectors.toSet());
+			Set<CubeQueryStep> tableRoots = inducerAndInduced.getInducers();
 
 			Set<CubeQueryStep> missingRootsFromTableQueries = Sets.difference(tableRoots, queryStepsFromTableQueries);
 			if (!missingRootsFromTableQueries.isEmpty()) {
@@ -889,6 +920,9 @@ public class TableQueryEngineBootstrapped {
 					.build());
 
 			stepToValues.put(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
+
+			inducerAndInduced.registerExecutionFeedback(induced,
+					SizeAndDuration.builder().size(inducedValues.size()).duration(elapsed).build());
 		}
 	}
 }

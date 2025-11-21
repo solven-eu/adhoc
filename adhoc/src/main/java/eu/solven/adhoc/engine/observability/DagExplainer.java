@@ -33,8 +33,8 @@ import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -85,12 +85,12 @@ public class DagExplainer implements IDagExplainer {
 		final Map<CubeQueryStep, Integer> stepToReference = new HashMap<>();
 
 		AdhocQueryId queryId;
-		QueryStepsDag dag;
+		IHasDagFromInducedToInducer dag;
 
 		public List<CubeQueryStep> getUnderlyingSteps(CubeQueryStep step) {
 			if (step == FAKE_ROOT) {
 				// Requesting the underlyings of the fakeRoot is requesting the (User) queried steps
-				return dag.getQueried().stream().sorted(this.orderForExplain()).toList();
+				return dag.getExplicits().stream().sorted(this.orderForExplain()).toList();
 			} else {
 				// Return the actual underlying steps
 				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> rawDag = dag.getInducedToInducer();
@@ -114,13 +114,19 @@ public class DagExplainer implements IDagExplainer {
 	}
 
 	@Override
-	public void explain(AdhocQueryId queryId, QueryStepsDag dag) {
+	public void explain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
+		log.info(
+				"[EXPLAIN] querySteps on table={} inducers is composed of {} inducers steps leading to {} induced steps",
+				queryId.getCube(),
+				dag.getInducers().size(),
+				dag.getInduceds().size());
+
 		DagExplainerState state = newDagExplainerState(queryId, dag);
 
 		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true);
 	}
 
-	protected DagExplainerState newDagExplainerState(AdhocQueryId queryId, QueryStepsDag dag) {
+	protected DagExplainerState newDagExplainerState(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
 		return new DagExplainerState(queryId, dag);
 	}
 
@@ -212,10 +218,19 @@ public class DagExplainer implements IDagExplainer {
 		if (step == FAKE_ROOT) {
 			AdhocQueryId queryId = dagState.getQueryId();
 			UUID parentQueryId = queryId.getParentQueryId();
-			if (parentQueryId == null) {
-				return "s=%s id=%s".formatted(queryId.getCube(), queryId.getQueryId());
+
+			String cubeOrTable;
+			if (queryId.isCubeElseTable()) {
+				cubeOrTable = "c";
 			} else {
-				return "s=%s id=%s (parentId=%s)".formatted(queryId.getCube(), queryId.getQueryId(), parentQueryId);
+				cubeOrTable = "t";
+			}
+
+			if (parentQueryId == null) {
+				return "%s=%s id=%s".formatted(cubeOrTable, queryId.getCube(), queryId.getQueryId());
+			} else {
+				return "%s=%s id=%s (parentId=%s)"
+						.formatted(cubeOrTable, queryId.getCube(), queryId.getQueryId(), parentQueryId);
 			}
 		}
 

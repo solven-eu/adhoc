@@ -57,7 +57,6 @@ public class DagExplainerForPerfs extends DagExplainer {
 			// This is a referenced step: no point in duplicating the performance information
 			return "";
 		}
-		SizeAndDuration cost = dagState.getDag().getStepToCost().get(step);
 
 		String prefix = indentation.replace('\\', ' ').replace('-', ' ');
 
@@ -74,6 +73,8 @@ public class DagExplainerForPerfs extends DagExplainer {
 				prefix += "|  ";
 			}
 		}
+
+		SizeAndDuration cost = dagState.getDag().getStepToCost().get(step);
 		if (cost == null) {
 			return EOL + prefix + "No cost info";
 		}

@@ -84,9 +84,9 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	 */
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
-		if (size >= AdhocUnsafe.limitColumnSize) {
+		if (size >= AdhocUnsafe.getLimitColumnSize()) {
 			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.limitColumnSize));
+					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.getLimitColumnSize()));
 		} else if (size == 0) {
 			ensureCapacity(type);
 		}
@@ -324,7 +324,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keyStream().limit(AdhocUnsafe.limitOrdinalToString).forEach(key -> {
+		keyStream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
 
 			onValue(key).acceptReceiver(o -> toStringHelper.add("#" + index.getAndIncrement() + "-" + key,
 					PepperLogHelper.getObjectAndClass(o)));
