@@ -4,16 +4,12 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.12</version>
+		<version>0.0.13-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-public</artifactId>
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
-
-	<scm>
-		<tag>v0.0.12</tag>
-	</scm>
 
 	<properties>
 		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>
