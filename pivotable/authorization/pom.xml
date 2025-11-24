@@ -4,13 +4,29 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.12-SNAPSHOT</version>
+		<version>0.0.12</version>
 	</parent>
 
 	<artifactId>pivotable-authorization</artifactId>
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Manage access_token and refresh_token</description>
+
+	<!--    <build>-->
+	<!--        <plugins>-->
+	<!--            <plugin>-->
+	<!--                <groupId>org.springframework.boot</groupId>-->
+	<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
+	<!--                <configuration>-->
+	<!--                    <classifier>exec</classifier>-->
+	<!--                </configuration>-->
+	<!--            </plugin>-->
+	<!--        </plugins>-->
+	<!--    </build>-->
+
+	<scm>
+		<tag>v0.0.12</tag>
+	</scm>
 
 	<properties>
 		<jacoco.branch.ratio>0.43</jacoco.branch.ratio>
@@ -60,17 +76,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-	<!--    <build>-->
-	<!--        <plugins>-->
-	<!--            <plugin>-->
-	<!--                <groupId>org.springframework.boot</groupId>-->
-	<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
-	<!--                <configuration>-->
-	<!--                    <classifier>exec</classifier>-->
-	<!--                </configuration>-->
-	<!--            </plugin>-->
-	<!--        </plugins>-->
-	<!--    </build>-->
-
 </project>

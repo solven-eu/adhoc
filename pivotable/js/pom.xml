@@ -4,13 +4,17 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.12-SNAPSHOT</version>
+		<version>0.0.12</version>
 	</parent>
 
 	<artifactId>pivotable-js</artifactId>
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>JavaScript/SPA static resources</description>
+
+	<scm>
+		<tag>v0.0.12</tag>
+	</scm>
 
 	<properties>
 		<!-- Workaround `groups/excludedGroups require TestNG, JUnit48+ or JUnit 5 (a specific engine required on classpath) on project test classpath` -->
