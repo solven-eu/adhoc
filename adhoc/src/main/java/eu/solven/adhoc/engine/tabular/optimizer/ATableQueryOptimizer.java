@@ -140,7 +140,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ISliceToValue> stepToValues,
 			CubeQueryStep induced) {
-		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking the one with the less rows)
+		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking
+		// the one with the less rows)
 		List<CubeQueryStep> inducers = inducerAndInduced.getInducers(induced);
 		if (inducers.size() != 1) {
 			throw new IllegalStateException(
@@ -164,10 +165,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		}
 
 		ISliceFilter sliceFilter = optSliceFilter.get();
-		FilterMatcher filterMatcher = FilterMatcher.builder()
-				.filter(sliceFilter)
-				.onMissingColumn(FilterMatcher.failOnMissing())
-				.build();
+		FilterMatcher filterMatcher =
+				FilterMatcher.builder().filter(sliceFilter).onMissingColumn(FilterMatcher.failOnMissing()).build();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 
 		inducerValues.stream()
@@ -191,7 +190,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		if (hasOptions.isDebugOrExplain()) {
 			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
 					induced.getGroupBy().getGroupedByColumns());
-			log.info("[EXPLAIN] size={} induced size={} on agg={} by filtering f={} and reducing groupBy={} ({} induced {})",
+			log.info(
+					"[EXPLAIN] size={} induced size={} on agg={} by filtering f={} and reducing groupBy={} ({} induced {})",
 					inducerValues.size(),
 					inducedValues.size(),
 					aggregator.getName(),

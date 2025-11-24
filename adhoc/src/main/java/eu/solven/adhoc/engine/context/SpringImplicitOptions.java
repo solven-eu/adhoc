@@ -55,27 +55,29 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 public class SpringImplicitOptions implements IImplicitOptions {
+	private static final String P_OPTION = "adhoc.query.";
+
 	static final List<Map.Entry<String, Set<? extends IQueryOption>>> NAME_TO_PRIORITY =
 			ImmutableList.<Map.Entry<String, Set<? extends IQueryOption>>>builder()
-					.add(Maps.immutableEntry("adhoc.query.table.",
+					.add(Maps.immutableEntry(P_OPTION + "table.",
 							// TODO Add sanity checks to detect conflicts (in environment)
 							ImmutableSet.<IQueryOption>builder()
 									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER)
 									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR)
 									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)
 									.build()))
-					.add(Maps.immutableEntry("adhoc.query.",
+					.add(Maps.immutableEntry(P_OPTION,
 							ImmutableSet.<IQueryOption>builder()
 									.add(StandardQueryOptions.SEQUENTIAL)
 									.add(StandardQueryOptions.CONCURRENT)
 									.build()))
-					.add(Maps.immutableEntry("adhoc.query.",
+					.add(Maps.immutableEntry(P_OPTION,
 							ImmutableSet.<IQueryOption>builder().add(StandardQueryOptions.DEBUG).build()))
-					.add(Maps.immutableEntry("adhoc.query.",
+					.add(Maps.immutableEntry(P_OPTION,
 							ImmutableSet.<IQueryOption>builder().add(StandardQueryOptions.EXPLAIN).build()))
-					.add(Maps.immutableEntry("adhoc.query.",
+					.add(Maps.immutableEntry(P_OPTION,
 							ImmutableSet.<IQueryOption>builder().add(StandardQueryOptions.NO_CACHE).build()))
-					.add(Maps.immutableEntry("adhoc.query.",
+					.add(Maps.immutableEntry(P_OPTION,
 							ImmutableSet.<IQueryOption>builder()
 									.add(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)
 									.build()))

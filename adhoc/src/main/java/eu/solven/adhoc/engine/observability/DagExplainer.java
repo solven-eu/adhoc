@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
@@ -98,11 +99,12 @@ public class DagExplainer implements IDagExplainer {
 				// for human readability (else it may be difficult to find explicit in the middle of the DAG). But we
 				// show them at the end as they are less interesting.
 				ImmutableSet<CubeQueryStep> explicits = dag.getExplicits();
+				ImmutableSet<CubeQueryStep> explicitsNotRoot = ImmutableSet.copyOf(Sets.difference(explicits, roots));
 
 				List<CubeQueryStep> explainerRoots = new ArrayList<>();
 
 				explainerRoots.addAll(roots.stream().sorted(this.orderForExplain()).toList());
-				explainerRoots.addAll(explicits.stream().sorted(this.orderForExplain()).toList());
+				explainerRoots.addAll(explicitsNotRoot.stream().sorted(this.orderForExplain()).toList());
 
 				return explainerRoots;
 			} else {

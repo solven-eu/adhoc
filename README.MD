@@ -701,6 +701,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Concurrency] Prevent `QueryStepRecursiveAction` to request multiple times the same underlying queryStep
 - [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
 - [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
+- [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
 
 # Sponsors
 
