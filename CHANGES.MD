@@ -27,6 +27,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Improved
 - `FilterHelpers.getFilteredColumns` is faster by relying on `Stream.mapMulti`
 - `FilterOptimizer.optimizeAndOfOr` skips operands which are alone on given column, even if they hold an `OR`.
+- `TableQueryOptimizer.splitInducedAsDag` may register an additional CubeQueryStep in order to apply the `FILTER` clause only once for a step of induced steps.
 
 ## [0.0.11]
 

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query;
 
 import java.util.Locale;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -69,6 +70,11 @@ public enum StandardQueryOptions implements IQueryOption {
 	CONCURRENT,
 
 	/**
+	 * Force sequential execution of inner parts of a query. Has priority over {@value #CONCURRENT}.
+	 */
+	SEQUENTIAL,
+
+	/**
 	 * Used to skip any cache mechanisms
 	 */
 	NO_CACHE,
@@ -95,5 +101,13 @@ public enum StandardQueryOptions implements IQueryOption {
 	@JsonCreator
 	public static StandardQueryOptions forValue(String value) {
 		return StandardQueryOptions.valueOf(value.toUpperCase(Locale.US));
+	}
+
+	public boolean isActive(Set<IQueryOption> options) {
+		if (this == CONCURRENT && options.contains(CONCURRENT) && !options.contains(SEQUENTIAL)) {
+			// SEQUENTIAL will force disabling of CONCURRENT
+			return true;
+		}
+		return false;
 	}
 }

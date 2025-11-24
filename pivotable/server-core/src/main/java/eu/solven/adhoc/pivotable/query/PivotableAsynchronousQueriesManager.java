@@ -99,7 +99,7 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 	}
 
 	public UUID execute(IAdhocSchema schema, TargetedCubeQuery queryOnSchema) {
-		UUID queryId = UUID.randomUUID();
+		UUID queryId = generateQueryId();
 
 		queryIdToState.put(queryId, AsynchronousStatus.RUNNING);
 
@@ -119,6 +119,10 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 		});
 
 		return queryId;
+	}
+
+	protected UUID generateQueryId() {
+		return UUID.randomUUID();
 	}
 
 	/**

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.query;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -57,5 +59,18 @@ public class TestStandardQueryOptions {
 		Assertions.assertThat(option).isEqualTo("""
 				"DISABLE_AGGREGATOR_INDUCTION"
 				""".trim());
+	}
+
+	@Test
+	public void testConcurrentAndSequential() throws JsonProcessingException {
+		Assertions.assertThat(StandardQueryOptions.CONCURRENT.isActive(Set.of())).isFalse();
+		Assertions.assertThat(StandardQueryOptions.CONCURRENT.isActive(Set.of(StandardQueryOptions.CONCURRENT)))
+				.isTrue();
+		Assertions.assertThat(StandardQueryOptions.CONCURRENT.isActive(Set.of(StandardQueryOptions.SEQUENTIAL)))
+				.isFalse();
+
+		// If both are active, CONCURRENT is not active
+		Assertions.assertThat(StandardQueryOptions.CONCURRENT
+				.isActive(Set.of(StandardQueryOptions.CONCURRENT, StandardQueryOptions.SEQUENTIAL))).isFalse();
 	}
 }

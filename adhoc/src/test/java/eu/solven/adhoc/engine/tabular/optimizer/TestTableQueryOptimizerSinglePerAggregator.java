@@ -257,4 +257,48 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
 				});
 	}
+
+	/**
+	 * Given `GROUP BY a,b FILTER d`, `GROUP BY a,c FILTER d` and `GROUP BY a FILTER e`, we may generate a single
+	 * inducer `GROUP BY a,b,c FILTER d || e`. In the case `FILTER d` is empty, it is a pity to execute the filter
+	 * twice, given there is 1 steps with `FILTER d`.
+	 * 
+	 * hence, we ensure we add intermediate steps per `FILTER`, in order to share FILTER.
+	 */
+	@Test
+	public void testCanInduce_IntermediateNodeForFilterSharing() {
+		CubeQueryStep tq1 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a", "b"))
+				.filter(ColumnFilter.matchEq("d", "d1"))
+				.measure(k1Sum)
+				.build();
+		CubeQueryStep tq2 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a", "c"))
+				.filter(ColumnFilter.matchEq("d", "d1"))
+				.measure(k1Sum)
+				.build();
+		CubeQueryStep tq3 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a"))
+				.filter(ColumnFilter.matchEq("e", "e1"))
+				.measure(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("d", "d1"), ColumnFilter.matchEq("e", "e1"))
+								.optimize())
+						.groupBy(GroupByColumns.named("a", "b", "c", "d", "e"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(4)
+				.contains(tq1, tq2, tq3)
+				// intermediate for tq1 and tq2
+				.contains(CubeQueryStep.edit(step)
+						.filter(ColumnFilter.matchEq("d", "d1"))
+						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
+						.build());
+	}
 }

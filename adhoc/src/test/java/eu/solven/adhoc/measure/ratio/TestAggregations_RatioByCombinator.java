@@ -189,9 +189,9 @@ public class TestAggregations_RatioByCombinator extends ADagTest {
 								/-- 1 inducers from SELECT d:SUM(d) WHERE country==US GROUP BY ()
 								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY ()
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								|\\- #1 m=d(SUM) filter=country==US groupBy=grandTotal
-								\\-- #2 m=d(SUM) filter=matchNone groupBy=grandTotal
-								    \\-- !1""")
+								|\\- #1 m=d(SUM) filter=matchNone groupBy=grandTotal
+								|   \\-- #2 m=d(SUM) filter=country==US groupBy=grandTotal
+								\\-- !2""")
 				.hasLineCount(5 + 2 + 4);
 	}
 }

@@ -678,11 +678,11 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								    \\  size=1 duration=24ms
 								/-- #0 c=someTableName1 id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info
-								|\\- #1 m=k1(SUM) filter=b==b1 groupBy=(a) customMarker=JPY
-								|   \\  size=1 duration=24ms
-								\\-- #2 m=k1.someTableName1.cube(Combinator[COALESCE]) filter=b==b1 groupBy=(a) customMarker=JPY
-								    |  size=1 duration=10ms
-								    \\-- !1
+								|\\- #1 m=k1.someTableName1.cube(Combinator[COALESCE]) filter=b==b1 groupBy=(a) customMarker=JPY
+								|   |  size=1 duration=10ms
+								|   \\-- #2 m=k1(SUM) filter=b==b1 groupBy=(a) customMarker=JPY
+								|       \\  size=1 duration=24ms
+								\\-- !2
 								Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==b1, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
 								/-- time=13ms for openingStream
 								|/- time=15ms for mergingAggregates
@@ -694,11 +694,11 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								    \\  size=0 duration=45ms
 								/-- #0 c=someTableName2 id=00000000-0000-0000-0000-000000000003 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info
-								|\\- #1 m=k1(SUM) filter=matchNone groupBy=(a) customMarker=JPY
-								|   \\  size=0 duration=45ms
-								\\-- #2 m=k1.someTableName1.cube(Combinator[COALESCE]) filter=matchNone groupBy=(a) customMarker=JPY
-								    |  size=0 duration=17ms
-								    \\-- !1
+								|\\- #1 m=k1.someTableName1.cube(Combinator[COALESCE]) filter=matchNone groupBy=(a) customMarker=JPY
+								|   |  size=0 duration=17ms
+								|   \\-- #2 m=k1(SUM) filter=matchNone groupBy=(a) customMarker=JPY
+								|       \\  size=0 duration=45ms
+								\\-- !2
 								Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
 								/-- time=150ms for openingStream
 								|/- time=19ms for mergingAggregates

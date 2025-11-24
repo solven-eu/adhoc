@@ -182,7 +182,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	}
 
 	protected ExecutorService getExecutorService(ICubeQuery preparedQuery) {
-		if (preparedQuery.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+		if (StandardQueryOptions.CONCURRENT.isActive(preparedQuery.getOptions())) {
 			// Concurrent query: execute in a dedicated pool
 			return concurrentExecutorService;
 		} else {

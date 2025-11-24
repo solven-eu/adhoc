@@ -207,9 +207,9 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 								/-- 1 inducers from SELECT d:SUM(d) WHERE country==US GROUP BY (country)
 								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY (country)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								|\\- #1 m=d(SUM) filter=country==US groupBy=(country)
-								\\-- #2 m=d(SUM) filter=country==US groupBy=grandTotal
-								    \\-- !1""");
+								|\\- #1 m=d(SUM) filter=country==US groupBy=grandTotal
+								|   \\-- #2 m=d(SUM) filter=country==US groupBy=(country)
+								\\-- !2""");
 
 		Assertions.assertThat(messages).hasSize(8 + 2 + 4);
 	}

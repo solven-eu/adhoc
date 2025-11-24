@@ -402,7 +402,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 			return queryPod.getExecutorService().submit(() -> {
 				Stream<Entry<String, ICubeQuery>> stream = cubeToQuery.entrySet().stream();
 
-				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
 					stream = stream.parallel();
 				}
 
