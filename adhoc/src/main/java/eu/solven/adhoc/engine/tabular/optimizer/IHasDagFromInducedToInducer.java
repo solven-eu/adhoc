@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -46,7 +47,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 public interface IHasDagFromInducedToInducer {
 	/**
 	 * 
-	 * @return the CubeQuerySteps which are explicitly requested. In the DAG, some of these steps may have parents.
+	 * @return the {@link CubeQueryStep} which are explicitly requested. In the DAG, some of these steps may have
+	 *         parents.
 	 */
 	ImmutableSet<CubeQueryStep> getExplicits();
 
@@ -92,5 +94,20 @@ public interface IHasDagFromInducedToInducer {
 	// Holds the TableQuery which can be evaluated implicitly from underlyings
 	default ImmutableSet<CubeQueryStep> getInduceds() {
 		return ImmutableSet.copyOf(Sets.difference(getInducedToInducer().vertexSet(), getInducers()));
+	}
+
+	/**
+	 * 
+	 * @return the {@link Set} of roots. This is a subset of explicit steps, as some additional explicit steps may be in
+	 *         the middle of the DAG, as (intermediate) inducer of other roots.
+	 */
+	default ImmutableSet<CubeQueryStep> getRoots() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = getInducedToInducer();
+
+		// relates with `Graphs.vertexHasSuccessors`
+		return inducedToInducer.vertexSet()
+				.stream()
+				.filter(s -> inducedToInducer.inDegreeOf(s) == 0)
+				.collect(ImmutableSet.toImmutableSet());
 	}
 }

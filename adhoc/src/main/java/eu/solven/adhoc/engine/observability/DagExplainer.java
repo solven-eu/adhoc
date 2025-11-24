@@ -22,12 +22,15 @@
  */
 package eu.solven.adhoc.engine.observability;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
@@ -60,6 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DagExplainer implements IDagExplainer {
 	private static final String FAKE_ROOT_MEASURE = "$ADHOC$fakeRoot";
 
+	// Requesting the underlyings of the fakeRoot is requesting the (User) queried steps
 	static final CubeQueryStep FAKE_ROOT = CubeQueryStep.builder()
 			.measure(ReferencedMeasure.ref(FAKE_ROOT_MEASURE))
 			.filter(ISliceFilter.MATCH_ALL)
@@ -85,8 +89,22 @@ public class DagExplainer implements IDagExplainer {
 
 		public List<CubeQueryStep> getUnderlyingSteps(CubeQueryStep step) {
 			if (step == FAKE_ROOT) {
-				// Requesting the underlyings of the fakeRoot is requesting the (User) queried steps
-				return dag.getExplicits().stream().sorted(this.orderForExplain()).toList();
+
+				// roots are the most abstract nodes, induced by other steps
+				// We show them first as they enable a nicer DAG representation
+				ImmutableSet<CubeQueryStep> roots = dag.getRoots();
+
+				// Explicit steps may be root, or not. An explicit step which is not a root should be shown in the DAG
+				// for human readability (else it may be difficult to find explicit in the middle of the DAG). But we
+				// show them at the end as they are less interesting.
+				ImmutableSet<CubeQueryStep> explicits = dag.getExplicits();
+
+				List<CubeQueryStep> explainerRoots = new ArrayList<>();
+
+				explainerRoots.addAll(roots.stream().sorted(this.orderForExplain()).toList());
+				explainerRoots.addAll(explicits.stream().sorted(this.orderForExplain()).toList());
+
+				return explainerRoots;
 			} else {
 				// Return the actual underlying steps
 				return dag.getInducers(step);
@@ -107,11 +125,13 @@ public class DagExplainer implements IDagExplainer {
 
 	@Override
 	public void explain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
-		log.info(
-				"[EXPLAIN] querySteps on table={} inducers is composed of {} inducers steps leading to {} induced steps",
+		String cubeOrTable = holderType(queryId);
+		log.info("[EXPLAIN] query steps DAG on {}={} has {} inducers leading to {} induced (including {} roots)",
+				cubeOrTable,
 				queryId.getCube(),
 				dag.getInducers().size(),
-				dag.getInduceds().size());
+				dag.getInduceds().size(),
+				dag.getRoots().size());
 
 		DagExplainerState state = newDagExplainerState(queryId, dag);
 
@@ -211,12 +231,7 @@ public class DagExplainer implements IDagExplainer {
 			AdhocQueryId queryId = dagState.getQueryId();
 			UUID parentQueryId = queryId.getParentQueryId();
 
-			String cubeOrTable;
-			if (queryId.isCubeElseTable()) {
-				cubeOrTable = "c";
-			} else {
-				cubeOrTable = "t";
-			}
+			String cubeOrTable = holderType(queryId);
 
 			if (parentQueryId == null) {
 				return "%s=%s id=%s".formatted(cubeOrTable, queryId.getCube(), queryId.getQueryId());
@@ -245,6 +260,16 @@ public class DagExplainer implements IDagExplainer {
 		optCustomMarker.ifPresent(customMarker -> sb.append(" customMarker=").append(customMarker));
 
 		return sb.toString();
+	}
+
+	private String holderType(AdhocQueryId queryId) {
+		String cubeOrTable;
+		if (queryId.isCubeElseTable()) {
+			cubeOrTable = "c";
+		} else {
+			cubeOrTable = "t";
+		}
+		return cubeOrTable;
 	}
 
 	protected String toString(CubeQueryStep step) {
