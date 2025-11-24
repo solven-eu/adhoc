@@ -31,8 +31,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.core.env.Environment;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.query.IQueryOption;
@@ -54,23 +55,30 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 public class SpringImplicitOptions implements IImplicitOptions {
-	static final Map<String, Set<? extends IQueryOption>> NAME_TO_PRIORITY =
-			ImmutableMap.<String, Set<? extends IQueryOption>>builder()
-					.put("adhoc.query.table.",
+	static final List<Map.Entry<String, Set<? extends IQueryOption>>> NAME_TO_PRIORITY =
+			ImmutableList.<Map.Entry<String, Set<? extends IQueryOption>>>builder()
+					.add(Maps.immutableEntry("adhoc.query.table.",
 							// TODO Add sanity checks to detect conflicts (in environment)
 							ImmutableSet.<IQueryOption>builder()
 									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER)
 									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR)
 									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)
-									.build())
-					.put("adhoc.query.",
+									.build()))
+					.add(Maps.immutableEntry("adhoc.query.",
 							ImmutableSet.<IQueryOption>builder()
-									.add(StandardQueryOptions.CONCURRENT,
-											StandardQueryOptions.DEBUG,
-											StandardQueryOptions.EXPLAIN,
-											StandardQueryOptions.NO_CACHE,
-											StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)
-									.build())
+									.add(StandardQueryOptions.SEQUENTIAL)
+									.add(StandardQueryOptions.CONCURRENT)
+									.build()))
+					.add(Maps.immutableEntry("adhoc.query.",
+							ImmutableSet.<IQueryOption>builder().add(StandardQueryOptions.DEBUG).build()))
+					.add(Maps.immutableEntry("adhoc.query.",
+							ImmutableSet.<IQueryOption>builder().add(StandardQueryOptions.EXPLAIN).build()))
+					.add(Maps.immutableEntry("adhoc.query.",
+							ImmutableSet.<IQueryOption>builder().add(StandardQueryOptions.NO_CACHE).build()))
+					.add(Maps.immutableEntry("adhoc.query.",
+							ImmutableSet.<IQueryOption>builder()
+									.add(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)
+									.build()))
 					.build();
 
 	final Environment env;
@@ -90,7 +98,10 @@ public class SpringImplicitOptions implements IImplicitOptions {
 	public Set<IQueryOption> getOptions(ICubeQuery query) {
 		Set<IQueryOption> options = new LinkedHashSet<>();
 
-		NAME_TO_PRIORITY.forEach((prefix, orderedOptions) -> {
+		NAME_TO_PRIORITY.forEach(e -> {
+			String prefix = e.getKey();
+			Set<? extends IQueryOption> orderedOptions = e.getValue();
+
 			Set<IQueryOption> intersection =
 					Sets.intersection(query.getOptions(), orderedOptions.stream().collect(Collectors.toSet()));
 			if (!intersection.isEmpty()) {
@@ -129,8 +140,7 @@ public class SpringImplicitOptions implements IImplicitOptions {
 	}
 
 	public String optionKey(IQueryOption option) {
-		return NAME_TO_PRIORITY.entrySet()
-				.stream()
+		return NAME_TO_PRIORITY.stream()
 				.filter(e -> e.getValue().contains(option))
 				.map(e -> e.getKey() + option.toString().toLowerCase(Locale.US))
 				.findFirst()

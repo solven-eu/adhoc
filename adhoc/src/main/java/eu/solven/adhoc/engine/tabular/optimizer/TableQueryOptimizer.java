@@ -96,10 +96,12 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			if (hasOptions.isDebugOrExplain()) {
 				SplitTableQueries aTableQueries =
 						SplitTableQueries.builder().inducedToInducer(aInducedToInducer).build();
+
+				// TODO This log lacks options and customMarkers if any
 				log.info("[EXPLAIN] inducers={} induceds={} for agg={}",
 						aTableQueries.getInducers().size(),
 						aTableQueries.getInduceds().size(),
-						a);
+						a.getMeasure().getName());
 			}
 
 			Graphs.addGraph(inducedToInducer, aInducedToInducer);

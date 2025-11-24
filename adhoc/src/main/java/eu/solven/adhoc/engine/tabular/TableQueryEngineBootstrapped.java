@@ -209,7 +209,7 @@ public class TableQueryEngineBootstrapped {
 			return queryPod.getExecutorService().submit(() -> {
 				Stream<TableQueryV2> tableQueriesStream = tableQueries.stream();
 
-				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
 					tableQueriesStream = tableQueriesStream.parallel();
 				}
 				Map<CubeQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();

@@ -30,6 +30,7 @@ import org.springframework.mock.env.MockEnvironment;
 
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.InternalQueryOptions;
+import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestSpringImplicitOptions {
@@ -122,6 +123,19 @@ public class TestSpringImplicitOptions {
 		{
 			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 			Assertions.assertThat(implicitOptions).containsExactly(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
+		}
+	}
+
+	@Test
+	public void testEnv_multipleStandardOptionFromEnv() {
+		implicit = SpringImplicitOptions.builder().env(env).build();
+
+		env.setProperty(implicit.optionKey(StandardQueryOptions.CONCURRENT), true);
+		env.setProperty(implicit.optionKey(StandardQueryOptions.EXPLAIN), true);
+		{
+			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+			Assertions.assertThat(implicitOptions)
+					.containsExactly(StandardQueryOptions.CONCURRENT, StandardQueryOptions.EXPLAIN);
 		}
 	}
 }
