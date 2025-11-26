@@ -2,6 +2,20 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.13]
+
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a==a1&(b==b1|c==c1)").optimize()`)
+
+### Improved
+- `TableQueryOptimizerSinglePerAggregator` now build a tree of intermediate CubeQuerySteps, to enable computing each filters a single time.
+
 ## [0.0.12]
 
 ### Added

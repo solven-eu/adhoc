@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.filter;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -43,7 +44,7 @@ public class FilterUtility {
 	@Default
 	final IFilterOptimizer optimizer = AdhocUnsafe.filterOptimizer;
 
-	public ISliceFilter commonAnd(Set<? extends ISliceFilter> filters) {
+	public ISliceFilter commonAnd(Collection<? extends ISliceFilter> filters) {
 		if (filters.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
 		} else if (filters.size() == 1) {

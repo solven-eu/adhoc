@@ -601,4 +601,18 @@ public class TestOrFilter {
 		Assertions.assertThat(a1orb2.negate()).hasToString("!(a==a1|b==b1)");
 	}
 
+	@Test
+	public void testOr_simpleAndWithOrOperand() {
+		ISliceFilter inputFilter =
+				FilterBuilder
+						.and(AndFilter.and(Map.of("a", "a1")),
+								FilterBuilder.or(ColumnFilter.matchEq("b", "b1"), ColumnFilter.matchEq("c", "c1"))
+										.combine())
+						.combine();
+		Assertions.assertThat(inputFilter).hasToString("a==a1&(b==b1|c==c1)");
+
+		ISliceFilter optimized = FilterBuilder.or(inputFilter).optimize();
+		Assertions.assertThat(optimized).hasToString("a==a1&(b==b1|c==c1)");
+	}
+
 }

@@ -155,7 +155,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		if (stripRedundancyPre.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
 		} else if (stripRedundancyPre.size() == 1) {
-			return stripRedundancyPre.iterator().next();
+			return preferNotOrOverAndNot(willBeNegated, stripRedundancyPre);
 		}
 
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
@@ -168,7 +168,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		if (stripRedundancyPost.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
 		} else if (stripRedundancyPost.size() == 1) {
-			return stripRedundancyPost.iterator().next();
+			return preferNotOrOverAndNot(willBeNegated, stripRedundancyPost);
 		}
 
 		if (stripRedundancyPost.size() >= 2) {
@@ -795,7 +795,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		// Consider returning a `!(a|b)` instead of `!a&!b`
 		ISliceFilter orCandidate =
 				FilterBuilder.or(and.stream().map(this::negatePreferNotOrOverAndNot).toList()).combine();
-		ISliceFilter notOrCandidate = NotFilter.builder().negated(orCandidate).build();
+		ISliceFilter notOrCandidate = orCandidate.negate();
 
 		long costOrCandidate;
 		long costAndCandidate;
