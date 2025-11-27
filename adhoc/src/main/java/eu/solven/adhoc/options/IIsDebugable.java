@@ -20,19 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.debug;
+package eu.solven.adhoc.options;
 
 /**
- * Some components can have their queryPlan explained. If true, we will spent some time providing information about the
- * queryPlan.
+ * Some components can toggle a debug feature. This will log many information (SLF4J).
  * 
  * @author Benoit Lacelle
  *
  */
 @FunctionalInterface
-@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.EXPLAIN)")
-public interface IIsExplainable {
+@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.DEBUG)")
+public interface IIsDebugable {
 
 	@Deprecated(since = "Use .getOptions()")
-	boolean isExplain();
+	boolean isDebug();
 }

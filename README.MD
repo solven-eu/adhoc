@@ -702,10 +702,6 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
 - [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
 - [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
-<<<<<<< Updated upstream
-=======
-- [Performance] `TableQueryOptimizerSinglePerAggregator` should build a DAG through filter, in order to compute relevant intermediate step. Typical case is `a&b|a&c|e` when `a` is empty: we should have an intermediate step for `a`, pre-computing an empty step.
->>>>>>> Stashed changes
 
 # Sponsors
 
