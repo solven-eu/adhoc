@@ -748,33 +748,33 @@ public class TestAndFilter {
 				right).optimize();
 	}
 
-
 	@Test
 	public void testAndOr_orStricterThanSimplerAnd_notAroundOr() {
-		ISliceFilter raw =FilterBuilder
-				.and().filter(ColumnFilter.matchIn("a", "a1", "a2", "a3"))
-				.filter(
-		NotFilter.builder().negated(AndFilter.builder().and(
-						ColumnFilter.notIn("b", "b1", "b2")).and(
+		ISliceFilter raw = FilterBuilder.and()
+				.filter(ColumnFilter.matchIn("a", "a1", "a2", "a3"))
+				.filter(NotFilter.builder()
+						.negated(AndFilter.builder()
+								.and(ColumnFilter.notIn("b", "b1", "b2"))
+								.and(
 
+										NotFilter.builder()
+												.negated(AndFilter.builder()
+														.and(ColumnFilter.matchEq("c", "c1"))
+														.and(ColumnFilter.matchEq("d", "d1"))
+														.and(ColumnFilter.matchEq("e", "e1"))
+														.build())
+												.build())
+								.build()
 
-						NotFilter.builder().negated(AndFilter.builder().and(
-										ColumnFilter.matchEq("c", "c1")).and(
-										ColumnFilter.matchEq("d", "d1")).and(
-										ColumnFilter.matchEq("e", "e1")).build()
-								).build()).build()
-
-				).build())
+						)
+						.build())
 
 				.combine();
 		Assertions.assertThat(raw).hasToString("a=in=(a1,a2,a3)&!(b=out=(b1,b2)&!(c==c1&d==d1&e==e1))");
 
-		ISliceFilter optimized =
-				FilterBuilder
-						.and(raw)
-						.optimize(optimizer);
+		ISliceFilter optimized = FilterBuilder.and(raw).optimize(optimizer);
 
-		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2,a3)&b=in=(b1,b2,b3)&(a=in=(a1,a2)|b=in=(b1,b2))");
+		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2,a3)&(b=in=(b1,b2)|c==c1&d==d1&e==e1)");
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 }

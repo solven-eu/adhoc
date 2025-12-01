@@ -615,4 +615,34 @@ public class TestOrFilter {
 		Assertions.assertThat(optimized).hasToString("a==a1&(b==b1|c==c1)");
 	}
 
+	@Test
+	public void testOr_imbricatedNegations_commonOr() {
+		ISliceFilter raw = FilterBuilder.or()
+				.filter(FilterBuilder.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchEq("b", "b1"))
+						.combine())
+				.filter(FilterBuilder
+						.and(ColumnFilter.matchIn("a", "a1", "a2"),
+								NotFilter.builder()
+										.negated(AndFilter.builder()
+												.and(ColumnFilter.notEq("b", "b2"))
+												.and(NotFilter.builder()
+														.negated(AndFilter.builder()
+																.and(ColumnFilter.matchEq("c", "c1"))
+																.and(ColumnFilter.matchEq("d", "d1"))
+																.and(ColumnFilter.matchEq("b", "b3"))
+																.build())
+														.build())
+												.build())
+										.build())
+						.combine())
+
+				.combine();
+		Assertions.assertThat(raw).hasToString("a=in=(a1,a2)&b==b1|a=in=(a1,a2)&!(b!=b2&!(c==c1&d==d1&b==b3))");
+
+		ISliceFilter optimized = FilterBuilder.and(raw).optimize(optimizer);
+
+		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2)&!(b=out=(b1,b2)&!(c==c1&d==d1&b==b3))");
+		Assertions.assertThat(nbSkip).hasValue(0);
+	}
+
 }

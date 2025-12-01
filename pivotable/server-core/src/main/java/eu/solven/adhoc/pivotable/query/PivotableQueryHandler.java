@@ -164,14 +164,16 @@ public class PivotableQueryHandler {
 			yield Optional.of(Duration.ofSeconds(0));
 		}
 		case AsynchronousStatus.RUNNING: {
-			// TODO Introduce exponential back-off
 			long nbPoll = queryIdPolls.getAndIncrement(queryId);
 
-			// On first try, delay is `1`
-			// On second try, delay is `1.5`
-			// On third try, delay is `2.25`
-			double exponentialBackoff = Math.pow(1.5, nbPoll);
-			long millis = (long) (100L * exponentialBackoff);
+			// This factor must not be too large, else we may have a large delay between when the result is available,
+			// and wehen it is polled
+			double backoffFactor = 1.1;
+
+			// https://en.wikipedia.org/wiki/Exponential_backoff
+			double exponentialBackoff = Math.pow(backoffFactor, nbPoll);
+			long minRetryMs = 100L;
+			long millis = (long) (minRetryMs * exponentialBackoff);
 			yield Optional.of(Duration.ofMillis(millis));
 		}
 		};
