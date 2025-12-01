@@ -641,7 +641,7 @@ public class TestOrFilter {
 
 		ISliceFilter optimized = FilterBuilder.and(raw).optimize(optimizer);
 
-		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2)&!(b=out=(b1,b2)&!(c==c1&d==d1&b==b3))");
+		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2)&(b=in=(b1,b2)|c==c1&d==d1&b==b3)");
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 

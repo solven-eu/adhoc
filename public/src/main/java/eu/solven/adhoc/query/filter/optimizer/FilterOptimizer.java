@@ -181,7 +181,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 						.map(f -> FilterHelpers.simplifyOrGivenContribution(commonOr, f))
 						.toList();
 
-				ISliceFilter others = and(toAnd, !willBeNegated);
+				ISliceFilter others = and(toAnd, willBeNegated);
 				if (ISliceFilter.MATCH_NONE.equals(others)) {
 					// Special branch as the other branch does `.combine` which skip optimizations
 					// Happens on `(a|b==b1)&(a|b==b2)`, which is `a|b==b1&b==b2`, which is `a`
