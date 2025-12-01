@@ -171,31 +171,6 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			return preferNotOrOverAndNot(willBeNegated, stripRedundancyPost);
 		}
 
-		if (stripRedundancyPost.size() >= 2) {
-			// `!(a==a1&b==b1)&!(a==a1&b==b2)&!(a==a1&b==b3)` can be turned into `a!=a1|b=out=(b1,b2,b3)`
-			FilterUtility filterUtility = FilterUtility.builder().optimizer(this).build();
-			ISliceFilter commonOr = filterUtility.commonOr(stripRedundancyPost);
-
-			if (!ISliceFilter.MATCH_NONE.equals(commonOr)) {
-				List<ISliceFilter> toAnd = stripRedundancyPost.stream()
-						.map(f -> FilterHelpers.simplifyOrGivenContribution(commonOr, f))
-						.toList();
-
-				ISliceFilter others = and(toAnd, willBeNegated);
-				if (ISliceFilter.MATCH_NONE.equals(others)) {
-					// Special branch as the other branch does `.combine` which skip optimizations
-					// Happens on `(a|b==b1)&(a|b==b2)`, which is `a|b==b1&b==b2`, which is `a`
-					return commonOr;
-				} else {
-					// Ensure this path also go through the `preferNotOrOverAndNot`
-					// return FilterBuilder.or(commonOr, others).combine();
-					ISliceFilter orToNegate = preferNotOrOverAndNot(!willBeNegated,
-							ImmutableSet.of(NotFilter.simpleNot(commonOr), NotFilter.simpleNot(others)));
-					return NotFilter.simpleNot(orToNegate);
-				}
-			}
-		}
-
 		return preferNotOrOverAndNot(willBeNegated, stripRedundancyPost);
 	}
 
@@ -791,6 +766,30 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	// BEWARE This should not to any `.optimize` as it should receive an optimized expression, and choose between 2
 	// equivalent representations.
 	protected ISliceFilter preferNotOrOverAndNot(boolean willBeNegated, Set<? extends ISliceFilter> and) {
+		if (and.size() >= 2) {
+			// `!(a==a1&b==b1)&!(a==a1&b==b2)&!(a==a1&b==b3)` can be turned into `a!=a1|b=out=(b1,b2,b3)`
+			FilterUtility filterUtility = FilterUtility.builder().optimizer(this).build();
+			ISliceFilter commonOr = filterUtility.commonOr(and);
+
+			if (!ISliceFilter.MATCH_NONE.equals(commonOr)) {
+				List<ISliceFilter> toAnd =
+						and.stream().map(f -> FilterHelpers.simplifyOrGivenContribution(commonOr, f)).toList();
+
+				ISliceFilter others = and(toAnd, willBeNegated);
+				if (ISliceFilter.MATCH_NONE.equals(others)) {
+					// Special branch as the other branch does `.combine` which skip optimizations
+					// Happens on `(a|b==b1)&(a|b==b2)`, which is `a|b==b1&b==b2`, which is `a`
+					return commonOr;
+				} else {
+					// Ensure this path also go through the `preferNotOrOverAndNot`
+					// return FilterBuilder.or(commonOr, others).combine();
+					ISliceFilter orToNegate = preferNotOrOverAndNot(!willBeNegated,
+							ImmutableSet.of(NotFilter.simpleNot(commonOr), NotFilter.simpleNot(others)));
+					return NotFilter.simpleNot(orToNegate);
+				}
+			}
+		}
+
 		// Consider returning a `!(a|b)` instead of `!a&!b`
 		ISliceFilter orCandidate =
 				FilterBuilder.or(and.stream().map(this::negatePreferNotOrOverAndNot).toList()).combine();
