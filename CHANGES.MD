@@ -12,8 +12,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Removed
 
 ### Fixed
-- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a==a1&(b==b1|c==c1)").optimize()`)
-- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a=in=(a1,a2)&b==b1|a=in=(a1,a2)&!(b!=b2&!(c==c1&d==d1&b==b3))").optimize()`)
+- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a==a1&(b==b1|c==c1)").optimize()`).
+- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a=in=(a1,a2)&b==b1|a=in=(a1,a2)&!(b!=b2&!(c==c1&d==d1&b==b3))").optimize()`).
+- `FilterStripper` was not properly stripping `OR` in case one stripped operand was `matchAll`.
 - VueJS router is properly waited for (with `.isReady()`) to load the queryModel from `#hash` on relogging.
 
 ### Improved

@@ -74,9 +74,9 @@
 			<version>8.5.18</version>
 		</dependency>
 
-<!--		<dependency>-->
-			<!-- Enable faster internalization of keySet in StandardSliceFactory-->
-<!--			<groupId>com.github.takawitter</groupId>-->
+		<!--		<dependency>-->
+		<!-- Enable faster internalization of keySet in StandardSliceFactory-->
+		<!--			<groupId>com.github.takawitter</groupId>-->
 		<!--			<artifactId>trie4j</artifactId>-->
 		<!--			<version>0.9.10</version>-->
 		<!--		</dependency>-->

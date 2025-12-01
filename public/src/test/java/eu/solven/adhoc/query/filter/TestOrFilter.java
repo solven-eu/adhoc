@@ -645,4 +645,27 @@ public class TestOrFilter {
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
+	@Test
+	public void testOr_bugMergingIn() {
+		ISliceFilter raw = FilterBuilder.or()
+				.filter(FilterBuilder.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchEq("b", "b1"))
+						.combine())
+				.filter(FilterBuilder
+						.or(ColumnFilter.matchIn("a", "a1", "a2", "a3"),
+								AndFilter.builder()
+										.and(ColumnFilter.matchEq("a", "a4"))
+										.and(ColumnFilter.matchEq("c", "c1"))
+										.and(ColumnFilter.matchEq("d", "d1"))
+										.build())
+						.combine())
+
+				.combine();
+		Assertions.assertThat(raw).hasToString("a=in=(a1,a2)&b==b1|a=in=(a1,a2,a3)|a==a4&c==c1&d==d1");
+
+		ISliceFilter optimized = FilterBuilder.and(raw).optimize(optimizer);
+
+		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2,a3)|a==a4&c==c1&d==d1");
+		Assertions.assertThat(nbSkip).hasValue(0);
+	}
+
 }
