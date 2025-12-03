@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -580,7 +582,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 			String m = k1Sum.getName();
 			Assertions.assertThatThrownBy(
 					() -> compositeCube.execute(CubeQuery.builder().measure(m).groupByAlso("unknownColumn").build()))
-					.isInstanceOf(IllegalArgumentException.class);
+					.isInstanceOf(UncheckedExecutionException.class)
+					.hasCauseInstanceOf(IllegalArgumentException.class);
 
 			// filter
 			Assertions

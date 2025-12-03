@@ -30,6 +30,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -68,7 +70,8 @@ public class TestTransformator_Combinator_Exception extends ADagTest implements 
 		Assertions
 				.assertThatThrownBy(
 						() -> cube().execute(CubeQuery.builder().measure("sumK1K2_OK", "sumK1K2_KO").build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalStateException.class)
 				.hasStackTraceContaining("Issue evaluating sumK1K2_KO over [468, 690]");
 	}
 

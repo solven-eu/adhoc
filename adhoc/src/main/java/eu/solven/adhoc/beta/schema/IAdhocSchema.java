@@ -24,6 +24,9 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.Optional;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -69,12 +72,16 @@ public interface IAdhocSchema {
 	 */
 	EndpointSchemaMetadata getMetadata(AdhocSchemaQuery query, boolean allIfEmpty);
 
+	ListenableFuture<ITabularView> executeAsync(String cube, ICubeQuery query);
+
 	/**
 	 * 
 	 * @param cube
 	 * @param query
 	 * @return an {@link ITabularView} as computed for given query.
 	 */
-	ITabularView execute(String cube, ICubeQuery query);
+	default ITabularView execute(String cube, ICubeQuery query) {
+		return Futures.getUnchecked(executeAsync(cube, query));
+	}
 
 }

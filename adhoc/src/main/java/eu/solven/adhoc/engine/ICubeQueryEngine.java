@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.engine;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -46,7 +49,11 @@ public interface ICubeQueryEngine {
 	 * @param queryPod
 	 * @return
 	 */
-	ITabularView execute(QueryPod queryPod);
+	ListenableFuture<ITabularView> executeAsync(QueryPod queryPod);
+
+	default ITabularView execute(QueryPod queryPod) {
+		return Futures.getUnchecked(executeAsync(queryPod));
+	}
 
 	@Deprecated(since = "This uses a default IImplicitFilter")
 	default ITabularView executeUnsafe(ICubeQuery query, IMeasureForest measures, ITableWrapper table) {

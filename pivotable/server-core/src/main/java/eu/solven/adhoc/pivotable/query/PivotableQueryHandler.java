@@ -32,6 +32,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -122,6 +123,16 @@ public class PivotableQueryHandler {
 	public Mono<ServerResponse> executeAsynchronousQuery(ServerRequest serverRequest) {
 		Mono<TargetedCubeQuery> queryOnSchemaMono = serverRequest.bodyToMono(TargetedCubeQuery.class);
 		return executeAsynchronousQuery(queryOnSchemaMono);
+	}
+
+	public Mono<ServerResponse> cancelAsynchronousQuery(ServerRequest serverRequest) {
+		UUID queryId = AdhocHandlerHelper.uuid(serverRequest, "query_id");
+		CancellationStatus status = asynchronousQueriesManager.cancelQuery(queryId);
+
+		return ServerResponse.ok()
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(BodyInserters
+						.fromValue(ImmutableMap.builder().put("queryId", queryId).put("status", status).build()));
 	}
 
 	public Mono<ServerResponse> fetchQueryResult(ServerRequest serverRequest) {

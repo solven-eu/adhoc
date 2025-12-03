@@ -30,6 +30,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -84,9 +86,11 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 	public void testGroupByK_countAggregator() {
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
-		Assertions.assertThatThrownBy(
-				() -> cube().execute(CubeQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
-				.isInstanceOf(IllegalStateException.class)
+		Assertions
+				.assertThatThrownBy(() -> cube()
+						.execute(CubeQuery.builder().groupByAlso("k").measure(countAsterisk.getName()).build()))
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage(
 						"Can not add as size=2 and limit=2 Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
 	}
@@ -96,7 +100,8 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().groupByAlso("k").build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage(
 						"Can not add as size=2 and limit=2 Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");
 	}
@@ -106,7 +111,8 @@ public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest imple
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure("byK").build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalStateException.class)
 				.hasRootCauseInstanceOf(IllegalStateException.class)
 				.hasRootCauseMessage(
 						"Can not add as size=2 and limit=2 Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X");

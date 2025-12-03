@@ -702,6 +702,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
 - [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
 - [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
+- [Feature] If a query generates a too large column, add investigation information (like the output of `COUNT(GROUP BY)` from table).
 
 # Sponsors
 

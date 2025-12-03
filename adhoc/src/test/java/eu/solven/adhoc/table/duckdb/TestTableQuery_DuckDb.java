@@ -34,6 +34,8 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -355,9 +357,11 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 
 		forest.addMeasure(k1Sum);
 
-		Assertions.assertThatThrownBy(
-				() -> cube().execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
-				.isInstanceOf(IllegalArgumentException.class)
+		Assertions
+				.assertThatThrownBy(() -> cube()
+						.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso("unknownColumn").build()))
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalArgumentException.class)
 				// .hasStackTraceContaining("source=TableQuery")
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!");
 	}
@@ -438,7 +442,8 @@ public class TestTableQuery_DuckDb extends ADuckDbJooqTest implements IAdhocTest
 			cube().execute(
 					CubeQuery.builder().measure(k1Sum.getName()).andFilter("unknownColumn", "someValue").build());
 		})
-				.isInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalArgumentException.class)
 				// .hasStackTraceContaining("source=TableQuery")
 				.hasRootCauseInstanceOf(SQLException.class)
 				.hasStackTraceContaining("Binder Error: Referenced column \"unknownColumn\" not found in FROM clause");

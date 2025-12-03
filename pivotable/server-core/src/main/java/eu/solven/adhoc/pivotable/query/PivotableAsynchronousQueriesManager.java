@@ -189,4 +189,8 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 	public void destroy() {
 		asynchronousQueriesService.close();
 	}
+
+	public CancellationStatus cancelQuery(UUID queryId) {
+		return CancellationStatus.UNKNOWN;
+	}
 }

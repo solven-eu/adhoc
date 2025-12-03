@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -211,9 +213,12 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 
 		cube().getColumnTypes().keySet().forEach(column -> {
 			if (Set.of("k1.k2").contains(column)) {
-				Assertions.assertThatThrownBy(
-						() -> cube().execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso(column).build()))
-						.isInstanceOf(IllegalArgumentException.class);
+				Assertions
+						.assertThatThrownBy(() -> cube()
+								.execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso(column).build()))
+						.isInstanceOf(UncheckedExecutionException.class)
+						.hasCauseInstanceOf(IllegalArgumentException.class)
+						.hasRootCauseInstanceOf(SQLException.class);
 			} else {
 				ITabularView result =
 						cube().execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso(column).build());

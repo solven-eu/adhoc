@@ -30,6 +30,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -178,7 +180,8 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 
 		Assertions.setMaxStackTraceElementsDisplayed(300);
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure("maxK1K2").build()))
-				.isInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
 

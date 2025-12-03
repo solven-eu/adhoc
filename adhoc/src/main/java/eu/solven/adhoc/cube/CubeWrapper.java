@@ -31,6 +31,7 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -102,8 +103,8 @@ public class CubeWrapper implements ICubeWrapper {
 	}
 
 	@Override
-	public ITabularView execute(ICubeQuery query) {
-		return engine.execute(queryPreparator.prepareQuery(table, forest, columnsManager, query));
+	public ListenableFuture<ITabularView> executeAsync(ICubeQuery query) {
+		return engine.executeAsync(queryPreparator.prepareQuery(table, forest, columnsManager, query));
 	}
 
 	@Override

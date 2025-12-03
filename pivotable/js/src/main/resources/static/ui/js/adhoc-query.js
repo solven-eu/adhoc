@@ -98,7 +98,7 @@ export default {
 
 		// https://github.com/vuejs/router/issues/2017
 		// Else, typicall when re-logging-in without F5, we observe the hash may not be available through the router
-		router.isReader().then(() => {
+		router.isReady().then(() => {
 			const currentHashDecoded = router.currentRoute.value.hash;
 
 			queryHelper.hashToQueryModel(currentHashDecoded, queryModel);

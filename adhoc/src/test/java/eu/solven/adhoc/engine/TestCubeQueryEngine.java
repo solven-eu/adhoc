@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -71,7 +72,8 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
-				.isInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
 	}
 
@@ -102,7 +104,8 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		forest.addMeasure(mBIsMaDividedBy2);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalStateException.class)
 				.hasStackTraceContaining("in cycle=");
 	}
 
@@ -167,7 +170,8 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 
 		AdhocUnsafe.resetDeterministicQueryIds();
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(UncheckedExecutionException.class)
+				.hasCauseInstanceOf(IllegalStateException.class)
 				.extracting(s -> Throwables.getStackTrace(s))
 				.asString()
 				// .hasStackTraceContaining does not normalize EOLs

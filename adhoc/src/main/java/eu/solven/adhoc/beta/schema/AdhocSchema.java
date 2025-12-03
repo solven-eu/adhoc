@@ -43,6 +43,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
@@ -290,7 +291,7 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	@Override
-	public ITabularView execute(String cube, ICubeQuery query) {
+	public ListenableFuture<ITabularView> executeAsync(String cube, ICubeQuery query) {
 		ICubeWrapper cubeWrapper = nameToCube.get(cube);
 
 		if (cubeWrapper == null) {
@@ -305,7 +306,7 @@ public class AdhocSchema implements IAdhocSchema {
 			log.info("[EXPLAIN] Transcoded to {} from {}", transcodedQuery, query);
 		}
 
-		return cubeWrapper.execute(transcodedQuery);
+		return cubeWrapper.executeAsync(transcodedQuery);
 	}
 
 	/**
