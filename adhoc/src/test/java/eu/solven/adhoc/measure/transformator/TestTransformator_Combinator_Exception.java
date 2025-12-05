@@ -35,6 +35,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.ThrowingCombination;
+import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -68,7 +69,8 @@ public class TestTransformator_Combinator_Exception extends ADagTest implements 
 		Assertions
 				.assertThatThrownBy(
 						() -> cube().execute(CubeQuery.builder().measure("sumK1K2_OK", "sumK1K2_KO").build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasRootCauseInstanceOf(ThrowingCombinationException.class)
 				.hasStackTraceContaining("Issue evaluating sumK1K2_KO over [468, 690]");
 	}
 
