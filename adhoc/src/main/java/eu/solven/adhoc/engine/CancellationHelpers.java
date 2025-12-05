@@ -20,22 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.query;
+package eu.solven.adhoc.engine;
+
+import java.time.Duration;
+import java.time.OffsetDateTime;
+
+import eu.solven.adhoc.engine.context.IIsCancellable;
+import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * The different state of a query execution.
+ * Helps cancelling queries.
  * 
  * @author Benoit Lacelle
  */
-public enum AsynchronousStatus {
-	// the queryId is unknown
-	UNKNOWN,
-	// the query is running
-	RUNNING,
-	// the query is completed and its result is available
-	SERVED,
-	// the query ended with a failure, or a cancellation
-	FAILED,
-	// the view is not available anymore, or it has been cancelled
-	DISCARDED
+@UtilityClass
+@Slf4j
+public class CancellationHelpers {
+	/**
+	 * To be called in a finally block of a cancellable block.
+	 * 
+	 * It would typically log to report failure or delay cancellation. But it would not throw, as we prefer a slightly
+	 * delayed succesful queries than a can
+	 * 
+	 * @param queryPod
+	 */
+	public static void afterCancellable(IIsCancellable queryPod) {
+		if (queryPod.isCancelled()) {
+			OffsetDateTime cancellationDate = queryPod.getCancellationDate();
+			OffsetDateTime now = OffsetDateTime.now();
+
+			Duration duration = Duration.between(cancellationDate, now);
+			log.warn("A cancelled query leaked a part, which remained active for {}",
+					PepperLogHelper.humanDuration(duration.toMillis()));
+		}
+	}
+
 }

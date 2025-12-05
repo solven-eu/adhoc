@@ -47,8 +47,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -153,11 +151,6 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Override
 	public IOperatorFactory getOperatorFactory() {
 		return factories.getOperatorFactory();
-	}
-
-	@Override
-	public ListenableFuture<ITabularView> executeAsync(QueryPod queryPod) {
-		return Futures.submit(() -> execute(queryPod), queryPod.getExecutorService());
 	}
 
 	@Override

@@ -24,7 +24,6 @@ package eu.solven.adhoc.cube;
 
 import java.util.Map;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -47,16 +46,14 @@ import eu.solven.adhoc.util.IHasName;
  */
 public interface ICubeWrapper extends IHasColumns, IHasName, IHasMeasures {
 
-	ListenableFuture<ITabularView> executeAsync(ICubeQuery transcodedQuery);
+	ListenableFuture<ITabularView> executeAsync(ICubeQuery query);
 
 	/**
 	 * 
 	 * @param query
 	 * @return
 	 */
-	default ITabularView execute(ICubeQuery query) {
-		return Futures.getUnchecked(executeAsync(query));
-	}
+	ITabularView execute(ICubeQuery query);
 
 	/**
 	 * 

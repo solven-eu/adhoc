@@ -35,8 +35,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
-
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -198,8 +196,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.setMaxStackTraceElementsDisplayed(128);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(mName).build()))
-				.isInstanceOf(UncheckedExecutionException.class)
-				.hasCauseInstanceOf(IllegalStateException.class)
+				.isInstanceOf(IllegalArgumentException.class)
 				.hasRootCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("ccyFrom", " not a sliced column");
 	}

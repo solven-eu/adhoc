@@ -73,4 +73,12 @@ public class TestStandardQueryOptions {
 		Assertions.assertThat(StandardQueryOptions.CONCURRENT
 				.isActive(Set.of(StandardQueryOptions.CONCURRENT, StandardQueryOptions.SEQUENTIAL))).isFalse();
 	}
+
+	@Test
+	public void testIsActive() {
+		Assertions.assertThat(StandardQueryOptions.NON_BLOCKING.isActive(Set.of(StandardQueryOptions.NON_BLOCKING)))
+				.isTrue();
+		Assertions.assertThat(StandardQueryOptions.NON_BLOCKING.isActive(Set.of(StandardQueryOptions.BLOCKING)))
+				.isFalse();
+	}
 }

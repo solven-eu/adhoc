@@ -29,8 +29,6 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
-
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.measure.IMeasureForest;
@@ -89,8 +87,7 @@ public class TestInMemoryTable {
 		Assertions
 				.assertThatThrownBy(
 						() -> cube.execute(CubeQuery.builder().andFilter("unknownColumn", "anyValue").build()))
-				.isInstanceOf(UncheckedExecutionException.class)
-				.hasCauseInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
 
@@ -104,8 +101,7 @@ public class TestInMemoryTable {
 		CubeWrapper cube = CubeWrapper.builder().forest(forest).table(table).build();
 
 		Assertions.assertThatThrownBy(() -> cube.execute(CubeQuery.builder().groupByAlso("unknownColumn").build()))
-				.isInstanceOf(UncheckedExecutionException.class)
-				.hasCauseInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("unknownColumn");
 	}
 
@@ -143,7 +139,7 @@ public class TestInMemoryTable {
 		// transcoded, so a missed groupedBy columns, and `AdhocTranscodingHelper - No queried keys found for k.1`)
 		Assertions.assertThatThrownBy(() -> {
 			cube.execute(CubeQuery.builder().groupByAlso(wrappedColumn).measure("someMeasure").build());
-		}).isInstanceOf(UncheckedExecutionException.class).hasCauseInstanceOf(IllegalArgumentException.class);
+		}).isInstanceOf(IllegalArgumentException.class);
 
 		Assertions.assertThat(table.getUnknownColumns()).isEmpty();
 	}

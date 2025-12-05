@@ -27,10 +27,15 @@ import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
+import org.jooq.ExecuteListener;
+import org.jooq.ExecuteListenerProvider;
 import org.jooq.SQLDialect;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
+import org.jooq.tools.StopWatchListener;
 
 import eu.solven.adhoc.query.AdhocCaseSensitivity;
 
@@ -67,11 +72,38 @@ public interface DSLSupplier {
 	 */
 	static DSLSupplier fromDialect(SQLDialect sqlDialect) {
 		Settings settings = AdhocCaseSensitivity.jooqSettings();
-		return () -> DSL.using(sqlDialect, settings);
+
+		Configuration jooqConf = new DefaultConfiguration();
+		jooqConf.set(sqlDialect);
+		jooqConf.set(settings);
+
+		return () -> DSL.using(jooqConf);
 	}
 
 	static DSLSupplier fromDatasource(DataSource datasource, SQLDialect sqlDialect) {
 		Settings settings = AdhocCaseSensitivity.jooqSettings();
 		return () -> DSL.using(datasource, sqlDialect, settings);
+	}
+
+	@Deprecated(since = "Unstable API")
+	static DSLSupplier fromDatasourceStopWatch(DataSource datasource, SQLDialect sqlDialect) {
+		Settings settings = AdhocCaseSensitivity.jooqSettings();
+
+		Configuration jooqConf = new DefaultConfiguration();
+		jooqConf.set(datasource);
+		jooqConf.set(sqlDialect);
+		jooqConf.set(settings);
+
+		// https://www.jooq.org/doc/latest/manual/sql-execution/execute-listeners/
+		jooqConf.set(new ExecuteListenerProvider() {
+
+			@Override
+			public ExecuteListener provide() {
+				return new StopWatchListener();
+			}
+
+		});
+
+		return () -> DSL.using(jooqConf);
 	}
 }

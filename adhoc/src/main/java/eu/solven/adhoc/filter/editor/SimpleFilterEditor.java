@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.filter.editor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -129,10 +130,25 @@ public class SimpleFilterEditor implements IFilterEditor {
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();
 
-			List<ISliceFilter> shiftedOperands =
-					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
+			if (filterMode == FilterMode.alwaysShift) {
+				// OPTIMIZATION Switch from `FilterMode.alwaysShift` to to build many AND of 2 columnFilters given an
+				// input AND. Indeed, given an AND over 3 columns, we would receive 3 AND, each with 2 columnFilters,
+				// the second filter being the shift in the 3 cases.
+				List<ISliceFilter> shiftedOperands = new ArrayList<>(operands.size() + 1);
 
-			return FilterBuilder.and(shiftedOperands).optimize();
+				// This may skip the alwaysPresent
+				operands.forEach(f -> shiftedOperands.add(shift(f, column, value, FilterMode.shiftIfPresent)));
+
+				// Ensure we alwaysPresent
+				shiftedOperands.add(shift(ISliceFilter.MATCH_ALL, column, value, FilterMode.alwaysShift));
+
+				return FilterBuilder.and(shiftedOperands).optimize();
+			} else {
+				List<ISliceFilter> shiftedOperands =
+						operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
+
+				return FilterBuilder.and(shiftedOperands).optimize();
+			}
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			Set<ISliceFilter> operands = orFilter.getOperands();
 

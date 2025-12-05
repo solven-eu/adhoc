@@ -180,12 +180,13 @@ public class PivotableApiRouter {
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
 										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200").implementation(UUID.class)))
-				.DELETE(json("/cubes/query/asynchronous"),
-						queryHandler::cancelAsynchronousQuery,
-						ops -> ops.operationId("cancelAsynchronousQuery")
-								.parameter(parameterBuilder().name("measure")
-										.description("Some pre-aggregated or transformed measure")
-										.example("delta.EUR"))
+				.DELETE(json("/cubes/query"),
+						queryHandler::cancelQuery,
+						ops -> ops.operationId("cancelQuery")
+								.parameter(parameterBuilder().name("query_id")
+										.description("id of the query result")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
 								.response(responseBuilder().responseCode("200").implementation(String.class)))
 
 				.GET(json("/cubes/query/result"),

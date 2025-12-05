@@ -22,14 +22,17 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
@@ -47,40 +50,78 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class QueryEngineConcurrencyHelper {
 
+	/**
+	 * Execute the steps as described by a DAG.
+	 * 
+	 * This handles cancellation as described by QueryPod.
+	 * 
+	 * @param queryPod
+	 * @param queryStepsDag
+	 * @param queryStepToValues
+	 * @param queryStepConsumer
+	 */
 	public static void walkUpDag(QueryPod queryPod,
 			IHasDagFromInducedToInducer queryStepsDag,
 			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
 			Consumer<? super CubeQueryStep> queryStepConsumer) {
+		Consumer<? super CubeQueryStep> cancellableStepConsumer = step -> {
+			if (queryPod.isCancelled()) {
+				throw new CancelledQueryException("queryPod is cancelled. Not starting step=%s".formatted(step));
+			}
+
+			try {
+				queryStepConsumer.accept(step);
+			} finally {
+				CancellationHelpers.afterCancellable(queryPod);
+			}
+
+		};
+
+		ListenableFuture<?> future = queryPod.getExecutorService().submit(() -> {
+			if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+				// multi-threaded
+				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
+
+				// list root induced
+				List<CubeQueryStep> rootInduced =
+						dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
+
+				QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
+						.fromQueriedToDependancies(dag)
+						.queryStepToValues(queryStepToValues)
+						.onReadyStep(cancellableStepConsumer);
+				List<QueryStepRecursiveAction> rootActions =
+						rootInduced.stream().map(step -> actionTemplate.step(step).build()).toList();
+
+				List<Runnable> stepCancellationListeners = new ArrayList<>();
+				rootActions.forEach(action -> {
+					stepCancellationListeners.add(() -> action.cancel(true));
+				});
+				stepCancellationListeners.forEach(queryPod::addCancellationListener);
+
+				// BEWARE: In case of exception, is it important to remove the cancellation listeners?
+				// try {
+				ForkJoinTask.invokeAll(rootActions);
+				// } finally {
+				// tasksCancellationListeners.forEach(queryPod::removeCancellationListener);
+				// }
+			} else {
+				// mono-threaded
+				queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(cancellableStepConsumer);
+			}
+		});
+
+		Runnable cancellationListener = () -> {
+			future.cancel(true);
+		};
+
+		queryPod.addCancellationListener(cancellationListener);
 		try {
-			queryPod.getExecutorService().submit(() -> {
-				if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
-					// multi-threaded
-					DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
-
-					// list root induced
-					List<CubeQueryStep> rootInduced =
-							dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
-
-					QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
-							.fromQueriedToDependancies(dag)
-							.queryStepToValues(queryStepToValues)
-							.onReadyStep(queryStepConsumer);
-					List<QueryStepRecursiveAction> actions =
-							rootInduced.stream().map(step -> actionTemplate.step(step).build()).toList();
-
-					ForkJoinTask.invokeAll(actions);
-				} else {
-					// mono-threaded
-					queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(queryStepConsumer);
-				}
-
-			}).get();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted", e);
-		} catch (ExecutionException e) {
-			throw new IllegalStateException("Failed", e);
+			Futures.getUnchecked(future);
+		} finally {
+			CancellationHelpers.afterCancellable(queryPod);
 		}
+		queryPod.removeCancellationListener(cancellationListener);
 	}
 
 }

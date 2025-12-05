@@ -20,22 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.query;
+package eu.solven.adhoc.engine;
+
+import java.util.concurrent.CancellationException;
 
 /**
- * The different state of a query execution.
+ * Thrown when a query is cancelled, to interrupt the active task.
  * 
  * @author Benoit Lacelle
  */
-public enum AsynchronousStatus {
-	// the queryId is unknown
-	UNKNOWN,
-	// the query is running
-	RUNNING,
-	// the query is completed and its result is available
-	SERVED,
-	// the query ended with a failure, or a cancellation
-	FAILED,
-	// the view is not available anymore, or it has been cancelled
-	DISCARDED
+public class CancelledQueryException extends CancellationException {
+	private static final long serialVersionUID = 1854618611130104735L;
+
+	public CancelledQueryException(String message) {
+		super(message);
+	}
+
 }

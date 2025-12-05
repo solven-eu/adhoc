@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -49,6 +48,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ThrowingCombination;
+import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
@@ -72,8 +72,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		Aggregator k1Max = k1Sum.toBuilder().aggregationKey(MaxAggregation.KEY).build();
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(k1Sum, k1Max).build()))
-				.isInstanceOf(UncheckedExecutionException.class)
-				.hasCauseInstanceOf(IllegalArgumentException.class)
+				.isInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("Can not query multiple measures with same name: {k1=2}");
 	}
 
@@ -104,8 +103,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 		forest.addMeasure(mBIsMaDividedBy2);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
-				.isInstanceOf(UncheckedExecutionException.class)
-				.hasCauseInstanceOf(IllegalStateException.class)
+				.isInstanceOf(IllegalStateException.class)
 				.hasStackTraceContaining("in cycle=");
 	}
 
@@ -170,8 +168,8 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 
 		AdhocUnsafe.resetDeterministicQueryIds();
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
-				.isInstanceOf(UncheckedExecutionException.class)
-				.hasCauseInstanceOf(IllegalStateException.class)
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasRootCauseInstanceOf(ThrowingCombinationException.class)
 				.extracting(s -> Throwables.getStackTrace(s))
 				.asString()
 				// .hasStackTraceContaining does not normalize EOLs

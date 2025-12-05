@@ -1,7 +1,5 @@
 import { ref, watch } from "vue";
 
-import { useRouter } from "vue-router";
-
 import { usePreferencesStore } from "./store-preferences.js";
 
 export default {

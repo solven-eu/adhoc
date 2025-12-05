@@ -6,6 +6,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Experimental support of [MongoDB](https://www.mongodb.com/docs/languages/java/)
+- Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
+- Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
+- Pivotable will automatically cancel currently running queries if another query is triggered.
 
 ### Changed
 
@@ -19,6 +22,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Improved
 - `TableQueryOptimizerSinglePerAggregator` now build a tree of intermediate CubeQuerySteps, to enable computing each filters a single time.
+- `SimpleFilterEditor.shift` has been optimized.
 
 ## [0.0.12]
 

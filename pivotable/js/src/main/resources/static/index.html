@@ -159,11 +159,17 @@
             const pinia = createPinia();
 
             // https://router.vuejs.org/guide/
-            createApp(AdhocApp)
-                .use(router)
+            const app = createApp(AdhocApp);
+
+            app.use(router)
                 // https://pinia.vuejs.org/getting-started.html
-                .use(pinia)
-                .mount("#app");
+                .use(pinia);
+
+            // https://github.com/vuejs/router/issues/2017
+            // https://router.vuejs.org/guide/migration/#All-navigations-are-now-always-asynchronous
+            router.isReady().then(() => {
+                app.mount("#app");
+            });
         </script>
         <!-- This demonstrate how we can inject properties into source files, to be rendered without any API/Javascript-->
         <!-- https://stackoverflow.com/questions/39099295/make-div-stick-to-bottom-of-page -->

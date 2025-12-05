@@ -125,7 +125,7 @@ public class PivotableQueryHandler {
 		return executeAsynchronousQuery(queryOnSchemaMono);
 	}
 
-	public Mono<ServerResponse> cancelAsynchronousQuery(ServerRequest serverRequest) {
+	public Mono<ServerResponse> cancelQuery(ServerRequest serverRequest) {
 		UUID queryId = AdhocHandlerHelper.uuid(serverRequest, "query_id");
 		CancellationStatus status = asynchronousQueriesManager.cancelQuery(queryId);
 

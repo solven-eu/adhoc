@@ -31,6 +31,8 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -43,12 +45,15 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
@@ -103,8 +108,37 @@ public class CubeWrapper implements ICubeWrapper {
 	}
 
 	@Override
+	public ITabularView execute(ICubeQuery query) {
+		// Input query may be BLOCKING or NON_BLOCKING
+		QueryPod queryPod = queryPreparator.prepareQuery(table, forest, columnsManager, query);
+		return engine.execute(queryPod);
+	}
+
+	@Override
 	public ListenableFuture<ITabularView> executeAsync(ICubeQuery query) {
-		return engine.executeAsync(queryPreparator.prepareQuery(table, forest, columnsManager, query));
+		if (query.getOptions().contains(StandardQueryOptions.BLOCKING)) {
+			throw new IllegalArgumentException("Can not asyncExecute() a BLOCKING query. Was %s".formatted(query));
+		} else if (!query.getOptions().contains(StandardQueryOptions.NON_BLOCKING)) {
+			// Ensure NON_BLOCKING for queryPod creation
+			query = CubeQuery.edit(query).options(query.getOptions()).option(StandardQueryOptions.NON_BLOCKING).build();
+		}
+
+		QueryPod queryPod = queryPreparator.prepareQuery(table, forest, columnsManager, query);
+		ListenableFuture<ITabularView> future =
+				Futures.submit(() -> engine.execute(queryPod), queryPod.getExecutorService());
+
+		// Wrap to enable cancellation to be propagated to the queryPod
+		return new SimpleForwardingListenableFuture<>(future) {
+
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				// Cancelling the future shall cancel the queryPod, which may itself cancel the inner parts of the query
+				queryPod.cancel();
+
+				return super.cancel(mayInterruptIfRunning);
+			}
+		};
+
 	}
 
 	@Override

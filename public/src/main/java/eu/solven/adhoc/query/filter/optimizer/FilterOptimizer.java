@@ -102,7 +102,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		AndFilter filterForEvent = AndFilter.builder().ands(filters).build();
 		listener.onOptimize(filterForEvent);
 
-		Instant start = Instant.now(AdhocTime.clock);
+		Instant start = Instant.now(AdhocTime.unsafeClock);
 		try {
 			return notCachedAnd(filters, willBeNegated);
 		} finally {
@@ -115,7 +115,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		OrFilter filterForEvent = OrFilter.builder().ors(filters).build();
 		listener.onOptimize(filterForEvent);
 
-		Instant start = Instant.now(AdhocTime.clock);
+		Instant start = Instant.now(AdhocTime.unsafeClock);
 		try {
 			return notCachedOr(filters);
 		} finally {
@@ -128,7 +128,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		NotFilter filterForEvent = NotFilter.builder().negated(filter).build();
 		listener.onOptimize(filterForEvent);
 
-		Instant start = Instant.now(AdhocTime.clock);
+		Instant start = Instant.now(AdhocTime.unsafeClock);
 		try {
 			return notCachedNot(filter);
 		} finally {
