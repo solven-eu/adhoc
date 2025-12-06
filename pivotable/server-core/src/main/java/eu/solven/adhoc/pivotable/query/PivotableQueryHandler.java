@@ -95,7 +95,7 @@ public class PivotableQueryHandler {
 		return queryOnSchemaMono.map(queryOnSchema -> {
 			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
 
-			return asynchronousQueriesManager.execute(schema, queryOnSchema);
+			return asynchronousQueriesManager.executeAsync(schema, queryOnSchema);
 
 		})
 				.flatMap(view -> ServerResponse.ok()

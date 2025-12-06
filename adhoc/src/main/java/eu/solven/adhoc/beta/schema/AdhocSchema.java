@@ -291,6 +291,25 @@ public class AdhocSchema implements IAdhocSchema {
 	}
 
 	@Override
+	public ITabularView execute(String cube, ICubeQuery query) {
+		ICubeWrapper cubeWrapper = nameToCube.get(cube);
+
+		if (cubeWrapper == null) {
+			throw new IllegalArgumentException("No cube named %s".formatted(cube));
+		}
+
+		ICubeQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
+
+		if (query.isDebugOrExplain()) {
+			// This can be helpful to debug why some `c=v` filters are turned into
+			// `c.toString() matches v`
+			log.info("[EXPLAIN] Transcoded to {} from {}", transcodedQuery, query);
+		}
+
+		return cubeWrapper.execute(transcodedQuery);
+	}
+
+	@Override
 	public ListenableFuture<ITabularView> executeAsync(String cube, ICubeQuery query) {
 		ICubeWrapper cubeWrapper = nameToCube.get(cube);
 

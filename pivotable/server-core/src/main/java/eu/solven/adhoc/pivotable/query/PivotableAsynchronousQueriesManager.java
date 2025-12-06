@@ -104,7 +104,7 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 	}
 
 	@SuppressWarnings("PMD.AvoidInstanceofChecksInCatchClause")
-	public UUID execute(IAdhocSchema schema, TargetedCubeQuery queryOnSchema) {
+	public UUID executeAsync(IAdhocSchema schema, TargetedCubeQuery queryOnSchema) {
 		UUID queryId = generateQueryId();
 
 		queryIdToState.put(queryId, AsynchronousStatus.RUNNING);
