@@ -29,6 +29,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestFilterStripper {
 	@Test
@@ -44,5 +47,50 @@ public class TestFilterStripper {
 		Assertions.assertThat(relatedStripper.filterToStripper.asMap()).hasSize(1);
 		// Ensure the cache related to current WHERE is not-shared
 		Assertions.assertThat(relatedStripper.knownAsStricter.asMap()).isEmpty();
+	}
+
+	@Test
+	public void testOrMatchAll() {
+		FilterStripper stripper = FilterStripper.builder().where(AndFilter.and(Map.of("a", "a1"))).build();
+
+		ISliceFilter laxerWithOr = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		Assertions.assertThat(stripper.isStricterThan(laxerWithOr)).isTrue();
+		Assertions.assertThat(stripper.strip(laxerWithOr)).isEqualTo(ISliceFilter.MATCH_ALL);
+	}
+
+	@Test
+	public void test_notIn_and() {
+		FilterStripper stripper = FilterStripper.builder().where(ColumnFilter.notIn("a", "a1", "a2", "a3")).build();
+
+		ISliceFilter notInLessColumns =
+				FilterBuilder.and(ColumnFilter.notIn("a", "a1", "a2"), ColumnFilter.notEq("b", "b1")).combine();
+		Assertions.assertThat(stripper.isStricterThan(notInLessColumns)).isFalse();
+		Assertions.assertThat(stripper.strip(notInLessColumns)).isEqualTo(ColumnFilter.notEq("b", "b1"));
+	}
+
+	@Test
+	public void test_notIn_or() {
+		FilterStripper stripper = FilterStripper.builder().where(ColumnFilter.notIn("a", "a1", "a2", "a3")).build();
+
+		ISliceFilter notInLessColumns =
+				FilterBuilder.or(ColumnFilter.notIn("a", "a1", "a2"), ColumnFilter.notEq("b", "b1")).combine();
+		Assertions.assertThat(stripper.isStricterThan(notInLessColumns)).isTrue();
+		Assertions.assertThat(stripper.strip(notInLessColumns)).isEqualTo(ISliceFilter.MATCH_ALL);
+	}
+
+	// This is an example where `isStrictedThan` is false, but the output of `.strip` is MATCH_NONE
+	@Test
+	public void test_notIn_or_additionalColumn() {
+		FilterStripper stripper = FilterStripper.builder()
+				.where(FilterBuilder.and(ColumnFilter.notIn("a", "a1", "a2", "a3"), ColumnFilter.notEq("c", "c1"))
+						.combine())
+				.build();
+
+		ISliceFilter notInLessColumns =
+				FilterBuilder.or(ColumnFilter.notIn("a", "a1", "a2"), ColumnFilter.notEq("b", "b1")).combine();
+		// Not stricter as input does not match `c!=c1`
+		Assertions.assertThat(stripper.isStricterThan(notInLessColumns)).isFalse();
+		// Still, `.strip` is everything is the constrain on `a` reject all rows
+		Assertions.assertThat(stripper.strip(notInLessColumns)).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 }

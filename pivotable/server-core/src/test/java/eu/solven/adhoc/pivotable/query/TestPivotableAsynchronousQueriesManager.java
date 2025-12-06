@@ -24,12 +24,16 @@ package eu.solven.adhoc.pivotable.query;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
@@ -41,10 +45,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TestPivotableAsynchronousQueriesManager {
 	final PivotableAsynchronousQueriesManager manager = new PivotableAsynchronousQueriesManager();
+	final ExecutorService es = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
 
 	@AfterEach
 	public void closeES() {
 		manager.destroy();
+		es.shutdown();
 	}
 
 	@Test
@@ -70,15 +76,17 @@ public class TestPivotableAsynchronousQueriesManager {
 		CountDownLatch waitForPoll = new CountDownLatch(1);
 
 		ITabularView view = Mockito.mock(ITabularView.class);
-		Mockito.when(schema.execute(query.getCube(), query.getQuery())).thenAnswer(invok -> {
-			log.debug("Wait for CDL");
-			waitForPoll.await();
-			log.debug("Waited for CDL");
+		Mockito.when(schema.executeAsync(query.getCube(), query.getQuery())).thenAnswer(invok -> {
+			return es.submit(() -> {
+				log.debug("Wait for CDL");
+				waitForPoll.await();
+				log.debug("Waited for CDL");
 
-			return view;
+				return view;
+			});
 		});
 
-		UUID queryId = manager.execute(schema, query);
+		UUID queryId = manager.executeAsync(schema, query);
 
 		{
 			Assertions.assertThat(manager.getState(queryId)).isEqualTo(AsynchronousStatus.RUNNING);
@@ -109,15 +117,17 @@ public class TestPivotableAsynchronousQueriesManager {
 		// a CDL so we check the state for RUNNING
 		CountDownLatch waitForPoll = new CountDownLatch(1);
 
-		Mockito.when(schema.execute(query.getCube(), query.getQuery())).thenAnswer(invok -> {
-			log.debug("Wait for CDL");
-			waitForPoll.await();
-			log.debug("Waited for CDL");
+		Mockito.when(schema.executeAsync(query.getCube(), query.getQuery())).thenAnswer(invok -> {
+			return es.submit(() -> {
+				log.debug("Wait for CDL");
+				waitForPoll.await();
+				log.debug("Waited for CDL");
 
-			throw new RuntimeException("Simulated failure");
+				throw new RuntimeException("Simulated failure");
+			});
 		});
 
-		UUID queryId = manager.execute(schema, query);
+		UUID queryId = manager.executeAsync(schema, query);
 
 		{
 			Assertions.assertThat(manager.getState(queryId)).isEqualTo(AsynchronousStatus.RUNNING);

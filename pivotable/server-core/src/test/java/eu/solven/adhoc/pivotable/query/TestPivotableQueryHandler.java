@@ -22,20 +22,32 @@
  */
 package eu.solven.adhoc.pivotable.query;
 
-/**
- * The different state of a query execution.
- * 
- * @author Benoit Lacelle
- */
-public enum AsynchronousStatus {
-	// the queryId is unknown
-	UNKNOWN,
-	// the query is running
-	RUNNING,
-	// the query is completed and its result is available
-	SERVED,
-	// the query ended with a failure, or a cancellation
-	FAILED,
-	// the view is not available anymore, or it has been cancelled
-	DISCARDED
+import java.time.Duration;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+
+public class TestPivotableQueryHandler {
+	PivotableAdhocSchemaRegistry schemaRegistry = null;
+	AdhocCubesRegistry cubesRegistry = null;
+	PivotableQueryHandler handler = new PivotableQueryHandler(schemaRegistry, cubesRegistry);
+
+	@Test
+	public void testBackoff() {
+		UUID queryId = UUID.randomUUID();
+
+		Optional<Duration> first = handler.getRetryIn(queryId, AsynchronousStatus.RUNNING);
+		Assertions.assertThat(first).isPresent().contains(Duration.ofMillis(100));
+
+		Optional<Duration> second = handler.getRetryIn(queryId, AsynchronousStatus.RUNNING);
+		Assertions.assertThat(second).isPresent().contains(Duration.ofMillis(110));
+
+		Optional<Duration> third = handler.getRetryIn(queryId, AsynchronousStatus.RUNNING);
+		Assertions.assertThat(third).isPresent().contains(Duration.ofMillis(121));
+	}
 }

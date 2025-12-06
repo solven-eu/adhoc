@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.debug;
+package eu.solven.adhoc.pivotable.query;
+
+import lombok.RequiredArgsConstructor;
 
 /**
- * Some components can have their queryPlan explained. If true, we will spent some time providing information about the
- * queryPlan.
+ * The different state of a query execution.
  * 
  * @author Benoit Lacelle
- *
  */
-@FunctionalInterface
-@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.EXPLAIN)")
-public interface IIsExplainable {
+@RequiredArgsConstructor
+public enum CancellationStatus {
+	// the queryId is unknown
+	UNKNOWN(AsynchronousStatus.UNKNOWN),
+	// the query is running
+	CANCELLED(AsynchronousStatus.RUNNING),
+	// the query is completed and its result is available
+	SERVED(AsynchronousStatus.SERVED),
+	// the query ended with a failure
+	FAILED(AsynchronousStatus.FAILED),
+	// the view is not available anymore, or it has been cancelled
+	DISCARDED(AsynchronousStatus.DISCARDED);
 
-	@Deprecated(since = "Use .getOptions()")
-	boolean isExplain();
+	final AsynchronousStatus asyncStatus;
 }

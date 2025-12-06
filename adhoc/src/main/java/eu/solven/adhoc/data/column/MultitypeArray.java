@@ -81,11 +81,10 @@ public class MultitypeArray implements IMultitypeArray {
 	 */
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
-		if (size >= AdhocUnsafe.getLimitColumnSize()) {
-			// TODO Log the first and last elements
-			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.getLimitColumnSize()));
-		} else if (size == 0) {
+
+		AdhocUnsafe.checkColumnSize(size);
+
+		if (size == 0) {
 			ensureCapacityForType(type);
 		}
 	}

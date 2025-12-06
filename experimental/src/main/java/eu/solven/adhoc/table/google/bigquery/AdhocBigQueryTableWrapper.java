@@ -43,6 +43,7 @@ import com.google.cloud.bigquery.TableResult;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -68,7 +69,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		String sql = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)

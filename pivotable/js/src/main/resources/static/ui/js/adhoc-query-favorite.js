@@ -1,7 +1,5 @@
 import { ref, watch } from "vue";
 
-import { useRouter } from "vue-router";
-
 import { usePreferencesStore } from "./store-preferences.js";
 
 export default {
@@ -38,8 +36,6 @@ export default {
 		};
 
 		{
-			const router = useRouter();
-
 			if (preferencesStore.latestQueryIds >= 1) {
 				const latestQueryId = preferencesStore.latestQueryIds[preferencesStore.latestQueryIds.length - 1];
 				// TODO Restore latestQueryId

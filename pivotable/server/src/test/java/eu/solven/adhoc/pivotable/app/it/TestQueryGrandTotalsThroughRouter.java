@@ -154,7 +154,8 @@ public class TestQueryGrandTotalsThroughRouter {
 						Set<String> cubes = schema.getSchema().getCubes().keySet();
 						log.info("Considering endpoint={} cubes={}", endpoint, cubes);
 
-						return Flux.fromIterable(cubes).flatMap(cube -> {
+						// sequential to maintain ordering
+						return Flux.fromIterable(cubes).flatMapSequential(cube -> {
 							log.info("Considering endpoint={} cube={}", endpoint, cube);
 
 							return pivotable.columnMetadata(AdhocColumnSearch.builder()
@@ -182,8 +183,10 @@ public class TestQueryGrandTotalsThroughRouter {
 				.blockLast();
 
 		Assertions.assertThat(nbColumns.get()).isGreaterThan(0);
-		// TODO Columns are not processed in the expected order. Hence, the last cube is not always the same. Why?
-		Assertions.assertThat(lastColumn.getColumn())
-				.isIn("gamma", "~CompositeSlicer", "film_rating", "rowIndex", "run_time");
+
+		// `flatMapSequential` guarantee processing in order, hence the last cube is always `simple` (as lowerCase as
+		// after upperCase)
+		Assertions.assertThat(lastColumn.getHolder()).isEqualTo("simple");
+		Assertions.assertThat(lastColumn.getColumn()).isEqualTo("rowIndex");
 	}
 }

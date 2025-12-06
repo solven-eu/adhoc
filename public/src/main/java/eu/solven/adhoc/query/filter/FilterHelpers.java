@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.filter;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -447,4 +448,14 @@ public class FilterHelpers {
 		return stripWhereFromFilter(contribution.negate(), filter.negate()).negate();
 	}
 
+	/**
+	 * This comparison enables a deterministic ordering of {@link ISliceFilter}. It does not implies anything in term of
+	 * relative complexity.
+	 * 
+	 * @return a Comparator for {@link ISliceFilter}, enabling deterministic ordering.
+	 */
+	@Deprecated(since = "Not ready")
+	public static Comparator<? super ISliceFilter> filterComparator() {
+		return (l, r) -> l.toString().compareTo(r.toString());
+	}
 }

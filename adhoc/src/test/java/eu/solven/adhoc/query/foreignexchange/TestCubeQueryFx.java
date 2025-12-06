@@ -196,7 +196,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		Assertions.setMaxStackTraceElementsDisplayed(128);
 
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(mName).build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(IllegalArgumentException.class)
 				.hasRootCauseInstanceOf(IllegalArgumentException.class)
 				.hasStackTraceContaining("ccyFrom", " not a sliced column");
 	}

@@ -48,6 +48,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ThrowingCombination;
+import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
@@ -167,7 +168,8 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 
 		AdhocUnsafe.resetDeterministicQueryIds();
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(measureA).build()))
-				.isInstanceOf(IllegalStateException.class)
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasRootCauseInstanceOf(ThrowingCombinationException.class)
 				.extracting(s -> Throwables.getStackTrace(s))
 				.asString()
 				// .hasStackTraceContaining does not normalize EOLs

@@ -25,6 +25,7 @@ package eu.solven.adhoc.util;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 
 import lombok.experimental.UtilityClass;
 
@@ -37,13 +38,18 @@ import lombok.experimental.UtilityClass;
 @SuppressWarnings("PMD.MutableStaticState")
 public class AdhocTime {
 
-	public static Clock clock = Clock.systemUTC();
+	public static Clock unsafeClock = Clock.systemUTC();
+	public static ZoneOffset unsafeZoneOffset = ZoneOffset.UTC;
 
 	public static Instant now() {
-		return Instant.now(clock);
+		return Instant.now(unsafeClock);
 	}
 
 	public static Duration untilNow(Instant start) {
 		return Duration.between(start, now());
+	}
+
+	public static ZoneOffset zoneOffset() {
+		return unsafeZoneOffset;
 	}
 }

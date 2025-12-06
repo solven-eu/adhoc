@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -36,15 +37,20 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
-public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
+public class TestJooqTableWrapper implements IAdhocTestConstants {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -52,7 +58,7 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	CubeQueryEngine aqe = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
+	CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.eventBus()::post).build();
 
 	@Test
 	public void testTableIsFunctionCall() throws IOException, SQLException {
@@ -85,13 +91,60 @@ public class TestAdhocJooqTableWrapper implements IAdhocTestConstants {
 			{
 				UnsafeMeasureForest forest = UnsafeMeasureForest.builder().name("jooq").build();
 				forest.addMeasure(k1Sum);
-				CubeWrapper aqw = CubeWrapper.builder().table(jooqDb).engine(aqe).forest(forest).build();
+				CubeWrapper aqw = CubeWrapper.builder().table(jooqDb).engine(engine).forest(forest).build();
 
 				ITabularView result = aqw.execute(CubeQuery.builder().measure(k1Sum.getName()).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 				Assertions.assertThat(mapBased.getCoordinatesToValues())
 						.containsEntry(Map.of(), Map.of(k1Sum.getName(), 0L + 123 + 234));
+			}
+		} finally {
+			Files.delete(tmpParquetPath);
+		}
+	}
+
+	@Test
+	public void testCancel() throws IOException, SQLException {
+		// Duplicated from TestDatabaseQuery_DuckDb_FromParquet
+		Path tmpParquetPath = Files.createTempFile(this.getClass().getSimpleName(), ".parquet");
+		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
+
+		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
+
+		try (Connection dbConn = DuckDbHelper.makeFreshInMemoryDb()) {
+			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
+					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.tableName(DSL.unquotedName(tableExpression))
+					.build();
+			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
+
+			DSLContext dsl = jooqDb.makeDsl();
+
+			// We create a simple parquet files, as we want to test the `read_parquet` expression as tableName
+			{
+				dsl.execute("""
+						CREATE TABLE someTableName AS
+							SELECT 'a1' AS a, 123 AS k1 UNION ALL
+							SELECT 'a2' AS a, 234 AS k1
+							;
+						""");
+				dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
+			}
+
+			{
+				QueryPod queryPod = QueryPod.forTable(jooqDb);
+				ITabularRecordStream stream = jooqDb.streamSlices(queryPod,
+						TableQueryV2.builder()
+								.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k1")).build())
+								.build());
+
+				queryPod.cancel();
+
+				List<Map<String, ?>> asList = stream.toList();
+
+				// BEWARE We seemingly receive a result as the query is so small it is fully executed when cancelled
+				Assertions.assertThat(asList).hasSize(1).contains(Map.of("k1", 0L + 357));
 			}
 		} finally {
 			Files.delete(tmpParquetPath);

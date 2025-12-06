@@ -20,22 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.query;
+package eu.solven.adhoc.engine.context;
+
+import java.time.OffsetDateTime;
 
 /**
- * The different state of a query execution.
+ * Anything which can be cancelled.
  * 
  * @author Benoit Lacelle
  */
-public enum AsynchronousStatus {
-	// the queryId is unknown
-	UNKNOWN,
-	// the query is running
-	RUNNING,
-	// the query is completed and its result is available
-	SERVED,
-	// the query ended with a failure, or a cancellation
-	FAILED,
-	// the view is not available anymore, or it has been cancelled
-	DISCARDED
+public interface IIsCancellable {
+
+	boolean isCancelled();
+
+	OffsetDateTime getCancellationDate();
+
+	void addCancellationListener(Runnable runnable);
+
+	/**
+	 * Removes a cancellationListener. Do nothing if there is no matching runnable (e.g. if the list has already been
+	 * drained).
+	 * 
+	 * @param runnable
+	 */
+	void removeCancellationListener(Runnable runnable);
 }

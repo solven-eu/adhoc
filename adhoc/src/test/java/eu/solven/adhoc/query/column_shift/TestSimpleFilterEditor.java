@@ -29,6 +29,8 @@ import java.util.function.Function;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -165,9 +167,9 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testSuppressColumns_not_allSuppressed() {
 		ISliceFilter filter =
-				NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
-		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
-		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
+				NotFilter.builder().negated(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1"))).build();
+		// Make sure this is really a NotFilter, i.e. it has not been optimized into something else
+		Assertions.assertThat(filter).hasToString("!(a==a1&b==b1&c==c1)");
 
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
@@ -176,8 +178,8 @@ public class TestSimpleFilterEditor {
 	@Test
 	public void testSuppressColumns_not_matchAll() {
 		ISliceFilter filter = NotFilter.builder().negated(ISliceFilter.MATCH_ALL).build();
-		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
-		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
+		// Make sure this is really a NotFilter, i.e. it has not been optimized into something else
+		Assertions.assertThat(filter).hasToString("!(matchAll)");
 
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
 				.isEqualTo(ISliceFilter.MATCH_ALL);

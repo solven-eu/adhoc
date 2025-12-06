@@ -202,4 +202,10 @@ public class TestMoreFilterHelpers {
 		ISliceFilter notMatchNull = matchNull.negate();
 		Assertions.assertThat(MoreFilterHelpers.match(notMatchNull, Map.of())).isFalse();
 	}
+
+	@Test
+	public void testMatchAll() {
+		Assertions.assertThat(MoreFilterHelpers.match(ISliceFilter.MATCH_ALL, Map.of())).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(ISliceFilter.MATCH_NONE, Map.of())).isFalse();
+	}
 }

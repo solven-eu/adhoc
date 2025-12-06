@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.debug;
+package eu.solven.adhoc.options;
 
 /**
  * Some components can toggle a debug feature. This will log many information (SLF4J).

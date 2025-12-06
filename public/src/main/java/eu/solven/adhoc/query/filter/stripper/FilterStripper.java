@@ -113,7 +113,6 @@ public class FilterStripper implements IFilterStripper {
 		// Given the FILTER, we reject the AND operands already covered by WHERE
 		ISliceFilter postAnd;
 		{
-
 			// Split the FILTER in parts
 			Set<? extends ISliceFilter> andOperands = FilterHelpers.splitAnd(filter);
 
@@ -131,12 +130,13 @@ public class FilterStripper implements IFilterStripper {
 					simplerSubFilter = strip(subFilter);
 				}
 
-				if (andMatchNone(simplerSubFilter)) {
+				if (isDisjoint(simplerSubFilter)) {
 					return ISliceFilter.MATCH_NONE;
 				} else {
 					boolean whereCoversSubFilter = isStricterThan(simplerSubFilter);
 
 					if (!whereCoversSubFilter) {
+						// Add only if this is not a matchAll (in the context of WHERE)
 						notInWhere.add(simplerSubFilter);
 					}
 				}
@@ -149,7 +149,6 @@ public class FilterStripper implements IFilterStripper {
 		// TODO Why managing OR after AND? (and not the inverse)
 		ISliceFilter postOr;
 		{
-
 			Set<ISliceFilter> orOperands = FilterHelpers.splitOr(postAnd);
 			boolean singleOr = orOperands.size() == 1;
 
@@ -165,12 +164,15 @@ public class FilterStripper implements IFilterStripper {
 					simplerSubFilter = strip(subFilter);
 				}
 
-				if (andMatchNone(simplerSubFilter)) {
+				if (isDisjoint(simplerSubFilter)) {
 					continue;
 				} else {
-					boolean whereRejectsSubFilter = isStricterThan(simplerSubFilter);
+					boolean whereCoversSubFilter = isStricterThan(simplerSubFilter);
 
-					if (!whereRejectsSubFilter) {
+					if (whereCoversSubFilter) {
+						// One operand is fully covered by WHERE: as this is an OR, the whole is matched
+						return ISliceFilter.MATCH_ALL;
+					} else {
 						notInWhere.add(simplerSubFilter);
 					}
 				}
@@ -184,7 +186,7 @@ public class FilterStripper implements IFilterStripper {
 	}
 
 	// `a&b=matchNone` is equivalent to `a includes !b`, which is equivalent to `a is stricter than !b`
-	protected boolean andMatchNone(ISliceFilter right) {
+	protected boolean isDisjoint(ISliceFilter right) {
 		return isStricterThan(right.negate());
 	}
 

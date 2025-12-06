@@ -78,7 +78,12 @@ public class TestQueryPod {
 		QueryPod queryContext =
 				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.adhocCommonPool).build();
 
+		Assertions.assertThat(queryContext.getExecutorService().toString())
+				.startsWith("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator")
+				.contains("java.util.concurrent.ForkJoinPool");
+
 		Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
-				.isEqualTo("java.util.concurrent.ForkJoinPool");
+				// java.util.concurrent.ForkJoinPool
+				.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator");
 	}
 }

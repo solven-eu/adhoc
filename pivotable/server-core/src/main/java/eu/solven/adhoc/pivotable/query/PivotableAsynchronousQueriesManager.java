@@ -24,6 +24,7 @@ package eu.solven.adhoc.pivotable.query;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,6 +35,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -71,6 +74,8 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 			.maximumSize(policy.getMaxSize())
 			.build();
 
+	final Cache<UUID, ListenableFuture<ITabularView>> queryIdToFuture = CacheBuilder.newBuilder().build();
+
 	final Cache<UUID, Throwable> queryIdToThrowable = CacheBuilder.newBuilder()
 			// The state remains available 10x longer than the view
 			.expireAfterWrite(policy.getExpireAfterWrite().multipliedBy(policy.getFactorForState()))
@@ -98,25 +103,34 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 		queryIdToState.put(queryId, AsynchronousStatus.DISCARDED);
 	}
 
-	public UUID execute(IAdhocSchema schema, TargetedCubeQuery queryOnSchema) {
+	@SuppressWarnings("PMD.AvoidInstanceofChecksInCatchClause")
+	public UUID executeAsync(IAdhocSchema schema, TargetedCubeQuery queryOnSchema) {
 		UUID queryId = generateQueryId();
 
 		queryIdToState.put(queryId, AsynchronousStatus.RUNNING);
 
-		asynchronousQueriesService.execute(() -> {
-			try {
-				ITabularView view = schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery());
+		ListenableFuture<ITabularView> future = schema.executeAsync(queryOnSchema.getCube(), queryOnSchema.getQuery());
+		queryIdToFuture.put(queryId, future);
 
+		future.addListener(() -> {
+			try {
+				queryIdToFuture.invalidate(queryId);
+
+				ITabularView view = Futures.getUnchecked(future);
 				log.info("Registered view for queryId={}", queryId);
 				queryIdToView.put(queryId, view);
 				// Mark as served after writing the result
 				queryIdToState.put(queryId, AsynchronousStatus.SERVED);
 			} catch (Throwable t) {
-				log.warn("queryId={} failed", queryId, t);
-				queryIdToThrowable.put(queryId, t);
+				if (t instanceof CancellationException || Throwables.getRootCause(t) instanceof InterruptedException) {
+					log.info("queryId={} cancelled", queryId);
+				} else {
+					log.warn("queryId={} failed", queryId, t);
+				}
 				queryIdToState.put(queryId, AsynchronousStatus.FAILED);
+				queryIdToThrowable.put(queryId, t);
 			}
-		});
+		}, asynchronousQueriesService);
 
 		return queryId;
 	}
@@ -188,5 +202,18 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 	@Override
 	public void destroy() {
 		asynchronousQueriesService.close();
+	}
+
+	public CancellationStatus cancelQuery(UUID queryId) {
+		ListenableFuture<ITabularView> future = queryIdToFuture.getIfPresent(queryId);
+		if (future != null) {
+			log.info("Cancelling queryId={}", queryId);
+			future.cancel(true);
+
+			return CancellationStatus.CANCELLED;
+		} else {
+			log.info("Cancelling queryId={} but it is {}", queryId, CancellationStatus.UNKNOWN);
+			return CancellationStatus.UNKNOWN;
+		}
 	}
 }

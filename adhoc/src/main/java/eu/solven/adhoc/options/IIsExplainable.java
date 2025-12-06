@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.query;
+package eu.solven.adhoc.options;
 
 /**
- * The different state of a query execution.
+ * Some components can have their queryPlan explained. If true, we will spent some time providing information about the
+ * queryPlan.
  * 
  * @author Benoit Lacelle
+ *
  */
-public enum AsynchronousStatus {
-	// the queryId is unknown
-	UNKNOWN,
-	// the query is running
-	RUNNING,
-	// the query is completed and its result is available
-	SERVED,
-	// the query ended with a failure, or a cancellation
-	FAILED,
-	// the view is not available anymore, or it has been cancelled
-	DISCARDED
+@FunctionalInterface
+@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.EXPLAIN)")
+public interface IIsExplainable {
+
+	@Deprecated(since = "Use .getOptions()")
+	boolean isExplain();
 }

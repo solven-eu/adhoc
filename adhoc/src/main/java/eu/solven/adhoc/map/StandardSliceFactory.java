@@ -716,8 +716,8 @@ public class StandardSliceFactory implements ISliceFactory {
 	}
 
 	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
-		MapBuilderThroughKeys builder = factory.newMapBuilder();
-		asMap.forEach(builder::put);
+		MapBuilderPreKeys builder = factory.newMapBuilder(asMap.keySet());
+		asMap.values().forEach(builder::append);
 		return builder.build();
 	}
 }

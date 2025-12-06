@@ -24,9 +24,9 @@ package eu.solven.adhoc.engine.context;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
@@ -75,7 +75,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 
 	@NonNull
 	@Default
-	final ExecutorService concurrentExecutorService = AdhocUnsafe.adhocCommonPool;
+	final ListeningExecutorService concurrentExecutorService = AdhocUnsafe.adhocCommonPool;
 
 	// If not-concurrent, we want the simpler execution plan as possible
 	// it is especially important to simplify thread-jumping lowering readability of stack-traces
@@ -83,7 +83,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	// RAM-allocations
 	@NonNull
 	@Default
-	final ExecutorService nonConcurrentExecutorService = MoreExecutors.newDirectExecutorService();
+	final ListeningExecutorService nonConcurrentExecutorService = MoreExecutors.newDirectExecutorService();
 
 	@NonNull
 	@Default
@@ -181,8 +181,9 @@ public class StandardQueryPreparator implements IQueryPreparator {
 		}
 	}
 
-	protected ExecutorService getExecutorService(ICubeQuery preparedQuery) {
-		if (StandardQueryOptions.CONCURRENT.isActive(preparedQuery.getOptions())) {
+	protected ListeningExecutorService getExecutorService(ICubeQuery preparedQuery) {
+		if (StandardQueryOptions.CONCURRENT.isActive(preparedQuery.getOptions())
+				|| StandardQueryOptions.NON_BLOCKING.isActive(preparedQuery.getOptions())) {
 			// Concurrent query: execute in a dedicated pool
 			return concurrentExecutorService;
 		} else {

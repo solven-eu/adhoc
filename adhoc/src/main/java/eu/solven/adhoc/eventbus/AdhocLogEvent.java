@@ -27,8 +27,8 @@ import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.options.IIsDebugable;
+import eu.solven.adhoc.options.IIsExplainable;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

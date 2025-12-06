@@ -95,7 +95,10 @@ export default {
 		const tabularView = reactive({});
 
 		const router = useRouter();
-		{
+
+		// https://github.com/vuejs/router/issues/2017
+		// Else, typicall when re-logging-in without F5, we observe the hash may not be available through the router
+		router.isReady().then(() => {
 			const currentHashDecoded = router.currentRoute.value.hash;
 
 			queryHelper.hashToQueryModel(currentHashDecoded, queryModel);
@@ -111,7 +114,7 @@ export default {
 
 				history.pushState({}, null, newUrl);
 			});
-		}
+		});
 
 		// TODO This structure should be persisted in localStorage
 		const recentlyUsed = reactive({ columns: new Set(), measures: new Set() });

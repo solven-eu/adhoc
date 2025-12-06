@@ -273,7 +273,7 @@ public class ColumnsManager implements IColumnsManager {
 						.map(row -> transcodeTypes(valueTranscoder, row))
 						// TODO Should we transcode type before or after columnNames?
 						.map(notTranscoded -> notTranscoded.transcode(columnTranscoder))
-						// calculate columns after transcoding, as these expression are generally table-independant
+						// calculate columns after transcoding, as these expression are generally table-independent
 						.map(row -> evaluateCalculated(transcodingContext, row))
 						// TODO Filter
 						.filter(row -> filterCalculatedColumns(postFilterer, row));

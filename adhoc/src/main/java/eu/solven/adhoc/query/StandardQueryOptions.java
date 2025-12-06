@@ -75,6 +75,18 @@ public enum StandardQueryOptions implements IQueryOption {
 	SEQUENTIAL,
 
 	/**
+	 * Forces a query to be executed in the calling thread. Some inner parts may be forked in another thread (e.g. given
+	 * {@link #CONCURRENT}).
+	 */
+	BLOCKING,
+
+	/**
+	 * Forces a query to be executed not in the calling thread. The inner parts may be executed sequentially (e.g. given
+	 * {@link #SEQUENTIAL}).
+	 */
+	NON_BLOCKING,
+
+	/**
 	 * Used to skip any cache mechanisms
 	 */
 	NO_CACHE,
@@ -104,10 +116,10 @@ public enum StandardQueryOptions implements IQueryOption {
 	}
 
 	public boolean isActive(Set<IQueryOption> options) {
-		if (this == CONCURRENT && options.contains(CONCURRENT) && !options.contains(SEQUENTIAL)) {
+		if (this == CONCURRENT) {
 			// SEQUENTIAL will force disabling of CONCURRENT
-			return true;
+			return options.contains(CONCURRENT) && !options.contains(SEQUENTIAL);
 		}
-		return false;
+		return options.contains(this);
 	}
 }

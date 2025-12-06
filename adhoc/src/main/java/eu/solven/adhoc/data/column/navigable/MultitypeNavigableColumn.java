@@ -151,11 +151,11 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	@SuppressWarnings("PMD.LooseCoupling")
 	protected void checkSizeBeforeAdd() {
 		long size = size();
-		if (size >= AdhocUnsafe.getLimitColumnSize()) {
-			// TODO Log the first and last elements
-			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s".formatted(size, AdhocUnsafe.getLimitColumnSize()));
-		} else if (size == 0) {
+
+		// TODO Log the first and last elements
+		AdhocUnsafe.checkColumnSize(size);
+
+		if (size == 0) {
 			if (keys instanceof ArrayList<?> arrayList) {
 				arrayList.ensureCapacity(capacity);
 			} else if (keys instanceof ObjectArrayList<?> arrayList) {
