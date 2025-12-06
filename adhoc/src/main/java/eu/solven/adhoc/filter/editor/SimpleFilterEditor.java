@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -71,7 +72,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	}
 
 	@SuppressWarnings("PMD.FieldNamingConventions")
-	private enum FilterMode {
+	protected enum FilterMode {
 		// Impact column filter on the considered column, else do nothing.
 		// Accept a `Function`, as there is always a value to shift
 		shiftIfPresent,
@@ -101,7 +102,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 *            the column to filter. If it is not already expressed, the filter is not shifted.
 	 * @param value
 	 *            if value is a {@link Function}, it is applied to IValueMatcher operands.
-	 * @return like {@link #shift(String, Object, ISliceFilter)} but only if the column is expressed
+	 * @return like {@link #shift(ISliceFilter, String, Object)} but only if the column is expressed
 	 */
 	public static ISliceFilter shiftIfPresent(ISliceFilter filter, String column, Object value) {
 		return shift(filter, column, value, FilterMode.shiftIfPresent);
@@ -117,11 +118,12 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return filter;
 			}
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 			if (columnFilter.getColumn().equals(column)) {
+				ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 				// Replace the valueMatcher by the shift
 				return shiftColumn;
 			} else if (filterMode == FilterMode.alwaysShift) {
+				ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 				// Combine both columns
 				return FilterBuilder.and(columnFilter, shiftColumn).optimize();
 			} else {

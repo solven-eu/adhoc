@@ -82,7 +82,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		// Read values from the shifted underlyingStep
 		CubeQueryStep whereToReadShifted =
 				CubeQueryStep.edit(step).filter(shiftedFilter).measure(underlyingMeasure).build();
-		// Read slices from the natural undelryingStep, as the natural slices to write
+		// Read slices from the natural underlyingStep, as the natural slices to write
 		CubeQueryStep whereToReadForWrite = CubeQueryStep.edit(step).measure(underlyingMeasure).build();
 
 		if (whereToReadShifted.equals(whereToReadForWrite)) {
