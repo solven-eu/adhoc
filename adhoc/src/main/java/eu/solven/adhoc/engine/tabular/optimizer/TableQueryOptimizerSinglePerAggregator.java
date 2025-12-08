@@ -268,34 +268,6 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		return CubeQueryStep.edit(step).filter(combinedFilter).build();
 	}
 
-	/**
-	 * 
-	 * @param commonFilter
-	 * @param inducer
-	 * @param strippedFilter
-	 * @param steps
-	 * @return a {@link CubeQueryStep} which can be used as intermediate to the input steps.
-	 */
-	protected CubeQueryStep makeIntermediateStep(ISliceFilter commonFilter,
-			CubeQueryStep inducer,
-			ISliceFilter strippedFilter,
-			Collection<CubeQueryStep> steps) {
-		ISliceFilter intermediateFilter = FilterBuilder.and(commonFilter, strippedFilter).optimize(filterOptimizer);
-
-		// Do the UNION of `GROUP BY` and `FILTER`
-		Set<String> intermediateColumns = new TreeSet<>();
-		steps.forEach(tq -> {
-			intermediateColumns.addAll(tq.getGroupBy().getGroupedByColumns());
-			// We need these additional columns for proper filtering
-			intermediateColumns.addAll(FilterHelpers.getFilteredColumns(strippedFilter));
-		});
-
-		return CubeQueryStep.edit(inducer)
-				.filter(intermediateFilter)
-				.groupBy(GroupByColumns.named(intermediateColumns))
-				.build();
-	}
-
 	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,
 			CubeQueryStep inducer,
 			CubeQueryStep induced) {

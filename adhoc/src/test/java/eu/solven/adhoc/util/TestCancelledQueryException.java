@@ -27,6 +27,8 @@ import java.util.concurrent.CancellationException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.cancel.CancelledQueryException;
+
 public class TestCancelledQueryException {
 
 	@Test

@@ -22,14 +22,20 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import java.sql.Wrapper;
+
+import javax.sql.DataSource;
 
 import org.assertj.core.api.Assertions;
 import org.duckdb.DuckDBConnection;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class TestDuckDBDataSource {
 	DuckDBDataSource dataSource = new DuckDBDataSource(DuckDbHelper.makeFreshInMemoryDb());
@@ -78,5 +84,38 @@ public class TestDuckDBDataSource {
 				Assertions.assertThat(outerDuckDBC).isSameAs(innerDuckdbC);
 			}
 		}
+	}
+
+	@Test
+	public void testUnwrap() throws SQLException {
+		Assertions.assertThat(dataSource.unwrap(DataSource.class)).isSameAs(dataSource);
+		Assertions.assertThat(dataSource.unwrap(DuckDBDataSource.class)).isSameAs(dataSource);
+	}
+
+	@Test
+	public void testClose() throws SQLException {
+		dataSource.close();
+
+		Assertions.assertThatThrownBy(() -> {
+			try (Connection c = dataSource.getConnection()) {
+				DuckDBConnection duckdbC = ((Wrapper) c).unwrap(DuckDBConnection.class);
+
+				try (Statement s = duckdbC.createStatement()) {
+					s.execute("CREATE TABLE someTableName (color VARCHAR, value FLOAT);");
+				}
+			}
+		}).isInstanceOf(IllegalStateException.class).hasRootCauseInstanceOf(SQLException.class);
+	}
+
+	@Test
+	public void testNotImplemented() throws SQLException {
+		Assertions.assertThatThrownBy(() -> dataSource.getLogWriter())
+				.isInstanceOf(SQLFeatureNotSupportedException.class);
+		Assertions.assertThatThrownBy(() -> dataSource.setLogWriter(new PrintWriter(Mockito.mock(Writer.class))))
+				.isInstanceOf(SQLFeatureNotSupportedException.class);
+		Assertions.assertThatThrownBy(() -> dataSource.setLoginTimeout(1))
+				.isInstanceOf(SQLFeatureNotSupportedException.class);
+		Assertions.assertThatThrownBy(() -> dataSource.getLoginTimeout())
+				.isInstanceOf(SQLFeatureNotSupportedException.class);
 	}
 }
