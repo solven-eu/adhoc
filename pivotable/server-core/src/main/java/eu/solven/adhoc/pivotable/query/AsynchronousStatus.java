@@ -34,7 +34,7 @@ public enum AsynchronousStatus {
 	RUNNING,
 	// the query is completed and its result is available
 	SERVED,
-	// the query ended with a failure
+	// the query ended with a failure, or a cancellation
 	FAILED,
 	// the view is not available anymore, or it has been cancelled
 	DISCARDED

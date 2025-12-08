@@ -73,6 +73,7 @@ public class PivotableApiRouter {
 	 */
 	// https://github.com/springdoc/springdoc-openapi-demos/tree/2.x/springdoc-openapi-spring-boot-2-webflux-functional
 	// https://stackoverflow.com/questions/6845772/should-i-use-singular-or-plural-name-convention-for-rest-resources
+	@SuppressWarnings("checkstyle:MethodLength")
 	@Bean
 	public RouterFunction<ServerResponse> apiRoutes(PivotableEndpointsHandler endpointsHandler,
 			PivotableQueryHandler queryHandler) {
@@ -180,6 +181,14 @@ public class PivotableApiRouter {
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
 										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200").implementation(UUID.class)))
+				.DELETE(json("/cubes/query"),
+						queryHandler::cancelQuery,
+						ops -> ops.operationId("cancelQuery")
+								.parameter(parameterBuilder().name("query_id")
+										.description("id of the query to cancel")
+										.implementation(UUID.class)
+										.example("12345678-1234-1234-1234-123456789012"))
+								.response(responseBuilder().responseCode("200").implementation(String.class)))
 
 				.GET(json("/cubes/query/result"),
 						queryHandler::fetchQueryResult,

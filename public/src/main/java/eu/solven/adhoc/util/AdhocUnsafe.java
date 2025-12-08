@@ -24,12 +24,13 @@ package eu.solven.adhoc.util;
 
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -213,7 +214,7 @@ public class AdhocUnsafe {
 	}
 
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
-	public static ExecutorService adhocCommonPool = newWorkStealingPool();
+	public static ListeningExecutorService adhocCommonPool = MoreExecutors.listeningDecorator(newWorkStealingPool());
 
 	/**
 	 * Similar with java.util.concurrent.Executors.newWorkStealingPool(int), but with a custom name.
@@ -280,6 +281,14 @@ public class AdhocUnsafe {
 		if (failFast) {
 			log.info("Switching failfast=false");
 			failFast = false;
+		}
+	}
+
+	public static void checkColumnSize(long size) {
+		if (size >= getLimitColumnSize()) {
+			throw new IllegalStateException(
+					"Can not add as size=%s and limit=%s Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X"
+							.formatted(size, AdhocUnsafe.getLimitColumnSize()));
 		}
 	}
 }

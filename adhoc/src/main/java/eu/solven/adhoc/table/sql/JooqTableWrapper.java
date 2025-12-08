@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Spliterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -41,6 +42,7 @@ import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Result;
+import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.DataAccessException;
@@ -63,6 +65,8 @@ import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.ISliceCompressor;
 import eu.solven.adhoc.data.row.slice.NoopSliceCompressor;
+import eu.solven.adhoc.engine.cancel.CancellationHelpers;
+import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.ISliceFactory;
 import eu.solven.adhoc.map.StandardSliceFactory;
@@ -264,14 +268,14 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 		if (tableQuery.isDebugOrExplain()) {
 			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}",
 					getName(),
-					resultQuery.getQuery().getSQL(ParamType.INLINED),
+					toSQL(resultQuery.getQuery()),
 					resultQuery.getLeftover());
 		}
 		if (tableQuery.isDebug()) {
 			debugResultQuery(resultQuery);
 		}
 
-		Stream<ITabularRecord> tableStream = toMapStream(resultQuery);
+		Stream<ITabularRecord> tableStream = toMapStream(queryPod, resultQuery);
 
 		Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
 		// Given the groupBy, we are guaranteed to receive distinct records
@@ -285,6 +289,10 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				distinctSlices,
 				// sliceFactory.getNullPlaceholder(),
 				() -> modifiedStream);
+	}
+
+	protected String toSQL(ResultQuery<Record> resultQuery) {
+		return resultQuery.getSQL(ParamType.INLINED);
 	}
 
 	protected boolean areDistinctSliced(TableQueryV2 tableQuery, QueryWithLeftover resultQuery) {
@@ -329,14 +337,14 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				.build();
 	}
 
-	protected Stream<ITabularRecord> toMapStream(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		ITabularRecordFactory tabularRecordFactory = new JooqTabularRecordFactory(sqlQuery.getFields(), sliceFactory);
 
-		ISliceCompressor sliceCompressor = makeSliceDictionarize();
+		ISliceCompressor sliceCompressor = makeSliceCompressor();
 
-		return sqlQuery.getQuery()
-				.stream()
-				.map(r -> intoTabularRecord(tabularRecordFactory, r))
+		ResultQuery<Record> resultQuery = sqlQuery.getQuery();
+
+		return toStream(queryPod, resultQuery).map(r -> intoTabularRecord(tabularRecordFactory, r))
 				// leftover in WHERE
 				.filter(row -> {
 					return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
@@ -372,10 +380,49 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 						return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
 					}
 				});
-
 	}
 
-	protected ISliceCompressor makeSliceDictionarize() {
+	protected Stream<Record> toStream(QueryPod queryPod, ResultQuery<Record> resultQuery) {
+		// BEWARE This cancellation mechanism is quite awkward. JooQ cancellation design seems to have blind spots. We
+		// may have to introduce an ExecuteListener to fully handle them.
+		if (queryPod.isCancelled()) {
+			// Cancel early, before creating the connection/statement
+			throw new CancelledQueryException("Query is cancelled");
+		}
+
+		// https://github.com/jOOQ/jOOQ/issues/5013
+		// https://github.com/jOOQ/jOOQ/issues/19479
+		// TODO We should remove this listener once the SQL is fully executed
+		Runnable cancellationListener = () -> {
+			log.info("Cancelling for queryId={} SQL={}", queryPod.getQueryId().getQueryId(), toSQL(resultQuery));
+			resultQuery.cancel();
+		};
+		queryPod.addCancellationListener(cancellationListener);
+		Runnable cancellationListenerOnceStarted = () -> {
+			log.info("Cancelling for queryId={} SQL={}", queryPod.getQueryId().getQueryId(), toSQL(resultQuery));
+			resultQuery.cancel();
+		};
+
+		AtomicBoolean isSecondCancellationListenerRegistered = new AtomicBoolean();
+
+		return resultQuery.stream().onClose(() -> {
+			queryPod.removeCancellationListener(cancellationListener);
+			queryPod.removeCancellationListener(cancellationListenerOnceStarted);
+
+			// BEWARE this would not be called in case of exception
+			CancellationHelpers.afterCancellable(queryPod);
+		}).peek(r -> {
+			// BEWARE Registering a second cancellationListener in order to capture cases where the cancellation
+			// happened before the statement registration in queryResult
+			// BEWARE This does not cover the case of a query being very slow to return a single row. Do we require an
+			// ExecutionListener?
+			if (isSecondCancellationListenerRegistered.compareAndSet(false, true)) {
+				queryPod.addCancellationListener(cancellationListenerOnceStarted);
+			}
+		});
+	}
+
+	protected ISliceCompressor makeSliceCompressor() {
 		// ByPageSliceDictionarizer.builder().build()
 		return new NoopSliceCompressor();
 	}

@@ -27,8 +27,8 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.debug.IIsDebugable;
-import eu.solven.adhoc.debug.IIsExplainable;
+import eu.solven.adhoc.options.IIsDebugable;
+import eu.solven.adhoc.options.IIsExplainable;
 import eu.solven.adhoc.query.IQueryOption;
 import eu.solven.adhoc.query.StandardQueryOptions;
 

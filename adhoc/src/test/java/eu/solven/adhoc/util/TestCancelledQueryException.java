@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,18 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.debug;
+package eu.solven.adhoc.util;
 
-/**
- * Some components can toggle a debug feature. This will log many information (SLF4J).
- * 
- * @author Benoit Lacelle
- *
- */
-@FunctionalInterface
-@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.DEBUG)")
-public interface IIsDebugable {
+import java.util.concurrent.CancellationException;
 
-	@Deprecated(since = "Use .getOptions()")
-	boolean isDebug();
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.engine.cancel.CancelledQueryException;
+
+public class TestCancelledQueryException {
+
+	@Test
+	public void testIsCancellation() {
+		Assertions.assertThat(CancelledQueryException.class).isAssignableTo(CancellationException.class);
+	}
 }

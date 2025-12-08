@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+
+import javax.sql.DataSource;
 
 import org.duckdb.DuckDBConnection;
 import org.jooq.Name;
@@ -51,6 +52,7 @@ import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.StandardDSLSupplier;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.NonNull;
@@ -101,17 +103,9 @@ public class DuckDbHelper {
 	 * @return
 	 */
 	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
-		ThreadLocal<Connection> threadLocal = ThreadLocal.withInitial(() -> {
-			Connection duplicated;
-			try {
-				duplicated = duckDbConnection.duplicate();
-			} catch (SQLException e) {
-				throw new IllegalStateException("Issue duplicating an InMemory DuckDB connection", e);
-			}
-			return duplicated;
-		});
+		DataSource dataSource = new DuckDBDataSource(duckDbConnection);
 
-		return () -> DSLSupplier.fromConnection(threadLocal::get).getDSLContext();
+		return StandardDSLSupplier.builder().dialect(SQLDialect.DUCKDB).dataSource(dataSource).build();
 	}
 
 	public static CoordinatesSample getCoordinates(JooqTableWrapper table,

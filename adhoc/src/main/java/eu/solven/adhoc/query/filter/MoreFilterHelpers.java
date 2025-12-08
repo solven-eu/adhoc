@@ -48,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Helpers methods around {@link ISliceFilter} and {@link IValueMatcher}. This includes those which does not fit into
  * {@link FilterHelpers}, due to dependency to `!public` dependencies.
- * 
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
@@ -132,7 +132,7 @@ public class MoreFilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param filter
 	 * @param input
 	 * @return true if the input matches the filter
@@ -150,7 +150,7 @@ public class MoreFilterHelpers {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return true if the input matches the filter, where each column in input is transcoded.
 	 */
 	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterParameters`")
@@ -158,6 +158,13 @@ public class MoreFilterHelpers {
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
 			Map<String, ?> input) {
+		// Fast-track, to skip opening Stream on empty Collection
+		if (ISliceFilter.MATCH_ALL.equals(filter)) {
+			return true;
+		} else if (ISliceFilter.MATCH_NONE.equals(filter)) {
+			return false;
+		}
+
 		return FilterHelpers.visit(filter, new IFilterVisitor() {
 
 			@Override

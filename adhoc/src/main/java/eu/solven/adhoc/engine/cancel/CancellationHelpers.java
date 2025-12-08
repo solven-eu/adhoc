@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.debug;
+package eu.solven.adhoc.engine.cancel;
+
+import java.time.Duration;
+import java.time.OffsetDateTime;
+
+import eu.solven.adhoc.engine.context.IIsCancellable;
+import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Some components can have their queryPlan explained. If true, we will spent some time providing information about the
- * queryPlan.
+ * Helps cancelling queries.
  * 
  * @author Benoit Lacelle
- *
  */
-@FunctionalInterface
-@Deprecated(since = "Rely on .getOptions(StandardQueryOptions.EXPLAIN)")
-public interface IIsExplainable {
+@UtilityClass
+@Slf4j
+public class CancellationHelpers {
+	/**
+	 * To be called in a finally block of a cancellable block.
+	 * 
+	 * It would typically log to report failure or delay cancellation. But it would not throw, as we prefer a slightly
+	 * delayed succesful queries than a can
+	 * 
+	 * @param queryPod
+	 */
+	public static void afterCancellable(IIsCancellable queryPod) {
+		if (queryPod.isCancelled()) {
+			OffsetDateTime cancellationDate = queryPod.getCancellationDate();
+			OffsetDateTime now = OffsetDateTime.now();
 
-	@Deprecated(since = "Use .getOptions()")
-	boolean isExplain();
+			Duration duration = Duration.between(cancellationDate, now);
+			log.warn("A cancelled query leaked a part, which remained active for {}",
+					PepperLogHelper.humanDuration(duration.toMillis()));
+		}
+	}
+
 }

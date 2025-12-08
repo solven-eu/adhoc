@@ -29,6 +29,9 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -37,6 +40,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -61,7 +65,7 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(k1Sum)
 				.build();
-		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), ImmutableSet.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -141,8 +145,8 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 												FilterBuilder
 														.or(ColumnFilter.matchEq("b", "b1"),
 																ColumnFilter.matchEq("c", "c1"))
-														.optimize())
-										.optimize())
+														.combine())
+										.combine())
 								.groupBy(GroupByColumns.named("b", "c", "d"))
 								.build());
 
@@ -298,7 +302,76 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 				// intermediate for tq1 and tq2
 				.contains(CubeQueryStep.edit(step)
 						.filter(ColumnFilter.matchEq("d", "d1"))
-						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
+						.groupBy(GroupByColumns.named("a", "b", "c"))
+						.build());
+	}
+
+	// `a&b|a&b|a&b&c|a&c|d`
+	@Test
+	public void testCanInduce_IntermediateNodeForFilterSharing_deep() {
+		CubeQueryStep tq1 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+				.measure(k1Sum)
+				.build();
+		// second step has same filter with different groupBy
+		CubeQueryStep tq2 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("y"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+				.measure(k1Sum)
+				.build();
+		// third step has stricter filter
+		CubeQueryStep tq3 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1")))
+				.measure(k1Sum)
+				.build();
+		// fourth step has intermediate filter: it may lead to ordering issues
+		CubeQueryStep tq4 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
+				.measure(k1Sum)
+				.build();
+		// fifth step has unrelated filter
+		CubeQueryStep tq5 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("d", "d1")))
+				.measure(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3, tq4, tq5));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder
+								.or(ColumnFilter.matchEq("d", "d1"),
+										FilterBuilder
+												.and(ColumnFilter.matchEq("a", "a1"),
+														OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
+												.combine())
+								.combine())
+						.groupBy(GroupByColumns.named("a", "b", "c", "d", "x", "y"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(7)
+				.contains(tq1, tq2, tq3, tq4, tq5)
+
+				// intermediate to the `a|b|c` branch
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder
+								.and(ColumnFilter.matchEq("a", "a1"),
+										OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
+								.combine())
+						// `a` is not groupedBy as it is common to all
+						.groupBy(GroupByColumns.named("b", "c", "x", "y"))
+						.build())
+
+				// intermediate for the 2 `a|b` steps
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+						// BEWARE `c` is present as groupBy as this intermediate is also used for `a&b&c` step
+						.groupBy(GroupByColumns.named("c", "x", "y"))
 						.build());
 	}
 }

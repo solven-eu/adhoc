@@ -781,10 +781,20 @@ public class TableQueryEngineBootstrapped {
 			if (!missingRootsFromTableQueries.isEmpty()) {
 				int nbMissing = missingRootsFromTableQueries.size();
 				log.warn("Missing {} steps from tableQueries to fill table DAG roots", nbMissing);
+
 				int indexMissing = 0;
 				for (CubeQueryStep missingStep : missingRootsFromTableQueries) {
 					indexMissing++;
 					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
+
+					queryStepsFromTableQueries.stream()
+							// This issue is probably due to a faulty filter representation: we search for steps
+							// differing only by filter
+							.filter(s -> suppressFilter(s).equals(suppressFilter(missingStep)))
+							.forEach(queryDifferingByFilter -> {
+								log.warn("\\-- Relates with {}", queryDifferingByFilter);
+							});
+
 				}
 
 				// This typically happens due to inconsistency in equality if ISliceFiler (e.g. `a` and
@@ -859,6 +869,10 @@ public class TableQueryEngineBootstrapped {
 		// log.warn("Irrelevant {}/{}: {}", indexIrrelevant, nbIrrelevant, irrelevantStep);
 		// }
 		// }
+	}
+
+	protected CubeQueryStep suppressFilter(CubeQueryStep s) {
+		return CubeQueryStep.edit(s).filter(ISliceFilter.MATCH_ALL).build();
 	}
 
 	/**

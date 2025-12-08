@@ -40,7 +40,7 @@ import org.springframework.util.ClassUtils;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -74,7 +74,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A simple {@link ITableWrapper} over a {@link List} of {@link Map}. It has some specificities: it does not execute
  * groupBys, nor it handles calculated columns (over SQL expressions).
- * 
+ *
  * @author Benoit Lacelle
  */
 @Slf4j
@@ -174,8 +174,17 @@ public class InMemoryTable implements ITableWrapper {
 			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
 				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
 			});
+
+			SetMultimap<String, FilteredAggregator> columnToAggregators = HashMultimap.create();
+			aggregateColumns.forEach(aggregatedColumn -> {
+				tableQuery.getAggregators()
+						.stream()
+						.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
+						.forEach(a -> columnToAggregators.put(aggregatedColumn, a));
+			});
+
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
-				return toRecord(tableQuery, aggregateColumns, groupByColumns, row);
+				return toRecord(tableQuery, columnToAggregators, groupByColumns, row);
 			});
 
 			if (isEmptyAggregation) {
@@ -215,7 +224,7 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param column
 	 *            a column name, potentially wrapped with `"`.
 	 * @return a clear columnName
@@ -239,7 +248,7 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param tableColumns
 	 *            all columns known by this table, given rows
 	 * @param queriedColumns
@@ -262,52 +271,48 @@ public class InMemoryTable implements ITableWrapper {
 	}
 
 	protected ITabularRecord toRecord(TableQueryV2 tableQuery,
-			Set<String> aggregateColumns,
+			SetMultimap<String, FilteredAggregator> columnToAggregators,
 			Set<String> groupByColumns,
 			Map<String, ?> row) {
 		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(tableQuery.getAggregators().size());
 
-		aggregateColumns.forEach(aggregatedColumn -> {
+		columnToAggregators.asMap().forEach((aggregatedColumn, aggs) -> {
 			Object aggregatorUnderlyingValue = row.get(aggregatedColumn);
-			tableQuery.getAggregators()
-					.stream()
-					.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
-					.forEach(a -> {
-						if (!MoreFilterHelpers.match(a.getFilter(), row)) {
-							// This aggregate is rejected by the `FILTER` clause
-							return;
-						}
+			aggs.forEach(a -> {
+				if (!MoreFilterHelpers.match(a.getFilter(), row)) {
+					// This aggregate is rejected by the `FILTER` clause
+					return;
+				}
 
-						Object aggregate = null;
-						if (CountAggregation.isCount(a.getAggregator().getAggregationKey())) {
-							boolean doCountOne = false;
+				Object aggregate = null;
+				if (CountAggregation.isCount(a.getAggregator().getAggregationKey())) {
+					boolean doCountOne = false;
 
-							if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
-								// `COUNT(*)` counts even if there is no value
-								doCountOne = true;
-							} else if (aggregatorUnderlyingValue != null) {
-								// COUNT 1 only if the COUNTed column is not null
-								doCountOne = true;
-							}
+					if (ICountMeasuresConstants.ASTERISK.equals(aggregatedColumn)) {
+						// `COUNT(*)` counts even if there is no value
+						doCountOne = true;
+					} else if (aggregatorUnderlyingValue != null) {
+						// COUNT 1 only if the COUNTed column is not null
+						doCountOne = true;
+					}
 
-							if (doCountOne) {
-								aggregate = 1L;
-							}
-						} else if (aggregatorUnderlyingValue != null) {
-							// SUM, MIN, MAX, AVG, RANK, etc
+					if (doCountOne) {
+						aggregate = 1L;
+					}
+				} else if (aggregatorUnderlyingValue != null) {
+					// SUM, MIN, MAX, AVG, RANK, etc
 
-							// Transcode from columnName to aggregatorName, supposing all aggregation functions does not
-							// change a not aggregated single value
-							aggregate = aggregatorUnderlyingValue;
-						}
-						if (null != aggregate) {
-							aggregates.put(a.getAlias(), aggregate);
-						}
-					});
+					// Transcode from columnName to aggregatorName, supposing all aggregation functions does not
+					// change a not aggregated single value
+					aggregate = aggregatorUnderlyingValue;
+				}
+				if (null != aggregate) {
+					aggregates.put(a.getAlias(), aggregate);
+				}
+			});
 		});
 
 		MapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
-		ImmutableMap.builderWithExpectedSize(groupByColumns.size());
 		groupByColumns.forEach(groupByColumn -> {
 			Object value = row.get(groupByColumn);
 			groupByBuilder.append(value);

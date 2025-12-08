@@ -43,6 +43,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
@@ -306,6 +307,25 @@ public class AdhocSchema implements IAdhocSchema {
 		}
 
 		return cubeWrapper.execute(transcodedQuery);
+	}
+
+	@Override
+	public ListenableFuture<ITabularView> executeAsync(String cube, ICubeQuery query) {
+		ICubeWrapper cubeWrapper = nameToCube.get(cube);
+
+		if (cubeWrapper == null) {
+			throw new IllegalArgumentException("No cube named %s".formatted(cube));
+		}
+
+		ICubeQuery transcodedQuery = transcodeQuery(cubeWrapper, query);
+
+		if (query.isDebugOrExplain()) {
+			// This can be helpful to debug why some `c=v` filters are turned into
+			// `c.toString() matches v`
+			log.info("[EXPLAIN] Transcoded to {} from {}", transcodedQuery, query);
+		}
+
+		return cubeWrapper.executeAsync(transcodedQuery);
 	}
 
 	/**

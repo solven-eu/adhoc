@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -213,7 +214,8 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 			if (Set.of("k1.k2").contains(column)) {
 				Assertions.assertThatThrownBy(
 						() -> cube().execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso(column).build()))
-						.isInstanceOf(IllegalArgumentException.class);
+						.isInstanceOf(IllegalArgumentException.class)
+						.hasRootCauseInstanceOf(SQLException.class);
 			} else {
 				ITabularView result =
 						cube().execute(CubeQuery.builder().measure(k1Sum.getName()).groupByAlso(column).build());

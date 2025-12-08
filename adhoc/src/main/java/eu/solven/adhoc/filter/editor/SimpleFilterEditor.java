@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.filter.editor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,7 +71,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	}
 
 	@SuppressWarnings("PMD.FieldNamingConventions")
-	private enum FilterMode {
+	protected enum FilterMode {
 		// Impact column filter on the considered column, else do nothing.
 		// Accept a `Function`, as there is always a value to shift
 		shiftIfPresent,
@@ -100,7 +101,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	 *            the column to filter. If it is not already expressed, the filter is not shifted.
 	 * @param value
 	 *            if value is a {@link Function}, it is applied to IValueMatcher operands.
-	 * @return like {@link #shift(String, Object, ISliceFilter)} but only if the column is expressed
+	 * @return like {@link #shift(ISliceFilter, String, Object)} but only if the column is expressed
 	 */
 	public static ISliceFilter shiftIfPresent(ISliceFilter filter, String column, Object value) {
 		return shift(filter, column, value, FilterMode.shiftIfPresent);
@@ -116,11 +117,11 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return filter;
 			}
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 			if (columnFilter.getColumn().equals(column)) {
 				// Replace the valueMatcher by the shift
-				return shiftColumn;
+				return toFilter(columnFilter, column, value);
 			} else if (filterMode == FilterMode.alwaysShift) {
+				ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 				// Combine both columns
 				return FilterBuilder.and(columnFilter, shiftColumn).optimize();
 			} else {
@@ -129,10 +130,25 @@ public class SimpleFilterEditor implements IFilterEditor {
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();
 
-			List<ISliceFilter> shiftedOperands =
-					operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
+			if (filterMode == FilterMode.alwaysShift) {
+				// OPTIMIZATION Switch from `FilterMode.alwaysShift` to to build many AND of 2 columnFilters given an
+				// input AND. Indeed, given an AND over 3 columns, we would receive 3 AND, each with 2 columnFilters,
+				// the second filter being the shift in the 3 cases.
+				List<ISliceFilter> shiftedOperands = new ArrayList<>(operands.size() + 1);
 
-			return FilterBuilder.and(shiftedOperands).optimize();
+				// This may skip the alwaysPresent
+				operands.forEach(f -> shiftedOperands.add(shift(f, column, value, FilterMode.shiftIfPresent)));
+
+				// Ensure we alwaysPresent
+				shiftedOperands.add(shift(ISliceFilter.MATCH_ALL, column, value, FilterMode.alwaysShift));
+
+				return FilterBuilder.and(shiftedOperands).optimize();
+			} else {
+				List<ISliceFilter> shiftedOperands =
+						operands.stream().map(f -> shift(f, column, value, filterMode)).toList();
+
+				return FilterBuilder.and(shiftedOperands).optimize();
+			}
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			Set<ISliceFilter> operands = orFilter.getOperands();
 

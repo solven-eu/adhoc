@@ -2,6 +2,30 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.13]
+
+### Added
+- Experimental support of [MongoDB](https://www.mongodb.com/docs/languages/java/)
+- Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
+- Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
+- Pivotable will automatically cancel currently running queries if another query is triggered.
+
+### Changed
+
+### Removed
+
+- `DSLSupplier.fromConnection(Supplier<Connection>)` has been removed.
+
+### Fixed
+- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a==a1&(b==b1|c==c1)").optimize()`).
+- `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a=in=(a1,a2)&b==b1|a=in=(a1,a2)&!(b!=b2&!(c==c1&d==d1&b==b3))").optimize()`).
+- `FilterStripper` was not properly stripping `OR` in case one stripped operand was `matchAll`.
+- VueJS router is properly waited for (with `.isReady()`) to load the queryModel from `#hash` on relogging.
+
+### Improved
+- `TableQueryOptimizerSinglePerAggregator` now build a tree of intermediate CubeQuerySteps, to enable computing each filters a single time.
+- `SimpleFilterEditor.shift` has been optimized.
+
 ## [0.0.12]
 
 ### Added
