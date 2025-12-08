@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.sql;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -68,9 +67,10 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
-		try (Connection dbConn = DuckDbHelper.makeFreshInMemoryDb()) {
+		try {
+			DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
-					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))
 					.build();
 			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
@@ -112,9 +112,10 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
-		try (Connection dbConn = DuckDbHelper.makeFreshInMemoryDb()) {
+		try {
+			DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
-					.dslSupplier(DSLSupplier.fromConnection(() -> dbConn))
+					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))
 					.build();
 			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);

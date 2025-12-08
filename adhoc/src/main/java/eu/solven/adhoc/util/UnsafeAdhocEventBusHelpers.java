@@ -20,20 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.util;
 
-import java.util.concurrent.CancellationException;
+import java.util.List;
+
+import lombok.experimental.UtilityClass;
 
 /**
- * Thrown when a query is cancelled, to interrupt the active task.
+ * Helps inter-operating EventBus an logging systems (e.g. to have a clear FQDN).
  * 
  * @author Benoit Lacelle
  */
-public class CancelledQueryException extends CancellationException {
-	private static final long serialVersionUID = 1854618611130104735L;
+@Deprecated(since = "Unclear of relevant")
+@UtilityClass
+public class UnsafeAdhocEventBusHelpers {
 
-	public CancelledQueryException(String message) {
-		super(message);
+	public static IAdhocEventBus safeWrapper(IAdhocEventBus eventBus) {
+		return new IAdhocEventBus() {
+
+			@Override
+			public void post(Object event) {
+				eventBus.post(event);
+			}
+		};
 	}
 
+	/**
+	 * To be added to `LoggerContext#getFrameworkPackages()` in LogBack.
+	 * 
+	 * @param frameworkPackages
+	 */
+	public static void addToFrameworkPackages(List<String> frameworkPackages) {
+		frameworkPackages.add("jdk.internal.reflect");
+		frameworkPackages.add("java.lang.reflect");
+		frameworkPackages.add("com.google.common.eventbus.Subscriber");
+		frameworkPackages.add("com.google.common.util.concurrent.DirectExecutor");
+		frameworkPackages.add("com.google.common.eventbus.Dispatcher");
+		frameworkPackages.add("com.google.common.eventbus.EventBus");
+		frameworkPackages.add(UnsafeAdhocEventBusHelpers.class.getName());
+	}
 }

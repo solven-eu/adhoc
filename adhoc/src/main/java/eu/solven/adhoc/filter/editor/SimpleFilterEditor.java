@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -119,9 +118,8 @@ public class SimpleFilterEditor implements IFilterEditor {
 			}
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			if (columnFilter.getColumn().equals(column)) {
-				ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 				// Replace the valueMatcher by the shift
-				return shiftColumn;
+				return toFilter(columnFilter, column, value);
 			} else if (filterMode == FilterMode.alwaysShift) {
 				ISliceFilter shiftColumn = toFilter(columnFilter, column, value);
 				// Combine both columns

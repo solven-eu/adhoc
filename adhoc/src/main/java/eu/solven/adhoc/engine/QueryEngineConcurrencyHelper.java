@@ -40,6 +40,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.util.CancelledQueryException;
 import lombok.experimental.UtilityClass;
 
 /**

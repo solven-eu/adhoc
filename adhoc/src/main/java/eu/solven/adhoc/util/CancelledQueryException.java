@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,39 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.util;
 
-import javax.sql.DataSource;
-
-import org.jooq.DSLContext;
-import org.jooq.SQLDialect;
+import java.util.concurrent.CancellationException;
 
 /**
- * Helps building a proper {@link DSLContext}, typically for {@link JooqTableWrapper}.
+ * Thrown when a query is cancelled, to interrupt the active task.
  * 
  * @author Benoit Lacelle
- *
  */
-@FunctionalInterface
-public interface DSLSupplier {
-	DSLContext getDSLContext();
+public class CancelledQueryException extends CancellationException {
+	private static final long serialVersionUID = 1854618611130104735L;
 
-	/**
-	 * Without a connection or data source, this executor cannot execute queries. Use it to render SQL only.
-	 * 
-	 * @param sqlDialect
-	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
-	 */
-	static DSLSupplier fromDialect(SQLDialect sqlDialect) {
-		return StandardDSLSupplier.builder().dialect(sqlDialect).build();
+	public CancelledQueryException(String message) {
+		super(message);
 	}
 
-	static DSLSupplier fromDatasource(DataSource datasource, SQLDialect sqlDialect) {
-		return StandardDSLSupplier.builder().dialect(sqlDialect).dataSource(datasource).build();
-	}
-
-	@Deprecated(since = "Unstable API")
-	static DSLSupplier fromDatasourceStopWatch(DataSource datasource, SQLDialect sqlDialect) {
-		return StandardDSLSupplier.builder().dialect(sqlDialect).dataSource(datasource).stopWatch().build();
-	}
 }

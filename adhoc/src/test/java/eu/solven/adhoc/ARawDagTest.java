@@ -44,6 +44,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.StopWatchTestFactory;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
+import eu.solven.adhoc.util.UnsafeAdhocEventBusHelpers;
 
 /**
  * Helps testing anything related with a {@link MeasureForest} or a {@link CubeQueryEngine}
@@ -73,7 +74,10 @@ public abstract class ARawDagTest {
 	}
 
 	public CubeQueryEngine engine() {
-		return CubeQueryEngine.builder().eventBus(eventBus::post).factories(makeFactories()).build();
+		return CubeQueryEngine.builder()
+				.eventBus(UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post))
+				.factories(makeFactories())
+				.build();
 	}
 
 	public abstract ITableWrapper makeTable();

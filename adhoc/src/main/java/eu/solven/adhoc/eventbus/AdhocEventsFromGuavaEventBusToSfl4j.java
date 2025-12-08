@@ -25,6 +25,8 @@ package eu.solven.adhoc.eventbus;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
+import org.slf4j.spi.LocationAwareLogger;
+
 import com.google.common.eventbus.Subscribe;
 
 import lombok.extern.slf4j.Slf4j;
@@ -113,10 +115,25 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	@Override
 	public void onAdhocLogEvent(AdhocLogEvent event) {
 		BiConsumer<String, Object[]> logMethod;
-		if (event.isWarn()) {
-			logMethod = log::warn;
+
+		if (log instanceof LocationAwareLogger lAwareLogger) {
+			int logLevel;
+			if (event.isWarn()) {
+				logLevel = LocationAwareLogger.WARN_INT;
+			} else {
+				logLevel = LocationAwareLogger.INFO_INT;
+			}
+
+			String fqdn = this.getClass().getName();
+
+			// https://stackoverflow.com/questions/3491744/wrapping-the-slf4j-api
+			logMethod = (template, parameters) -> lAwareLogger.log(null, fqdn, logLevel, template, parameters, null);
 		} else {
-			logMethod = log::info;
+			if (event.isWarn()) {
+				logMethod = log::warn;
+			} else {
+				logMethod = log::info;
+			}
 		}
 
 		printLogEvent(event, logMethod);

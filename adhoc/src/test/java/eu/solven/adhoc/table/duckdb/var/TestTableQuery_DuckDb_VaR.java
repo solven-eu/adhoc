@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.duckdb.var;
 
 import java.sql.Statement;
+import java.sql.Wrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -108,29 +109,30 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 
 	@BeforeEach
 	public void feedTable() {
-
 		// https://duckdb.org/docs/stable/sql/data_types/array.html
 		dslSupplier.getDSLContext().connection(c -> {
-			DuckDBConnection duckDbConnection = (DuckDBConnection) c;
+			DuckDBConnection duckDbConnection = ((Wrapper) c).unwrap(DuckDBConnection.class);
+			// DuckDBConnection duckDbConnection = (DuckDBConnection) c;
 
-			Statement s = duckDbConnection.createStatement();
+			try (Statement s = duckDbConnection.createStatement()) {
 
-			// We generally want to store FLOAT but aggregate as DOUBLE
-			// No fixed size due to
-			// https://github.com/duckdb/duckdb/issues/16672
-			s.execute(
-					"CREATE TABLE someTableName (color VARCHAR, doubles FLOAT[]);".formatted(arrayLength, arrayLength));
+				// We generally want to store FLOAT but aggregate as DOUBLE
+				// No fixed size due to
+				// https://github.com/duckdb/duckdb/issues/16672
+				s.execute("CREATE TABLE someTableName (color VARCHAR, doubles FLOAT[]);".formatted(arrayLength,
+						arrayLength));
 
-			// https://github.com/duckdb/duckdb-java/issues/163
-			// doInsertSpecificArrays(duckDbConnection);
+				// https://github.com/duckdb/duckdb-java/issues/163
+				// doInsertSpecificArrays(duckDbConnection);
 
-			s.execute("""
-					INSERT INTO someTableName (
-					    SELECT
-					        if(random() > 0.5, 'red', 'blue'),
-					        list_transform(range(%s), x -> RANDOM()::DECIMAL(2, 1))::DOUBLE[]
-					    FROM range(%s)
-					);""".formatted(arrayLength, maxCardinality));
+				s.execute("""
+						INSERT INTO someTableName (
+						    SELECT
+						        if(random() > 0.5, 'red', 'blue'),
+						        list_transform(range(%s), x -> RANDOM()::DECIMAL(2, 1))::DOUBLE[]
+						    FROM range(%s)
+						);""".formatted(arrayLength, maxCardinality));
+			}
 		});
 
 		registerMeasures();
