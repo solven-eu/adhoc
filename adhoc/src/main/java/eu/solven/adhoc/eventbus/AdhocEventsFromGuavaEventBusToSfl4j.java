@@ -167,11 +167,9 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 				yield EventConstants.WARN_INT;
 			case Level.ERROR:
 				yield EventConstants.ERROR_INT;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + level);
 			};
 
-			String fqdn = event.getFqdn();// this.getClass().getName();
+			String fqdn = event.getFqdn();
 
 			// https://stackoverflow.com/questions/3491744/wrapping-the-slf4j-api
 			logMethod = (template, parameters) -> lAwareLogger.log(null, fqdn, logLevel, template, parameters, null);
@@ -187,8 +185,6 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 				yield log::warn;
 			case Level.ERROR:
 				yield log::error;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + level);
 			};
 		}
 

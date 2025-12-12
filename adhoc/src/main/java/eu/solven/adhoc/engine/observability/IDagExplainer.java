@@ -23,8 +23,8 @@
 package eu.solven.adhoc.engine.observability;
 
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.util.IAdhocEventBus;
 
 /**
  * Will publish `EXPLAIN` information into {@link IAdhocEventBus}.

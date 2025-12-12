@@ -20,14 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.eventbus;
 
 import java.util.List;
 
 import com.google.common.eventbus.EventBus;
 
-import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import eu.solven.adhoc.eventbus.IAdhocEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 
@@ -41,6 +39,10 @@ import lombok.experimental.UtilityClass;
 public class UnsafeAdhocEventBusHelpers {
 	private static final AdhocEventsFromGuavaEventBusToSfl4j TO_SLF4J = new AdhocEventsFromGuavaEventBusToSfl4j();
 
+	/**
+	 * Wraps an {@link IAdhocEventBus} so that all events ares forked into a plain SLF4J log, with proper FQDN
+	 * management.
+	 */
 	@RequiredArgsConstructor
 	public static class WrappingEventBusForSlf4jFQDN implements IAdhocEventBus {
 		final IAdhocEventBus decorated;
