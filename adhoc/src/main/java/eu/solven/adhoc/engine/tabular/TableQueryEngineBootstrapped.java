@@ -95,6 +95,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
+import eu.solven.adhoc.util.UnsafeAdhocEventBusHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -123,7 +124,7 @@ public class TableQueryEngineBootstrapped {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
+	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
 
 	@NonNull
 	@Getter(AccessLevel.PRIVATE)

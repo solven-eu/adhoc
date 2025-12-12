@@ -67,7 +67,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 
 	@BeforeEach
 	public void registerMonitor() {
-		eventBus.register(queryMonitor);
+		eventBusGuava().register(queryMonitor);
 	}
 
 	@BeforeEach

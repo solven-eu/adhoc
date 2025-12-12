@@ -45,7 +45,7 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 
 	CachingTableWrapper caching = CachingTableWrapper.builder().decorated(tableSupplier.get()).build();
 	ICubeWrapper cachingCube =
-			CubeWrapper.builder().table(caching).engine(engine()).forest(forest).eventBus(eventBus::post).build();
+			CubeWrapper.builder().table(caching).engine(engine()).forest(forest).eventBus(eventBus()).build();
 
 	@Override
 	@BeforeEach

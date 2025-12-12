@@ -81,6 +81,16 @@ public class TestAdhocEventsFromGuavaEventBusToSfl4j {
 	public void testCustomEvent() {
 		// Some custom event
 		IAdhocEvent customEvent = new IAdhocEvent() {
+
+			@Override
+			public String getFqdn() {
+				throw new UnsupportedOperationException("Irrelevant");
+			}
+
+			@Override
+			public IAdhocEvent withFqdn(String fqdn) {
+				throw new UnsupportedOperationException("Irrelevant");
+			}
 		};
 
 		toSlf4j.onAdhocEvent(customEvent);

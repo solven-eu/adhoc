@@ -203,7 +203,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testExplain_grandTotal() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		prepareMeasures();
 
@@ -225,7 +225,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testExplain_filter() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		prepareMeasures();
 
@@ -253,7 +253,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 
 	@Test
 	public void testLogPerfs() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		prepareMeasures();
 

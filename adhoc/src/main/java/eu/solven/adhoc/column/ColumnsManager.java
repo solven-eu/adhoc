@@ -34,6 +34,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.event.Level;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -76,6 +78,7 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IAdhocEventBus;
+import eu.solven.adhoc.util.UnsafeAdhocEventBusHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -98,7 +101,7 @@ public class ColumnsManager implements IColumnsManager {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
+	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
 
 	@Default
 	@NonNull
@@ -151,12 +154,14 @@ public class ColumnsManager implements IColumnsManager {
 			FilterHelpers.getFilteredColumns(transcodedFilter).forEach(underlying -> {
 				Set<String> queried = transcodingContext.queried(underlying);
 				if (queried.size() >= 2) {
-					eventBus.post(AdhocLogEvent.builder()
-							.warn(true)
-							.messageT("Ambiguous filtered column: %s -> %s (filter=%s)",
-									underlying,
-									queried,
-									notTranscodedFilter));
+					UnsafeAdhocEventBusHelpers.logForkEventBus(eventBus,
+							AdhocLogEvent.builder()
+									.level(Level.WARN)
+									.messageT("Ambiguous filtered column: %s -> %s (filter=%s)",
+											underlying,
+											queried,
+											notTranscodedFilter)
+									.build());
 				}
 			});
 		}
@@ -395,7 +400,7 @@ public class ColumnsManager implements IColumnsManager {
 
 						// BEWARE To handle transcoding, one would need to parse the SQL, to replace columns references
 						eventBus.post(AdhocLogEvent.builder()
-								.warn(true)
+								.level(Level.WARN)
 								.messageT("BEWARE If %s should be impacted by transcoding", expressionColumn)
 								.source(this)
 								.build());

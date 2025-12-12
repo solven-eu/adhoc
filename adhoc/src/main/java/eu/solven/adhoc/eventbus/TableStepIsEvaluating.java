@@ -28,6 +28,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.With;
 
 /**
  * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have computed a
@@ -44,4 +45,7 @@ public class TableStepIsEvaluating implements IAdhocEvent {
 
 	@NonNull
 	Object source;
+
+	@With
+	String fqdn;
 }

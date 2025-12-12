@@ -24,6 +24,11 @@ package eu.solven.adhoc.util;
 
 import java.util.List;
 
+import com.google.common.eventbus.EventBus;
+
+import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
+import eu.solven.adhoc.eventbus.IAdhocEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -34,15 +39,24 @@ import lombok.experimental.UtilityClass;
 @Deprecated(since = "Unclear of relevant")
 @UtilityClass
 public class UnsafeAdhocEventBusHelpers {
+	private static final AdhocEventsFromGuavaEventBusToSfl4j TO_SLF4J = new AdhocEventsFromGuavaEventBusToSfl4j();
+
+	@RequiredArgsConstructor
+	public static class WrappingEventBusForSlf4jFQDN implements IAdhocEventBus {
+		final IAdhocEventBus decorated;
+
+		@Override
+		public void post(Object event) {
+			if (event instanceof IAdhocEvent logEvent) {
+				logForkEventBus(decorated, logEvent.withFqdn(this.getClass().getName()));
+			} else {
+				decorated.post(event);
+			}
+		}
+	}
 
 	public static IAdhocEventBus safeWrapper(IAdhocEventBus eventBus) {
-		return new IAdhocEventBus() {
-
-			@Override
-			public void post(Object event) {
-				eventBus.post(event);
-			}
-		};
+		return new WrappingEventBusForSlf4jFQDN(eventBus);
 	}
 
 	/**
@@ -58,5 +72,23 @@ public class UnsafeAdhocEventBusHelpers {
 		frameworkPackages.add("com.google.common.eventbus.Dispatcher");
 		frameworkPackages.add("com.google.common.eventbus.EventBus");
 		frameworkPackages.add(UnsafeAdhocEventBusHelpers.class.getName());
+	}
+
+	/**
+	 * Utility methods to both submit the log to SLF4J and post it into an {@link EventBus}.
+	 * 
+	 * @param eventBus
+	 * @param event
+	 */
+	public static void logForkEventBus(IAdhocEventBus eventBus, IAdhocEvent event) {
+		if (event.getFqdn() == null) {
+			event = event.withFqdn(UnsafeAdhocEventBusHelpers.class.getName());
+		}
+
+		// Will log to SLF4J
+		TO_SLF4J.onAdhocEvent(event);
+
+		// Transmit the event to an EventBus for decoupled processing
+		eventBus.post(event);
 	}
 }
