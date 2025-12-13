@@ -29,4 +29,13 @@ package eu.solven.adhoc.eventbus;
  */
 public interface IAdhocEvent {
 
+	/**
+	 * Useful to generate proper SLF4J log.
+	 * 
+	 * @return the helper class from which the event is triggered
+	 */
+	String getFqdn();
+
+	IAdhocEvent withFqdn(String fqdn);
+
 }

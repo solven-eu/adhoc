@@ -651,7 +651,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		IMeasureForest withUnderlyings = compositeCubesTable.injectUnderlyingMeasures(withoutUnderlyings);
 
 		{
-			List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+			List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 			table1.add(Map.of("k1", 123, "a", "a1"));
 			table1.add(Map.of("k1", 234, "a", "a2"));

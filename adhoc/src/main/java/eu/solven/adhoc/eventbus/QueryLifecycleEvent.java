@@ -29,6 +29,7 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.With;
 
 /**
  * An event enabling to be notified on query lifecycle events (e.g. start, done).
@@ -44,4 +45,7 @@ public class QueryLifecycleEvent implements IAdhocEvent {
 	@NonNull
 	@Singular
 	ImmutableSet<String> tags;
+
+	@With
+	String fqdn;
 }

@@ -25,6 +25,7 @@ package eu.solven.adhoc.eventbus;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.With;
 
 /**
  * Enable being notified when major steps on the queryExecution are completed.
@@ -39,4 +40,7 @@ public class AdhocQueryPhaseIsCompleted implements IAdhocEvent {
 
 	@NonNull
 	Object source;
+
+	@With
+	String fqdn;
 }

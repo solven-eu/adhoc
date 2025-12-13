@@ -338,7 +338,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		ITabularRecordFactory tabularRecordFactory = new JooqTabularRecordFactory(sqlQuery.getFields(), sliceFactory);
+		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(sqlQuery);
 
 		ISliceCompressor sliceCompressor = makeSliceCompressor();
 
@@ -380,6 +380,10 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 						return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
 					}
 				});
+	}
+
+	protected JooqTabularRecordFactory makeTabularRecordFactory(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		return new JooqTabularRecordFactory(sqlQuery.getFields(), sliceFactory);
 	}
 
 	protected Stream<Record> toStream(QueryPod queryPod, ResultQuery<Record> resultQuery) {

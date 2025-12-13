@@ -81,6 +81,19 @@ public class TestAdhocEventsFromGuavaEventBusToSfl4j {
 	public void testCustomEvent() {
 		// Some custom event
 		IAdhocEvent customEvent = new IAdhocEvent() {
+			String fqdn;
+
+			@Override
+			public String getFqdn() {
+				return fqdn;
+			}
+
+			@Override
+			public IAdhocEvent withFqdn(String fqdn) {
+				this.fqdn = fqdn;
+
+				return this;
+			}
 		};
 
 		toSlf4j.onAdhocEvent(customEvent);

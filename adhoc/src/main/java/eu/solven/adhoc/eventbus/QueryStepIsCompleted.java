@@ -28,6 +28,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.With;
 
 /**
  * An {@link eu.solven.adhoc.engine.step.CubeQueryStep} has been evaluated.
@@ -47,4 +48,7 @@ public class QueryStepIsCompleted implements IAdhocEvent {
 
 	@NonNull
 	Object source;
+
+	@With
+	String fqdn;
 }

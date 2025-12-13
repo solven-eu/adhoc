@@ -120,7 +120,7 @@ public class TestCubeQuery_QueryStepCache extends ADagTest implements IAdhocTest
 		}
 
 		// second try: cache full
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 		{
 			ITabularView output = cube().execute(CubeQuery.builder().measure(k1PlusK2AsExpr).explain(true).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(output);
@@ -169,7 +169,7 @@ public class TestCubeQuery_QueryStepCache extends ADagTest implements IAdhocTest
 		}
 
 		// second try: cache partially full
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 		{
 			ITabularView output = cube().execute(CubeQuery.builder().measure(k1PlusK2AsExpr).explain(true).build());
 			MapBasedTabularView mapBased = MapBasedTabularView.load(output);

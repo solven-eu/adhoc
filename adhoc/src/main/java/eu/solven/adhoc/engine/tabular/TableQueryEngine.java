@@ -32,8 +32,9 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerFactory;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
+import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.util.AdhocBlackHole;
-import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -64,7 +65,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
+	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
 
 	@NonNull
 	@Default

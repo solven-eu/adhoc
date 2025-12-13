@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.ratio;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -44,7 +45,7 @@ public class AdhocExplainerTestHelper {
 
 	public static List<String> listenForExplainNoPerf(EventBus eventBus) {
 		AdhocUnsafe.resetDeterministicQueryIds();
-		List<String> messages = new ArrayList<>();
+		List<String> messages = new CopyOnWriteArrayList<>();
 
 		// Register an eventListener to collect the EXPLAIN results
 		{
@@ -66,7 +67,7 @@ public class AdhocExplainerTestHelper {
 
 	public static List<String> listenForPerf(EventBus eventBus) {
 		AdhocUnsafe.resetDeterministicQueryIds();
-		List<String> messages = new ArrayList<>();
+		List<String> messages = new CopyOnWriteArrayList<>();
 
 		// Register an eventListener to collect the EXPLAIN results
 		{

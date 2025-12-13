@@ -122,7 +122,7 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 
 	@Test
 	public void testChainOfSums() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		ITabularView output =
 				cube().execute(CubeQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());
@@ -142,7 +142,7 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 	// Check that EmptyAggregation is fast
 	@Test
 	public void testNoMeasures() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		ITabularView output = cube().execute(CubeQuery.builder().groupByAlso("row_index").explain(true).build());
 

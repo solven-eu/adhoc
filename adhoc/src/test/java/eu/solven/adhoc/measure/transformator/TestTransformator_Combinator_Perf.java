@@ -100,7 +100,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 
 	@Test
 	public void testChainOfSums_multithreaded() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(timesN)
@@ -123,7 +123,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 
 	@Test
 	public void testChainOfSums_monothreaded() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		ITabularView output =
 				cube().execute(CubeQuery.builder().measure(timesN).groupByAlso("row_index").explain(true).build());

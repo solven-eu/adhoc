@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -46,7 +47,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
-import eu.solven.adhoc.util.IAdhocEventBus;
 
 //@Disabled("TODO")
 // https://www.jooq.org/doc/latest/manual/sql-building/queryparts/custom-bindings/

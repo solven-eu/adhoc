@@ -97,7 +97,7 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 
 		List<TableStepIsEvaluating> tableEvaluating = new ArrayList<>();
 
-		eventBus.register(new Object() {
+		eventBusGuava().register(new Object() {
 			@Subscribe
 			public void onEvent(TableStepIsEvaluating o) {
 				tableEvaluating.add(o);
@@ -153,7 +153,7 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 
 		List<TableStepIsEvaluating> tableEvaluating = new ArrayList<>();
 
-		eventBus.register(new Object() {
+		eventBusGuava().register(new Object() {
 			@Subscribe
 			public void onEvent(TableStepIsEvaluating o) {
 				tableEvaluating.add(o);

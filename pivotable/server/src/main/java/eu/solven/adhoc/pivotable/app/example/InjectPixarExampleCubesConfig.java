@@ -27,7 +27,6 @@ import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.sql.Wrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,7 @@ public class InjectPixarExampleCubesConfig {
 				.execute();
 
 		dslContext.connection(connection -> {
-			DuckDBConnection duckDbC = ((Wrapper) connection).unwrap(DuckDBConnection.class);
+			DuckDBConnection duckDbC = connection.unwrap(DuckDBConnection.class);
 
 			Stream.of("pixar_films", "pixar_people").forEach(fileName -> {
 				// https://github.com/duckdb/duckdb-java/issues/310

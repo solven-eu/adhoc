@@ -135,7 +135,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 
 	@Test
 	public void testGrandTotal() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure(dToD).explain(true).build());
 
@@ -148,7 +148,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 
 	@Test
 	public void testGroupByDate_maxRow() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		ITabularView output = cube().execute(
 				CubeQuery.builder().measure(dToD).groupByAlso("d").andFilter("row_index", maxCardinality - 1).build());
@@ -173,7 +173,7 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 
 	@Test
 	public void testGroupByRow_Today() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		ITabularView output = cube()
 				.execute(CubeQuery.builder().measure(dToD).groupByAlso("row_index").andFilter("d", today).build());

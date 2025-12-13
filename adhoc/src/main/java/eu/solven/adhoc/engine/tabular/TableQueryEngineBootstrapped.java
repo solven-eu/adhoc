@@ -67,10 +67,12 @@ import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.eventbus.TableStepIsCompleted;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
+import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -93,7 +95,6 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
-import eu.solven.adhoc.util.IAdhocEventBus;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -123,7 +124,7 @@ public class TableQueryEngineBootstrapped {
 
 	@NonNull
 	@Default
-	final IAdhocEventBus eventBus = AdhocBlackHole.getInstance();
+	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
 
 	@NonNull
 	@Getter(AccessLevel.PRIVATE)

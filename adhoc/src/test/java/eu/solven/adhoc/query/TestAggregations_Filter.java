@@ -134,7 +134,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 
 	@Test
 	public void testLogs() {
-		List<String> messages = AdhocExplainerTestHelper.listenForLogs(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForLogs(eventBusGuava());
 
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);

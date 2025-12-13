@@ -342,7 +342,7 @@ public class TestCubeQuery_ManyToMany extends ADagTest implements IAdhocTestCons
 
 	@Test
 	public void testExplain_groupByGroups() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		{
 			prepareMeasures();

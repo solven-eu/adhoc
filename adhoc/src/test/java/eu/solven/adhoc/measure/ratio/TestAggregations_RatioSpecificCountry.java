@@ -121,7 +121,7 @@ public class TestAggregations_RatioSpecificCountry extends ADagTest {
 
 	@Test
 	public void testExplain_filterOtherColumn() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		{
 			CubeQuery adhocQuery =

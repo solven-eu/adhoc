@@ -34,10 +34,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.pivotable.account.IAdhocUserRawRawRepository;
 import eu.solven.adhoc.pivotable.account.IAdhocUserRepository;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
-import eu.solven.adhoc.util.IAdhocEventBus;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)

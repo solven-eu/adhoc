@@ -121,7 +121,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 
 	@Test
 	public void testGrandTotal_noCache() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
 
@@ -136,7 +136,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 
 	@Test
 	public void testGrandTotal_withCache() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
 
@@ -144,7 +144,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 				.table(CachingTableWrapper.builder().decorated(table()).build())
 				.engine(engine())
 				.forest(forest)
-				.eventBus(eventBus::post)
+				.eventBus(eventBus())
 				.build();
 
 		// Fill the cache

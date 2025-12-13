@@ -150,7 +150,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@Test
 	public void testExplain_filterUs() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		{
 			CubeQuery adhocQuery = CubeQuery.builder()
@@ -181,7 +181,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 
 	@Test
 	public void testExplain_filterUs_andWhole() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		{
 			CubeQuery adhocQuery = CubeQuery.builder()

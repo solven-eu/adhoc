@@ -25,6 +25,8 @@ package eu.solven.adhoc.eventbus;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 
+import org.slf4j.event.EventConstants;
+import org.slf4j.event.Level;
 import org.slf4j.spi.LocationAwareLogger;
 
 import com.google.common.eventbus.Subscribe;
@@ -60,7 +62,12 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 		} else if (event instanceof QueryLifecycleEvent lifecycleEvent) {
 			onQueryLifecycleEvent(lifecycleEvent);
 		} else {
-			log.warn("Not managed properly: {}", event);
+			onAdhocLogEvent(AdhocLogEvent.builder()
+					.messageT("Not managed properly: {}", event)
+					.source(this)
+					.level(Level.WARN)
+					.fqdn(event.getFqdn())
+					.build());
 		}
 	}
 
@@ -74,66 +81,111 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	@Subscribe
 	@Override
 	public void onQueryStepIsCompleted(QueryStepIsCompleted event) {
-		log.debug("size={} for queryStep={} on completed (source={})",
-				event.getNbCells(),
-				event.getQuerystep(),
-				event.getSource());
+		onAdhocLogEvent(AdhocLogEvent.builder()
+				.messageT("size={} for queryStep={} on completed",
+						event.getNbCells(),
+						event.getQuerystep(),
+						event.getSource())
+				.source(event.getSource())
+				.level(Level.DEBUG)
+				.fqdn(event.getFqdn())
+				.build());
 	}
 
 	@Subscribe
 	@Override
 	public void onAdhocQueryPhaseIsCompleted(AdhocQueryPhaseIsCompleted event) {
-		log.debug("query phase={} is completed (source={})", event.getPhase(), event.getSource());
+		onAdhocLogEvent(AdhocLogEvent.builder()
+				.messageT("query phase={} is completed", event.getPhase())
+				.source(event.getSource())
+				.level(Level.DEBUG)
+				.fqdn(event.getFqdn())
+				.build());
 	}
 
 	@Subscribe
 	@Override
 	public void onQueryStepIsEvaluating(QueryStepIsEvaluating event) {
-		log.debug("queryStep={} is evaluating (source={})", event.getQueryStep(), event.getSource());
+		onAdhocLogEvent(AdhocLogEvent.builder()
+				.messageT("queryStep={} is evaluating", event.getQueryStep())
+				.source(event.getSource())
+				.level(Level.DEBUG)
+				.fqdn(event.getFqdn())
+				.build());
 	}
 
 	@Subscribe
 	@Override
 	public void onTableStepIsEvaluating(TableStepIsEvaluating event) {
-		log.debug("tableStep={} is evaluating (source={})", event.getTableQuery(), event.getSource());
+		onAdhocLogEvent(AdhocLogEvent.builder()
+				.messageT("tableStep={} is evaluating", event.getTableQuery())
+				.source(event.getSource())
+				.level(Level.DEBUG)
+				.fqdn(event.getFqdn())
+				.build());
 	}
 
 	@Subscribe
 	@Override
 	public void onTableStepIsCompleted(TableStepIsCompleted event) {
-		log.debug("tableStep={} is completed (source={})", event.getTableQuery(), event.getSource());
+		onAdhocLogEvent(AdhocLogEvent.builder()
+				.messageT("tableStep={} is completed", event.getTableQuery())
+				.source(event.getSource())
+				.level(Level.DEBUG)
+				.fqdn(event.getFqdn())
+				.build());
 	}
 
 	@Subscribe
 	@Override
 	public void onQueryLifecycleEvent(QueryLifecycleEvent event) {
 		// Log first the tags, as the queryId is very redundant
-		log.debug("queryLifecycleEvent tags={} queryId={}", event.getTags(), event.getQuery().getQueryId());
+		onAdhocLogEvent(AdhocLogEvent.builder()
+				.messageT("queryLifecycleEvent tags={} queryId={}", event.getTags(), event.getQuery().getQueryId())
+				.source(event.getQuery())
+				.level(Level.DEBUG)
+				.fqdn(event.getFqdn())
+				.build());
 	}
 
 	@Subscribe
 	@Override
 	public void onAdhocLogEvent(AdhocLogEvent event) {
+		Level level = event.getLevel();
+
 		BiConsumer<String, Object[]> logMethod;
 
 		if (log instanceof LocationAwareLogger lAwareLogger) {
-			int logLevel;
-			if (event.isWarn()) {
-				logLevel = LocationAwareLogger.WARN_INT;
-			} else {
-				logLevel = LocationAwareLogger.INFO_INT;
-			}
+			int logLevel = switch (level) {
+			case Level.TRACE:
+				yield EventConstants.TRACE_INT;
+			case Level.DEBUG:
+				yield EventConstants.DEBUG_INT;
+			case Level.INFO:
+				yield EventConstants.INFO_INT;
+			case Level.WARN:
+				yield EventConstants.WARN_INT;
+			case Level.ERROR:
+				yield EventConstants.ERROR_INT;
+			};
 
-			String fqdn = this.getClass().getName();
+			String fqdn = event.getFqdn();
 
 			// https://stackoverflow.com/questions/3491744/wrapping-the-slf4j-api
 			logMethod = (template, parameters) -> lAwareLogger.log(null, fqdn, logLevel, template, parameters, null);
 		} else {
-			if (event.isWarn()) {
-				logMethod = log::warn;
-			} else {
-				logMethod = log::info;
-			}
+			logMethod = switch (level) {
+			case Level.TRACE:
+				yield log::trace;
+			case Level.DEBUG:
+				yield log::debug;
+			case Level.INFO:
+				yield log::info;
+			case Level.WARN:
+				yield log::warn;
+			case Level.ERROR:
+				yield log::error;
+			};
 		}
 
 		printLogEvent(event, logMethod);

@@ -307,7 +307,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 
 	@Test
 	public void testQueryCube1Plus2_filterUnshared() {
-		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
 
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
@@ -563,7 +563,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 
 	@Test
 	public void testLogPerfs() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		CubeWrapper cube3 = makeAndFeedCompositeCube();
 
@@ -638,7 +638,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 
 	@Test
 	public void testLogPerfs_conflictingSubMeasure() {
-		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBus);
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		CubeWrapper cube3 = makeAndFeedCompositeCube(forest -> {
 		}, forest -> {

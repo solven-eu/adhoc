@@ -20,43 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
-
-import java.util.List;
-
-import lombok.experimental.UtilityClass;
+package eu.solven.adhoc.eventbus;
 
 /**
- * Helps inter-operating EventBus an logging systems (e.g. to have a clear FQDN).
- * 
+ * Abstract the EventBus to which Adhoc events are published
+ *
  * @author Benoit Lacelle
  */
-@Deprecated(since = "Unclear of relevant")
-@UtilityClass
-public class UnsafeAdhocEventBusHelpers {
-
-	public static IAdhocEventBus safeWrapper(IAdhocEventBus eventBus) {
-		return new IAdhocEventBus() {
-
-			@Override
-			public void post(Object event) {
-				eventBus.post(event);
-			}
-		};
-	}
-
-	/**
-	 * To be added to `LoggerContext#getFrameworkPackages()` in LogBack.
-	 * 
-	 * @param frameworkPackages
-	 */
-	public static void addToFrameworkPackages(List<String> frameworkPackages) {
-		frameworkPackages.add("jdk.internal.reflect");
-		frameworkPackages.add("java.lang.reflect");
-		frameworkPackages.add("com.google.common.eventbus.Subscriber");
-		frameworkPackages.add("com.google.common.util.concurrent.DirectExecutor");
-		frameworkPackages.add("com.google.common.eventbus.Dispatcher");
-		frameworkPackages.add("com.google.common.eventbus.EventBus");
-		frameworkPackages.add(UnsafeAdhocEventBusHelpers.class.getName());
-	}
+@FunctionalInterface
+public interface IAdhocEventBus {
+	void post(Object event);
 }

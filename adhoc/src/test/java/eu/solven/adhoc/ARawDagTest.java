@@ -38,13 +38,13 @@ import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.StopWatchTestFactory;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
-import eu.solven.adhoc.util.UnsafeAdhocEventBusHelpers;
 
 /**
  * Helps testing anything related with a {@link MeasureForest} or a {@link CubeQueryEngine}
@@ -53,7 +53,20 @@ import eu.solven.adhoc.util.UnsafeAdhocEventBusHelpers;
  *
  */
 public abstract class ARawDagTest {
-	public final EventBus eventBus = AdhocTestHelper.eventBus();
+	public EventBus makeEventBus() {
+		return AdhocTestHelper.eventBus();
+	}
+
+	private final Supplier<EventBus> eventBus = Suppliers.memoize(this::makeEventBus);
+
+	public EventBus eventBusGuava() {
+		return eventBus.get();
+	}
+
+	public IAdhocEventBus eventBus() {
+		return eventBus.get()::post;
+	}
+
 	public final MockEnvironment env = new MockEnvironment();
 
 	public final UnsafeMeasureForest forest =
@@ -74,10 +87,7 @@ public abstract class ARawDagTest {
 	}
 
 	public CubeQueryEngine engine() {
-		return CubeQueryEngine.builder()
-				.eventBus(UnsafeAdhocEventBusHelpers.safeWrapper(eventBus::post))
-				.factories(makeFactories())
-				.build();
+		return CubeQueryEngine.builder().eventBus(eventBus()).factories(makeFactories()).build();
 	}
 
 	public abstract ITableWrapper makeTable();
@@ -93,7 +103,7 @@ public abstract class ARawDagTest {
 				.table(table())
 				.engine(engine())
 				.forest(forest)
-				.eventBus(eventBus::post)
+				.eventBus(eventBus())
 				.queryPreparator(queryPreparator());
 	}
 
