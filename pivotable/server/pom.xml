@@ -155,6 +155,11 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webtestclient</artifactId>
+		</dependency>
 
 		<dependency>
 			<!-- @WithMockUser -->

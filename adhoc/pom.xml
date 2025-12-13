@@ -111,8 +111,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.dataformat</groupId>
-			<artifactId>jackson-dataformat-yaml</artifactId>
+		    <groupId>tools.jackson.dataformat</groupId>
+		    <artifactId>jackson-dataformat-yaml</artifactId>
 			<!-- One may need require reading/writing Yaml files-->
 			<optional>true</optional>
 		</dependency>
