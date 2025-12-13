@@ -4,17 +4,13 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.13</version>
+		<version>0.0.14-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-authorization</artifactId>
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Manage access_token and refresh_token</description>
-
-	<scm>
-		<tag>v0.0.13</tag>
-	</scm>
 
 	<!--    <build>-->
 	<!--        <plugins>-->
