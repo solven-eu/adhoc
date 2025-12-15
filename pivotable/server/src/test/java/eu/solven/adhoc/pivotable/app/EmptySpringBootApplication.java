@@ -23,7 +23,7 @@
 package eu.solven.adhoc.pivotable.app;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.graphql.GraphQlAutoConfiguration;
+import org.springframework.boot.graphql.autoconfigure.GraphQlAutoConfiguration;
 
 /**
  * Used to test minimal {@link SpringBootApplication}, still loading `application[-XXX].yml` files

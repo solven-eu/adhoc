@@ -26,16 +26,13 @@ import java.beans.Customizer;
 import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
-
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.jackson.JsonNodeDeserializer;
+import tools.jackson.databind.jsontype.TypeDeserializer;
 
 /**
  * {@link Customizer} serialization to write matchAll and matchNone as plain {@link String}.
@@ -43,12 +40,12 @@ import eu.solven.adhoc.resource.AdhocPublicJackson;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class SliceFilterDeserializer extends JsonDeserializer<ISliceFilter> implements ResolvableDeserializer {
+public class SliceFilterDeserializer extends JsonNodeDeserializer<ISliceFilter> implements ResolvableDeserializer {
 	// private static final long serialVersionUID = 8174515895932210350L;
 
-	private final JsonDeserializer<?> base;
+	private final JsonNodeDeserializer<?> base;
 
-	public SliceFilterDeserializer(JsonDeserializer<?> base) {
+	public SliceFilterDeserializer(JsonNodeDeserializer<?> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
