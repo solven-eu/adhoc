@@ -36,7 +36,6 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.map.factory.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;

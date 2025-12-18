@@ -57,7 +57,7 @@ public class ByPageArrowSliceCompressor {
 	}
 
 	// TODO How to keep the allocator for the query lifetime?
-	@SuppressWarnings("PMD.CloseResource")
+	@SuppressWarnings({ "PMD.CloseResource", "PMD.LooseCoupling" })
 	protected void doCompress(List<ProxiedAdhocMap> toCompress) {
 		// super.doCompress(toCompress);
 
