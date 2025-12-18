@@ -20,19 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.map.factory;
+
+import eu.solven.adhoc.map.IAdhocMap;
 
 /**
- * 
- * Skip any compression or dictionarisation.
+ * Interface for Map builder instanced created by for {@link ISliceFactory}.
  * 
  * @author Benoit Lacelle
  */
-public class NoopSliceCompressor implements ISliceCompressor {
+public interface IMapBuilderPreKeys {
 
-	@Override
-	public IAdhocSlice compress(IAdhocSlice slice) {
-		return slice;
-	}
+	IMapBuilderPreKeys append(Object value);
+
+	IAdhocMap build();
 
 }

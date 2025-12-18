@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestAdhocFactories {

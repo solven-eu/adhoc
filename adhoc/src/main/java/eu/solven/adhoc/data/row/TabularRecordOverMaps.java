@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;

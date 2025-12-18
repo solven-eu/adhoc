@@ -63,13 +63,11 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.ISliceCompressor;
-import eu.solven.adhoc.data.row.slice.NoopSliceCompressor;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -79,13 +77,14 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.pepper.mappath.MapPathGet;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
@@ -95,7 +94,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
 public class JooqTableWrapper implements ITableWrapper, IHasCache {
@@ -108,7 +107,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 	@NonNull
 	@Default
-	protected ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
+	protected final ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 
 	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()
 			// https://github.com/google/guava/wiki/cachesexplained#refresh
@@ -125,7 +124,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 			.build(CacheLoader.asyncReloading(CacheLoader.from(this::noCacheGetFields), AdhocUnsafe.maintenancePool));
 
 	public JooqTableWrapper(String name, JooqTableWrapperParameters tableParameters) {
-		this(name, tableParameters, StandardSliceFactory.builder().build());
+		this(name, tableParameters, AdhocFactoriesUnsafe.factories.getSliceFactory());
 	}
 
 	@Override
@@ -285,10 +284,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
-		return new SuppliedTabularRecordStream(tableQuery,
-				distinctSlices,
-				// sliceFactory.getNullPlaceholder(),
-				() -> modifiedStream);
+		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> modifiedStream);
 	}
 
 	protected String toSQL(ResultQuery<Record> resultQuery) {
@@ -340,22 +336,12 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(sqlQuery);
 
-		ISliceCompressor sliceCompressor = makeSliceCompressor();
-
 		ResultQuery<Record> resultQuery = sqlQuery.getQuery();
 
 		return toStream(queryPod, resultQuery).map(r -> intoTabularRecord(tabularRecordFactory, r))
 				// leftover in WHERE
 				.filter(row -> {
 					return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
-				})
-				// DESIGN NOTE: we dictionarize after the leftover filter. Is it premature? It fits with
-				// dictionarization being fully independant of slice initial creation.
-				.map(row -> {
-					return TabularRecordOverMaps.builder()
-							.aggregates(row.aggregatesAsMap())
-							.slice(sliceCompressor.compress(row.getGroupBys()))
-							.build();
 				})
 				// leftover in FILTER
 				.map(row -> {
@@ -424,11 +410,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				queryPod.addCancellationListener(cancellationListenerOnceStarted);
 			}
 		});
-	}
-
-	protected ISliceCompressor makeSliceCompressor() {
-		// ByPageSliceDictionarizer.builder().build()
-		return new NoopSliceCompressor();
 	}
 
 	// Inspired from AbstractRecord.intoMap

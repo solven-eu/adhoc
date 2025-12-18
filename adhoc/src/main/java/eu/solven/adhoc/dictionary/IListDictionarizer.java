@@ -20,64 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.dictionary;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder.Default;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
+import java.util.function.IntFunction;
 
 /**
- * Enable {@link IAdhocSlice} to be compressed by pages. The compression algorithm is delegated to another class.
+ * Return an {@link IntFunction} equivalent to input {@link List#get(int)}.
  * 
  * @author Benoit Lacelle
  */
-@Deprecated(since = "Not-Ready")
-@SuperBuilder
-@Slf4j
-public class ByPageSliceCompressor implements ISliceCompressor {
-
-	/**
-	 * Number of rows to accumulate in a page
-	 */
-	@Default
-	final int pageSize = AdhocUnsafe.pageSize;
-
-	/**
-	 * Current page
-	 */
-	final List<ProxiedSlice> page = new ArrayList<>();
-
-	@Override
-	public IAdhocSlice compress(IAdhocSlice slice) {
-		ProxiedSlice proxiedSlice = new ProxiedSlice(slice);
-
-		page.add(proxiedSlice);
-
-		if (isFull()) {
-			compressPage();
-		}
-
-		return proxiedSlice;
-	}
-
-	protected void compressPage() {
-		final List<ProxiedSlice> toCompress = new ArrayList<>(page);
-		page.clear();
-
-		doCompress(toCompress);
-
-	}
-
-	protected void doCompress(List<ProxiedSlice> toCompress) {
-		log.info("Compressing a page with with={}", toCompress.size());
-	}
-
-	protected boolean isFull() {
-		return page.size() >= pageSize;
-	}
-
+@FunctionalInterface
+public interface IListDictionarizer {
+	IntFunction<Object> dictionarize(List<Object> list);
 }

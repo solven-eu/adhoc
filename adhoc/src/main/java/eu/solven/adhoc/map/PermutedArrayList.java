@@ -27,11 +27,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.AbstractList;
 import java.util.List;
 import java.util.RandomAccess;
+import java.util.function.IntFunction;
 import java.util.function.IntUnaryOperator;
 
 import org.jspecify.annotations.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
 import lombok.Builder;
@@ -46,18 +46,20 @@ import lombok.Builder;
  */
 @Builder
 public class PermutedArrayList<T> extends AbstractList<T> implements RandomAccess {
-	final ImmutableList<T> unorderedValues;
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+	final int size;
+	final IntFunction<T> unorderedValues;
 
 	final IntUnaryOperator reordering;
 
 	@Override
 	public int size() {
-		return unorderedValues.size();
+		return size;
 	}
 
 	@Override
 	public T get(int index) {
-		return unorderedValues.get(reordering.applyAsInt(index));
+		return unorderedValues.apply(reordering.applyAsInt(index));
 	}
 
 	// Do not rely on default implementation to skip the instantiation of an
@@ -111,5 +113,9 @@ public class PermutedArrayList<T> extends AbstractList<T> implements RandomAcces
 		} else {
 			return Iterators.elementsEqual(thisList.iterator(), otherList.iterator());
 		}
+	}
+
+	public static <T> PermutedArrayListBuilder<T> builderList(List<T> list) {
+		return PermutedArrayList.<T>builder().size(list.size()).unorderedValues(list::get);
 	}
 }

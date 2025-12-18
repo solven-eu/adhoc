@@ -39,6 +39,7 @@ import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
+import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -64,7 +65,7 @@ public abstract class ARawDagTest {
 	}
 
 	public IAdhocEventBus eventBus() {
-		return eventBus.get()::post;
+		return UnsafeAdhocEventBusHelpers.safeWrapper(eventBus.get()::post);
 	}
 
 	public final MockEnvironment env = new MockEnvironment();

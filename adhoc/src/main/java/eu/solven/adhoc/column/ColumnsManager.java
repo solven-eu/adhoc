@@ -48,7 +48,6 @@ import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -318,15 +317,17 @@ public class ColumnsManager implements IColumnsManager {
 			return row;
 		}
 
-		Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys().getCoordinates());
+		// Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys().getCoordinates());
+
+		Map<String, Object> computed = new LinkedHashMap<>();
 
 		columns.forEach((columnName, column) -> {
 			// TODO handle recursive formulas (e.g. a formula relying on another formula)
-			enrichedGroupBy.put(columnName, column.computeCoordinate(row));
+			computed.put(columnName, column.computeCoordinate(row));
 		});
 
 		return TabularRecordOverMaps.builder()
-				.slice(SliceAsMap.fromMap(enrichedGroupBy))
+				.slice(row.getGroupBys().addColumns(computed))
 				.aggregates(row.aggregatesAsMap())
 				.build();
 	}

@@ -32,7 +32,8 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory.MapBuilderThroughKeys;
 
 public class TestAdhocMapFactory {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();

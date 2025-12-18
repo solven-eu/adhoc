@@ -35,7 +35,8 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -149,7 +150,7 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 
 		@NonNull
 		ImmutableList<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
-		MapBuilderPreKeys slice = sliceFactory.newMapBuilder(aggregateGroupBys);
+		IMapBuilderPreKeys slice = sliceFactory.newMapBuilder(aggregateGroupBys);
 
 		{
 			for (int i = 0; i < aggregateGroupBys.size(); i++) {

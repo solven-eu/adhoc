@@ -53,9 +53,9 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -312,7 +312,7 @@ public class InMemoryTable implements ITableWrapper {
 			});
 		});
 
-		MapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
+		IMapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
 		groupByColumns.forEach(groupByColumn -> {
 			Object value = row.get(groupByColumn);
 			groupByBuilder.append(value);

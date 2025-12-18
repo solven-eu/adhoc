@@ -20,18 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.util.immutable;
 
 /**
- * 
- * Replace an {@link IAdhocSlice} by a compressed alternative row. The actual compression may be differed (e.g. by this
- * implementation relying on a {@link ProxiedSlice}).
+ * Used for operations forbidden due to immutability.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ISliceCompressor {
+public class UnsupportedAsImmutableException extends UnsupportedOperationException {
+	private static final long serialVersionUID = 5673313093256614656L;
 
-	IAdhocSlice compress(IAdhocSlice slice);
-
+	public UnsupportedAsImmutableException() {
+		super("Immutable");
+	}
 }

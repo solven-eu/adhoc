@@ -47,7 +47,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;

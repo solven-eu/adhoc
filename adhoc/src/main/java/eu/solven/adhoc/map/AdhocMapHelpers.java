@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.map;
 
-import java.util.Collection;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.map.StandardSliceFactory.IHasEntries;
+import eu.solven.adhoc.map.factory.ASliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -54,18 +55,7 @@ public class AdhocMapHelpers {
 
 	@Deprecated
 	public static IAdhocMap wrap(Map<String, ?> asMap) {
-		return StandardSliceFactory.builder().build().buildMap(new IHasEntries() {
-
-			@Override
-			public Collection<?> getValues() {
-				return asMap.values();
-			}
-
-			@Override
-			public Collection<? extends String> getKeys() {
-				return asMap.keySet();
-			}
-		});
+		return ASliceFactory.fromMap(StandardSliceFactory.builder().build(), asMap);
 	}
 
 }

@@ -28,7 +28,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -39,9 +40,17 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
  * 
  * Coordinates (e.g. Map values) are normalized: e.g. `int` and `long` are considered equals.
  * 
+ * Similar to {@link IAdhocMap}, but slightly more specific to a `GROUP BY` entry representation.
+ * 
  * @author Benoit Lacelle
  */
 public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRecord {
+
+	@Override
+	default IAdhocSlice getGroupBys() {
+		return this;
+	}
+
 	/**
 	 * 
 	 * @return true if this a grandTotal slice.

@@ -55,7 +55,7 @@ public class AdhocUnsafe {
 	}
 
 	public static void resetProperties() {
-		log.info("Resetting AdhocUnsafe configuration");
+		log.info("Resetting {} configuration", AdhocUnsafe.class.getName());
 
 		// This default should be big enough to show all informations in most cases, without printing huge information
 		// on edge-cases

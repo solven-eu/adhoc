@@ -28,6 +28,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
+
 public class TestMaskedAdhocMap {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
 
