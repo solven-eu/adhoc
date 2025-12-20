@@ -668,7 +668,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.1</version>
 				<configuration>
 					<!-- https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#autoVersionSubmodules -->
 					<autoVersionSubmodules>true</autoVersionSubmodules>
