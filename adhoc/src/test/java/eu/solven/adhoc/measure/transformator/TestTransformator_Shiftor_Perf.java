@@ -80,7 +80,8 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 			for (int d = 0; d < nbDays; d++) {
 				table().add(ImmutableMap.<String, Object>builder()
 						.put("l", "A")
-						.put("row_index", i)
+						// Write as long to reduce the effect of ICoordinateNormalizer
+						.put("row_index", (long) i)
 						.put("d", today.minusDays(d))
 						.put("k1", (i + (nbDays - d) * (nbDays - d)))
 						.build());

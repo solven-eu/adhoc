@@ -39,6 +39,7 @@ import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.With;
@@ -49,6 +50,7 @@ import lombok.With;
  * @author Benoit Lacelle
  */
 @Builder
+@EqualsAndHashCode
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@With

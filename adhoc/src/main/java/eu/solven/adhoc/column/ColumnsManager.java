@@ -195,7 +195,7 @@ public class ColumnsManager implements IColumnsManager {
 					.source(this)
 					.build());
 		}
-		if (queryPod.isExplain() && !transcodingContext.isOnlyIdentity()) {
+		if (queryPod.isExplain() && !transcodingContext.isIdentity()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)
 					.messageT("Transcoded context is %s", transcodingContext)
@@ -306,6 +306,11 @@ public class ColumnsManager implements IColumnsManager {
 			@Override
 			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				return estimatedSize;
+			}
+
+			@Override
+			public boolean isIdentity() {
+				return transcodingContext.isIdentity();
 			}
 		};
 	}

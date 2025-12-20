@@ -125,6 +125,11 @@ public class TestAdhocAliaserHelper {
 			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				return outputKeys.size();
 			}
+
+			@Override
+			public boolean isIdentity() {
+				return false;
+			}
 		};
 		Map<String, ?> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
 
@@ -148,6 +153,11 @@ public class TestAdhocAliaserHelper {
 			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				// `-1`: we are underestimating the actual number of entries to write
 				return outputKeys.size() - 1;
+			}
+
+			@Override
+			public boolean isIdentity() {
+				return false;
 			}
 		};
 		Map<String, ?> transcoded = AdhocTranscodingHelper.transcodeColumns(transcoder, Map.of("k", "v"));
