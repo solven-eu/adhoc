@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.dictionary.DictionarizedSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
 
 public class TestDictionarizedSliceFactory {
 	DictionarizedSliceFactory sliceFactory = DictionarizedSliceFactory.builder().build();
@@ -39,9 +42,8 @@ public class TestDictionarizedSliceFactory {
 	@Test
 	public void testEmpty() {
 		IAdhocMap map = sliceFactory.newMapBuilder().build();
-		Assertions.assertThat((Map) map).isEqualTo(Map.of());
-
-		Assertions.assertThat(((AbstractAdhocMap) map).orderedValues()).isEmpty();
+		Assertions.assertThat((Map) map).isEqualTo(Map.of()).isEmpty();
+		Assertions.assertThat(map.entrySet()).isEqualTo(Set.of()).isEmpty();
 	}
 
 	@Test
@@ -49,7 +51,7 @@ public class TestDictionarizedSliceFactory {
 		IAdhocMap map = sliceFactory.newMapBuilder().put("c", "v").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("c", "v"));
 
-		Assertions.assertThat(((AbstractAdhocMap) map).orderedValues()).containsExactly("v");
+		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(0)).isEqualTo("v");
 	}
 
 	@Test
@@ -57,7 +59,11 @@ public class TestDictionarizedSliceFactory {
 		IAdhocMap map = sliceFactory.newMapBuilder().put("b", "vB").put("a", "vA").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("a", "vA", "b", "vB"));
 
-		Assertions.assertThat(((AbstractAdhocMap) map).orderedValues()).containsExactly("vA", "vB");
+		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(0)).isEqualTo("vB");
+		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(1)).isEqualTo("vA");
+
+		Assertions.assertThat(((AbstractAdhocMap) map).getSequencedValueRaw(0)).isEqualTo("vB");
+		Assertions.assertThat(((AbstractAdhocMap) map).getSequencedValueRaw(1)).isEqualTo("vA");
 	}
 
 	@Test
@@ -70,6 +76,24 @@ public class TestDictionarizedSliceFactory {
 	public void testPre_OneEntry() {
 		IAdhocMap map = sliceFactory.newMapBuilder(ImmutableSet.of("c")).append("v").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("c", "v"));
+	}
+
+	@Test
+	public void testBuildRawMaps() {
+		IAdhocMap map = sliceFactory.buildMap(new IHasEntries() {
+
+			@Override
+			public Collection<? extends String> getKeys() {
+				return List.of("a", "b");
+			}
+
+			@Override
+			public Collection<?> getValues() {
+				return List.of("vA", "vB");
+			}
+
+		});
+		Assertions.assertThat((Map) map).isEqualTo(Map.of("a", "vA", "b", "vB"));
 	}
 
 	@Test

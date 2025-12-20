@@ -111,13 +111,13 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	protected ITabularRecord withSlice(ISliceFactory factory, Map<String, ?> slice) {
-		return withGroupBy(TabularGroupByRecordOverMap.builder().slice(SliceAsMap.fromMap(factory, slice)).build());
+		return withGroupBy(SliceAsMap.fromMap(factory, slice));
 	}
 
 	@Override
 	public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
 		Map<String, ?> transcodedSlice =
-				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.getGroupBys().getCoordinates());
+				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.getGroupBys().asAdhocMap());
 
 		return withSlice(groupBy.getGroupBys().getFactory(), transcodedSlice);
 	}
@@ -125,7 +125,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	@Override
 	public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
 		Map<String, ?> transcodedSlice =
-				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, groupBy.getGroupBys().getCoordinates());
+				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, groupBy.getGroupBys().asAdhocMap());
 
 		return withSlice(this.groupBy.getGroupBys().getFactory(), transcodedSlice);
 	}
@@ -163,7 +163,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	public static class TabularRecordOverMapsBuilder {

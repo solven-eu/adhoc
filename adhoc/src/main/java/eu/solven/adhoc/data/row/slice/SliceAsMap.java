@@ -33,6 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
@@ -42,6 +43,7 @@ import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -64,11 +66,11 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 
 	@Deprecated(since = "Should use a ISliceFactory")
 	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
-		return fromMap(StandardSliceFactory.builder().build(), asMap);
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactory(), asMap);
 	}
 
 	public static IAdhocSlice fromMap(ISliceFactory factory, Map<String, ?> asMap) {
-		return StandardSliceFactory.fromMap(factory, asMap).asSlice();
+		return AdhocMapHelpers.fromMap(factory, asMap).asSlice();
 	}
 
 	/**

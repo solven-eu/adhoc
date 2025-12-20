@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestAdhocFactories {
 	@Test
@@ -36,6 +37,6 @@ public class TestAdhocFactories {
 		ISliceFactory sliceFactory = factories.getSliceFactory();
 
 		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat(slice.get("k")).isSameAs(NullMatcher.NULL_HOLDER);
+		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
 	}
 }

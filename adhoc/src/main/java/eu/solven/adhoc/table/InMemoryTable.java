@@ -55,7 +55,6 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -64,6 +63,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -92,7 +92,7 @@ public class InMemoryTable implements ITableWrapper {
 
 	@NonNull
 	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
+	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 
 	@Default
 	boolean distinctSlices = false;

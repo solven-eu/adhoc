@@ -26,8 +26,9 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.map.factory.ASliceFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.experimental.UtilityClass;
 
@@ -54,8 +55,17 @@ public class AdhocMapHelpers {
 	}
 
 	@Deprecated
-	public static IAdhocMap wrap(Map<String, ?> asMap) {
-		return ASliceFactory.fromMap(StandardSliceFactory.builder().build(), asMap);
+	public static IAdhocMap fromMap(Map<String, ?> asMap) {
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactory(), asMap);
+	}
+
+	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
+		if (asMap instanceof IAdhocMap adhocMap && adhocMap.getFactory().equals(factory)) {
+			return adhocMap;
+		}
+		IMapBuilderPreKeys builder = factory.newMapBuilder(asMap.keySet());
+		asMap.values().forEach(builder::append);
+		return builder.build();
 	}
 
 }

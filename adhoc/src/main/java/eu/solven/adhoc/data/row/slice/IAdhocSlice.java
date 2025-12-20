@@ -22,13 +22,13 @@
  */
 package eu.solven.adhoc.data.row.slice;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -44,7 +44,7 @@ import eu.solven.adhoc.query.filter.value.EqualsMatcher;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRecord {
+public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRecord, IHasAdhocMap {
 
 	@Override
 	default IAdhocSlice getGroupBys() {
@@ -82,13 +82,7 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRec
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
 	default Map<String, ?> getCoordinates() {
-		Map<String, Object> asMap = new LinkedHashMap<>();
-
-		columnsKeySet().forEach(column -> {
-			asMap.put(column, getGroupBy(column, Object.class));
-		});
-
-		return asMap;
+		return asAdhocMap();
 	}
 
 	@Deprecated(since = "Is this good design?")

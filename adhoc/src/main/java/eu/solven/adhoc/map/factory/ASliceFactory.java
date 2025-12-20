@@ -29,15 +29,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
-import eu.solven.adhoc.map.factory.StandardSliceFactory.MapOverLists;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 
@@ -52,10 +54,10 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a",
 	// "b")).append("a1").append("b1")` as the order
 	// of the Set is not consistent with the input array
-	private static final Set<Class<?>> NOT_ORDERED_CLASSES;
+	private static final Set<Class<? extends Set>> NOT_ORDERED_CLASSES;
 
 	static {
-		ImmutableSet.Builder<Class<?>> builder = ImmutableSet.builder();
+		ImmutableSet.Builder<Class<? extends Set>> builder = ImmutableSet.builder();
 
 		// java.util.ImmutableCollections.Set12.Set12(E)
 		builder.add(Set.of("a").getClass());
@@ -74,14 +76,15 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
-	private static final IAdhocMap EMPTY = MapOverLists.builder()
-			.factory(StandardSliceFactory.builder().build())
+	// Supplier as the sliceFactory may be configured lazily
+	private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> StandardSliceFactory.MapOverLists.builder()
+			.factory(AdhocFactoriesUnsafe.factories.getSliceFactory())
 			.keys(SequencedSetLikeList.fromSet(Set.of()))
-			.unorderedValues(ImmutableList.of())
-			.build();
+			.sequencedValues(ImmutableList.of())
+			.build());
 
 	public static IAdhocMap of() {
-		return EMPTY;
+		return EMPTY.get();
 	}
 
 	@Override
@@ -156,11 +159,5 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {
 		return ImmutableList.copyOf(keys);
-	}
-
-	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
-		IMapBuilderPreKeys builder = factory.newMapBuilder(asMap.keySet());
-		asMap.values().forEach(builder::append);
-		return builder.build();
 	}
 }

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.dictionary;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
@@ -32,14 +31,13 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
-import eu.solven.adhoc.map.PermutedArrayList;
 import eu.solven.adhoc.map.factory.ASliceFactory;
 import eu.solven.adhoc.map.factory.AbstractAdhocMap;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;
-import eu.solven.adhoc.map.factory.StandardSliceFactory.MapOverLists;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -64,7 +62,11 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 
 		@Override
 		public IDictionarizer makeDictionarizer(String column) {
-			return columnToDic.computeIfAbsent(column, c -> new MapDictionarizer());
+			return columnToDic.computeIfAbsent(column, this::newDictionarizer);
+		}
+
+		protected IDictionarizer newDictionarizer(String column) {
+			return new MapDictionarizer();
 		}
 	};
 
@@ -74,29 +76,26 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 	public static class MapOverIntFunction extends AbstractAdhocMap {
 
 		@NonNull
-		final IntFunction<Object> unorderedValues;
+		final IntFunction<Object> sequencedValues;
 
 		@Builder
 		public MapOverIntFunction(ISliceFactory factory,
 				SequencedSetLikeList keys,
 				IntFunction<Object> unorderedValues) {
 			super(factory, keys);
-			this.unorderedValues = unorderedValues;
+			this.sequencedValues = unorderedValues;
 		}
 
 		@Override
-		protected Object getUnorderedValue(int index) {
-			return unorderedValues.apply(index);
+		protected Object getSequencedValueRaw(int index) {
+			return sequencedValues.apply(index);
 		}
 
 		@Override
-		protected List<Object> orderedValues() {
-			return PermutedArrayList.builder()
-					.size(keys.size())
-					.unorderedValues(unorderedValues)
-					.reordering(keys::unorderedIndex)
-					.build();
+		protected Object getSortedValueRaw(int index) {
+			return getSequencedValueRaw(sequencedKeys.unorderedIndex(index));
 		}
+
 	}
 
 	/**
@@ -273,10 +272,10 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 						"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
 			}
 
-			return MapOverLists.builder()
+			return StandardSliceFactory.MapOverLists.builder()
 					.factory(this)
 					.keys(internKeyset(keys))
-					.unorderedValues(ImmutableList.copyOf(values))
+					.sequencedValues(ImmutableList.copyOf(values))
 					.build();
 		}
 

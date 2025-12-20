@@ -37,7 +37,6 @@ import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.table.Table;
 
-import eu.solven.adhoc.data.row.slice.ProxiedAdhocMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

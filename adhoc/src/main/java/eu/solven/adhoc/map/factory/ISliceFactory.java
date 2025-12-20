@@ -52,5 +52,4 @@ public interface ISliceFactory {
 	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
 
 	IAdhocMap buildMap(IHasEntries hasEntries);
-
 }

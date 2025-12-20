@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.map.factory.NavigableSetLikeList;
+import eu.solven.adhoc.map.factory.ILikeList;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -42,9 +42,9 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	final Map<String, IDictionarizer> columnToDictionary = new ConcurrentHashMap<>();
 
 	protected class RowListDictionarizer implements IListDictionarizer {
-		private final NavigableSetLikeList keySet;
+		private final ILikeList<String> keySet;
 
-		public RowListDictionarizer(NavigableSetLikeList keySet) {
+		public RowListDictionarizer(ILikeList<String> keySet) {
 			this.keySet = keySet;
 		}
 
@@ -60,7 +60,7 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 		 * @param list
 		 * @return
 		 */
-		protected IntFunction<Object> toDictionarizedRow(NavigableSetLikeList keySet, List<Object> list) {
+		protected IntFunction<Object> toDictionarizedRow(ILikeList<String> keySet, List<Object> list) {
 			int[] indexTo = new int[list.size()];
 
 			return extracted(keySet, list, new IIntArray() {
@@ -84,17 +84,23 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	}
 
 	@Override
-	public IListDictionarizer makeDictionarizer(NavigableSetLikeList keySet) {
-		return new RowListDictionarizer(keySet);
+	public IListDictionarizer makeDictionarizer(ILikeList<String> columns) {
+		return new RowListDictionarizer(columns);
 	}
 
 	protected IDictionarizer getDictionarizer(String column) {
 		return new MapDictionarizer();
 	}
 
-	protected IntFunction<Object> extracted(NavigableSetLikeList keySet, List<Object> list, IIntArray indexTo) {
+	protected IntFunction<Object> extracted(ILikeList<String> columns, List<Object> list, IIntArray indexTo) {
+		if (columns.size() != list.size()) {
+			throw new IllegalArgumentException("%s != %s".formatted(columns.size(), list.size()));
+		} else if (columns.size() != indexTo.length()) {
+			throw new IllegalArgumentException("%s != %s".formatted(columns.size(), indexTo.length()));
+		}
+
 		IntStream.range(0, indexTo.length()).forEach(index -> {
-			IDictionarizer dictionary = columnToDictionary.get(keySet.getKey(index));
+			IDictionarizer dictionary = getOrMakeDictionary(columns.getKey(index));
 
 			indexTo.writeInt(index, dictionary.toInt(list.get(index)));
 		});
@@ -102,9 +108,17 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 		return index -> {
 			int indexedValue = indexTo.readInt(index);
 
-			IDictionarizer dictionary = columnToDictionary.get(keySet.getKey(index));
+			IDictionarizer dictionary = columnToDictionary.get(columns.getKey(index));
 
 			return dictionary.fromInt(indexedValue);
 		};
+	}
+
+	protected IDictionarizer getOrMakeDictionary(String key) {
+		return columnToDictionary.computeIfAbsent(key, this::makeDictionarizer);
+	}
+
+	protected IDictionarizer makeDictionarizer(String column) {
+		return new MapDictionarizer();
 	}
 }

@@ -25,7 +25,6 @@ package eu.solven.adhoc.map.factory;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -33,15 +32,17 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Maps;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.StandardSliceFactory.MapOverLists;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -64,7 +65,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Holds keys, in both sorted order, and unordered order ,with the information
 	// to map from one to the other
 	@NonNull
-	protected final SequencedSetLikeList keys;
+	protected final SequencedSetLikeList sequencedKeys;
 
 	/**
 	 * Cache the hash code for the string
@@ -85,10 +86,25 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
 
-	protected abstract Object getUnorderedValue(int index);
+	/**
+	 * 
+	 * @param index
+	 * @return the value at given index, considering keys in original order.
+	 */
+	// null would be represented by NullMatcher.NULL_HOLDER
+	@org.jspecify.annotations.NonNull
+	protected abstract Object getSequencedValueRaw(int index);
 
-	@Deprecated(since = "This should not be needed")
-	protected abstract List<Object> orderedValues();
+	protected Object getSequencedValue(int index) {
+		return NullMatcher.unwrapNull(getSequencedValueRaw(index));
+	}
+
+	/**
+	 * 
+	 * @param index
+	 * @return the value at given index, considering keys being sorted.
+	 */
+	protected abstract Object getSortedValueRaw(int index);
 
 	@Override
 	public IAdhocSlice asSlice() {
@@ -111,31 +127,31 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	public void forEach(BiConsumer<? super String, ? super Object> action) {
 		int size = size();
 		for (int i = 0; i < size; i++) {
-			action.accept(keys.getKey(i), getUnorderedValue(i));
+			action.accept(sequencedKeys.getKey(i), getSequencedValue(i));
 		}
 	}
 
 	@Override
 	public Object get(Object key) {
-		int index = keys.indexOf(key);
+		int index = sequencedKeys.indexOf(key);
 		if (index < 0) {
 			// key is unknown: return null as default value
 			return null;
 		}
 
-		return getUnorderedValue(index);
+		return getSequencedValue(index);
 	}
 
 	// Called by `SliceAsMap` so it needs to be fast
 	@Override
 	public boolean containsKey(Object key) {
-		return keys.set.keysAsHashSet.get().contains(key);
+		return sequencedKeys.set.keysAsHashSet.get().contains(key);
 	}
 
 	@Override
 	public boolean containsValue(Object value) {
 		// DESIGN This is a slow method in most cases
-		return IntStream.range(0, size()).anyMatch(index -> getUnorderedValue(index).equals(value));
+		return IntStream.range(0, size()).anyMatch(index -> getSequencedValue(index).equals(value));
 	}
 
 	/**
@@ -153,10 +169,10 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 			int size = size();
 			for (int i = 0; i < size; i++) {
-				String key = keys.getKey(i);
-				Object value = getUnorderedValue(i);
+				String key = sequencedKeys.getKey(i);
+				Object value = getSequencedValue(i);
 				// see `Map.Entry#hashCode`
-				hashcodeHolder[0] += key.hashCode() ^ value.hashCode();
+				hashcodeHolder[0] += Objects.hashCode(key) ^ Objects.hashCode(value);
 			}
 
 			h = hashcodeHolder[0];
@@ -175,10 +191,12 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	public boolean equals(Object obj) {
 		if (obj == null) {
 			return false;
-		} else if (obj instanceof MapOverLists objAsMap) {
+		} else if (obj instanceof AbstractAdhocMap objAsMap) {
 			// hashCode is cached: while many .equals are covered by a previous hashCode check, it may be only partial
 			// (e.g. in a hashMap, we do .equals between instance for each hashCodes are equals modulo X)
 			if (this.hashCode() != objAsMap.hashCode()) {
+				return false;
+			} else if (this.size() != objAsMap.size()) {
 				return false;
 			} else
 
@@ -186,9 +204,9 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 			// In other words: there is high probability of same keys and different values
 			// than different keys but
 			// same values. `Objects.equals` will do a reference check
-			if (!Objects.equals(orderedValues(), objAsMap.orderedValues())) {
+			if (!equalsForInt(size(), this::getSortedValueRaw, objAsMap::getSortedValueRaw)) {
 				return false;
-			} else if (!Objects.equals(keys.orderedKeys(), objAsMap.keys.orderedKeys())) {
+			} else if (!Objects.equals(sequencedKeys.orderedKeys(), objAsMap.sequencedKeys.orderedKeys())) {
 				return false;
 			} else {
 				return true;
@@ -204,6 +222,23 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * 
+	 * @param size
+	 * @param left
+	 * @param right
+	 * @return true if the {@link IntFunction} returns equals value for index from 0 to size (excluded)
+	 */
+	protected static boolean equalsForInt(int size, IntFunction<Object> left, IntFunction<Object> right) {
+		for (int i = 0; i < size; i++) {
+			if (!Objects.equals(left.apply(i), right.apply(i))) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	// Directly copied from AbstractMap.equals
@@ -240,7 +275,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	public final class AdhocMapEntrySet extends AbstractSet<Map.Entry<String, Object>> {
 		@Override
 		public final int size() {
-			return keys.size();
+			return sequencedKeys.size();
 		}
 
 		@Override
@@ -279,11 +314,11 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 				return false;
 			}
 			Object key = e.getKey();
-			int index = keys.indexOf(key);
+			int index = sequencedKeys.indexOf(key);
 			if (index < 0) {
 				return false;
 			}
-			return Objects.equals(getUnorderedValue(index), e.getValue());
+			return Objects.equals(getSequencedValue(index), e.getValue());
 		}
 
 		@Override
@@ -305,9 +340,9 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		}
 
 		protected Map.Entry<String, Object> entry(int index) {
-			String key = keys.getKey(index);
-			Object value = getUnorderedValue(index);
-			return Map.entry(key, value);
+			String key = sequencedKeys.getKey(index);
+			Object value = getSequencedValue(index);
+			return Maps.immutableEntry(key, value);
 		}
 	}
 
@@ -326,15 +361,12 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		}
 
 		// compare sorted keys
-		int compareKeys = keys.compareTo(other.keys);
+		int compareKeys = sequencedKeys.compareTo(other.sequencedKeys);
 		if (compareKeys != 0) {
 			return compareKeys;
 		}
 
 		// Compare values
-		List<Object> thisOrderedValues = this.orderedValues();
-		List<Object> otherOrderedValues = other.orderedValues();
-
-		return AdhocMapComparisonHelpers.compareValues(thisOrderedValues, otherOrderedValues);
+		return AdhocMapComparisonHelpers.compareValues(this.size(), this::getSortedValueRaw, other::getSortedValueRaw);
 	}
 }

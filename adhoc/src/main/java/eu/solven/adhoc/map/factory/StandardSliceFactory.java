@@ -29,7 +29,6 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.PermutedArrayList;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
@@ -55,27 +54,24 @@ public class StandardSliceFactory extends ASliceFactory {
 	public static class MapOverLists extends AbstractAdhocMap {
 
 		@NonNull
-		final ImmutableList<Object> unorderedValues;
+		final ImmutableList<Object> sequencedValues;
 
 		@Builder
-		public MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, ImmutableList<Object> unorderedValues) {
+		public MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, ImmutableList<Object> sequencedValues) {
 			super(factory, keys);
-			this.unorderedValues = unorderedValues;
+			this.sequencedValues = sequencedValues;
 		}
 
 		@Override
-		protected Object getUnorderedValue(int index) {
-			return unorderedValues.get(index);
+		protected Object getSequencedValueRaw(int index) {
+			return sequencedValues.get(index);
 		}
 
 		@Override
-		protected List<Object> orderedValues() {
-			return PermutedArrayList.builder()
-					.size(unorderedValues.size())
-					.unorderedValues(unorderedValues::get)
-					.reordering(keys::unorderedIndex)
-					.build();
+		protected Object getSortedValueRaw(int index) {
+			return sequencedValues.get(sequencedKeys.unorderedIndex(index));
 		}
+
 	}
 
 	/**
@@ -192,7 +188,7 @@ public class StandardSliceFactory extends ASliceFactory {
 		return MapOverLists.builder()
 				.factory(this)
 				.keys(internKeyset(keys))
-				.unorderedValues(ImmutableList.copyOf(values))
+				.sequencedValues(ImmutableList.copyOf(values))
 				.build();
 	}
 }

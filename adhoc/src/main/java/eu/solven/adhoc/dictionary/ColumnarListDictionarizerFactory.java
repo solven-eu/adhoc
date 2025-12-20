@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.map.factory.NavigableSetLikeList;
+import eu.solven.adhoc.map.factory.ILikeList;
 
 /**
  * Extends {@link ListDictionarizerFactory} by relying on a `int[][]`. The memory is referenced for the whole column,
@@ -43,7 +43,7 @@ public class ColumnarListDictionarizerFactory extends ListDictionarizerFactory {
 	}
 
 	@Override
-	public IListDictionarizer makeDictionarizer(NavigableSetLikeList keySet) {
+	public IListDictionarizer makeDictionarizer(ILikeList<String> keySet) {
 		int width = keySet.size();
 		int[][] table = IntStream.range(0, size).mapToObj(s -> new int[width]).toArray(int[][]::new);
 
@@ -51,7 +51,7 @@ public class ColumnarListDictionarizerFactory extends ListDictionarizerFactory {
 
 		return new ListDictionarizerFactory.RowListDictionarizer(keySet) {
 			@Override
-			protected IntFunction<Object> toDictionarizedRow(NavigableSetLikeList keySet, List<Object> list) {
+			protected IntFunction<Object> toDictionarizedRow(ILikeList<String> keySet, List<Object> list) {
 				int currentRowIndex = rowIndex.getAndIncrement();
 
 				return extracted(keySet, list, new IIntArray() {

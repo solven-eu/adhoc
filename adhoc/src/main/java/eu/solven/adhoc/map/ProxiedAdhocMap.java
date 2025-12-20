@@ -20,14 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.map;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 

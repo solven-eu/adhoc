@@ -67,7 +67,6 @@ import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -247,7 +246,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 		}
 
 		JooqTableWrapperParameters parameters = parametersBuilder.build();
-		return new JooqTableWrapper(tableName, parameters, StandardSliceFactory.builder().build());
+		return new JooqTableWrapper(tableName, parameters, AdhocFactoriesUnsafe.factories.getSliceFactory());
 	}
 
 	public DSLContext makeDsl() {

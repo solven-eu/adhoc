@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.dictionary;
 
+import eu.solven.adhoc.map.factory.ILikeList;
 import eu.solven.adhoc.map.factory.NavigableSetLikeList;
 
 /**
@@ -32,6 +33,6 @@ import eu.solven.adhoc.map.factory.NavigableSetLikeList;
 @FunctionalInterface
 public interface IListDictionarizerFactory {
 
-	IListDictionarizer makeDictionarizer(NavigableSetLikeList keySet);
+	IListDictionarizer makeDictionarizer(ILikeList<String> columns);
 
 }
