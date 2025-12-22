@@ -41,8 +41,9 @@ public class TestAdhocAliaserHelper {
 				.isEqualTo(Map.of("k", "v"));
 		// Receiving unknown column would be a bug
 		Assertions.assertThat(AdhocTranscodingHelper.transcodeColumns(context, Map.of("otherK", "v")))
-				// .isEqualTo(Map.of("otherK", "v"))
-				.isEmpty();
+				.isEqualTo(Map.of("otherK", "v"))
+		// .isEmpty()
+		;
 	}
 
 	@Test

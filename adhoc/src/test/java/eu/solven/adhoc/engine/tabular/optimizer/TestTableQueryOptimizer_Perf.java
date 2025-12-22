@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
@@ -34,7 +33,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -79,9 +78,12 @@ public class TestTableQueryOptimizer_Perf {
 
 		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
-		NavigableSet<String> inColumns = new TreeSet<>(ImmutableSet.of("c0", "c1"));
+		// BEWARE This tests demonstrates DictionaryFactoryValue is behaving badly on large cardinalities
+		StandardSliceFactory sliceFactory = StandardSliceFactory.builder().build();
+
+		NavigableSet<String> inColumns = ImmutableSortedSet.of("c0", "c1");
 		IntStream.range(0, cardinalityIn).forEach(rowIndex -> {
-			inducerValues.append(SliceAsMap.fromMap(
+			inducerValues.append(SliceAsMap.fromMap(sliceFactory,
 					factory.newMapBuilder(inColumns).append(rowIndex % cardinalityOut).append(rowIndex).build()))
 					.onLong(rowIndex);
 		});

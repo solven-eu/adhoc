@@ -59,11 +59,13 @@ public class TestDictionarizedSliceFactory {
 		IAdhocMap map = sliceFactory.newMapBuilder().put("b", "vB").put("a", "vA").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("a", "vA", "b", "vB"));
 
-		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(0)).isEqualTo("vB");
-		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(1)).isEqualTo("vA");
+		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(0)).isEqualTo("vA");
+		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(1)).isEqualTo("vB");
 
 		Assertions.assertThat(((AbstractAdhocMap) map).getSequencedValueRaw(0)).isEqualTo("vB");
 		Assertions.assertThat(((AbstractAdhocMap) map).getSequencedValueRaw(1)).isEqualTo("vA");
+
+		Assertions.assertThat(map.entrySet()).containsExactly(Map.entry("b", "vB"), Map.entry("a", "vA"));
 	}
 
 	@Test
