@@ -23,14 +23,11 @@
 package eu.solven.adhoc.map;
 
 /**
- * Used for operations forbidden due to immutability.
+ * For any structure representable as an {@link IAdhocMap}
  * 
  * @author Benoit Lacelle
  */
-public class UnsupportedAsImmutableException extends UnsupportedOperationException {
-	private static final long serialVersionUID = 5673313093256614656L;
-
-	public UnsupportedAsImmutableException() {
-		super("Immutable");
-	}
+@FunctionalInterface
+public interface IHasAdhocMap {
+	IAdhocMap asAdhocMap();
 }

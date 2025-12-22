@@ -57,7 +57,6 @@ import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -286,7 +285,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
 			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
 		} else {
-			filterStripperFactory = AdhocUnsafe.filterStripperFactory;
+			filterStripperFactory = factories.getFilterStripperFactory();
 		}
 		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
 	}

@@ -11,6 +11,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Pivotable will automatically cancel currently running queries if another query is triggered.
 
 ### Changed
+- Refactored `ISliceFactory`, preparing the ability to rely on dictionarized and column-oriented storage.
 
 ### Removed
 

@@ -56,7 +56,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 	@Test
 	public void testConcurrentTableQueries() throws InterruptedException {
 		TableQueryEngineBootstrapped engine = TableQueryEngineBootstrapped.builder()
-				.optimizer(new TableQueryOptimizer(factories, AdhocUnsafe.filterOptimizer))
+				.optimizer(new TableQueryOptimizer(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
 				.build();
 
 		ITableWrapper tableWrapper = Mockito.mock(ITableWrapper.class);

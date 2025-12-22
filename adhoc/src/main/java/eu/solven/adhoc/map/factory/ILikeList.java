@@ -20,18 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.map.factory;
+
+import java.util.List;
 
 /**
+ * Similar to {@link List}
  * 
- * Replace an {@link IAdhocSlice} by a compressed alternative row. The actual compression may be differed (e.g. by this
- * implementation relying on a {@link ProxiedSlice}).
- * 
+ * @param <T>
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ISliceCompressor {
+public interface ILikeList<T> {
+	int size();
 
-	IAdhocSlice compress(IAdhocSlice slice);
+	/**
+	 * @param key
+	 * @return the index in the ordered keySet
+	 */
+	int indexOf(Object key);
+
+	String getKey(int i);
 
 }

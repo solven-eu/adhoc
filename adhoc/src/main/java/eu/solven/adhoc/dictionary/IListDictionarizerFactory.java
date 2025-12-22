@@ -20,19 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.dictionary;
+
+import eu.solven.adhoc.map.factory.ILikeList;
+import eu.solven.adhoc.map.factory.NavigableSetLikeList;
 
 /**
- * 
- * Skip any compression or dictionarisation.
+ * Creates {@link IListDictionarizer} given a {@link NavigableSetLikeList}.
  * 
  * @author Benoit Lacelle
  */
-public class NoopSliceCompressor implements ISliceCompressor {
+@FunctionalInterface
+public interface IListDictionarizerFactory {
 
-	@Override
-	public IAdhocSlice compress(IAdhocSlice slice) {
-		return slice;
-	}
+	IListDictionarizer makeDictionarizer(ILikeList<String> columns);
 
 }

@@ -45,7 +45,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 
 /**
  * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}

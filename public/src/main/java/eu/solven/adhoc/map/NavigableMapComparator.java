@@ -34,6 +34,8 @@ import lombok.extern.slf4j.Slf4j;
  * A {@link Comparator} which compare first the keyset, then the values. Useful to rely on {@link NavigableMap} as key
  * of a {@link NavigableMap}.
  * 
+ * We compare keySet first in order to group together maps with similar keyKey.
+ * 
  * @author Benoit Lacelle
  * 
  */

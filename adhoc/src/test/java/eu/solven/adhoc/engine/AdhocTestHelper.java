@@ -39,7 +39,7 @@ public class AdhocTestHelper {
 	public static EventBus eventBus() {
 		EventBus eventBus = new EventBus();
 
-		eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j());
+		// eventBus.register(new AdhocEventsFromGuavaEventBusToSfl4j());
 
 		return eventBus;
 	}

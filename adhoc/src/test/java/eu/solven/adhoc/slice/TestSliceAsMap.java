@@ -37,6 +37,9 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapHelpers;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 
 public class TestSliceAsMap {
 	@Test
@@ -142,17 +145,42 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testIntAndLong_adhocMap() {
-		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123)));
-		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123L)));
+		IAdhocSlice sliceInt = SliceAsMap.fromMap(AdhocMapHelpers.fromMap(Map.of("k", 123)));
+		IAdhocSlice sliceLong = SliceAsMap.fromMap(AdhocMapHelpers.fromMap(Map.of("k", 123L)));
 
 		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
 	}
 
 	@Test
 	public void testKeepAdhocMap() {
-		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMapHelpers.wrap(Map.of("k", 123)));
+		IAdhocSlice sliceOverAdhocMap = SliceAsMap.fromMap(AdhocMapHelpers.fromMap(Map.of("k", 123)));
 
 		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())
 				.isEqualTo("com.google.common.collect.Maps$TransformedEntriesMap");
+	}
+
+	@Test
+	public void testNullValue() {
+		StandardSliceFactory factory = StandardSliceFactory.builder().build();
+		IAdhocMap mapWithNullValue = factory.newMapBuilder().put("c", null).build();
+		Assertions.assertThat(mapWithNullValue.get("c")).isEqualTo(null);
+		Assertions.assertThat(mapWithNullValue.entrySet().iterator().next().getValue()).isEqualTo(null);
+
+		Assertions.assertThat((Map) mapWithNullValue)
+				.isEqualTo(MapWithNulls.of("c", null))
+				.hasSameHashCodeAs(MapWithNulls.of("c", null));
+	}
+
+	@Test
+	public void testEqualsRawMap() {
+		Map<String, String> rawMap = Map.of("a", "vA", "b", "vB");
+		IAdhocMap slice = AdhocMapHelpers.fromMap(rawMap);
+		Assertions.assertThat((Map) slice).isNotEqualTo(Map.of("a", "vA")).isEqualTo(rawMap).hasSameHashCodeAs(rawMap);
+		Assertions.assertThat(slice.entrySet())
+				.contains(Map.entry("a", "vA"))
+				.contains(Map.entry("b", "vB"))
+				.hasSize(2)
+				.isEqualTo(rawMap.entrySet())
+				.hasSameHashCodeAs(rawMap.entrySet());
 	}
 }

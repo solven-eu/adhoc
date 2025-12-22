@@ -34,7 +34,8 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 
 public class TestAdhocMap {
 	// Not a String to ensure we accept various types
@@ -118,7 +119,13 @@ public class TestAdhocMap {
 		IAdhocMap desc =
 				factory.newMapBuilder(ImmutableSet.of("a", "b", "c")).append("a1").append("b1").append("c1").build();
 
-		Assertions.assertThat((Map) desc).isEqualTo(asc).isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		Assertions.assertThat((Map) asc).hasToString("{c=c1, a=a1, b=b1}");
+		Assertions.assertThat((Map) desc).hasToString("{a=a1, b=b1, c=c1}");
+
+		Assertions.assertThat((Map) desc)
+				.isEqualTo(asc)
+				.hasSameHashCodeAs(asc)
+				.isEqualTo(Map.of("a", "a1", "b", "b1", "c", "c1"));
 	}
 
 	@Test
@@ -164,7 +171,7 @@ public class TestAdhocMap {
 				.mapToObj(i -> Strings.padStart(Integer.toString(i), 3, '0'))
 				.collect(ImmutableSet.toImmutableSet());
 
-		MapBuilderPreKeys builder = factory.newMapBuilder(keys);
+		IMapBuilderPreKeys builder = factory.newMapBuilder(keys);
 
 		IntStream.range(0, size).forEach(i -> builder.append("v_" + i));
 

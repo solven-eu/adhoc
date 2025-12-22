@@ -37,10 +37,7 @@ import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.table.Table;
 
-import eu.solven.adhoc.data.row.slice.ByPageSliceCompressor;
-import eu.solven.adhoc.data.row.slice.ProxiedSlice;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -49,8 +46,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@SuperBuilder
-public class ByPageArrowSliceCompressor extends ByPageSliceCompressor {
+public class ByPageArrowSliceCompressor {
 	static final int ALLOCATOR_LIMIT = 8 * 1024;
 
 	@RequiredArgsConstructor
@@ -60,19 +56,18 @@ public class ByPageArrowSliceCompressor extends ByPageSliceCompressor {
 	}
 
 	// TODO How to keep the allocator for the query lifetime?
-	@SuppressWarnings("PMD.CloseResource")
-	@Override
-	protected void doCompress(List<ProxiedSlice> toCompress) {
-		super.doCompress(toCompress);
+	@SuppressWarnings({ "PMD.CloseResource", "PMD.LooseCoupling" })
+	protected void doCompress(List<ProxiedAdhocMap> toCompress) {
+		// super.doCompress(toCompress);
 
 		// https://arrow.apache.org/docs/java/memory.html#reference-counting
 		BufferAllocator allocator = new RootAllocator(ALLOCATOR_LIMIT);
 
 		List<ValueVectorOrObject> vectors = new ArrayList<>();
 
-		toCompress.getFirst().columnsKeySet().forEach(column -> {
+		toCompress.getFirst().keySet().forEach(column -> {
 			Set<?> classes = toCompress.stream()
-					.map(s -> s.getGroupBy(column))
+					.map(s -> s.get(column))
 					.filter(v -> v != null)
 					.map(Object::getClass)
 					.collect(Collectors.toSet());
@@ -83,8 +78,7 @@ public class ByPageArrowSliceCompressor extends ByPageSliceCompressor {
 				vectors.add(new ValueVectorOrObject(new BitVector(column, allocator), null));
 			} else {
 				// fallback to a plain Object[] column
-				vectors.add(
-						new ValueVectorOrObject(null, toCompress.stream().map(s -> s.getGroupBy(column)).toArray()));
+				vectors.add(new ValueVectorOrObject(null, toCompress.stream().map(s -> s.get(column)).toArray()));
 			}
 
 			ValueVector valueVector = vectors.getLast().valueVector;
@@ -92,7 +86,7 @@ public class ByPageArrowSliceCompressor extends ByPageSliceCompressor {
 				valueVector.allocateNew();
 
 				AtomicInteger index = new AtomicInteger();
-				toCompress.stream().map(s -> s.getGroupBy(column)).forEach(o -> {
+				toCompress.stream().map(s -> s.get(column)).forEach(o -> {
 					if (valueVector instanceof VarCharVector varcharVector) {
 						varcharVector.setSafe(index.getAndIncrement(), o.toString().getBytes(StandardCharsets.UTF_8));
 					} else if (valueVector instanceof BitVector bitVector) {

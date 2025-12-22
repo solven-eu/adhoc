@@ -61,7 +61,7 @@ public class BenchmarkAndFilter {
 	Map<String, ?> asMap =
 			IntStream.range(0, 5).mapToObj(i -> i).collect(Collectors.toMap(i -> "k_" + i, i -> "v_" + i));
 
-	IAdhocMap adhocMap = AdhocMapHelpers.wrap(asMap);
+	IAdhocMap adhocMap = AdhocMapHelpers.fromMap(asMap);
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkAndFilter.class.getSimpleName()).forks(1).build();

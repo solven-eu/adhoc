@@ -20,64 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.map.factory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
-import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder.Default;
-import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
+import eu.solven.adhoc.map.factory.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
+import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 
 /**
- * Enable {@link IAdhocSlice} to be compressed by pages. The compression algorithm is delegated to another class.
+ * Enable building {@link Map} and {@link IAdhocSlice} in Adhoc context.
+ * 
+ * In Adhoc, we generate tons of {@link Map}-like for a given {@link IAdhocGroupBy}. Which means a tons of
+ * {@link Map}-like for a predefined keySet. Given {@link Map} may be sorted, to enable faster merging (see
+ * {@link IDagBottomUpStrategy}).
  * 
  * @author Benoit Lacelle
  */
-@Deprecated(since = "Not-Ready")
-@SuperBuilder
-@Slf4j
-public class ByPageSliceCompressor implements ISliceCompressor {
+public interface ISliceFactory {
+
+	IMapBuilderThroughKeys newMapBuilder();
 
 	/**
-	 * Number of rows to accumulate in a page
+	 * 
+	 * @param keys
+	 * @return a {@link MapBuilderPreKeys} for given set of keys.
 	 */
-	@Default
-	final int pageSize = AdhocUnsafe.pageSize;
+	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
 
-	/**
-	 * Current page
-	 */
-	final List<ProxiedSlice> page = new ArrayList<>();
-
-	@Override
-	public IAdhocSlice compress(IAdhocSlice slice) {
-		ProxiedSlice proxiedSlice = new ProxiedSlice(slice);
-
-		page.add(proxiedSlice);
-
-		if (isFull()) {
-			compressPage();
-		}
-
-		return proxiedSlice;
-	}
-
-	protected void compressPage() {
-		final List<ProxiedSlice> toCompress = new ArrayList<>(page);
-		page.clear();
-
-		doCompress(toCompress);
-
-	}
-
-	protected void doCompress(List<ProxiedSlice> toCompress) {
-		log.info("Compressing a page with with={}", toCompress.size());
-	}
-
-	protected boolean isFull() {
-		return page.size() >= pageSize;
-	}
-
+	IAdhocMap buildMap(IHasEntries hasEntries);
 }

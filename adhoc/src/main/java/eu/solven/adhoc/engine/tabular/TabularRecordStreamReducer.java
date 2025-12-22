@@ -35,8 +35,8 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -148,7 +148,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	/**
 	 * @param tableQuery
 	 * @param tableSlice
-	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
+	 * @return the coordinate for given input.
 	 */
 	protected IAdhocSlice makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableSlice) {
 		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
@@ -156,9 +156,10 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			return SliceAsMap.grandTotal();
 		}
 
+		// BEWARE This order may differ from tableSlice due to calculatedColumns
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		MapBuilderPreKeys coordinatesBuilder = sliceFactory.newMapBuilder(groupedByColumns);
+		IMapBuilderThroughKeys coordinatesBuilder = sliceFactory.newMapBuilder();
 
 		// `forEachGroupBy` enables not doing many individual `.get`
 		tableSlice.forEachGroupBy((sliceColumn, value) -> {
@@ -174,7 +175,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				assert value != null : "`null` is not a legal column value";
 			}
 
-			coordinatesBuilder.append(value);
+			coordinatesBuilder.put(sliceColumn, value);
 		});
 
 		return coordinatesBuilder.build().asSlice();

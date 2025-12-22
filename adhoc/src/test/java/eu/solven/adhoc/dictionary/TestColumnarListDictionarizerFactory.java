@@ -20,43 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.dictionary;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.IntFunction;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import eu.solven.adhoc.map.factory.NavigableSetLikeList;
 
-public class TestStandardSliceFactory {
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+public class TestColumnarListDictionarizerFactory {
+	IListDictionarizerFactory factory = new ColumnarListDictionarizerFactory(5);
 
 	@Test
-	public void isNorOrdered() {
-		Assertions.assertThat(factory.isNotOrdered(Set.of("a"))).isTrue();
+	public void testMakeMap() {
+		IListDictionarizer dictionarizer = factory.makeDictionarizer(NavigableSetLikeList.fromSet(Set.of("a", "b")));
 
-		{
-			HashSet<String> hashSet = new HashSet<>();
-			Assertions.assertThat(factory.isNotOrdered(hashSet)).isFalse();
-		}
+		IntFunction<Object> dic00 = dictionarizer.dictionarize(List.of("a0", "b0"));
+		Assertions.assertThat(dic00.apply(0)).isEqualTo("a0");
+		Assertions.assertThat(dic00.apply(1)).isEqualTo("b0");
 
-		// HashMap keySet is considered ordered, as we expect to iterate in `.values` which has same ordering as
-		// `.keySet`
-		{
-			HashMap<String, Object> hashMap = new HashMap<>();
-			Assertions.assertThat(factory.isNotOrdered(hashMap.keySet())).isFalse();
-		}
+		IntFunction<Object> dic11 = dictionarizer.dictionarize(List.of("a1", "b1"));
+		Assertions.assertThat(dic11.apply(0)).isEqualTo("a1");
+		Assertions.assertThat(dic11.apply(1)).isEqualTo("b1");
 
-		// Empty so ordered
-		Assertions.assertThat(factory.isNotOrdered(Set.of())).isFalse();
-		// These implementations are ordered
-		Assertions.assertThat(factory.isNotOrdered(List.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableList.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableSet.of())).isFalse();
+		IntFunction<Object> dic10 = dictionarizer.dictionarize(List.of("a1", "b0"));
+		Assertions.assertThat(dic10.apply(0)).isEqualTo("a1");
+		Assertions.assertThat(dic10.apply(1)).isEqualTo("b0");
 	}
 }

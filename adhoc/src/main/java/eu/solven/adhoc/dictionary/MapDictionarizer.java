@@ -20,13 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.dictionary;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Indicates the instances are immutable.
+ * Simple {@link IDictionarizer} based on an {@link ConcurrentHashMap}.
  * 
  * @author Benoit Lacelle
  */
-public interface IImmutable {
+// https://stackoverflow.com/questions/29826787/is-this-dictionary-function-thread-safe-concurrenthashmapatomicinteger
+public class MapDictionarizer implements IDictionarizer {
+	final ConcurrentMap<Object, Integer> objectToInt = new ConcurrentHashMap<>();
+	final List<Object> intToObject = new CopyOnWriteArrayList<>();
+
+	@Override
+	public Object fromInt(int indexedValue) {
+		return intToObject.get(indexedValue);
+	}
+
+	@Override
+	public int toInt(Object object) {
+		// ConcurrentHashMap guarantees the `ifAbsent` function to be called zero or once per `computeIfAbsent`
+		// invocation
+		return objectToInt.computeIfAbsent(object, o -> {
+			intToObject.add(o);
+
+			return intToObject.size() - 1;
+		});
+	}
 
 }

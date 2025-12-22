@@ -26,7 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.immutable.IImmutable;
 
 /**
  * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a
