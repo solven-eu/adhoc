@@ -20,23 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.dictionary.page;
 
-import java.util.Map;
+import eu.solven.adhoc.map.factory.SequencedSetLikeList;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Represents a table.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IAppendableTable {
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+	/**
+	 * 
+	 * @return a row, able to write into any column.
+	 */
+	IAdhocTableRow nextRow();
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+	/**
+	 * 
+	 * @param keysLikeList
+	 * @return a row, able to write only into given columns, in given order.
+	 */
+	IAdhocTableRow nextRow(SequencedSetLikeList keysLikeList);
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
-	}
 }

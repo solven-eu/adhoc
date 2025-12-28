@@ -66,7 +66,6 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -76,13 +75,11 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -104,10 +101,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	@NonNull
 	final JooqTableWrapperParameters tableParameters;
 
-	@NonNull
-	@Default
-	protected final ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
-
 	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()
 			// https://github.com/google/guava/wiki/cachesexplained#refresh
 			.refreshAfterWrite(Duration.ofMinutes(1))
@@ -121,10 +114,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				}
 			})
 			.build(CacheLoader.asyncReloading(CacheLoader.from(this::noCacheGetFields), AdhocUnsafe.maintenancePool));
-
-	public JooqTableWrapper(String name, JooqTableWrapperParameters tableParameters) {
-		this(name, tableParameters, AdhocFactoriesUnsafe.factories.getSliceFactory());
-	}
 
 	@Override
 	public String getName() {
@@ -246,7 +235,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 		}
 
 		JooqTableWrapperParameters parameters = parametersBuilder.build();
-		return new JooqTableWrapper(tableName, parameters, AdhocFactoriesUnsafe.factories.getSliceFactory());
+		return new JooqTableWrapper(tableName, parameters);
 	}
 
 	public DSLContext makeDsl() {
@@ -333,7 +322,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(sqlQuery);
+		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery);
 
 		ResultQuery<Record> resultQuery = sqlQuery.getQuery();
 
@@ -367,8 +356,9 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				});
 	}
 
-	protected JooqTabularRecordFactory makeTabularRecordFactory(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		return new JooqTabularRecordFactory(sqlQuery.getFields(), sliceFactory);
+	protected ITabularRecordFactory makeTabularRecordFactory(QueryPod queryPod,
+			IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		return new JooqTabularRecordFactory(sqlQuery.getFields(), queryPod.getSliceFactory());
 	}
 
 	protected Stream<Record> toStream(QueryPod queryPod, ResultQuery<Record> resultQuery) {

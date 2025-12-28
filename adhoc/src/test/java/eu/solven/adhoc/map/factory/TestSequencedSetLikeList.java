@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -86,5 +87,15 @@ public class TestSequencedSetLikeList {
 		Assertions.assertThat(sequence.indexOf("c")).isEqualTo(2);
 
 		Assertions.assertThat((Set) sequence).hasToString("[a, b, c]");
+	}
+
+	@Test
+	public void testHashCodeEquals_differentOrders() {
+		SequencedSetLikeList abc = SequencedSetLikeList.fromSet(ImmutableSet.of("a", "b", "c"));
+		SequencedSetLikeList bca = SequencedSetLikeList.fromSet(ImmutableSet.of("b", "c", "a"));
+		SequencedSetLikeList cab = SequencedSetLikeList.fromSet(ImmutableSet.of("c", "a", "b"));
+
+		Assertions.assertThat((Set) abc).isEqualTo(bca).hasSameHashCodeAs(bca).isEqualTo(cab).hasSameHashCodeAs(cab);
+		Assertions.assertThat(abc.asList()).isEqualTo(List.of("a", "b", "c")).hasSameHashCodeAs(List.of("a", "b", "c"));
 	}
 }

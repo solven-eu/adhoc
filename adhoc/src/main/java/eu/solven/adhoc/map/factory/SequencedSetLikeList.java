@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -44,9 +45,12 @@ import lombok.Builder;
 import lombok.NonNull;
 
 /**
- * A {@link NavigableSet} with information to build the order in the original {@link Set}.
+ * A {@link SequencedSet} with information to build the order in the original {@link Set}.
  * 
  * This is NOT similar to a {@link NavigableSet}. It enables an order relatively to {@link NavigableSet}.
+ * 
+ * This should generally not be used as key, as two {@link SequencedSet} with different orders would be considered
+ * equals. In such a case, one should rely on
  *
  * @author Benoit Lacelle
  */
@@ -196,6 +200,21 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 			}
 			sb.append(',').append(' ');
 		}
+	}
+
+	public List<String> asList() {
+		return new AbstractList<>() {
+
+			@Override
+			public int size() {
+				return SequencedSetLikeList.this.size();
+			}
+
+			@Override
+			public String get(int index) {
+				return SequencedSetLikeList.this.getKey(index);
+			}
+		};
 	}
 
 }

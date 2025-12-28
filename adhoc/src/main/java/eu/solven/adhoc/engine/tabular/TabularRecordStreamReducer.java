@@ -25,6 +25,8 @@ package eu.solven.adhoc.engine.tabular;
 import java.util.NavigableSet;
 import java.util.function.BiConsumer;
 
+import com.google.common.collect.Iterables;
+
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -35,6 +37,8 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.map.factory.IBuildableIntoMap;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -159,26 +163,49 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		// BEWARE This order may differ from tableSlice due to calculatedColumns
 		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		IMapBuilderThroughKeys coordinatesBuilder = sliceFactory.newMapBuilder();
+		IBuildableIntoMap buildableIntoMap;
+		if (Iterables.elementsEqual(tableSlice.columnsKeySet(), groupedByColumns)) {
+			// In most cases, the tableSlice should have same columns as requested by the groupBy
+			IMapBuilderPreKeys coordinatesBuilder = sliceFactory.newMapBuilder(groupedByColumns);
 
-		// `forEachGroupBy` enables not doing many individual `.get`
-		tableSlice.forEachGroupBy((sliceColumn, value) -> {
-			if (!groupedByColumns.contains(sliceColumn)) {
-				return;
-			}
+			// `forEachGroupBy` enables not doing many individual `.get`
+			tableSlice.forEachGroupBy((sliceColumn, value) -> {
+				if (value == null) {
+					// We received an explicit null
+					// Typically happens on a failed LEFT JOIN
+					value = valueOnNull(queryPod, sliceColumn);
 
-			if (value == null) {
-				// We received an explicit null
-				// Typically happens on a failed LEFT JOIN
-				value = valueOnNull(queryPod, sliceColumn);
+					assert value != null : "`null` is not a legal column value";
+				}
 
-				assert value != null : "`null` is not a legal column value";
-			}
+				coordinatesBuilder.append(value);
+			});
+			buildableIntoMap = coordinatesBuilder;
+		} else {
+			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive most columns than expected,
+			// or in a different order.
+			IMapBuilderThroughKeys coordinatesBuilder = sliceFactory.newMapBuilder();
 
-			coordinatesBuilder.put(sliceColumn, value);
-		});
+			// `forEachGroupBy` enables not doing many individual `.get`
+			tableSlice.forEachGroupBy((sliceColumn, value) -> {
+				if (!groupedByColumns.contains(sliceColumn)) {
+					return;
+				}
 
-		return coordinatesBuilder.build().asSlice();
+				if (value == null) {
+					// We received an explicit null
+					// Typically happens on a failed LEFT JOIN
+					value = valueOnNull(queryPod, sliceColumn);
+
+					assert value != null : "`null` is not a legal column value";
+				}
+
+				coordinatesBuilder.put(sliceColumn, value);
+			});
+			buildableIntoMap = coordinatesBuilder;
+		}
+
+		return buildableIntoMap.build().asSlice();
 	}
 
 	/**

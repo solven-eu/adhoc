@@ -34,9 +34,11 @@ import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.StandardColumnFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
@@ -81,10 +83,17 @@ public class AdhocAutoConfiguration {
 		return StandardColumnFactory.builder().build();
 	}
 
+	// BEWARE As this is a shared ISliceFactory, it may not keep memory in the long-run (e.g. through dictionaries)
 	@Bean
 	@ConditionalOnMissingBean(ISliceFactory.class)
 	public ISliceFactory sliceFactory() {
 		return StandardSliceFactory.builder().build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(ISliceFactoryFactory.class)
+	public ISliceFactoryFactory sliceFactoryFactory() {
+		return AdhocFactoriesUnsafe.factories.getSliceFactoryFactory();
 	}
 
 	@Bean
@@ -97,13 +106,13 @@ public class AdhocAutoConfiguration {
 	@ConditionalOnMissingBean(AdhocFactories.class)
 	public AdhocFactories adhocFactories(IOperatorFactory operatorFactory,
 			IColumnFactory columnsFactory,
-			ISliceFactory sliceFactory,
+			ISliceFactoryFactory sliceFactoryFactory,
 			IStopwatchFactory stopwatchFactory) {
 		return AdhocFactories.builder()
 				.operatorFactory(operatorFactory)
 				.columnFactory(columnsFactory)
 				.stopwatchFactory(stopwatchFactory)
-				.sliceFactory(sliceFactory)
+				.sliceFactoryFactory(sliceFactoryFactory)
 				.build();
 	}
 

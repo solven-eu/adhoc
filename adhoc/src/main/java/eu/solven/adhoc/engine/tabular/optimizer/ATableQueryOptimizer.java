@@ -205,7 +205,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	}
 
 	protected IAdhocSlice inducedGroupBy(NavigableSet<String> groupedByColumns, IAdhocSlice inducer) {
-		var induced = factories.getSliceFactory().newMapBuilder(groupedByColumns);
+		var induced = inducer.getFactory().newMapBuilder(groupedByColumns);
 
 		groupedByColumns.forEach(inducedColumn -> {
 			induced.append(inducer.getGroupBy(inducedColumn));

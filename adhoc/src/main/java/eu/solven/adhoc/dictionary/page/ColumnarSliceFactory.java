@@ -20,82 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary;
+package eu.solven.adhoc.dictionary.page;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.IntFunction;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.dictionary.DictionarizedSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.factory.ASliceFactory;
-import eu.solven.adhoc.map.factory.AbstractAdhocMap;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 
 /**
- * A {@link ISliceFactory} which enable dictionarization of created {@link IAdhocMap}.
+ * A {@link ISliceFactory} which enable columnar storage of created {@link IAdhocMap}. This requires to be
+ * contextualized (e.g. within a given query), to prevent leaking memory (e.g. we do not want to mix the slices from
+ * different queries in the same columns).
  * 
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class DictionarizedSliceFactory extends ASliceFactory {
+public class ColumnarSliceFactory extends ASliceFactory {
 
 	@Default
 	@NonNull
-	IDictionarizerFactory dictionaryFactory = new IDictionarizerFactory() {
-		final Map<String, IDictionarizer> columnToDic = new ConcurrentHashMap<>();
-
-		@Override
-		public IDictionarizer makeDictionarizer(String column) {
-			return columnToDic.computeIfAbsent(column, this::newDictionarizer);
-		}
-
-		protected IDictionarizer newDictionarizer(String column) {
-			return new MapDictionarizer();
-		}
-	};
-
-	/**
-	 * Represents an {@link IAdhocMap} given an {@link IntFunction} representation dictionarized value.
-	 */
-	public static class MapOverIntFunction extends AbstractAdhocMap {
-
-		@NonNull
-		final IntFunction<Object> sequencedValues;
-
-		@Builder
-		public MapOverIntFunction(ISliceFactory factory,
-				SequencedSetLikeList keys,
-				IntFunction<Object> unorderedValues) {
-			super(factory, keys);
-			this.sequencedValues = unorderedValues;
-		}
-
-		@Override
-		protected Object getSequencedValueRaw(int index) {
-			return sequencedValues.apply(index);
-		}
-
-		@Override
-		protected Object getSortedValueRaw(int index) {
-			return getSequencedValueRaw(sequencedKeys.unorderedIndex(index));
-		}
-
-	}
+	protected final IAppendableTable appendableTable =
+			FlexibleAppendableTable.builder().capacity(AdhocUnsafe.getPageSize()).build();
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
@@ -110,13 +71,14 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		@NonNull
 		protected final ASliceFactory factory;
 
-		@NonNull
-		protected final IDictionarizerFactory dictionaryFactory;
-
 		// Remember the ordered keys, as we expect to receive values in the same order
+		@NonNull
 		SequencedSetLikeList keysLikeList;
 
-		IntList values;
+		@NonNull
+		IAppendableTable pageFactory;
+
+		IAdhocTableRow row;
 
 		@Override
 		public Collection<? extends String> getKeys() {
@@ -125,31 +87,29 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 
 		@Override
 		public MapBuilderPreKeys append(Object value) {
-			if (values == null) {
-				values = new IntArrayList(keysLikeList.size());
+			if (row == null) {
+				row = pageFactory.nextRow(keysLikeList);
 			}
 			Object normalizedValue = factory.normalizeCoordinate(value);
-			int dictionarizedValue =
-					dictionaryFactory.makeDictionarizer(keysLikeList.getKey(values.size())).toInt(normalizedValue);
-			values.add(dictionarizedValue);
+			row.add(keysLikeList.getKey(row.size()), normalizedValue);
 
 			return this;
 		}
 
 		@Override
 		public Collection<?> getValues() {
-			if (values == null) {
+			if (row == null) {
 				return ImmutableList.of();
 			} else {
 				throw new NotYetImplementedException("Undictionarize");
 			}
 		}
 
-		public IntList getDictionarizedValues() {
-			if (values == null) {
-				return IntArrayList.of();
+		public IAdhocTableRow getDictionarizedValues() {
+			if (row == null) {
+				return IAdhocTableRow.empty();
 			} else {
-				return values;
+				return row;
 			}
 		}
 
@@ -181,21 +141,23 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		ISliceFactory factory;
 
 		@NonNull
-		IDictionarizerFactory dictionaryFactory;
+		IAppendableTable pageFactory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@Default
 		ImmutableList.Builder<String> keys = ImmutableList.builder();
 
-		@Default
-		IntList values = new IntArrayList();
+		IAdhocTableRow row;
 
 		@Override
 		public MapBuilderThroughKeys put(String key, Object value) {
+			if (row == null) {
+				row = pageFactory.nextRow();
+			}
+
 			keys.add(key);
 			Object normalizedValue = ((ICoordinateNormalizer) factory).normalizeCoordinate(value);
-			int dictionarizedValue = dictionaryFactory.makeDictionarizer(key).toInt(normalizedValue);
-			values.add(dictionarizedValue);
+			row.add(key, normalizedValue);
 
 			return this;
 		}
@@ -218,7 +180,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 
 	@Override
 	public MapBuilderThroughKeys newMapBuilder() {
-		return MapBuilderThroughKeys.builder().factory(this).dictionaryFactory(dictionaryFactory).build();
+		return MapBuilderThroughKeys.builder().factory(this).pageFactory(appendableTable).build();
 	}
 
 	@Override
@@ -227,7 +189,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 
 		return MapBuilderPreKeys.builder()
 				.factory(this)
-				.dictionaryFactory(dictionaryFactory)
+				.pageFactory(appendableTable)
 				.keys(ImmutableList.copyOf(keys))
 				.build();
 	}
@@ -235,37 +197,32 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 	@Override
 	public IAdhocMap buildMap(IHasEntries hasEntries) {
 		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			IntList values = preKeys.getDictionarizedValues();
+			IAdhocTableRow values = preKeys.getDictionarizedValues();
 
-			if (preKeys.keysLikeList.size() != values.size()) {
-				throw new IllegalArgumentException("keys size (%s) differs from values size (%s)"
-						.formatted(preKeys.keysLikeList.size(), values.size()));
-			}
+			values.freeze();
 
-			return MapOverIntFunction.builder()
+			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
 					.keys(preKeys.keysLikeList)
-					.unorderedValues(i -> dictionaryFactory.makeDictionarizer(preKeys.keysLikeList.getKey(i))
-							.fromInt(values.getInt(i)))
+					.unorderedValues(values::readValue)
 					.build();
 		} else if (hasEntries instanceof MapBuilderThroughKeys throughKeys) {
 			Collection<? extends String> keys = throughKeys.getKeys();
-			if (keys.size() != throughKeys.values.size()) {
-				throw new IllegalArgumentException("keys size (%s) differs from values size (%s)".formatted(keys.size(),
-						throughKeys.values.size()));
+
+			if (throughKeys.row == null) {
+				return SliceAsMap.grandTotal().asAdhocMap();
 			}
+			throughKeys.row.freeze();
 
 			SequencedSetLikeList keyLikeList = internKeyset(keys);
-			return MapOverIntFunction.builder()
+			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
 					.keys(keyLikeList)
-					.unorderedValues(i -> dictionaryFactory.makeDictionarizer(keyLikeList.getKey(i))
-							.fromInt(throughKeys.values.getInt(i)))
+					.unorderedValues(throughKeys.row::readValue)
 					.build();
 		} else {
 			return buildMapNaively(hasEntries);
 		}
-
 	}
 
 }

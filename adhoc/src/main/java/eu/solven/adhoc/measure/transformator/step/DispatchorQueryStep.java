@@ -209,7 +209,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 			ISliceWithStep slice,
 			Map<String, ?> fragmentCoordinate) {
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
-		IMapBuilderPreKeys queryCoordinatesBuilder = factories.getSliceFactory().newMapBuilder(groupByColumns);
+		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate

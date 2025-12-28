@@ -22,17 +22,13 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import eu.solven.adhoc.map.IAdhocMap;
-
 /**
  * Interface for Map builder instanced created by for {@link ISliceFactory}.
  * 
  * @author Benoit Lacelle
  */
-public interface IMapBuilderThroughKeys {
+public interface IMapBuilderThroughKeys extends IBuildableIntoMap {
 
 	IMapBuilderThroughKeys put(String key, Object value);
-
-	IAdhocMap build();
 
 }

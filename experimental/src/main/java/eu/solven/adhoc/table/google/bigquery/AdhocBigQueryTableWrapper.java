@@ -136,7 +136,7 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 			}
 
 			List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
-			IMapBuilderPreKeys slice = sliceFactory.newMapBuilder(aggregateGroupBys);
+			IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(aggregateGroupBys);
 
 			{
 				for (int i = 0; i < aggregateGroupBys.size(); i++) {

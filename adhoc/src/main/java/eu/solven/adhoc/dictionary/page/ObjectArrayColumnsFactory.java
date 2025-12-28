@@ -20,23 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.dictionary.page;
 
-import java.util.Map;
+import java.util.ArrayList;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.dictionary.IAppendableColumnFactory;
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+/**
+ * {@link IAppendableColumnFactory} based on {@link ObjectArrayColumn}.
+ * 
+ * @author Benoit Lacelle
+ */
+public class ObjectArrayColumnsFactory implements IAppendableColumnFactory {
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+	@Override
+	public IAppendableColumn makeColumn(String key, long capacity) {
+		return ObjectArrayColumn.builder().asArray(new ArrayList<>(Ints.checkedCast(capacity))).build();
 	}
+
 }

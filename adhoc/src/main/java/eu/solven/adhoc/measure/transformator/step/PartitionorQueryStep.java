@@ -151,7 +151,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 	protected IAdhocSlice queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
-		IMapBuilderPreKeys mapBuilder = factories.getSliceFactory().newMapBuilder(groupedByColumns);
+		IMapBuilderPreKeys mapBuilder = bucketedSlice.getSlice().getFactory().newMapBuilder(groupedByColumns);
 
 		IAdhocSlice slice = bucketedSlice.getSlice();
 		groupedByColumns.forEach(groupBy -> {

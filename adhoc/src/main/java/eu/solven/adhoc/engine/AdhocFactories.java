@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.dictionary.DictionarizedSliceFactory;
+import eu.solven.adhoc.dictionary.page.ColumnarSliceFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
@@ -53,7 +53,12 @@ public class AdhocFactories {
 
 	@NonNull
 	@Default
-	ISliceFactory sliceFactory = DictionarizedSliceFactory.builder().build();
+	ISliceFactoryFactory sliceFactoryFactory = () -> ColumnarSliceFactory.builder().build();
+
+	// @NonNull
+	// @Default
+	// ISliceFactory sliceFactory = ColumnarSliceFactory.builder().build();
+	// DictionarizedSliceFactory.builder().build();
 
 	@NonNull
 	@Default

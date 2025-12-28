@@ -20,23 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.dictionary.page;
 
-import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Represents a table page, in which one can poll a row for writing.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IAppendableTablePage {
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+	/**
+	 * 
+	 * @return null if there is not more available row in this page.
+	 */
+	@Nullable
+	IAdhocTableRow pollNextRow();
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+	// /**
+	// * Do allocate the underlying memory. Useful to delay the allocation in case of CAS operation.
+	// */
+	// void allocate();
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
-	}
 }

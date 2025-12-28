@@ -20,23 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.dictionary;
 
-import java.util.Map;
+import eu.solven.adhoc.dictionary.page.IAppendableColumn;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Enable creation of {@link IAppendableColumn}.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IAppendableColumnFactory {
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+	IAppendableColumn makeColumn(String key, long capacity);
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
-
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
-	}
 }

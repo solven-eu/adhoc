@@ -20,23 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.map.factory;
 
-import java.util.Map;
+/**
+ * Some {@link ISliceFactory} will rely on some shared data-structure. This enables creating a context for given
+ * sharing. Typically, a context is a single query.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface ISliceFactoryFactory {
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
-
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
-
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
-	}
+	ISliceFactory makeFactory();
 }

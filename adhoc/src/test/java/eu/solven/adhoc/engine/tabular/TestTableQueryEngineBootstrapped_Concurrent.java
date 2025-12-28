@@ -55,15 +55,17 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 	@Test
 	public void testConcurrentTableQueries() throws InterruptedException {
-		TableQueryEngineBootstrapped engine = TableQueryEngineBootstrapped.builder()
-				.optimizer(new TableQueryOptimizer(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
-				.build();
 
 		ITableWrapper tableWrapper = Mockito.mock(ITableWrapper.class);
 		Mockito.when(tableWrapper.getName()).thenReturn("someTableName");
 
 		QueryPod queryPod =
 				QueryPod.forTable(tableWrapper, CubeQuery.builder().option(StandardQueryOptions.CONCURRENT).build());
+
+		TableQueryEngineBootstrapped engine = TableQueryEngineBootstrapped.builder()
+				.queryPod(queryPod)
+				.optimizer(new TableQueryOptimizer(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
+				.build();
 
 		CountDownLatch cdl = new CountDownLatch(2);
 
@@ -80,17 +82,15 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
-			Map<CubeQueryStep, ISliceToValue> views =
-					engine.executeTableQueries(queryPod, (queryStep, SizeAndDuration) -> {
-					},
-							ImmutableSet.of(TableQueryV2.builder()
+			Map<CubeQueryStep, ISliceToValue> views = engine.executeTableQueries((queryStep, SizeAndDuration) -> {
+			},
+					ImmutableSet.of(
+							TableQueryV2.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build())
 									.build(),
-									TableQueryV2.builder()
-											.aggregator(FilteredAggregator.builder()
-													.aggregator(Aggregator.sum("b"))
-													.build())
-											.build()));
+							TableQueryV2.builder()
+									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build())
+									.build()));
 
 			try {
 				if (!cdl.await(1, TimeUnit.SECONDS)) {

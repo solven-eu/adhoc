@@ -27,7 +27,6 @@ import java.util.Map;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
-import eu.solven.adhoc.map.factory.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 
@@ -42,14 +41,20 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
  */
 public interface ISliceFactory {
 
-	IMapBuilderThroughKeys newMapBuilder();
-
 	/**
 	 * 
 	 * @param keys
-	 * @return a {@link MapBuilderPreKeys} for given set of keys.
+	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
 	 */
 	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
+
+	/**
+	 * BEWARE This should be used in last resort, when the keySet is not available.
+	 * 
+	 * @return an {@link IMapBuilderThroughKeys}, which can handle a stream of entries where the keySet is not known in
+	 *         advance.
+	 */
+	IMapBuilderThroughKeys newMapBuilder();
 
 	IAdhocMap buildMap(IHasEntries hasEntries);
 }

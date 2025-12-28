@@ -56,13 +56,14 @@ public class AdhocMapHelpers {
 
 	@Deprecated
 	public static IAdhocMap fromMap(Map<String, ?> asMap) {
-		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactory(), asMap);
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(), asMap);
 	}
 
 	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
 		if (asMap instanceof IAdhocMap adhocMap && adhocMap.getFactory().equals(factory)) {
 			return adhocMap;
 		}
+		// BEWARE This assumes iterating along keys and along values follows the same order as entries.
 		IMapBuilderPreKeys builder = factory.newMapBuilder(asMap.keySet());
 		asMap.values().forEach(builder::append);
 		return builder.build();

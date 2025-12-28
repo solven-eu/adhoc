@@ -111,7 +111,8 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		IMapBuilderPreKeys builder = factories.getSliceFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
+		IMapBuilderPreKeys builder =
+				slice.getSlice().getFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
 
 		step.getGroupBy().getGroupedByColumns().forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));

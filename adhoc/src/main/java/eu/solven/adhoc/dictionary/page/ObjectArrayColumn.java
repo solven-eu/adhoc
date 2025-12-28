@@ -20,23 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.dictionary.page;
 
-import java.util.Map;
+import java.util.List;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import lombok.Builder;
+import lombok.NonNull;
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+/**
+ * {@link IAppendableColumn} over a List.
+ * 
+ * @author Benoit Lacelle
+ */
+@Builder
+public class ObjectArrayColumn implements IAppendableColumn {
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+	@NonNull
+	final List<Object> asArray;
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+	@Override
+	public void append(Object normalizedValue) {
+		asArray.add(normalizedValue);
 	}
+
+	@Override
+	public Object readValue(int rowIndex) {
+		return asArray.get(rowIndex);
+	}
+
 }

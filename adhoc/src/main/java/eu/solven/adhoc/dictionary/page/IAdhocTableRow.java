@@ -20,23 +20,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.dictionary.page;
 
-import java.util.Map;
+import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Represents a row in a table.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IAdhocTableRow {
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+	int size();
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+	int add(String key, Object normalizedValue);
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+	static IAdhocTableRow empty() {
+		return new IAdhocTableRow() {
+
+			@Override
+			public int size() {
+				return 0;
+			}
+
+			@Override
+			public Object readValue(int columnIndex) {
+				return null;
+			}
+
+			@Override
+			public void freeze() {
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public int add(String key, Object normalizedValue) {
+				throw new UnsupportedAsImmutableException();
+			}
+		};
 	}
+
+	Object readValue(int columnIndex);
+
+	/**
+	 * Mark this as read-only.
+	 */
+	void freeze();
+
 }

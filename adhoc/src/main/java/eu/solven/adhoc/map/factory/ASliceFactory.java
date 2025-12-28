@@ -78,7 +78,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	// Supplier as the sliceFactory may be configured lazily
 	private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> StandardSliceFactory.MapOverLists.builder()
-			.factory(AdhocFactoriesUnsafe.factories.getSliceFactory())
+			.factory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory())
 			.keys(SequencedSetLikeList.fromSet(Set.of()))
 			.sequencedValues(ImmutableList.of())
 			.build());
@@ -159,5 +159,21 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {
 		return ImmutableList.copyOf(keys);
+	}
+
+	protected IAdhocMap buildMapNaively(IHasEntries hasEntries) {
+		Collection<? extends String> keys = hasEntries.getKeys();
+		Collection<?> values = hasEntries.getValues();
+
+		if (keys.size() != values.size()) {
+			throw new IllegalArgumentException(
+					"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
+		}
+
+		return StandardSliceFactory.MapOverLists.builder()
+				.factory(this)
+				.keys(internKeyset(keys))
+				.sequencedValues(ImmutableList.copyOf(values))
+				.build();
 	}
 }

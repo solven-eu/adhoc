@@ -20,23 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
-
-import java.util.Map;
-
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+package eu.solven.adhoc.map.factory;
 
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
-
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
-	}
+/**
+ * Can be built into an {@link IAdhocMap}.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IBuildableIntoMap {
+	IAdhocMap build();
 }

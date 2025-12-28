@@ -63,7 +63,6 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -89,10 +88,6 @@ public class InMemoryTable implements ITableWrapper {
 	@NonNull
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
-
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 
 	@Default
 	boolean distinctSlices = false;
@@ -183,8 +178,10 @@ public class InMemoryTable implements ITableWrapper {
 						.forEach(a -> columnToAggregators.put(aggregatedColumn, a));
 			});
 
+			ISliceFactory sliceFactory = queryPod.getSliceFactory();
+
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
-				return toRecord(tableQuery, columnToAggregators, groupByColumns, row);
+				return toRecord(sliceFactory, tableQuery, columnToAggregators, groupByColumns, row);
 			});
 
 			if (isEmptyAggregation) {
@@ -270,7 +267,8 @@ public class InMemoryTable implements ITableWrapper {
 		}
 	}
 
-	protected ITabularRecord toRecord(TableQueryV2 tableQuery,
+	protected ITabularRecord toRecord(ISliceFactory sliceFactory,
+			TableQueryV2 tableQuery,
 			SetMultimap<String, FilteredAggregator> columnToAggregators,
 			Set<String> groupByColumns,
 			Map<String, ?> row) {

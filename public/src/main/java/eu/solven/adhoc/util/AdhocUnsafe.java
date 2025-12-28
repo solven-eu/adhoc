@@ -155,7 +155,7 @@ public class AdhocUnsafe {
 	private static final int DEFAULT_PAGE_SIZE = 16 * 1024;
 	@Setter
 	@Getter
-	public static int pageSize = DEFAULT_PAGE_SIZE;
+	private static int pageSize = DEFAULT_PAGE_SIZE;
 
 	/**
 	 * Used for unitTests
