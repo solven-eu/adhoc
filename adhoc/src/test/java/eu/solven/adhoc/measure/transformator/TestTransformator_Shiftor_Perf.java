@@ -57,8 +57,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTestConstants {
+	// TODO This test may be switcehd over H2 or SQLite or DuckDB to reduce its RAM consumption
 	static final int maxCardinality = 1000;
-	static final int nbDays = 10_000;
+	static final int nbDays = 1_000;
 
 	@BeforeAll
 	public static void setLimits() {

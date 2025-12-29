@@ -167,7 +167,9 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 
 	@Override
 	public int compareTo(IAdhocSlice o) {
-		if (o instanceof IHasAdhocMap otherSlice) {
+		if (o == null) {
+			throw new IllegalArgumentException("null");
+		} else if (o instanceof IHasAdhocMap otherSlice) {
 			return this.asAdhocMap().compareTo(otherSlice.asAdhocMap());
 		}
 		return MapComparators.mapComparator().compare(this.getCoordinates(), o.getCoordinates());
