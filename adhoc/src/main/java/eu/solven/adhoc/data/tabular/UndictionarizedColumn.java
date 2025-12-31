@@ -33,6 +33,7 @@ import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Builder;
+import lombok.NonNull;
 
 /**
  * Undictionarize a {@link IMultitypeColumnFastGet}, based on an Integer key, and `int-from/to-Object` mappings.
@@ -42,8 +43,11 @@ import lombok.Builder;
  */
 @Builder
 public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
+	@NonNull
 	private final IntFunction<T> indexToSlice;
+	@NonNull
 	private final ToIntFunction<T> sliceToIndex;
+	@NonNull
 	private final IMultitypeColumnFastGet<Integer> column;
 
 	@Override

@@ -68,21 +68,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// https://questdb.com/blog/building-faster-hash-table-high-performance-sql-joins/
 	@NonNull
 	@Default
-	Object2IntMap<T> sliceToIndex = newHashMapDefaultMinus1();
+	Object2IntMap<T> sliceToIndex = AdhocPrimitiveMapHelpers.newHashMapDefaultMinus1();
 
 	@NonNull
 	@Default
 	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
-
-	@SuppressWarnings("PMD.LooseCoupling")
-	private static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
-		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(AdhocUnsafe.getDefaultColumnCapacity());
-
-		// If we request an unknown slice, we must not map to an existing index
-		map.defaultReturnValue(-1);
-
-		return map;
-	}
 
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice

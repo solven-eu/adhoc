@@ -28,14 +28,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.duckdb.DuckDBAppender;
+import org.duckdb.DuckDBConnection;
+import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
@@ -50,16 +50,21 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTestConstants {
-	// TODO This test may be switcehd over H2 or SQLite or DuckDB to reduce its RAM consumption
+public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements IAdhocTestConstants {
 	static final int maxCardinality = 1000;
-	static final int nbDays = 1000;
+	static final int nbDays = 10_000;
+
+	String tableName = "someTableName";
 
 	@BeforeAll
 	public static void setLimits() {
@@ -74,20 +79,50 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 
 	LocalDate today = LocalDate.now();
 
-	@BeforeEach
 	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+	}
+
+	@BeforeEach
 	public void feedTable() {
-		for (int i = 0; i < maxCardinality; i++) {
-			for (int d = 0; d < nbDays; d++) {
-				table().add(ImmutableMap.<String, Object>builder()
-						.put("l", "A")
-						// Write as long to reduce the effect of ICoordinateNormalizer
-						.put("row_index", (long) i)
-						.put("d", today.minusDays(d))
-						.put("k1", (i + (nbDays - d) * (nbDays - d)))
-						.build());
+		dsl.createTableIfNotExists(tableName)
+				.column("l", SQLDataType.VARCHAR)
+				// Write as long to reduce the effect of ICoordinateNormalizer
+				.column("row_index", SQLDataType.BIGINT)
+				.column("d", SQLDataType.DATE)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+
+		dsl.connection(c -> {
+			DuckDBConnection duckDBC = c.unwrap(DuckDBConnection.class);
+
+			DuckDBAppender appender = duckDBC.createAppender(tableName);
+
+			for (int i = 0; i < maxCardinality; i++) {
+				for (int d = 0; d < nbDays; d++) {
+					appender.beginRow();
+
+					appender.append("A");
+					// Write as long to reduce the effect of ICoordinateNormalizer
+					appender.append((long) i);
+					appender.append(today.minusDays(d));
+					appender.append((i + (nbDays - d) * (nbDays - d)));
+
+					appender.endRow();
+					// dsl.insertInto(DSL.table(tableName))
+					// .set(ImmutableMap.<String, Object>builder()
+					// .put("l", "A")
+					// // Write as long to reduce the effect of ICoordinateNormalizer
+					// .put("row_index", (long) i)
+					// .put("d", today.minusDays(d))
+					// .put("k1", (i + (nbDays - d) * (nbDays - d)))
+					// .build())
+					// .execute();
+				}
 			}
-		}
+		});
 	}
 
 	public IStopwatchFactory makeStopwatchFactory() {

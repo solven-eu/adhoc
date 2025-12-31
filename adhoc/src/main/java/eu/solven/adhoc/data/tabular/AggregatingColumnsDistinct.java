@@ -40,7 +40,6 @@ import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -137,7 +136,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
 		// Reverse from `slice->index` to `index->slice`
-		Object2IntMap<T> sliceToIndex = new Object2IntOpenHashMap<>(indexToSlice.size());
+		Object2IntMap<T> sliceToIndex = AdhocPrimitiveMapHelpers.newHashMapDefaultMinus1(indexToSlice.size());
 		for (int i = 0; i < indexToSlice.size(); i++) {
 			sliceToIndex.put(indexToSlice.get(i), i);
 		}
