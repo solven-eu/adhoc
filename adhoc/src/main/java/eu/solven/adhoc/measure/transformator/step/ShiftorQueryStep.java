@@ -42,7 +42,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -111,7 +111,8 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		MapBuilderPreKeys builder = factories.getSliceFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
+		IMapBuilderPreKeys builder =
+				slice.getSlice().getFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
 
 		step.getGroupBy().getGroupedByColumns().forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));

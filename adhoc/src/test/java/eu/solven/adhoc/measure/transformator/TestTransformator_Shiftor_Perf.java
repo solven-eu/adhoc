@@ -57,8 +57,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTestConstants {
+	// TODO This test may be switcehd over H2 or SQLite or DuckDB to reduce its RAM consumption
 	static final int maxCardinality = 1000;
-	static final int nbDays = 10_000;
+	static final int nbDays = 1000;
 
 	@BeforeAll
 	public static void setLimits() {
@@ -80,7 +81,8 @@ public class TestTransformator_Shiftor_Perf extends ADagTest implements IAdhocTe
 			for (int d = 0; d < nbDays; d++) {
 				table().add(ImmutableMap.<String, Object>builder()
 						.put("l", "A")
-						.put("row_index", i)
+						// Write as long to reduce the effect of ICoordinateNormalizer
+						.put("row_index", (long) i)
 						.put("d", today.minusDays(d))
 						.put("k1", (i + (nbDays - d) * (nbDays - d)))
 						.build());

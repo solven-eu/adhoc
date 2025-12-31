@@ -55,7 +55,6 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
 	ITableQueryOptimizer optimizer =
 			engine.optimizerFactory.makeOptimizer(engine().getFactories(), IHasQueryOptions.noOption());
-	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 
 	@Override
 	public void feedTable() {
@@ -76,7 +75,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 		CubeQuery cubeQuery = CubeQuery.builder().measure("byCcy", k1Sum.getName()).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(2);
 
 		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
@@ -98,7 +98,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 			Map<CubeQueryStep, ISliceToValue> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
 					valuesFromTable);
-			bootstrapped.walkUpInducedDag(queryPod, fromTable, split);
+			bootstrapped.walkUpInducedDag(fromTable, split);
 
 			Assertions.assertThat(fromTable)
 					// inducer
@@ -141,7 +141,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				CubeQuery.builder().measure("byCcyCountry", "byCcy", k1Sum.getName()).explain(true).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(3);
 
 		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
@@ -171,7 +172,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 					.groupBy(GroupByColumns.named("ccy", "country"))
 					.measure(k1Sum)
 					.build(), valuesFromTable);
-			bootstrapped.walkUpInducedDag(queryPod, fromTable, split);
+			bootstrapped.walkUpInducedDag(fromTable, split);
 
 			Assertions.assertThat(fromTable)
 					// inducer

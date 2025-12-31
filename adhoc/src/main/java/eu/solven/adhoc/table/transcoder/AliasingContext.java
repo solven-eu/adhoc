@@ -119,7 +119,8 @@ public class AliasingContext implements ITableAliaser, ITableReverseAliaser {
 		return underlyings().stream().map(u -> u + "->" + queried(u)).collect(Collectors.joining(", "));
 	}
 
-	public boolean isOnlyIdentity() {
+	@Override
+	public boolean isIdentity() {
 		return originalToAlias.isEmpty();
 	}
 }

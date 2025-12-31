@@ -44,7 +44,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 
 /**
  * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}

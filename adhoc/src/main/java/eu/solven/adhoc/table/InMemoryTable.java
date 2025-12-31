@@ -53,9 +53,8 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -89,10 +88,6 @@ public class InMemoryTable implements ITableWrapper {
 	@NonNull
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
-
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
 
 	@Default
 	boolean distinctSlices = false;
@@ -183,8 +178,10 @@ public class InMemoryTable implements ITableWrapper {
 						.forEach(a -> columnToAggregators.put(aggregatedColumn, a));
 			});
 
+			ISliceFactory sliceFactory = queryPod.getSliceFactory();
+
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
-				return toRecord(tableQuery, columnToAggregators, groupByColumns, row);
+				return toRecord(sliceFactory, tableQuery, columnToAggregators, groupByColumns, row);
 			});
 
 			if (isEmptyAggregation) {
@@ -270,7 +267,8 @@ public class InMemoryTable implements ITableWrapper {
 		}
 	}
 
-	protected ITabularRecord toRecord(TableQueryV2 tableQuery,
+	protected ITabularRecord toRecord(ISliceFactory sliceFactory,
+			TableQueryV2 tableQuery,
 			SetMultimap<String, FilteredAggregator> columnToAggregators,
 			Set<String> groupByColumns,
 			Map<String, ?> row) {
@@ -312,7 +310,7 @@ public class InMemoryTable implements ITableWrapper {
 			});
 		});
 
-		MapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
+		IMapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
 		groupByColumns.forEach(groupByColumn -> {
 			Object value = row.get(groupByColumn);
 			groupByBuilder.append(value);

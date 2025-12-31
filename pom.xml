@@ -105,6 +105,9 @@
 		<maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
 		<!-- https://mvnrepository.com/artifact/net.sourceforge.pmd/pmd -->
 		<pmd.version>7.17.0</pmd.version>
+
+		<!-- https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
+		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError</argLine>
 	</properties>
 
 	<dependencies>

@@ -26,7 +26,7 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import lombok.RequiredArgsConstructor;
 
@@ -38,7 +38,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TabularRecordBuilder {
 	final Map<String, Object> aggregates;
-	final MapBuilderPreKeys sliceBuilder;
+	final IMapBuilderPreKeys sliceBuilder;
 
 	protected Object cleanAggregateValue(Object value) {
 		// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types

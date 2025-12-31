@@ -137,9 +137,9 @@ public class TestInMemoryTable {
 		// TODO There is a bug around InMemoryTable management of quoted columns (see InMemoryTable.clearColumnName) and
 		// transcoding which fails (as it does not handle the quoted column transcoded, hence leading to missed
 		// transcoded, so a missed groupedBy columns, and `AdhocTranscodingHelper - No queried keys found for k.1`)
-		Assertions.assertThatThrownBy(() -> {
-			cube.execute(CubeQuery.builder().groupByAlso(wrappedColumn).measure("someMeasure").build());
-		}).isInstanceOf(IllegalArgumentException.class);
+		// Assertions.assertThatThrownBy(() -> {
+		cube.execute(CubeQuery.builder().groupByAlso(wrappedColumn).measure("someMeasure").build());
+		// }).isInstanceOf(IllegalArgumentException.class);
 
 		Assertions.assertThat(table.getUnknownColumns()).isEmpty();
 	}

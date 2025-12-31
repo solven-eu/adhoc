@@ -20,13 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.dictionary.page;
+
+import java.util.List;
+
+import lombok.Builder;
+import lombok.NonNull;
 
 /**
- * Indicates the instances are immutable.
+ * {@link IAppendableColumn} over a List.
  * 
  * @author Benoit Lacelle
  */
-public interface IImmutable {
+@Builder
+public class ObjectArrayColumn implements IAppendableColumn {
+
+	@NonNull
+	final List<Object> asArray;
+
+	@Override
+	public void append(Object normalizedValue) {
+		asArray.add(normalizedValue);
+	}
+
+	@Override
+	public Object readValue(int rowIndex) {
+		return asArray.get(rowIndex);
+	}
 
 }

@@ -20,18 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.dictionary;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * 
- * Replace an {@link IAdhocSlice} by a compressed alternative row. The actual compression may be differed (e.g. by this
- * implementation relying on a {@link ProxiedSlice}).
+ * Simple {@link IDictionarizer} based on an {@link ConcurrentHashMap}.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ISliceCompressor {
+// https://stackoverflow.com/questions/29826787/is-this-dictionary-function-thread-safe-concurrenthashmapatomicinteger
+public class MapDictionarizer implements IDictionarizer {
+	final ConcurrentMap<Object, Integer> objectToInt = new ConcurrentHashMap<>();
+	final List<Object> intToObject = new CopyOnWriteArrayList<>();
 
-	IAdhocSlice compress(IAdhocSlice slice);
+	@Override
+	public Object fromInt(int indexedValue) {
+		return intToObject.get(indexedValue);
+	}
+
+	@Override
+	public int toInt(Object object) {
+		// ConcurrentHashMap guarantees the `ifAbsent` function to be called zero or once per `computeIfAbsent`
+		// invocation
+		return objectToInt.computeIfAbsent(object, o -> {
+			intToObject.add(o);
+
+			return intToObject.size() - 1;
+		});
+	}
 
 }

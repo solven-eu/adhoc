@@ -22,12 +22,14 @@
  */
 package eu.solven.adhoc.map;
 
-import java.util.Collection;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.map.StandardSliceFactory.IHasEntries;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -53,19 +55,18 @@ public class AdhocMapHelpers {
 	}
 
 	@Deprecated
-	public static IAdhocMap wrap(Map<String, ?> asMap) {
-		return StandardSliceFactory.builder().build().buildMap(new IHasEntries() {
+	public static IAdhocMap fromMap(Map<String, ?> asMap) {
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(), asMap);
+	}
 
-			@Override
-			public Collection<?> getValues() {
-				return asMap.values();
-			}
-
-			@Override
-			public Collection<? extends String> getKeys() {
-				return asMap.keySet();
-			}
-		});
+	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
+		if (asMap instanceof IAdhocMap adhocMap && adhocMap.getFactory().equals(factory)) {
+			return adhocMap;
+		}
+		// BEWARE This assumes iterating along keys and along values follows the same order as entries.
+		IMapBuilderPreKeys builder = factory.newMapBuilder(asMap.keySet());
+		asMap.values().forEach(builder::append);
+		return builder.build();
 	}
 
 }

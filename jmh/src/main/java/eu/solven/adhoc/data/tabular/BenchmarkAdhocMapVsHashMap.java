@@ -46,7 +46,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 
 /**
  * Benchmarks comparing {@link IAdhocMap} versus {@link HashMap}.

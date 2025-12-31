@@ -49,6 +49,7 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -105,6 +106,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				.columnsManager(columnsManager)
 				.executorService(getExecutorService(preparedQuery))
 				.queryStepCache(getQueryStepCache(preparedQuery))
+				.sliceFactory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory())
 				.build();
 
 		// Filtering the forest is useful for edge-cades like:

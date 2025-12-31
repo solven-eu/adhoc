@@ -20,19 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row.slice;
+package eu.solven.adhoc.dictionary.page;
 
 /**
- * 
- * Skip any compression or dictionarisation.
+ * Represents an appendable column, with random read access.
  * 
  * @author Benoit Lacelle
  */
-public class NoopSliceCompressor implements ISliceCompressor {
+public interface IAppendableColumn {
 
-	@Override
-	public IAdhocSlice compress(IAdhocSlice slice) {
-		return slice;
-	}
+	void append(Object normalizedValue);
+
+	Object readValue(int rowIndex);
 
 }

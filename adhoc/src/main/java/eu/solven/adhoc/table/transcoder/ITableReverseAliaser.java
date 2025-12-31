@@ -47,4 +47,6 @@ public interface ITableReverseAliaser {
 	 * @return the number of queriedKeys through all underlyings
 	 */
 	int estimateQueriedSize(Set<String> underlyingKeys);
+
+	boolean isIdentity();
 }

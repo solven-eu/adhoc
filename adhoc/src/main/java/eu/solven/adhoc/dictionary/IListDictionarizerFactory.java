@@ -20,34 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.dictionary;
 
-import java.util.Map;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
-import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.map.factory.ILikeList;
+import eu.solven.adhoc.map.factory.NavigableSetLikeList;
 
 /**
- * Enable building {@link Map} and {@link IAdhocSlice} in Adhoc context.
- * 
- * In Adhoc, we generate tons of {@link Map}-like for a given {@link IAdhocGroupBy}. Which means a tons of
- * {@link Map}-like for a predefined keySet. Given {@link Map} may be sorted, to enable faster merging (see
- * {@link IDagBottomUpStrategy}).
+ * Creates {@link IListDictionarizer} given a {@link NavigableSetLikeList}.
  * 
  * @author Benoit Lacelle
  */
-public interface ISliceFactory {
+@FunctionalInterface
+public interface IListDictionarizerFactory {
 
-	MapBuilderThroughKeys newMapBuilder();
-
-	/**
-	 * 
-	 * @param keys
-	 * @return a {@link MapBuilderPreKeys} for given set of keys.
-	 */
-	MapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
+	IListDictionarizer makeDictionarizer(ILikeList<String> columns);
 
 }

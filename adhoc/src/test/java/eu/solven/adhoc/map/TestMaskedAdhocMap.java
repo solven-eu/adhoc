@@ -28,15 +28,17 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
+
 public class TestMaskedAdhocMap {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
 
 	@Test
 	public void testCompare_withSameMask() {
-		IAdhocMap decorated1 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated1 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked1 = MaskedAdhocMap.builder().decorated(decorated1).mask(Map.of("k2", "v2")).build();
 
-		IAdhocMap decorated2 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated2 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked2 = MaskedAdhocMap.builder().decorated(decorated2).mask(Map.of("k2", "v2")).build();
 
 		Assertions.assertThat((Map) masked1).isEqualTo(masked2);
@@ -45,10 +47,10 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testCompare_differentMask() {
-		IAdhocMap decorated1 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated1 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked1 = MaskedAdhocMap.builder().decorated(decorated1).mask(Map.of("k2", "v2")).build();
 
-		IAdhocMap decorated2 = StandardSliceFactory.fromMap(factory, Map.of("k2", "v2"));
+		IAdhocMap decorated2 = AdhocMapHelpers.fromMap(factory, Map.of("k2", "v2"));
 		MaskedAdhocMap masked2 = MaskedAdhocMap.builder().decorated(decorated2).mask(Map.of("k", "v")).build();
 
 		Assertions.assertThat((Map) masked1).isEqualTo(masked2);
@@ -57,7 +59,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testImmutable() {
-		IAdhocMap decorated1 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated1 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked1 = MaskedAdhocMap.builder().decorated(decorated1).mask(Map.of("k2", "v2")).build();
 
 		Assertions.assertThatThrownBy(() -> masked1.clear()).isInstanceOf(UnsupportedOperationException.class);
@@ -69,7 +71,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testEquals() {
-		IAdhocMap decorated = StandardSliceFactory.fromMap(StandardSliceFactory.builder().build(), Map.of("a", "a1"));
+		IAdhocMap decorated = AdhocMapHelpers.fromMap(StandardSliceFactory.builder().build(), Map.of("a", "a1"));
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 

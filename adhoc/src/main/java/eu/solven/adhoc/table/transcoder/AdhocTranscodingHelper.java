@@ -51,6 +51,10 @@ public class AdhocTranscodingHelper {
 
 	// TODO Should return original Map is there is no actual transcoding
 	public static Map<String, ?> transcodeColumns(ITableReverseAliaser reverseAliaser, Map<String, ?> underlyingMap) {
+		if (reverseAliaser.isIdentity()) {
+			return underlyingMap;
+		}
+
 		int initialCapacity = reverseAliaser.estimateQueriedSize(underlyingMap.keySet());
 		Map<String, Object> transcoded = HashMap.newHashMap(initialCapacity);
 

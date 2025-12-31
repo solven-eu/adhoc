@@ -33,25 +33,29 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.ISliceFactory;
+import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * A simple {@link IAdhocSlice} based on a {@link Map}.
+ * A simple {@link IAdhocSlice} based on a {@link Map}. It may be kept as use for small queries, or later compressed
+ * (e.g. into columnar storage) in case of many slices.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public final class SliceAsMap implements IAdhocSlice {
+public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	@Getter
 	final ISliceFactory factory;
 
@@ -62,11 +66,11 @@ public final class SliceAsMap implements IAdhocSlice {
 
 	@Deprecated(since = "Should use a ISliceFactory")
 	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
-		return fromMap(StandardSliceFactory.builder().build(), asMap);
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(), asMap);
 	}
 
 	public static IAdhocSlice fromMap(ISliceFactory factory, Map<String, ?> asMap) {
-		return StandardSliceFactory.fromMap(factory, asMap).asSlice();
+		return AdhocMapHelpers.fromMap(factory, asMap).asSlice();
 	}
 
 	/**
@@ -77,6 +81,11 @@ public final class SliceAsMap implements IAdhocSlice {
 	 */
 	public static SliceAsMap fromMapUnsafe(IAdhocMap adhocMap) {
 		return new SliceAsMap(adhocMap.getFactory(), adhocMap);
+	}
+
+	@Override
+	public IAdhocMap asAdhocMap() {
+		return asMap;
 	}
 
 	@Override
@@ -122,11 +131,7 @@ public final class SliceAsMap implements IAdhocSlice {
 	}
 
 	private Object explicitNull(Object v) {
-		if (v == NullMatcher.NULL_HOLDER) {
-			return null;
-		} else {
-			return v;
-		}
+		return NullMatcher.unwrapNull(v);
 	}
 
 	@Override
@@ -146,22 +151,26 @@ public final class SliceAsMap implements IAdhocSlice {
 			return true;
 		} else if (obj == null) {
 			return false;
-		} else if (getClass() != obj.getClass()) {
-			return false;
 		} else if (this.hashCode() != obj.hashCode()) {
 			// This is not checked by `Objects.hashCode` while AdhocMap keep it in Cache
 			return false;
 		}
-		SliceAsMap other = (SliceAsMap) obj;
 
-		return Objects.equals(asMap, other.asMap);
+		if (obj instanceof IHasAdhocMap otherSlice) {
+			return Objects.equals(this.asAdhocMap(), otherSlice.asAdhocMap());
+		} else if (obj instanceof IAdhocSlice otherSlice) {
+			return Objects.equals(this.getCoordinates(), otherSlice.getCoordinates());
+		} else {
+			return false;
+		}
 	}
 
 	@Override
 	public int compareTo(IAdhocSlice o) {
-		if (o instanceof SliceAsMap otherSlice && this.asMap instanceof IAdhocMap thisAdhocMap
-				&& otherSlice.asMap instanceof IAdhocMap otherAdhocMap) {
-			return thisAdhocMap.compareTo(otherAdhocMap);
+		if (o == null) {
+			throw new IllegalArgumentException("null");
+		} else if (o instanceof IHasAdhocMap otherSlice) {
+			return this.asAdhocMap().compareTo(otherSlice.asAdhocMap());
 		}
 		return MapComparators.mapComparator().compare(this.getCoordinates(), o.getCoordinates());
 	}
@@ -198,8 +207,4 @@ public final class SliceAsMap implements IAdhocSlice {
 		asMap.forEach(action);
 	}
 
-	@Override
-	public IAdhocSlice getGroupBys() {
-		return this;
-	}
 }

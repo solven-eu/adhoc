@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.function.IntFunction;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.experimental.UtilityClass;
@@ -111,6 +112,22 @@ public class AdhocMapComparisonHelpers {
 		for (int i = 0; i < size; i++) {
 			Object thisCoordinate = thisOrderedValues.get(i);
 			Object otherCoordinate = otherOrderedValues.get(i);
+			int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
+
+			if (valueCompare != 0) {
+				return valueCompare;
+			}
+		}
+
+		return 0;
+	}
+
+	public static int compareValues(int size,
+			IntFunction<Object> thisOrderedValues,
+			IntFunction<Object> otherOrderedValues) {
+		for (int i = 0; i < size; i++) {
+			Object thisCoordinate = thisOrderedValues.apply(i);
+			Object otherCoordinate = otherOrderedValues.apply(i);
 			int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
 
 			if (valueCompare != 0) {

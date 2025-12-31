@@ -40,6 +40,8 @@ import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.StandardSliceFactory;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -52,6 +54,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocTime;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -65,6 +68,7 @@ import lombok.extern.slf4j.Slf4j;
  * Holds the living action doing a query, typically while being executed by an {@link CubeQueryEngine}
  * 
  * @author Benoit Lacelle
+ * @see StandardQueryPreparator
  */
 @Builder(toBuilder = true)
 @Value
@@ -84,6 +88,10 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 
 	@NonNull
 	ITableWrapper table;
+
+	@NonNull
+	@Default
+	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
 
 	@NonNull
 	@Default
@@ -219,6 +227,7 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 		AdhocQueryId queryId;
 		IMeasureForest forest;
 		ITableWrapper table;
+		ISliceFactory sliceFactory;
 
 		// https://projectlombok.org/features/Builder
 		// columnsManager is problematic as it has @Default
@@ -262,6 +271,9 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 			if (columnsManager == null) {
 				columnsManager = ColumnsManager.builder().build();
 			}
+			if (sliceFactory == null) {
+				sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory();
+			}
 			if (executorService == null) {
 				// By default, we do not jump into a separate thread/executorService, hence we do not rely on
 				// AdhocUnsafe.adhocCommonPool
@@ -271,7 +283,14 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 				queryStepCache = GuavaQueryStepCache.withSize(1);
 			}
 
-			return new QueryPod(query, queryId, forest, table, columnsManager, executorService, queryStepCache);
+			return new QueryPod(query,
+					queryId,
+					forest,
+					table,
+					sliceFactory,
+					columnsManager,
+					executorService,
+					queryStepCache);
 		}
 	}
 

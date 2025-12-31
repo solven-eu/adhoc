@@ -50,4 +50,9 @@ public class IdentityReversibleAliaser implements ITableAliaser, ITableReverseAl
 	public int estimateQueriedSize(Set<String> underlyingKeys) {
 		return underlyingKeys.size();
 	}
+
+	@Override
+	public boolean isIdentity() {
+		return true;
+	}
 }
