@@ -39,11 +39,11 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AdhocPrimitiveMapHelpers {
 
-	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
 		return newHashMapDefaultMinus1(AdhocUnsafe.getDefaultColumnCapacity());
 	}
 
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T> Object2IntMap<T> newHashMapDefaultMinus1(int size) {
 		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(size);
 
