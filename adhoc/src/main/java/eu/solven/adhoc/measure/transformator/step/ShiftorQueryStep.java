@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -111,10 +112,10 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		IMapBuilderPreKeys builder =
-				slice.getSlice().getFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
+		NavigableSet<String> columns = step.getGroupBy().getGroupedByColumns();
+		IMapBuilderPreKeys builder = slice.getSlice().getFactory().newMapBuilder(columns);
 
-		step.getGroupBy().getGroupedByColumns().forEach(column -> {
+		columns.forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));
 
 			Object value;

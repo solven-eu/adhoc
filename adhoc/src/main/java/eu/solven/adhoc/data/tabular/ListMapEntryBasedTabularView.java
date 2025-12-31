@@ -37,7 +37,6 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
@@ -64,7 +63,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 	final List<TabularEntry> entries = new ArrayList<>();
 
 	@JsonIgnore
-	final Object2IntMap<Map<String, ?>> coordinateToIndex = new Object2IntOpenHashMap<>();
+	final Object2IntMap<Map<String, ?>> coordinateToIndex = AdhocPrimitiveMapHelpers.newHashMapDefaultMinus1();
 
 	/**
 	 * Associate a slice coordinate with its measure values.

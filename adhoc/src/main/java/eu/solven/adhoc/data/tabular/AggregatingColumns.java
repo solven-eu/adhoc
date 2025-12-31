@@ -35,13 +35,11 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -68,21 +66,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// https://questdb.com/blog/building-faster-hash-table-high-performance-sql-joins/
 	@NonNull
 	@Default
-	Object2IntMap<T> sliceToIndex = newHashMapDefaultMinus1();
+	Object2IntMap<T> sliceToIndex = AdhocPrimitiveMapHelpers.newHashMapDefaultMinus1();
 
 	@NonNull
 	@Default
 	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
-
-	@SuppressWarnings("PMD.LooseCoupling")
-	private static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
-		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(AdhocUnsafe.getDefaultColumnCapacity());
-
-		// If we request an unknown slice, we must not map to an existing index
-		map.defaultReturnValue(-1);
-
-		return map;
-	}
 
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
