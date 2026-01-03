@@ -29,6 +29,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -40,6 +41,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.CubeQuery.CubeQueryBuilder;
+import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 
 public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConstants {
 
@@ -293,6 +295,7 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 		});
 	}
 
+	@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
 	@Test
 	public void testFuzzy() {
 		List<CubeQuery> queries = new ArrayList<>();

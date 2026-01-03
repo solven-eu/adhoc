@@ -33,7 +33,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -49,9 +48,9 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
-import eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+@AdhocBenchmark
 public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest implements IAdhocTestConstants {
 	static final int maxCardinality = 1_000_000 / 1;
 

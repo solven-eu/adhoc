@@ -54,12 +54,14 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@AdhocBenchmark
 public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements IAdhocTestConstants {
 	static final int maxCardinality = 1000;
 	static final int nbDays = 10_000;

@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: JS Unit (ViTest) Tests
 on:
   push:
     branches: [ main, master ]

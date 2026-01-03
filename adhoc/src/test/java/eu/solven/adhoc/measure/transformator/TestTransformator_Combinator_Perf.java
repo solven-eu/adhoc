@@ -42,9 +42,11 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@AdhocBenchmark
 public class TestTransformator_Combinator_Perf extends ADagTest implements IAdhocTestConstants {
 	int maxCardinality = 100_000;
 

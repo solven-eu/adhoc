@@ -20,15 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb.worldcup;
+package eu.solven.adhoc.util;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 public class TestAdhocIntegrationTests {
 	// To be referred by `@EnabledIf` for integration tests
-	public static final String ENABLED_IF =
-			"eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests#runIntegrationTests";
+	public static final String ENABLED_IF = "eu.solven.adhoc.util.TestAdhocIntegrationTests" + "#runIntegrationTests";
 
 	public static boolean runIntegrationTests() {
 		return Boolean.getBoolean("adhoc.runIntegrationTests");
@@ -37,8 +38,16 @@ public class TestAdhocIntegrationTests {
 	/**
 	 * Check the integration tests are disabled by default
 	 */
+	@DisabledIf(TestAdhocIntegrationTests.ENABLED_IF)
 	@Test
-	public void testRunIntegrationsTests() {
+	public void testSkipIntegrationsTests() {
 		Assertions.assertThat(runIntegrationTests()).isFalse();
 	}
+
+	@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+	@Test
+	public void testRunIntegrationsTests() {
+		Assertions.assertThat(runIntegrationTests()).isTrue();
+	}
+
 }
