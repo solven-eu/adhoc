@@ -110,16 +110,19 @@ public class TestMultitypeHashMergeableColumn {
 		appenders.add(column -> column.merge("k1").onDouble(23.45D));
 		appenders.add(column -> column.merge("k1").onObject(null));
 
-		Collections2.permutations(appenders).forEach(combination -> {
-			column.clearKey("k1");
+		Collections2.permutations(appenders)
+				// parallelSteam as this unitTest can be slow
+				.parallelStream()
+				.forEach(combination -> {
+					column.clearKey("k1");
 
-			combination.forEach(consumer -> consumer.accept(column));
+					combination.forEach(consumer -> consumer.accept(column));
 
-			column.onValue("k1", o -> {
-				Assertions.assertThat((Double) o)
-						.isCloseTo(123 + 234 + 12.34D + 23.45D, Percentage.withPercentage(0.001));
-			});
-		});
+					column.onValue("k1", o -> {
+						Assertions.assertThat((Double) o)
+								.isCloseTo(123 + 234 + 12.34D + 23.45D, Percentage.withPercentage(0.001));
+					});
+				});
 	}
 
 	@Test

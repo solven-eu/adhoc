@@ -108,15 +108,18 @@ public class TestMultitypeHashMergeableColumn_Set {
 		appenders.add(column -> column.merge("k1").onDouble(23.45D));
 		appenders.add(column -> column.merge("k1").onObject(null));
 
-		Collections2.permutations(appenders).forEach(combination -> {
-			column.clearKey("k1");
+		Collections2.permutations(appenders)
+				// parallelSteam as this unitTest can be slow
+				.parallelStream()
+				.forEach(combination -> {
+					column.clearKey("k1");
 
-			combination.forEach(consumer -> consumer.accept(column));
+					combination.forEach(consumer -> consumer.accept(column));
 
-			column.onValue("k1", o -> {
-				Assertions.assertThat(o).isEqualTo(Set.of(123L, 234L, 12.34D, 23.45D));
-			});
-		});
+					column.onValue("k1", o -> {
+						Assertions.assertThat(o).isEqualTo(Set.of(123L, 234L, 12.34D, 23.45D));
+					});
+				});
 	}
 
 	@Test

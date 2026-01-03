@@ -44,9 +44,9 @@ import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 import lombok.extern.slf4j.Slf4j;
 
 /**

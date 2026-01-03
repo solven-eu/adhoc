@@ -48,9 +48,9 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
-import eu.solven.adhoc.table.duckdb.worldcup.TestAdhocIntegrationTests;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
+import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
