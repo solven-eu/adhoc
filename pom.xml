@@ -89,6 +89,7 @@
 		<!-- https://github.com/spotbugs/spotbugs-maven-plugin/issues/75 -->
 		<staticChecksOverBytecode>process-classes</staticChecksOverBytecode>
 
+		<!-- By default, benchmarks are not executed-->
 		<excludedGroups>adhoc-benchmark</excludedGroups>
 
 		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs -->
@@ -794,6 +795,26 @@
 
 				<!-- Dependency will be checked with style -->
 				<enforcer.skip>true</enforcer.skip>
+			</properties>
+		</profile>
+		
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>benchmark-with</id>
+			<properties>
+				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
+			</properties>
+		</profile>
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>benchmark-only</id>
+			<properties>
+				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
+				<!-- https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups -->
+				<groups>adhoc-benchmark</groups>
+				<excludedGroups></excludedGroups>
 			</properties>
 		</profile>
 	</profiles>
