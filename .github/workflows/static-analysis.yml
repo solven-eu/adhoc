@@ -6,7 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Adhoc Static Analysis
+name: Static Analysis
 
 on:
   push:
