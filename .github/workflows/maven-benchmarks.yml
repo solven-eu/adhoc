@@ -10,9 +10,9 @@ name: Adhoc Benchmarks
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "ci/benchmarks" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "ci/benchmarks" ]
 
 jobs:
   build:
