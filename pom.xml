@@ -107,7 +107,7 @@
 		<pmd.version>7.17.0</pmd.version>
 
 		<!-- https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
-		<customArgLine></customArgLine>
+		<customArgLine />
 		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError ${customArgLine}</argLine>
 	</properties>
 

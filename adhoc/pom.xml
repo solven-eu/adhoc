@@ -17,27 +17,6 @@
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
 	</properties>
-	
-	<profiles>
-		<profile>
-			<!-- Used to recompile quickly only the core components -->
-			<id>benchmark</id>
-			<properties>
-				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
-				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
-			</properties>
-		</profile>
-		<profile>
-			<!-- Used to recompile quickly only the core components -->
-			<id>benchmark-only</id>
-			<properties>
-				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
-				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
-				<!-- https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups -->
-				<groups>adhoc-benchmark</groups>
-			</properties>
-		</profile>
-	</profiles>
 
 	<dependencies>
 		<dependency>
@@ -204,5 +183,26 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>benchmark</id>
+			<properties>
+				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
+			</properties>
+		</profile>
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>benchmark-only</id>
+			<properties>
+				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
+				<!-- https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups -->
+				<groups>adhoc-benchmark</groups>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

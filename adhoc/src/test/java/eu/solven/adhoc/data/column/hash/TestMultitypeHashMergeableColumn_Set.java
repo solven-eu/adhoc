@@ -108,10 +108,18 @@ public class TestMultitypeHashMergeableColumn_Set {
 		appenders.add(column -> column.merge("k1").onDouble(23.45D));
 		appenders.add(column -> column.merge("k1").onObject(null));
 
+		ThreadLocal<MultitypeHashMergeableColumn<String>> columnTL =
+				new ThreadLocal<MultitypeHashMergeableColumn<String>>() {
+					protected MultitypeHashMergeableColumn<String> initialValue() {
+						return MultitypeHashMergeableColumn.<String>builder().aggregation(sum).capacity(1).build();
+					};
+				};
+
 		Collections2.permutations(appenders)
 				// parallelSteam as this unitTest can be slow
 				.parallelStream()
 				.forEach(combination -> {
+					MultitypeHashMergeableColumn<String> column = columnTL.get();
 					column.clearKey("k1");
 
 					combination.forEach(consumer -> consumer.accept(column));
