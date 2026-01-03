@@ -176,7 +176,7 @@
 			<!-- Used to check links in HTML -->
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.21.2</version>
+			<version>1.22.1</version>
 			<scope>test</scope>
 		</dependency>
 
