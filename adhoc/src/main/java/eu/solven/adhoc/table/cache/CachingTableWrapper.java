@@ -148,12 +148,14 @@ public class CachingTableWrapper implements ITableWrapper {
 				.removalListener(new RemovalListener<>() {
 					@Override
 					public void onRemoval(RemovalNotification<CachingKey, CachingValue> notification) {
-						log.debug("RemovalNotification cause={} {} size={}",
-								notification.getCause(),
+						log.debug("RemovalNotification key={} cause={} size={}",
 								notification.getKey(),
+								notification.getCause(),
 								notification.getValue().getRecords().size());
 					}
-				});
+				})
+				// softValues to get ride automatically of entries when we lack memory
+				.softValues();
 	}
 
 	public void invalidateAll() {

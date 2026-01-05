@@ -22,17 +22,40 @@
  */
 package eu.solven.adhoc.util;
 
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.springframework.core.env.StandardEnvironment;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class TestAdhocIntegrationTests {
 	// To be referred by `@EnabledIf` for integration tests
 	public static final String ENABLED_IF = "eu.solven.adhoc.util.TestAdhocIntegrationTests" + "#runIntegrationTests";
 
 	public static boolean runIntegrationTests() {
-		return Boolean.getBoolean("adhoc.runIntegrationTests");
+		Optional<StackTraceElement> ideEntry = Stream.of(Thread.currentThread().getStackTrace())
+				.filter(e -> e.getClassName().startsWith("org.eclipse.jdt."))
+				.findAny();
+		if (ideEntry.isPresent()) {
+			log.info("Running {} due to {}", "IntegrationTests", ideEntry.get());
+			return true;
+		}
+
+		String valueAsString = new StandardEnvironment().getProperty("adhoc.runIntegrationTests", String.class);
+
+		if (valueAsString == null) {
+			return false;
+		} else if (valueAsString.isEmpty()) {
+			return true;
+		} else {
+			return Boolean.parseBoolean(valueAsString);
+		}
 	}
 
 	/**

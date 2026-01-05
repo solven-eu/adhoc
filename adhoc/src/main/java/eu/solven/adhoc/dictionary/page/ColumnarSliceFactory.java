@@ -199,12 +199,12 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
 			IAdhocTableRow values = preKeys.getDictionarizedValues();
 
-			values.freeze();
+			IAdhocTableRowRead frozen = values.freeze();
 
 			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
 					.keys(preKeys.keysLikeList)
-					.unorderedValues(values::readValue)
+					.unorderedValues(frozen::readValue)
 					.build();
 		} else if (hasEntries instanceof MapBuilderThroughKeys throughKeys) {
 			Collection<? extends String> keys = throughKeys.getKeys();
@@ -212,13 +212,13 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			if (throughKeys.row == null) {
 				return SliceAsMap.grandTotal().asAdhocMap();
 			}
-			throughKeys.row.freeze();
+			IAdhocTableRowRead frozen = throughKeys.row.freeze();
 
 			SequencedSetLikeList keyLikeList = internKeyset(keys);
 			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
 					.keys(keyLikeList)
-					.unorderedValues(throughKeys.row::readValue)
+					.unorderedValues(frozen::readValue)
 					.build();
 		} else {
 			return buildMapNaively(hasEntries);

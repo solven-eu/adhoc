@@ -42,6 +42,98 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public class AppendableTablePage implements IAppendableTablePage {
 
+	private final class TablePageRow implements IAdhocTableRow {
+		private final AtomicInteger columnIndex;
+		private final int rowIndex;
+
+		private TablePageRow(AtomicInteger columnIndex, int rowIndex) {
+			this.columnIndex = columnIndex;
+			this.rowIndex = rowIndex;
+		}
+
+		@Override
+		public int size() {
+			return columnIndex.get();
+		}
+
+		@Override
+		public int add(String key, Object normalizedValue) {
+			int currentColumnIndex = columnIndex.getAndIncrement();
+
+			if (currentColumnIndex >= columnNames.size()) {
+				// Register a new additional column
+				columnNames.add(key);
+				columns.add(makeColumn(key));
+			} else {
+				String expectedColumnName = columnNames.get(currentColumnIndex);
+				if (!key.equals(expectedColumnName)) {
+					log.warn("Mis-ordered columns %s != %s".formatted(key, expectedColumnName));
+					if (AdhocUnsafe.isFailFast()) {
+						throw new IllegalStateException("%s != %s".formatted(key, expectedColumnName));
+					} else {
+						currentColumnIndex = columnNames.indexOf(key);
+
+						if (currentColumnIndex < 0) {
+							currentColumnIndex = columnNames.size();
+							columnNames.add(key);
+							columns.add(makeColumn(key));
+						}
+					}
+				}
+			}
+
+			columns.get(currentColumnIndex).append(normalizedValue);
+
+			return currentColumnIndex;
+		}
+
+		@Override
+		public IAdhocTableRowRead freeze() {
+			if (columnNames.size() != size()) {
+				throw new IllegalArgumentException(
+						"keys size (%s) differs from values size (%s)".formatted(columnNames.size(), size()));
+			}
+
+			return new TablePageRowRead(size(), rowIndex);
+		}
+
+		@Override
+		public String toString() {
+			return new TablePageRowRead(size(), rowIndex).toString();
+		}
+	}
+
+	private final class TablePageRowRead implements IAdhocTableRowRead {
+		private final int columnSize;
+		private final int rowIndex;
+
+		private TablePageRowRead(int columnSize, int rowIndex) {
+			this.columnSize = columnSize;
+			this.rowIndex = rowIndex;
+		}
+
+		@Override
+		public int size() {
+			return columnSize;
+		}
+
+		@Override
+		public Object readValue(int column) {
+			return columns.get(column).readValue(rowIndex);
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+
+			for (int i = 0; i < size(); i++) {
+				sb.append(columnNames.get(i)).append('=').append(readValue(i));
+			}
+
+			return sb.toString();
+		}
+	}
+
 	@Default
 	@NonNull
 	final IAppendableColumnFactory columnsFactory = new ObjectArrayColumnsFactory();
@@ -79,68 +171,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 		AtomicInteger columnIndex = new AtomicInteger();
 
-		return new IAdhocTableRow() {
-
-			@Override
-			public int size() {
-				return columnIndex.get();
-			}
-
-			@Override
-			public int add(String key, Object normalizedValue) {
-				int currentColumnIndex = columnIndex.getAndIncrement();
-
-				if (currentColumnIndex >= columnNames.size()) {
-					// Register a new additional column
-					columnNames.add(key);
-					columns.add(makeColumn(key));
-				} else {
-					String expectedColumnName = columnNames.get(currentColumnIndex);
-					if (!key.equals(expectedColumnName)) {
-						log.warn("Mis-ordered columns %s != %s".formatted(key, expectedColumnName));
-						if (AdhocUnsafe.isFailFast()) {
-							throw new IllegalStateException("%s != %s".formatted(key, expectedColumnName));
-						} else {
-							currentColumnIndex = columnNames.indexOf(key);
-
-							if (currentColumnIndex < 0) {
-								currentColumnIndex = columnNames.size();
-								columnNames.add(key);
-								columns.add(makeColumn(key));
-							}
-						}
-					}
-				}
-
-				columns.get(currentColumnIndex).append(normalizedValue);
-
-				return currentColumnIndex;
-			}
-
-			@Override
-			public Object readValue(int column) {
-				return columns.get(column).readValue(rowIndex);
-			}
-
-			@Override
-			public void freeze() {
-				if (columnNames.size() != size()) {
-					throw new IllegalArgumentException(
-							"keys size (%s) differs from values size (%s)".formatted(columnNames.size(), size()));
-				}
-			}
-
-			@Override
-			public String toString() {
-				StringBuilder sb = new StringBuilder();
-
-				for (int i = 0; i < size(); i++) {
-					sb.append(columnNames.get(i)).append('=').append(readValue(i));
-				}
-
-				return sb.toString();
-			}
-		};
+		return new TablePageRow(columnIndex, rowIndex);
 	}
 
 	protected IAppendableColumn makeColumn(String key) {
