@@ -141,7 +141,7 @@ public class CachingTableWrapper implements ITableWrapper {
 				// https://github.com/google/guava/issues/3202
 				.<CachingKey, CachingValue>weigher((key, value) -> {
 					// TODO Adjust with the weight of the aggregate
-					return value.getRecords().size() * key.getTableQuery().getGroupBy().getGroupedByColumns().size();
+					return sliceToValueSize(key, value);
 				})
 				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
 				// .maximumWeight(1024 * 1024)
@@ -151,6 +151,13 @@ public class CachingTableWrapper implements ITableWrapper {
 						notification.getValue().getRecords().size()))
 				// softValues to get ride automatically of entries when we lack memory
 				.softValues();
+	}
+
+	private static int sliceToValueSize(CachingKey key, CachingValue value) {
+		int nbRecords = value.getRecords().size();
+		int recordWidth = key.getTableQuery().getGroupBy().getGroupedByColumns().size()
+				+ key.getTableQuery().getAggregators().size();
+		return nbRecords * recordWidth;
 	}
 
 	public void invalidateAll() {
