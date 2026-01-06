@@ -145,15 +145,10 @@ public class CachingTableWrapper implements ITableWrapper {
 				})
 				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
 				// .maximumWeight(1024 * 1024)
-				.removalListener(new RemovalListener<>() {
-					@Override
-					public void onRemoval(RemovalNotification<CachingKey, CachingValue> notification) {
-						log.debug("RemovalNotification key={} cause={} size={}",
-								notification.getKey(),
-								notification.getCause(),
-								notification.getValue().getRecords().size());
-					}
-				})
+				.removalListener(notification -> log.debug("RemovalNotification key={} cause={} size={}",
+						notification.getKey(),
+						notification.getCause(),
+						notification.getValue().getRecords().size()))
 				// softValues to get ride automatically of entries when we lack memory
 				.softValues();
 	}
