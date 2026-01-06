@@ -27,10 +27,9 @@ package eu.solven.adhoc.dictionary.page;
  * 
  * @author Benoit Lacelle
  */
-public interface IAppendableColumn extends IReadableColumn {
+@FunctionalInterface
+public interface IReadableColumn {
 
-	void append(Object normalizedValue);
-
-	IReadableColumn freeze();
+	Object readValue(int rowIndex);
 
 }

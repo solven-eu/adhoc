@@ -35,6 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -80,7 +82,7 @@ public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdh
 	@Override
 	public void feedTable() {
 		for (int i = 0; i < maxCardinality; i++) {
-			table().add(Map.of("l", "A", "row_index", i, "k1", i, "k2", (i % 9)));
+			table().add(ImmutableMap.of("l", "A", "row_index", i, "k1", i, "k2", (i % 9)));
 		}
 	}
 

@@ -35,13 +35,13 @@ public interface IAppendableTable {
 	 * 
 	 * @return a row, able to write into any column.
 	 */
-	IAdhocTableRow nextRow();
+	ITableRow nextRow();
 
 	/**
 	 * 
 	 * @param keysLikeList
 	 * @return a row, able to write only into given columns, in given order.
 	 */
-	IAdhocTableRow nextRow(SequencedSetLikeList keysLikeList);
+	ITableRow nextRow(SequencedSetLikeList keysLikeList);
 
 }

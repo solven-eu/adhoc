@@ -89,7 +89,7 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	}
 
 	protected IDictionarizer getDictionarizer(String column) {
-		return new MapDictionarizer();
+		return MapDictionarizer.builder().build();
 	}
 
 	protected IntFunction<Object> extracted(ILikeList<String> columns, List<Object> list, IIntArray indexTo) {
@@ -119,6 +119,6 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	}
 
 	protected IDictionarizer makeDictionarizer(String column) {
-		return new MapDictionarizer();
+		return MapDictionarizer.builder().build();
 	}
 }

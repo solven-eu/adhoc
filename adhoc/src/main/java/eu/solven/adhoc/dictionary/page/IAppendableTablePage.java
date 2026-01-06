@@ -37,11 +37,6 @@ public interface IAppendableTablePage {
 	 * @return null if there is not more available row in this page.
 	 */
 	@Nullable
-	IAdhocTableRow pollNextRow();
-
-	// /**
-	// * Do allocate the underlying memory. Useful to delay the allocation in case of CAS operation.
-	// */
-	// void allocate();
+	ITableRow pollNextRow();
 
 }

@@ -78,7 +78,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		@NonNull
 		IAppendableTable pageFactory;
 
-		IAdhocTableRow row;
+		ITableRow row;
 
 		@Override
 		public Collection<? extends String> getKeys() {
@@ -105,9 +105,9 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			}
 		}
 
-		public IAdhocTableRow getDictionarizedValues() {
+		public ITableRow getDictionarizedValues() {
 			if (row == null) {
-				return IAdhocTableRow.empty();
+				return ITableRow.empty();
 			} else {
 				return row;
 			}
@@ -147,7 +147,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		@Default
 		ImmutableList.Builder<String> keys = ImmutableList.builder();
 
-		IAdhocTableRow row;
+		ITableRow row;
 
 		@Override
 		public MapBuilderThroughKeys put(String key, Object value) {
@@ -197,9 +197,9 @@ public class ColumnarSliceFactory extends ASliceFactory {
 	@Override
 	public IAdhocMap buildMap(IHasEntries hasEntries) {
 		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			IAdhocTableRow values = preKeys.getDictionarizedValues();
+			ITableRow values = preKeys.getDictionarizedValues();
 
-			IAdhocTableRowRead frozen = values.freeze();
+			ITableRowRead frozen = values.freeze();
 
 			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
@@ -212,7 +212,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			if (throughKeys.row == null) {
 				return SliceAsMap.grandTotal().asAdhocMap();
 			}
-			IAdhocTableRowRead frozen = throughKeys.row.freeze();
+			ITableRowRead frozen = throughKeys.row.freeze();
 
 			SequencedSetLikeList keyLikeList = internKeyset(keys);
 			return DictionarizedSliceFactory.MapOverIntFunction.builder()

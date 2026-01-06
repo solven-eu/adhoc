@@ -27,14 +27,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import lombok.Builder;
+import lombok.Builder.Default;
+
 /**
  * Simple {@link IDictionarizer} based on an {@link ConcurrentHashMap}.
  * 
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/29826787/is-this-dictionary-function-thread-safe-concurrenthashmapatomicinteger
+@Builder
 public class MapDictionarizer implements IDictionarizer {
+	@Default
 	final ConcurrentMap<Object, Integer> objectToInt = new ConcurrentHashMap<>();
+	@Default
 	final List<Object> intToObject = new CopyOnWriteArrayList<>();
 
 	@Override
