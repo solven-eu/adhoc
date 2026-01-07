@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -47,7 +46,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.AdhocBenchmark;
-import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 import lombok.extern.slf4j.Slf4j;
 
 /**
