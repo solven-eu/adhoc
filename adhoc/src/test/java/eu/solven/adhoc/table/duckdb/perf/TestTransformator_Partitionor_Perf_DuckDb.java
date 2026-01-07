@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.transformator;
+package eu.solven.adhoc.table.duckdb.perf;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,11 +33,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
-import com.google.common.collect.ImmutableMap;
-
-import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -46,25 +42,32 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
-import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Similar to {@link TestTransformator_Combinator_Perf}, but based on DuckDb.
+ * 
+ * @author Benoit Lacelle
+ */
 @Slf4j
-@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
-public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdhocTestConstants {
-	static final int maxCardinality = 1_000_000;
+@AdhocBenchmark
+public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest implements IAdhocTestConstants {
+	static final int maxCardinality = 1_000_000 / 1;
 
 	@BeforeAll
 	public static void setLimits() {
-		log.info("{} is evaluated on cardinality={}",
-				TestTransformator_Partitionor_Perf.class.getName(),
-				maxCardinality);
+		log.info("Evaluating on cardinality={}", maxCardinality);
 		AdhocUnsafe.setLimitColumnSize(maxCardinality + 10);
 	}
 
@@ -73,19 +76,26 @@ public class TestTransformator_Partitionor_Perf extends ADagTest implements IAdh
 		AdhocUnsafe.resetProperties();
 	}
 
+	String tableName = "someTableName";
+
 	@Override
-	public InMemoryTable makeTable() {
-		return InMemoryTable.builder().distinctSlices(true).build();
+	public ITableWrapper makeTable() {
+		dsl.execute("""
+				CREATE OR REPLACE TABLE %s (l VARCHAR, row_index INTEGER, k1 INTEGER, k2 INTEGER);
+				INSERT INTO %s (
+				    SELECT
+				    	'A',
+				        i,
+				        i,
+				        i %% 9
+				    FROM range(%s) AS t(i)
+				);
+								""".formatted(tableName, tableName, maxCardinality));
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
 	}
 
-	@BeforeEach
 	@Override
-	public void feedTable() {
-		for (int i = 0; i < maxCardinality; i++) {
-			table().add(ImmutableMap.of("l", "A", "row_index", i, "k1", i, "k2", (i % 9)));
-		}
-	}
-
 	public IStopwatchFactory makeStopwatchFactory() {
 		return IStopwatchFactory.guavaStopwatchFactory();
 	}

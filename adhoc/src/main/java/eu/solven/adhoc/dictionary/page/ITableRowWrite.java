@@ -22,42 +22,23 @@
  */
 package eu.solven.adhoc.dictionary.page;
 
-import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
-
 /**
  * Represents a row in a table.
  * 
  * @author Benoit Lacelle
  */
-public interface ITableRow {
+public interface ITableRowWrite {
 
 	int size();
 
-	int add(String key, Object normalizedValue);
-
-	static ITableRow empty() {
-		return new ITableRow() {
-
-			@Override
-			public int size() {
-				return 0;
-			}
-
-			@Override
-			public ITableRowRead freeze() {
-				return ITableRowRead.empty();
-			}
-
-			@Override
-			public int add(String key, Object normalizedValue) {
-				throw new UnsupportedAsImmutableException();
-			}
-		};
-	}
+	int add(String key, Object value);
 
 	/**
 	 * Mark this as read-only.
 	 */
 	ITableRowRead freeze();
 
+	static ITableRowWrite empty() {
+		return TableRowReadHelpers.emptyRow();
+	}
 }

@@ -59,13 +59,13 @@ public class FlexibleAppendableTable implements IAppendableTable {
 	}
 
 	@Override
-	public ITableRow nextRow() {
+	public ITableRowWrite nextRow() {
 		while (true) {
 			IAppendableTablePage currentPage = refFlexiblePage.get();
 			if (currentPage == null) {
 				nextPage(currentPage);
 			} else {
-				ITableRow nextRow = currentPage.pollNextRow();
+				ITableRowWrite nextRow = currentPage.pollNextRow();
 				if (nextRow == null) {
 					nextPage(currentPage);
 				} else {
@@ -88,11 +88,11 @@ public class FlexibleAppendableTable implements IAppendableTable {
 	}
 
 	@Override
-	public ITableRow nextRow(SequencedSetLikeList keysLikeList) {
+	public ITableRowWrite nextRow(SequencedSetLikeList keysLikeList) {
 		while (true) {
 			List<String> keysAsList = keysLikeList.asList();
 			IAppendableTablePage currentPage = keyToPage.computeIfAbsent(keysAsList, k -> makePage());
-			ITableRow nextRow = currentPage.pollNextRow();
+			ITableRowWrite nextRow = currentPage.pollNextRow();
 			if (nextRow == null) {
 				IAppendableTablePage newCandidate = makePage();
 				if (keyToPage.replace(keysAsList, currentPage, newCandidate)) {

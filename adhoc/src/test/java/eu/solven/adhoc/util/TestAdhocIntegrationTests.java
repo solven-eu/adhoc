@@ -58,6 +58,11 @@ public class TestAdhocIntegrationTests {
 		}
 	}
 
+	@Test
+	public void reportSkipIntegrationsTests() {
+		log.info("runIntegrationTests()={}", runIntegrationTests());
+	}
+
 	/**
 	 * Check the integration tests are disabled by default
 	 */

@@ -78,7 +78,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		@NonNull
 		IAppendableTable pageFactory;
 
-		ITableRow row;
+		ITableRowWrite row;
 
 		@Override
 		public Collection<? extends String> getKeys() {
@@ -105,9 +105,9 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			}
 		}
 
-		public ITableRow getDictionarizedValues() {
+		public ITableRowWrite getDictionarizedValues() {
 			if (row == null) {
-				return ITableRow.empty();
+				return ITableRowWrite.empty();
 			} else {
 				return row;
 			}
@@ -147,7 +147,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		@Default
 		ImmutableList.Builder<String> keys = ImmutableList.builder();
 
-		ITableRow row;
+		ITableRowWrite row;
 
 		@Override
 		public MapBuilderThroughKeys put(String key, Object value) {
@@ -197,7 +197,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 	@Override
 	public IAdhocMap buildMap(IHasEntries hasEntries) {
 		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			ITableRow values = preKeys.getDictionarizedValues();
+			ITableRowWrite values = preKeys.getDictionarizedValues();
 
 			ITableRowRead frozen = values.freeze();
 

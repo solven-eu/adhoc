@@ -61,9 +61,9 @@ public class AppendableTablePage implements IAppendableTablePage {
 	final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
 
 	/**
-	 * An {@link ITableRow} being written.
+	 * An {@link ITableRowWrite} being written.
 	 */
-	protected final class TablePageRow implements ITableRow {
+	protected final class TablePageRow implements ITableRowWrite {
 		private final AtomicInteger columnIndex;
 		private final int rowIndex;
 
@@ -197,7 +197,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 	}
 
 	@Override
-	public ITableRow pollNextRow() {
+	public ITableRowWrite pollNextRow() {
 		int rowIndex = pollNextRowIndex();
 		if (rowIndex < 0) {
 			return null;

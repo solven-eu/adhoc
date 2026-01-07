@@ -46,6 +46,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 import lombok.extern.slf4j.Slf4j;
 
@@ -131,7 +132,7 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 		Assertions.assertThat(columnMeta.getCoordinates()).hasSize(100);
 	}
 
-	@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+	@AdhocBenchmark
 	@Test
 	public void testCoordinates_allColumns_like() {
 		// Search through all columns for any coordinate matching `%abc%`

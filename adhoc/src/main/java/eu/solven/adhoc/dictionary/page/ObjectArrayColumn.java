@@ -51,10 +51,10 @@ public class ObjectArrayColumn implements IAppendableColumn {
 	@Override
 	@SuppressWarnings("checkstyle:MagicNumber")
 	public IReadableColumn freeze() {
-		long countDistinct = asArray.stream().count();
+		long countDistinct = asArray.stream().distinct().count();
 
 		// TODO This computation could be done asynchronously
-		if (countDistinct * 16 < asArray.size()) {
+		if (countDistinct * 16 <= asArray.size()) {
 			return DictionarizedObjectColumn.fromArray(asArray);
 		} else if (asArray.stream().allMatch(Long.class::isInstance)) {
 			long[] primitiveArray = asArray.stream().mapToLong(Long.class::cast).toArray();

@@ -37,6 +37,6 @@ public interface IAppendableTablePage {
 	 * @return null if there is not more available row in this page.
 	 */
 	@Nullable
-	ITableRow pollNextRow();
+	ITableRowWrite pollNextRow();
 
 }

@@ -34,18 +34,7 @@ public interface ITableRowRead {
 	Object readValue(int columnIndex);
 
 	static ITableRowRead empty() {
-		return new ITableRowRead() {
-
-			@Override
-			public int size() {
-				return 0;
-			}
-
-			@Override
-			public Object readValue(int columnIndex) {
-				return null;
-			}
-		};
+		return TableRowReadHelpers.empty();
 	}
 
 }

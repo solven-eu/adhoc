@@ -41,6 +41,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.CubeQuery.CubeQueryBuilder;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 
 public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConstants {
@@ -295,7 +296,7 @@ public class TestCachingTableWrapper extends ADagTest implements IAdhocTestConst
 		});
 	}
 
-	@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+	@AdhocBenchmark
 	@Test
 	public void testFuzzy() {
 		List<CubeQuery> queries = new ArrayList<>();
