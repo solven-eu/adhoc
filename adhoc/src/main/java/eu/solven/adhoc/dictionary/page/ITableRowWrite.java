@@ -39,6 +39,6 @@ public interface ITableRowWrite {
 	ITableRowRead freeze();
 
 	static ITableRowWrite empty() {
-		return TableRowReadHelpers.emptyRow();
+		return TableRowHelpers.emptyRow();
 	}
 }

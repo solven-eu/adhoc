@@ -35,4 +35,38 @@ public class TestAppendableTablePage {
 		Assertions.assertThat(page.pollNextRowIndex()).isEqualTo(-1);
 		Assertions.assertThat(page.pollNextRowIndex()).isEqualTo(-1);
 	}
+
+	@Test
+	public void testFreeze() {
+		AppendableTablePage page = AppendableTablePage.builder().capacity(2).build();
+
+		{
+			ITableRowWrite row1 = page.pollNextRow();
+
+			row1.add("k1", "v11");
+			row1.add("k2", "v12");
+
+			ITableRowRead rowFreeze1 = row1.freeze();
+			Assertions.assertThat(page.columns).hasSize(2);
+			Assertions.assertThat(page.columnsRead).isEmpty();
+
+			Assertions.assertThat(rowFreeze1.readValue(0)).isEqualTo("v11");
+			Assertions.assertThat(rowFreeze1.readValue(1)).isEqualTo("v12");
+		}
+
+		{
+			ITableRowWrite row2 = page.pollNextRow();
+			Assertions.assertThat(page.pollNextRow()).isNull();
+
+			row2.add("k1", "v21");
+			row2.add("k2", "v22");
+
+			ITableRowRead rowFreeze2 = row2.freeze();
+			Assertions.assertThat(page.columns).isEmpty();
+			Assertions.assertThat(page.columnsRead).hasSize(2);
+
+			Assertions.assertThat(rowFreeze2.readValue(0)).isEqualTo("v21");
+			Assertions.assertThat(rowFreeze2.readValue(1)).isEqualTo("v22");
+		}
+	}
 }

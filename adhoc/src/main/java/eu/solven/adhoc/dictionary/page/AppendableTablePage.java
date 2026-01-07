@@ -183,12 +183,10 @@ public class AppendableTablePage implements IAppendableTablePage {
 			}
 			int polledNextRow = l + r;
 			if (polledNextRow >= capacity) {
+				isLastRowPolled.set(true);
+
 				// Can not reserve requested rows
 				return -1;
-			}
-
-			if (polledNextRow == capacity) {
-				isLastRowPolled.set(true);
 			}
 
 			// register the requested rows

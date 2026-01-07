@@ -33,7 +33,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 @UtilityClass
-public class TableRowReadHelpers {
+public class TableRowHelpers {
 	private static final ITableRowRead EMPTY_ROW_READ = new ITableRowRead() {
 
 		@Override
@@ -99,7 +99,7 @@ public class TableRowReadHelpers {
 		public boolean equals(Object obj) {
 			if (obj == null) {
 				return false;
-			} else if (obj instanceof ITableRowRead otherRow) {
+			} else if (obj instanceof ITableRowWrite otherRow) {
 				return otherRow.size() == 0;
 			} else {
 				return false;
@@ -107,7 +107,7 @@ public class TableRowReadHelpers {
 		}
 	};
 
-	static ITableRowRead empty() {
+	static ITableRowRead emptyRead() {
 		return EMPTY_ROW_READ;
 	}
 

@@ -34,7 +34,7 @@ public interface ITableRowRead {
 	Object readValue(int columnIndex);
 
 	static ITableRowRead empty() {
-		return TableRowReadHelpers.empty();
+		return TableRowHelpers.emptyRead();
 	}
 
 }
