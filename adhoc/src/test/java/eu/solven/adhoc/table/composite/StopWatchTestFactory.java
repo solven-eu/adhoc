@@ -28,6 +28,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.IStopwatchFactory;
 
+/**
+ * 
+ * An {@link IStopwatchFactory} useful for unit-tests willing to check the way timings are measures (e.g. their
+ * predictability), but not actually measuring the execution timings. This is irrelevant for benchmark purposes.
+ * 
+ * @author Benoit Lacelle
+ * 
+ */
 public class StopWatchTestFactory implements IStopwatchFactory {
 
 	AtomicInteger nextTicks = new AtomicInteger();

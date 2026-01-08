@@ -65,7 +65,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		}
 
 		protected IDictionarizer newDictionarizer(String column) {
-			return new MapDictionarizer();
+			return MapDictionarizer.builder().build();
 		}
 	};
 

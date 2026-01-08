@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,50 +22,17 @@
  */
 package eu.solven.adhoc.dictionary.page;
 
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 
-/**
- * Represents a row in a table.
- * 
- * @author Benoit Lacelle
- */
-public interface IAdhocTableRow {
-
-	int size();
-
-	int add(String key, Object normalizedValue);
-
-	static IAdhocTableRow empty() {
-		return new IAdhocTableRow() {
-
-			@Override
-			public int size() {
-				return 0;
-			}
-
-			@Override
-			public Object readValue(int columnIndex) {
-				return null;
-			}
-
-			@Override
-			public void freeze() {
-				// TODO Auto-generated method stub
-
-			}
-
-			@Override
-			public int add(String key, Object normalizedValue) {
-				throw new UnsupportedAsImmutableException();
-			}
-		};
+public class TestITableRow {
+	@Test
+	public void testEmpty() {
+		ITableRowWrite empty = ITableRowWrite.empty();
+		Assertions.assertThat(empty.size()).isEqualTo(0);
+		Assertions.assertThatThrownBy(() -> empty.add("k", 0L)).isInstanceOf(UnsupportedAsImmutableException.class);
+		Assertions.assertThat(empty.freeze()).isEqualTo(ITableRowRead.empty());
 	}
-
-	Object readValue(int columnIndex);
-
-	/**
-	 * Mark this as read-only.
-	 */
-	void freeze();
-
 }

@@ -36,8 +36,6 @@ import java.util.stream.Stream;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -139,21 +137,23 @@ public class CachingTableWrapper implements ITableWrapper {
 		return CacheBuilder.newBuilder()
 				.recordStats()
 				// https://github.com/google/guava/issues/3202
-				.<CachingKey, CachingValue>weigher((key, value) -> {
-					// TODO Adjust with the weight of the aggregate
-					return value.getRecords().size() * key.getTableQuery().getGroupBy().getGroupedByColumns().size();
-				})
+				.<CachingKey, CachingValue>weigher(CachingTableWrapper::sliceToValueSize)
 				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
 				// .maximumWeight(1024 * 1024)
-				.removalListener(new RemovalListener<>() {
-					@Override
-					public void onRemoval(RemovalNotification<CachingKey, CachingValue> notification) {
-						log.debug("RemovalNotification cause={} {} size={}",
-								notification.getCause(),
-								notification.getKey(),
-								notification.getValue().getRecords().size());
-					}
-				});
+				.removalListener(notification -> log.debug("RemovalNotification key={} cause={} size={}",
+						notification.getKey(),
+						notification.getCause(),
+						notification.getValue().getRecords().size()))
+				// softValues to get ride automatically of entries when we lack memory
+				.softValues();
+	}
+
+	// TODO Adjust with the weight of the aggregate
+	private static int sliceToValueSize(CachingKey key, CachingValue value) {
+		int nbRecords = value.getRecords().size();
+		int recordWidth = key.getTableQuery().getGroupBy().getGroupedByColumns().size()
+				+ key.getTableQuery().getAggregators().size();
+		return nbRecords * recordWidth;
 	}
 
 	public void invalidateAll() {

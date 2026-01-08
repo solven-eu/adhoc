@@ -33,4 +33,8 @@ public class UnsupportedAsImmutableException extends UnsupportedOperationExcepti
 	public UnsupportedAsImmutableException() {
 		super("Immutable");
 	}
+
+	public UnsupportedAsImmutableException(String msg) {
+		super(msg);
+	}
 }

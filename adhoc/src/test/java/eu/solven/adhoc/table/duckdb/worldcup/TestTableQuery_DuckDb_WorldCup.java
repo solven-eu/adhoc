@@ -33,7 +33,6 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 import com.google.common.collect.Sets;
 
@@ -58,8 +57,8 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import eu.solven.adhoc.util.IStopwatchFactory;
-import eu.solven.adhoc.util.TestAdhocIntegrationTests;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -74,6 +73,11 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema();
 
 	IMeasureForest forest = worldCupSchema.getForest(worldCupSchema.getName());
+
+	@Override
+	public IStopwatchFactory makeStopwatchFactory() {
+		return IStopwatchFactory.guavaStopwatchFactory();
+	}
 
 	@Override
 	public ITableWrapper makeTable() {
@@ -97,7 +101,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		});
 	}
 
-	@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+	@AdhocBenchmark
 	@Test
 	public void testVariousQueries() {
 		ICubeWrapper cube = editCube().engine(editEngine()
@@ -123,14 +127,17 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 
 			Set<List<String>> groupBys = Sets.cartesianProduct(columnsToGroupBy);
 			log.info("Considering {} groupBys", groupBys.size());
-			groupBys.forEach(columnsInGroupBy -> {
-				ITabularView result = cube().execute(CubeQuery.builder()
-						.groupBy(GroupByColumns.named(columnsInGroupBy))
-						.measure("event_count")
-						.build());
-				MapBasedTabularView mapBased = MapBasedTabularView.load(result);
-				Assertions.assertThat(mapBased.getCoordinatesToValues()).isNotEmpty();
-			});
+			groupBys
+					// parallel executions as there is many queries to consider
+					.parallelStream()
+					.forEach(columnsInGroupBy -> {
+						ITabularView result = cube().execute(CubeQuery.builder()
+								.groupBy(GroupByColumns.named(columnsInGroupBy))
+								.measure("event_count")
+								.build());
+						MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+						Assertions.assertThat(mapBased.getCoordinatesToValues()).isNotEmpty();
+					});
 		}
 	}
 

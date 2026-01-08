@@ -78,7 +78,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		@NonNull
 		IAppendableTable pageFactory;
 
-		IAdhocTableRow row;
+		ITableRowWrite row;
 
 		@Override
 		public Collection<? extends String> getKeys() {
@@ -105,9 +105,9 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			}
 		}
 
-		public IAdhocTableRow getDictionarizedValues() {
+		public ITableRowWrite getDictionarizedValues() {
 			if (row == null) {
-				return IAdhocTableRow.empty();
+				return ITableRowWrite.empty();
 			} else {
 				return row;
 			}
@@ -147,7 +147,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		@Default
 		ImmutableList.Builder<String> keys = ImmutableList.builder();
 
-		IAdhocTableRow row;
+		ITableRowWrite row;
 
 		@Override
 		public MapBuilderThroughKeys put(String key, Object value) {
@@ -197,14 +197,14 @@ public class ColumnarSliceFactory extends ASliceFactory {
 	@Override
 	public IAdhocMap buildMap(IHasEntries hasEntries) {
 		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			IAdhocTableRow values = preKeys.getDictionarizedValues();
+			ITableRowWrite values = preKeys.getDictionarizedValues();
 
-			values.freeze();
+			ITableRowRead frozen = values.freeze();
 
 			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
 					.keys(preKeys.keysLikeList)
-					.unorderedValues(values::readValue)
+					.unorderedValues(frozen::readValue)
 					.build();
 		} else if (hasEntries instanceof MapBuilderThroughKeys throughKeys) {
 			Collection<? extends String> keys = throughKeys.getKeys();
@@ -212,13 +212,13 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			if (throughKeys.row == null) {
 				return SliceAsMap.grandTotal().asAdhocMap();
 			}
-			throughKeys.row.freeze();
+			ITableRowRead frozen = throughKeys.row.freeze();
 
 			SequencedSetLikeList keyLikeList = internKeyset(keys);
 			return DictionarizedSliceFactory.MapOverIntFunction.builder()
 					.factory(this)
 					.keys(keyLikeList)
-					.unorderedValues(throughKeys.row::readValue)
+					.unorderedValues(frozen::readValue)
 					.build();
 		} else {
 			return buildMapNaively(hasEntries);

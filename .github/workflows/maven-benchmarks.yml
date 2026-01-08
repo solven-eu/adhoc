@@ -6,13 +6,13 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Adhoc Benchmarks
+name: Benchmarks
 
 on:
   push:
-    branches: [ "master", "ci/benchmarks" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master", "ci/benchmarks" ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -33,9 +33,6 @@ jobs:
       # run: mvn dependency:resolve dependency:resolve-plugins --batch-mode
     - name: Package skipping tests
       run: mvn package -Pfast --file pom.xml --batch-mode
-	- name: Java benchmarks
-	  # Stick to `package` phase for consistency, and checking packaging is fine
-	  run: mvn package -Pnostyle -Pbenchmark --file pom.xml --batch-mode
-	- name: Java ONLY benchmarks
-	  # Stick to `package` phase for consistency, and checking packaging is fine
-	  run: mvn package -Pnostyle -Pbenchmark-only --file pom.xml --batch-mode
+    - name: Java ONLY benchmarks
+      # Stick to `package` phase for consistency, and checking packaging is fine
+      run: mvn package -Pnostyle -Pbenchmark-only --file pom.xml --batch-mode

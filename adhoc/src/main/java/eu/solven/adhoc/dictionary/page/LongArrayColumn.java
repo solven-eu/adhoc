@@ -22,15 +22,23 @@
  */
 package eu.solven.adhoc.dictionary.page;
 
+import lombok.Builder;
+import lombok.NonNull;
+
 /**
- * Represents an appendable column, with random read access.
+ * {@link IAppendableColumn} over a List.
  * 
  * @author Benoit Lacelle
  */
-public interface IAppendableColumn extends IReadableColumn {
+@Builder
+public class LongArrayColumn implements IReadableColumn {
 
-	void append(Object normalizedValue);
+	@NonNull
+	final long[] asArray;
 
-	IReadableColumn freeze();
+	@Override
+	public Object readValue(int rowIndex) {
+		return asArray[rowIndex];
+	}
 
 }

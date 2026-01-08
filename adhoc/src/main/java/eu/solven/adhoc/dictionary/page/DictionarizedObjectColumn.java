@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,43 @@
  */
 package eu.solven.adhoc.dictionary.page;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import eu.solven.adhoc.dictionary.MapDictionarizer;
+import lombok.Builder;
+import lombok.NonNull;
+
 /**
- * Represents an appendable column, with random read access.
+ * An {@link IReadableColumn} based on a dictionary.
  * 
  * @author Benoit Lacelle
  */
-public interface IAppendableColumn extends IReadableColumn {
+@Builder
+public class DictionarizedObjectColumn implements IReadableColumn {
 
-	void append(Object normalizedValue);
+	@NonNull
+	List<Object> distinctValues;
 
-	IReadableColumn freeze();
+	@NonNull
+	int[] rowToDic;
+
+	@Override
+	public Object readValue(int rowIndex) {
+		return distinctValues.get(rowToDic[rowIndex]);
+	}
+
+	public static IReadableColumn fromArray(List<?> asArray) {
+		List<Object> intToObject = new ArrayList<>();
+		MapDictionarizer dictionarizer = MapDictionarizer.builder().intToObject(intToObject).build();
+
+		int[] rowToDic = new int[asArray.size()];
+		for (int i = 0; i < asArray.size(); i++) {
+			Object rawValue = asArray.get(i);
+			rowToDic[i] = dictionarizer.toInt(rawValue);
+		}
+
+		return DictionarizedObjectColumn.builder().distinctValues(intToObject).rowToDic(rowToDic).build();
+	}
 
 }

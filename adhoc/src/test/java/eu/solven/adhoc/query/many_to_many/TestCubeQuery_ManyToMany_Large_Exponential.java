@@ -32,7 +32,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableMap;
@@ -54,7 +53,7 @@ import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.TestAdhocIntegrationTests;
+import eu.solven.adhoc.util.AdhocBenchmark;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,7 +65,7 @@ import lombok.extern.slf4j.Slf4j;
  * when we have many not very small groups
  */
 @Slf4j
-@EnabledIf(TestAdhocIntegrationTests.ENABLED_IF)
+@AdhocBenchmark
 public class TestCubeQuery_ManyToMany_Large_Exponential extends ADagTest implements IAdhocTestConstants {
 	// This could be adjusted so that tests takes a few seconds to execute. Can be increased a lot to test bigger cases
 	static int maxGroupCardinality = 18;

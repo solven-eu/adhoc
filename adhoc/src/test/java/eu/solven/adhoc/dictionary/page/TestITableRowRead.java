@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,14 @@
  */
 package eu.solven.adhoc.dictionary.page;
 
-/**
- * Represents an appendable column, with random read access.
- * 
- * @author Benoit Lacelle
- */
-public interface IAppendableColumn extends IReadableColumn {
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	void append(Object normalizedValue);
-
-	IReadableColumn freeze();
-
+public class TestITableRowRead {
+	@Test
+	public void testEmpty() {
+		ITableRowRead empty = ITableRowRead.empty();
+		Assertions.assertThat(empty.size()).isEqualTo(0);
+		Assertions.assertThat(empty.readValue(0)).isNull();
+	}
 }

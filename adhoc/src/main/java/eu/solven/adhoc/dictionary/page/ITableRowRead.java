@@ -23,14 +23,18 @@
 package eu.solven.adhoc.dictionary.page;
 
 /**
- * Represents an appendable column, with random read access.
+ * Represents a row in a table.
  * 
  * @author Benoit Lacelle
  */
-public interface IAppendableColumn extends IReadableColumn {
+public interface ITableRowRead {
 
-	void append(Object normalizedValue);
+	int size();
 
-	IReadableColumn freeze();
+	Object readValue(int columnIndex);
+
+	static ITableRowRead empty() {
+		return TableRowHelpers.emptyRead();
+	}
 
 }

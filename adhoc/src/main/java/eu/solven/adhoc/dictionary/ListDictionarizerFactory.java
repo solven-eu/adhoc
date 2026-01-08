@@ -88,10 +88,6 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 		return new RowListDictionarizer(columns);
 	}
 
-	protected IDictionarizer getDictionarizer(String column) {
-		return new MapDictionarizer();
-	}
-
 	protected IntFunction<Object> extracted(ILikeList<String> columns, List<Object> list, IIntArray indexTo) {
 		if (columns.size() != list.size()) {
 			throw new IllegalArgumentException("%s != %s".formatted(columns.size(), list.size()));
@@ -119,6 +115,6 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	}
 
 	protected IDictionarizer makeDictionarizer(String column) {
-		return new MapDictionarizer();
+		return MapDictionarizer.builder().build();
 	}
 }

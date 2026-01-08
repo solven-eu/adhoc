@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb;
+package eu.solven.adhoc.table.duckdb.perf;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,11 +43,11 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
-import eu.solven.adhoc.measure.transformator.TestTransformator_Partitionor_Perf;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.AdhocBenchmark;
@@ -67,9 +67,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 
 	@BeforeAll
 	public static void setLimits() {
-		log.info("{} is evaluated on cardinality={}",
-				TestTransformator_Partitionor_Perf.class.getName(),
-				maxCardinality);
+		log.info("Evaluating on cardinality={}", maxCardinality);
 		AdhocUnsafe.setLimitColumnSize(maxCardinality + 10);
 	}
 
