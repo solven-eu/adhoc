@@ -108,9 +108,9 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	@SuppressWarnings("checkstyle:MagicNumber")
 	protected Object aggregateObjects(Object l, Object r) {
 		if (l instanceof Throwable t) {
-			return l;
+			return t;
 		} else if (r instanceof Throwable t) {
-			return r;
+			return t;
 		}
 		return aggregateCollections(wrapAsCollection(l), wrapAsCollection(r));
 	}

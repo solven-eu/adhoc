@@ -61,6 +61,11 @@
 		<exclude name="UseObjectForClearerAPI" />
 		<exclude name="ExcessiveParameterList" />
 	</rule>
+	<rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
+	    <properties>
+	        <property name="problemDepth" value="4" />
+	    </properties>
+	</rule>
 	<rule ref="category/java/design.xml/NPathComplexity">
 		<properties>
 			<!-- TODO Lower this value -->
@@ -119,6 +124,7 @@
 		<exclude name="AvoidLiteralsInIfCondition" />
 		<exclude name="AvoidCatchingThrowable" />
 		<exclude name="AvoidCatchingNPE" />
+		<exclude name="AvoidCatchingGenericException" />
 	</rule>
 	<rule ref="category/java/multithreading.xml">
 		<exclude name="DoNotUseThreads" />

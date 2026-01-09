@@ -655,7 +655,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return toCondition(columnFilter, false);
 	}
 
-	@SuppressWarnings("PMD.AssignmentInOperand")
 	protected Optional<Condition> toCondition(IColumnFilter columnFilter, boolean hasParentNot) {
 		IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 		String column = columnFilter.getColumn();
@@ -664,7 +663,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		Condition condition;
 		switch (valueMatcher) {
-		case NullMatcher nullMatcher -> condition = DSL.condition(field.isNull());
+		case NullMatcher unused -> condition = DSL.condition(field.isNull());
 		case InMatcher inMatcher -> {
 			Set<?> operands = inMatcher.getOperands();
 
@@ -677,8 +676,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 		case EqualsMatcher equalsMatcher -> condition = wrap(hasParentNot, field, field.eq(equalsMatcher.getOperand()));
 		case LikeMatcher likeMatcher -> condition = wrap(hasParentNot, field, field.like(likeMatcher.getPattern()));
-		case StringMatcher stringMatcher -> condition =
-				wrap(hasParentNot, field, field.cast(String.class).eq(stringMatcher.getString()));
+		case StringMatcher stringMatcher ->
+			condition = wrap(hasParentNot, field, field.cast(String.class).eq(stringMatcher.getString()));
 
 		case ComparingMatcher comparingMatcher -> {
 			Object operand = comparingMatcher.getOperand();

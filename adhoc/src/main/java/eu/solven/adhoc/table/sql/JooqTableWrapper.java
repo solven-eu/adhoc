@@ -443,7 +443,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
@@ -453,7 +453,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		// TODO How should `null` be reported?
-		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
 			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);
@@ -462,12 +462,11 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 	@Override
 	public Map<String, ?> getHealthDetails() {
-		return ImmutableMap.of("tableLike",
-				tableParameters.getTable().toString(),
-				"dialect",
-				tableParameters.getDslSupplier().getDSLContext().dialect(),
-				"dslContextCreationTime",
-				tableParameters.getDslSupplier().getDSLContext().creationTime());
+		return ImmutableMap.<String, Object>builder()
+				.put("tableLike", tableParameters.getTable().toString())
+				.put("dialect", tableParameters.getDslSupplier().getDSLContext().dialect())
+				.put("dslContextCreationTime", tableParameters.getDslSupplier().getDSLContext().creationTime())
+				.build();
 	}
 
 }
