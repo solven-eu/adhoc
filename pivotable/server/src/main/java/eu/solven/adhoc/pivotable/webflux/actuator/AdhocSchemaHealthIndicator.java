@@ -36,6 +36,7 @@ import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.stereotype.Component;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import lombok.RequiredArgsConstructor;
@@ -67,16 +68,11 @@ public class AdhocSchemaHealthIndicator implements CompositeReactiveHealthContri
 
 				ICubeWrapper cube = optCube.orElseThrow();
 
-				Map<String, Object> details = new LinkedHashMap<>();
-				details.put("columns", cube.columnsKeySet().size());
-				details.put("measures", cube.getMeasures().size());
-
-				if (cube instanceof IHasHealthDetails hasHealthDetails) {
-					details.putAll(hasHealthDetails.getHealthDetails());
-				}
+				Map<String, Object> details = CubeWrapper.makeDetails(cube);
 
 				return Mono.just(Health.up().withDetails(details).build());
 			}
+
 		};
 	}
 

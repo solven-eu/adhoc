@@ -22,11 +22,10 @@
  */
 package eu.solven.adhoc.data.column;
 
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.primitive.IValueReceiver;
-
 import java.util.Optional;
+
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * For {@link IMultitypeColumn} which enables fast `.get` operations.

@@ -22,25 +22,25 @@ export default {
 	setup() {
 		const store = useAdhocStore();
 
-		watch(() => store.isLoggedIn, (isLoggedIn) => {
-			if (isLoggedIn) {
-				store.loadEndpoints();
-			} else {
-				
-			}
-		});
+		watch(
+			() => store.isLoggedIn,
+			(isLoggedIn) => {
+				if (isLoggedIn) {
+					store.loadEndpoints();
+				} else {
+				}
+			},
+		);
 
 		return {};
 	},
 	template: /* HTML */ `
-		<div v-if="needsToCheckLogin">
-			Loading the login status...
-		</div>
+        <div v-if="needsToCheckLogin">Loading the login status...</div>
         <div v-else-if="!isLoggedIn">
-			Needs to be logged-in to fetch endpoints.
-			<br/>
-			<LoginRef />
-		</div>
+            Needs to be logged-in to fetch endpoints.
+            <br />
+            <LoginRef />
+        </div>
         <div v-else-if="Object.keys(endpoints).length == 0">
             <div v-if="nbSchemaFetching > 0">Loading endpoints</div>
             <div v-else>Issue loading endpoints (or no endpoints at all)</div>

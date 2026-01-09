@@ -63,8 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 		InjectPixarExampleCubesConfig.class,
 		InjectWorldCupExampleCubesConfig.class,
 
-		AdhocSchemaHealthIndicator.class,
-})
+		AdhocSchemaHealthIndicator.class, })
 @Slf4j
 public class PivotableServerApplication {
 

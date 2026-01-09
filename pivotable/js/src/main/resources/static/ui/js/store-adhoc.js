@@ -76,7 +76,7 @@ export const useAdhocStore = defineStore("adhoc", {
 			if (!response.ok) {
 				throw new Error("Response is KO: " + response);
 			}
-			
+
 			const gzipRatio = 8;
 			// https://github.com/facebook/zstd
 			const zstdRatio = 4;
@@ -95,7 +95,7 @@ export const useAdhocStore = defineStore("adhoc", {
 				}
 				return totalDecodedBytes;
 			}
-			
+
 			let success = true;
 			const totalDecodedBytes = decompressedSize(response.headers);
 
