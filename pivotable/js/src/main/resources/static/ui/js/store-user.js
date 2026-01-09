@@ -410,5 +410,52 @@ export const useUserStore = defineStore("user", {
 					throw e;
 				});
 		},
+
+		// https://stackoverflow.com/questions/35711724/upload-progress-indicators-for-fetch
+		async authenticatedFetchStream(url, fetchOptions) {
+			if (url.startsWith("/api")) {
+				throw new Error("Invalid URL as '/api' is added automatically");
+			}
+
+			// loading missing tokens will ensure login status
+			await this.loadUserTokensIfMissing();
+
+			if (this.isLoggedOut) {
+				this.needsToLogin = true;
+				throw new UserNeedsToLoginError("User needs to login");
+			}
+
+			const apiHeaders = this.apiHeaders;
+
+			// fetchOptions are optional
+			fetchOptions = fetchOptions || {};
+
+			// https://stackoverflow.com/questions/171251/how-can-i-merge-properties-of-two-javascript-objects
+			const mergeHeaders = Object.assign({}, apiHeaders, fetchOptions.headers || {});
+
+			const mergedFetchOptions = Object.assign({ method: "GET" }, fetchOptions);
+			mergedFetchOptions.headers = mergeHeaders;
+
+			console.debug("->", mergedFetchOptions.method, url, mergedFetchOptions);
+
+			return fetch(prefix + url, mergedFetchOptions)
+				.then((response) => {
+					console.debug("<-", mergedFetchOptions.method, url, mergedFetchOptions, response);
+
+					if (response.status == 401) {
+						console.log("The access_token is expired as we received a 401");
+						this.tokens.access_token_expired = true;
+
+						// TODO Implement an automated retry after updated userTokens
+					} else if (!response.ok) {
+						console.trace("StackTrace for !ok on", url);
+					}
+
+					return response;
+				})
+				.catch((e) => {
+					throw e;
+				});
+		},
 	},
 });

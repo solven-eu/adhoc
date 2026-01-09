@@ -1,20 +1,23 @@
 # server: the default configuration for a contestServer
 
 spring:
-    application.name: kumite-server
+    application.name: pivotable-server
     security:
         oauth2:
             client:
                 registration:
                     github:
-                        clientId: ${kumite.login.oauth2.github.clientId:NEEDS_TO_BE_DEFINED}
-                        clientSecret: ${kumite.login.oauth2.github.clientSecret:NEEDS_TO_BE_DEFINED}
+                        clientId: ${adhoc.pivotable.login.oauth2.github.clientId:NEEDS_TO_BE_DEFINED}
+                        clientSecret: ${adhoc.pivotable.login.oauth2.github.clientSecret:NEEDS_TO_BE_DEFINED}
                     google:
-                        client-id: ${kumite.login.oauth2.google.clientId:NEEDS_TO_BE_DEFINED}
-                        client-secret: ${kumite.login.oauth2.google.clientSecret:NEEDS_TO_BE_DEFINED}
+                        client-id: ${adhoc.pivotable.login.oauth2.google.clientId:NEEDS_TO_BE_DEFINED}
+                        client-secret: ${adhoc.pivotable.login.oauth2.google.clientSecret:NEEDS_TO_BE_DEFINED}
     graphql:
         graphiql:
             enabled: true
 
 springdoc.show-actuator: true
 
+adhoc.pivotable.login.oauth2:
+    github.enabled: true
+    google.enabled: true

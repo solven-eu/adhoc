@@ -46,8 +46,10 @@ export default {
 		const store = useAdhocStore();
 
 		const nbCubes = ref("...");
+		
+		const percentUi = ref(0);
 
-		store.loadEndpointSchemaIfMissing(props.endpointId).then((schema) => {
+		store.loadEndpointSchemaIfMissing(props.endpointId, (value, done, percent) => {percentUi.value = percent;}).then((schema) => {
 			var endpointSchema = schema || { cubes: {} };
 			nbCubes.value = Object.keys(endpointSchema.cubes).length;
 		});
@@ -57,11 +59,16 @@ export default {
 		// NOSONAR
 		new Tooltip(document.body, { selector: "[data-bs-toggle='tooltip']" });
 
-		return { nbCubes };
+		return { nbCubes, percentUi };
 	},
 	template: /* HTML */ `
         <div v-if="!schema || schema.error">
             <AdhocLoading :id="endpointId" type="schema" :loading="nbSchemaFetching > 0" :error="schema.error" />
+			
+			{{percentUi}}
+			<div class="progress" role="progressbar" aria-label="Animated striped example" :aria-valuenow="percentUi * 100" aria-valuemin="0" aria-valuemax="100">
+			  <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + (percentUi * 100) + '%'"></div>
+			</div>
         </div>
         <div v-else>
             <span v-if="showSchema">
