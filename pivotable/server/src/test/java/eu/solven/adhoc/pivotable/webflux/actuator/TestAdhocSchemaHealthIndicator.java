@@ -64,7 +64,12 @@ public class TestAdhocSchemaHealthIndicator {
 		Assertions.assertThat(health.getDetails())
 				.containsEntry("columns", 0)
 				.containsEntry("measures", 0)
-				.containsEntry("table", ImmutableMap.of("name", "inMemory", "rows", 0))
+				.containsEntry("table",
+						ImmutableMap.builder()
+								.put("name", "inMemory")
+								.put("type", "eu.solven.adhoc.table.InMemoryTable")
+								.put("rows", 0)
+								.build())
 				.hasSize(3);
 	}
 }

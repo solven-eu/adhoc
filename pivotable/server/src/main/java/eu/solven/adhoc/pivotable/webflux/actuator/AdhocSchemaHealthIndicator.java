@@ -23,7 +23,6 @@
 package eu.solven.adhoc.pivotable.webflux.actuator;
 
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -38,7 +37,6 @@ import org.springframework.stereotype.Component;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.spring.IHasHealthDetails;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 

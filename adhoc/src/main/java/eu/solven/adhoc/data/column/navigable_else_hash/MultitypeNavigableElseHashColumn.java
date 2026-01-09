@@ -157,7 +157,12 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	@Override
 	public Stream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
-		return switch(stragegy){case StreamStrategy.ALL->this.stream();case StreamStrategy.SORTED_SUB->navigable.stream();case StreamStrategy.SORTED_SUB_COMPLEMENT->hash.stream();default->IMultitypeColumn.defaultStream(this,stragegy);};
+		return switch (stragegy) {
+		case StreamStrategy.ALL -> this.stream();
+		case StreamStrategy.SORTED_SUB -> navigable.stream();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.stream();
+		default -> IMultitypeColumn.defaultStream(this, stragegy);
+		};
 	}
 
 	@Override
