@@ -1,3 +1,4 @@
+import { watch } from "vue";
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
@@ -11,7 +12,7 @@ export default {
 		AdhocEndpoint,
 	},
 	computed: {
-		...mapState(useAdhocStore, ["isLoggedIn", "nbSchemaFetching"]),
+		...mapState(useAdhocStore, ["needsToCheckLogin", "isLoggedIn", "nbSchemaFetching"]),
 		...mapState(useAdhocStore, {
 			endpoints(store) {
 				return Object.values(store.endpoints);
@@ -21,13 +22,26 @@ export default {
 	setup() {
 		const store = useAdhocStore();
 
-		store.loadEndpoints();
+		watch(() => store.isLoggedIn, (isLoggedIn) => {
+			if (isLoggedIn) {
+				store.loadEndpoints();
+			} else {
+				
+			}
+		});
 
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!isLoggedIn"><LoginRef /></div>
-        <div v-if="Object.keys(endpoints).length == 0">
+		<div v-if="needsToCheckLogin">
+			Loading the login status...
+		</div>
+        <div v-else-if="!isLoggedIn">
+			Needs to be logged-in to fetch endpoints.
+			<br/>
+			<LoginRef />
+		</div>
+        <div v-else-if="Object.keys(endpoints).length == 0">
             <div v-if="nbSchemaFetching > 0">Loading endpoints</div>
             <div v-else>Issue loading endpoints (or no endpoints at all)</div>
         </div>

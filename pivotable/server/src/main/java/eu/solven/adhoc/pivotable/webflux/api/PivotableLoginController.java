@@ -92,8 +92,9 @@ public class PivotableLoginController {
 				.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
 						.equals(registration.getAuthorizationGrantType()))
 				// e.g. `-Dadhoc.pivotable.login.oauth2.github.enabled=true`
+				// Enabling custom deactivation as Pivotable may bring some default
 				.filter(registration -> env.getProperty("adhoc.pivotable.login.oauth2.%s.enabled"
-						.formatted(registration.getRegistrationId()), Boolean.class, false))
+						.formatted(registration.getRegistrationId()), Boolean.class, true))
 				.forEach(r -> {
 					// Typically 'github' or 'google'
 					String registrationId = r.getRegistrationId();

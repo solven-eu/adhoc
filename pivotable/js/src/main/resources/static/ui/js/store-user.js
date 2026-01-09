@@ -52,7 +52,7 @@ export const useUserStore = defineStore("user", {
 		// If true, we have an account details. We typically have a session. Hence we can logout.
 		// BEWARE `store.account.details.username` is not null after a session expiry, but `needsToLogin` would turn to true
 		// If false, we need to check `needsToCheckLogin && needsToLogin`
-		isLoggedIn: (store) => !store.needsToLogin && store.account.details.username,
+		isLoggedIn: (store) => !store.needsToLogin && !!store.account.details.username,
 		isLoggedOut: (store) => {
 			if (store.isLoggedIn) {
 				// No need to login as we have an account (hence presumably relevant Cookies/tokens)

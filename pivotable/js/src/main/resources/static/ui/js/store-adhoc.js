@@ -82,39 +82,37 @@ export const useAdhocStore = defineStore("adhoc", {
 			const zstdRatio = 4;
 
 			function decompressedSize(headers) {
-				let totalDownloadBytes = headers.get("content-length");
-				if (totalDownloadBytes) {
+				let totalDecodedBytes = headers.get("content-length");
+				if (totalDecodedBytes) {
 					const contentEncoding = headers.get("content-encoding");
 					if (contentEncoding === "gzip") {
 						// Heuristic: gzip decompressed size is 6 times the compressed size
 						// This can not be done backend size as it would sacrifices the streamed serialization (i.e. given a very large Object, Reactor+Jackson will stream its properties into JSON)
-						totalDownloadBytes *= gzipRatio;
+						totalDecodedBytes *= gzipRatio;
 					} else if (contentEncoding === "zstd") {
-						// Heuristic: gzip decompressed size is 6 times the compressed size
-						// This can not be done backend size as it would sacrifices the streamed serialization (i.e. given a very large Object, Reactor+Jackson will stream its properties into JSON)
-						totalDownloadBytes *= zstdRatio;
+						totalDecodedBytes *= zstdRatio;
 					}
 				}
-				return totalDownloadBytes;
+				return totalDecodedBytes;
 			}
 			
 			let success = true;
-			const totalDownloadBytes = decompressedSize(response.headers);
+			const totalDecodedBytes = decompressedSize(response.headers);
 
-			let bytesDownloaded = 0;
+			let currentDecodedBytes = 0;
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			let text = "";
 
-			const onProgress = function (bytesDownloaded, done, percent) {
-				if (totalDownloadBytes != undefined) {
-					console.log("download progress:", bytesDownloaded, totalDownloadBytes, done, percent);
+			const onProgress = function (done, percent) {
+				if (totalDecodedBytes != undefined) {
+					console.log("download progress:", currentDecodedBytes, totalDecodedBytes, done, percent);
 				} else {
-					console.log("download progress:", bytesDownloaded, ", unknown total", done, percent);
+					console.log("download progress:", currentDecodedBytes, ", unknown total", done, percent);
 				}
 
 				if (externalOnProgress) {
-					externalOnProgress(bytesDownloaded, done, percent);
+					externalOnProgress(currentDecodedBytes, done, percent);
 				}
 			};
 
@@ -122,18 +120,18 @@ export const useAdhocStore = defineStore("adhoc", {
 				try {
 					const { value, done } = await reader.read();
 					if (done) {
-						onProgress(bytesDownloaded, done, 1);
+						onProgress(currentDecodedBytes, done, 1);
 						break;
 					} else {
-						bytesDownloaded += value.length;
+						currentDecodedBytes += value.length;
 
 						// If the content is encoded, we may have underestimated the size of the unencoded content
 						// Hence, we need to cap the current size
-						if (totalDownloadBytes && bytesDownloaded > totalDownloadBytes) {
-							console.log("underestimation estimated=", totalDownloadBytes, " bytesDownloaded=", bytesDownloaded);
+						if (totalDecodedBytes && currentDecodedBytes > totalDecodedBytes) {
+							console.log("underestimation estimated=", totalDecodedBytes, " currentDecodedBytes=", currentDecodedBytes);
 						}
-						const percent = Math.min(bytesDownloaded / totalDownloadBytes, 0.95);
-						onProgress(bytesDownloaded, done, percent);
+						const percent = Math.min(currentDecodedBytes / totalDecodedBytes, 0.95);
+						onProgress(currentDecodedBytes, done, percent);
 						text += decoder.decode(value, { stream: true });
 					}
 				} catch (error) {
