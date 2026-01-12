@@ -514,7 +514,7 @@
 							<eclipse>
 								<!--
                                 https://github.com/diffplug/spotless/tree/main/lib-extra/src/main/resources/com/diffplug/spotless/extra/eclipse_jdt_formatter -->
-								 <version>4.38</version>
+								<version>4.38</version>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse_java_code_formatter.xml</file>
 							</eclipse>
 

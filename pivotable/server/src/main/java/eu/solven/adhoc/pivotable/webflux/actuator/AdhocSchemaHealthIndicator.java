@@ -78,7 +78,7 @@ public class AdhocSchemaHealthIndicator implements CompositeReactiveHealthContri
 	public Iterator<NamedContributor<ReactiveHealthContributor>> iterator() {
 		return schema.getCubes()
 				.stream()
-				.map(c -> c.getName())
+				.map(ICubeWrapper::getName)
 				.<NamedContributor<ReactiveHealthContributor>>map(
 						cubeName -> NamedContributor.of(cubeName, getContributor(cubeName)))
 				.iterator();
