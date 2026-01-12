@@ -328,7 +328,14 @@ export default {
 				return "Sending the query";
 			}
 			if (props.tabularView.loading.executing) {
-				return "Executing the query";
+				// The execution phase may be a single synchronous call, or a polling until state of DONE
+				if (props.tabularView.loading.fetching) {
+					return "Executing the query (fetching)";
+				}
+				if (props.tabularView.loading.sleeping) {
+					return "Executing the query (sleeping)";
+				}
+				return "Executing the query (?)";
 			}
 			if (props.tabularView.loading.downloading) {
 				return "Downloading the result";

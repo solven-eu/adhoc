@@ -35,6 +35,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -929,4 +931,61 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.isGreaterThan("9");
 
 	}
+
+	// `k1` is both an underlyingCube measure, and an explicit cube measure.
+	@Test
+	public void testHasHealth() {
+		Aggregator k3Max = Aggregator.builder().name("k3").aggregationKey(MaxAggregation.KEY).build();
+
+		String tableName1 = "someTableName1";
+		InMemoryTable table1 = InMemoryTable.builder().name(tableName1).build();
+
+		String tableName2 = "someTableName2";
+		InMemoryTable table2 = InMemoryTable.builder().name(tableName2).build();
+
+		CubeWrapper cube1;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(k2Sum);
+			cube1 = wrapInCube(measureBag, table1);
+		}
+		CubeWrapper cube2;
+		{
+			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
+			measureBag.addMeasure(k1Sum);
+			measureBag.addMeasure(k3Max);
+			cube2 = wrapInCube(measureBag, table2);
+		}
+
+		CompositeCubesTableWrapper compositeCubesTable =
+				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
+
+		Assertions.assertThat((Map) compositeCubesTable.getHealthDetails())
+				.containsEntry("subCube.someTableName1.cube",
+						ImmutableMap.builder()
+								.put("columns", 0)
+								.put("measures", 2)
+								.put("table",
+										ImmutableMap.builder()
+												.put("name", "someTableName1")
+												.put("rows", 0)
+												.put("type", "eu.solven.adhoc.table.InMemoryTable")
+												.build())
+								.build())
+				.containsEntry("subCube.someTableName2.cube",
+						ImmutableMap.builder()
+								.put("columns", 0)
+								.put("measures", 2)
+								.put("table",
+										ImmutableMap.builder()
+												.put("name", "someTableName2")
+												.put("rows", 0)
+												.put("type", "eu.solven.adhoc.table.InMemoryTable")
+												.build())
+								.build())
+				.hasSize(2);
+
+	}
+
 }

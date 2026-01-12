@@ -2,6 +2,14 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.14]
+
+### Added
+- Spring Actuator Health is enriched through `AdhocSchemaHealthIndicator`
+
+### Changed
+- `ISliceFactory` actually enable compression, based on dictionarisation, or `long[]` or `int[]`.
+
 ## [0.0.13]
 
 ### Added
@@ -9,7 +17,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
 - Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
 - Pivotable will automatically cancel currently running queries if another query is triggered.
-- Spring Actuator Health is enriched through `AdhocSchemaHealthIndicator`
 
 ### Changed
 - Refactored `ISliceFactory`, preparing the ability to rely on dictionarized and column-oriented storage.
