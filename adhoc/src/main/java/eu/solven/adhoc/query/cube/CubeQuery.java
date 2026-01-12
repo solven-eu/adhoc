@@ -174,7 +174,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		 * @return the builder
 		 */
 		public CubeQueryBuilder andFilter(String column, Object value) {
-			return andFilter(ColumnFilter.builder().column(column).matching(value).build());
+			return andFilter(ColumnFilter.matchLax(column, value));
 		}
 
 		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {

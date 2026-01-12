@@ -10,6 +10,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Changed
 - `ISliceFactory` actually enable compression, based on dictionarisation, or `long[]` or `int[]`.
 
+### Fixed
+- `CubeQuery.CubeQueryBuilder.andFilter(String, Object)` now relies on `ColumnFilter.matchLax(String, Object)`.
+
 ## [0.0.13]
 
 ### Added

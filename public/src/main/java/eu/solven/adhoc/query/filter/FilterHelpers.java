@@ -119,8 +119,8 @@ public class FilterHelpers {
 				if (splitOrs.isEmpty()) {
 					return IValueMatcher.MATCH_NONE;
 				} else if (splitOrs.size() == 1) {
-					throw new UnsupportedOperationException(
-							"filter:%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+					throw new UnsupportedOperationException("filter:%s column:%s is not managed"
+							.formatted(PepperLogHelper.getObjectAndClass(filter), column));
 				} else {
 					Set<IValueMatcher> orMatchers = splitOrs.stream()
 							.map(f -> getValueMatcherLax(f, column, throwOnOr))
@@ -131,8 +131,8 @@ public class FilterHelpers {
 						// This is a common factor to all OR operands
 						return orMatchers.iterator().next();
 					} else if (throwOnOr) {
-						throw new UnsupportedOperationException(
-								"filter:%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+						throw new UnsupportedOperationException("filter:%s column:%s is not managed"
+								.formatted(PepperLogHelper.getObjectAndClass(filter), column));
 					} else {
 						return OrMatcher.or(orMatchers.stream()
 								// .filter(m -> !IValueMatcher.MATCH_ALL.equals(m))

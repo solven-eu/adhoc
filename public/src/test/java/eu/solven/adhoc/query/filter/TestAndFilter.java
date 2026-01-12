@@ -44,6 +44,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.query.filter.FilterBuilder.Type;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer.IOptimizerEventListener;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
@@ -776,5 +777,13 @@ public class TestAndFilter {
 
 		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2,a3)&(b=in=(b1,b2)|c==c1&d==d1&e==e1)");
 		Assertions.assertThat(nbSkip).hasValue(0);
+	}
+
+	@Test
+	public void testAnd_matchAll() {
+		ISliceFilter filter =
+				FilterBuilder.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.match("b", IValueMatcher.MATCH_ALL))
+						.combine();
+		Assertions.assertThat(filter).hasToString("a==a1");
 	}
 }
