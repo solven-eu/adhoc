@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -65,8 +66,9 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 	final List<String> columnNames = new ArrayList<>();
 
-	final List<IAppendableColumn> columns = new ArrayList<>();
-	final List<IReadableColumn> columnsRead = new ArrayList<>();
+	// AtomicReference to be turned into null when freezing
+	final AtomicReference<List<IAppendableColumn>> columnsWrite = new AtomicReference<>(new ArrayList<>());
+	final AtomicReference<List<? extends IReadableColumn>> columnsRead = new AtomicReference<>(columnsWrite.get());
 
 	/**
 	 * If true, the last row has been polled and may or may not be frozen
@@ -78,7 +80,6 @@ public class AppendableTablePage implements IAppendableTablePage {
 	final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
 
 	final Thread creationThread = Thread.currentThread();
-	final AtomicBoolean rareRaceCondition = new AtomicBoolean();
 
 	/**
 	 * An {@link ITableRowWrite} being written.
@@ -104,7 +105,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 			if (currentColumnIndex >= columnNames.size()) {
 				// Register a new additional column
 				columnNames.add(key);
-				columns.add(makeColumn(key));
+				columnsWrite.get().add(makeColumn(key));
 			} else {
 				String expectedColumnName = columnNames.get(currentColumnIndex);
 				if (!key.equals(expectedColumnName)) {
@@ -117,13 +118,13 @@ public class AppendableTablePage implements IAppendableTablePage {
 						if (currentColumnIndex < 0) {
 							currentColumnIndex = columnNames.size();
 							columnNames.add(key);
-							columns.add(makeColumn(key));
+							columnsWrite.get().add(makeColumn(key));
 						}
 					}
 				}
 			}
 
-			columns.get(currentColumnIndex).append(normalizedValue);
+			columnsWrite.get().get(currentColumnIndex).append(normalizedValue);
 
 			return currentColumnIndex;
 		}
@@ -136,15 +137,18 @@ public class AppendableTablePage implements IAppendableTablePage {
 			}
 
 			if (isLastRowPolled.get()) {
+				final List<IReadableColumn> columnsReadLocal = new ArrayList<>();
+
 				// Convert from IAppendableColumns to IReadableColumns
-				AppendableTablePage.this.columns.stream()
+				AppendableTablePage.this.columnsWrite.get().stream()
 						.map(IAppendableColumn::freeze)
-						.forEach(AppendableTablePage.this.columnsRead::add);
+						.forEach(columnsReadLocal::add);
 
 				isLastRowFrozen.set(true);
 
 				// Remove reference to IAppendableColumns
-				AppendableTablePage.this.columns.clear();
+				// We set the readColumn to workaround race-conditions
+				AppendableTablePage.this.columnsRead.set(columnsReadLocal);
 			}
 
 			return new TablePageRowRead(size(), rowIndex);
@@ -175,35 +179,8 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 		@Override
 		public Object readValue(int columnIndex) {
-			IReadableColumn column;
-			if (isLastRowFrozen.get()) {
-				column = columnsRead.get(columnIndex);
-			} else {
-				try {
-					column = columns.get(columnIndex);
-				} catch (IndexOutOfBoundsException e) {
-					column = onRaceCondition(columnIndex);
-				}
-
-				if (column == null) {
-					column = onRaceCondition(columnIndex);
-				}
-			}
+			IReadableColumn column = columnsRead.get().get(columnIndex);
 			return column.readValue(rowIndex);
-		}
-
-		private IReadableColumn onRaceCondition(int columnIndex) {
-			IReadableColumn column;
-			if (isLastRowFrozen.get()) {
-				// This may happen as the freezing operation may be executed in a different thread
-				log.debug("Rare race-condition: column was frozen in the meantime");
-				column = columnsRead.get(columnIndex);
-
-				rareRaceCondition.set(true);
-			} else {
-				throw new IllegalArgumentException("Column at index=%s is out of bounds. columnNames=%s".formatted(columnIndex, columnNames));
-			}
-			return column;
 		}
 
 		@Override

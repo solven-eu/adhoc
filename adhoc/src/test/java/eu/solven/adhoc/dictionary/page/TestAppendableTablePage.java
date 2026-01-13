@@ -61,8 +61,8 @@ public class TestAppendableTablePage {
             Assertions.assertThat(rowFreeze1.readValue(0)).isEqualTo("v11");
             Assertions.assertThat(rowFreeze1.readValue(1)).isEqualTo("v12");
 
-            Assertions.assertThat(page.columns).hasSize(2);
-            Assertions.assertThat(page.columnsRead).isEmpty();
+            Assertions.assertThat(page.columnsWrite.get()).hasSize(2);
+            Assertions.assertThat(page.columnsRead.get()).isSameAs(page.columnsWrite.get());
         }
 
         {
@@ -77,8 +77,9 @@ public class TestAppendableTablePage {
             Assertions.assertThat(rowFreeze2.readValue(0)).isEqualTo("v21");
             Assertions.assertThat(rowFreeze2.readValue(1)).isEqualTo("v22");
 
-            Assertions.assertThat(page.columns).isEmpty();
-            Assertions.assertThat(page.columnsRead).hasSize(2);
+            // Remove reference to the unfrozen column, to enable GC
+            Assertions.assertThat(page.columnsWrite.get()).isNull();
+            Assertions.assertThat(page.columnsRead.get()).hasSize(2);
         }
 
         Assertions.assertThat(page.pollNextRow()).isNull();
@@ -89,6 +90,7 @@ public class TestAppendableTablePage {
      *
      * @throws InterruptedException
      */
+    // This test is not relevant anymore since the implementation is fully thread-safe, by relying on AtomicReference
     @Test
     public void testFreeze_concurrency() throws InterruptedException {
         try (ExecutorService es = Executors.newFixedThreadPool(2)) {
@@ -131,12 +133,8 @@ public class TestAppendableTablePage {
 
                 if (refT.get() != null) {
                     Assertions.fail(refT.get());
-                } else if (page.rareRaceCondition.get()) {
-                    log.info("Successfully observed the rare race-condition. Try={}", tryIndex);
-                    return;
                 }
             }
-            log.warn("Failed observing the rare race-condition");
         }
     }
 }
