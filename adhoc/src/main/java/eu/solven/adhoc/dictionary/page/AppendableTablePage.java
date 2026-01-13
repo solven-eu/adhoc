@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import eu.solven.adhoc.dictionary.IAppendableColumnFactory;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
@@ -37,10 +39,13 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A page in a structure representing a table with given columns. It has fixed capacity.
  * 
+ * It is not thread-safe. Especially due to lack of synchronization between `columns` and `columnNames`.
+ * 
  * @author Benoit Lacelle
  */
 @Slf4j
 @Builder
+@NotThreadSafe
 public class AppendableTablePage implements IAppendableTablePage {
 
 	@Default
@@ -59,6 +64,8 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 	final AtomicBoolean isLastRowPolled = new AtomicBoolean();
 	final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
+
+	final Thread creationThread = Thread.currentThread();
 
 	/**
 	 * An {@link ITableRowWrite} being written.
@@ -208,6 +215,11 @@ public class AppendableTablePage implements IAppendableTablePage {
 		}
 
 		AtomicInteger columnIndex = new AtomicInteger();
+
+		if (creationThread != Thread.currentThread()) {
+			throw new IllegalStateException(
+					"Concurrency issue created=%s used=%s".formatted(creationThread, Thread.currentThread()));
+		}
 
 		return new TablePageRow(columnIndex, rowIndex);
 	}

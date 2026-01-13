@@ -56,7 +56,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 	@Default
 	@NonNull
 	protected final IAppendableTable appendableTable =
-			FlexibleAppendableTable.builder().capacity(AdhocUnsafe.getPageSize()).build();
+			ThreadLocalAppendableTable.builder().capacity(AdhocUnsafe.getPageSize()).build();
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same

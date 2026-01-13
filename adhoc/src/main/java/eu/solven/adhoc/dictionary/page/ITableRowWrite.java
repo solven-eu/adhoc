@@ -31,6 +31,12 @@ public interface ITableRowWrite {
 
 	int size();
 
+	/**
+	 * 
+	 * @param key
+	 * @param value
+	 * @return the index written, compatible with read by index from {@link ITableRowRead}.
+	 */
 	int add(String key, Object value);
 
 	/**
