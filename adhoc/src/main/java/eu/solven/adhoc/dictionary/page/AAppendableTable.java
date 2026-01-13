@@ -23,8 +23,6 @@
 package eu.solven.adhoc.dictionary.page;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import eu.solven.adhoc.dictionary.IAppendableColumnFactory;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;

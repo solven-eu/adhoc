@@ -40,6 +40,9 @@ import lombok.extern.slf4j.Slf4j;
  * A page in a structure representing a table with given columns. It has fixed capacity.
  * 
  * It is not thread-safe. Especially due to lack of synchronization between `columns` and `columnNames`.
+ *
+ * It has thread-safety requirements when being read-only. Typically, `TablePageRow.freeze` musy be thread-safe: it implies the freezing process may be executed by
+ *  a different thread.
  * 
  * @author Benoit Lacelle
  */
@@ -55,6 +58,9 @@ public class AppendableTablePage implements IAppendableTablePage {
 	@Default
 	final int capacity = AdhocUnsafe.getPageSize();
 
+	/**
+	 * The index of the next polled row. -1 if this page is full.
+	 */
 	final AtomicInteger nextRow = new AtomicInteger();
 
 	final List<String> columnNames = new ArrayList<>();
@@ -62,10 +68,17 @@ public class AppendableTablePage implements IAppendableTablePage {
 	final List<IAppendableColumn> columns = new ArrayList<>();
 	final List<IReadableColumn> columnsRead = new ArrayList<>();
 
+	/**
+	 * If true, the last row has been polled and may or may not be frozen
+	 */
 	final AtomicBoolean isLastRowPolled = new AtomicBoolean();
+	/**
+	 * If true, the last row has been frozen: this page is now read-only
+	 */
 	final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
 
 	final Thread creationThread = Thread.currentThread();
+	final AtomicBoolean rareRaceCondition = new AtomicBoolean();
 
 	/**
 	 * An {@link ITableRowWrite} being written.
@@ -123,12 +136,13 @@ public class AppendableTablePage implements IAppendableTablePage {
 			}
 
 			if (isLastRowPolled.get()) {
-				isLastRowFrozen.set(true);
-
 				// Convert from IAppendableColumns to IReadableColumns
 				AppendableTablePage.this.columns.stream()
 						.map(IAppendableColumn::freeze)
 						.forEach(AppendableTablePage.this.columnsRead::add);
+
+				isLastRowFrozen.set(true);
+
 				// Remove reference to IAppendableColumns
 				AppendableTablePage.this.columns.clear();
 			}
@@ -162,12 +176,34 @@ public class AppendableTablePage implements IAppendableTablePage {
 		@Override
 		public Object readValue(int columnIndex) {
 			IReadableColumn column;
-			if (columns.isEmpty()) {
+			if (isLastRowFrozen.get()) {
 				column = columnsRead.get(columnIndex);
 			} else {
-				column = columns.get(columnIndex);
+				try {
+					column = columns.get(columnIndex);
+				} catch (IndexOutOfBoundsException e) {
+					column = onRaceCondition(columnIndex);
+				}
+
+				if (column == null) {
+					column = onRaceCondition(columnIndex);
+				}
 			}
 			return column.readValue(rowIndex);
+		}
+
+		private IReadableColumn onRaceCondition(int columnIndex) {
+			IReadableColumn column;
+			if (isLastRowFrozen.get()) {
+				// This may happen as the freezing operation may be executed in a different thread
+				log.debug("Rare race-condition: column was frozen in the meantime");
+				column = columnsRead.get(columnIndex);
+
+				rareRaceCondition.set(true);
+			} else {
+				throw new IllegalArgumentException("Column at index=%s is out of bounds. columnNames=%s".formatted(columnIndex, columnNames));
+			}
+			return column;
 		}
 
 		@Override
