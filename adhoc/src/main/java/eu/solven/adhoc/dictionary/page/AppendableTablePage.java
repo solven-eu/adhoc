@@ -42,8 +42,8 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * It is not thread-safe. Especially due to lack of synchronization between `columns` and `columnNames`.
  *
- * It has thread-safety requirements when being read-only. Typically, `TablePageRow.freeze` musy be thread-safe: it implies the freezing process may be executed by
- *  a different thread.
+ * It has thread-safety requirements when being read-only. Typically, `TablePageRow.freeze` must be thread-safe: it
+ * implies the freezing process may be executed by a different thread.
  * 
  * @author Benoit Lacelle
  */
@@ -77,7 +77,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 	/**
 	 * If true, the last row has been frozen: this page is now read-only
 	 */
-	final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
+	// final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
 
 	final Thread creationThread = Thread.currentThread();
 
@@ -140,15 +140,19 @@ public class AppendableTablePage implements IAppendableTablePage {
 				final List<IReadableColumn> columnsReadLocal = new ArrayList<>();
 
 				// Convert from IAppendableColumns to IReadableColumns
-				AppendableTablePage.this.columnsWrite.get().stream()
+				AppendableTablePage.this.columnsWrite.get()
+						.stream()
 						.map(IAppendableColumn::freeze)
 						.forEach(columnsReadLocal::add);
 
-				isLastRowFrozen.set(true);
+				// isLastRowFrozen.set(true);
 
 				// Remove reference to IAppendableColumns
 				// We set the readColumn to workaround race-conditions
 				AppendableTablePage.this.columnsRead.set(columnsReadLocal);
+
+				// nullify to enable GC of write columns
+				AppendableTablePage.this.columnsWrite.set(null);
 			}
 
 			return new TablePageRowRead(size(), rowIndex);
@@ -229,12 +233,18 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 		AtomicInteger columnIndex = new AtomicInteger();
 
-		if (creationThread != Thread.currentThread()) {
-			throw new IllegalStateException(
-					"Concurrency issue created=%s used=%s".formatted(creationThread, Thread.currentThread()));
-		}
+		checkThreadSafety();
 
 		return new TablePageRow(columnIndex, rowIndex);
+	}
+
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected void checkThreadSafety() {
+		Thread currentThread = Thread.currentThread();
+		if (creationThread != currentThread) {
+			throw new IllegalStateException(
+					"Concurrency issue created=%s used=%s".formatted(creationThread, currentThread));
+		}
 	}
 
 	protected IAppendableColumn makeColumn(String key) {

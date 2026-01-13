@@ -94,7 +94,7 @@ public abstract class AAppendableTable implements IAppendableTable {
 			ITableRowWrite nextRow = currentPage.pollNextRow();
 			if (nextRow == null) {
 				IAppendableTablePage newCandidate = makePage();
-				if ( compareAndSetPage(keysAsList, currentPage, newCandidate)) {
+				if (compareAndSetPage(keysAsList, currentPage, newCandidate)) {
 					log.trace("New page");
 				}
 			} else {
