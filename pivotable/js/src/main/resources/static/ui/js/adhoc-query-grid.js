@@ -291,7 +291,9 @@ export default {
 				// Not a single flag initialized the loading property
 				return false;
 			}
-			return Object.values(props.tabularView.loading).some((loadingFlag) => !!loadingFlag);
+
+			// BEWARE some properties are date (like latestFetched)
+			return Object.values(props.tabularView.loading).some((loadingFlag) => typeof loadingFlag === "boolean" && !!loadingFlag);
 		}
 
 		function loadingPercent() {

@@ -30,6 +30,10 @@ export default {
 				} else {
 				}
 			},
+			{
+				// immediate to ensure endpoints loads when component is mounted, not just when logging-in
+				immediate: true,
+			},
 		);
 
 		return {};
