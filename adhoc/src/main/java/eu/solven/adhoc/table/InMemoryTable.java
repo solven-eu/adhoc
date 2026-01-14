@@ -41,6 +41,7 @@ import org.springframework.util.ClassUtils;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -63,6 +64,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -78,7 +80,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @SuperBuilder
-public class InMemoryTable implements ITableWrapper {
+public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	@Default
 	@NonNull
@@ -362,6 +364,11 @@ public class InMemoryTable implements ITableWrapper {
 				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 
 		return toStringHelper.toString();
+	}
+
+	@Override
+	public Map<String, ?> getHealthDetails() {
+		return ImmutableMap.of("rows", rows.size());
 	}
 
 }

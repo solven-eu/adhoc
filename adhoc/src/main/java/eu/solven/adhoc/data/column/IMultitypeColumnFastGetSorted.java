@@ -20,31 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary.page;
+package eu.solven.adhoc.data.column;
+
+import java.util.Optional;
+
+import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * Represents a row in a table.
+ * For {@link IMultitypeColumn} which enables fast `.get` operations.
  * 
+ * @param <T>
+ *            typically {@link SliceAsMap}
  * @author Benoit Lacelle
  */
-public interface ITableRowWrite {
+public interface IMultitypeColumnFastGetSorted<T> extends IMultitypeColumnFastGet<T>, IIsSorted {
 
-	int size();
+	Optional<IValueReceiver> appendIfOptimal(T key);
 
-	/**
-	 * 
-	 * @param key
-	 * @param value
-	 * @return the index written, compatible with read by index from {@link ITableRowRead}.
-	 */
-	int add(String key, Object value);
-
-	/**
-	 * Mark this as read-only.
-	 */
-	ITableRowRead freeze();
-
-	static ITableRowWrite empty() {
-		return TableRowHelpers.emptyRow();
-	}
+	@Override
+	IMultitypeColumnFastGetSorted<T> purgeAggregationCarriers();
 }

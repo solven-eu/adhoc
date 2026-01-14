@@ -82,7 +82,7 @@ public class PivotableLoginController {
 	final PivotableUsersRegistry usersRegistry;
 	final Environment env;
 
-	final PivotableTokenService kumiteTokenService;
+	final PivotableTokenService pivotableTokenService;
 
 	@GetMapping("/providers")
 	public Map<String, ?> loginProviders() {
@@ -91,6 +91,10 @@ public class PivotableLoginController {
 		StreamSupport.stream(clientRegistrationRepository.spliterator(), false)
 				.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
 						.equals(registration.getAuthorizationGrantType()))
+				// e.g. `-Dadhoc.pivotable.login.oauth2.github.enabled=true`
+				// Enabling custom deactivation as Pivotable may bring some default
+				.filter(registration -> env.getProperty("adhoc.pivotable.login.oauth2.%s.enabled"
+						.formatted(registration.getRegistrationId()), Boolean.class, true))
 				.forEach(r -> {
 					// Typically 'github' or 'google'
 					String registrationId = r.getRegistrationId();
@@ -225,10 +229,10 @@ public class PivotableLoginController {
 
 			if (requestRefreshToken) {
 				log.info("Generating an refresh_token for accountId={}", accountId);
-				return kumiteTokenService.wrapInJwtRefreshToken(accountId);
+				return pivotableTokenService.wrapInJwtRefreshToken(accountId);
 			} else {
 				log.info("Generating an access_token for accountId={}", user.getAccountId());
-				return kumiteTokenService.wrapInJwtAccessToken(accountId);
+				return pivotableTokenService.wrapInJwtAccessToken(accountId);
 			}
 		});
 	}

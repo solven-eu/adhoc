@@ -16,10 +16,13 @@ spring:
             default_server:
                 - self_endpoint
                 - simple_datasets
+            # prodmode should be used only for production application, hence with safe parameters
             prodmode:
                 - default_server
+            # heroku is an external environment: it may be prodmode or devmode
             heroku:
                 - default_server
+            # unsafe activates various parameters not qualifiable for prodmode, but making development or demonstrations easier
             unsafe:
                 - default_server
                 # unsafe_server provides unsafe security (JWT signature, etc)
@@ -28,8 +31,10 @@ spring:
                 - unsafe_external_oauth2
             unsafe_server:
                 - default_server
+            # activates various oauth2 providers with an unsafe (e.g. public credentials) configurationb
             unsafe_external_oauth2:
                 - default_server
+                - demo_external_oauth2
 
 # https://stackoverflow.com/questions/55237276/how-to-return-gzip-responses-with-spring-webflux
 server.compression:

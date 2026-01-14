@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary.page;
+package eu.solven.adhoc.spring;
+
+import java.util.Map;
 
 /**
- * Represents a row in a table.
+ * Useful to optionally provide additional health information.
  * 
  * @author Benoit Lacelle
  */
-public interface ITableRowWrite {
+@FunctionalInterface
+public interface IHasHealthDetails {
 
-	int size();
+	Map<String, ?> getHealthDetails();
 
-	/**
-	 * 
-	 * @param key
-	 * @param value
-	 * @return the index written, compatible with read by index from {@link ITableRowRead}.
-	 */
-	int add(String key, Object value);
-
-	/**
-	 * Mark this as read-only.
-	 */
-	ITableRowRead freeze();
-
-	static ITableRowWrite empty() {
-		return TableRowHelpers.emptyRow();
-	}
 }

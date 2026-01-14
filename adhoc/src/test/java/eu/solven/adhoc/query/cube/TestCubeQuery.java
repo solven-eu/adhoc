@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.webflux.actuator;
+package eu.solven.adhoc.query.cube;
 
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
-import org.springframework.stereotype.Component;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import reactor.core.publisher.Mono;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
-/**
- * Example of additional health indicator.
- *
- * @author Benoit Lacelle
- */
-// https://www.baeldung.com/spring-boot-actuators
-@Component
-public class DownstreamServiceHealthIndicator implements ReactiveHealthIndicator {
-
-	@Override
-	public Mono<Health> health() {
-		return checkDownstreamServiceHealth().onErrorResume(ex -> Mono.just(new Health.Builder().down(ex).build()));
-	}
-
-	private Mono<Health> checkDownstreamServiceHealth() {
-		// we could use WebClient to check health reactively
-		return Mono.just(new Health.Builder().up().build());
+public class TestCubeQuery {
+	@Test
+	public void testCubeQuery() {
+		ISliceFilter filter =
+				CubeQuery.builder().andFilter("a", "a1").andFilter("b", IValueMatcher.MATCH_ALL).build().getFilter();
+		Assertions.assertThat(filter).hasToString("a==a1");
 	}
 }

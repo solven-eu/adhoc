@@ -50,6 +50,7 @@ import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -80,6 +81,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
@@ -99,7 +101,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-public class CompositeCubesTableWrapper implements ITableWrapper {
+public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
 
 	@NonNull
 	@Default
@@ -591,6 +593,17 @@ public class CompositeCubesTableWrapper implements ITableWrapper {
 		} else {
 			return Map.of();
 		}
+	}
+
+	@Override
+	public Map<String, ?> getHealthDetails() {
+		Map<String, Object> details = new LinkedHashMap<>();
+
+		cubes.forEach(cube -> {
+			details.put("subCube." + cube.getName(), CubeWrapper.makeDetails(cube));
+		});
+
+		return details;
 	}
 
 }

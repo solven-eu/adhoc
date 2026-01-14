@@ -1,0 +1,17 @@
+# server: the default configuration for a contestServer
+
+spring:
+    security:
+        oauth2:
+            client:
+                registration:
+                    github:
+                        clientId: ${adhoc.pivotable.login.oauth2.github.clientId:NEEDS_TO_BE_DEFINED}
+                        clientSecret: ${adhoc.pivotable.login.oauth2.github.clientSecret:NEEDS_TO_BE_DEFINED}
+                    google:
+                        client-id: ${adhoc.pivotable.login.oauth2.google.clientId:NEEDS_TO_BE_DEFINED}
+                        client-secret: ${adhoc.pivotable.login.oauth2.google.clientSecret:NEEDS_TO_BE_DEFINED}
+
+adhoc.pivotable.login.oauth2:
+    github.enabled: true
+    google.enabled: true

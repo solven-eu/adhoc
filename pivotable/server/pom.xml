@@ -60,6 +60,15 @@
 			<version>5.12.0</version>
 			<!-- Many projects may not use CSVParsing-->
 			<optional>true</optional>
+			<exclusions>
+				<exclusion>
+					<!-- Would conflict with spring-jcl -->
+					<!-- Typical warning is: -->
+					<!-- Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts -->
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- Used by Simple example -->
 		<dependency>

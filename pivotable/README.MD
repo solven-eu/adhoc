@@ -59,3 +59,32 @@ The default implementations is based over:
 - Enable quick developments
 - Make not be satisfactory for production application (as it is sub-optimal by not being compiled)
 - Make not be satisfactory for a full-fledged application (as it has strong restrictions in term of available tools (no TypeScript, no `.vue` files, etc)).
+
+# Authentication
+
+Pivotable authentication relies on a custom JWT. The JWT is generated following a login flow.
+
+The signature of JWTs is managed by `PivotableResourceServerConfiguration`.
+The generation of JWTs is managed by `PivotableTokenService`.
+
+## Custom Authentication
+
+The main class to define authentication methods is `PivotableLoginController`.
+
+Pivotable provides 2 authentication methods by default:
+- BASIC, through the Spring profile `fakeuser`
+- OAuth2, with examples provided for Google and Github, relying on core [SpringBoot](https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html).
+
+One can register an additional oauth2 method with:
+
+```
+spring:
+    application.name: pivotable-server
+    security:
+        oauth2:
+            client:
+                registration:
+                    some_provider_id:
+                        clientId: someClientId
+                        clientSecret: someClientSecret
+```

@@ -30,6 +30,7 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
@@ -58,7 +59,7 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 		implements IMultitypeColumnFastGet<T>, ICompactable {
 	@Default
 	@NonNull
-	final MultitypeNavigableColumn<T> navigable = MultitypeNavigableColumn.<T>builder().build();
+	final IMultitypeColumnFastGetSorted<T> navigable = MultitypeNavigableColumn.<T>builder().build();
 
 	@Default
 	@NonNull
@@ -70,6 +71,10 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	// encounter unordered slices.
 	// final AtomicBoolean inputAreNotOrderedAnymore = new AtomicBoolean();
 
+	/**
+	 *
+	 * @return the sum of the underlying sizes as we each slice can only be present in one of the underlying.
+	 */
 	@Override
 	public long size() {
 		return navigable.size() + hash.size();
@@ -116,11 +121,7 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	public IValueReceiver append(T slice) {
 		Optional<IValueReceiver> navigableReceiver = navigable.appendIfOptimal(slice);
 
-		if (navigableReceiver.isPresent()) {
-			return navigableReceiver.get();
-		} else {
-			return hash.append(slice);
-		}
+		return navigableReceiver.orElseGet(() -> hash.append(slice));
 	}
 
 	@Override
@@ -157,14 +158,10 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	@Override
 	public Stream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
 		return switch (stragegy) {
-		case StreamStrategy.ALL:
-			yield this.stream();
-		case StreamStrategy.SORTED_SUB:
-			yield navigable.stream();
-		case StreamStrategy.SORTED_SUB_COMPLEMENT:
-			yield hash.stream();
-		default:
-			yield IMultitypeColumn.defaultStream(this, stragegy);
+		case StreamStrategy.ALL -> this.stream();
+		case StreamStrategy.SORTED_SUB -> navigable.stream();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.stream();
+		default -> IMultitypeColumn.defaultStream(this, stragegy);
 		};
 	}
 

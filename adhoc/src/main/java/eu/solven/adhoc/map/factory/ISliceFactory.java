@@ -54,6 +54,7 @@ public interface ISliceFactory {
 	 * @return an {@link IMapBuilderThroughKeys}, which can handle a stream of entries where the keySet is not known in
 	 *         advance.
 	 */
+	@Deprecated
 	IMapBuilderThroughKeys newMapBuilder();
 
 	IAdhocMap buildMap(IHasEntries hasEntries);

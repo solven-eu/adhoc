@@ -41,6 +41,7 @@ import eu.solven.adhoc.pivotable.app.example.InjectWorldCupExampleCubesConfig;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
+import eu.solven.adhoc.pivotable.webflux.actuator.AdhocSchemaHealthIndicator;
 import eu.solven.adhoc.tools.GitPropertySourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,7 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 		InjectPixarExampleCubesConfig.class,
 		InjectWorldCupExampleCubesConfig.class,
 
-})
+		AdhocSchemaHealthIndicator.class, })
 @Slf4j
 public class PivotableServerApplication {
 

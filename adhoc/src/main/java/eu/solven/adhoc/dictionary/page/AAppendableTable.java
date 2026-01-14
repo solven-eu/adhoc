@@ -23,16 +23,13 @@
 package eu.solven.adhoc.dictionary.page;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.dictionary.IAppendableColumnFactory;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -40,12 +37,9 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@Builder
+@SuperBuilder
 @Slf4j
-public class FlexibleAppendableTable implements IAppendableTable {
-
-	protected final AtomicReference<IAppendableTablePage> refFlexiblePage = new AtomicReference<>();
-	protected final ConcurrentMap<List<String>, IAppendableTablePage> keyToPage = new ConcurrentHashMap<>();
+public abstract class AAppendableTable implements IAppendableTable {
 
 	@Default
 	@NonNull
@@ -61,7 +55,7 @@ public class FlexibleAppendableTable implements IAppendableTable {
 	@Override
 	public ITableRowWrite nextRow() {
 		while (true) {
-			IAppendableTablePage currentPage = refFlexiblePage.get();
+			IAppendableTablePage currentPage = getCurrentPage();
 			if (currentPage == null) {
 				nextPage(currentPage);
 			} else {
@@ -75,11 +69,13 @@ public class FlexibleAppendableTable implements IAppendableTable {
 		}
 	}
 
+	protected abstract IAppendableTablePage getCurrentPage();
+
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected void nextPage(IAppendableTablePage currentPage) {
 		// the page is full
 		IAppendableTablePage newCandidate = makePage();
-		IAppendableTablePage witnessPage = refFlexiblePage.compareAndExchange(currentPage, newCandidate);
+		IAppendableTablePage witnessPage = compareAndSetPage(currentPage, newCandidate);
 		if (witnessPage == currentPage) {
 			// This thread has actually updated the page
 			// newCandidate.allocate();
@@ -87,15 +83,18 @@ public class FlexibleAppendableTable implements IAppendableTable {
 		}
 	}
 
+	protected abstract IAppendableTablePage compareAndSetPage(IAppendableTablePage currentPage,
+			IAppendableTablePage newCandidate);
+
 	@Override
 	public ITableRowWrite nextRow(SequencedSetLikeList keysLikeList) {
 		while (true) {
 			List<String> keysAsList = keysLikeList.asList();
-			IAppendableTablePage currentPage = keyToPage.computeIfAbsent(keysAsList, k -> makePage());
+			IAppendableTablePage currentPage = getCurrentPage(keysAsList);
 			ITableRowWrite nextRow = currentPage.pollNextRow();
 			if (nextRow == null) {
 				IAppendableTablePage newCandidate = makePage();
-				if (keyToPage.replace(keysAsList, currentPage, newCandidate)) {
+				if (compareAndSetPage(keysAsList, currentPage, newCandidate)) {
 					log.trace("New page");
 				}
 			} else {
@@ -103,4 +102,10 @@ public class FlexibleAppendableTable implements IAppendableTable {
 			}
 		}
 	}
+
+	protected abstract boolean compareAndSetPage(List<String> keysAsList,
+			IAppendableTablePage currentPage,
+			IAppendableTablePage newCandidate);
+
+	protected abstract IAppendableTablePage getCurrentPage(List<String> keysAsList);
 }

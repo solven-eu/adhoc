@@ -54,6 +54,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -71,6 +72,7 @@ import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
@@ -93,7 +95,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-public class JooqTableWrapper implements ITableWrapper, IHasCache {
+public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
 
 	@NonNull
 	final String name;
@@ -441,7 +443,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
@@ -451,11 +453,20 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		// TODO How should `null` be reported?
-		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
 			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);
 		}
+	}
+
+	@Override
+	public Map<String, ?> getHealthDetails() {
+		return ImmutableMap.<String, Object>builder()
+				.put("tableLike", tableParameters.getTable().toString())
+				.put("dialect", tableParameters.getDslSupplier().getDSLContext().dialect())
+				.put("dslContextCreationTime", tableParameters.getDslSupplier().getDSLContext().creationTime())
+				.build();
 	}
 
 }

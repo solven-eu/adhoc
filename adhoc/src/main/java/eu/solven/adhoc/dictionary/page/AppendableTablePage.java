@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.concurrent.NotThreadSafe;
 
 import eu.solven.adhoc.dictionary.IAppendableColumnFactory;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -37,10 +40,16 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A page in a structure representing a table with given columns. It has fixed capacity.
  * 
+ * It is not thread-safe. Especially due to lack of synchronization between `columns` and `columnNames`.
+ *
+ * It has thread-safety requirements when being read-only. Typically, `TablePageRow.freeze` must be thread-safe: it
+ * implies the freezing process may be executed by a different thread.
+ * 
  * @author Benoit Lacelle
  */
 @Slf4j
 @Builder
+@NotThreadSafe
 public class AppendableTablePage implements IAppendableTablePage {
 
 	@Default
@@ -50,15 +59,27 @@ public class AppendableTablePage implements IAppendableTablePage {
 	@Default
 	final int capacity = AdhocUnsafe.getPageSize();
 
+	/**
+	 * The index of the next polled row. -1 if this page is full.
+	 */
 	final AtomicInteger nextRow = new AtomicInteger();
 
 	final List<String> columnNames = new ArrayList<>();
 
-	final List<IAppendableColumn> columns = new ArrayList<>();
-	final List<IReadableColumn> columnsRead = new ArrayList<>();
+	// AtomicReference to be turned into null when freezing
+	final AtomicReference<List<IAppendableColumn>> columnsWrite = new AtomicReference<>(new ArrayList<>());
+	final AtomicReference<List<? extends IReadableColumn>> columnsRead = new AtomicReference<>(columnsWrite.get());
 
+	/**
+	 * If true, the last row has been polled and may or may not be frozen
+	 */
 	final AtomicBoolean isLastRowPolled = new AtomicBoolean();
-	final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
+	/**
+	 * If true, the last row has been frozen: this page is now read-only
+	 */
+	// final AtomicBoolean isLastRowFrozen = new AtomicBoolean();
+
+	final Thread creationThread = Thread.currentThread();
 
 	/**
 	 * An {@link ITableRowWrite} being written.
@@ -84,7 +105,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 			if (currentColumnIndex >= columnNames.size()) {
 				// Register a new additional column
 				columnNames.add(key);
-				columns.add(makeColumn(key));
+				columnsWrite.get().add(makeColumn(key));
 			} else {
 				String expectedColumnName = columnNames.get(currentColumnIndex);
 				if (!key.equals(expectedColumnName)) {
@@ -97,13 +118,13 @@ public class AppendableTablePage implements IAppendableTablePage {
 						if (currentColumnIndex < 0) {
 							currentColumnIndex = columnNames.size();
 							columnNames.add(key);
-							columns.add(makeColumn(key));
+							columnsWrite.get().add(makeColumn(key));
 						}
 					}
 				}
 			}
 
-			columns.get(currentColumnIndex).append(normalizedValue);
+			columnsWrite.get().get(currentColumnIndex).append(normalizedValue);
 
 			return currentColumnIndex;
 		}
@@ -116,14 +137,22 @@ public class AppendableTablePage implements IAppendableTablePage {
 			}
 
 			if (isLastRowPolled.get()) {
-				isLastRowFrozen.set(true);
+				final List<IReadableColumn> columnsReadLocal = new ArrayList<>();
 
 				// Convert from IAppendableColumns to IReadableColumns
-				AppendableTablePage.this.columns.stream()
+				AppendableTablePage.this.columnsWrite.get()
+						.stream()
 						.map(IAppendableColumn::freeze)
-						.forEach(AppendableTablePage.this.columnsRead::add);
+						.forEach(columnsReadLocal::add);
+
+				// isLastRowFrozen.set(true);
+
 				// Remove reference to IAppendableColumns
-				AppendableTablePage.this.columns.clear();
+				// We set the readColumn to workaround race-conditions
+				AppendableTablePage.this.columnsRead.set(columnsReadLocal);
+
+				// nullify to enable GC of write columns
+				AppendableTablePage.this.columnsWrite.set(null);
 			}
 
 			return new TablePageRowRead(size(), rowIndex);
@@ -154,12 +183,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 		@Override
 		public Object readValue(int columnIndex) {
-			IReadableColumn column;
-			if (columns.isEmpty()) {
-				column = columnsRead.get(columnIndex);
-			} else {
-				column = columns.get(columnIndex);
-			}
+			IReadableColumn column = columnsRead.get().get(columnIndex);
 			return column.readValue(rowIndex);
 		}
 
@@ -209,7 +233,18 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 		AtomicInteger columnIndex = new AtomicInteger();
 
+		checkThreadSafety();
+
 		return new TablePageRow(columnIndex, rowIndex);
+	}
+
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected void checkThreadSafety() {
+		Thread currentThread = Thread.currentThread();
+		if (creationThread != currentThread) {
+			throw new IllegalStateException(
+					"Concurrency issue created=%s used=%s".formatted(creationThread, currentThread));
+		}
 	}
 
 	protected IAppendableColumn makeColumn(String key) {

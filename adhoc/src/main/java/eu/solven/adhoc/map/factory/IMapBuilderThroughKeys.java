@@ -27,6 +27,7 @@ package eu.solven.adhoc.map.factory;
  * 
  * @author Benoit Lacelle
  */
+@Deprecated
 public interface IMapBuilderThroughKeys extends IBuildableIntoMap {
 
 	IMapBuilderThroughKeys put(String key, Object value);

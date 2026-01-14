@@ -66,6 +66,85 @@ export const useAdhocStore = defineStore("adhoc", {
 			return userStore.authenticatedFetch(url, fetchOptions);
 		},
 
+		async authenticatedFetchStream(url, fetchOptions) {
+			const userStore = useUserStore();
+
+			return userStore.authenticatedFetchStream(url, fetchOptions);
+		},
+
+		async toJSON(response, externalOnProgress) {
+			if (!response.ok) {
+				throw new Error("Response is KO: " + response);
+			}
+
+			const gzipRatio = 8;
+			// https://github.com/facebook/zstd
+			const zstdRatio = 4;
+
+			function decompressedSize(headers) {
+				let totalDecodedBytes = headers.get("content-length");
+				if (totalDecodedBytes) {
+					const contentEncoding = headers.get("content-encoding");
+					if (contentEncoding === "gzip") {
+						// Heuristic: gzip decompressed size is 6 times the compressed size
+						// This can not be done backend size as it would sacrifices the streamed serialization (i.e. given a very large Object, Reactor+Jackson will stream its properties into JSON)
+						totalDecodedBytes *= gzipRatio;
+					} else if (contentEncoding === "zstd") {
+						totalDecodedBytes *= zstdRatio;
+					}
+				}
+				return totalDecodedBytes;
+			}
+
+			let success = true;
+			const totalDecodedBytes = decompressedSize(response.headers);
+
+			let currentDecodedBytes = 0;
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let text = "";
+
+			const onProgress = function (done, percent) {
+				if (totalDecodedBytes != undefined) {
+					console.log("download progress:", currentDecodedBytes, totalDecodedBytes, done, percent);
+				} else {
+					console.log("download progress:", currentDecodedBytes, ", unknown total", done, percent);
+				}
+
+				if (externalOnProgress) {
+					externalOnProgress(currentDecodedBytes, done, percent);
+				}
+			};
+
+			while (true) {
+				try {
+					const { value, done } = await reader.read();
+					if (done) {
+						onProgress(currentDecodedBytes, done, 1);
+						break;
+					} else {
+						currentDecodedBytes += value.length;
+
+						// If the content is encoded, we may have underestimated the size of the unencoded content
+						// Hence, we need to cap the current size
+						if (totalDecodedBytes && currentDecodedBytes > totalDecodedBytes) {
+							console.log("underestimation estimated=", totalDecodedBytes, " currentDecodedBytes=", currentDecodedBytes);
+						}
+						const percent = Math.min(currentDecodedBytes / totalDecodedBytes, 0.95);
+						onProgress(currentDecodedBytes, done, percent);
+						text += decoder.decode(value, { stream: true });
+					}
+				} catch (error) {
+					console.error("error:", error);
+					success = false;
+					break;
+				}
+			}
+			text += decoder.decode();
+
+			return JSON.parse(text);
+		},
+
 		async loadMetadata() {
 			const store = this;
 
@@ -252,18 +331,17 @@ export const useAdhocStore = defineStore("adhoc", {
 		 * @param {string} endpointId id of the requested endpoint.
 		 * @param {string} cubeId [Optional] id the the requested cube.
 		 */
-		async loadEndpointSchemas(endpointId, cubeId) {
+		async loadEndpointSchemas(endpointId, cubeId, externalOnProgress) {
 			const store = this;
 
 			async function fetchFromUrl(url) {
 				store.nbSchemaFetching++;
 				try {
-					const response = await store.authenticatedFetch(url);
+					const response = await store.authenticatedFetchStream(url);
 					if (!response.ok) {
 						throw new Error("Rejected request for endpointId=" + endpointId);
 					}
-
-					const responseJson = await response.json();
+					const responseJson = await store.toJSON(response, externalOnProgress);
 
 					console.debug("responseJson", responseJson);
 
@@ -323,13 +401,13 @@ export const useAdhocStore = defineStore("adhoc", {
 			}
 		},
 
-		async loadEndpointSchemaIfMissing(endpointId) {
+		async loadEndpointSchemaIfMissing(endpointId, onProgress) {
 			const store = this;
 			const availableSchema = store.getLoadedSchema(endpointId);
 
 			if (availableSchema.error) {
 				console.log("Loading schema due to error=", availableSchema.error);
-				return this.loadEndpointSchemas(endpointId).then(() => {
+				return this.loadEndpointSchemas(endpointId, null, onProgress).then(() => {
 					return store.getLoadedSchema(endpointId);
 				});
 			} else {
