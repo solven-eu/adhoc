@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
@@ -30,8 +32,17 @@
 			<!-- Used as bitset in MultitypeArrayColumn -->
 			<groupId>org.roaringbitmap</groupId>
 			<artifactId>RoaringBitmap</artifactId>
-			<!-- Can not upgrade due to https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
+			<!-- Can not upgrade due to
+			https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
 			<version>1.3.0</version>
+		</dependency>
+
+		<!--
+		https://mvnrepository.com/artifact/me.lemire.integercompression/JavaFastPFOR/0.3.10 -->
+		<dependency>
+			<groupId>me.lemire.integercompression</groupId>
+			<artifactId>JavaFastPFOR</artifactId>
+			<version>0.3.10</version>
 		</dependency>
 
 		<dependency>
