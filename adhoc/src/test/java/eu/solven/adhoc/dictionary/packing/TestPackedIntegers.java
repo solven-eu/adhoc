@@ -7,6 +7,7 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.compression.packing.PackedIntegers;
 import lombok.extern.slf4j.Slf4j;
 import me.lemire.integercompression.BitPacking;
 import me.lemire.integercompression.Util;
@@ -15,24 +16,7 @@ import me.lemire.integercompression.Util;
 public class TestPackedIntegers {
 
 	private PackedIntegers doPack(int[] input) {
-		// fastpackwithoutmask requires input to have size % 32
-		int[] input32;
-
-		if (input.length % 32 != 0) {
-			input32 = Arrays.copyOf(input, 32 * (1 + input.length / 32));
-		} else {
-			input32 = input;
-		}
-
-		// `fastpackwithoutmask` will pack 32 integers into this number of integers
-		final int bits = Util.maxbits(input32, 0, input.length);
-
-		int[] output = new int[bits];
-
-		BitPacking.fastpackwithoutmask(input32, 0, output, 0, bits);
-
-		PackedIntegers packed = PackedIntegers.builder().bits(bits).length(input.length).holder(output).build();
-		return packed;
+		return PackedIntegers.doPack(input);
 	}
 
 	private void doCheck(int[] input, PackedIntegers packed) {
@@ -47,6 +31,36 @@ public class TestPackedIntegers {
 		PackedIntegers packed = doPack(input);
 
 		doCheck(input, packed);
+	}
+
+	@Test
+	public void testPacking_0to64() {
+		int[] input = IntStream.range(0, 64).toArray();
+		PackedIntegers packed = doPack(input);
+
+		doCheck(input, packed);
+	}
+
+	@Test
+	public void testPacking_0ToGrowingMax() {
+		for (int max = 0; max < 128; max++) {
+			int[] input = IntStream.range(0, max).toArray();
+			PackedIntegers packed = doPack(input);
+
+			doCheck(input, packed);
+		}
+	}
+
+	@Test
+	public void testPacking_GrowingMinToGrowingMax() {
+		for (int min = 0; min < 64; min++) {
+			for (int max = 0; max < 64; max++) {
+				int[] input = IntStream.range(min, min + max).toArray();
+				PackedIntegers packed = doPack(input);
+
+				doCheck(input, packed);
+			}
+		}
 	}
 
 	@Test

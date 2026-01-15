@@ -29,6 +29,9 @@ import java.util.function.IntFunction;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.compression.ColumnarListDictionarizerFactory;
+import eu.solven.adhoc.compression.IListDictionarizer;
+import eu.solven.adhoc.compression.IListDictionarizerFactory;
 import eu.solven.adhoc.map.factory.NavigableSetLikeList;
 
 public class TestColumnarListDictionarizerFactory {
