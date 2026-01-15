@@ -25,8 +25,6 @@ package eu.solven.adhoc.compression.page;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.compression.page.ITableRowRead;
-import eu.solven.adhoc.compression.page.ITableRowWrite;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 
 public class TestITableRow {

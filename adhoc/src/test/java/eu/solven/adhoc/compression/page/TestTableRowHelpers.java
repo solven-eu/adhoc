@@ -27,10 +27,6 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.compression.page.ITableRowRead;
-import eu.solven.adhoc.compression.page.ITableRowWrite;
-import eu.solven.adhoc.compression.page.TableRowHelpers;
-
 public class TestTableRowHelpers {
 	@Test
 	public void testTableRow_emptyRow() {

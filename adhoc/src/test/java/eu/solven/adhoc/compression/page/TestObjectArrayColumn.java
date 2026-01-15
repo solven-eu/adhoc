@@ -29,9 +29,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
-import eu.solven.adhoc.compression.page.IReadableColumn;
-import eu.solven.adhoc.compression.page.LongArrayColumn;
-import eu.solven.adhoc.compression.page.ObjectArrayColumn;
 
 public class TestObjectArrayColumn {
 	@Test

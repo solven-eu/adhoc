@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.compression.packing;
 
 import java.util.Arrays;
@@ -20,20 +42,24 @@ import me.lemire.integercompression.Util;
  */
 @Builder
 public class PackedIntegers implements IIntArray {
+	private static final int BITS_PER_INT = 32;
+
+	// each `byte` provide 8 bits.
+	// each `int` provide 32 bits.
+	protected static final int BITS_PER_CHUNK = BITS_PER_INT;
+
 	// number of lower bits expressed per integer (higher bits are all zeros)
 	protected int bits;
 	// number of packed ints
-	protected int length;
+	protected int intsLength;
 
-	// each `byte` provide 8 bits.
-	protected final int chunkSize = 32;
 	// length is `(length * bits) / chunkSize`
 	@NonNull
 	protected int[] holder;
 
 	@Override
 	public int length() {
-		return length;
+		return intsLength;
 	}
 
 	@Override
@@ -43,8 +69,8 @@ public class PackedIntegers implements IIntArray {
 
 	@Override
 	public int readInt(int index) {
-		if (index < 0 || index >= length) {
-			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, length));
+		if (index < 0 || index >= intsLength) {
+			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
 		}
 
 		int output = 0;
@@ -55,9 +81,9 @@ public class PackedIntegers implements IIntArray {
 		int firstBitIndex = index * bits;
 
 		// Index of the first chunk holding relevant bits
-		int firstChunkIndex = firstBitIndex / chunkSize;
+		int firstChunkIndex = firstBitIndex / BITS_PER_CHUNK;
 		// Number of bits to skip in the first chunk
-		int firstChunkShift = firstBitIndex - firstChunkIndex * chunkSize;
+		int firstChunkShift = firstBitIndex - firstChunkIndex * BITS_PER_CHUNK;
 
 		// Needed bits may be split on multiple chunks
 		int bitsLeft = bits;
@@ -67,7 +93,7 @@ public class PackedIntegers implements IIntArray {
 		// We need to append the writes
 		int shiftWrite = 0;
 
-		int mask = 0xFFFFFFFF >>> (32 - bits);
+		int mask = 0xFFFFFFFF >>> (BITS_PER_INT - bits);
 		while (bitsLeft > 0) {
 			int maskRead;
 			if (shiftRead == 0) {
@@ -76,7 +102,7 @@ public class PackedIntegers implements IIntArray {
 				maskRead = mask << shiftRead;
 			}
 
-			int contrib = holder[firstChunkIndex] & (maskRead);
+			int contrib = holder[firstChunkIndex] & maskRead;
 			int contributionFromChunk;
 			if (shiftRead == 0) {
 				contributionFromChunk = contrib << shiftWrite;
@@ -86,7 +112,7 @@ public class PackedIntegers implements IIntArray {
 			output |= contributionFromChunk;
 
 			firstChunkIndex++;
-			int nbWritten = (chunkSize - shiftRead);
+			int nbWritten = BITS_PER_CHUNK - shiftRead;
 			bitsLeft -= nbWritten;
 			shiftWrite += nbWritten;
 			// Next chunk is read from the beginning
@@ -100,16 +126,16 @@ public class PackedIntegers implements IIntArray {
 	public String toString() {
 		return IntStream.of(holder)
 				.map(Integer::reverse)
-				.mapToObj(i -> Strings.padStart(Integer.toBinaryString(i), 32, '0'))
+				.mapToObj(i -> Strings.padStart(Integer.toBinaryString(i), BITS_PER_INT, '0'))
 				.collect(Collectors.joining("."));
 	}
 
-	public static PackedIntegers doPack(int[] input) {
+	public static PackedIntegers doPack(int... input) {
 		// fastpackwithoutmask requires input to have size % 32
 		int[] input32;
 
-		if (input.length % 32 != 0) {
-			input32 = Arrays.copyOf(input, 32 * (1 + input.length / 32));
+		if (input.length % BITS_PER_INT != 0) {
+			input32 = Arrays.copyOf(input, BITS_PER_INT * (1 + input.length / BITS_PER_INT));
 		} else {
 			input32 = input;
 		}
@@ -117,14 +143,13 @@ public class PackedIntegers implements IIntArray {
 		// `fastpackwithoutmask` will pack 32 integers into this number of integers
 		final int bits = Util.maxbits(input32, 0, input.length);
 
-		int nbBlocks = input32.length / 32;
+		int nbBlocks = input32.length / BITS_PER_INT;
 		int[] output = new int[bits * nbBlocks];
 
 		for (int i = 0; i < nbBlocks; i++) {
-			BitPacking.fastpackwithoutmask(input32, 32 * i, output, bits * i, bits);
+			BitPacking.fastpackwithoutmask(input32, BITS_PER_INT * i, output, bits * i, bits);
 		}
 
-		PackedIntegers packed = PackedIntegers.builder().bits(bits).length(input.length).holder(output).build();
-		return packed;
+		return PackedIntegers.builder().bits(bits).intsLength(input.length).holder(output).build();
 	}
 }
