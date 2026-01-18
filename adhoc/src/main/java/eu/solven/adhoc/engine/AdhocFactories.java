@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.dictionary.page.ColumnarSliceFactory;
+import eu.solven.adhoc.compression.ColumnarSliceFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;

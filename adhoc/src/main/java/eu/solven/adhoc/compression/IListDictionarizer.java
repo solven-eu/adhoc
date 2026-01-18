@@ -20,37 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary;
+package eu.solven.adhoc.compression;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.IntFunction;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.compression.IListDictionarizer;
-import eu.solven.adhoc.compression.IListDictionarizerFactory;
-import eu.solven.adhoc.compression.ListDictionarizerFactory;
-import eu.solven.adhoc.map.factory.NavigableSetLikeList;
-
-public class TestListDictionarizerFactory {
-	IListDictionarizerFactory factory = new ListDictionarizerFactory();
-
-	@Test
-	public void testMakeMap() {
-		IListDictionarizer dictionarizer = factory.makeDictionarizer(NavigableSetLikeList.fromSet(Set.of("a", "b")));
-
-		IntFunction<Object> dic00 = dictionarizer.dictionarize(List.of("a0", "b0"));
-		Assertions.assertThat(dic00.apply(0)).isEqualTo("a0");
-		Assertions.assertThat(dic00.apply(1)).isEqualTo("b0");
-
-		IntFunction<Object> dic11 = dictionarizer.dictionarize(List.of("a1", "b1"));
-		Assertions.assertThat(dic11.apply(0)).isEqualTo("a1");
-		Assertions.assertThat(dic11.apply(1)).isEqualTo("b1");
-
-		IntFunction<Object> dic10 = dictionarizer.dictionarize(List.of("a1", "b0"));
-		Assertions.assertThat(dic10.apply(0)).isEqualTo("a1");
-		Assertions.assertThat(dic10.apply(1)).isEqualTo("b0");
-	}
+/**
+ * Return an {@link IntFunction} equivalent to input {@link List#get(int)}.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IListDictionarizer {
+	IntFunction<Object> dictionarize(List<Object> list);
 }
