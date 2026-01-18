@@ -28,6 +28,8 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.compression.column.LongArrayColumn;
+import eu.solven.adhoc.compression.column.ObjectArrayColumn;
 import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
 
 public class TestObjectArrayColumn {

@@ -20,12 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.page;
+package eu.solven.adhoc.compression.column;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
+import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 
 /**
@@ -37,7 +40,12 @@ import lombok.NonNull;
 public class ObjectArrayColumn implements IAppendableColumn {
 
 	@NonNull
-	final List<Object> asArray;
+	@Default
+	final IFreezingStrategy freezer = ObjectArrayColumnsFactory.DEFAULT_FREEZER;
+
+	@NonNull
+	@Default
+	final List<Object> asArray = new ArrayList<>();
 
 	@Override
 	public void append(Object normalizedValue) {
@@ -52,18 +60,11 @@ public class ObjectArrayColumn implements IAppendableColumn {
 	@Override
 	@SuppressWarnings("checkstyle:MagicNumber")
 	public IReadableColumn freeze() {
-		long countDistinct = asArray.stream().distinct().count();
+		return freezer.freeze(this);
+	}
 
-		// TODO This computation could be done asynchronously
-		if (countDistinct * 16 <= asArray.size()) {
-			return DictionarizedObjectColumn.fromArray(asArray);
-		} else if (asArray.stream().allMatch(Long.class::isInstance)) {
-			long[] primitiveArray = asArray.stream().mapToLong(Long.class::cast).toArray();
-			return LongArrayColumn.builder().asArray(primitiveArray).build();
-		} else {
-			return this;
-		}
-
+	public List<?> getAsArray() {
+		return Collections.unmodifiableList(asArray);
 	}
 
 }

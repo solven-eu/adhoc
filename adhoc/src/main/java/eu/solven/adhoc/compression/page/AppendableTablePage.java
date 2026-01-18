@@ -30,7 +30,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
-import eu.solven.adhoc.compression.IAppendableColumnFactory;
+import eu.solven.adhoc.compression.column.IAppendableColumn;
+import eu.solven.adhoc.compression.column.IAppendableColumnFactory;
+import eu.solven.adhoc.compression.column.ObjectArrayColumnsFactory;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;

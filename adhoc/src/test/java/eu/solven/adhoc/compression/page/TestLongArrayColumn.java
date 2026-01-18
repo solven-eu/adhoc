@@ -25,6 +25,8 @@ package eu.solven.adhoc.compression.page;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.compression.column.LongArrayColumn;
+
 public class TestLongArrayColumn {
 	@Test
 	public void testFromArray_empty() {

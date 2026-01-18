@@ -20,7 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.page;
+package eu.solven.adhoc.compression.column;
+
+import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**
  * Represents an appendable column, with random read access.

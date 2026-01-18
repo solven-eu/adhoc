@@ -20,13 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.page;
+package eu.solven.adhoc.compression.column;
 
 import java.util.ArrayList;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.compression.IAppendableColumnFactory;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
  * {@link IAppendableColumnFactory} based on {@link ObjectArrayColumn}.
@@ -35,9 +36,18 @@ import eu.solven.adhoc.compression.IAppendableColumnFactory;
  */
 public class ObjectArrayColumnsFactory implements IAppendableColumnFactory {
 
+	public static IFreezingStrategy DEFAULT_FREEZER = new StandardFreezingStrategy();
+
+	@NonNull
+	@Default
+	final IFreezingStrategy freezer = DEFAULT_FREEZER;
+
 	@Override
 	public IAppendableColumn makeColumn(String key, long capacity) {
-		return ObjectArrayColumn.builder().asArray(new ArrayList<>(Ints.checkedCast(capacity))).build();
+		return ObjectArrayColumn.builder()
+				.asArray(new ArrayList<>(Ints.checkedCast(capacity)))
+				.freezer(freezer)
+				.build();
 	}
 
 }

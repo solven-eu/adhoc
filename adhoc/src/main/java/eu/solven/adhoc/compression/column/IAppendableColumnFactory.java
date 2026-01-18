@@ -20,25 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.page;
-
-import lombok.Builder;
-import lombok.NonNull;
+package eu.solven.adhoc.compression.column;
 
 /**
- * {@link IAppendableColumn} over a List.
+ * Enable creation of {@link IAppendableColumn}.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class LongArrayColumn implements IReadableColumn {
+@FunctionalInterface
+public interface IAppendableColumnFactory {
 
-	@NonNull
-	final long[] asArray;
-
-	@Override
-	public Object readValue(int rowIndex) {
-		return asArray[rowIndex];
-	}
+	IAppendableColumn makeColumn(String key, long capacity);
 
 }
