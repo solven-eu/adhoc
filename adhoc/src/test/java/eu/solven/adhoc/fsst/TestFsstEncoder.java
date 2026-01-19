@@ -22,30 +22,13 @@
  */
 package eu.solven.adhoc.fsst;
 
-import java.io.ByteArrayOutputStream;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-
-/**
- * 
- * Represents a symbol, which is a mapping from the original bytes to an encoded code.
- * 
- * @author Benoit Lacelle
- * 
- */
-@RequiredArgsConstructor
-@Value
-public final class Symbol {
-	private final ByteArrayKey key;
-	private final int code;
-
-	@Override
-	public String toString() {
-		return code + ":" + key;
-	}
-
-	public void writeBytes(ByteArrayOutputStream out) {
-		key.writeBytes(out);
+public class TestFsstEncoder {
+	@Test
+	public void testConstants() {
+		int masked = IFsstConstants.ENTRY_ESCAPE & IFsstConstants.MASK_NOT_SYMBOL;
+		Assertions.assertThat(masked).isEqualTo(Byte.toUnsignedInt(IFsstConstants.MASK_NOT_SYMBOL));
 	}
 }

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
-import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
-import eu.solven.adhoc.compression.page.IReadableColumn;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.column.IAdhocColumn;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link IAppendableColumn} over a List.
+ * Some various unsafe constants, related to {@link IAdhocColumn} freezing.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class ObjectArrayColumn implements IAppendableColumn {
+@UtilityClass
+@Slf4j
+@SuppressWarnings("PMD.MutableStaticState")
+public class AdhocFreezingUnsafe {
 
-	@NonNull
-	@Default
-	final IFreezingStrategy freezer =
-			StandardFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
+	private static final List<IFreezingWithContext> DEFAULT_FREEZERS =
+			ImmutableList.of(new DistinctFreezer(), new LongFreezer());
 
-	@NonNull
-	@Default
-	final List<Object> asArray = new ArrayList<>();
-
-	@Override
-	public void append(Object normalizedValue) {
-		asArray.add(normalizedValue);
-	}
-
-	@Override
-	public Object readValue(int rowIndex) {
-		return asArray.get(rowIndex);
-	}
-
-	@Override
-	public IReadableColumn freeze() {
-		return freezer.freeze(this);
-	}
-
-	public List<?> getAsArray() {
-		return Collections.unmodifiableList(asArray);
-	}
+	@Getter
+	@Setter
+	protected static List<IFreezingWithContext> freezers = DEFAULT_FREEZERS;
 
 }

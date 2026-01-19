@@ -20,54 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
-import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
-import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
+import eu.solven.adhoc.compression.column.IAppendableColumn;
+import eu.solven.adhoc.compression.column.LongArrayColumn;
+import eu.solven.adhoc.compression.column.ObjectArrayColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
 
 /**
- * Standard {@link IFreezingStrategy}.
  * 
  * @author Benoit Lacelle
  */
-@SuperBuilder
-public class StandardFreezingStrategy implements IFreezingStrategy {
-
-	@Default
-	@NonNull
-	List<IFreezingWithContext> freezersWithContext = AdhocFreezingUnsafe.getFreezers();
-
-	// TODO This computation could be done asynchronously
+public final class LongFreezer implements IFreezingWithContext {
 	@Override
-	public IReadableColumn freeze(IAppendableColumn column) {
+	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
 		if (column instanceof ObjectArrayColumn arrayColumn) {
-			Map<String, Object> freezingContext = new LinkedHashMap<>();
+			List<?> array = arrayColumn.getAsArray();
 
-			Optional<IReadableColumn> output = Optional.empty();
-			for (IFreezingWithContext freezer : freezersWithContext) {
-				output = freezer.freeze(arrayColumn, freezingContext);
+			Set<?> classes = classesWithContext(freezingContext, array);
 
-				if (!output.isEmpty()) {
-					break;
-				}
+			if (classes.size() == 1 && classes.contains(Long.class)) {
+				long[] primitiveArray = array.stream().mapToLong(Long.class::cast).toArray();
+				return Optional.of(LongArrayColumn.builder().asArray(primitiveArray).build());
+			} else {
+				return Optional.empty();
 			}
-
-			// TODO wrap in unmodifiable?
-			return output.orElse(column);
 		} else {
-			// TODO wrap in unmodifiable?
-			return column;
+			return Optional.empty();
 		}
 	}
 
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
+	public static Set<?> classesWithContext(Map<String, Object> freezingContext, List<?> array) {
+		return (Set<?>) freezingContext.computeIfAbsent("classes", k -> {
+			return array.stream().map(o -> o == null ? null : o.getClass()).collect(Collectors.toSet());
+		});
+	}
 }

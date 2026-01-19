@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
-import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import com.google.common.math.LongMath;
+
+import eu.solven.adhoc.compression.column.IAppendableColumn;
+import eu.solven.adhoc.compression.column.ObjectArrayColumn;
+import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
- * {@link IAppendableColumn} over a List.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class ObjectArrayColumn implements IAppendableColumn {
-
-	@NonNull
-	@Default
-	final IFreezingStrategy freezer =
-			StandardFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
-
-	@NonNull
-	@Default
-	final List<Object> asArray = new ArrayList<>();
+public final class DistinctFreezer implements IFreezingWithContext {
+	private static final int DISTINCT_FACTOR = 16;
 
 	@Override
-	public void append(Object normalizedValue) {
-		asArray.add(normalizedValue);
-	}
+	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
+		if (column instanceof ObjectArrayColumn arrayColumn) {
+			List<?> array = arrayColumn.getAsArray();
 
-	@Override
-	public Object readValue(int rowIndex) {
-		return asArray.get(rowIndex);
-	}
+			long countDistinct = (long) freezingContext.computeIfAbsent("count_distinct", k -> {
+				return array.stream().distinct().count();
+			});
 
-	@Override
-	public IReadableColumn freeze() {
-		return freezer.freeze(this);
+			if (LongMath.saturatedMultiply(countDistinct, DISTINCT_FACTOR) <= array.size()) {
+				return Optional.of(DictionarizedObjectColumn.fromArray(array));
+			} else {
+				return Optional.empty();
+			}
+		} else {
+			return Optional.empty();
+		}
 	}
-
-	public List<?> getAsArray() {
-		return Collections.unmodifiableList(asArray);
-	}
-
 }

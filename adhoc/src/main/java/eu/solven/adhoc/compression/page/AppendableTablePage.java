@@ -56,7 +56,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 
 	@Default
 	@NonNull
-	final IAppendableColumnFactory columnsFactory = new ObjectArrayColumnsFactory();
+	final IAppendableColumnFactory columnsFactory = ObjectArrayColumnsFactory.builder().build();
 
 	@Default
 	final int capacity = AdhocUnsafe.getPageSize();

@@ -26,6 +26,9 @@ import java.util.ArrayList;
 
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
+import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 
@@ -34,13 +37,13 @@ import lombok.NonNull;
  * 
  * @author Benoit Lacelle
  */
+@Builder
 public class ObjectArrayColumnsFactory implements IAppendableColumnFactory {
-
-	public static IFreezingStrategy DEFAULT_FREEZER = new StandardFreezingStrategy();
 
 	@NonNull
 	@Default
-	final IFreezingStrategy freezer = DEFAULT_FREEZER;
+	final IFreezingStrategy freezer =
+			StandardFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
 
 	@Override
 	public IAppendableColumn makeColumn(String key, long capacity) {

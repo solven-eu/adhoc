@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
-import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.NonNull;
 
 /**
- * {@link IAppendableColumn} over a List.
+ * Component of {@link IFreezingStrategy}. The context enables sharing computed information through freezers.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class ObjectArrayColumn implements IAppendableColumn {
-
-	@NonNull
-	@Default
-	final IFreezingStrategy freezer =
-			StandardFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
-
-	@NonNull
-	@Default
-	final List<Object> asArray = new ArrayList<>();
-
-	@Override
-	public void append(Object normalizedValue) {
-		asArray.add(normalizedValue);
-	}
-
-	@Override
-	public Object readValue(int rowIndex) {
-		return asArray.get(rowIndex);
-	}
-
-	@Override
-	public IReadableColumn freeze() {
-		return freezer.freeze(this);
-	}
-
-	public List<?> getAsArray() {
-		return Collections.unmodifiableList(asArray);
-	}
-
+@FunctionalInterface
+public interface IFreezingWithContext {
+	Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext);
 }
