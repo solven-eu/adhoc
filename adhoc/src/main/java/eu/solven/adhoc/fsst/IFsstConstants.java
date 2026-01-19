@@ -32,7 +32,8 @@ public interface IFsstConstants {
 	int MIN_LEN = 2;
 	// Default is 8.
 	int MAX_LEN = 8;
-	int MAX_SYMBOLS = 128;
+	// a byte is either a symbol-code, or an escape code indicating next byte is literal
+	int MAX_SYMBOLS = 255;
 
 	// Used to indicate current entry is not a symbol code
 	byte MASK_NOT_SYMBOL = (byte) 0x80;

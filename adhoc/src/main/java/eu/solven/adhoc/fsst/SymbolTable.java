@@ -80,7 +80,7 @@ public final class SymbolTable {
 		// Once frozen, we do not encode any new entry: the lookup table can be dropped.
 		lookup.clear();
 
-		for (int i = size(); i >= 0; i--) {
+		for (int i = size() - 1; i >= 0; i--) {
 			// Check if the symbol is actually used
 			if (!usedForEncoding.get(i)) {
 				// If not, we can remove the symbol

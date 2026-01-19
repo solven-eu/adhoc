@@ -49,13 +49,8 @@ public final class FsstEncoder implements IFsstConstants {
 				i += s.getKey().length();
 			} else {
 				// else plain byte
-
-				if ((input[i] & MASK_NOT_SYMBOL) == MASK_NOT_SYMBOL) {
-					// input conflicts with the mask: we write an escape character
-					out.write(ENTRY_ESCAPE);
-				}
-
-				out.write((input[i] & ENTRY_ESCAPE) | MASK_NOT_SYMBOL); // 128..255
+				out.write(ENTRY_ESCAPE);
+				out.write(input[i]);
 				i++;
 			}
 		}

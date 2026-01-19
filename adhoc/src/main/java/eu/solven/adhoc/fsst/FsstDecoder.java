@@ -45,20 +45,15 @@ public final class FsstDecoder implements IFsstConstants {
 			byte b = compressed[i];
 
 			int code = b & 0xFF;
-			if ((code & MASK_NOT_SYMBOL) == 0) {
+			if (code == ENTRY_ESCAPE) {
+				// we encounter an escape character: the next byte has to be written as-is
+
+				// BEWARE This modify the loop iterator while inside the loop
+				byte escapedByte = compressed[++i];
+				out.write(escapedByte);
+			} else {
 				// the first bit is 0: this is an encoded symbol
 				table.getByCode(code).writeBytes(out);
-			} else {
-				if (code == ENTRY_ESCAPE) {
-					// we encounter an escape character: the next byte has to be written as-is
-
-					// BEWARE This modify the loop iterator while inside the loop
-					byte escapedByte = compressed[++i];
-					out.write(escapedByte);
-				} else {
-					// literal, we remove the bit from the mask
-					out.write(code & 0x7F);
-				}
 			}
 		}
 		return out.toByteArray();

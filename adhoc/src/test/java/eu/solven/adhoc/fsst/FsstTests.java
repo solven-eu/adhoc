@@ -39,23 +39,44 @@ public class FsstTests {
 
 		SymbolTable table = FsstTrainer.train(data);
 
+		Assertions.assertThat(table.lookup).hasSize(42);
+		Assertions.assertThat(table.byCode).hasSize(42);
+		{
+			// Calculate table size (bytes)
+			int tableSizeBytes = 0;
+			for (Symbol s : table.byCode) {
+				if (s != null) {
+					tableSizeBytes += s.getKey().length() + 1; // substring bytes + 1 for code
+				}
+			}
+
+			log.info("Symbol table size: {} bytes before freeze", tableSizeBytes);
+			Assertions.assertThat(tableSizeBytes).isEqualTo(252);
+		}
+
 		FsstEncoder enc = new FsstEncoder(table);
 		FsstDecoder dec = new FsstDecoder(table);
 
 		byte[] compressed = enc.encode(data);
 
-		Assertions.assertThat(compressed).hasSize(3);
-		Assertions.assertThat(table.lookup).hasSize(42);
+		table.freeze();
+		Assertions.assertThat(table.lookup).hasSize(0);
 		Assertions.assertThat(table.byCode).hasSize(42);
 
-		// Calculate table size (bytes)
-		int tableSizeBytes = 0;
-		for (Symbol s : table.byCode) {
-			tableSizeBytes += s.getKey().length() + 1; // substring bytes + 1 for code
-		}
+		Assertions.assertThat(compressed).hasSize(4);
 
-		log.info("Symbol table size: {} bytes", tableSizeBytes);
-		Assertions.assertThat(tableSizeBytes).isEqualTo(252);
+		{
+			// Calculate table size (bytes)
+			int tableSizeBytes = 0;
+			for (Symbol s : table.byCode) {
+				if (s != null) {
+					tableSizeBytes += s.getKey().length() + 1; // substring bytes + 1 for code
+				}
+			}
+
+			log.info("Symbol table size: {} bytes after freeze", tableSizeBytes);
+			Assertions.assertThat(tableSizeBytes).isEqualTo(252);
+		}
 
 		byte[] restored = dec.decode(compressed);
 		Assertions.assertThat(restored).containsExactly(data);
@@ -75,7 +96,7 @@ public class FsstTests {
 		dataWithAdditionalByte[data.length] = -128;
 		byte[] compressed = enc.encode(dataWithAdditionalByte);
 
-		Assertions.assertThat(compressed).hasSize(5);
+		Assertions.assertThat(compressed).hasSize(6);
 		// escape character
 		Assertions.assertThat(compressed[compressed.length - 2]).isEqualTo((byte) 0xFF);
 		// escaped character
