@@ -121,7 +121,7 @@
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue</artifactId>
-			<version>3.5.26</version>
+			<version>3.5.27</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
 		<dependency>

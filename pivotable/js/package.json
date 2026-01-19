@@ -1,7 +1,7 @@
 {
     "dependencies": {
         "lodashEs": "npm:lodash@4.17.21",
-        "vue": "3.5.26"
+        "vue": "3.5.27"
     },
     "devDependencies": {
         "@playwright/test": "1.57.0",
