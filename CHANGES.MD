@@ -6,6 +6,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Spring Actuator Health is enriched through `AdhocSchemaHealthIndicator`
+- FSST String compression is a `IFreezingWithContext`. Relates with https://github.com/cwida/fsst
 
 ### Changed
 - `ISliceFactory` actually enable compression, based on dictionarisation, or `long[]` or `int[]`.
