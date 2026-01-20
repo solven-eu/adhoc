@@ -62,23 +62,20 @@ public final class FsstTrainer implements IFsstConstants {
 		return freq;
 	}
 
-	@SuppressWarnings("PMD.AssignmentInOperand")
 	private static SymbolTable buildTable(Object2IntMap<ByteArrayKey> freq) {
 		// 2. Score substrings by compression gain
-		List<Candidate> candidates = scoreCandidates(freq);
+		List<Candidate> unsortedCandidates = scoreCandidates(freq);
 
 		// 3. Pick best symbols
-		candidates.sort(Comparator.comparingInt(Candidate::gain).reversed());
+		List<Candidate> candidates = unsortedCandidates.stream()
+				.sorted(Comparator.comparingInt(Candidate::gain).reversed())
+				// Can not register more symbols
+				.limit(MAX_SYMBOLS)
+				.toList();
 
 		SymbolTable table = new SymbolTable();
-		int code = 0;
-
 		for (Candidate c : candidates) {
-			if (code >= MAX_SYMBOLS) {
-				// Can not register more symbols
-				break;
-			}
-			table.addSymbol(c.bytes, code++);
+			table.addSymbol(c.bytes);
 		}
 
 		return table;

@@ -35,12 +35,18 @@ import java.util.Map;
  */
 public final class SymbolTable {
 	// enable fast lookup as long as encoding are needed
-	final Map<ByteArrayKey, Symbol> lookup = new HashMap<>();
+	final Map<ByteArrayKey, Symbol> lookup = HashMap.newHashMap(IFsstConstants.MAX_SYMBOLS);
 	// refer symbol by code for decoding
 	final List<Symbol> byCode = new ArrayList<>();
 	final List<Boolean> usedForEncoding = new ArrayList<>();
 
-	public void addSymbol(ByteArrayKey key, int code) {
+	public void addSymbol(ByteArrayKey key) {
+		int code = byCode.size();
+
+		if (code > IFsstConstants.MAX_SYMBOLS) {
+			throw new IllegalArgumentException("Too many symbols. max=%s".formatted(IFsstConstants.MAX_SYMBOLS));
+		}
+
 		Symbol s = new Symbol(key, code);
 		lookup.put(key, s);
 		byCode.add(s);

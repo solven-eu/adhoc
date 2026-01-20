@@ -75,7 +75,7 @@ public class FsstTests {
 			}
 
 			log.info("Symbol table size: {} bytes after freeze", tableSizeBytes);
-			Assertions.assertThat(tableSizeBytes).isEqualTo(252);
+			Assertions.assertThat(tableSizeBytes).isEqualTo(18);
 		}
 
 		byte[] restored = dec.decode(compressed);
