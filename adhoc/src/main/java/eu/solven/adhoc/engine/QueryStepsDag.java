@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jgrapht.GraphIterables;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -103,6 +104,11 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 	@Override
 	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getInducedToInducer() {
 		return inducedToInducer;
+	}
+
+	@Override
+	public long edgeCount() {
+		return inducedToInducer.iterables().edgeCount();
 	}
 
 }

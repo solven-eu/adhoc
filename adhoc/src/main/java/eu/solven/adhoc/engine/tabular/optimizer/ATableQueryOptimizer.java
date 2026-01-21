@@ -169,14 +169,23 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 				FilterMatcher.builder().filter(sliceFilter).onMissingColumn(FilterMatcher.failOnMissing()).build();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 
+		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
+
 		inducerValues.stream()
 				// filter the relevant rows from inducer
 				.filter(s -> filterMatcher.match(s.getSlice()))
 				// aggregate the accepted rows
-				.forEach(slice -> {
+				.forEach(inducerSlice -> {
 					// inducer have same or more columns than induced
-					IAdhocSlice inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
-					slice.getValueProvider().acceptReceiver(inducedValues.merge(inducedGroupBy));
+					IAdhocSlice inducedSlice;
+
+					if (sameColumns) {
+						// If columns are the same, we simply reuse the original slice
+						inducedSlice = inducerSlice.getSlice();
+					} else {
+						inducedSlice = inducedGroupBy(inducedColumns, inducerSlice.getSlice());
+					}
+					inducerSlice.getValueProvider().acceptReceiver(inducedValues.merge(inducedSlice));
 				});
 
 		// Given we reduced to a lower number of slices, it is relevant to compact
