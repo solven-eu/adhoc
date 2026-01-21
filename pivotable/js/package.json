@@ -1,6 +1,6 @@
 {
     "dependencies": {
-        "lodashEs": "npm:lodash@4.17.21",
+        "lodashEs": "npm:lodash@4.17.23",
         "vue": "3.5.27"
     },
     "devDependencies": {
