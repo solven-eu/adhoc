@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.Collection;
 import java.util.Map;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -58,4 +59,6 @@ public interface ISliceFactory {
 	IMapBuilderThroughKeys newMapBuilder();
 
 	IAdhocMap buildMap(IHasEntries hasEntries);
+
+	SequencedSetLikeList internKeyset(Collection<? extends String> keys);
 }

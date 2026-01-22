@@ -98,4 +98,16 @@ public class TestSequencedSetLikeList {
 		Assertions.assertThat((Set) abc).isEqualTo(bca).hasSameHashCodeAs(bca).isEqualTo(cab).hasSameHashCodeAs(cab);
 		Assertions.assertThat(abc.asList()).isEqualTo(List.of("a", "b", "c")).hasSameHashCodeAs(List.of("a", "b", "c"));
 	}
+
+	@Test
+	public void testAsList() {
+		SequencedSetLikeList abc = SequencedSetLikeList.fromSet(ImmutableSet.of("a", "c", "b"));
+		List<String> asList = abc.asList();
+		List<String> rawList = List.of("a", "c", "b");
+
+		Assertions.assertThat(asList).isEqualTo(rawList).hasSameHashCodeAs(rawList);
+		Assertions.assertThat(asList).element(0).isEqualTo("a");
+		Assertions.assertThat(asList).element(1).isEqualTo("c");
+		Assertions.assertThat(asList).element(2).isEqualTo("b");
+	}
 }

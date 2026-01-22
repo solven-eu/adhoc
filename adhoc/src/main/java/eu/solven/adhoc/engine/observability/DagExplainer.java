@@ -129,7 +129,8 @@ public class DagExplainer implements IDagExplainer {
 	public void explain(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
 		String cubeOrTable = holderType(queryId);
 		// a queried node may be a root, or an intermediate node if it is underlying of another root
-		log.info("[EXPLAIN] DAG on {}={} has {} inducers (i.e. leaves) leading to {} induced (i.e. vertices, including {} roots, through {} edges)",
+		log.info(
+				"[EXPLAIN] DAG on {}={} has {} inducers (i.e. leaves) leading to {} induced (i.e. vertices, including {} roots, through {} edges)",
 				cubeOrTable,
 				queryId.getCube(),
 				dag.getInducers().size(),

@@ -111,5 +111,5 @@ public interface IHasDagFromInducedToInducer {
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
-    long edgeCount();
+	long edgeCount();
 }

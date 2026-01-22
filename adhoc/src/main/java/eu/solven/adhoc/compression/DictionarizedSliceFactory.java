@@ -95,6 +95,15 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 			return getSequencedValueRaw(sequencedKeys.unorderedIndex(index));
 		}
 
+		@Override
+		public IAdhocMap retainAll(Collection<String> retainedColumns) {
+			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
+
+			int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();
+			IntFunction<Object> retainedSequencedValues = index -> sequencedValues.apply(sequencedIndexes[index]);
+
+			return new MapOverIntFunction(getFactory(), retainedKeyset.getKeys(), retainedSequencedValues);
+		}
 	}
 
 	/**

@@ -153,6 +153,9 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
+
+		// TODO We should not rely on Sorted columns in various cases. Typically, if inducer is `country, id` and
+		// induced is `id`, then inducer might be sorted but induced would not be written in sorted.
 		IMultitypeMergeableColumn<IAdhocSlice> inducedValues = factories.getColumnFactory()
 				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
@@ -214,13 +217,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	}
 
 	protected IAdhocSlice inducedGroupBy(NavigableSet<String> groupedByColumns, IAdhocSlice inducer) {
-		var induced = inducer.getFactory().newMapBuilder(groupedByColumns);
-
-		groupedByColumns.forEach(inducedColumn -> {
-			induced.append(inducer.getGroupBy(inducedColumn));
-		});
-
-		return induced.build().asSlice();
+		return inducer.retainAll(groupedByColumns);
 	}
 
 }

@@ -149,4 +149,9 @@ public class ProxiedAdhocMap implements IAdhocMap {
 		return refMap.get().asSlice();
 	}
 
+	@Override
+	public IAdhocMap retainAll(Collection<String> columns) {
+		return refMap.get().retainAll(columns);
+	}
+
 }

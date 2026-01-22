@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -54,10 +55,15 @@ public class StandardSliceFactory extends ASliceFactory {
 	public static class MapOverLists extends AbstractAdhocMap {
 
 		@NonNull
-		final ImmutableList<Object> sequencedValues;
+		final List<?> sequencedValues;
 
 		@Builder
-		public MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, ImmutableList<Object> sequencedValues) {
+		public MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, ImmutableList<?> sequencedValues) {
+			super(factory, keys);
+			this.sequencedValues = sequencedValues;
+		}
+
+		protected MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, List<?> sequencedValues) {
 			super(factory, keys);
 			this.sequencedValues = sequencedValues;
 		}
@@ -72,6 +78,26 @@ public class StandardSliceFactory extends ASliceFactory {
 			return sequencedValues.get(sequencedKeys.unorderedIndex(index));
 		}
 
+		@Override
+		public IAdhocMap retainAll(Collection<String> retainedColumns) {
+			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
+
+			int[] retainedIndexes = retainedKeyset.getSequencedIndexes();
+			List<?> retainedSequencedValues = new AbstractList<>() {
+
+				@Override
+				public int size() {
+					return retainedColumns.size();
+				}
+
+				@Override
+				public Object get(int index) {
+					return sequencedValues.get(retainedIndexes[index]);
+				}
+			};
+
+			return new MapOverLists(factory, retainedKeyset.getKeys(), retainedSequencedValues);
+		}
 	}
 
 	/**

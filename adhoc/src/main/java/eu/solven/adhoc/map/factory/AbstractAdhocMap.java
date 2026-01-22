@@ -24,7 +24,9 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -46,9 +48,11 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 /**
  * An abstract {@link IAdhocMap} based on on a {@link SequencedSetLikeList} as keySet, and a List as values.
@@ -60,7 +64,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 	@Getter
 	@NonNull
-	final ISliceFactory factory;
+	protected final ISliceFactory factory;
 
 	// Holds keys, in both sorted order, and unordered order ,with the information
 	// to map from one to the other
@@ -368,5 +372,34 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 		// Compare values
 		return AdhocMapComparisonHelpers.compareValues(this.size(), this::getSortedValueRaw, other::getSortedValueRaw);
+	}
+
+	/**
+	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Collection)}
+	 */
+	@Value
+	@Builder
+	public static class RetainedKeySet {
+		@NonNull
+		SequencedSetLikeList keys;
+
+		@NonNull
+		int[] sequencedIndexes;
+	}
+
+	protected RetainedKeySet retainKeyset(Collection<String> retainedColumns) {
+		SequencedSetLikeList retainedKeyset = factory.internKeyset(retainedColumns);
+
+		// TODO Cache it?
+		// TODO Throw if missing column?
+		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+		int[] sequencedIndexes = retainedColumns.stream().mapToInt(sequencedKeysAsList::indexOf).toArray();
+
+		return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+	}
+
+	@Override
+	public IAdhocMap retainAll(Collection<String> columns) {
+		throw new NotYetImplementedException("TODO");
 	}
 }

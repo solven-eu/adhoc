@@ -24,7 +24,9 @@ package eu.solven.adhoc.map;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -162,6 +164,17 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 			throw new UnsupportedAsImmutableException();
 		}
 
+	}
+
+	@Override
+	public IAdhocMap retainAll(Collection<String> retainedColumns) {
+		Map<String, ?> retainedMask = new LinkedHashMap<>(mask);
+		if (!retainedMask.keySet().retainAll(retainedColumns)) {
+			// It appears the mask contains no retained column
+			retainedMask = mask;
+		}
+
+		return MaskedAdhocMap.builder().decorated(decorated.retainAll(retainedColumns)).mask(retainedMask).build();
 	}
 
 }

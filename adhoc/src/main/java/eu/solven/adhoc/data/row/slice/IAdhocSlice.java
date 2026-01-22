@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.row.slice;
 
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -89,5 +90,13 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRec
 	IAdhocSlice addColumns(Map<String, ?> masks);
 
 	ISliceFactory getFactory();
+
+	/**
+	 * Make an immutable copy, where only given columns are retained.
+	 * 
+	 * @param columns
+	 * @return
+	 */
+	IAdhocSlice retainAll(NavigableSet<String> columns);
 
 }

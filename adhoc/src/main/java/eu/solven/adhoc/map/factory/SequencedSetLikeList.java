@@ -34,12 +34,13 @@ import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import com.google.common.base.Preconditions;
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ForwardingSet;
 import com.google.common.collect.ImmutableSortedSet;
-
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
@@ -48,7 +49,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import lombok.Builder;
 import lombok.NonNull;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A {@link SequencedSet} with information to build the order in the original {@link Set}.
@@ -234,7 +234,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 				if (size != otherList.size()) {
 					return false;
 				} else if (otherList instanceof RandomAccess) {
-					for(int i = 0; i < size; ++i) {
+					for (int i = 0; i < size; ++i) {
 						if (!Objects.equals(this.get(i), otherList.get(i))) {
 							return false;
 						}
@@ -249,16 +249,23 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 		// from ImmutableList. Improve AbstractList by not creating an iterator given this is RandomAccess
 		@Override
+		@SuppressWarnings({ "checkstyle:MagicNumber", "checkstyle:AvoidInlineConditionals" })
 		public int hashCode() {
 			int hashCode = 1;
 			int n = this.size();
 
-			for(int i = 0; i < n; ++i) {
+			for (int i = 0; i < n; ++i) {
 				Object e = this.get(i);
-				hashCode = 31 * hashCode + (e==null ? 0 : e.hashCode()) ;
+				hashCode = 31 * hashCode + (e == null ? 0 : e.hashCode());
 			}
 
 			return hashCode;
+		}
+
+		@SuppressFBWarnings("IA_AMBIGUOUS_INVOCATION_OF_INHERITED_OR_OUTER_METHOD")
+		@Override
+		public Iterator<String> iterator() {
+			return super.iterator();
 		}
 	}
 
