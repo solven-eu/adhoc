@@ -40,6 +40,7 @@ import java.util.stream.IntStream;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -389,7 +390,15 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		SequencedSetLikeList retainedKeyset = factory.internKeyset(Sets.intersection(sequencedKeys, retainedColumns));
+		Set<String> intersection;
+		if (sequencedKeys.containsAll(retainedColumns)) {
+			// In most cases, we retains a subSet
+			intersection = retainedColumns;
+		} else {
+			// `Sets.intersection` necessarily creates a new Set
+			intersection = Sets.intersection(sequencedKeys, retainedColumns);
+		}
+		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
 
 		// TODO Cache it?
 		List<String> sequencedKeysAsList = this.sequencedKeys.asList();

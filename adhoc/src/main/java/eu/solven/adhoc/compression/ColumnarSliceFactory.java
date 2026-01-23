@@ -138,6 +138,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
+	@Deprecated
 	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
 		@NonNull
 		ISliceFactory factory;

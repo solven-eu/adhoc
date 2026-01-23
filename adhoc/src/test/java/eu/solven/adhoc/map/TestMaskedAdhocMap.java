@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -101,56 +102,46 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testRetainAll_excludeMask() {
-		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		IAdhocMap decorated = StandardSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
-		IAdhocMap retainedDecorated = Mockito.mock(IAdhocMap.class);
-		Mockito.when(decorated.retainAll(Set.of("a"))).thenReturn(retainedDecorated);
-
 		IAdhocMap retainA = masked.retainAll(Set.of("a"));
 
-		Mockito.verify(decorated, Mockito.times(1)).retainAll(Set.of("a"));
-
-		Assertions.assertThat((Map) retainA).isSameAs(retainedDecorated);
+		Assertions.assertThat((Map) retainA).isEqualTo(Map.of("a", "a1"));
 	}
 
 	@Test
 	public void testRetainAll_excludeOnlyMask() {
-		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		IAdhocMap decorated = StandardSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
-		IAdhocMap retainedDecorated = Mockito.mock(IAdhocMap.class);
-		Mockito.when(decorated.retainAll(Set.of("b"))).thenReturn(retainedDecorated);
-
 		IAdhocMap retainA = masked.retainAll(Set.of("b"));
-
-		Mockito.verify(decorated, Mockito.times(1)).retainAll(Set.of("b"));
 
 		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
 			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
-			Assertions.assertThat((Map) masked3.decorated).isSameAs(retainedDecorated);
+			Assertions.assertThat((Map) masked3.decorated).isEqualTo(Map.of("a", "a1"));
 			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("b", "b2"));
 		});
 	}
 
 	@Test
 	public void testRetainAll_excludePartialMaskPartialDecorated() {
-		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		IAdhocMap decorated = StandardSliceFactory.builder()
+				.build()
+				.newMapBuilder(List.of("a", "b"))
+				.append("a1")
+				.append("b1")
+				.build();
 		Map<String, ?> mask = Map.of("c", "c2", "d", "d2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
-		IAdhocMap retainedDecorated = Mockito.mock(IAdhocMap.class);
-		Mockito.when(decorated.retainAll(Set.of("b", "c"))).thenReturn(retainedDecorated);
-
 		IAdhocMap retainA = masked.retainAll(Set.of("b", "c"));
-
-		Mockito.verify(decorated, Mockito.times(1)).retainAll(Set.of("b", "c"));
 
 		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
 			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
-			Assertions.assertThat((Map) masked3.decorated).isSameAs(retainedDecorated);
+			Assertions.assertThat((Map) masked3.decorated).isEqualTo(Map.of("b", "b1"));
 			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("c", "c2"));
 		});
 	}

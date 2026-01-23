@@ -26,9 +26,12 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -167,14 +170,39 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 
 	@Override
 	public IAdhocMap retainAll(Set<String> retainedColumns) {
-		Map<String, ?> retainedMask = new LinkedHashMap<>(mask);
-		boolean retainedHasImpactOnMask = retainedMask.keySet().retainAll(retainedColumns);
-		if (!retainedHasImpactOnMask) {
-			// It appears the mask contains no retained column
+		Map<Boolean, ImmutableSet<String>> partitioned = retainedColumns.stream()
+				.collect(Collectors.partitioningBy(c -> mask.containsKey(c), ImmutableSet.toImmutableSet()));
+
+		Map<String, ?> retainedMask;
+		if (partitioned.get(true).isEmpty()) {
+			// no impact on mask
+			retainedMask = Map.of();
+		} else if (partitioned.get(true).size() == mask.size()) {
+			// no impact on mask
 			retainedMask = mask;
+		} else {
+			retainedMask = new LinkedHashMap<>(mask);
+			retainedMask.keySet().retainAll(retainedColumns);
 		}
 
-		IAdhocMap retainedDecorated = decorated.retainAll(retainedColumns);
+		IAdhocMap retainedDecorated;
+		if (partitioned.get(false).isEmpty()) {
+			// no impact on decorated
+			retainedDecorated = decorated;
+		} else if (retainedColumns.size() == partitioned.get(false).size()) {
+			// Re-use the original Collection, which is typically a Guava ImmutableCollection
+			retainedDecorated = decorated.retainAll(retainedColumns);
+		} else {
+			retainedDecorated = decorated.retainAll(ImmutableSet.copyOf(partitioned.get(false)));
+		}
+
+		if (retainedMask.size() == mask.size()) {
+			// It appears the mask contains no retained column
+			retainedMask = mask;
+		} else {
+			retainedDecorated = decorated.retainAll(retainedColumns);
+		}
+
 		if (retainedMask.isEmpty()) {
 			return retainedDecorated;
 		}
