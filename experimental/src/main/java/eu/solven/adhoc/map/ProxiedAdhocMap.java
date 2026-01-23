@@ -150,7 +150,7 @@ public class ProxiedAdhocMap implements IAdhocMap {
 	}
 
 	@Override
-	public IAdhocMap retainAll(Collection<String> columns) {
+	public IAdhocMap retainAll(Set<String> columns) {
 		return refMap.get().retainAll(columns);
 	}
 

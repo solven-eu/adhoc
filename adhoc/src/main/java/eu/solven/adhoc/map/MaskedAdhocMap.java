@@ -24,7 +24,6 @@ package eu.solven.adhoc.map;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -46,7 +45,7 @@ import lombok.Builder;
  */
 @Builder
 public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
-	final IAdhocMap decorated;
+	protected final IAdhocMap decorated;
 	final Map<String, ?> mask;
 
 	/**
@@ -167,14 +166,20 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	}
 
 	@Override
-	public IAdhocMap retainAll(Collection<String> retainedColumns) {
+	public IAdhocMap retainAll(Set<String> retainedColumns) {
 		Map<String, ?> retainedMask = new LinkedHashMap<>(mask);
-		if (!retainedMask.keySet().retainAll(retainedColumns)) {
+		boolean retainedHasImpactOnMask = retainedMask.keySet().retainAll(retainedColumns);
+		if (!retainedHasImpactOnMask) {
 			// It appears the mask contains no retained column
 			retainedMask = mask;
 		}
 
-		return MaskedAdhocMap.builder().decorated(decorated.retainAll(retainedColumns)).mask(retainedMask).build();
+		IAdhocMap retainedDecorated = decorated.retainAll(retainedColumns);
+		if (retainedMask.isEmpty()) {
+			return retainedDecorated;
+		}
+
+		return MaskedAdhocMap.builder().decorated(retainedDecorated).mask(retainedMask).build();
 	}
 
 }

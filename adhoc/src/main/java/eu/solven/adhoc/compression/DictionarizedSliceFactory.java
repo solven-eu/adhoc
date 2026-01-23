@@ -24,6 +24,7 @@ package eu.solven.adhoc.compression;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 
@@ -96,7 +97,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		}
 
 		@Override
-		public IAdhocMap retainAll(Collection<String> retainedColumns) {
+		public IAdhocMap retainAll(Set<String> retainedColumns) {
 			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
 
 			int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();

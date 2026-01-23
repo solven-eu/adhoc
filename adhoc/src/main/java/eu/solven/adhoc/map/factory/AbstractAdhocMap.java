@@ -39,6 +39,7 @@ import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -48,7 +49,6 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import eu.solven.pepper.core.PepperLogHelper;
-import it.unimi.dsi.fastutil.ints.IntArrays;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -388,16 +388,17 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		int[] sequencedIndexes;
 	}
 
-	protected RetainedKeySet retainKeyset(Collection<String> retainedColumns) {
-		SequencedSetLikeList retainedKeyset = factory.internKeyset(retainedColumns);
+	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
+		SequencedSetLikeList retainedKeyset = factory.internKeyset(Sets.intersection(sequencedKeys, retainedColumns));
 
 		// TODO Cache it?
-		// TODO Throw if missing column?
 		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
-		int[] sequencedIndexes = retainedColumns.stream().mapToInt(retainedColumn -> {
+		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
 			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
 
 			if (originalIndex < 0) {
+				// Throw is retaining a missing column: it does not follow resilient behavior of standard `.retainALl`
+				// but it may help having good performances.
 				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
 			}
 
@@ -408,7 +409,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	@Override
-	public IAdhocMap retainAll(Collection<String> columns) {
+	public IAdhocMap retainAll(Set<String> columns) {
 		throw new NotYetImplementedException("TODO");
 	}
 }

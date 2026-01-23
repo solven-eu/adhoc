@@ -80,13 +80,11 @@ public class TestStandardSliceFactory {
 		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
 
 		// disjoint
-		Assertions.assertThatThrownBy(() -> aAndB.retainAll(Set.of("c")))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Missing c amongst [a, b]");
+		IAdhocMap disjoint = aAndB.retainAll(Set.of("c"));
+		Assertions.assertThat((Map) disjoint).isEqualTo(Map.of()).hasSameHashCodeAs(Map.of());
 
 		// joint
-		Assertions.assertThatThrownBy(() -> aAndB.retainAll(Set.of("a", "c")))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Missing c amongst [a, b]");
+		IAdhocMap joint = aAndB.retainAll(Set.of("a", "c"));
+		Assertions.assertThat((Map) joint).isEqualTo(Map.of("a", "a1")).hasSameHashCodeAs(Map.of("a", "a1"));
 	}
 }

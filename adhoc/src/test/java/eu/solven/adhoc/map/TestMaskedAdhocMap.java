@@ -23,6 +23,7 @@
 package eu.solven.adhoc.map;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -96,5 +97,61 @@ public class TestMaskedAdhocMap {
 
 		Assertions.assertThat((Map) masked).containsKey("b");
 		Mockito.verify(decorated, Mockito.times(1)).containsKey("b");
+	}
+
+	@Test
+	public void testRetainAll_excludeMask() {
+		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retainedDecorated = Mockito.mock(IAdhocMap.class);
+		Mockito.when(decorated.retainAll(Set.of("a"))).thenReturn(retainedDecorated);
+
+		IAdhocMap retainA = masked.retainAll(Set.of("a"));
+
+		Mockito.verify(decorated, Mockito.times(1)).retainAll(Set.of("a"));
+
+		Assertions.assertThat((Map) retainA).isSameAs(retainedDecorated);
+	}
+
+	@Test
+	public void testRetainAll_excludeOnlyMask() {
+		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retainedDecorated = Mockito.mock(IAdhocMap.class);
+		Mockito.when(decorated.retainAll(Set.of("b"))).thenReturn(retainedDecorated);
+
+		IAdhocMap retainA = masked.retainAll(Set.of("b"));
+
+		Mockito.verify(decorated, Mockito.times(1)).retainAll(Set.of("b"));
+
+		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
+			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
+			Assertions.assertThat((Map) masked3.decorated).isSameAs(retainedDecorated);
+			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("b", "b2"));
+		});
+	}
+
+	@Test
+	public void testRetainAll_excludePartialMaskPartialDecorated() {
+		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
+		Map<String, ?> mask = Map.of("c", "c2", "d", "d2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retainedDecorated = Mockito.mock(IAdhocMap.class);
+		Mockito.when(decorated.retainAll(Set.of("b", "c"))).thenReturn(retainedDecorated);
+
+		IAdhocMap retainA = masked.retainAll(Set.of("b", "c"));
+
+		Mockito.verify(decorated, Mockito.times(1)).retainAll(Set.of("b", "c"));
+
+		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
+			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
+			Assertions.assertThat((Map) masked3.decorated).isSameAs(retainedDecorated);
+			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("c", "c2"));
+		});
 	}
 }
