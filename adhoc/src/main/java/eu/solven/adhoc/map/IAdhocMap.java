@@ -54,6 +54,7 @@ public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<I
 	/**
 	 * 
 	 * @param columns
+	 *            MUST be a subset of the existing columns.
 	 * @return a new (immutable) IAdhocMap where only given keys has been retained.
 	 */
 	IAdhocMap retainAll(Collection<String> columns);

@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.measure.transformator.MapWithNulls;
 
 public class TestStandardSliceFactory {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
@@ -48,7 +49,7 @@ public class TestStandardSliceFactory {
 			Assertions.assertThat(factory.isNotOrdered(hashSet)).isFalse();
 		}
 
-		// HashMap keySet is considered ordered, as we expect to iterate in `.values` which has same ordering as
+		// HashMap keySet is kind-of ordered, in the sense we expect to iterate in `.values` with same ordering as
 		// `.keySet`
 		{
 			HashMap<String, Object> hashMap = new HashMap<>();
@@ -72,5 +73,20 @@ public class TestStandardSliceFactory {
 
 		IAdhocMap onlyB = aAndB.retainAll(Set.of("b"));
 		Assertions.assertThat((Map) onlyB).isEqualTo(Map.of("b", "b1")).hasSameHashCodeAs(Map.of("b", "b1"));
+	}
+
+	@Test
+	public void testRetainNotIn() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+
+		// disjoint
+		Assertions.assertThatThrownBy(() -> aAndB.retainAll(Set.of("c")))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Missing c amongst [a, b]");
+
+		// joint
+		Assertions.assertThatThrownBy(() -> aAndB.retainAll(Set.of("a", "c")))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Missing c amongst [a, b]");
 	}
 }

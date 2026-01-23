@@ -48,6 +48,7 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import eu.solven.pepper.core.PepperLogHelper;
+import it.unimi.dsi.fastutil.ints.IntArrays;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -393,7 +394,15 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		// TODO Cache it?
 		// TODO Throw if missing column?
 		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
-		int[] sequencedIndexes = retainedColumns.stream().mapToInt(sequencedKeysAsList::indexOf).toArray();
+		int[] sequencedIndexes = retainedColumns.stream().mapToInt(retainedColumn -> {
+			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
+
+			if (originalIndex < 0) {
+				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+			}
+
+			return originalIndex;
+		}).toArray();
 
 		return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
 	}

@@ -92,7 +92,13 @@ public class StandardSliceFactory extends ASliceFactory {
 
 				@Override
 				public Object get(int index) {
-					return sequencedValues.get(retainedIndexes[index]);
+					int originalIndex = retainedIndexes[index];
+					if (originalIndex == -1) {
+						// retained a not present column
+						return null;
+					} else {
+						return sequencedValues.get(originalIndex);
+					}
 				}
 			};
 
