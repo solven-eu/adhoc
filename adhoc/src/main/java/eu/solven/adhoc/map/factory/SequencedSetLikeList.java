@@ -28,13 +28,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Objects;
+import java.util.RandomAccess;
 import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ForwardingSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterators;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
@@ -202,19 +208,69 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		}
 	}
 
+	protected class SequenceSetAsList extends AbstractList<String> implements RandomAccess {
+
+		@Override
+		public int size() {
+			return SequencedSetLikeList.this.size();
+		}
+
+		@Override
+		public String get(int index) {
+			return SequencedSetLikeList.this.getKey(index);
+		}
+
+		// from Guava ImmutableList/Lists.equalsImpl
+		@Override
+		public boolean equals(@Nullable Object other) {
+			if (other == null) {
+				return false;
+			} else if (other == this) {
+				return true;
+			} else if (!(other instanceof List<?> otherList)) {
+				return false;
+			} else {
+				int size = this.size();
+				if (size != otherList.size()) {
+					return false;
+				} else if (otherList instanceof RandomAccess) {
+					for (int i = 0; i < size; ++i) {
+						if (!Objects.equals(this.get(i), otherList.get(i))) {
+							return false;
+						}
+					}
+
+					return true;
+				} else {
+					return Iterators.elementsEqual(this.iterator(), otherList.iterator());
+				}
+			}
+		}
+
+		// from ImmutableList. Improve AbstractList by not creating an iterator given this is RandomAccess
+		@Override
+		@SuppressWarnings({ "checkstyle:MagicNumber", "checkstyle:AvoidInlineConditionals" })
+		public int hashCode() {
+			int hashCode = 1;
+			int n = this.size();
+
+			for (int i = 0; i < n; ++i) {
+				Object e = this.get(i);
+				hashCode = 31 * hashCode + (e == null ? 0 : e.hashCode());
+			}
+
+			return hashCode;
+		}
+
+		@SuppressFBWarnings("IA_AMBIGUOUS_INVOCATION_OF_INHERITED_OR_OUTER_METHOD")
+		@Override
+		public Iterator<String> iterator() {
+			return super.iterator();
+		}
+	}
+
 	public List<String> asList() {
-		return new AbstractList<>() {
-
-			@Override
-			public int size() {
-				return SequencedSetLikeList.this.size();
-			}
-
-			@Override
-			public String get(int index) {
-				return SequencedSetLikeList.this.getKey(index);
-			}
-		};
+		return new SequenceSetAsList();
 	}
 
 }

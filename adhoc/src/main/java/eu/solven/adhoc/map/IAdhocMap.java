@@ -24,6 +24,7 @@ package eu.solven.adhoc.map;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -49,5 +50,13 @@ public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<I
 	IAdhocSlice asSlice();
 
 	ISliceFactory getFactory();
+
+	/**
+	 * 
+	 * @param columns
+	 *            SHOULD be a subset of the existing columns.
+	 * @return a new (immutable) IAdhocMap where only given keys has been retained.
+	 */
+	IAdhocMap retainAll(Set<String> columns);
 
 }

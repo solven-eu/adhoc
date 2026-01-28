@@ -153,6 +153,9 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
+
+		// TODO We should not rely on Sorted columns in various cases. Typically, if inducer is `country, id` and
+		// induced is `id`, then inducer might be sorted but induced would not be written in sorted.
 		IMultitypeMergeableColumn<IAdhocSlice> inducedValues = factories.getColumnFactory()
 				.makeColumn(aggregation, CombinatorQueryStep.sumSizes(Set.of(inducerValues)));
 
@@ -169,14 +172,23 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 				FilterMatcher.builder().filter(sliceFilter).onMissingColumn(FilterMatcher.failOnMissing()).build();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 
+		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
+
 		inducerValues.stream()
 				// filter the relevant rows from inducer
 				.filter(s -> filterMatcher.match(s.getSlice()))
 				// aggregate the accepted rows
-				.forEach(slice -> {
+				.forEach(inducerSlice -> {
 					// inducer have same or more columns than induced
-					IAdhocSlice inducedGroupBy = inducedGroupBy(inducedColumns, slice.getSlice());
-					slice.getValueProvider().acceptReceiver(inducedValues.merge(inducedGroupBy));
+					IAdhocSlice inducedSlice;
+
+					if (sameColumns) {
+						// If columns are the same, we simply reuse the original slice
+						inducedSlice = inducerSlice.getSlice();
+					} else {
+						inducedSlice = inducedGroupBy(inducedColumns, inducerSlice.getSlice());
+					}
+					inducerSlice.getValueProvider().acceptReceiver(inducedValues.merge(inducedSlice));
 				});
 
 		// Given we reduced to a lower number of slices, it is relevant to compact
@@ -205,13 +217,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	}
 
 	protected IAdhocSlice inducedGroupBy(NavigableSet<String> groupedByColumns, IAdhocSlice inducer) {
-		var induced = inducer.getFactory().newMapBuilder(groupedByColumns);
-
-		groupedByColumns.forEach(inducedColumn -> {
-			induced.append(inducer.getGroupBy(inducedColumn));
-		});
-
-		return induced.build().asSlice();
+		return inducer.retainAll(groupedByColumns);
 	}
 
 }

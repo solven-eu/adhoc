@@ -25,6 +25,7 @@ package eu.solven.adhoc.map.factory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -32,6 +33,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.map.IAdhocMap;
 
 public class TestStandardSliceFactory {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();
@@ -45,7 +48,7 @@ public class TestStandardSliceFactory {
 			Assertions.assertThat(factory.isNotOrdered(hashSet)).isFalse();
 		}
 
-		// HashMap keySet is considered ordered, as we expect to iterate in `.values` which has same ordering as
+		// HashMap keySet is kind-of ordered, in the sense we expect to iterate in `.values` with same ordering as
 		// `.keySet`
 		{
 			HashMap<String, Object> hashMap = new HashMap<>();
@@ -58,5 +61,29 @@ public class TestStandardSliceFactory {
 		Assertions.assertThat(factory.isNotOrdered(List.of())).isFalse();
 		Assertions.assertThat(factory.isNotOrdered(ImmutableList.of())).isFalse();
 		Assertions.assertThat(factory.isNotOrdered(ImmutableSet.of())).isFalse();
+	}
+
+	@Test
+	public void testRetainAll() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+
+		IAdhocMap onlyA = aAndB.retainAll(Set.of("a"));
+		Assertions.assertThat((Map) onlyA).isEqualTo(Map.of("a", "a1")).hasSameHashCodeAs(Map.of("a", "a1"));
+
+		IAdhocMap onlyB = aAndB.retainAll(Set.of("b"));
+		Assertions.assertThat((Map) onlyB).isEqualTo(Map.of("b", "b1")).hasSameHashCodeAs(Map.of("b", "b1"));
+	}
+
+	@Test
+	public void testRetainNotIn() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+
+		// disjoint
+		IAdhocMap disjoint = aAndB.retainAll(Set.of("c"));
+		Assertions.assertThat((Map) disjoint).isEqualTo(Map.of()).hasSameHashCodeAs(Map.of());
+
+		// joint
+		IAdhocMap joint = aAndB.retainAll(Set.of("a", "c"));
+		Assertions.assertThat((Map) joint).isEqualTo(Map.of("a", "a1")).hasSameHashCodeAs(Map.of("a", "a1"));
 	}
 }

@@ -24,6 +24,7 @@ package eu.solven.adhoc.compression;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 
@@ -95,6 +96,15 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 			return getSequencedValueRaw(sequencedKeys.unorderedIndex(index));
 		}
 
+		@Override
+		public IAdhocMap retainAll(Set<String> retainedColumns) {
+			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
+
+			int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();
+			IntFunction<Object> retainedSequencedValues = index -> sequencedValues.apply(sequencedIndexes[index]);
+
+			return new MapOverIntFunction(getFactory(), retainedKeyset.getKeys(), retainedSequencedValues);
+		}
 	}
 
 	/**
@@ -176,6 +186,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
+	@Deprecated
 	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
 		@NonNull
 		ISliceFactory factory;

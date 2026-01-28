@@ -90,6 +90,11 @@ public interface ITableQueryOptimizer {
 		public static SplitTableQueries empty() {
 			return SplitTableQueries.builder().inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class)).build();
 		}
+
+		@Override
+		public long edgeCount() {
+			return inducedToInducer.iterables().edgeCount();
+		}
 	}
 
 	/**

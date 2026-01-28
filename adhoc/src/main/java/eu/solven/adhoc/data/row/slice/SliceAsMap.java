@@ -24,6 +24,7 @@ package eu.solven.adhoc.data.row.slice;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -205,6 +206,11 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	@Override
 	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
 		asMap.forEach(action);
+	}
+
+	@Override
+	public IAdhocSlice retainAll(NavigableSet<String> columns) {
+		return fromMap(factory, asMap.retainAll(columns));
 	}
 
 }

@@ -110,4 +110,6 @@ public interface IHasDagFromInducedToInducer {
 				.filter(s -> inducedToInducer.inDegreeOf(s) == 0)
 				.collect(ImmutableSet.toImmutableSet());
 	}
+
+	long edgeCount();
 }

@@ -25,9 +25,12 @@ package eu.solven.adhoc.map;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -44,7 +47,7 @@ import lombok.Builder;
  */
 @Builder
 public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
-	final IAdhocMap decorated;
+	protected final IAdhocMap decorated;
 	final Map<String, ?> mask;
 
 	/**
@@ -162,6 +165,48 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 			throw new UnsupportedAsImmutableException();
 		}
 
+	}
+
+	@Override
+	public IAdhocMap retainAll(Set<String> retainedColumns) {
+		Map<Boolean, ImmutableSet<String>> partitioned = retainedColumns.stream()
+				.collect(Collectors.partitioningBy(mask::containsKey, ImmutableSet.toImmutableSet()));
+
+		Map<String, ?> retainedMask;
+		if (partitioned.get(true).isEmpty()) {
+			// no impact on mask
+			retainedMask = Map.of();
+		} else if (partitioned.get(true).size() == mask.size()) {
+			// no impact on mask
+			retainedMask = mask;
+		} else {
+			retainedMask = new LinkedHashMap<>(mask);
+			retainedMask.keySet().retainAll(retainedColumns);
+		}
+
+		IAdhocMap retainedDecorated;
+		if (partitioned.get(false).isEmpty()) {
+			// no impact on decorated
+			retainedDecorated = decorated;
+		} else if (retainedColumns.size() == partitioned.get(false).size()) {
+			// Re-use the original Collection, which is typically a Guava ImmutableCollection
+			retainedDecorated = decorated.retainAll(retainedColumns);
+		} else {
+			retainedDecorated = decorated.retainAll(ImmutableSet.copyOf(partitioned.get(false)));
+		}
+
+		if (retainedMask.size() == mask.size()) {
+			// It appears the mask contains no retained column
+			retainedMask = mask;
+		} else {
+			retainedDecorated = decorated.retainAll(retainedColumns);
+		}
+
+		if (retainedMask.isEmpty()) {
+			return retainedDecorated;
+		}
+
+		return MaskedAdhocMap.builder().decorated(retainedDecorated).mask(retainedMask).build();
 	}
 
 }

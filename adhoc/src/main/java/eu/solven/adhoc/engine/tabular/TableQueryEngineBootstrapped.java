@@ -923,7 +923,15 @@ public class TableQueryEngineBootstrapped {
 					.duration(elapsed)
 					.build());
 
-			stepToValues.put(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
+			ISliceToValue alreadyPresent =
+					stepToValues.putIfAbsent(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
+			if (alreadyPresent != null) {
+				// This may happen on CONCURRENT queries, as we might request the same underlying multiple times.
+				log.info("Already present: induced={} (from {} to {})",
+						induced,
+						alreadyPresent.size(),
+						inducedValues.size());
+			}
 
 			inducerAndInduced.registerExecutionFeedback(induced,
 					SizeAndDuration.builder().size(inducedValues.size()).duration(elapsed).build());

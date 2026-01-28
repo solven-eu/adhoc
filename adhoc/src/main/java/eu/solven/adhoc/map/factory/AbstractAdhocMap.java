@@ -24,7 +24,9 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -37,6 +39,7 @@ import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -46,9 +49,11 @@ import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 
 /**
  * An abstract {@link IAdhocMap} based on on a {@link SequencedSetLikeList} as keySet, and a List as values.
@@ -60,7 +65,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 	@Getter
 	@NonNull
-	final ISliceFactory factory;
+	protected final ISliceFactory factory;
 
 	// Holds keys, in both sorted order, and unordered order ,with the information
 	// to map from one to the other
@@ -368,5 +373,51 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 		// Compare values
 		return AdhocMapComparisonHelpers.compareValues(this.size(), this::getSortedValueRaw, other::getSortedValueRaw);
+	}
+
+	/**
+	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Collection)}
+	 */
+	@Value
+	@Builder
+	public static class RetainedKeySet {
+		@NonNull
+		SequencedSetLikeList keys;
+
+		@NonNull
+		int[] sequencedIndexes;
+	}
+
+	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
+		Set<String> intersection;
+		if (sequencedKeys.containsAll(retainedColumns)) {
+			// In most cases, we retains a subSet
+			intersection = retainedColumns;
+		} else {
+			// `Sets.intersection` necessarily creates a new Set
+			intersection = Sets.intersection(sequencedKeys, retainedColumns);
+		}
+		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
+
+		// TODO Cache it?
+		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
+			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
+
+			if (originalIndex < 0) {
+				// Throw is retaining a missing column: it does not follow resilient behavior of standard `.retainALl`
+				// but it may help having good performances.
+				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+			}
+
+			return originalIndex;
+		}).toArray();
+
+		return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+	}
+
+	@Override
+	public IAdhocMap retainAll(Set<String> columns) {
+		throw new NotYetImplementedException("TODO");
 	}
 }
