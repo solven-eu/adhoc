@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,16 +22,18 @@
  */
 package eu.solven.adhoc.fsst.v3;
 
+import com.google.common.base.Strings;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 /**
  * Core constants for FSST compression algorithm
- * 
+ *
  * Represents a Symbol in FSST. A Symbol is a contiguous chunk of bytes which can be represented by a shorter
  * representation (e.g. a single byte).
- * 
+ *
  * @author Benoit Lacelle
  */
 // https://github.com/axiomhq/fsst/blob/main/symbol.go
@@ -43,13 +45,27 @@ public final class SymbolUtil implements IFsstConstants {
 		// ByteBuffer buf = ByteBuffer.wrap(b, offset, 8);
 		// buf.order(ByteOrder.LITTLE_ENDIAN);
 		// return buf.getLong();
-		long value = 0;
-
 		int length = Math.min(in.length - offset, 8);
-		for (int i = 0; i < length; i++) {
-			// make sure we cast to long BEFORE bit-shifting
-			value |= (in[i + offset] & 0xFFL) << (8 * i);
+
+		long value = switch (length) {
+		case 1 -> (in[offset] & 0xFFL);
+		case 2, 3, 4, 5, 6, 7 -> {
+			long v = 0;
+			for (int i = 0; i < length; i++) {
+				// make sure we cast to long BEFORE bit-shifting
+				v |= (in[i + offset] & 0xFFL) << (8 * i);
+			}
+			yield v;
 		}
+        // BEWARE JMH suggests unrolling the loop has no benefit
+		default -> (in[offset] & 0xFFL) | (in[offset + 1] & 0xFFL) << 8
+				| (in[offset + 2] & 0xFFL) << 16
+				| (in[offset + 3] & 0xFFL) << 24
+				| (in[offset + 4] & 0xFFL) << 32
+				| (in[offset + 5] & 0xFFL) << 40
+				| (in[offset + 6] & 0xFFL) << 48
+				| (in[offset + 7] & 0xFFL) << 56;
+		};
 
 		return value;
 	}
@@ -140,7 +156,9 @@ public final class SymbolUtil implements IFsstConstants {
 		@Override
 		public String toString() {
 			// each byte is represented by 2 chars
-			String valueAsString = Long.toHexString(Long.reverseBytes(val)).substring(0, 2 * length());
+			String hexString = Long.toHexString(Long.reverseBytes(val));
+			int length = 2 * length();
+			String valueAsString = Strings.padStart(hexString, length, '0').substring(0, length);
 			return "length=%s code=%s value=%s".formatted(length(), code(), valueAsString);
 		}
 	}

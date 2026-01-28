@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import eu.solven.adhoc.fsst.v3.Counters.IntPair;
@@ -201,10 +202,15 @@ public class FsstTrain {
 	/**
 	 * QSym represents a candidate symbol with gain.
 	 */
-	public record QSym(Symbol symbol, int gain) {
+	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
 		// larger val breaks tie
 		public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
+
+		@Override
+		public int compareTo(QSym o) {
+			return COMPARATOR.compare(this, o);
+		}
 	}
 
 	/**
@@ -266,11 +272,24 @@ public class FsstTrain {
 		}
 
 		// Extract top-K into list in descending order
-		List<QSym> sortedList =
-				candidates.values().stream().sorted(QSym.COMPARATOR).limit(SymbolUtil.fsstMaxSymbols).toList();
+		PriorityQueue<QSym> pq = new PriorityQueue<>(SymbolUtil.fsstMaxSymbols);
+		
+		for (QSym x : candidates.values()) {
+			if (pq.size() < SymbolUtil.fsstMaxSymbols) {
+				pq.offer(x);
+			} else if (x.compareTo(pq.peek()) < 0) {
+				pq.poll();
+				pq.offer(x);
+			}
+		}
+
+		List<QSym> sortedList = new ArrayList<>(pq.size());
+		while (!pq.isEmpty()) {
+			sortedList.add(pq.poll());
+		}
 
 		SymbolTableTraining newSymboltable = SymbolTableTraining.makeSymbolTable();
-		for (QSym q : sortedList.reversed()) {
+		for (QSym q : sortedList) {
 			if (!newSymboltable.addSymbol(q.symbol)) {
 				break;
 			}
@@ -337,7 +356,7 @@ public class FsstTrain {
 
 			int numChunks = (inputs[idx].length + FSST_SAMPLE_LINE - 1) / FSST_SAMPLE_LINE;
 			rng = SymbolUtil.fsstHash(rng);
-			int off = FSST_SAMPLE_LINE * (int) (rng % numChunks);
+			int off = FSST_SAMPLE_LINE * (int) Long.remainderUnsigned(rng, numChunks);
 
 			int n = Math.min(inputs[idx].length - off, FSST_SAMPLE_LINE);
 			if (pos + n > FSST_SAMPLE_MAX_SZ) {

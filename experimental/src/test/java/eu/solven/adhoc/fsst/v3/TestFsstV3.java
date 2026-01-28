@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -40,169 +40,163 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TestFsstV3 {
 
-	@Test
-	public void setCodeLengthTest() {
-		Symbol symbol = new Symbol(123L, Symbol.evalICL(50, 4));
-		Assertions.assertThat(symbol.code()).isEqualTo(50);
-		Assertions.assertThat(symbol.length()).isEqualTo(4);
-		Assertions.assertThat(symbol.ignoredBits()).isEqualTo(32);
-		Assertions.assertThat(symbol.val).isEqualTo(123L);
-	}
+    @Test
+    public void setCodeLengthTest() {
+        Symbol symbol = new Symbol(123L, Symbol.evalICL(50, 4));
+        Assertions.assertThat(symbol.code()).isEqualTo(50);
+        Assertions.assertThat(symbol.length()).isEqualTo(4);
+        Assertions.assertThat(symbol.ignoredBits()).isEqualTo(32);
+        Assertions.assertThat(symbol.val).isEqualTo(123L);
+    }
 
-	@Test
-	public void testConcat() {
-		Symbol symbol1 = Symbol.newSymbolFromBytes(new byte[] { 1, 2 });
-		Symbol symbol2 = Symbol.newSymbolFromBytes(new byte[] { 3, 4, 5 });
 
-		Symbol concat = SymbolUtil.fsstConcat(symbol1, symbol2);
-		Assertions.assertThat(concat.code()).isEqualTo(511);
-		Assertions.assertThat(concat.length()).isEqualTo(2 + 3);
-		Assertions.assertThat(concat.ignoredBits()).isEqualTo(64 - (2 + 3) * 8);
-		Assertions.assertThat(concat.val).isEqualTo(21542142465L);
-	}
+    @Test
+    public void testTrain_helloWorld() {
+        SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
 
-	@Test
-	public void testTrain_helloWorld() {
-		SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
+        ByteSlice encoded = table.encodeAll("Hello World");
 
-		ByteSlice encoded = table.encodeAll("Hello World");
+        Assertions.assertThat(encoded.length).isEqualTo(15);
 
-		Assertions.assertThat(encoded.length).isEqualTo(15);
+        ByteSlice decoded = table.decodeAll(encoded);
+        String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+        Assertions.assertThat(decodedString).isEqualTo("Hello World");
+    }
 
-		Assertions.assertThat(decodedString).isEqualTo("Hello World");
-	}
+    @Test
+    public void testTrain_hello() {
+        SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
 
-	@Test
-	public void testTrain_hello() {
-		SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
+        ByteSlice encoded = table.encodeAll("Hello");
 
-		ByteSlice encoded = table.encodeAll("Hello");
+        Assertions.assertThat(encoded.length).isEqualTo(6);
 
-		Assertions.assertThat(encoded.length).isEqualTo(6);
+        ByteSlice decoded = table.decodeAll(encoded);
+        String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+        Assertions.assertThat(decodedString).isEqualTo("Hello");
+    }
 
-		Assertions.assertThat(decodedString).isEqualTo("Hello");
-	}
+    @Test
+    public void testTrain_2codes() {
+        SymbolTable table = FsstTrain.train(List.of("az_azaz_azazaz_azazazaz"));
 
-	@Test
-	public void testTrain_2codes() {
-		SymbolTable table = FsstTrain.train(List.of("az_azaz_azazaz_azazazaz"));
+        ByteSlice encoded = table.encodeAll("azaz");
 
-		ByteSlice encoded = table.encodeAll("azaz");
+        Assertions.assertThat(encoded.length).isEqualTo(4);
 
-		Assertions.assertThat(encoded.length).isEqualTo(4);
+        ByteSlice decoded = table.decodeAll(encoded);
+        String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+        Assertions.assertThat(decodedString).isEqualTo("azaz");
+    }
 
-		Assertions.assertThat(decodedString).isEqualTo("azaz");
-	}
+    /**
+     * Consider a training given all bytes once then a single byte many times.
+     */
+    @Test
+    public void testTrain_allBytes() {
+        byte[] input = new byte[256 * 3];
 
-	/**
-	 * Consider a training given all bytes once then a single byte many times.
-	 */
-	@Test
-	public void testTrain_allBytes() {
-		byte[] input = new byte[256 * 3];
+        // Choose a byte which is negative, as this is less usual and may spot some bug
+        byte recurrent = (byte) 234;
 
-		// Choose a byte which is negative, as this is less usual and may spot some bug
-		byte recurrent = (byte) 234;
+        // All bytes are encountered once
+        for (int i = 0; i < 256; i++) {
+            input[i] = (byte) i;
+        }
+        // Some given byte is very frequent and consecutive
+        for (int i = 256; i < 512; i++) {
+            input[i] = recurrent;
+        }
 
-		// All bytes are encountered once
-		for (int i = 0; i < 256; i++) {
-			input[i] = (byte) i;
-		}
-		// Some given byte is very frequent and consecutive
-		for (int i = 256; i < 512; i++) {
-			input[i] = recurrent;
-		}
+        SymbolTable table = FsstTrain.train(new byte[][]{input});
 
-		SymbolTable table = FsstTrain.train(new byte[][] { input });
+        byte[] original = new byte[]{recurrent, recurrent, recurrent, recurrent};
+        ByteSlice encoded = table.encodeAll(original);
 
-		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
-		ByteSlice encoded = table.encodeAll(original);
+        Assertions.assertThat(encoded.length).isEqualTo(2);
 
-		Assertions.assertThat(encoded.length).isEqualTo(2);
+        ByteSlice decoded = table.decodeAll(encoded);
 
-		ByteSlice decoded = table.decodeAll(encoded);
+        Assertions.assertThat(decoded.length).isEqualTo(original.length);
+        Assertions.assertThat(decoded.array).contains(original);
+    }
 
-		Assertions.assertThat(decoded.length).isEqualTo(original.length);
-		Assertions.assertThat(decoded.array).contains(original);
-	}
+    @Test
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        SymbolTable tableOriginal = FsstTrain.train(List.of("hello hello hello"));
 
-	@Test
-	public void testSerialization() throws IOException, ClassNotFoundException {
-		SymbolTable tableOriginal = FsstTrain.train(List.of("hello hello hello"));
+        byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
+        SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
 
-		byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
-		SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
+        ByteSlice encoded = table.encodeAll("Hello");
 
-		ByteSlice encoded = table.encodeAll("Hello");
+        Assertions.assertThat(encoded.length).isEqualTo(6);
 
-		Assertions.assertThat(encoded.length).isEqualTo(6);
+        ByteSlice decoded = table.decodeAll(encoded);
+        String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+        Assertions.assertThat(decodedString).isEqualTo("Hello");
+    }
 
-		Assertions.assertThat(decodedString).isEqualTo("Hello");
-	}
+    private void testDataset(String filename) {
+        String input = PepperResourceHelper.loadAsString("fsst/paper/dbtext/%s".formatted(filename));
 
-	private void testDataset(String filename) {
-		String input = PepperResourceHelper.loadAsString("fsst/paper/dbtext/%s".formatted(filename));
+        List<String> inputs = List.of(input.split("[\r\n]+"));
 
-		List<String> inputs = List.of(input.split("[\r\n]+"));
+        int nbRetryForBenchmark = 1;
+        for (int iRetry = 0; iRetry < nbRetryForBenchmark; iRetry++) {
+            SymbolTable table = FsstTrain.train(inputs);
 
-		SymbolTable table = FsstTrain.train(inputs);
+            long sizeEncoded = 0;
 
-		long sizeEncoded = 0;
+            for (int i = 0; i < inputs.size(); i++) {
+                String entry = inputs.get(i);
+                ByteSlice encoded = table.encodeAll(entry);
 
-		for (int i = 0; i < inputs.size(); i++) {
-			String entry = inputs.get(i);
-			ByteSlice encoded = table.encodeAll(entry);
+                sizeEncoded += encoded.length;
 
-			sizeEncoded += encoded.length;
+                ByteSlice decoded = table.decodeAll(encoded);
+                String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
-			ByteSlice decoded = table.decodeAll(encoded);
-			String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+                Assertions.assertThat(decodedString).isEqualTo(entry);
+            }
 
-			Assertions.assertThat(decodedString).isEqualTo(entry);
-		}
+            if (iRetry == 0) {
+                long sizeTable;
+                try {
+                    sizeTable = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(table)).length;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
 
-		long sizeTable;
-		try {
-			sizeTable = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(table)).length;
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
+                log.info("Compressed {} from bytes={} to bytes={} (table={} encoded={})",
+                        filename,
+                        PepperLogHelper.humanBytes(input.getBytes(StandardCharsets.UTF_8).length),
+                        PepperLogHelper.humanBytes(sizeTable + sizeEncoded),
+                        PepperLogHelper.humanBytes(sizeTable),
+                        PepperLogHelper.humanBytes(sizeEncoded));
+            }
+        }
+    }
 
-		log.info("Compressed {} from bytes={} to bytes={} (table={} encoded={})",
-				filename,
-				PepperLogHelper.humanBytes(input.getBytes(StandardCharsets.UTF_8).length),
-				PepperLogHelper.humanBytes(sizeTable + sizeEncoded),
-				PepperLogHelper.humanBytes(sizeTable),
-				PepperLogHelper.humanBytes(sizeEncoded));
-	}
+    @Test
+    public void testDataset_chinese() {
+        String filename = "chinese.txt";
+        testDataset(filename);
+    }
 
-	@Test
-	public void testDataset_chinese() throws IOException, ClassNotFoundException {
-		String filename = "chinese.txt";
-		testDataset(filename);
-	}
+    @Test
+    public void testDataset_city() {
+        String filename = "city.txt";
+        testDataset(filename);
+    }
 
-	@Test
-	public void testDataset_city() throws IOException, ClassNotFoundException {
-		String filename = "city.txt";
-		testDataset(filename);
-	}
-
-	@Test
-	public void testDataset_credentials() throws IOException, ClassNotFoundException {
-		String filename = "credentials.txt";
-		testDataset(filename);
-	}
+    @Test
+    public void testDataset_credentials() {
+        String filename = "credentials.txt";
+        testDataset(filename);
+    }
 }

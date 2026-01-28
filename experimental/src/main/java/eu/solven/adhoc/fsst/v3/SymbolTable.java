@@ -40,11 +40,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
 public class SymbolTable implements IFsstConstants {
+	// Used for encoding
 	final SymbolTableTraining symbols;
 
 	// Decoder tables
-	final byte[] decLen; // code -> symbol length
-	final long[] decSymbol; // code -> symbol value
+	public final byte[] decLen; // code -> symbol length
+	public final long[] decSymbol; // code -> symbol value
 
 	final int suffixLim;
 
@@ -56,6 +57,18 @@ public class SymbolTable implements IFsstConstants {
 		final byte[] array;
 		final int offset;
 		final int length;
+
+		/**
+		 * 
+		 * @return a non-defensive copy of this as a `byte[]`.
+		 */
+		public byte[] asByteArray() {
+			if (offset == 0 && array.length == length) {
+				return array;
+			} else {
+				return Arrays.copyOfRange(array, offset, offset + length);
+			}
+		}
 	}
 
 	// Encode compresses input, reusing buf if provided.
@@ -128,6 +141,7 @@ public class SymbolTable implements IFsstConstants {
 			if (entry.icl < fsstICLFree) {
 				long mask = ~0L >> entry.ignoredBits();
 				int symLen = entry.length();
+				// hash matched: let's check for equality
 				if ((entry.val & mask) == (word & mask) && pos + symLen <= end) {
 					dst[dstPos++] = (byte) entry.code();
 					pos += symLen;
