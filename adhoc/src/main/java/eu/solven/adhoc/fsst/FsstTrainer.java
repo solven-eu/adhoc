@@ -140,7 +140,7 @@ public final class FsstTrainer implements IFsstConstants {
 	/**
 	 * A symbol candidate, attached to its gain given its frequency.
 	 */
-	private record Candidate(ByteArrayKey bytes, int gain) {
+	public record Candidate(ByteArrayKey bytes, int gain) {
 	}
 
 }
