@@ -35,7 +35,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.measure.transformator.MapWithNulls;
 
 public class TestStandardSliceFactory {
 	StandardSliceFactory factory = StandardSliceFactory.builder().build();

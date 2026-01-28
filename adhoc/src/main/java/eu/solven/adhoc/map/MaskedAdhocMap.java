@@ -26,7 +26,6 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -171,7 +170,7 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	@Override
 	public IAdhocMap retainAll(Set<String> retainedColumns) {
 		Map<Boolean, ImmutableSet<String>> partitioned = retainedColumns.stream()
-				.collect(Collectors.partitioningBy(c -> mask.containsKey(c), ImmutableSet.toImmutableSet()));
+				.collect(Collectors.partitioningBy(mask::containsKey, ImmutableSet.toImmutableSet()));
 
 		Map<String, ?> retainedMask;
 		if (partitioned.get(true).isEmpty()) {
