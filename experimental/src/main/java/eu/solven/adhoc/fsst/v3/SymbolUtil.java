@@ -1,7 +1,26 @@
+/**
+ * The MIT License
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.fsst.v3;
-
-import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,6 +35,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 // https://github.com/axiomhq/fsst/blob/main/symbol.go
+@SuppressWarnings("checkstyle:MagicNumber")
 @UtilityClass
 public final class SymbolUtil implements IFsstConstants {
 
@@ -27,8 +47,10 @@ public final class SymbolUtil implements IFsstConstants {
 
 		int length = Math.min(in.length - offset, 8);
 		for (int i = 0; i < length; i++) {
-			value |= ((long) in[i + offset] & 0xFF) << (8 * i);
+			// make sure we cast to long BEFORE bit-shifting
+			value |= (in[i + offset] & 0xFFL) << (8 * i);
 		}
+
 		return value;
 	}
 
@@ -43,9 +65,10 @@ public final class SymbolUtil implements IFsstConstants {
 		return (code & 0xFFFF) | ((length << fsstLenBits) & 0xFFFF);
 	}
 
-	// symbol is the internal representation of a compression symbol (1-8 bytes).
-	// It packs the symbol value and metadata into two uint64 fields:
-	//
+	/**
+	 * symbol is the internal representation of a compression symbol (1-8 bytes). // It packs the symbol value and
+	 * metadata into two uint64 fields:
+	 */
 	// val: the actual symbol bytes in little-endian (up to 8 bytes)
 	// icl: packed metadata with bit layout:
 	// bits 28-31: length (1-8)
@@ -57,8 +80,8 @@ public final class SymbolUtil implements IFsstConstants {
 		long icl; // Packed: [length:4][code:12][ignoredBits:16]
 
 		public static Symbol newSymbolFromByte(byte b, int code) {
-			long val = (long) (b & 0xFF);
-			return new Symbol(val, Symbol.evalICL(code, 1));
+			long val = b & 0xFF;
+			return new Symbol(val, evalICL(code, 1));
 		}
 
 		public static Symbol newSymbolFromBytes(byte[] in) {
@@ -69,7 +92,7 @@ public final class SymbolUtil implements IFsstConstants {
 			int length = Math.min(in.length - offset, 8);
 			assert length > 0;
 			long value = fsstUnalignedLoad(in, offset);
-			return new Symbol(value, Symbol.evalICL(fsstCodeMax, length));
+			return new Symbol(value, evalICL(fsstCodeMax, length));
 		}
 
 		public static long evalICL(int code, int length) {
@@ -81,7 +104,7 @@ public final class SymbolUtil implements IFsstConstants {
 
 			// icl format: [length:4][code:12][ignoredBits:16]
 			// length=1, ignoredBits=(8-1)*8=56 (ignore top 7 bytes when matching)
-			return ((long) length << 28) | ((long) code << 16) | (long) ((8 - length) * 8);
+			return ((long) length << 28) | ((long) code << 16) | ((8 - length) * 8);
 		}
 
 		public int length() {
