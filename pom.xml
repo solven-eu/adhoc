@@ -64,7 +64,7 @@
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
-		<jooq.version>3.20.10</jooq.version>
+		<jooq.version>3.20.11</jooq.version>
 
 		<spotless.version>3.2.1</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
