@@ -23,6 +23,7 @@
 package eu.solven.adhoc.fsst.v3;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,18 +46,28 @@ import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
 public class Counters {
 	private static final int MAX_COUNT = 0xFFFF;
 
-	private final int[] single = new int[IFsstConstants.fsstCodeMax]; // single-symbol counts
-	private final int[][] pair = new int[IFsstConstants.fsstCodeMax][IFsstConstants.fsstCodeMax]; // pair counts
+	private static final int counterCodeMax = IFsstConstants.fsstCodeMax;
+
+	private final int[] single = new int[counterCodeMax]; // single-symbol counts
+	// code1 * counterCodeMax + code2
+	private final int[] pair = new int[counterCodeMax * counterCodeMax]; // pair counts
 
 	// https://github.com/axiomhq/fsst/blob/main/counters.go
 	private final List<IntPair> pairList = new ArrayList<>(); // sparse list of non-zero pairs
+
+	// reset is faster than a new instance creation, as a training phase will typically needs 5 counters
+	public void reset() {
+		Arrays.fill(single, 0);
+		Arrays.fill(pair, 0);
+		pairList.clear();
+	}
 
 	record IntPair(int left, int right) {
 	}
 
 	/** Increment the frequency count for a single symbol (capped at 0xFFFF). */
 	public void incSingle(int code) {
-		assert code >= 0 && code <= IFsstConstants.fsstCodeMax : "Invalid code: %s".formatted(code);
+		assert code >= 0 && code <= counterCodeMax : "Invalid code: %s".formatted(code);
 
 		if (single[code] < MAX_COUNT) {
 			single[code]++;
@@ -65,11 +76,12 @@ public class Counters {
 
 	/** Increment the frequency count for a symbol pair (sparse tracking). */
 	public void incPair(int code1, int code2) {
-		if (pair[code1][code2] == 0) {
+		int combinedCode = code1 * counterCodeMax + code2;
+		if (pair[combinedCode] == 0) {
 			pairList.add(new IntPair(code1, code2));
-		}
-		if (pair[code1][code2] < MAX_COUNT) {
-			pair[code1][code2]++;
+			pair[combinedCode] = 1;
+		} else if (pair[combinedCode] < MAX_COUNT) {
+			pair[combinedCode]++;
 		}
 	}
 
@@ -96,7 +108,8 @@ public class Counters {
 
 	/** Returns the count for a specific symbol pair. */
 	public int pairCount(int code1, int code2) {
-		return pair[code1][code2];
+		int combinedCode = code1 * counterCodeMax + code2;
+		return pair[combinedCode];
 	}
 
 	public List<IntPair> getPairList() {

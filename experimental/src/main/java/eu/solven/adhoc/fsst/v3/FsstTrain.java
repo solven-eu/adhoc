@@ -25,6 +25,7 @@ package eu.solven.adhoc.fsst.v3;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @UtilityClass
 public class FsstTrain {
+	public static final boolean DEBUG = true;
 
 	// --- Sampling constants ---
 	// we construct FSST symbol tables using a random sample of about 16KB (1<<14)
@@ -68,11 +70,27 @@ public class FsstTrain {
 		byte[][] sample = makeSample(inputs);
 		SymbolTableTraining table = SymbolTableTraining.makeSymbolTable();
 
+		Counters counter = new Counters();
+
+		// long previousLengthEncoded = Long.MAX_VALUE;
+
 		for (int frac = 8;; frac += 30) {
-			Counters counter = new Counters();
+			// It is substantially faster (~ x2) to reset than creating a new instance
+			// May become a bottleneck if trained+encoded on many small inputs
+			if (frac > 8) {
+				counter.reset();
+			}
+
 			// Simulate encode given known symbols, counting symbols use
 			// Will read but not write symbolTable
-			compressCount(table, counter, sample, frac);
+			long lengthEncoded = compressCount(table, counter, sample, frac);
+
+			assert lengthEncoded >= 0;
+
+			if (DEBUG) {
+				log.info("Length encoded: " + lengthEncoded);
+			}
+
 			// Build symbol tables given frequencies
 			table = buildCandidates(table, counter, frac);
 			if (frac >= 128) {
@@ -114,11 +132,13 @@ public class FsstTrain {
 		return pos < IFsstConstants.fsstCodeBase;
 	}
 
-	static int escapeCodeAsInt(int pos) {
+	static int codeLength(int pos) {
 		if (isEscapeCode(pos)) {
-			return 1;
+			// If escaped, we write an escape byte, then the literal byte
+			return 2;
 		} else {
-			return 0;
+			// Else we just write the code as one byte
+			return 1;
 		}
 	}
 
@@ -126,10 +146,11 @@ public class FsstTrain {
 	 * compressCount walks the sample as the encoder would with the current Table, incrementing single counts and (in
 	 * early rounds) pair counts to drive candidate selection in the subsequent build step.
 	 * 
-	 * See {@link SymbolTableTraining#encode(byte[], byte[])}
+	 * See {@link SymbolTable#encode(byte[], byte[])}
 	 */
-	public static void compressCount(SymbolTableTraining t, Counters c, byte[][] samples, int frac) {
-		int gain = 0;
+	public static long compressCount(SymbolTableTraining t, Counters c, byte[][] samples, int frac) {
+		// length of the encoded, restricted to sampled input
+		int encodedLength = 0;
 
 		for (int i = 0; i < samples.length; i++) {
 			// in earlier rounds (sampleFrac < 128) we skip data in the sample (reduces overall work ~2x)
@@ -151,7 +172,7 @@ public class FsstTrain {
 			int code1 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
 			{
 				cur += t.symbols[code1].length();
-				gain += t.symbols[code1].length() - (1 + escapeCodeAsInt(code1));
+				encodedLength += codeLength(code1);
 			}
 
 			int start = 0;
@@ -183,7 +204,7 @@ public class FsstTrain {
 				}
 
 				// compute compressed output size
-				gain += cur - start - (1 + escapeCodeAsInt(code2));
+				encodedLength += codeLength(code2);
 
 				if (frac < 128) {
 					int n = cur - start;
@@ -196,7 +217,8 @@ public class FsstTrain {
 			}
 		}
 
-		log.debug("Estimated gain is {}", gain);
+		// log.debug("Estimated gain is {}", gain);
+		return encodedLength;
 	}
 
 	/**
@@ -221,8 +243,15 @@ public class FsstTrain {
 	@SuppressWarnings("PMD.AvoidReassigningLoopVariables")
 	public static SymbolTableTraining buildCandidates(SymbolTableTraining t, Counters c, int frac) {
 		Map<SymCodeless, QSym> candidates = HashMap.newHashMap(IFsstConstants.fsstCodeMax);
+
+		// on first iteration, minCount is 1
+		// on last iteration, minCount is 5
 		int minCount = Math.max(MIN_COUNT_NUMERATOR * frac / MIN_COUNT_DENOMINATOR, 1);
 		assert minCount > 0;
+
+		// TODO Should improve this else we may discord good symbols on very short training data (e.g. just a
+		// simple String)
+		minCount = 0;
 
 		// Iterate through code have appeared at least once
 		for (int pos1 = 0; pos1 < IFsstConstants.fsstCodeBase + t.getNSymbols(); pos1++) {
@@ -245,7 +274,7 @@ public class FsstTrain {
 			}
 
 			if (weight >= minCount) {
-				addOrInc(candidates, sym, weight);
+				addOrInc(candidates, sym, count);
 			}
 		}
 
@@ -260,47 +289,82 @@ public class FsstTrain {
 					continue;
 				}
 				Symbol sym = t.symbols[code1];
-				if (sym.length() == 8) {
-					// symbol has already max length: can not be suffixed
-					continue;
-				}
 				Symbol sym2 = t.symbols[code2];
-				Symbol merged = SymbolUtil.fsstConcat(sym, sym2);
-
-				addOrInc(candidates, merged, countPair);
+				if (sym.length() < 8) {
+					// symbol has already max length: can not be suffixed
+					Symbol merged = SymbolUtil.fsstConcat(sym, sym2);
+					addOrInc(candidates, merged, countPair);
+				}
+				if (
+				// symbol 2has already max length: can not be suffixed
+				sym2.length() < 8
+						// concatEnd would give different merge result than concat
+						&& sym.length() + sym2.length() > 8) {
+					Symbol merged = SymbolUtil.fsstConcatEnd(sym, sym2);
+					addOrInc(candidates, merged, countPair);
+				}
 			}
 		}
 
-		// Extract top-K into list in descending order
-		PriorityQueue<QSym> pq = new PriorityQueue<>(SymbolUtil.fsstMaxSymbols);
-		
-		for (QSym x : candidates.values()) {
-			if (pq.size() < SymbolUtil.fsstMaxSymbols) {
-				pq.offer(x);
-			} else if (x.compareTo(pq.peek()) < 0) {
-				pq.poll();
-				pq.offer(x);
-			}
-		}
+		List<QSym> sortedList;
+		if (candidates.size() > SymbolUtil.fsstMaxSymbols) {
+			// Extract top-K into list in descending order
+			PriorityQueue<QSym> pq = new PriorityQueue<>(SymbolUtil.fsstMaxSymbols);
 
-		List<QSym> sortedList = new ArrayList<>(pq.size());
-		while (!pq.isEmpty()) {
-			sortedList.add(pq.poll());
+			for (QSym x : candidates.values()) {
+				if (pq.size() < SymbolUtil.fsstMaxSymbols) {
+					pq.offer(x);
+				} else if (x.compareTo(pq.peek()) > 0) {
+					// QSym polled =
+					pq.poll();
+					pq.offer(x);
+
+					// System.out.println("Replaced " + polled + " with " + x);
+				}
+			}
+
+			// Copy into least, from least to greater
+			sortedList = new ArrayList<>(pq.size());
+			while (!pq.isEmpty()) {
+				sortedList.add(pq.poll());
+			}
+		} else {
+			sortedList = new ArrayList<>(candidates.values());
+			Collections.sort(sortedList);
 		}
 
 		SymbolTableTraining newSymboltable = SymbolTableTraining.makeSymbolTable();
-		for (QSym q : sortedList) {
-			if (!newSymboltable.addSymbol(q.symbol)) {
-				break;
+
+		List<QSym> betterToWorst = sortedList.reversed();
+		for (int i = 0; i < betterToWorst.size(); i++) {
+			QSym q = betterToWorst.get(i);
+
+			if (DEBUG) {
+				if (newSymboltable.nSymbols == 0) {
+					System.out.println("first symbol is " + q);
+				} else if (i == sortedList.size() - 1) {
+					System.out.println("last symbol is " + q);
+				}
 			}
+
+			newSymboltable.addSymbol(q.symbol);
 		}
 		return newSymboltable;
 	}
 
-	private static void addOrInc(Map<SymCodeless, QSym> candidates, Symbol sym, int weight) {
+	/**
+	 * 
+	 * @param candidates
+	 * @param sym
+	 * @param weight
+	 *            is typically count of occurrence
+	 */
+	private static void addOrInc(Map<SymCodeless, QSym> candidates, Symbol sym, int count) {
 		SymCodeless key = new SymCodeless(sym.val, sym.length());
 
-		int gain = weight * sym.length();
+		// If coded, we write 1
+		// if escaped, we write 2*length
+		int gain = count * (2 * sym.length() - 1);
 
 		if (candidates.containsKey(key)) {
 			gain += candidates.get(key).gain;

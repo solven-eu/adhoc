@@ -120,6 +120,12 @@ public final class SymbolTableTraining implements IFsstConstants {
 		return true;
 	}
 
+	/**
+	 * Add a symbol. Might fail in case of hash conflict.
+	 * 
+	 * @param sym
+	 * @return
+	 */
 	public boolean addSymbol(Symbol sym) {
 		if (fsstCodeBase + nSymbols >= fsstCodeMax) {
 			return false;
@@ -226,8 +232,7 @@ public final class SymbolTableTraining implements IFsstConstants {
 			Symbol sym = symbols[i];
 			if (sym.length() == 2) {
 				shortCodes[sym.first2()] = packCodeLength(i, 2);
-			}
-			if (sym.length() >= 3) {
+			} else if (sym.length() >= 3) {
 				hashInsert(sym);
 			}
 		}

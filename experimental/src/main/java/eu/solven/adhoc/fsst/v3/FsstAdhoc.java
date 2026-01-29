@@ -9,17 +9,23 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 public class FsstAdhoc implements Fsst {
 
-	@Override
-	public SymbolTable encode(byte[] data) {
+	public eu.solven.adhoc.fsst.v3.SymbolTable train(byte[] data) {
 		var st = FsstTrain.train(new byte[][] { data });
+		return st;
+	}
 
+	public SymbolTable encode(byte[] data, eu.solven.adhoc.fsst.v3.SymbolTable st) {
 		ByteSlice encoded = st.encodeAll(data);
 
 		ByteArrayList concatenatedSymbols = new ByteArrayList();
-		IntArrayList symbolsLength = new IntArrayList();
+		IntArrayList symbolsLength = new IntArrayList(st.decLen.length);
 
 		for (int i = 0; i < st.decLen.length; i++) {
 			int symLen = Byte.toUnsignedInt(st.decLen[i]);
+			
+			if (symLen == 0) {
+				break;
+			}
 
 			long symVal = st.decSymbol[i];
 
@@ -30,13 +36,20 @@ public class FsstAdhoc implements Fsst {
 			symbolsLength.add(symLen);
 		}
 
-		return new SymbolTable(null, null, encoded.asByteArray(), data.length);
+		concatenatedSymbols.trim();
+		symbolsLength.trim();
+
+		return new SymbolTable(concatenatedSymbols.elements(),
+				symbolsLength.elements(),
+				encoded.asByteArray(),
+				data.length);
 	}
 
-	// @Override
-	// public byte[] decode(
-	// byte[] symbols, int[] symbolLengths, byte[] compressedData, int decompressedLength) {
-	//
-	// }
+	@Override
+	public SymbolTable encode(byte[] data) {
+		var st = train(data);
+
+		return encode(data, st);
+	}
 
 }

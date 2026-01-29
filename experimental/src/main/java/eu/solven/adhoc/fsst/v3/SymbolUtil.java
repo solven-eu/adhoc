@@ -57,7 +57,7 @@ public final class SymbolUtil implements IFsstConstants {
 			}
 			yield v;
 		}
-        // BEWARE JMH suggests unrolling the loop has no benefit
+		// BEWARE JMH suggests unrolling the loop has no benefit
 		default -> (in[offset] & 0xFFL) | (in[offset + 1] & 0xFFL) << 8
 				| (in[offset + 2] & 0xFFL) << 16
 				| (in[offset + 3] & 0xFFL) << 24
@@ -167,9 +167,27 @@ public final class SymbolUtil implements IFsstConstants {
 		int lengthA = a.length();
 		int lengthB = b.length();
 		int combinedLength = Math.min(lengthA + lengthB, 8);
-		// Append b.val after a.val
+		// Append b.val after a.val: b may be cut on its higher bits (to the left of val)
 		long combinedValue = (b.val << (8 * lengthA)) | a.val;
-		// TODO code=fsstCodeMask will be replaced later?
+		// code=fsstCodeMask will be replaced later?
 		return new Symbol(combinedValue, Symbol.evalICL(fsstCodeMask, combinedLength));
 	}
+
+	public static Symbol fsstConcatEnd(Symbol a, Symbol b) {
+		int lengthA = a.length();
+		int lengthB = b.length();
+
+		if (lengthA + lengthB <= 8) {
+			throw new IllegalArgumentException("For perf reason, this case should never happen");
+		}
+
+		int combinedLength = 8;
+		int shiftA = 8 * (lengthA - (8 - lengthB));
+
+		// Append b.val after a.val: a may be cut on its lower bits (to the right of val)
+		long combinedValue = (b.val << (8 * (lengthA) - shiftA)) | (a.val >>> shiftA);
+		// code=fsstCodeMask will be replaced later?
+		return new Symbol(combinedValue, Symbol.evalICL(fsstCodeMask, combinedLength));
+	}
+
 }

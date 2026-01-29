@@ -4,3 +4,5 @@ Source:
 - https://github.com/axiomhq/fsst - Some Go port, helped with Claude AI - Seems functional
 - https://github.com/sirixdb/fsst-string-compression/tree/main - Some Java - Does not compile
 - https://github.com/maplibre/maplibre-tile-spec/tree/main/java/mlt-core/src/main/java/org/maplibre/mlt/converter/encodings/fsst
+  - https://github.com/maplibre/maplibre-tile-spec/issues/150
+  - https://github.com/maplibre/maplibre-tile-spec/pull/251

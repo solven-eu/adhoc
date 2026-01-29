@@ -86,7 +86,7 @@ public class SymbolTable implements IFsstConstants {
 		// Process with safe unaligned loads while >=8 bytes remain
 		while (pos + 8 <= inputLen) {
 			int chunkEnd = Math.min(pos + fsstChunkSize, inputLen - tailLen);
-			outPos = encodeChunk(buf, outPos, input, pos, chunkEnd - pos);
+			outPos = encodeChunk(buf, outPos, input, pos, chunkEnd);
 			pos = chunkEnd;
 		}
 
