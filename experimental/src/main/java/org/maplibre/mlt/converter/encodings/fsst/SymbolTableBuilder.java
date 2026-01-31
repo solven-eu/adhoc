@@ -51,7 +51,8 @@ import software.amazon.awssdk.annotations.NotNull;
 class SymbolTableBuilder {
   static final int MAX_SYMBOL_LENGTH = 8;
   private static final int NUM_ITERS = 6;
-  public static final int DEFAULT_SAMPLE_SIZE = 30_000;
+  // Default was 30_000. Now 16k, like in FSST
+  public static final int DEFAULT_SAMPLE_SIZE = 1 << 14;
   private final int sampleSize;
   private final Symbol[] symbols = new Symbol[512];
 
@@ -96,6 +97,7 @@ class SymbolTableBuilder {
       // then gather statistics about symbol frequencies and encoded data size
       counters = new Counters();
       long weight = st.compressCount(counters, data, i < NUM_ITERS);
+      System.out.println("length encoded: " + weight);
       if (weight <= bestWeight) {
         bestCounters = counters;
         bestTable = st;
@@ -216,7 +218,7 @@ class SymbolTableBuilder {
     }
   }
 
-  private long compressCount(Counters counters, ByteBuffer text, boolean secondPass) {
+  private long compressCount(Counters counters, ByteBuffer text, boolean intermediatePass) {
     if (text.capacity() == 0) return 0;
     long weight = 0;
 
@@ -243,7 +245,7 @@ class SymbolTableBuilder {
         Symbol symbol2 = symbols[code2];
         cur += symbol2.length();
         weight += isEscapeCode(code2) ? 2 : 1;
-        if (secondPass) { // no need to count pairs in final round
+        if (intermediatePass) { // no need to count pairs in final round
           // consider the symbol that is the concatenation of the two last symbols
           counters.count2Inc(code1, code2);
           // as an alternative, consider just extending with the next byte..
@@ -294,6 +296,7 @@ class SymbolTableBuilder {
     while (st.nSymbols < 255 && !pq.isEmpty()) {
       var symb = pq.remove();
       if (!lastPass || sampled) {
+		System.out.println("symbol is " + symb);
         st.add(symb.symbol);
       } else {
         // adding a symbol costs length + 1, so don't add if it costs more than it saves

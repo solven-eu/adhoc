@@ -28,7 +28,6 @@ import java.util.Arrays;
 import javax.annotation.concurrent.ThreadSafe;
 
 import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -43,33 +42,7 @@ public class SymbolTable implements IFsstConstants {
 	// Used for encoding
 	final SymbolTableTraining symbols;
 
-	// Decoder tables
-	public final byte[] decLen; // code -> symbol length
-	public final long[] decSymbol; // code -> symbol value
-
-	final int suffixLim;
-
-	/**
-	 * A byte wrapper, enabling some sub-byte[] without creating a new array.
-	 */
-	@AllArgsConstructor
-	public static final class ByteSlice {
-		final byte[] array;
-		final int offset;
-		final int length;
-
-		/**
-		 * 
-		 * @return a non-defensive copy of this as a `byte[]`.
-		 */
-		public byte[] asByteArray() {
-			if (offset == 0 && array.length == length) {
-				return array;
-			} else {
-				return Arrays.copyOfRange(array, offset, offset + length);
-			}
-		}
-	}
+	final SymbolTableDecoding decoding;
 
 	// Encode compresses input, reusing buf if provided.
 	// Returns compressed data (may be a different slice than buf).
@@ -122,7 +95,7 @@ public class SymbolTable implements IFsstConstants {
 	// buf must have >=8 bytes padding after end for safe unaligned loads.
 	@SuppressWarnings("PMD.AssignmentInOperand")
 	private int encodeChunk(byte[] dst, int dstPos, byte[] input, int pos, int end) {
-		int suffixLimit = suffixLim;
+		int suffixLimit = decoding.suffixLim;
 
 		while (pos < end) {
 			long word = SymbolUtil.fsstUnalignedLoad(input, pos);
@@ -195,8 +168,8 @@ public class SymbolTable implements IFsstConstants {
 		while (srcPos < srcEnd) {
 			int code = src[srcPos++] & 0xFF;
 			if (code < fsstEscapeCode) {
-				int symLen = decLen[code];
-				long symVal = decSymbol[code];
+				int symLen = decoding.decLen[code];
+				long symVal = decoding.decSymbol[code];
 
 				if (bufPos + symLen > bufCap) {
 					// extends the buffer as it it too small to accept decoded bytes

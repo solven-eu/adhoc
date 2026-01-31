@@ -15,10 +15,10 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-
-import eu.solven.adhoc.fsst.v3.FsstAdhoc;
-import eu.solven.adhoc.fsst.v3.SymbolTable.ByteSlice;
 import org.springframework.util.Assert;
+
+import eu.solven.adhoc.fsst.v3.ByteSlice;
+import eu.solven.adhoc.fsst.v3.FsstAdhoc;
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)

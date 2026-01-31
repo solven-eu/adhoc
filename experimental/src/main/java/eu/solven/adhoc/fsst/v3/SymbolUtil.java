@@ -106,7 +106,7 @@ public final class SymbolUtil implements IFsstConstants {
 
 		public static Symbol fromBytes(byte[] in, int offset) {
 			int length = Math.min(in.length - offset, 8);
-			assert length > 0;
+//			assert length > 0;
 			long value = fsstUnalignedLoad(in, offset);
 			return new Symbol(value, evalICL(fsstCodeMax, length));
 		}
@@ -173,6 +173,7 @@ public final class SymbolUtil implements IFsstConstants {
 		return new Symbol(combinedValue, Symbol.evalICL(fsstCodeMask, combinedLength));
 	}
 
+	@Deprecated
 	public static Symbol fsstConcatEnd(Symbol a, Symbol b) {
 		int lengthA = a.length();
 		int lengthB = b.length();

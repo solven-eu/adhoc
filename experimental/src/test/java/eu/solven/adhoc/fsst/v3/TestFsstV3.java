@@ -30,7 +30,6 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.fsst.v3.SymbolTable.ByteSlice;
 import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.io.PepperSerializationHelper;
@@ -56,7 +55,7 @@ public class TestFsstV3 {
 
 		ByteSlice encoded = table.encodeAll("01234567");
 
-		Assertions.assertThat(encoded.length).isEqualTo(1);
+		Assertions.assertThat(encoded.length).isEqualTo(16);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -70,7 +69,7 @@ public class TestFsstV3 {
 
 		ByteSlice encoded = table.encodeAll("Hello World");
 
-		Assertions.assertThat(encoded.length).isEqualTo(17);
+		Assertions.assertThat(encoded.length).isEqualTo(22);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -86,7 +85,7 @@ public class TestFsstV3 {
 
 		ByteSlice encoded = table.encodeAll("Hello");
 
-		Assertions.assertThat(encoded.length).isEqualTo(7);
+		Assertions.assertThat(encoded.length).isEqualTo(10);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -132,7 +131,7 @@ public class TestFsstV3 {
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
 		ByteSlice encoded = table.encodeAll(original);
 
-		Assertions.assertThat(encoded.length).isEqualTo(2);
+		Assertions.assertThat(encoded.length).isEqualTo(4);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 

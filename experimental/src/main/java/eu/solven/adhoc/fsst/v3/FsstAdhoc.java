@@ -3,7 +3,6 @@ package eu.solven.adhoc.fsst.v3;
 import org.maplibre.mlt.converter.encodings.fsst.Fsst;
 import org.maplibre.mlt.converter.encodings.fsst.SymbolTable;
 
-import eu.solven.adhoc.fsst.v3.SymbolTable.ByteSlice;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
@@ -14,15 +13,16 @@ public class FsstAdhoc implements Fsst {
 		return st;
 	}
 
-	public SymbolTable encode(byte[] data, eu.solven.adhoc.fsst.v3.SymbolTable st) {
-		ByteSlice encoded = st.encodeAll(data);
+	public SymbolTable encode(byte[] data, eu.solven.adhoc.fsst.v3.SymbolTable st2) {
+		SymbolTableDecoding st = st2.decoding;
+		ByteSlice encoded = st2.encodeAll(data);
 
 		ByteArrayList concatenatedSymbols = new ByteArrayList();
 		IntArrayList symbolsLength = new IntArrayList(st.decLen.length);
 
 		for (int i = 0; i < st.decLen.length; i++) {
 			int symLen = Byte.toUnsignedInt(st.decLen[i]);
-			
+
 			if (symLen == 0) {
 				break;
 			}

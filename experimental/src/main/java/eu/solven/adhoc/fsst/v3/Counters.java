@@ -44,10 +44,12 @@ import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
 // TODO There is an alternative implementation if not 32bits. Should we implement it?
 @NotThreadSafe
 public class Counters {
+	// Must be relative to the maximum sampling size to prevent saturation
 	private static final int MAX_COUNT = 0xFFFF;
 
 	private static final int counterCodeMax = IFsstConstants.fsstCodeMax;
 
+	// 1-byte may be counted by both literals (<256) and 1-byte symbols (>=256 but < 512)
 	private final int[] single = new int[counterCodeMax]; // single-symbol counts
 	// code1 * counterCodeMax + code2
 	private final int[] pair = new int[counterCodeMax * counterCodeMax]; // pair counts
@@ -65,7 +67,11 @@ public class Counters {
 	record IntPair(int left, int right) {
 	}
 
-	/** Increment the frequency count for a single symbol (capped at 0xFFFF). */
+	/**
+	 * Increment the frequency count for a single symbol (capped at 0xFFFF).
+	 * 
+	 * If code < 256, we refer to a literal byte, else (but still <512) we refer to a symbol (which may be 1-byte)
+	 */
 	public void incSingle(int code) {
 		assert code >= 0 && code <= counterCodeMax : "Invalid code: %s".formatted(code);
 
@@ -104,6 +110,32 @@ public class Counters {
 		}
 		codeHolder.set(code);
 		return 0;
+	}
+
+	/**
+	 * 
+	 * @param code1
+	 * @param codeHolder
+	 *            hold initial code2, but may change it to a greater code with a non-zero count
+	 * @return 0 if there is no more non-zero codes
+	 */
+	public int nextNotZero(int code1, AtomicInteger codeHolder) {
+		int code2 = codeHolder.get();
+		while (code2 < IFsstConstants.fsstCodeMax) {
+			int combinedCode = code1 * counterCodeMax + code2;
+			int count = pair[combinedCode];
+			if (count != 0) {
+				codeHolder.set(code2);
+				return count;
+			}
+			code2++;
+		}
+		codeHolder.set(code2);
+		return 0;
+	}
+
+	public int singleCount(int code) {
+		return single[code];
 	}
 
 	/** Returns the count for a specific symbol pair. */
