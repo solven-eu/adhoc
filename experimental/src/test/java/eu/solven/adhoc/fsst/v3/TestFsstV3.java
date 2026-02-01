@@ -69,7 +69,7 @@ public class TestFsstV3 {
 
 		ByteSlice encoded = table.encodeAll("Hello World");
 
-		Assertions.assertThat(encoded.length).isEqualTo(22);
+		Assertions.assertThat(encoded.length).isEqualTo(17);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -95,8 +95,10 @@ public class TestFsstV3 {
 
 	@Test
 	public void testTrain_2codes() {
+		// 1x 2x 3x 4x
 		SymbolTable table = FsstTrain.train(List.of("az_azaz_azazaz_azazazaz"));
 
+		// 2x
 		ByteSlice encoded = table.encodeAll("azaz");
 
 		Assertions.assertThat(encoded.length).isEqualTo(2);
@@ -155,7 +157,7 @@ public class TestFsstV3 {
 	}
 
 	// Once can increase this value to generate easily profilable benchmarks
-	int nbRetryForBenchmark = 0;
+	int nbRetryForBenchmark = 1024;
 
 	// This ensures nbRetryForBenchmark is not commited >0
 	@Test

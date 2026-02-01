@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import eu.solven.adhoc.fsst.v3.Counters.IntPair;
 import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +46,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @UtilityClass
 public class FsstTrain {
-	public static final boolean DEBUG = true;
-
 	// --- Sampling constants ---
 	// we construct FSST symbol tables using a random sample of about 16KB (1<<14)
 	// https://github.com/cwida/fsst/blob/master/libfsst.hpp#L133
@@ -94,10 +91,6 @@ public class FsstTrain {
 
 			assert lengthEncoded >= 0;
 
-			if (DEBUG) {
-				log.info("Length encoded: " + lengthEncoded);
-			}
-
 			if (lengthEncoded < bestLengthEncoded) {
 				bestLengthEncoded = lengthEncoded;
 				// Next symbols candidates seems to produce worst results
@@ -129,14 +122,14 @@ public class FsstTrain {
 
 		compressCount(bestTable, counter, sample, 128);
 
-		// finalize to rebuild without the merged symbols
+		// renumber codes for more efficient compression
 		SymbolTable finalTable = bestTable.finalizeTable();
 
 		counter.reset();
 
-//		long lengthEncodedFinal = compressCount(finalTable.symbols, counter, sample, 128);
+		// long lengthEncodedFinal = compressCount(finalTable.symbols, counter, sample, 128);
 
-		return  finalTable;
+		return finalTable;
 	}
 
 	private record CodeAndLength(int code, int length) {
@@ -171,7 +164,7 @@ public class FsstTrain {
 		return pos < IFsstConstants.fsstCodeBase;
 	}
 
-	static int codeLength(int pos) {
+	static int encodedLength(int pos) {
 		if (isEscapeCode(pos)) {
 			// If escaped, we write an escape byte, then the literal byte
 			return 2;
@@ -218,7 +211,7 @@ public class FsstTrain {
 			int code1 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
 			{
 				cur += t.symbols[code1].length();
-				encodedLength += codeLength(code1);
+				encodedLength += encodedLength(code1);
 				codeUsed[code1] = true;
 			}
 
@@ -251,7 +244,7 @@ public class FsstTrain {
 				}
 
 				// compute compressed output size
-				encodedLength += codeLength(code2);
+				encodedLength += encodedLength(code2);
 				codeUsed[code2] = true;
 
 				if (frac < 128) {
@@ -266,23 +259,16 @@ public class FsstTrain {
 			}
 		}
 
-		int countUsed = 0;
-		int symbolTotalLength = 0;
-
 		// account for the encoded symbol table size
 		for (int i = 0; i < t.nSymbols; i++) {
 			if (codeUsed[IFsstConstants.fsstCodeBase + i]) {
 				// account only for symbols in table actually used in the compress pass
 				int symLength = t.symbols[IFsstConstants.fsstCodeBase + i].length();
 				encodedLength += symLength;
-				symbolTotalLength += symLength;
 				// account for the array of length
 				encodedLength++;
-				countUsed++;
 			}
 		}
-
-		System.out.println(countUsed + " used for " + t.nSymbols + " available symLengths=" + symbolTotalLength);
 
 		// log.debug("Estimated gain is {}", gain);
 		return encodedLength;
@@ -324,7 +310,9 @@ public class FsstTrain {
 		}
 
 		// Maptitle always requires 5
-		minCount = 5;
+		// C++ increases the requirement on each pass
+		// TODO What is the point of discarding as we sort at the end?
+		// minCount = 5;
 
 		// Iterate through symbols have appeared at least once
 		int maxCodeExcluded = IFsstConstants.fsstCodeBase + t.getNSymbols();
@@ -414,8 +402,6 @@ public class FsstTrain {
 					// QSym polled =
 					pq.poll();
 					pq.offer(x);
-
-					// System.out.println("Replaced " + polled + " with " + x);
 				}
 			}
 
@@ -435,22 +421,19 @@ public class FsstTrain {
 		for (int i = 0; i < betterToWorst.size(); i++) {
 			QSym q = betterToWorst.get(i);
 
-			if (DEBUG) {
-				// if (newSymboltable.nSymbols == 0) {
-				// System.out.println("first symbol is " + q);
-				// } else if (i == sortedList.size() - 1) {
-				// System.out.println("last symbol is " + q);
-				// }
-				System.out.println("symbol is " + q);
-			}
-
 			if (frac >= 128) {
 				// last pass: keep symbol if effective
-				long gainMinusCost = q.gain - q.symbol.length();
+				// cost is symbol length + length reference
+				int gain = q.gain;
+
+				if (q.symbol.length() == 1) {
+					gain /= SINGLE_BYTE_BOOST;
+				}
+
+				long gainMinusCost = gain - (q.symbol.length() + 1);
+
 				if (gainMinusCost > 0) {
 					newSymboltable.addSymbol(q.symbol);
-				} else {
-					System.out.println("Reject " + q);
 				}
 			} else {
 				// intermediate pass: keep as many symbols as possible
@@ -464,7 +447,7 @@ public class FsstTrain {
 	 * 
 	 * @param candidates
 	 * @param sym
-	 * @param weight
+	 * @param count
 	 *            is typically count of occurrence
 	 */
 	private static void addOrInc(Map<SymCodeless, QSym> candidates, Symbol sym, int count) {
@@ -482,15 +465,7 @@ public class FsstTrain {
 			// Happens when 1-byte are encountered both unencoded and coded
 			gain += candidates.get(key).gain;
 		}
-		// QSym already =
 		candidates.put(key, new QSym(sym, gain));
-		// if (already != null) {
-		// // BEWARE This case should not happen as we ensured to process each byte once
-		// gain += already.gain;
-		// candidates.put(key, new QSym(sym, gain));
-		// System.out.println("NONONO");
-		// }
-
 	}
 
 	/**

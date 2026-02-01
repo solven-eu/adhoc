@@ -157,7 +157,7 @@ public final class SymbolTableTraining implements IFsstConstants {
 		int idx = sym.hash();
 		Symbol entry = hashTab[idx];
 		if (entry.icl <= sym.icl) {
-			long mask = ~0L >> entry.ignoredBits();
+			long mask = ~0L >>> entry.ignoredBits();
 			if (entry.val == (sym.val & mask)) {
 				return entry.code() & fsstCodeMask;
 			}
@@ -225,7 +225,10 @@ public final class SymbolTableTraining implements IFsstConstants {
 		}
 
 		int suffixLim = reorderCodes(newCode, runningSum);
+
+		// TODO rebuildIndices should be a bit faster
 		buildIndices();
+
 		// rebuildIndices(newCode);
 		SymbolTableDecoding decoding = buildDecoderTables(suffixLim);
 		return new SymbolTable(this, decoding);
@@ -264,9 +267,10 @@ public final class SymbolTableTraining implements IFsstConstants {
 				newCode[i] = runningSum[length - 1];
 				runningSum[length - 1]++;
 			}
-			if (i != newCode[i]) {
-				symbols[newCode[i]] = sym1.withCode(newCode[i]);
-			}
+			// if (i != newCode[i]) {
+			// Write from `[256, 512]` to `[0, 255]`
+			symbols[newCode[i]] = sym1.withCode(newCode[i]);
+			// }
 		}
 		return suffixLim;
 	}
@@ -287,7 +291,8 @@ public final class SymbolTableTraining implements IFsstConstants {
 			shortCodes[i] = byteCodes[i & fsstMask8];
 		}
 
-		for (int i = 0; i < nSymbols; i++) {
+		for (int i = nSymbols - 1; i >= 0; i--) {
+			// Should iterate from longest symbol to smaller ones, in order to fill hash with longest in priority
 			Symbol sym = symbols[i];
 			if (sym.length() == 2) {
 				shortCodes[sym.first2()] = packCodeLength(i, 2);
@@ -341,6 +346,7 @@ public final class SymbolTableTraining implements IFsstConstants {
 
 		for (int i = 0; i < fsstHashTabSize; i++) {
 			if (hashTab[i].icl < fsstICLFree) {
+				// TODO How are we guaranteed to pick the longest code with given hash?
 				hashTab[i] = symbols[newCodes[hashTab[i].first()]];
 			} else {
 				// the hashTab entry is free, and remains free with new code mapping

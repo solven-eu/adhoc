@@ -41,6 +41,7 @@ public class SymbolTableDecoding implements IFsstConstants {
 	public final byte[] decLen; // code -> symbol length
 	public final long[] decSymbol; // code -> symbol value
 
+	// 2-bytes lower than this has no longer symbol with same prefix
 	final int suffixLim;
 
 	private ByteSlice decode(byte[] buf, ByteSlice src) {

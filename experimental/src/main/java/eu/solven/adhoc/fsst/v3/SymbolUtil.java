@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.fsst.v3;
 
+import java.nio.charset.StandardCharsets;
+
 import com.google.common.base.Strings;
 
 import lombok.AccessLevel;
@@ -106,7 +108,7 @@ public final class SymbolUtil implements IFsstConstants {
 
 		public static Symbol fromBytes(byte[] in, int offset) {
 			int length = Math.min(in.length - offset, 8);
-//			assert length > 0;
+			// assert length > 0;
 			long value = fsstUnalignedLoad(in, offset);
 			return new Symbol(value, evalICL(fsstCodeMax, length));
 		}
@@ -159,7 +161,14 @@ public final class SymbolUtil implements IFsstConstants {
 			String hexString = Long.toHexString(Long.reverseBytes(val));
 			int length = 2 * length();
 			String valueAsString = Strings.padStart(hexString, length, '0').substring(0, length);
-			return "length=%s code=%s value=%s".formatted(length(), code(), valueAsString);
+
+			byte[] bytes = new byte[length()];
+			for (int i = 0; i < length(); i++) {
+				bytes[i] = (byte) ((val >> 8 * i) & 0xFF);
+			}
+
+			return "length=%s code=%s value=%s UTF-8=%s"
+					.formatted(length(), code(), valueAsString, new String(bytes, StandardCharsets.UTF_8));
 		}
 	}
 

@@ -29,7 +29,7 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(SMALL);
 
 		Assertions.assertThat(SMALL.length).isEqualTo(26L);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(82L);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(48L);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(48L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(SMALL);
@@ -38,11 +38,13 @@ public class TestMaplibreVsAdhoc {
 
 	@Test
 	public void testCompareCompression_MEDIUM() {
+		// System.out.println("medium=" + new String(MEDIUM, StandardCharsets.UTF_8));
+
 		SymbolTable encodedAdhoc = adhoc.encode(MEDIUM);
 		SymbolTable encodedMaplibre = java.encode(MEDIUM);
 
 		Assertions.assertThat(MEDIUM.length).isEqualTo(664L);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(668);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(585);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(587L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(MEDIUM);
@@ -55,7 +57,7 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(LARGE);
 
 		Assertions.assertThat(LARGE.length).isEqualTo(23_038);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(16_226L);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(14_301L);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(14_115L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(LARGE);
@@ -72,8 +74,8 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(inputBytes);
 
 		Assertions.assertThat(inputBytes.length).isEqualTo(154265L);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(99_054L);
-		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(74148L);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(76_783L);
+		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(74_148L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(inputBytes);
 		Assertions.assertThat(java.decode(encodedMaplibre)).contains(inputBytes);
