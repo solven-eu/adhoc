@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.fsst.v3;
 
 import java.nio.charset.StandardCharsets;
@@ -63,21 +85,21 @@ public class TestSymbol {
 	public void testToString() {
 		Symbol symbol = Symbol.newSymbolFromBytes("abc".getBytes(StandardCharsets.UTF_8));
 
-		Assertions.assertThat(symbol).hasToString("length=3 code=0 value=616263");
+		Assertions.assertThat(symbol).hasToString("length=3 code=0 value=616263 UTF-8=abc");
 	}
 
 	@Test
 	public void testToString_0ispadded() {
 		Symbol symbol = Symbol.newSymbolFromBytes(new byte[] { 0 });
 
-		Assertions.assertThat(symbol).hasToString("length=1 code=0 value=00");
+		Assertions.assertThat(symbol.toString()).startsWith("length=1 code=0 value=00");
 	}
 
 	@Test
 	public void testToString_01ispadded() {
 		Symbol symbol = Symbol.newSymbolFromBytes(new byte[] { 0, 1 });
 
-		Assertions.assertThat(symbol).hasToString("length=2 code=0 value=1000");
+		Assertions.assertThat(symbol.toString()).startsWith("length=2 code=0 value=1000");
 	}
 
 	// TODO Something is wrong: we should not have same string as `01` case
@@ -85,6 +107,13 @@ public class TestSymbol {
 	public void testToString_10ispadded() {
 		Symbol symbol = Symbol.newSymbolFromBytes(new byte[] { 1, 0 });
 
-		Assertions.assertThat(symbol).hasToString("length=2 code=0 value=1000");
+		Assertions.assertThat(symbol.toString()).startsWith("length=2 code=0 value=1000 UTF-8=");
+	}
+
+	@Test
+	public void testToString_chars() {
+		Symbol symbol = Symbol.newSymbolFromBytes(new byte[] { 'a', 'c' });
+
+		Assertions.assertThat(symbol).hasToString("length=2 code=0 value=6163 UTF-8=ac");
 	}
 }

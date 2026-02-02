@@ -22,31 +22,46 @@
  */
 package eu.solven.adhoc.fsst.v3;
 
-import java.util.Arrays;
-
-import lombok.AllArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 /**
- * A byte wrapper, enabling some sub-byte[] without creating a new array.
+ * Decodes FSST scheme.
  * 
  * @author Benoit Lacelle
  */
-@AllArgsConstructor
-public final class ByteSlice {
-	final byte[] array;
-	final int offset;
-	final int length;
+public interface IFsstDecoder {
 
 	/**
 	 * 
-	 * @return a non-defensive copy of this as a `byte[]`.
+	 * @param buf
+	 *            if null, will be initialized with reasonable size.
+	 * @param src
+	 * @return
 	 */
-	@SuppressWarnings("PMD.MethodReturnsInternalArray")
-	public byte[] asByteArray() {
-		if (offset == 0 && array.length == length) {
-			return array;
-		} else {
-			return Arrays.copyOfRange(array, offset, offset + length);
-		}
-	}
+	ByteSlice decode(@Nullable byte[] buf, ByteSlice src);
+
+	/**
+	 * 
+	 * @param buf
+	 *            if null, will be initialized with reasonable size.
+	 * @param src
+	 * @return
+	 */
+	ByteSlice decode(@Nullable byte[] buf, byte[] src);
+
+	/**
+	 * 
+	 * @param buf
+	 *            if null, will be initialized with reasonable size.
+	 * @param src
+	 * @param srcStart
+	 * @param srcEnd
+	 * @return
+	 */
+	ByteSlice decode(@Nullable byte[] buf, byte[] src, int srcStart, int srcEnd);
+
+	ByteSlice decodeAll(byte[] src);
+
+	ByteSlice decodeAll(ByteSlice src);
+
 }

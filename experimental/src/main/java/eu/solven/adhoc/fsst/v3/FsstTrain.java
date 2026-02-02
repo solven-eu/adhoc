@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
@@ -42,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.GodClass" })
 @Slf4j
 @UtilityClass
 public class FsstTrain {
@@ -187,7 +188,7 @@ public class FsstTrain {
 		// Register code actually used to estimate the encoded length on a table pruned of unused symbols
 		boolean[] codeUsed = new boolean[2 * IFsstConstants.fsstCodeBase];
 
-		for (int i = 0; i < samplingResult.samples.length; i++) {
+		for (byte[] sample : samplingResult.samples) {
 			// in earlier rounds (sampleFrac < 128) we skip data in the sample (reduces overall work ~2x)
 			// TODO Adjust with https://github.com/cwida/fsst/blob/master/libfsst.cpp#L89
 			// TODO To be adjusted based on sample size, else we might fully skip some round if the training input is
@@ -197,8 +198,6 @@ public class FsstTrain {
 			// if (frac < 128 && (SymbolUtil.fsstHash(i) & IFsstConstants.fsstSampleMask) > frac) {
 			// continue;
 			// }
-
-			byte[] sample = samplingResult.samples[i];
 			final int end = sample.length;
 			if (end == 0) {
 				// empty input
@@ -278,14 +277,16 @@ public class FsstTrain {
 	 * QSym represents a candidate symbol with gain.
 	 */
 	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
-		// larger val breaks tie
-		public static final Comparator<QSym> COMPARATOR =
+
+	// larger val breaks tie
+	public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
-		@Override
-		public int compareTo(QSym o) {
-			return COMPARATOR.compare(this, o);
-		}
+	@Override
+	public int compareTo(QSym o) {
+		return COMPARATOR.compare(this, o);
+	}
+
 	}
 
 	/**
@@ -293,27 +294,85 @@ public class FsstTrain {
 	 * (except in the last round), scores by gain≈frequency×length, keeps top-K via a min-heap, and updates the Table.
 	 * Reuses provided allocations to reduce GC pressure.
 	 */
-	@SuppressWarnings("PMD.AvoidReassigningLoopVariables")
 	public static SymbolTableTraining buildCandidates(SymbolTableTraining t, Counters c, int frac, boolean sampled) {
-		Map<SymCodeless, QSym> candidates = HashMap.newHashMap(IFsstConstants.fsstCodeMax);
+		int minCount = minCount(frac, sampled);
 
-		// on first iteration, minCount is 1
-		// on last iteration, minCount is 5
-		int minCount = Math.max(MIN_COUNT_NUMERATOR * frac / MIN_COUNT_DENOMINATOR, 1);
-		assert minCount > 0;
+		Map<SymCodeless, QSym> candidates = buildCandidates(t, c, frac, minCount);
 
-		// TODO Should improve this else we may discord good symbols on very short training data (e.g. just a
-		// simple String)
-		if (frac >= 128 && !sampled) {
-			// If the input is very small, we should considered all inputs at last pass
-			minCount = 0;
+		List<QSym> sortedList = sortCandidates(candidates);
+
+		SymbolTableTraining newSymboltable = SymbolTableTraining.makeSymbolTable();
+
+		return finalizeCandidates(frac, sortedList, newSymboltable);
+	}
+
+	private static SymbolTableTraining finalizeCandidates(int frac,
+			List<QSym> sortedList,
+			SymbolTableTraining newSymboltable) {
+		List<QSym> betterToWorst = sortedList.reversed();
+		for (QSym q : betterToWorst) {
+			if (frac >= 128) {
+				// last pass: keep symbol if effective
+				// cost is symbol length + length reference
+				int gain = q.gain;
+
+				if (q.symbol.length() == 1) {
+					gain /= SINGLE_BYTE_BOOST;
+				}
+
+				long gainMinusCost = gain - (q.symbol.length() + 1);
+
+				if (gainMinusCost > 0) {
+					newSymboltable.addSymbol(q.symbol);
+				}
+			} else {
+				// intermediate pass: keep as many symbols as possible
+				newSymboltable.addSymbol(q.symbol);
+			}
 		}
+		return newSymboltable;
+	}
 
-		// Maptitle always requires 5
-		// C++ increases the requirement on each pass
-		// TODO What is the point of discarding as we sort at the end?
-		// minCount = 5;
+	private static List<QSym> sortCandidates(Map<SymCodeless, QSym> candidates) {
+		List<QSym> sortedList;
+		if (candidates.size() > SymbolUtil.fsstMaxSymbols) {
+			// Extract top-K into list in descending order
+			Queue<QSym> pq = new PriorityQueue<>(SymbolUtil.fsstMaxSymbols);
 
+			for (QSym x : candidates.values()) {
+				if (pq.size() < SymbolUtil.fsstMaxSymbols) {
+					pq.offer(x);
+				} else if (x.compareTo(pq.peek()) > 0) {
+					// QSym polled =
+					pq.poll();
+					pq.offer(x);
+				}
+			}
+
+			// Copy into least, from least to greater
+			sortedList = new ArrayList<>(pq.size());
+			while (!pq.isEmpty()) {
+				sortedList.add(pq.poll());
+			}
+		} else {
+			sortedList = new ArrayList<>(candidates.values());
+			Collections.sort(sortedList);
+		}
+		return sortedList;
+	}
+
+	/**
+	 * 
+	 * @param t
+	 * @param c
+	 * @param frac
+	 *            from 0 to 128, growing on each pass. 128 means this is the final pass.
+	 * @param minCount
+	 * @return
+	 */
+	@SuppressWarnings("PMD.AvoidReassigningLoopVariables")
+	private static Map<SymCodeless, QSym> buildCandidates(SymbolTableTraining t, Counters c, int frac, int minCount) {
+		Map<SymCodeless, QSym> candidates = HashMap.newHashMap(IFsstConstants.fsstCodeMax);
 		// Iterate through symbols have appeared at least once
 		int maxCodeExcluded = IFsstConstants.fsstCodeBase + t.getNSymbols();
 		nextCode1: for (int pos1 = 0; pos1 < maxCodeExcluded; pos1++) {
@@ -333,6 +392,7 @@ public class FsstTrain {
 				if (sym1.length() == 1) {
 					// heuristic: promoting single-byte symbols (*8) helps reduce exception rates and increases
 					// [de]compression
+					// TODO Should not be applied on latest step
 					weight *= SINGLE_BYTE_BOOST;
 				}
 
@@ -389,58 +449,27 @@ public class FsstTrain {
 		// // }
 		// }
 		// }
+		return candidates;
+	}
 
-		List<QSym> sortedList;
-		if (candidates.size() > SymbolUtil.fsstMaxSymbols) {
-			// Extract top-K into list in descending order
-			PriorityQueue<QSym> pq = new PriorityQueue<>(SymbolUtil.fsstMaxSymbols);
+	private static int minCount(int frac, boolean sampled) {
+		// on first iteration, minCount is 1
+		// on last iteration, minCount is 5
+		int minCount = Math.max(MIN_COUNT_NUMERATOR * frac / MIN_COUNT_DENOMINATOR, 1);
+		assert minCount > 0;
 
-			for (QSym x : candidates.values()) {
-				if (pq.size() < SymbolUtil.fsstMaxSymbols) {
-					pq.offer(x);
-				} else if (x.compareTo(pq.peek()) > 0) {
-					// QSym polled =
-					pq.poll();
-					pq.offer(x);
-				}
-			}
-
-			// Copy into least, from least to greater
-			sortedList = new ArrayList<>(pq.size());
-			while (!pq.isEmpty()) {
-				sortedList.add(pq.poll());
-			}
-		} else {
-			sortedList = new ArrayList<>(candidates.values());
-			Collections.sort(sortedList);
+		// TODO Should improve this else we may discord good symbols on very short training data (e.g. just a
+		// simple String)
+		if (frac >= 128 && !sampled) {
+			// If the input is very small, we should considered all inputs at last pass
+			minCount = 0;
 		}
 
-		SymbolTableTraining newSymboltable = SymbolTableTraining.makeSymbolTable();
-
-		List<QSym> betterToWorst = sortedList.reversed();
-		for (int i = 0; i < betterToWorst.size(); i++) {
-			QSym q = betterToWorst.get(i);
-
-			if (frac >= 128) {
-				// last pass: keep symbol if effective
-				// cost is symbol length + length reference
-				int gain = q.gain;
-
-				if (q.symbol.length() == 1) {
-					gain /= SINGLE_BYTE_BOOST;
-				}
-
-				long gainMinusCost = gain - (q.symbol.length() + 1);
-
-				if (gainMinusCost > 0) {
-					newSymboltable.addSymbol(q.symbol);
-				}
-			} else {
-				// intermediate pass: keep as many symbols as possible
-				newSymboltable.addSymbol(q.symbol);
-			}
-		}
-		return newSymboltable;
+		// Maptitle always requires 5
+		// C++ increases the requirement on each pass
+		// TODO What is the point of discarding as we sort at the end?
+		// minCount = 5;
+		return minCount;
 	}
 
 	/**
@@ -455,10 +484,10 @@ public class FsstTrain {
 
 		// If coded, we write 1
 		// if escaped, we write 2*length
-		int gain = count * (2 * sym.length() - 1);
-		// FSST gain function
-		// TODO Why is it better?
-		gain = count * sym.length();
+		// This is the actual gain, not reduced by the cost
+		// The cost will be evaluated in the final pass, to get ride of poor symbols
+		// Why isn't there a minus, as we gain `symbol.length() - symbol mark`
+		int gain = count * sym.length();
 
 		if (candidates.containsKey(key)) {
 			// Happens when merging 2 symbols hits an already known symbol

@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package eu.solven.adhoc.fsst.v3;
 
 import java.util.concurrent.TimeUnit;
@@ -14,6 +36,11 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
+/**
+ * Benchmarks for SymbolUtil, especially `fsstUnalignedLoad` which is one of FSST hotspots.
+ * 
+ * @author Benoit Lacelle
+ */
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Mode.Throughput)
@@ -21,6 +48,7 @@ import org.openjdk.jmh.annotations.Warmup;
 @Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1)
+@SuppressWarnings("checkstyle:MagicNumber")
 public class SymbolUtilBenchmark {
 
 	byte[] bytes1 = new byte[] { 1 };
@@ -62,13 +90,11 @@ public class SymbolUtilBenchmark {
 		return SymbolUtil.fsstUnalignedLoad(bytes5, 0);
 	}
 
-
 	@OperationsPerInvocation(6)
 	@Benchmark
 	public long unalignedLoad_6bytes() {
 		return SymbolUtil.fsstUnalignedLoad(bytes6, 0);
 	}
-
 
 	@OperationsPerInvocation(7)
 	@Benchmark

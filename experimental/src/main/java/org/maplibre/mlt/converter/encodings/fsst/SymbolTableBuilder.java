@@ -1,27 +1,25 @@
-/*
-MIT License
-
-Copyright (c) 2018-2020, CWI, TU Munich, FSU Jena
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+/**
+ * The MIT License
+ * Copyright (c) 2018-2020 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
-
 package org.maplibre.mlt.converter.encodings.fsst;
 
 import java.nio.ByteBuffer;
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.bytes.ByteList;
@@ -48,6 +45,7 @@ import software.amazon.awssdk.annotations.NotNull;
  * <p>
  * Some Java-specific optimizations are added to bring performance within 50% of the C++ version on real-world data.
  */
+@SuppressWarnings({ "PMD", "checkstyle:all" })
 class SymbolTableBuilder {
 	static final int MAX_SYMBOL_LENGTH = 8;
 	private static final int NUM_ITERS = 6;
@@ -119,7 +117,12 @@ class SymbolTableBuilder {
 		int idx = 0;
 		// 2, 3, 4, 5, 6, 7, 8, 1
 		for (int b = 2; b <= MAX_SYMBOL_LENGTH + 1; b++) {
-			int len = b > MAX_SYMBOL_LENGTH ? 1 : b;
+			int len;
+			if (b > MAX_SYMBOL_LENGTH) {
+				len = 1;
+			} else {
+				len = b;
+			}
 			for (int i = 0; i < nSymbols; i++) {
 				var symbol = symbols[256 + i];
 				if (symbol.length() == len) {
@@ -305,7 +308,12 @@ class SymbolTableBuilder {
 			} else {
 				// adding a symbol costs length + 1, so don't add if it costs more than it saves
 				long costs = symb.symbol.length() + 1L;
-				long saves = symb.symbol.length() == 1 ? symb.gain / 8 : symb.gain;
+				long saves;
+				if (symb.symbol.length() == 1) {
+					saves = symb.gain / 8;
+				} else {
+					saves = symb.gain;
+				}
 				if (saves > costs) {
 					st.add(symb.symbol);
 				}
@@ -339,30 +347,30 @@ class SymbolTableBuilder {
 	}
 
 	private record QSymbol(long gain, Symbol symbol) implements Comparable<QSymbol> {
-		@Override
-		public int compareTo(@NotNull SymbolTableBuilder.QSymbol o) {
-			return Long.compare(o.gain, gain);
-		}
-	}
 
-	static class Counters {
-		private final int[] count1 = new int[512];
-		private final int[] count2 = new int[512 * 512];
-
-		public void count1Inc(int pos1) {
-			count1[pos1]++;
-		}
-
-		public void count2Inc(int pos1, int pos2) {
-			count2[(pos1 << 9) | pos2]++;
-		}
-
-		public int count1GetNext(int pos1) {
-			return count1[pos1];
-		}
-
-		public int count2GetNext(int pos1, int pos2) {
-			return count2[(pos1 << 9) | pos2];
-		}
+	@Override
+	public int compareTo(@NotNull SymbolTableBuilder.QSymbol o) {
+		return Long.compare(o.gain, gain);
 	}
 }
+
+static class Counters {
+	private final int[] count1 = new int[512];
+	private final int[] count2 = new int[512 * 512];
+
+	public void count1Inc(int pos1) {
+		count1[pos1]++;
+	}
+
+	public void count2Inc(int pos1, int pos2) {
+		count2[(pos1 << 9) | pos2]++;
+	}
+
+	public int count1GetNext(int pos1) {
+		return count1[pos1];
+	}
+
+	public int count2GetNext(int pos1, int pos2) {
+		return count2[(pos1 << 9) | pos2];
+	}
+}}

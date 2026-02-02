@@ -47,12 +47,12 @@ public class Counters {
 	// Must be relative to the maximum sampling size to prevent saturation
 	private static final int MAX_COUNT = 0xFFFF;
 
-	private static final int counterCodeMax = IFsstConstants.fsstCodeMax;
+	private static final int COUNTER_CODE_MAX = IFsstConstants.fsstCodeMax;
 
 	// 1-byte may be counted by both literals (<256) and 1-byte symbols (>=256 but < 512)
-	private final int[] single = new int[counterCodeMax]; // single-symbol counts
+	private final int[] single = new int[COUNTER_CODE_MAX]; // single-symbol counts
 	// code1 * counterCodeMax + code2
-	private final int[] pair = new int[counterCodeMax * counterCodeMax]; // pair counts
+	private final int[] pair = new int[COUNTER_CODE_MAX * COUNTER_CODE_MAX]; // pair counts
 
 	// https://github.com/axiomhq/fsst/blob/main/counters.go
 	private final List<IntPair> pairList = new ArrayList<>(); // sparse list of non-zero pairs
@@ -73,7 +73,7 @@ public class Counters {
 	 * If code < 256, we refer to a literal byte, else (but still <512) we refer to a symbol (which may be 1-byte)
 	 */
 	public void incSingle(int code) {
-		assert code >= 0 && code <= counterCodeMax : "Invalid code: %s".formatted(code);
+		assert code >= 0 && code <= COUNTER_CODE_MAX : "Invalid code: %s".formatted(code);
 
 		if (single[code] < MAX_COUNT) {
 			single[code]++;
@@ -82,7 +82,7 @@ public class Counters {
 
 	/** Increment the frequency count for a symbol pair (sparse tracking). */
 	public void incPair(int code1, int code2) {
-		int combinedCode = code1 * counterCodeMax + code2;
+		int combinedCode = code1 * COUNTER_CODE_MAX + code2;
 		if (pair[combinedCode] == 0) {
 			pairList.add(new IntPair(code1, code2));
 			pair[combinedCode] = 1;
@@ -122,7 +122,7 @@ public class Counters {
 	public int nextNotZero(int code1, AtomicInteger codeHolder) {
 		int code2 = codeHolder.get();
 		while (code2 < IFsstConstants.fsstCodeMax) {
-			int combinedCode = code1 * counterCodeMax + code2;
+			int combinedCode = code1 * COUNTER_CODE_MAX + code2;
 			int count = pair[combinedCode];
 			if (count != 0) {
 				codeHolder.set(code2);
@@ -140,7 +140,7 @@ public class Counters {
 
 	/** Returns the count for a specific symbol pair. */
 	public int pairCount(int code1, int code2) {
-		int combinedCode = code1 * counterCodeMax + code2;
+		int combinedCode = code1 * COUNTER_CODE_MAX + code2;
 		return pair[combinedCode];
 	}
 

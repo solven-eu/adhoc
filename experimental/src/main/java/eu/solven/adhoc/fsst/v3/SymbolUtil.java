@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
- * <p>
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * <p>
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * <p>
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -49,8 +49,8 @@ public final class SymbolUtil implements IFsstConstants {
 		// return buf.getLong();
 		int length = Math.min(in.length - offset, 8);
 
-		long value = switch (length) {
-		case 1 -> (in[offset] & 0xFFL);
+		return switch (length) {
+		case 1 -> in[offset] & 0xFFL;
 		case 2, 3, 4, 5, 6, 7 -> {
 			long v = 0;
 			for (int i = 0; i < length; i++) {
@@ -68,8 +68,6 @@ public final class SymbolUtil implements IFsstConstants {
 				| (in[offset + 6] & 0xFFL) << 48
 				| (in[offset + 7] & 0xFFL) << 56;
 		};
-
-		return value;
 	}
 
 	public static long fsstHash(long w) {
@@ -195,7 +193,7 @@ public final class SymbolUtil implements IFsstConstants {
 		int shiftA = 8 * (lengthA - (8 - lengthB));
 
 		// Append b.val after a.val: a may be cut on its lower bits (to the right of val)
-		long combinedValue = (b.val << (8 * (lengthA) - shiftA)) | (a.val >>> shiftA);
+		long combinedValue = (b.val << (8 * lengthA - shiftA)) | (a.val >>> shiftA);
 		// code=fsstCodeMask will be replaced later?
 		return new Symbol(combinedValue, Symbol.evalICL(fsstCodeMask, combinedLength));
 	}

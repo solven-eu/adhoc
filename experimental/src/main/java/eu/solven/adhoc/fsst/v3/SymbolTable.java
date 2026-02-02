@@ -38,7 +38,7 @@ import lombok.RequiredArgsConstructor;
 @ThreadSafe
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
-public class SymbolTable implements IFsstConstants {
+public class SymbolTable implements IFsstConstants, IFsstDecoder {
 	// Used for encoding
 	final SymbolTableTraining symbols;
 
@@ -112,8 +112,8 @@ public class SymbolTable implements IFsstConstants {
 			// Try 3-8 byte hash table match
 			int idx = (int) (SymbolUtil.fsstHash(word & fsstMask24) & (fsstHashTabSize - 1));
 			Symbol entry = symbols.hashTab[idx];
-			
-			//Relates with SymbolTableTraining.findLongestSymbol
+
+			// Relates with SymbolTableTraining.findLongestSymbol
 			if (entry.icl < fsstICLFree) {
 				long mask = ~0L >>> entry.ignoredBits();
 				int symLen = entry.length();
@@ -146,63 +146,28 @@ public class SymbolTable implements IFsstConstants {
 		return encodeAll(string.getBytes(StandardCharsets.UTF_8));
 	}
 
-	private ByteSlice decode(byte[] buf, ByteSlice src) {
-		return decode(buf, src.array, src.offset, src.offset + src.length);
+	@Override
+	public ByteSlice decode(byte[] buf, ByteSlice src) {
+		return decoding.decode(buf, src);
 	}
 
+	@Override
 	public ByteSlice decode(byte[] buf, byte[] src) {
-		return decode(buf, src, 0, src.length);
+		return decoding.decode(buf, src);
 	}
 
-	@SuppressWarnings("PMD.AssignmentInOperand")
+	@Override
 	public ByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
-		if (buf == null) {
-			buf = new byte[src.length * 4 + 8];
-		}
-
-		if (srcEnd >= src.length) {
-			throw new IllegalArgumentException();
-		}
-
-		int bufPos = 0;
-		int srcPos = srcStart;
-		int bufCap = buf.length;
-
-		while (srcPos < srcEnd) {
-			int code = src[srcPos++] & 0xFF;
-			if (code < fsstEscapeCode) {
-				int symLen = decoding.decLen[code];
-				long symVal = decoding.decSymbol[code];
-
-				if (bufPos + symLen > bufCap) {
-					// extends the buffer as it it too small to accept decoded bytes
-					int newCap = Math.max(bufCap * 2, bufPos + symLen);
-					buf = Arrays.copyOf(buf, newCap);
-					bufCap = newCap;
-				}
-
-				for (int i = 0; i < symLen; i++) {
-					buf[bufPos + i] = (byte) ((symVal >> (8 * i)) & 0xFF);
-				}
-				bufPos += symLen;
-			} else {
-				if (srcPos >= srcEnd) {
-					break;
-				}
-				if (bufPos >= bufCap) {
-					buf = Arrays.copyOf(buf, Math.max(bufCap * 2, bufPos + 1));
-				}
-				buf[bufPos++] = src[srcPos++];
-			}
-		}
-		return new ByteSlice(buf, 0, bufPos);
+		return decoding.decode(buf, src, srcStart, srcEnd);
 	}
 
+	@Override
 	public ByteSlice decodeAll(byte[] src) {
-		return decode(null, src);
+		return decoding.decode(null, src);
 	}
 
+	@Override
 	public ByteSlice decodeAll(ByteSlice src) {
-		return decode(null, src);
+		return decoding.decode(null, src);
 	}
 }

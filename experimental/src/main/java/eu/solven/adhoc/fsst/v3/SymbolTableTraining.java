@@ -208,7 +208,6 @@ public final class SymbolTableTraining implements IFsstConstants {
 	// finally, shortCodes[] is modified to also encode all single-byte symbols (hence byteCodes[] is not required on a
 	// critical path anymore).
 	//
-	@SuppressWarnings("PMD.AssignmentInOperand")
 	public SymbolTable finalizeTable() {
 		assert nSymbols <= 255;
 
@@ -234,6 +233,7 @@ public final class SymbolTableTraining implements IFsstConstants {
 		return new SymbolTable(this, decoding);
 	}
 
+	@SuppressWarnings({ "PMD.UseVarargs", "PMD.AssignmentInOperand" })
 	private int reorderCodes(int[] newCode, int[] runningSum) {
 		// determine the new code for each symbol, ordered by length (and splitting 2byte symbols into two classes
 		// around suffixLim)
@@ -302,6 +302,7 @@ public final class SymbolTableTraining implements IFsstConstants {
 		}
 	}
 
+	@SuppressWarnings("PMD.UseVarargs")
 	void rebuildIndices(int[] newCodes) {
 		// renumber the codes in byteCodes[]
 		{
@@ -327,7 +328,7 @@ public final class SymbolTableTraining implements IFsstConstants {
 				// BEWARE Small optimization by short-circuiting packCodeLength
 				shortCodes[i] = newCodes[shortCodes[i] & 0xFF] + (shortCodes[i] & (15 << fsstLenBits));
 			} else {
-				shortCodes[i] = shortCodes[i] = byteCodes[i & fsstMask8];
+				shortCodes[i] = byteCodes[i & fsstMask8];
 			}
 		}
 
@@ -348,9 +349,10 @@ public final class SymbolTableTraining implements IFsstConstants {
 			if (hashTab[i].icl < fsstICLFree) {
 				// TODO How are we guaranteed to pick the longest code with given hash?
 				hashTab[i] = symbols[newCodes[hashTab[i].first()]];
-			} else {
-				// the hashTab entry is free, and remains free with new code mapping
 			}
+			// else {
+			// the hashTab entry is free, and remains free with new code mapping
+			// }
 		}
 	}
 

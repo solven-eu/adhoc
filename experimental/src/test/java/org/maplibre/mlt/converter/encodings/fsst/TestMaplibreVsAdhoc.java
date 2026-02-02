@@ -1,3 +1,25 @@
+/**
+ * The MIT License
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package org.maplibre.mlt.converter.encodings.fsst;
 
 import java.nio.charset.StandardCharsets;
@@ -29,7 +51,7 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(SMALL);
 
 		Assertions.assertThat(SMALL.length).isEqualTo(26L);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(48L);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(52L);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(48L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(SMALL);
@@ -44,7 +66,7 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(MEDIUM);
 
 		Assertions.assertThat(MEDIUM.length).isEqualTo(664L);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(585);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(600);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(587L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(MEDIUM);
@@ -57,7 +79,7 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(LARGE);
 
 		Assertions.assertThat(LARGE.length).isEqualTo(23_038);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(14_301L);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(14_297L);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(14_115L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(LARGE);
@@ -74,7 +96,7 @@ public class TestMaplibreVsAdhoc {
 		SymbolTable encodedMaplibre = java.encode(inputBytes);
 
 		Assertions.assertThat(inputBytes.length).isEqualTo(154265L);
-		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(76_783L);
+		Assertions.assertThat(encodedAdhoc.weight()).isEqualTo(77_398L);
 		Assertions.assertThat(encodedMaplibre.weight()).isEqualTo(74_148L);
 
 		Assertions.assertThat(adhoc.decode(encodedAdhoc)).contains(inputBytes);

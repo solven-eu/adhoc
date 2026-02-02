@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 @ThreadSafe
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
-public class SymbolTableDecoding implements IFsstConstants {
+public class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
 	// Decoder tables
 	public final byte[] decLen; // code -> symbol length
 	public final long[] decSymbol; // code -> symbol value
@@ -44,15 +44,18 @@ public class SymbolTableDecoding implements IFsstConstants {
 	// 2-bytes lower than this has no longer symbol with same prefix
 	final int suffixLim;
 
-	private ByteSlice decode(byte[] buf, ByteSlice src) {
+	@Override
+	public ByteSlice decode(byte[] buf, ByteSlice src) {
 		return decode(buf, src.array, src.offset, src.offset + src.length);
 	}
 
+	@Override
 	public ByteSlice decode(byte[] buf, byte[] src) {
 		return decode(buf, src, 0, src.length);
 	}
 
 	@SuppressWarnings("PMD.AssignmentInOperand")
+	@Override
 	public ByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
 		if (buf == null) {
 			buf = new byte[src.length * 4 + 8];
@@ -96,10 +99,12 @@ public class SymbolTableDecoding implements IFsstConstants {
 		return new ByteSlice(buf, 0, bufPos);
 	}
 
+	@Override
 	public ByteSlice decodeAll(byte[] src) {
 		return decode(null, src);
 	}
 
+	@Override
 	public ByteSlice decodeAll(ByteSlice src) {
 		return decode(null, src);
 	}
