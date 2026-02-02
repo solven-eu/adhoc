@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,6 +27,7 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,171 +43,224 @@ import lombok.Builder;
 /**
  * An {@link IAdhocMap} based over an underlying {@link Map}, and a mask. The mask keySet must not overlap the decorated
  * keySet.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder
 public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
-	protected final IAdhocMap decorated;
-	final Map<String, ?> mask;
+    protected final IAdhocMap decorated;
+    final Map<String, ?> mask;
 
-	/**
-	 * Holds cached entrySet(). Note that AbstractMap fields are used for keySet() and values().
-	 */
-	// Similar to HashMap
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	transient Set<Map.Entry<String, Object>> entrySet;
+    /**
+     * Holds cached entrySet(). Note that AbstractMap fields are used for keySet() and values().
+     */
+    // Similar to HashMap
+    @SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+    transient Set<Map.Entry<String, Object>> entrySet;
 
-	@SuppressWarnings("PMD.LooseCoupling")
-	@Override
-	public int compareTo(IAdhocMap o) {
-		if (o instanceof MaskedAdhocMap otherMasked) {
-			if (otherMasked.mask.equals(this.mask)) {
-				return this.decorated.compareTo(otherMasked.decorated);
-			} else {
-				return AdhocMapComparisonHelpers.compareMap(this, o);
-			}
-		} else {
-			return AdhocMapComparisonHelpers.compareMap(this, o);
-		}
-	}
+    @SuppressWarnings("PMD.LooseCoupling")
+    @Override
+    public int compareTo(IAdhocMap o) {
+        if (o instanceof MaskedAdhocMap otherMasked) {
+            if (otherMasked.mask.equals(this.mask)) {
+                return this.decorated.compareTo(otherMasked.decorated);
+            } else {
+                return AdhocMapComparisonHelpers.compareMap(this, o);
+            }
+        } else {
+            return AdhocMapComparisonHelpers.compareMap(this, o);
+        }
+    }
 
-	@Override
-	public IAdhocSlice asSlice() {
-		return SliceAsMap.fromMapUnsafe(this);
-	}
+    @Override
+    public IAdhocSlice asSlice() {
+        return SliceAsMap.fromMapUnsafe(this);
+    }
 
-	@Override
-	public ISliceFactory getFactory() {
-		return decorated.getFactory();
-	}
+    @Override
+    public ISliceFactory getFactory() {
+        return decorated.getFactory();
+    }
 
-	// Similar to HashMap
-	@SuppressWarnings({ "checkstyle.InnerAssignment", "PMD.AssignmentInOperand", "PMD.UselessParentheses" })
-	@Override
-	public Set<Entry<String, Object>> entrySet() {
-		Set<Map.Entry<String, Object>> es;
-		if ((es = entrySet) == null) {
-			return (entrySet = new MaskedSliceAsMapEntrySet());
-		} else {
-			return es;
-		}
-	}
+    // Similar to HashMap
+    @SuppressWarnings({"checkstyle.InnerAssignment", "PMD.AssignmentInOperand", "PMD.UselessParentheses"})
+    @Override
+    public Set<Entry<String, Object>> entrySet() {
+        Set<Map.Entry<String, Object>> es;
+        if ((es = entrySet) == null) {
+            return (entrySet = new MaskedSliceAsMapEntrySet());
+        } else {
+            return es;
+        }
+    }
 
-	// Called by `SliceAsMap` so it needs to be fast
-	@Override
-	public boolean containsKey(Object key) {
-		return decorated.containsKey(key) || mask.containsKey(key);
-	}
+    // Called by `SliceAsMap` so it needs to be fast
+    @Override
+    public boolean containsKey(Object key) {
+        return decorated.containsKey(key) || mask.containsKey(key);
+    }
 
-	@Override
-	public Object get(Object key) {
-		Object fromDecorated = decorated.get(key);
-		if (fromDecorated != null) {
-			return fromDecorated;
-		} else {
-			return mask.get(key);
-		}
-	}
+    @Override
+    public Object get(Object key) {
+        Object fromDecorated = decorated.get(key);
+        if (fromDecorated != null) {
+            return fromDecorated;
+        } else {
+            return mask.get(key);
+        }
+    }
 
-	@Override
-	public int hashCode() {
-		return decorated.hashCode() + mask.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return decorated.hashCode() + mask.hashCode();
+    }
 
-	@SuppressWarnings("PMD.LooseCoupling")
-	@Override
-	public boolean equals(Object o) {
-		if (o == null) {
-			return false;
-		} else if (o == this) {
-			return true;
-		} else if (o instanceof MaskedAdhocMap otherMasked) {
-			if (this.mask.equals(otherMasked.mask)) {
-				return this.decorated.equals(otherMasked.decorated);
-			} else {
-				return super.equals(o);
-			}
-		} else {
-			return super.equals(o);
-		}
-	}
+    @SuppressWarnings("PMD.LooseCoupling")
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        } else if (o == this) {
+            return true;
+        } else if (o instanceof MaskedAdhocMap otherMasked) {
+            if (this.mask.equals(otherMasked.mask)) {
+                return this.decorated.equals(otherMasked.decorated);
+            } else {
+                return super.equals(o);
+            }
+        } else {
+            return super.equals(o);
+        }
+    }
 
-	/**
-	 * A {@link Set} for {@link Entry} of {@link MaskedAdhocMap}.
-	 * 
-	 * @author Benoit Lacelle
-	 * 
-	 */
-	public class MaskedSliceAsMapEntrySet extends AbstractSet<Map.Entry<String, Object>> {
+    /**
+     * A {@link Set} for {@link Entry} of {@link MaskedAdhocMap}.
+     *
+     * @author Benoit Lacelle
+     *
+     */
+    public class MaskedSliceAsMapEntrySet extends AbstractSet<Map.Entry<String, Object>> {
 
-		@Override
-		public int size() {
-			return decorated.size() + mask.size();
-		}
+        @Override
+        public int size() {
+            return decorated.size() + mask.size();
+        }
 
-		@Override
-		public Iterator<Map.Entry<String, Object>> iterator() {
-			Iterator<Map.Entry<String, Object>> decoratedIterator = decorated.entrySet().iterator();
-			Iterator<? extends Map.Entry<String, ?>> maskIterator = mask.entrySet().iterator();
+        @Override
+        public Iterator<Map.Entry<String, Object>> iterator() {
+            Iterator<Map.Entry<String, Object>> decoratedIterator = decorated.entrySet().iterator();
+            Iterator<? extends Map.Entry<String, ?>> maskIterator = mask.entrySet().iterator();
 
-			Iterator<Map.Entry<String, Object>> maskIteratorTyped =
-					Iterators.transform(maskIterator, e -> Map.entry(e.getKey(), e.getValue()));
-			return Iterators.concat(decoratedIterator, maskIteratorTyped);
-		}
+            Iterator<Map.Entry<String, Object>> maskIteratorTyped =
+                    Iterators.transform(maskIterator, e -> Map.entry(e.getKey(), e.getValue()));
+            return Iterators.concat(decoratedIterator, maskIteratorTyped);
+        }
 
-		@Override
-		public void clear() {
-			throw new UnsupportedAsImmutableException();
-		}
+        @Override
+        public void clear() {
+            throw new UnsupportedAsImmutableException();
+        }
 
-		@Override
-		public boolean remove(Object o) {
-			throw new UnsupportedAsImmutableException();
-		}
+        @Override
+        public boolean remove(Object o) {
+            throw new UnsupportedAsImmutableException();
+        }
 
-	}
+    }
 
-	@Override
-	public IAdhocMap retainAll(Set<String> retainedColumns) {
-		Map<Boolean, ImmutableSet<String>> partitioned = retainedColumns.stream()
-				.collect(Collectors.partitioningBy(mask::containsKey, ImmutableSet.toImmutableSet()));
+    /**
+     *
+     * @param retainedColumns a Set of columns to retains
+     * @param mask a mask from which keySet are available.
+     * @param partitioned
+     */
+    // BEWARE We store the mask as it has higher change to be sameRef while `mask.KeySet` may he changed
+    private record RetainedResult(Set<String> retainedColumns, Map<String, ?> mask,
+                                  Map<Boolean, ImmutableSet<String>> partitioned) {
 
-		Map<String, ?> retainedMask;
-		if (partitioned.get(true).isEmpty()) {
-			// no impact on mask
-			retainedMask = Map.of();
-		} else if (partitioned.get(true).size() == mask.size()) {
-			// no impact on mask
-			retainedMask = mask;
-		} else {
-			retainedMask = new LinkedHashMap<>(mask);
-			retainedMask.keySet().retainAll(retainedColumns);
-		}
+        public boolean isCompatible(Set<String> retainedColumns, Map<String, ?> mask) {
+            boolean sameRetained = this.retainedColumns.equals(retainedColumns);
 
-		IAdhocMap retainedDecorated;
-		if (partitioned.get(false).isEmpty()) {
-			// no impact on decorated
-			retainedDecorated = decorated;
-		} else if (retainedColumns.size() == partitioned.get(false).size()) {
-			// Re-use the original Collection, which is typically a Guava ImmutableCollection
-			retainedDecorated = decorated.retainAll(retainedColumns);
-		} else {
-			retainedDecorated = decorated.retainAll(ImmutableSet.copyOf(partitioned.get(false)));
-		}
+            if (!sameRetained) {
+                return false;
+            }
 
-		if (retainedMask.size() == mask.size()) {
-			// It appears the mask contains no retained column
-			retainedMask = mask;
-		} else {
-			retainedDecorated = decorated.retainAll(retainedColumns);
-		}
+            if (mask == this.mask) {
+                // implies same keySet
+                return true;
+            }
 
-		if (retainedMask.isEmpty()) {
-			return retainedDecorated;
-		}
+            Set<String> thisKeySet = this.mask.keySet();
+            Set<String> otherKeySet = mask.keySet();
+            // BEWARE `Objects.equals` starts with a reference-check
+            if (Objects.equals(thisKeySet, otherKeySet)) {
+                // implies same keySet
+                return true;
+            }
 
-		return MaskedAdhocMap.builder().decorated(retainedDecorated).mask(retainedMask).build();
-	}
+            return false;
+        }
+    }
+
+    // In a given thread, we tend to do many `.retainAll` with the same retained columns
+    private static final ThreadLocal<RetainedResult> tlPartition = new ThreadLocal<>();
+
+    @Override
+    public IAdhocMap retainAll(Set<String> retainedColumns) {
+        Map<Boolean, ImmutableSet<String>> partitioned;
+
+        // BEWARE This is a performance optimization for `ATableQueryOptimizer.evaluateInduced` as we will induce many similar rows, given the same retainedColumns (i.e. the induced columns)
+        {
+            RetainedResult previousPartition = tlPartition.get();
+            if (previousPartition == null || !previousPartition.isCompatible(retainedColumns, mask)) {
+                // Previous partition is not compatible: may happen if current thread moved to another inferred
+                Map<Boolean, ImmutableSet<String>> currentPartitioned = retainedColumns.stream()
+                        .collect(Collectors.partitioningBy(mask::containsKey, ImmutableSet.toImmutableSet()));
+
+                tlPartition.set(new RetainedResult(retainedColumns, mask, currentPartitioned));
+
+                partitioned = currentPartitioned;
+            } else {
+                partitioned = previousPartition.partitioned;
+            }
+        }
+
+
+        Map<String, ?> retainedMask;
+        if (partitioned.get(true).isEmpty()) {
+            // no impact on mask
+            retainedMask = Map.of();
+        } else if (partitioned.get(true).size() == mask.size()) {
+            // no impact on mask
+            retainedMask = mask;
+        } else {
+            retainedMask = new LinkedHashMap<>(mask);
+            retainedMask.keySet().retainAll(retainedColumns);
+        }
+
+        IAdhocMap retainedDecorated;
+        if (partitioned.get(false).isEmpty()) {
+            // no impact on decorated
+            retainedDecorated = decorated;
+        } else if (retainedColumns.size() == partitioned.get(false).size()) {
+            // Re-use the original Collection, which is typically a Guava ImmutableCollection
+            retainedDecorated = decorated.retainAll(retainedColumns);
+        } else {
+            retainedDecorated = decorated.retainAll(ImmutableSet.copyOf(partitioned.get(false)));
+        }
+
+        if (retainedMask.size() == mask.size()) {
+            // It appears the mask contains no retained column
+            retainedMask = mask;
+        } else {
+            retainedDecorated = decorated.retainAll(retainedColumns);
+        }
+
+        if (retainedMask.isEmpty()) {
+            return retainedDecorated;
+        }
+
+        return MaskedAdhocMap.builder().decorated(retainedDecorated).mask(retainedMask).build();
+    }
 
 }

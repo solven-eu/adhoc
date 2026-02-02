@@ -32,12 +32,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -45,6 +47,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
@@ -376,7 +379,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	/**
-	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Collection)}
+	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
 	 */
 	@Value
 	@Builder
@@ -388,32 +391,48 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		int[] sequencedIndexes;
 	}
 
+
+	/**
+	 *
+	 * @param retainedColumns a Set of columns to retains
+	 * @param sequencedKeys
+	 */
+	// BEWARE We store the mask as it has higher change to be sameRef while `mask.KeySet` may he changed
+	private record RetainedResult(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
+	}
+
+	// TODO Purge policy
+	// TODO Compare perf with ThreadLocal
+	private static final Map<RetainedResult, RetainedKeySet> retainedColumsToSet = new ConcurrentHashMap<>();
+
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		Set<String> intersection;
-		if (sequencedKeys.containsAll(retainedColumns)) {
-			// In most cases, we retains a subSet
-			intersection = retainedColumns;
-		} else {
-			// `Sets.intersection` necessarily creates a new Set
-			intersection = Sets.intersection(sequencedKeys, retainedColumns);
-		}
-		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
-
-		// TODO Cache it?
-		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
-		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
-			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
-
-			if (originalIndex < 0) {
-				// Throw is retaining a missing column: it does not follow resilient behavior of standard `.retainALl`
-				// but it may help having good performances.
-				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+		return retainedColumsToSet.computeIfAbsent(new RetainedResult(retainedColumns, sequencedKeys), k -> {
+			Set<String> intersection;
+			if (sequencedKeys.containsAll(retainedColumns)) {
+				// In most cases, we retain a subSet
+				intersection = retainedColumns;
+			} else {
+				// `Sets.intersection` necessarily creates a new Set
+				intersection = Sets.intersection(sequencedKeys, retainedColumns);
 			}
+			SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
 
-			return originalIndex;
-		}).toArray();
+			List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+			int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
+				int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
 
-		return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+				if (originalIndex < 0) {
+					// Throw is retaining a missing column: it does not follow resilient behavior of standard `.retainALl`
+					// but it may help having good performances.
+					throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+				}
+
+				return originalIndex;
+			}).toArray();
+
+			return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+		});
+
 	}
 
 	@Override
