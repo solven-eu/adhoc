@@ -12,7 +12,7 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<cucumber.version>7.23.0</cucumber.version>
+		<cucumber.version>7.34.2</cucumber.version>
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
