@@ -49,7 +49,7 @@ public final class FlexiblePackedIntegers implements IIntArray {
 	static final int BITS_PER_CHUNK = BITS_PER_INT;
 
 	// number of lower bits expressed per integer (higher bits are all zeros)
-	int bits;
+	int bitsPerInt;
 	// number of packed ints
 	int intsLength;
 
@@ -61,12 +61,17 @@ public final class FlexiblePackedIntegers implements IIntArray {
 
 	@Builder
 	@SuppressWarnings("PMD.UseVarargs")
-	private FlexiblePackedIntegers(int bits, int intsLength, int[] holder) {
-		this.bits = bits;
+	private FlexiblePackedIntegers(int bitsPerInt, int intsLength, int[] holder) {
+		this.bitsPerInt = bitsPerInt;
 		this.intsLength = intsLength;
 		this.holder = holder;
 
-		this.mask = 0xFFFFFFFF >>> (BITS_PER_INT - bits);
+		this.mask = ~0 >>> (BITS_PER_INT - bitsPerInt);
+
+		if (bitsPerInt == 0) {
+			throw new IllegalArgumentException(
+					"Given bits==0, one should rely on %s".formatted(ZeroPackedIntegers.class.getName()));
+		}
 	}
 
 	@Override
@@ -83,14 +88,12 @@ public final class FlexiblePackedIntegers implements IIntArray {
 	public int readInt(int index) {
 		if (index < 0 || index >= intsLength) {
 			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
-		} else if (bits == 0) {
-			return 0;
 		}
 
 		// maximum number of chunks amongst which the pack is dispatched
 		// int nbChunks = 1 + (bits - 1) / chunkSize;
 
-		int firstBitIndex = index * bits;
+		int firstBitIndex = index * bitsPerInt;
 
 		// Index of the first chunk holding relevant bits
 		int firstChunkIndex = firstBitIndex / BITS_PER_CHUNK;
@@ -98,7 +101,7 @@ public final class FlexiblePackedIntegers implements IIntArray {
 		int firstChunkShift = firstBitIndex - firstChunkIndex * BITS_PER_CHUNK;
 
 		// Needed bits may be split on multiple chunks
-		int bitsLeft = bits;
+		int bitsLeft = bitsPerInt;
 
 		// We need to append the writes
 		int shiftWrite = 0;
@@ -112,9 +115,7 @@ public final class FlexiblePackedIntegers implements IIntArray {
 
 			int maskRead = mask << shiftRead;
 
-			int contrib = holder[firstChunkIndex] & maskRead;
-			int contributionFromChunk = contrib >>> shiftRead;
-			output |= contributionFromChunk;
+			output |= holder[firstChunkIndex] & maskRead >>> shiftRead;
 
 			int nbWritten = BITS_PER_CHUNK - shiftRead;
 			bitsLeft -= nbWritten;
@@ -129,9 +130,7 @@ public final class FlexiblePackedIntegers implements IIntArray {
 
 			int maskRead = mask >>> shiftWrite;
 
-			int contrib = holder[firstChunkIndex] & maskRead;
-			int contributionFromChunk = contrib << shiftWrite;
-			output |= contributionFromChunk;
+			output |= holder[firstChunkIndex] & maskRead << shiftWrite;
 
 			// BEWARE We might write less bits if we read not all bits of next chunk
 			int nbWritten = BITS_PER_CHUNK;
@@ -144,10 +143,7 @@ public final class FlexiblePackedIntegers implements IIntArray {
 
 	@Override
 	public String toString() {
-		return IntStream.range(0, length())
-				.map(this::readInt)
-				.mapToObj(Integer::toString)
-				.collect(Collectors.joining(", "));
+		return toString(this);
 	}
 
 	public static IIntArray doPack(int... input) {
@@ -178,9 +174,9 @@ public final class FlexiblePackedIntegers implements IIntArray {
 		// For instance, if bits==7, we may prefer storing 4 ints per chunk (hence consuming 4*7=28 bits, and losing 2
 		// bits)
 		if (SingleChunkPackedIntegers.isCompatible(bits)) {
-			return SingleChunkPackedIntegers.builder().bits(bits).intsLength(input.length).holder(output).build();
+			return SingleChunkPackedIntegers.builder().bitsPerInt(bits).intsLength(input.length).holder(output).build();
 		} else {
-			return FlexiblePackedIntegers.builder().bits(bits).intsLength(input.length).holder(output).build();
+			return FlexiblePackedIntegers.builder().bitsPerInt(bits).intsLength(input.length).holder(output).build();
 		}
 	}
 
@@ -191,9 +187,16 @@ public final class FlexiblePackedIntegers implements IIntArray {
 		}
 
 		return FlexiblePackedIntegers.builder()
-				.bits(singleChunk.bits)
+				.bitsPerInt(singleChunk.bitsPerInt)
 				.intsLength(singleChunk.intsLength)
 				.holder(singleChunk.holder)
 				.build();
+	}
+
+	public static String toString(IIntArray intArray) {
+		return IntStream.range(0, intArray.length())
+				.map(intArray::readInt)
+				.mapToObj(Integer::toString)
+				.collect(Collectors.joining(", "));
 	}
 }

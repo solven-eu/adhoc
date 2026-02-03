@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.compression.packing;
 
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import eu.solven.adhoc.compression.IIntArray;
 
 /**
@@ -34,16 +31,15 @@ import eu.solven.adhoc.compression.IIntArray;
  */
 public final class ZeroPackedIntegers implements IIntArray {
 	// number of packed ints
-	int intsLength;
+	int length;
 
-	@SuppressWarnings("PMD.UseVarargs")
 	ZeroPackedIntegers(int intsLength) {
-		this.intsLength = intsLength;
+		this.length = intsLength;
 	}
 
 	@Override
 	public int length() {
-		return intsLength;
+		return length;
 	}
 
 	@Override
@@ -53,17 +49,14 @@ public final class ZeroPackedIntegers implements IIntArray {
 
 	@Override
 	public int readInt(int index) {
-		if (index < 0 || index >= intsLength) {
-			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
+		if (index < 0 || index >= length) {
+			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, length));
 		}
 		return 0;
 	}
 
 	@Override
 	public String toString() {
-		return IntStream.range(0, length())
-				.map(this::readInt)
-				.mapToObj(Integer::toString)
-				.collect(Collectors.joining(", "));
+		return FlexiblePackedIntegers.toString(this);
 	}
 }

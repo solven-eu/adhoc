@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary.packing;
+package eu.solven.adhoc.compression.packing;
 
 import java.util.stream.IntStream;
 
@@ -28,8 +28,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.compression.IIntArray;
-import eu.solven.adhoc.compression.packing.FlexiblePackedIntegers;
-import eu.solven.adhoc.compression.packing.SingleChunkPackedIntegers;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -118,5 +116,18 @@ public class TestSingleChunkPackedIntegers {
 		IIntArray packed = doPack(input);
 
 		doCheck(input, packed);
+	}
+
+	@Test
+	public void testNotDivirorOf32() {
+		Assertions.assertThatThrownBy(
+				() -> SingleChunkPackedIntegers.builder().bitsPerInt(5).intsLength(1).holder(new int[1]).build())
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Requires bits=5 to be a divisor of 32");
+	}
+
+	@Test
+	public void testZeroBits() {
+		Assertions.assertThat(SingleChunkPackedIntegers.isCompatible(0)).isFalse();
 	}
 }

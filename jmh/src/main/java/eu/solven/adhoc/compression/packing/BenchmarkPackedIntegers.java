@@ -101,6 +101,8 @@ public class BenchmarkPackedIntegers {
 	}
 
 	// On an equivalent case, singleChunk should be (more or less) faster than flexible.
+	// 2026-02-04 We observe ~15% performance improvement versus flexible. It is lower than expect, but as this path is
+	// very hot, it's worth it.
 	@Benchmark
 	public int readInt_given255_read255_singlechunk() {
 		return packed255SingleChunk.readInt(254);

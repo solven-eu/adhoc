@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary.packing;
+package eu.solven.adhoc.compression.packing;
 
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -29,7 +29,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.compression.IIntArray;
-import eu.solven.adhoc.compression.packing.FlexiblePackedIntegers;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
