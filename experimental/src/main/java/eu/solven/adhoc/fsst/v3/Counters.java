@@ -23,6 +23,7 @@
 package eu.solven.adhoc.fsst.v3;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,20 +44,36 @@ import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
 // TODO There is an alternative implementation if not 32bits. Should we implement it?
 @NotThreadSafe
 public class Counters {
+	// Must be relative to the maximum sampling size to prevent saturation
 	private static final int MAX_COUNT = 0xFFFF;
 
-	private final int[] single = new int[IFsstConstants.fsstCodeMax]; // single-symbol counts
-	private final int[][] pair = new int[IFsstConstants.fsstCodeMax][IFsstConstants.fsstCodeMax]; // pair counts
+	private static final int COUNTER_CODE_MAX = IFsstConstants.fsstCodeMax;
+
+	// 1-byte may be counted by both literals (<256) and 1-byte symbols (>=256 but < 512)
+	private final int[] single = new int[COUNTER_CODE_MAX]; // single-symbol counts
+	// code1 * counterCodeMax + code2
+	private final int[] pair = new int[COUNTER_CODE_MAX * COUNTER_CODE_MAX]; // pair counts
 
 	// https://github.com/axiomhq/fsst/blob/main/counters.go
 	private final List<IntPair> pairList = new ArrayList<>(); // sparse list of non-zero pairs
 
+	// reset is faster than a new instance creation, as a training phase will typically needs 5 counters
+	public void reset() {
+		Arrays.fill(single, 0);
+		Arrays.fill(pair, 0);
+		pairList.clear();
+	}
+
 	record IntPair(int left, int right) {
 	}
 
-	/** Increment the frequency count for a single symbol (capped at 0xFFFF). */
+	/**
+	 * Increment the frequency count for a single symbol (capped at 0xFFFF).
+	 * 
+	 * If code < 256, we refer to a literal byte, else (but still <512) we refer to a symbol (which may be 1-byte)
+	 */
 	public void incSingle(int code) {
-		assert code >= 0 && code <= IFsstConstants.fsstCodeMax : "Invalid code: %s".formatted(code);
+		assert code >= 0 && code <= COUNTER_CODE_MAX : "Invalid code: %s".formatted(code);
 
 		if (single[code] < MAX_COUNT) {
 			single[code]++;
@@ -65,11 +82,12 @@ public class Counters {
 
 	/** Increment the frequency count for a symbol pair (sparse tracking). */
 	public void incPair(int code1, int code2) {
-		if (pair[code1][code2] == 0) {
+		int combinedCode = code1 * COUNTER_CODE_MAX + code2;
+		if (pair[combinedCode] == 0) {
 			pairList.add(new IntPair(code1, code2));
-		}
-		if (pair[code1][code2] < MAX_COUNT) {
-			pair[code1][code2]++;
+			pair[combinedCode] = 1;
+		} else if (pair[combinedCode] < MAX_COUNT) {
+			pair[combinedCode]++;
 		}
 	}
 
@@ -94,9 +112,36 @@ public class Counters {
 		return 0;
 	}
 
+	/**
+	 * 
+	 * @param code1
+	 * @param codeHolder
+	 *            hold initial code2, but may change it to a greater code with a non-zero count
+	 * @return 0 if there is no more non-zero codes
+	 */
+	public int nextNotZero(int code1, AtomicInteger codeHolder) {
+		int code2 = codeHolder.get();
+		while (code2 < IFsstConstants.fsstCodeMax) {
+			int combinedCode = code1 * COUNTER_CODE_MAX + code2;
+			int count = pair[combinedCode];
+			if (count != 0) {
+				codeHolder.set(code2);
+				return count;
+			}
+			code2++;
+		}
+		codeHolder.set(code2);
+		return 0;
+	}
+
+	public int singleCount(int code) {
+		return single[code];
+	}
+
 	/** Returns the count for a specific symbol pair. */
 	public int pairCount(int code1, int code2) {
-		return pair[code1][code2];
+		int combinedCode = code1 * COUNTER_CODE_MAX + code2;
+		return pair[combinedCode];
 	}
 
 	public List<IntPair> getPairList() {

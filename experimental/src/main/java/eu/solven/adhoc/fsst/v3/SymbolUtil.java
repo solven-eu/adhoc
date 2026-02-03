@@ -22,16 +22,20 @@
  */
 package eu.solven.adhoc.fsst.v3;
 
+import java.nio.charset.StandardCharsets;
+
+import com.google.common.base.Strings;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 /**
  * Core constants for FSST compression algorithm
- * 
+ *
  * Represents a Symbol in FSST. A Symbol is a contiguous chunk of bytes which can be represented by a shorter
  * representation (e.g. a single byte).
- * 
+ *
  * @author Benoit Lacelle
  */
 // https://github.com/axiomhq/fsst/blob/main/symbol.go
@@ -43,15 +47,27 @@ public final class SymbolUtil implements IFsstConstants {
 		// ByteBuffer buf = ByteBuffer.wrap(b, offset, 8);
 		// buf.order(ByteOrder.LITTLE_ENDIAN);
 		// return buf.getLong();
-		long value = 0;
-
 		int length = Math.min(in.length - offset, 8);
-		for (int i = 0; i < length; i++) {
-			// make sure we cast to long BEFORE bit-shifting
-			value |= (in[i + offset] & 0xFFL) << (8 * i);
-		}
 
-		return value;
+		return switch (length) {
+		case 1 -> in[offset] & 0xFFL;
+		case 2, 3, 4, 5, 6, 7 -> {
+			long v = 0;
+			for (int i = 0; i < length; i++) {
+				// make sure we cast to long BEFORE bit-shifting
+				v |= (in[i + offset] & 0xFFL) << (8 * i);
+			}
+			yield v;
+		}
+		// BEWARE JMH suggests unrolling the loop has no benefit
+		default -> (in[offset] & 0xFFL) | (in[offset + 1] & 0xFFL) << 8
+				| (in[offset + 2] & 0xFFL) << 16
+				| (in[offset + 3] & 0xFFL) << 24
+				| (in[offset + 4] & 0xFFL) << 32
+				| (in[offset + 5] & 0xFFL) << 40
+				| (in[offset + 6] & 0xFFL) << 48
+				| (in[offset + 7] & 0xFFL) << 56;
+		};
 	}
 
 	public static long fsstHash(long w) {
@@ -90,7 +106,7 @@ public final class SymbolUtil implements IFsstConstants {
 
 		public static Symbol fromBytes(byte[] in, int offset) {
 			int length = Math.min(in.length - offset, 8);
-			assert length > 0;
+			// assert length > 0;
 			long value = fsstUnalignedLoad(in, offset);
 			return new Symbol(value, evalICL(fsstCodeMax, length));
 		}
@@ -140,8 +156,17 @@ public final class SymbolUtil implements IFsstConstants {
 		@Override
 		public String toString() {
 			// each byte is represented by 2 chars
-			String valueAsString = Long.toHexString(Long.reverseBytes(val)).substring(0, 2 * length());
-			return "length=%s code=%s value=%s".formatted(length(), code(), valueAsString);
+			String hexString = Long.toHexString(Long.reverseBytes(val));
+			int length = 2 * length();
+			String valueAsString = Strings.padStart(hexString, length, '0').substring(0, length);
+
+			byte[] bytes = new byte[length()];
+			for (int i = 0; i < length(); i++) {
+				bytes[i] = (byte) ((val >> 8 * i) & 0xFF);
+			}
+
+			return "length=%s code=%s value=%s UTF-8=%s"
+					.formatted(length(), code(), valueAsString, new String(bytes, StandardCharsets.UTF_8));
 		}
 	}
 
@@ -149,9 +174,28 @@ public final class SymbolUtil implements IFsstConstants {
 		int lengthA = a.length();
 		int lengthB = b.length();
 		int combinedLength = Math.min(lengthA + lengthB, 8);
-		// Append b.val after a.val
+		// Append b.val after a.val: b may be cut on its higher bits (to the left of val)
 		long combinedValue = (b.val << (8 * lengthA)) | a.val;
-		// TODO code=fsstCodeMask will be replaced later?
+		// code=fsstCodeMask will be replaced later?
 		return new Symbol(combinedValue, Symbol.evalICL(fsstCodeMask, combinedLength));
 	}
+
+	@Deprecated
+	public static Symbol fsstConcatEnd(Symbol a, Symbol b) {
+		int lengthA = a.length();
+		int lengthB = b.length();
+
+		if (lengthA + lengthB <= 8) {
+			throw new IllegalArgumentException("For perf reason, this case should never happen");
+		}
+
+		int combinedLength = 8;
+		int shiftA = 8 * (lengthA - (8 - lengthB));
+
+		// Append b.val after a.val: a may be cut on its lower bits (to the right of val)
+		long combinedValue = (b.val << (8 * lengthA - shiftA)) | (a.val >>> shiftA);
+		// code=fsstCodeMask will be replaced later?
+		return new Symbol(combinedValue, Symbol.evalICL(fsstCodeMask, combinedLength));
+	}
+
 }

@@ -30,7 +30,6 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.fsst.v3.SymbolTable.ByteSlice;
 import eu.solven.adhoc.fsst.v3.SymbolUtil.Symbol;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.io.PepperSerializationHelper;
@@ -49,16 +48,19 @@ public class TestFsstV3 {
 		Assertions.assertThat(symbol.val).isEqualTo(123L);
 	}
 
+	// If optimal, we should have a single symbol
 	@Test
-	public void testConcat() {
-		Symbol symbol1 = Symbol.newSymbolFromBytes(new byte[] { 1, 2 });
-		Symbol symbol2 = Symbol.newSymbolFromBytes(new byte[] { 3, 4, 5 });
+	public void testTrain_8chars() {
+		SymbolTable table = FsstTrain.train(List.of("01234567"));
 
-		Symbol concat = SymbolUtil.fsstConcat(symbol1, symbol2);
-		Assertions.assertThat(concat.code()).isEqualTo(511);
-		Assertions.assertThat(concat.length()).isEqualTo(2 + 3);
-		Assertions.assertThat(concat.ignoredBits()).isEqualTo(64 - (2 + 3) * 8);
-		Assertions.assertThat(concat.val).isEqualTo(21542142465L);
+		ByteSlice encoded = table.encodeAll("01234567");
+
+		Assertions.assertThat(encoded.length).isEqualTo(16);
+
+		ByteSlice decoded = table.decodeAll(encoded);
+		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+
+		Assertions.assertThat(decodedString).isEqualTo("01234567");
 	}
 
 	@Test
@@ -67,7 +69,7 @@ public class TestFsstV3 {
 
 		ByteSlice encoded = table.encodeAll("Hello World");
 
-		Assertions.assertThat(encoded.length).isEqualTo(15);
+		Assertions.assertThat(encoded.length).isEqualTo(22);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -75,13 +77,15 @@ public class TestFsstV3 {
 		Assertions.assertThat(decodedString).isEqualTo("Hello World");
 	}
 
+	// `hello` is a typically learnt symbol but not its substrings. Hence, `Hello` is not well encoded.
+	// TODO Could we improve this? Should be feasible given the low number of different symbols.
 	@Test
 	public void testTrain_hello() {
 		SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
 
 		ByteSlice encoded = table.encodeAll("Hello");
 
-		Assertions.assertThat(encoded.length).isEqualTo(6);
+		Assertions.assertThat(encoded.length).isEqualTo(10);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -91,11 +95,13 @@ public class TestFsstV3 {
 
 	@Test
 	public void testTrain_2codes() {
+		// 1x 2x 3x 4x
 		SymbolTable table = FsstTrain.train(List.of("az_azaz_azazaz_azazazaz"));
 
+		// 2x
 		ByteSlice encoded = table.encodeAll("azaz");
 
-		Assertions.assertThat(encoded.length).isEqualTo(4);
+		Assertions.assertThat(encoded.length).isEqualTo(2);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
@@ -127,7 +133,7 @@ public class TestFsstV3 {
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
 		ByteSlice encoded = table.encodeAll(original);
 
-		Assertions.assertThat(encoded.length).isEqualTo(2);
+		Assertions.assertThat(encoded.length).isEqualTo(4);
 
 		ByteSlice decoded = table.decodeAll(encoded);
 
@@ -144,64 +150,104 @@ public class TestFsstV3 {
 
 		ByteSlice encoded = table.encodeAll("Hello");
 
-		Assertions.assertThat(encoded.length).isEqualTo(6);
-
 		ByteSlice decoded = table.decodeAll(encoded);
 		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
 
+	// Once can increase this value to generate easily profilable benchmarks
+	int nbRetryForBenchmark = 0;
+
+	// This ensures nbRetryForBenchmark is not commited >0
+	@Test
+	public void testUnitTestsDoesNotRetryForBenchmarks() {
+		Assertions.assertThat(nbRetryForBenchmark).isEqualTo(0);
+	}
+
 	private void testDataset(String filename) {
 		String input = PepperResourceHelper.loadAsString("fsst/paper/dbtext/%s".formatted(filename));
 
-		List<String> inputs = List.of(input.split("[\r\n]+"));
-
-		SymbolTable table = FsstTrain.train(inputs);
-
-		long sizeEncoded = 0;
-
-		for (int i = 0; i < inputs.size(); i++) {
-			String entry = inputs.get(i);
-			ByteSlice encoded = table.encodeAll(entry);
-
-			sizeEncoded += encoded.length;
+		// Compress input as a single entry
+		{
+			SymbolTable table = FsstTrain.train(input);
+			ByteSlice encoded = table.encodeAll(input);
 
 			ByteSlice decoded = table.decodeAll(encoded);
 			String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
 
-			Assertions.assertThat(decodedString).isEqualTo(entry);
+			Assertions.assertThat(decodedString).isEqualTo(input);
+
+			long sizeTable = byteLength(table);
+			long sizeEncoded = encoded.length;
+			log.info("row-basis Compressed {} from bytes={} to bytes={} (table={} encoded={})",
+					filename,
+					PepperLogHelper.humanBytes(input.getBytes(StandardCharsets.UTF_8).length),
+					PepperLogHelper.humanBytes(sizeTable + sizeEncoded),
+					PepperLogHelper.humanBytes(sizeTable),
+					PepperLogHelper.humanBytes(sizeEncoded));
 		}
 
+		// Compress on a row basis, enabling random access
+		{
+			List<String> inputs = List.of(input.split("[\r\n]+"));
+
+			for (int iRetry = 0; iRetry < nbRetryForBenchmark; iRetry++) {
+				SymbolTable table = FsstTrain.train(inputs);
+
+				long sizeEncoded = 0;
+
+				for (int i = 0; i < inputs.size(); i++) {
+					String entry = inputs.get(i);
+					ByteSlice encoded = table.encodeAll(entry);
+
+					sizeEncoded += encoded.length;
+
+					ByteSlice decoded = table.decodeAll(encoded);
+					String decodedString =
+							new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+
+					Assertions.assertThat(decodedString).isEqualTo(entry);
+				}
+
+				if (iRetry == 0) {
+					long sizeTable = byteLength(table);
+
+					log.info("row-basis Compressed {} from bytes={} to bytes={} (table={} encoded={})",
+							filename,
+							PepperLogHelper.humanBytes(input.getBytes(StandardCharsets.UTF_8).length),
+							PepperLogHelper.humanBytes(sizeTable + sizeEncoded),
+							PepperLogHelper.humanBytes(sizeTable),
+							PepperLogHelper.humanBytes(sizeEncoded));
+				}
+			}
+		}
+	}
+
+	private long byteLength(SymbolTable table) {
 		long sizeTable;
 		try {
 			sizeTable = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(table)).length;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-
-		log.info("Compressed {} from bytes={} to bytes={} (table={} encoded={})",
-				filename,
-				PepperLogHelper.humanBytes(input.getBytes(StandardCharsets.UTF_8).length),
-				PepperLogHelper.humanBytes(sizeTable + sizeEncoded),
-				PepperLogHelper.humanBytes(sizeTable),
-				PepperLogHelper.humanBytes(sizeEncoded));
+		return sizeTable;
 	}
 
 	@Test
-	public void testDataset_chinese() throws IOException, ClassNotFoundException {
+	public void testDataset_chinese() {
 		String filename = "chinese.txt";
 		testDataset(filename);
 	}
 
 	@Test
-	public void testDataset_city() throws IOException, ClassNotFoundException {
+	public void testDataset_city() {
 		String filename = "city.txt";
 		testDataset(filename);
 	}
 
 	@Test
-	public void testDataset_credentials() throws IOException, ClassNotFoundException {
+	public void testDataset_credentials() {
 		String filename = "credentials.txt";
 		testDataset(filename);
 	}
