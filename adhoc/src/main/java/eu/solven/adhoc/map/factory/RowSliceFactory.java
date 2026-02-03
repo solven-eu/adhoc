@@ -42,11 +42,14 @@ import lombok.experimental.SuperBuilder;
 /**
  * In Adhoc context, we expect to build many {@link Map}-like objects, with same keySet. This is due to the fact we
  * process multiple rows with the same {@link IAdhocGroupBy}.
+ * 
+ * This implementation is row-oriented: maps are essentially based on a {@link SequencedSetLikeList} and a {@link List}
+ * of values.
  *
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class StandardSliceFactory extends ASliceFactory {
+public class RowSliceFactory extends ASliceFactory {
 
 	/**
 	 * A {@link Map} based on {@link SequencedSetLikeList} and values as a {@link List}.
@@ -118,7 +121,7 @@ public class StandardSliceFactory extends ASliceFactory {
 	@Builder
 	public static class MapBuilderPreKeys implements IMapBuilderPreKeys, IHasEntries {
 		@NonNull
-		StandardSliceFactory factory;
+		RowSliceFactory factory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@Getter
@@ -163,7 +166,7 @@ public class StandardSliceFactory extends ASliceFactory {
 	@Deprecated
 	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
 		@NonNull
-		StandardSliceFactory factory;
+		RowSliceFactory factory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@Default

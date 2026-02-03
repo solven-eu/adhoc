@@ -32,11 +32,11 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory.MapBuilderThroughKeys;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory.MapBuilderThroughKeys;
 
 public class TestAdhocMapFactory {
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	private void verifyForEach(Map<String, ?> a1b1) {
 		Map<String, Object> mapFromForEach = new LinkedHashMap<>();

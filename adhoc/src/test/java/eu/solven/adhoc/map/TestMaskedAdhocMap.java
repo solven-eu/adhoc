@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.map.MaskedAdhocMap.RetainAllKeys;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 public class TestMaskedAdhocMap {
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	@Test
 	public void testEqualsVerifier() {
@@ -80,7 +80,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testEquals() {
-		IAdhocMap decorated = AdhocMapHelpers.fromMap(StandardSliceFactory.builder().build(), Map.of("a", "a1"));
+		IAdhocMap decorated = AdhocMapHelpers.fromMap(RowSliceFactory.builder().build(), Map.of("a", "a1"));
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
@@ -109,7 +109,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testRetainAll_excludeMask() {
-		IAdhocMap decorated = StandardSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
+		IAdhocMap decorated = RowSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
@@ -120,7 +120,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testRetainAll_excludeOnlyMask() {
-		IAdhocMap decorated = StandardSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
+		IAdhocMap decorated = RowSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
@@ -135,12 +135,8 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testRetainAll_excludePartialMaskPartialDecorated() {
-		IAdhocMap decorated = StandardSliceFactory.builder()
-				.build()
-				.newMapBuilder(List.of("a", "b"))
-				.append("a1")
-				.append("b1")
-				.build();
+		IAdhocMap decorated =
+				RowSliceFactory.builder().build().newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
 		Map<String, ?> mask = Map.of("c", "c2", "d", "d2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 

@@ -35,12 +35,12 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 public class TestAdhocMap {
 	// Not a String to ensure we accept various types
 	LocalDate now = LocalDate.now();
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	@Test
 	public void testGet() {

@@ -40,7 +40,7 @@ import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
@@ -200,7 +200,7 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	}
 
 	public static SliceAsMap grandTotal() {
-		return new SliceAsMap(StandardSliceFactory.builder().build(), StandardSliceFactory.of());
+		return new SliceAsMap(RowSliceFactory.builder().build(), RowSliceFactory.of());
 	}
 
 	@Override

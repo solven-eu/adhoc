@@ -26,8 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntUnaryOperator;
 
+import eu.solven.adhoc.compression.IIntArray;
 import eu.solven.adhoc.compression.MapDictionarizer;
-import eu.solven.adhoc.compression.packing.PackedIntegers;
+import eu.solven.adhoc.compression.packing.FlexiblePackedIntegers;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder;
 import lombok.NonNull;
@@ -62,7 +63,7 @@ public class DictionarizedObjectColumn implements IReadableColumn {
 		}
 
 		// Given rowToDic holds small integers, it is relevant to pack it for compression purposes
-		PackedIntegers packedIntegers = PackedIntegers.doPack(rowToDic);
+		IIntArray packedIntegers = FlexiblePackedIntegers.doPack(rowToDic);
 
 		return DictionarizedObjectColumn.builder()
 				.distinctValues(intToObject)

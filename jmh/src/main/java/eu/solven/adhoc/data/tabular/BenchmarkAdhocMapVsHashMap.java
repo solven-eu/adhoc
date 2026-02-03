@@ -46,7 +46,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 /**
  * Benchmarks comparing {@link IAdhocMap} versus {@link HashMap}.
@@ -61,7 +61,7 @@ import eu.solven.adhoc.map.factory.StandardSliceFactory;
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkAdhocMapVsHashMap {
 
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	IAdhocMap adhocMap;
 	Map<String, Object> hashMap;

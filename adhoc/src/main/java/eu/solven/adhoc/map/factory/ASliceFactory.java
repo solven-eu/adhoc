@@ -77,7 +77,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
 	// Supplier as the sliceFactory may be configured lazily
-	private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> StandardSliceFactory.MapOverLists.builder()
+	private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> RowSliceFactory.MapOverLists.builder()
 			.factory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory())
 			.keys(SequencedSetLikeList.fromSet(Set.of()))
 			.sequencedValues(ImmutableList.of())
@@ -171,7 +171,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 					"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
 		}
 
-		return StandardSliceFactory.MapOverLists.builder()
+		return RowSliceFactory.MapOverLists.builder()
 				.factory(this)
 				.keys(internKeyset(keys))
 				.sequencedValues(ImmutableList.copyOf(values))

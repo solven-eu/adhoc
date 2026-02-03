@@ -35,7 +35,7 @@ import eu.solven.adhoc.engine.StandardColumnFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
@@ -87,7 +87,7 @@ public class AdhocAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean(ISliceFactory.class)
 	public ISliceFactory sliceFactory() {
-		return StandardSliceFactory.builder().build();
+		return RowSliceFactory.builder().build();
 	}
 
 	@Bean
