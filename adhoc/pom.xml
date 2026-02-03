@@ -154,8 +154,10 @@
 		<!--</dependency>-->
 		<!-- https://mvnrepository.com/artifact/com.github.haifengl/smile-core -->
 		<dependency>
+			<!-- Used by ExampleVaRQuickSelectCombination -->
 			<groupId>com.github.haifengl</groupId>
 			<artifactId>smile-core</artifactId>
+			<!-- Smile v5 requires Java25 -->
 			<version>4.4.2</version>
 			<scope>test</scope>
 		</dependency>

@@ -4,9 +4,9 @@
         "vue": "3.5.27"
     },
     "devDependencies": {
-        "@playwright/test": "1.58.0",
+        "@playwright/test": "1.58.1",
         "@types/node": "24.10.9",
-        "@vitejs/plugin-vue": "6.0.3",
+        "@vitejs/plugin-vue": "6.0.4",
         "@vitest/ui": "^4.0.0",
         "eslint": "9.39.2",
         "eslint-config-prettier": "10.1.8",

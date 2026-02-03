@@ -64,7 +64,7 @@
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
-		<jooq.version>3.20.10</jooq.version>
+		<jooq.version>3.20.11</jooq.version>
 
 		<spotless.version>3.2.1</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
@@ -99,7 +99,7 @@
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<!-- https://mvnrepository.com/artifact/com.puppycrawl.tools/checkstyle -->
-		<checkstyle.version>13.0.0</checkstyle.version>
+		<checkstyle.version>13.1.0</checkstyle.version>
 		<!-- https://mvnrepository.com/artifact/info.novatec.ita/stereotype.check.plugin -->
 		<stereotype.check.plugin.version>4.0.0</stereotype.check.plugin.version>
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-pmd-plugin -->
@@ -512,8 +512,8 @@
 							</importOrder>
 
 							<eclipse>
-								<!--
-                                https://github.com/diffplug/spotless/tree/main/lib-extra/src/main/resources/com/diffplug/spotless/extra/eclipse_jdt_formatter -->
+								<!-- matches the version of Eclipse IDE-->
+								<!-- https://download.eclipse.org/eclipse/downloads/ -->
 								<version>4.38</version>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse_java_code_formatter.xml</file>
 							</eclipse>
