@@ -91,6 +91,10 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
 
+	// TODO Purge policy
+	// TODO Compare perf with ThreadLocal
+	static final Map<RetainedResult, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+
 	/**
 	 * 
 	 * @param index
@@ -398,12 +402,8 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	private record RetainedResult(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
 	}
 
-	// TODO Purge policy
-	// TODO Compare perf with ThreadLocal
-	private static final Map<RetainedResult, RetainedKeySet> retainedColumsToSet = new ConcurrentHashMap<>();
-
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		return retainedColumsToSet.computeIfAbsent(new RetainedResult(retainedColumns, sequencedKeys), k -> {
+		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedResult(retainedColumns, sequencedKeys), k -> {
 			Set<String> intersection;
 			if (sequencedKeys.containsAll(retainedColumns)) {
 				// In most cases, we retain a subSet

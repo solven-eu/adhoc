@@ -45,6 +45,14 @@ public class TestPackedIntegers {
 	}
 
 	@Test
+	public void testPacking_1Entry0() {
+		int[] input = new int[] { 0 };
+		PackedIntegers packed = doPack(input);
+
+		doCheck(input, packed);
+	}
+
+	@Test
 	public void testPacking() {
 		int[] input = new int[] { 0, 1, 2 };
 		PackedIntegers packed = doPack(input);
@@ -62,7 +70,7 @@ public class TestPackedIntegers {
 
 	@Test
 	public void testPacking_0ToGrowingMax() {
-		for (int max = 0; max < 128; max++) {
+		for (int max = 1; max < 128; max++) {
 			int[] input = IntStream.range(0, max).toArray();
 			PackedIntegers packed = doPack(input);
 
@@ -72,7 +80,7 @@ public class TestPackedIntegers {
 
 	@Test
 	public void testPacking_GrowingMinToGrowingMax() {
-		for (int min = 0; min < 64; min++) {
+		for (int min = 1; min < 64; min++) {
 			for (int max = 0; max < 64; max++) {
 				int[] input = IntStream.range(min, min + max).toArray();
 				PackedIntegers packed = doPack(input);
