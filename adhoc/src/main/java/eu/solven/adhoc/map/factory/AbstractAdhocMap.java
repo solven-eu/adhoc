@@ -24,7 +24,6 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -47,7 +45,6 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
@@ -391,10 +388,10 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		int[] sequencedIndexes;
 	}
 
-
 	/**
 	 *
-	 * @param retainedColumns a Set of columns to retains
+	 * @param retainedColumns
+	 *            a Set of columns to retains
 	 * @param sequencedKeys
 	 */
 	// BEWARE We store the mask as it has higher change to be sameRef while `mask.KeySet` may he changed
@@ -422,9 +419,11 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 				int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
 
 				if (originalIndex < 0) {
-					// Throw is retaining a missing column: it does not follow resilient behavior of standard `.retainALl`
+					// Throw is retaining a missing column: it does not follow resilient behavior of standard
+					// `.retainALl`
 					// but it may help having good performances.
-					throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+					throw new IllegalArgumentException(
+							"Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
 				}
 
 				return originalIndex;
