@@ -33,6 +33,7 @@ import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.results.format.ResultFormatType;
@@ -57,11 +58,15 @@ import eu.solven.adhoc.compression.IIntArray;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkPackedIntegers {
 
-	private int[] array7 = IntStream.range(0, 7).toArray();
-	IIntArray packed7 = FlexiblePackedIntegers.doPack(array7);
+	final int[] array7 = IntStream.range(0, 7).toArray();
+	final IIntArray packed7 = FlexiblePackedIntegers.doPack(array7);
 
-	private int[] array1024 = IntStream.range(0, 1024).toArray();
-	IIntArray packed1024 = FlexiblePackedIntegers.doPack(array1024);
+	final int[] array1024 = IntStream.range(0, 1024).toArray();
+	final IIntArray packed1024 = FlexiblePackedIntegers.doPack(array1024);
+
+	final int[] array255 = IntStream.range(0, 255).toArray();
+	final IIntArray packed255SingleChunk = FlexiblePackedIntegers.doPack(array255);
+	final IIntArray packed255Flexible = FlexiblePackedIntegers.asFlexible(packed255SingleChunk);
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkPackedIntegers.class.getSimpleName())
@@ -75,9 +80,30 @@ public class BenchmarkPackedIntegers {
 		new Runner(opt).run();
 	}
 
+	@Setup
+	public void setup() {
+		if (!(packed255Flexible instanceof FlexiblePackedIntegers)) {
+			throw new IllegalStateException("Should be %s".formatted(FlexiblePackedIntegers.class.getName()));
+		}
+		if (!(packed255SingleChunk instanceof SingleChunkPackedIntegers)) {
+			throw new IllegalStateException("Should be %s".formatted(SingleChunkPackedIntegers.class.getName()));
+		}
+	}
+
 	@Benchmark
 	public int readInt_given7_read0() {
 		return packed7.readInt(0);
+	}
+
+	@Benchmark
+	public int readInt_given255_read255_flexible() {
+		return packed255Flexible.readInt(254);
+	}
+
+	// On an equivalent case, singleChunk should be (more or less) faster than flexible.
+	@Benchmark
+	public int readInt_given255_read255_singlechunk() {
+		return packed255SingleChunk.readInt(254);
 	}
 
 	@Benchmark
@@ -89,6 +115,12 @@ public class BenchmarkPackedIntegers {
 	@OperationsPerInvocation(7)
 	public IIntArray pack_0to7() {
 		return FlexiblePackedIntegers.doPack(array7);
+	}
+
+	@Benchmark
+	@OperationsPerInvocation(255)
+	public IIntArray pack_0to255() {
+		return FlexiblePackedIntegers.doPack(array255);
 	}
 
 	@Benchmark

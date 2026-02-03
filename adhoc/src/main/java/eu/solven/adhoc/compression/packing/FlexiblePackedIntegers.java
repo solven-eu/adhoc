@@ -183,4 +183,17 @@ public final class FlexiblePackedIntegers implements IIntArray {
 			return FlexiblePackedIntegers.builder().bits(bits).intsLength(input.length).holder(output).build();
 		}
 	}
+
+	@Deprecated(since = "Used only for benchmarks")
+	static IIntArray asFlexible(IIntArray flexible) {
+		if (!(flexible instanceof SingleChunkPackedIntegers singleChunk)) {
+			throw new IllegalArgumentException("Expected %s".formatted(SingleChunkPackedIntegers.class.getName()));
+		}
+
+		return FlexiblePackedIntegers.builder()
+				.bits(singleChunk.bits)
+				.intsLength(singleChunk.intsLength)
+				.holder(singleChunk.holder)
+				.build();
+	}
 }
