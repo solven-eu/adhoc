@@ -40,22 +40,34 @@ import me.lemire.integercompression.Util;
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class PackedIntegers implements IIntArray {
+// TODO Add ability to read multiple entries, as done by `BitPacking`
+public final class PackedIntegers implements IIntArray {
 	private static final int BITS_PER_INT = 32;
 
 	// each `byte` provide 8 bits.
 	// each `int` provide 32 bits.
-	protected static final int BITS_PER_CHUNK = BITS_PER_INT;
+	static final int BITS_PER_CHUNK = BITS_PER_INT;
 
 	// number of lower bits expressed per integer (higher bits are all zeros)
-	protected int bits;
+	int bits;
 	// number of packed ints
-	protected int intsLength;
+	int intsLength;
 
 	// length is `(length * bits) / chunkSize`
 	@NonNull
-	protected int[] holder;
+	int[] holder;
+
+	final int mask;
+
+	@Builder
+	@SuppressWarnings("PMD.UseVarargs")
+	private PackedIntegers(int bits, int intsLength, int[] holder) {
+		this.bits = bits;
+		this.intsLength = intsLength;
+		this.holder = holder;
+
+		this.mask = 0xFFFFFFFF >>> (BITS_PER_INT - bits);
+	}
 
 	@Override
 	public int length() {
@@ -71,9 +83,9 @@ public class PackedIntegers implements IIntArray {
 	public int readInt(int index) {
 		if (index < 0 || index >= intsLength) {
 			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
+		} else if (bits == 0) {
+			return 0;
 		}
-
-		int output = 0;
 
 		// maximum number of chunks amongst which the pack is dispatched
 		// int nbChunks = 1 + (bits - 1) / chunkSize;
@@ -93,30 +105,38 @@ public class PackedIntegers implements IIntArray {
 		// We need to append the writes
 		int shiftWrite = 0;
 
-		int mask = 0xFFFFFFFF >>> (BITS_PER_INT - bits);
-		while (bitsLeft > 0) {
-			int maskRead;
-			if (shiftRead == 0) {
-				maskRead = mask >>> shiftWrite;
-			} else {
-				maskRead = mask << shiftRead;
-			}
+		int output = 0;
+
+		// Initial block
+		{
+			int maskRead = mask << shiftRead;
 
 			int contrib = holder[firstChunkIndex] & maskRead;
-			int contributionFromChunk;
-			if (shiftRead == 0) {
-				contributionFromChunk = contrib << shiftWrite;
-			} else {
-				contributionFromChunk = contrib >>> shiftRead;
-			}
+			int contributionFromChunk = contrib >>> shiftRead;
 			output |= contributionFromChunk;
 
 			firstChunkIndex++;
 			int nbWritten = BITS_PER_CHUNK - shiftRead;
 			bitsLeft -= nbWritten;
 			shiftWrite += nbWritten;
-			// Next chunk is read from the beginning
+			// Next chunks are read from the beginning
 			shiftRead = 0;
+		}
+
+		// Read from next blocks
+		// BEWARE We may read 1 or more blocks, depending on blocks size
+		// For instance, if block is int, we're guaranteed to read at most one other block
+		while (bitsLeft > 0) {
+			int maskRead = mask >>> shiftWrite;
+
+			int contrib = holder[firstChunkIndex] & maskRead;
+			int contributionFromChunk = contrib << shiftWrite;
+			output |= contributionFromChunk;
+
+			firstChunkIndex++;
+			int nbWritten = BITS_PER_CHUNK - shiftRead;
+			bitsLeft -= nbWritten;
+			shiftWrite += nbWritten;
 		}
 
 		return output;

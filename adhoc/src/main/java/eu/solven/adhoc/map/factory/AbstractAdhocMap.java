@@ -24,7 +24,6 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -90,6 +90,10 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Similar to HashMap
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
+
+	// TODO Purge policy
+	// TODO Compare perf with ThreadLocal
+	static final Map<RetainedResult, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
 
 	/**
 	 * 
@@ -376,7 +380,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	/**
-	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Collection)}
+	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
 	 */
 	@Value
 	@Builder
@@ -388,32 +392,46 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		int[] sequencedIndexes;
 	}
 
+	/**
+	 *
+	 * @param retainedColumns
+	 *            a Set of columns to retains
+	 * @param sequencedKeys
+	 */
+	// BEWARE We store the mask as it has higher change to be sameRef while `mask.KeySet` may he changed
+	private record RetainedResult(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
+	}
+
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		Set<String> intersection;
-		if (sequencedKeys.containsAll(retainedColumns)) {
-			// In most cases, we retains a subSet
-			intersection = retainedColumns;
-		} else {
-			// `Sets.intersection` necessarily creates a new Set
-			intersection = Sets.intersection(sequencedKeys, retainedColumns);
-		}
-		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
-
-		// TODO Cache it?
-		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
-		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
-			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
-
-			if (originalIndex < 0) {
-				// Throw is retaining a missing column: it does not follow resilient behavior of standard `.retainALl`
-				// but it may help having good performances.
-				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedResult(retainedColumns, sequencedKeys), k -> {
+			Set<String> intersection;
+			if (sequencedKeys.containsAll(retainedColumns)) {
+				// In most cases, we retain a subSet
+				intersection = retainedColumns;
+			} else {
+				// `Sets.intersection` necessarily creates a new Set
+				intersection = Sets.intersection(sequencedKeys, retainedColumns);
 			}
+			SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
 
-			return originalIndex;
-		}).toArray();
+			List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+			int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
+				int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
 
-		return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+				if (originalIndex < 0) {
+					// Throw is retaining a missing column: it does not follow resilient behavior of standard
+					// `.retainALl`
+					// but it may help having good performances.
+					throw new IllegalArgumentException(
+							"Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
+				}
+
+				return originalIndex;
+			}).toArray();
+
+			return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+		});
+
 	}
 
 	@Override

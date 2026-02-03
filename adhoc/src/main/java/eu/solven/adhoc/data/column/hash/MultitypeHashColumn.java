@@ -117,7 +117,18 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	protected boolean containsKey(T key) {
-		return sliceToValueL.containsKey(key) || sliceToValueD.containsKey(key) || sliceToValueO.containsKey(key);
+		// `isEmpty` does not really improve performance, but it prevents
+		// sliceToValueL from soaking profiling when empty
+		if (!sliceToValueL.isEmpty() && sliceToValueL.containsKey(key)) {
+			return true;
+		}
+		if (!sliceToValueD.isEmpty() && sliceToValueD.containsKey(key)) {
+			return true;
+		}
+		if (!sliceToValueO.isEmpty() && sliceToValueO.containsKey(key)) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
