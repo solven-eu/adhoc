@@ -5,7 +5,7 @@
     },
     "devDependencies": {
         "@playwright/test": "1.58.1",
-        "@types/node": "24.10.9",
+        "@types/node": "24.10.10",
         "@vitejs/plugin-vue": "6.0.4",
         "@vitest/ui": "^4.0.0",
         "eslint": "9.39.2",
