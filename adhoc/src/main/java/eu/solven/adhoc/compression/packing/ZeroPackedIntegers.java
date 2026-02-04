@@ -20,42 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column.freezer;
+package eu.solven.adhoc.compression.packing;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import com.google.common.math.LongMath;
-
-import eu.solven.adhoc.compression.column.IAppendableColumn;
-import eu.solven.adhoc.compression.column.ObjectArrayColumn;
-import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
-import eu.solven.adhoc.compression.page.IReadableColumn;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 
 /**
+ * Edge-case where the input holds only 0. Packing has not a single bit to consider.
  * 
  * @author Benoit Lacelle
  */
-public final class DistinctFreezer implements IFreezingWithContext {
-	private static final int DISTINCT_FACTOR = 16;
+public final class ZeroPackedIntegers implements IIntArray {
+	// number of packed ints
+	int intsLength;
+
+	ZeroPackedIntegers(int intsLength) {
+		this.intsLength = intsLength;
+	}
 
 	@Override
-	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
-		if (column instanceof ObjectArrayColumn arrayColumn) {
-			List<?> array = arrayColumn.getAsArray();
+	public int length() {
+		return intsLength;
+	}
 
-			long countDistinct = (long) freezingContext.computeIfAbsent("count_distinct", k -> {
-				return array.stream().distinct().count();
-			});
+	@Override
+	public void writeInt(int index, int value) {
+		throw new UnsupportedOperationException();
+	}
 
-			if (LongMath.saturatedMultiply(countDistinct, DISTINCT_FACTOR) <= array.size()) {
-				return Optional.of(DictionarizedObjectColumn.fromArray(array));
-			} else {
-				return Optional.empty();
-			}
-		} else {
-			return Optional.empty();
+	@Override
+	public int readInt(int index) {
+		if (index < 0 || index >= intsLength) {
+			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
 		}
+		return 0;
+	}
+
+	@Override
+	public String toString() {
+		return FlexiblePackedIntegers.toString(this);
 	}
 }

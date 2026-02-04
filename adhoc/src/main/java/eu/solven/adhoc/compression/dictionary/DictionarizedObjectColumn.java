@@ -24,9 +24,11 @@ package eu.solven.adhoc.compression.dictionary;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import eu.solven.adhoc.compression.MapDictionarizer;
+import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.compression.packing.PackedIntegers;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder;
@@ -48,26 +50,50 @@ public class DictionarizedObjectColumn implements IReadableColumn {
 
 	@Override
 	public Object readValue(int rowIndex) {
-		return distinctValues.get(rowToDic.applyAsInt(rowIndex));
+		int dictionarizedIndex = rowToDic.applyAsInt(rowIndex);
+		return distinctValues.get(dictionarizedIndex);
 	}
 
-	public static IReadableColumn fromArray(List<?> asArray) {
+	public static IReadableColumn fromArray(List<?> asList) {
 		List<Object> intToObject = new ArrayList<>();
 		MapDictionarizer dictionarizer = MapDictionarizer.builder().intToObject(intToObject).build();
 
-		int[] rowToDic = new int[asArray.size()];
-		for (int i = 0; i < asArray.size(); i++) {
-			Object rawValue = asArray.get(i);
+		int size = asList.size();
+		int[] rowToDic = new int[size];
+		for (int i = 0; i < size; i++) {
+			Object rawValue = asList.get(i);
 			rowToDic[i] = dictionarizer.toInt(rawValue);
 		}
 
 		// Given rowToDic holds small integers, it is relevant to pack it for compression purposes
-		PackedIntegers packedIntegers = PackedIntegers.doPack(rowToDic);
+		IIntArray packedIntegers = PackedIntegers.doPack(rowToDic);
+
+		if (AdhocFreezingUnsafe.isCheckPostCompression()) {
+			checkPostCompression(asList, dictionarizer, size, packedIntegers);
+		}
 
 		return DictionarizedObjectColumn.builder()
 				.distinctValues(intToObject)
 				.rowToDic(packedIntegers::readInt)
 				.build();
+	}
+
+	static void checkPostCompression(List<?> asList,
+			MapDictionarizer dictionarizer,
+			int size,
+			IIntArray packedIntegers) {
+		if (packedIntegers.length() != size) {
+			throw new IllegalStateException("Invalid length %s!=%s".formatted(packedIntegers.length(), size));
+		}
+
+		for (int i = 0; i < size; i++) {
+			int fromPack = packedIntegers.readInt(i);
+			Object fromDic = dictionarizer.fromInt(fromPack);
+			Object fromList = asList.get(i);
+			if (!Objects.equals(fromList, fromDic)) {
+				throw new IllegalStateException("Invalid value as index=%s %s!=%s".formatted(i, fromList, fromDic));
+			}
+		}
 	}
 
 }

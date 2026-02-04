@@ -22,11 +22,9 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 
@@ -42,70 +40,14 @@ import lombok.experimental.SuperBuilder;
 /**
  * In Adhoc context, we expect to build many {@link Map}-like objects, with same keySet. This is due to the fact we
  * process multiple rows with the same {@link IAdhocGroupBy}.
+ * 
+ * This implementation is row-oriented: maps are essentially based on a {@link SequencedSetLikeList} and a {@link List}
+ * of values.
  *
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class StandardSliceFactory extends ASliceFactory {
-
-	/**
-	 * A {@link Map} based on {@link SequencedSetLikeList} and values as a {@link List}.
-	 *
-	 * @author Benoit Lacelle
-	 */
-	public static class MapOverLists extends AbstractAdhocMap {
-
-		@NonNull
-		final List<?> sequencedValues;
-
-		@Builder
-		public MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, ImmutableList<?> sequencedValues) {
-			super(factory, keys);
-			this.sequencedValues = sequencedValues;
-		}
-
-		protected MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, List<?> sequencedValues) {
-			super(factory, keys);
-			this.sequencedValues = sequencedValues;
-		}
-
-		@Override
-		protected Object getSequencedValueRaw(int index) {
-			return sequencedValues.get(index);
-		}
-
-		@Override
-		protected Object getSortedValueRaw(int index) {
-			return sequencedValues.get(sequencedKeys.unorderedIndex(index));
-		}
-
-		@Override
-		public IAdhocMap retainAll(Set<String> retainedColumns) {
-			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
-
-			int[] retainedIndexes = retainedKeyset.getSequencedIndexes();
-			List<?> retainedSequencedValues = new AbstractList<>() {
-
-				@Override
-				public int size() {
-					return retainedColumns.size();
-				}
-
-				@Override
-				public Object get(int index) {
-					int originalIndex = retainedIndexes[index];
-					if (originalIndex == -1) {
-						// retained a not present column
-						return null;
-					} else {
-						return sequencedValues.get(originalIndex);
-					}
-				}
-			};
-
-			return new MapOverLists(factory, retainedKeyset.getKeys(), retainedSequencedValues);
-		}
-	}
+public class RowSliceFactory extends ASliceFactory {
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
@@ -118,7 +60,7 @@ public class StandardSliceFactory extends ASliceFactory {
 	@Builder
 	public static class MapBuilderPreKeys implements IMapBuilderPreKeys, IHasEntries {
 		@NonNull
-		StandardSliceFactory factory;
+		RowSliceFactory factory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@Getter
@@ -163,7 +105,7 @@ public class StandardSliceFactory extends ASliceFactory {
 	@Deprecated
 	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
 		@NonNull
-		StandardSliceFactory factory;
+		RowSliceFactory factory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@Default

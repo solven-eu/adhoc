@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.compression.page.IAppendableTable;
 import eu.solven.adhoc.compression.page.ITableRowRead;
 import eu.solven.adhoc.compression.page.ITableRowWrite;
+import eu.solven.adhoc.compression.page.ThreadLocalAppendableTable;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
@@ -36,6 +37,7 @@ import eu.solven.adhoc.map.factory.ASliceFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -204,7 +206,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 
 			ITableRowRead frozen = values.freeze();
 
-			return DictionarizedSliceFactory.MapOverIntFunction.builder()
+			return MapOverIntFunction.builder()
 					.factory(this)
 					.keys(preKeys.keysLikeList)
 					.unorderedValues(frozen::readValue)
@@ -218,7 +220,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			ITableRowRead frozen = throughKeys.row.freeze();
 
 			SequencedSetLikeList keyLikeList = internKeyset(keys);
-			return DictionarizedSliceFactory.MapOverIntFunction.builder()
+			return MapOverIntFunction.builder()
 					.factory(this)
 					.keys(keyLikeList)
 					.unorderedValues(frozen::readValue)

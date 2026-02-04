@@ -23,134 +23,26 @@
 package eu.solven.adhoc.compression.packing;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import com.google.common.base.Strings;
-
-import eu.solven.adhoc.compression.IIntArray;
-import lombok.Builder;
-import lombok.NonNull;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
+import lombok.experimental.UtilityClass;
 import me.lemire.integercompression.BitPacking;
 import me.lemire.integercompression.Util;
 
 /**
- * Used to compress an `int[]` when all ints are known to be relatively small. `bits` represent the number of expressed
- * bits: all others are considered to be 0.
+ * Entry-point to access packing algorithms. It may choose different packing strategy depending on the situation.
  * 
  * @author Benoit Lacelle
  */
-// TODO Add ability to read multiple entries, as done by `BitPacking`
-public final class PackedIntegers implements IIntArray {
+@UtilityClass
+public class PackedIntegers {
 	private static final int BITS_PER_INT = 32;
 
-	// each `byte` provide 8 bits.
-	// each `int` provide 32 bits.
-	static final int BITS_PER_CHUNK = BITS_PER_INT;
-
-	// number of lower bits expressed per integer (higher bits are all zeros)
-	int bits;
-	// number of packed ints
-	int intsLength;
-
-	// length is `(length * bits) / chunkSize`
-	@NonNull
-	int[] holder;
-
-	final int mask;
-
-	@Builder
-	@SuppressWarnings("PMD.UseVarargs")
-	private PackedIntegers(int bits, int intsLength, int[] holder) {
-		this.bits = bits;
-		this.intsLength = intsLength;
-		this.holder = holder;
-
-		this.mask = 0xFFFFFFFF >>> (BITS_PER_INT - bits);
+	public static IIntArray doPack(int... input) {
+		return doPack(false, input);
 	}
 
-	@Override
-	public int length() {
-		return intsLength;
-	}
-
-	@Override
-	public void writeInt(int index, int value) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public int readInt(int index) {
-		if (index < 0 || index >= intsLength) {
-			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
-		} else if (bits == 0) {
-			return 0;
-		}
-
-		// maximum number of chunks amongst which the pack is dispatched
-		// int nbChunks = 1 + (bits - 1) / chunkSize;
-
-		int firstBitIndex = index * bits;
-
-		// Index of the first chunk holding relevant bits
-		int firstChunkIndex = firstBitIndex / BITS_PER_CHUNK;
-		// Number of bits to skip in the first chunk
-		int firstChunkShift = firstBitIndex - firstChunkIndex * BITS_PER_CHUNK;
-
-		// Needed bits may be split on multiple chunks
-		int bitsLeft = bits;
-
-		// We may need to skip some bits on the first chunk
-		int shiftRead = firstChunkShift;
-		// We need to append the writes
-		int shiftWrite = 0;
-
-		int output = 0;
-
-		// Initial block
-		{
-			int maskRead = mask << shiftRead;
-
-			int contrib = holder[firstChunkIndex] & maskRead;
-			int contributionFromChunk = contrib >>> shiftRead;
-			output |= contributionFromChunk;
-
-			firstChunkIndex++;
-			int nbWritten = BITS_PER_CHUNK - shiftRead;
-			bitsLeft -= nbWritten;
-			shiftWrite += nbWritten;
-			// Next chunks are read from the beginning
-			shiftRead = 0;
-		}
-
-		// Read from next blocks
-		// BEWARE We may read 1 or more blocks, depending on blocks size
-		// For instance, if block is int, we're guaranteed to read at most one other block
-		while (bitsLeft > 0) {
-			int maskRead = mask >>> shiftWrite;
-
-			int contrib = holder[firstChunkIndex] & maskRead;
-			int contributionFromChunk = contrib << shiftWrite;
-			output |= contributionFromChunk;
-
-			firstChunkIndex++;
-			int nbWritten = BITS_PER_CHUNK - shiftRead;
-			bitsLeft -= nbWritten;
-			shiftWrite += nbWritten;
-		}
-
-		return output;
-	}
-
-	@Override
-	public String toString() {
-		return IntStream.of(holder)
-				.map(Integer::reverse)
-				.mapToObj(i -> Strings.padStart(Integer.toBinaryString(i), BITS_PER_INT, '0'))
-				.collect(Collectors.joining("."));
-	}
-
-	public static PackedIntegers doPack(int... input) {
+	static IIntArray doPack(boolean forceFlexible, int... input) {
 		// fastpackwithoutmask requires input to have size % 32
 		int[] input32;
 
@@ -163,6 +55,10 @@ public final class PackedIntegers implements IIntArray {
 		// `fastpackwithoutmask` will pack 32 integers into this number of integers
 		final int bits = Util.maxbits(input32, 0, input.length);
 
+		if (bits == 0) {
+			return new ZeroPackedIntegers(input.length);
+		}
+
 		int nbBlocks = input32.length / BITS_PER_INT;
 		int[] output = new int[bits * nbBlocks];
 
@@ -170,6 +66,26 @@ public final class PackedIntegers implements IIntArray {
 			BitPacking.fastpackwithoutmask(input32, BITS_PER_INT * i, output, bits * i, bits);
 		}
 
-		return PackedIntegers.builder().bits(bits).intsLength(input.length).holder(output).build();
+		// BEWARE Should we sometimes prefer prefer force packing into a singleChunk?
+		// For instance, if bits==7, we may prefer storing 4 ints per chunk (hence consuming 4*7=28 bits, and losing 2
+		// bits)
+		if (!forceFlexible && SingleChunkPackedIntegers.isCompatible(bits)) {
+			return SingleChunkPackedIntegers.builder().bitsPerInt(bits).intsLength(input.length).holder(output).build();
+		} else {
+			return FlexiblePackedIntegers.builder().bitsPerInt(bits).intsLength(input.length).holder(output).build();
+		}
+	}
+
+	@Deprecated(since = "Used only for benchmarks")
+	static IIntArray asFlexible(IIntArray flexible) {
+		if (!(flexible instanceof SingleChunkPackedIntegers singleChunk)) {
+			throw new IllegalArgumentException("Expected %s".formatted(SingleChunkPackedIntegers.class.getName()));
+		}
+
+		return FlexiblePackedIntegers.builder()
+				.bitsPerInt(singleChunk.bitsPerInt)
+				.intsLength(singleChunk.intsLength)
+				.holder(singleChunk.holder)
+				.build();
 	}
 }

@@ -46,7 +46,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -61,7 +61,7 @@ public class TestTableQueryOptimizer_Perf {
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
 	Map<CubeQueryStep, ISliceToValue> inducers = new LinkedHashMap<>();
 
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	@Test
 	public void testReduce() {
@@ -79,7 +79,7 @@ public class TestTableQueryOptimizer_Perf {
 		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 		// BEWARE This tests demonstrates DictionaryFactoryValue is behaving badly on large cardinalities
-		StandardSliceFactory sliceFactory = StandardSliceFactory.builder().build();
+		RowSliceFactory sliceFactory = RowSliceFactory.builder().build();
 
 		NavigableSet<String> inColumns = ImmutableSortedSet.of("c0", "c1");
 		IntStream.range(0, cardinalityIn).forEach(rowIndex -> {

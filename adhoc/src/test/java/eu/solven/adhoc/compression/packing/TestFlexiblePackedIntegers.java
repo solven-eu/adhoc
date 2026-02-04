@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dictionary.packing;
+package eu.solven.adhoc.compression.packing;
 
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -28,34 +28,28 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.compression.packing.PackedIntegers;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestPackedIntegers {
+public class TestFlexiblePackedIntegers {
 
-	private PackedIntegers doPack(int[] input) {
-		return PackedIntegers.doPack(input);
+	private IIntArray doPack(int[] input) {
+		return PackedIntegers.doPack(true, input);
 	}
 
-	private void doCheck(int[] input, PackedIntegers packed) {
+	private void doCheck(int[] input, IIntArray packed) {
+		Assertions.assertThat(packed).isInstanceOf(FlexiblePackedIntegers.class);
+
 		for (int i = 0; i < input.length; i++) {
 			Assertions.assertThat(packed.readInt(i)).isEqualTo(input[i]);
 		}
 	}
 
 	@Test
-	public void testPacking_1Entry0() {
-		int[] input = new int[] { 0 };
-		PackedIntegers packed = doPack(input);
-
-		doCheck(input, packed);
-	}
-
-	@Test
 	public void testPacking() {
 		int[] input = new int[] { 0, 1, 2 };
-		PackedIntegers packed = doPack(input);
+		IIntArray packed = doPack(input);
 
 		doCheck(input, packed);
 	}
@@ -63,16 +57,16 @@ public class TestPackedIntegers {
 	@Test
 	public void testPacking_0to64() {
 		int[] input = IntStream.range(0, 64).toArray();
-		PackedIntegers packed = doPack(input);
+		IIntArray packed = doPack(input);
 
 		doCheck(input, packed);
 	}
 
 	@Test
 	public void testPacking_0ToGrowingMax() {
-		for (int max = 1; max < 128; max++) {
+		for (int max = 2; max < 128; max++) {
 			int[] input = IntStream.range(0, max).toArray();
-			PackedIntegers packed = doPack(input);
+			IIntArray packed = doPack(input);
 
 			doCheck(input, packed);
 		}
@@ -81,9 +75,9 @@ public class TestPackedIntegers {
 	@Test
 	public void testPacking_GrowingMinToGrowingMax() {
 		for (int min = 1; min < 64; min++) {
-			for (int max = 0; max < 64; max++) {
+			for (int max = 1; max < 64; max++) {
 				int[] input = IntStream.range(min, min + max).toArray();
-				PackedIntegers packed = doPack(input);
+				IIntArray packed = doPack(input);
 
 				doCheck(input, packed);
 			}
@@ -93,7 +87,7 @@ public class TestPackedIntegers {
 	@Test
 	public void testEmpty() {
 		int[] input = new int[] {};
-		PackedIntegers packed = doPack(input);
+		IIntArray packed = doPack(input);
 
 		Assertions.assertThatThrownBy(() -> packed.readInt(0)).isInstanceOf(ArrayIndexOutOfBoundsException.class);
 	}
@@ -101,7 +95,7 @@ public class TestPackedIntegers {
 	@Test
 	public void testIntegerMax() {
 		int[] input = new int[] { 0, 1, Integer.MAX_VALUE };
-		PackedIntegers packed = doPack(input);
+		IIntArray packed = doPack(input);
 
 		doCheck(input, packed);
 	}
@@ -109,7 +103,7 @@ public class TestPackedIntegers {
 	@Test
 	public void testNegative() {
 		int[] input = new int[] { 0, 1, Integer.MAX_VALUE, -1 };
-		PackedIntegers packed = doPack(input);
+		IIntArray packed = doPack(input);
 
 		doCheck(input, packed);
 	}
@@ -123,9 +117,11 @@ public class TestPackedIntegers {
 
 		for (int iterationIndex = 0; iterationIndex < 1024; iterationIndex++) {
 			int[] input = IntStream.range(0, r2.nextInt(128)).map(i -> r2.nextInt()).toArray();
-			PackedIntegers packed = doPack(input);
+			IIntArray packed = doPack(input);
 
-			doCheck(input, packed);
+			if (!(packed instanceof ZeroPackedIntegers)) {
+				doCheck(input, packed);
+			}
 		}
 	}
 }

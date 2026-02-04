@@ -38,7 +38,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
 
 public class TestSliceAsMap {
@@ -161,7 +161,7 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testNullValue() {
-		StandardSliceFactory factory = StandardSliceFactory.builder().build();
+		RowSliceFactory factory = RowSliceFactory.builder().build();
 		IAdhocMap mapWithNullValue = factory.newMapBuilder().put("c", null).build();
 		Assertions.assertThat(mapWithNullValue.get("c")).isEqualTo(null);
 		Assertions.assertThat(mapWithNullValue.entrySet().iterator().next().getValue()).isEqualTo(null);

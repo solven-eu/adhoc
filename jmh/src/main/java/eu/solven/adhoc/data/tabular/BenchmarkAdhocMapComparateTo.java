@@ -44,7 +44,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 /**
  * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
@@ -59,7 +59,7 @@ import eu.solven.adhoc.map.factory.StandardSliceFactory;
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkAdhocMapComparateTo {
 
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	String c1 = "c1";
 	String c2 = "c2";

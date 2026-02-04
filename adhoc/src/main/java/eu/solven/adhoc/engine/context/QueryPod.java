@@ -41,7 +41,7 @@ import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -91,7 +91,7 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 
 	@NonNull
 	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
+	ISliceFactory sliceFactory = RowSliceFactory.builder().build();
 
 	@NonNull
 	@Default

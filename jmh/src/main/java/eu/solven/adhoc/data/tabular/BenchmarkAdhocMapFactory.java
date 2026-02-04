@@ -45,7 +45,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.factory.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 /**
  * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
@@ -61,7 +61,7 @@ import eu.solven.adhoc.map.factory.StandardSliceFactory;
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkAdhocMapFactory {
 
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	Supplier<Map<String, ?>> supplierJava = () -> {
 		Map<String, Object> hashMap = HashMap.newHashMap(2);

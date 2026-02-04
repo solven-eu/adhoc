@@ -33,7 +33,6 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.compression.ThreadLocalAppendableTable;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;
 
 public class TestThreadLocalAppendableTable {

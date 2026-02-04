@@ -37,7 +37,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.IAdhocMap;
 
 public class TestStandardSliceFactory {
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	@Test
 	public void isNorOrdered() {

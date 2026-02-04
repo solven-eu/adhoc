@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 import eu.solven.adhoc.map.factory.ILikeList;
 
 /**
@@ -35,6 +36,7 @@ import eu.solven.adhoc.map.factory.ILikeList;
  * 
  * @author Benoit Lacelle
  */
+@Deprecated(since = "unused")
 public class ColumnarListDictionarizerFactory extends ListDictionarizerFactory {
 	final int size;
 

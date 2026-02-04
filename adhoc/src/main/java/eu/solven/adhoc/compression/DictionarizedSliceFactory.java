@@ -24,19 +24,17 @@ package eu.solven.adhoc.compression;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.IntFunction;
 
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.factory.ASliceFactory;
-import eu.solven.adhoc.map.factory.AbstractAdhocMap;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.factory.SequencedSetLikeList;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -53,6 +51,7 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
+@Deprecated(since = "Prefer ColumnarSliceFactory")
 public class DictionarizedSliceFactory extends ASliceFactory {
 
 	@Default
@@ -69,43 +68,6 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 			return MapDictionarizer.builder().build();
 		}
 	};
-
-	/**
-	 * Represents an {@link IAdhocMap} given an {@link IntFunction} representation dictionarized value.
-	 */
-	public static class MapOverIntFunction extends AbstractAdhocMap {
-
-		@NonNull
-		final IntFunction<Object> sequencedValues;
-
-		@Builder
-		public MapOverIntFunction(ISliceFactory factory,
-				SequencedSetLikeList keys,
-				IntFunction<Object> unorderedValues) {
-			super(factory, keys);
-			this.sequencedValues = unorderedValues;
-		}
-
-		@Override
-		protected Object getSequencedValueRaw(int index) {
-			return sequencedValues.apply(index);
-		}
-
-		@Override
-		protected Object getSortedValueRaw(int index) {
-			return getSequencedValueRaw(sequencedKeys.unorderedIndex(index));
-		}
-
-		@Override
-		public IAdhocMap retainAll(Set<String> retainedColumns) {
-			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
-
-			int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();
-			IntFunction<Object> retainedSequencedValues = index -> sequencedValues.apply(sequencedIndexes[index]);
-
-			return new MapOverIntFunction(getFactory(), retainedKeyset.getKeys(), retainedSequencedValues);
-		}
-	}
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
