@@ -36,7 +36,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.IAdhocMap;
 
-public class TestStandardSliceFactory {
+public class TestRowSliceFactory {
 	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	@Test

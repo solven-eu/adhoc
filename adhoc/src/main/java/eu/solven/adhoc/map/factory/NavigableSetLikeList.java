@@ -25,6 +25,7 @@ package eu.solven.adhoc.map.factory;
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -57,6 +58,18 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 	// cache lazily the keySet as a hashSet for faster `.containsKey`
 	final Supplier<ImmutableSet<String>> keysAsHashSet = Suppliers.memoize(() -> ImmutableSet.copyOf(getKeysAsSet()));
 
+	/**
+	 * Cache the hash code for the string
+	 */
+	// Like String, as ImmutableSortedSet does not cache the hash
+	private int hash; // Default to 0
+
+	/**
+	 * Cache if the hash has been calculated as actually being zero, enabling us to avoid recalculating this.
+	 */
+	// Like String, as ImmutableSortedSet does not cache the hash
+	private boolean hashIsZero; // Default to false;
+
 	@Override
 	protected NavigableSet<String> delegate() {
 		return keysAsSet;
@@ -64,7 +77,19 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 
 	@Override
 	public int hashCode() {
-		return keysAsSet.hashCode();
+		// hashCode caching like String.hashCode
+		// relevant for AbstractAdhocMap.RetainedResult used as cache key
+		int h = hash;
+		if (h == 0 && !hashIsZero) {
+			h = keysAsSet.hashCode();
+
+			if (h == 0) {
+				hashIsZero = true;
+			} else {
+				hash = h;
+			}
+		}
+		return hash;
 	}
 
 	// Behave like a Set
@@ -76,6 +101,9 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 			return true;
 		} else if (other instanceof NavigableSetLikeList otherEnrichedKeySet) {
 			return this.keysAsSet.equals(otherEnrichedKeySet.keysAsSet);
+		} else if (other instanceof SequencedSetLikeList otherEnrichedKeySet) {
+			// compare as ImmutableSortedSet, which has some fast paths
+			return this.keysAsSet.equals(otherEnrichedKeySet.set.keysAsSet);
 		} else if (other instanceof Set<?> otherSet) {
 			return this.keysAsSet.equals(otherSet);
 		} else {

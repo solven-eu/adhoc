@@ -35,9 +35,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -56,7 +58,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
 /**
- * An abstract {@link IAdhocMap} based on on a {@link SequencedSetLikeList} as keySet, and a List as values.
+ * An abstract {@link IAdhocMap} based on a {@link SequencedSetLikeList} as keySet, and a List as values.
  * 
  * @author Benoit Lacelle
  */
@@ -84,6 +86,8 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
+	final IntSupplier hashcodeSupplier;
+
 	/**
 	 * Holds cached entrySet(). Note that AbstractMap fields are used for keySet() and values().
 	 */
@@ -93,7 +97,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 	// TODO Purge policy
 	// TODO Compare perf with ThreadLocal
-	static final Map<RetainedResult, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+	static final Map<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
 
 	/**
 	 * 
@@ -173,18 +177,22 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	public int hashCode() {
 		// hashCode caching like String.hashCode
 		int h = hash;
-		if (h == 0 && !hashIsZero) {
-			int[] hashcodeHolder = new int[1];
+		if (hash == 0 && !hashIsZero) {
+			if (hashcodeSupplier == null) {
+				int hashcodeHolder = 0;
 
-			int size = size();
-			for (int i = 0; i < size; i++) {
-				String key = sequencedKeys.getKey(i);
-				Object value = getSequencedValue(i);
-				// see `Map.Entry#hashCode`
-				hashcodeHolder[0] += Objects.hashCode(key) ^ Objects.hashCode(value);
+				int size = size();
+				for (int i = 0; i < size; i++) {
+					String key = sequencedKeys.getKey(i);
+					Object value = getSequencedValue(i);
+					// see `Map.Entry#hashCode`
+					hashcodeHolder += Objects.hashCode(key) ^ Objects.hashCode(value);
+				}
+
+				h = hashcodeHolder;
+			} else {
+				h = hashcodeSupplier.getAsInt();
 			}
-
-			h = hashcodeHolder[0];
 
 			if (h == 0) {
 				hashIsZero = true;
@@ -192,7 +200,11 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 				hash = h;
 			}
 		}
-		return h;
+		return hash;
+	}
+
+
+	void setCachedHashcode(int h) {
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")
@@ -380,30 +392,36 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	/**
-	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
-	 */
-	@Value
-	@Builder
-	public static class RetainedKeySet {
-		@NonNull
-		SequencedSetLikeList keys;
-
-		@NonNull
-		int[] sequencedIndexes;
-	}
-
-	/**
 	 *
 	 * @param retainedColumns
 	 *            a Set of columns to retains
 	 * @param sequencedKeys
 	 */
-	// BEWARE We store the mask as it has higher change to be sameRef while `mask.KeySet` may he changed
-	private record RetainedResult(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
+	// BEWARE We store the mask 9as a Map) as it has higher change to be sameRef while `mask.KeySet` may be changed
+	private record RetainedKeysetCacheKey(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
+	}
+
+	/**
+	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
+	 */
+	@Value
+	@Builder
+	public static class RetainedKeySet {
+		// retains keys
+		@NonNull
+		SequencedSetLikeList keys;
+
+		// sequenced indexes, from retained Map, to underlying/original Map
+		@NonNull
+		int[] sequencedIndexes;
+
+		// excluded keys. Typically used to compute hashCode incrementally
+		@NonNull
+		int[] excludedIndexes;
 	}
 
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedResult(retainedColumns, sequencedKeys), k -> {
+		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedKeysetCacheKey(retainedColumns, sequencedKeys), k -> {
 			Set<String> intersection;
 			if (sequencedKeys.containsAll(retainedColumns)) {
 				// In most cases, we retain a subSet
@@ -420,7 +438,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 				if (originalIndex < 0) {
 					// Throw is retaining a missing column: it does not follow resilient behavior of standard
-					// `.retainALl`
+					// `.retainAll`
 					// but it may help having good performances.
 					throw new IllegalArgumentException(
 							"Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
@@ -429,7 +447,25 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 				return originalIndex;
 			}).toArray();
 
-			return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
+			ImmutableSet<String> excludedKeys = ImmutableSet.copyOf(Sets.difference(sequencedKeys, retainedKeyset));
+			int[] excludedIndexes = sequencedKeysAsList.stream().filter(existingColumn -> !retainedColumns.contains(existingColumn)).mapToInt(rejectedColumn -> {
+				int originalIndex = sequencedKeysAsList.indexOf(rejectedColumn);
+
+				if (originalIndex < 0) {
+					// Throw is retaining a missing column: it does not follow resilient behavior of standard
+					// `.retainAll`
+					// but it may help having good performances.
+					throw new IllegalArgumentException(
+							"Missing %s amongst %s".formatted(rejectedColumn, sequencedKeys));
+				}
+
+				return originalIndex;
+
+
+			}).toArray();
+
+
+			return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).excludedIndexes(excludedIndexes).build();
 		});
 
 	}
