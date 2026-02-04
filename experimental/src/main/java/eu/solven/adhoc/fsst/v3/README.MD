@@ -7,6 +7,8 @@ This implementation tries to be a best-of-breed given existing implementation. W
 
 This is supposedly the most efficient ((de)-compression rate, compression ratio in wider cases) implementation.
 
+Original Article: [VLDB](https://www.vldb.org/pvldb/vol13/p2649-boncz.pdf)
+
 It implements some mechanisms we do not implement:
 - zeroterminated: not implemented as supposedly irrelevant in Java world
 - AVSX12 optimizations

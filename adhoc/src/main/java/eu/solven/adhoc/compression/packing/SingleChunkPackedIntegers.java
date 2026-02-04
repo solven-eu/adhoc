@@ -92,7 +92,6 @@ public final class SingleChunkPackedIntegers implements IIntArray {
 		throw new UnsupportedOperationException();
 	}
 
-	@SuppressWarnings("PMD.UselessParentheses")
 	@Override
 	public int readInt(int index) {
 		if (index < 0 || index >= intsLength) {

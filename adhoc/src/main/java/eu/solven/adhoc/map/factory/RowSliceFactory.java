@@ -22,11 +22,9 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 
