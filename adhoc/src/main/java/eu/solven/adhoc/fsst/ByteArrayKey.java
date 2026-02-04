@@ -81,7 +81,7 @@ final class ByteArrayKey {
 	 * @param length
 	 * @return
 	 */
-	public static ByteArrayKey read(byte[] source, int offset, int length) {
+	static ByteArrayKey read(byte[] source, int offset, int length) {
 		return new ByteArrayKey(source, offset, length);
 	}
 
@@ -94,7 +94,7 @@ final class ByteArrayKey {
 	 * @param length
 	 * @return
 	 */
-	public static ByteArrayKey write(byte[] source, int offset, int length) {
+	static ByteArrayKey write(byte[] source, int offset, int length) {
 		return new ByteArrayKey(Arrays.copyOfRange(source, offset, offset + length), 0, length);
 	}
 
@@ -128,7 +128,7 @@ final class ByteArrayKey {
 		return hash;
 	}
 
-	public void writeBytes(ByteArrayOutputStream out) {
+	void writeBytes(ByteArrayOutputStream out) {
 		out.write(data, offset, length);
 	}
 

@@ -46,7 +46,7 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	protected class RowListDictionarizer implements IListDictionarizer {
 		private final ILikeList<String> keySet;
 
-		public RowListDictionarizer(ILikeList<String> keySet) {
+		protected RowListDictionarizer(ILikeList<String> keySet) {
 			this.keySet = keySet;
 		}
 
