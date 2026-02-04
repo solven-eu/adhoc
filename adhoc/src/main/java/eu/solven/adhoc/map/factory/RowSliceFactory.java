@@ -52,65 +52,6 @@ import lombok.experimental.SuperBuilder;
 public class RowSliceFactory extends ASliceFactory {
 
 	/**
-	 * A {@link Map} based on {@link SequencedSetLikeList} and values as a {@link List}.
-	 *
-	 * @author Benoit Lacelle
-	 */
-	public static class MapOverLists extends AbstractAdhocMap {
-
-		@NonNull
-		final List<?> sequencedValues;
-
-		@Builder
-		public MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, ImmutableList<?> sequencedValues) {
-			super(factory, keys);
-			this.sequencedValues = sequencedValues;
-		}
-
-		protected MapOverLists(ISliceFactory factory, SequencedSetLikeList keys, List<?> sequencedValues) {
-			super(factory, keys);
-			this.sequencedValues = sequencedValues;
-		}
-
-		@Override
-		protected Object getSequencedValueRaw(int index) {
-			return sequencedValues.get(index);
-		}
-
-		@Override
-		protected Object getSortedValueRaw(int index) {
-			return sequencedValues.get(sequencedKeys.unorderedIndex(index));
-		}
-
-		@Override
-		public IAdhocMap retainAll(Set<String> retainedColumns) {
-			RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
-
-			int[] retainedIndexes = retainedKeyset.getSequencedIndexes();
-			List<?> retainedSequencedValues = new AbstractList<>() {
-
-				@Override
-				public int size() {
-					return retainedColumns.size();
-				}
-
-				@Override
-				public Object get(int index) {
-					int originalIndex = retainedIndexes[index];
-					if (originalIndex == -1) {
-						// retained a not present column
-						return null;
-					} else {
-						return sequencedValues.get(originalIndex);
-					}
-				}
-			};
-
-			return new MapOverLists(factory, retainedKeyset.getKeys(), retainedSequencedValues);
-		}
-	}
-
-	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
 	 * order in the initial keySet.
 	 * <p>

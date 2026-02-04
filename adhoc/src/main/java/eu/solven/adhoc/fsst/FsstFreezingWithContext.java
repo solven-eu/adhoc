@@ -63,6 +63,12 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 		return Optional.empty();
 	}
 
+	/**
+	 * Given the input, we train an FSST model and encode each String with given model.
+	 * 
+	 * @param primitiveArray
+	 * @return an FSST-encoded {@link IReadableColumn}
+	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected IReadableColumn readableColumn(List<byte[]> primitiveArray) {
 		SymbolTable table = FsstTrainer.train(primitiveArray.iterator());

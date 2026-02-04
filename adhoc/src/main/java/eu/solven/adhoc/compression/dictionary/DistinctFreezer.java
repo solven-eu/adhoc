@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column.freezer;
+package eu.solven.adhoc.compression.dictionary;
 
 import java.util.List;
 import java.util.Map;
@@ -30,10 +30,11 @@ import com.google.common.math.LongMath;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
-import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
+import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**
+ * {@link IFreezingWithContext} which will enable dictionarization.
  * 
  * @author Benoit Lacelle
  */

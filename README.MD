@@ -658,6 +658,55 @@ The column `customColumn` or `"customTable"."customColumn"` can now be reference
 
 `ICalculatedColumn` enables
 
+# Optimization
+
+## By caching in static caches
+
+In some cases, it seemed simpler to optimize the CPU performance by caching some intermediate results in static variables.
+
+A specific case is `.retainAll`:
+- When inducing an `ISliceToValue` by removing some columns in the `GROUP BY`
+- we can infer the induced sliced from the inducer slice with a `.retainAll(inducedColumns)`
+- which is called once per inducer slice.
+
+This step essentially relies on an operations similar to `Map.ketSet().retainAll(inducedColumns)` which is expensive as called once per slice, and exactly the same for each slice of the same `inducer+induced`.
+
+To improve this scenario, we introduce:
+- a ThreadLocal cache in `MaskedAdhocMap`, which operates as a Map from `inducedColumns+inducerColumns` to `maskedRetains+decoratedRetained`
+- we know ThreadLocal can be quite slow, but we observes this design enables great improvements at low design cost
+- typically, it does not require evolving the API by transporting the cached-result through the stack down to the deeper structure doing `.retainAll`
+
+# Compression
+
+Adhoc relies on various compression techniques to reduces the RAM consumption. It relies on multiple principles:
+- Most algorithm are mono-threaded, enabling a higher-level concurrency. For instance, dictionarization is mono-threaded per-block, concurrency applying through blocks.
+- While we may rely on caches, these are generally applicable on a per-query basis: dictionarization should not occur through queries.
+- Slices/columns/coordinates/members are compressed by expecting a lot of redundancy through (e.g. see `DistinctFreezer`).
+- Values/aggregates are compressed by expecting a lot of variability: they are generally compressed but not necessarily compressed (e.g. see `MultitypeHashColumn`).
+
+
+# Adhoc Unsafe
+
+Various inner parameters can be customized through static variables.
+
+## AdhocUnsafe
+
+## AdhocUnsafeMap
+
+Enables:
+- Clearing cross-queries caches related to `.retainAll`
+
+## AdhocFactoriesUnsafe
+
+Enables:
+- Custom factories as used by `AdhocFactories`
+
+## AdhocFreezingUnsafe
+
+Enables:
+- Custom freezers. Normal customization goes with `IFreezingStrategy`.
+
+
 # Roadmap / Limitations to lift soon
 
 ## Recent changes

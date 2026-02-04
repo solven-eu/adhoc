@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.packing;
-
-import eu.solven.adhoc.compression.dictionary.IIntArray;
+package eu.solven.adhoc.compression.dictionary;
 
 /**
- * Edge-case where the input holds only 0. Packing has not a single bit to consider.
+ * Abstract an `int[]`. Useful to rely on alternative storage (like `int[][]`).
  * 
  * @author Benoit Lacelle
  */
-public final class ZeroPackedIntegers implements IIntArray {
-	// number of packed ints
-	int intsLength;
+public interface IIntArray {
+	int length();
 
-	ZeroPackedIntegers(int intsLength) {
-		this.intsLength = intsLength;
-	}
+	void writeInt(int index, int value);
 
-	@Override
-	public int length() {
-		return intsLength;
-	}
-
-	@Override
-	public void writeInt(int index, int value) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public int readInt(int index) {
-		if (index < 0 || index >= intsLength) {
-			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
-		}
-		return 0;
-	}
-
-	@Override
-	public String toString() {
-		return FlexiblePackedIntegers.toString(this);
-	}
+	int readInt(int index);
 }

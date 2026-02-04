@@ -42,6 +42,7 @@ import eu.solven.adhoc.beta.schema.RelevancyHeuristic;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.CubeRelevancy;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.MeasureRelevancy;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
+import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -104,6 +105,8 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	@AdhocBenchmark
 	@Test
 	public void testVariousQueries() {
+		AdhocFreezingUnsafe.setCheckPostCompression(true);
+		
 		ICubeWrapper cube = editCube().engine(editEngine()
 				.factories(
 						makeFactories().toBuilder().stopwatchFactory(IStopwatchFactory.guavaStopwatchFactory()).build())

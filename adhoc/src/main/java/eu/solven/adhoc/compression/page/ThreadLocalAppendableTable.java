@@ -20,17 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression;
+package eu.solven.adhoc.compression.page;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-import eu.solven.adhoc.compression.page.AAppendableTable;
-import eu.solven.adhoc.compression.page.IAppendableTable;
-import eu.solven.adhoc.compression.page.IAppendableTablePage;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,7 +48,7 @@ public class ThreadLocalAppendableTable extends AAppendableTable {
 	protected final ThreadLocal<Map<List<String>, IAppendableTablePage>> keyToPage = new ThreadLocal<>() {
 		@Override
 		protected Map<List<String>, IAppendableTablePage> initialValue() {
-			return new HashMap<>();
+			return new LinkedHashMap<>();
 		}
 	};
 

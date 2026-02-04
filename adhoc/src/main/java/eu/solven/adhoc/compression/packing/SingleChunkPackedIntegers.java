@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.compression.packing;
 
-import eu.solven.adhoc.compression.IIntArray;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 import lombok.Builder;
 import lombok.NonNull;
 
@@ -92,16 +92,19 @@ public final class SingleChunkPackedIntegers implements IIntArray {
 		throw new UnsupportedOperationException();
 	}
 
+	@SuppressWarnings("PMD.UselessParentheses")
 	@Override
 	public int readInt(int index) {
 		if (index < 0 || index >= intsLength) {
 			throw new ArrayIndexOutOfBoundsException("index:%s >= length:%s".formatted(index, intsLength));
 		}
 
-		// Number of bits to skip in the first chunk
+		// Number of bits to skip in the chunk
+		// `index & nbPerChunkMask` does a modulo
 		int shiftRead = (index & nbPerChunkMask) << bitsPerIntAsBitShift;
 
-		return holder[index >>> chunkIndexShift] & (maskForFirstBits << shiftRead) >>> shiftRead;
+		// `index >>> chunkIndexShift` does a division
+		return (holder[index >>> chunkIndexShift] & (maskForFirstBits << shiftRead)) >>> shiftRead;
 	}
 
 	@Override

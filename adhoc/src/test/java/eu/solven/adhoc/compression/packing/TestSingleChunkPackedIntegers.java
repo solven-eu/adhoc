@@ -27,14 +27,14 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.compression.IIntArray;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestSingleChunkPackedIntegers {
 
 	private IIntArray doPack(int[] input) {
-		return FlexiblePackedIntegers.doPack(input);
+		return PackedIntegers.doPack(input);
 	}
 
 	private void doCheck(int[] input, IIntArray packed) {
@@ -129,5 +129,21 @@ public class TestSingleChunkPackedIntegers {
 	@Test
 	public void testZeroBits() {
 		Assertions.assertThat(SingleChunkPackedIntegers.isCompatible(0)).isFalse();
+	}
+
+	@Test
+	public void testPacking_0_0_1_1_4bits() {
+		int[] input = new int[] { 0, 0, 1, 1, 13 };
+		IIntArray packed = doPack(input);
+
+		doCheck(input, packed);
+	}
+
+	@Test
+	public void testPacking_0_0_1_1_8bits() {
+		int[] input = new int[] { 0, 0, 1, 1, 253 };
+		IIntArray packed = doPack(input);
+
+		doCheck(input, packed);
 	}
 }

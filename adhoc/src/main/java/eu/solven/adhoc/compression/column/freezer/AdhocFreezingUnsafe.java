@@ -27,6 +27,8 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.compression.dictionary.DistinctFreezer;
+import eu.solven.adhoc.fsst.FsstFreezingWithContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;
@@ -42,11 +44,28 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("PMD.MutableStaticState")
 public class AdhocFreezingUnsafe {
 
-	private static final List<IFreezingWithContext> DEFAULT_FREEZERS =
-			ImmutableList.of(new DistinctFreezer(), new LongFreezer());
+	public void resetToDefaults() {
+		freezers = DEFAULT_FREEZERS;
+		checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
+	}
+
+	private static final List<IFreezingWithContext> DEFAULT_FREEZERS = ImmutableList.<IFreezingWithContext>builder()
+			.add(new DistinctFreezer())
+			.add(new LongFreezer())
+			.add(new FsstFreezingWithContext())
+			.build();
 
 	@Getter
 	@Setter
 	protected static List<IFreezingWithContext> freezers = DEFAULT_FREEZERS;
+
+	private static final boolean DEFAULT_CHECK_POST_COMPRESSION = false;
+
+	/**
+	 * If true, each compression algorithm will check right after compression the decompression returns correct results.
+	 */
+	@Getter
+	@Setter
+	protected static boolean checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
 
 }

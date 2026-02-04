@@ -42,7 +42,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.compression.IIntArray;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 
 /**
  * Benchmarks related with {@link FlexiblePackedIntegers}
@@ -59,14 +59,14 @@ import eu.solven.adhoc.compression.IIntArray;
 public class BenchmarkPackedIntegers {
 
 	final int[] array7 = IntStream.range(0, 7).toArray();
-	final IIntArray packed7 = FlexiblePackedIntegers.doPack(array7);
+	final IIntArray packed7 = PackedIntegers.doPack(array7);
 
 	final int[] array1024 = IntStream.range(0, 1024).toArray();
-	final IIntArray packed1024 = FlexiblePackedIntegers.doPack(array1024);
+	final IIntArray packed1024 = PackedIntegers.doPack(array1024);
 
 	final int[] array255 = IntStream.range(0, 255).toArray();
-	final IIntArray packed255SingleChunk = FlexiblePackedIntegers.doPack(array255);
-	final IIntArray packed255Flexible = FlexiblePackedIntegers.asFlexible(packed255SingleChunk);
+	final IIntArray packed255SingleChunk = PackedIntegers.doPack(array255);
+	final IIntArray packed255Flexible = PackedIntegers.asFlexible(packed255SingleChunk);
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkPackedIntegers.class.getSimpleName())
@@ -116,19 +116,19 @@ public class BenchmarkPackedIntegers {
 	@Benchmark
 	@OperationsPerInvocation(7)
 	public IIntArray pack_0to7() {
-		return FlexiblePackedIntegers.doPack(array7);
+		return PackedIntegers.doPack(array7);
 	}
 
 	@Benchmark
 	@OperationsPerInvocation(255)
 	public IIntArray pack_0to255() {
-		return FlexiblePackedIntegers.doPack(array255);
+		return PackedIntegers.doPack(array255);
 	}
 
 	@Benchmark
 	@OperationsPerInvocation(1024)
 	public IIntArray pack_0to1024() {
-		return FlexiblePackedIntegers.doPack(array1024);
+		return PackedIntegers.doPack(array1024);
 	}
 
 }

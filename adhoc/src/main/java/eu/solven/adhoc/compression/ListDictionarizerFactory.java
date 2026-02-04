@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 import eu.solven.adhoc.map.factory.ILikeList;
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +37,7 @@ import lombok.RequiredArgsConstructor;
  * 
  * @author Benoit Lacelle
  */
+@Deprecated(since = "unused")
 @RequiredArgsConstructor
 public class ListDictionarizerFactory implements IListDictionarizerFactory {
 	// IDictionarizer are shared by the factory

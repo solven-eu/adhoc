@@ -28,28 +28,22 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.compression.IIntArray;
+import eu.solven.adhoc.compression.dictionary.IIntArray;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestFlexiblePackedIntegers {
 
 	private IIntArray doPack(int[] input) {
-		return FlexiblePackedIntegers.doPack(input);
+		return PackedIntegers.doPack(true, input);
 	}
 
 	private void doCheck(int[] input, IIntArray packed) {
+		Assertions.assertThat(packed).isInstanceOf(FlexiblePackedIntegers.class);
+
 		for (int i = 0; i < input.length; i++) {
 			Assertions.assertThat(packed.readInt(i)).isEqualTo(input[i]);
 		}
-	}
-
-	@Test
-	public void testPacking_1Entry0() {
-		int[] input = new int[] { 0 };
-		IIntArray packed = doPack(input);
-
-		doCheck(input, packed);
 	}
 
 	@Test
@@ -70,7 +64,7 @@ public class TestFlexiblePackedIntegers {
 
 	@Test
 	public void testPacking_0ToGrowingMax() {
-		for (int max = 1; max < 128; max++) {
+		for (int max = 2; max < 128; max++) {
 			int[] input = IntStream.range(0, max).toArray();
 			IIntArray packed = doPack(input);
 
@@ -81,7 +75,7 @@ public class TestFlexiblePackedIntegers {
 	@Test
 	public void testPacking_GrowingMinToGrowingMax() {
 		for (int min = 1; min < 64; min++) {
-			for (int max = 0; max < 64; max++) {
+			for (int max = 1; max < 64; max++) {
 				int[] input = IntStream.range(min, min + max).toArray();
 				IIntArray packed = doPack(input);
 
@@ -125,7 +119,9 @@ public class TestFlexiblePackedIntegers {
 			int[] input = IntStream.range(0, r2.nextInt(128)).map(i -> r2.nextInt()).toArray();
 			IIntArray packed = doPack(input);
 
-			doCheck(input, packed);
+			if (!(packed instanceof ZeroPackedIntegers)) {
+				doCheck(input, packed);
+			}
 		}
 	}
 }

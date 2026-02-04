@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression;
+package eu.solven.adhoc.compression.packing;
 
-/**
- * Abstract an `int[]`. Useful to rely on alternative storage (like `int[][]`).
- * 
- * @author Benoit Lacelle
- */
-public interface IIntArray {
-	int length();
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	void writeInt(int index, int value);
+import eu.solven.adhoc.compression.dictionary.IIntArray;
+import lombok.extern.slf4j.Slf4j;
 
-	int readInt(int index);
+@Slf4j
+public class TestZeroPackedIntegers {
+
+	private IIntArray doPack(int[] input) {
+		return PackedIntegers.doPack(true, input);
+	}
+
+	private void doCheck(int[] input, IIntArray packed) {
+		Assertions.assertThat(packed).isInstanceOf(ZeroPackedIntegers.class);
+
+		for (int i = 0; i < input.length; i++) {
+			Assertions.assertThat(packed.readInt(i)).isEqualTo(input[i]);
+		}
+	}
+
+	@Test
+	public void testPacking_1Entry0() {
+		int[] input = new int[] { 0 };
+		IIntArray packed = doPack(input);
+
+		doCheck(input, packed);
+	}
+
 }
