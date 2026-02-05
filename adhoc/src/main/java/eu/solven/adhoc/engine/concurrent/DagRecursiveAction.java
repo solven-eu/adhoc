@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine.concurrent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -68,10 +67,9 @@ public class DagRecursiveAction<T> extends RecursiveAction {
 	@Default
 	final ConcurrentMap<T, DagRecursiveAction<T>> stepToTask = new ConcurrentHashMap<>();
 
-	// BEWARE This should be a thread-safe Map!
-	// BEWARE This must not be an ImmutableMap, as this is modified to receive the results
+	// BEWARE This should be a thread-safe Set, typically as view of a Map receiving results in onReadyStep !
 	@NonNull
-	final Map<T, ?> queryStepToValues;
+	final Set<T> queryStepsDone;
 
 	// Similar to `Spliterator`: the action is delegated to some Consumer
 	@NonNull
@@ -83,7 +81,7 @@ public class DagRecursiveAction<T> extends RecursiveAction {
 		List<T> missingSteps = outgoingEdgesOf.stream()
 				.map(fromQueriedToDependencies::getEdgeTarget)
 				// Some tasks may be already done (e.g. cache, task already completed from another parent)
-				.filter(s -> !queryStepToValues.containsKey(s))
+				.filter(s -> !queryStepsDone.contains(s))
 				.toList();
 
 		List<DagRecursiveAction<T>> missingStepStasks =
@@ -98,6 +96,8 @@ public class DagRecursiveAction<T> extends RecursiveAction {
 					return missingStepAction;
 				})).toList();
 
+		log.debug("About to join {} tasks", missingStepStasks.size());
+
 		// Join results
 		missingStepStasks.forEach(ForkJoinTask::join);
 
@@ -111,7 +111,7 @@ public class DagRecursiveAction<T> extends RecursiveAction {
 	@Override
 	public String toString() {
 		int vertexSize = fromQueriedToDependencies.vertexSet().size();
-		int ready = queryStepToValues.size();
+		int ready = queryStepsDone.size();
 		return MoreObjects.toStringHelper(this)
 				.add("step", step)
 				.add("#ready", ready)

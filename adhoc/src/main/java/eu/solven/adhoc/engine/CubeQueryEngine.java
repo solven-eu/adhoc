@@ -483,8 +483,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		if (null != alreadyIn) {
 			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
 			// dependents.
-			// TODO Prevent an intermediate step to be computed multiple times
-			log.debug("A queryStep has been computed multiple times queryStep={}", queryPod);
+			log.warn("A queryStep has been computed multiple times queryStep={}. Should not happen since 0.0.14",
+					queryPod);
 		}
 	}
 

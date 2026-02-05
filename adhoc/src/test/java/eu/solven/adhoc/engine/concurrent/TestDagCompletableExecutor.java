@@ -31,20 +31,19 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 
-public class TestDagRecursiveAction {
+public class TestDagCompletableExecutor {
 
 	private void execute(DirectedAcyclicGraph<String, DefaultEdge> dag,
 			AtomicLongMap<String> taskToCount,
 			Map<String, Object> queryStepToValues,
 			AtomicInteger nbExecution) {
-		DagRecursiveAction<String> rootTask = DagRecursiveAction.<String>builder()
+		DagCompletableExecutor<String> rootTask = DagCompletableExecutor.<String>builder()
 				.fromQueriedToDependencies(dag)
-				.step("a")
+				// .step("a")
 				.queryStepsDone(queryStepToValues.keySet())
 				.onReadyStep(string -> {
 					taskToCount.incrementAndGet(string);
@@ -61,9 +60,10 @@ public class TestDagRecursiveAction {
 
 					queryStepToValues.put(string, nbExecution.getAndIncrement());
 				})
+				.executor(ForkJoinPool.commonPool())
 				.build();
 
-		ForkJoinPool.commonPool().submit(rootTask).join();
+		rootTask.executeRecursively("a").join();
 	}
 
 	@Test
@@ -95,13 +95,14 @@ public class TestDagRecursiveAction {
 			Assertions.assertThat(taskToCount.get("intermediate_" + i)).isEqualTo(1);
 		});
 
-		Assertions.assertThat(nbExecution).hasValue(1 + 1024 + 1);
+		// initial + layer1 + final
+		Assertions.assertThat(nbExecution).hasValue(1 + nbIntermediate + 1);
 	}
 
 	// This test tries to demonstrate that even with a complex DAG, we do not end with thread starving
 	// In fact, we sometimes observe StackOverFlow, and rarely thread-starving in this unit-test
 	// Anyway, it suggests FJP is too fragile for complex DAG
-	@Disabled("Demonstrate fragility with complex DAG in FJP")
+	// @Disabled("Demonstrate fragility with complex DAG in FJP")
 	@Test
 	public void testConcurrentQuerySteps_sharedAreReUsed_2layers() {
 		DirectedAcyclicGraph<String, DefaultEdge> dag =
@@ -110,7 +111,7 @@ public class TestDagRecursiveAction {
 		dag.addVertex("a");
 		dag.addVertex("c");
 
-		int nbIntermediate = 1024;
+		int nbIntermediate = 256;
 
 		// a to layer1
 		IntStream.range(0, nbIntermediate).forEach(i -> {
@@ -148,7 +149,8 @@ public class TestDagRecursiveAction {
 			Assertions.assertThat(taskToCount.get("intermediate2_" + i)).isEqualTo(1);
 		});
 
-		Assertions.assertThat(nbExecution).hasValue(1 + 1024 + 1024 + 1);
+		// initial + layer1 + layer2 + final
+		Assertions.assertThat(nbExecution).hasValue(1 + nbIntermediate + nbIntermediate + 1);
 	}
 
 }
