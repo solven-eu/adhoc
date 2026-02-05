@@ -15,7 +15,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduces `IAdhocMap.retainAll` to make an immutable copy with a subset of columns.
 
 ### Changed
-- `ISliceFactory` actually enable compression, based on dictionarisation, or `long[]` or `int[]`.
+- `ISliceFactory` actually enable compression, based on dictionarisation, or `long[]` or `int[]`, or FSST for `String`.
 
 ### Fixed
 - `CubeQuery.CubeQueryBuilder.andFilter(String, Object)` now relies on `ColumnFilter.matchLax(String, Object)`.
@@ -27,6 +27,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
 - Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
 - Pivotable will automatically cancel currently running queries if another query is triggered.
+- `IAdhocMap.retainAll(Set<String>)` enables faster creation of `IAdhocMap` over a subset of columns (e.g. inducing).
 
 ### Changed
 - Refactored `ISliceFactory`, preparing the ability to rely on dictionarized and column-oriented storage.
