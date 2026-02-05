@@ -54,7 +54,7 @@ import eu.solven.adhoc.map.IAdhocMap;
  * 
  * @author Benoit Lacelle
  */
-@SuppressWarnings("checkstyle:MemberName")
+@SuppressWarnings({ "checkstyle:MemberName", "checkstyle:MagicNumber" })
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
