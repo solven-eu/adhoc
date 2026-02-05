@@ -719,6 +719,20 @@
 				<module>atoti</module>
 			</modules>
 		</profile>
+		<profile>
+			<!-- alias for activeviam -->
+			<id>activepivot</id>
+			<modules>
+				<module>atoti</module>
+			</modules>
+		</profile>
+		<profile>
+			<!-- alias for activeviam -->
+			<id>atoti</id>
+			<modules>
+				<module>atoti</module>
+			</modules>
+		</profile>
 
 		<profile>
 			<!-- http://central.sonatype.org/pages/apache-maven.html#deploying-to-ossrh-with-apache-maven-introduction -->

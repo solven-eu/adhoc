@@ -29,6 +29,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;

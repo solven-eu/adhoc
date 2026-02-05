@@ -35,7 +35,7 @@ import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.MapOverIntFunction;
-import eu.solven.adhoc.map.factory.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.ints.IntArrayList;

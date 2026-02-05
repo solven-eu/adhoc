@@ -28,6 +28,7 @@ import java.util.Map;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 

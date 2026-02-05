@@ -23,7 +23,7 @@
 package eu.solven.adhoc.compression;
 
 import eu.solven.adhoc.map.factory.ILikeList;
-import eu.solven.adhoc.map.factory.NavigableSetLikeList;
+import eu.solven.adhoc.map.keyset.NavigableSetLikeList;
 
 /**
  * Creates {@link IListDictionarizer} given a {@link NavigableSetLikeList}.

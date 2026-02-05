@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
 

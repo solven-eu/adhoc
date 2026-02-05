@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.compression.IListDictionarizer;
 import eu.solven.adhoc.compression.IListDictionarizerFactory;
 import eu.solven.adhoc.compression.ListDictionarizerFactory;
-import eu.solven.adhoc.map.factory.NavigableSetLikeList;
+import eu.solven.adhoc.map.keyset.NavigableSetLikeList;
 
 public class TestListDictionarizerFactory {
 	IListDictionarizerFactory factory = new ListDictionarizerFactory();

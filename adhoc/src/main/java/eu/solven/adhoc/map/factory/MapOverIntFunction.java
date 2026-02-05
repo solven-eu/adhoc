@@ -28,6 +28,7 @@ import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 import lombok.NonNull;
 
@@ -43,11 +44,19 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 	final IntFunction<Object> sequencedValues;
 
 	@Builder
-	public MapOverIntFunction(ISliceFactory factory, SequencedSetLikeList keys, IntFunction<Object> unorderedValues, IntSupplier hashcodeSupplier) {
-		super(factory, keys, hashcodeSupplier);
+	public MapOverIntFunction(ISliceFactory factory, SequencedSetLikeList keys, IntFunction<Object> unorderedValues) {
+		super(factory, keys);
 		this.sequencedValues = unorderedValues;
 	}
 
+	@Builder(builderMethodName = "builderCustomHashcode")
+	public MapOverIntFunction(ISliceFactory factory,
+			SequencedSetLikeList keys,
+			IntFunction<Object> unorderedValues,
+			IntSupplier hashcodeSupplier) {
+		super(factory, keys, hashcodeSupplier);
+		this.sequencedValues = unorderedValues;
+	}
 
 	@Override
 	protected Object getSequencedValueRaw(int index) {
@@ -67,14 +76,15 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 		IntFunction<Object> retainedSequencedValues = index -> sequencedValues.apply(sequencedIndexes[index]);
 
 		// compute hashCode differentially based on excluded entries
-		// This is expected to be faster as we expect the parent map to be hashed at least once if the retained map is hashed
+		// This is expected to be faster as we expect the parent map to be hashed at least once if the retained map is
+		// hashed
 		IntSupplier retainedHashcode = () -> {
 			int excludedhashcode = 0;
 
-			@NonNull int[] excludedColumn = retainedKeyset.getExcludedIndexes();
+			@NonNull
+			int[] excludedColumn = retainedKeyset.getExcludedIndexes();
 
-			for (int i = 0; i < excludedColumn.length; i++) {
-				int excludedColumnIndex = excludedColumn[i];
+			for (int excludedColumnIndex : excludedColumn) {
 				String key = sequencedKeys.getKey(excludedColumnIndex);
 				Object value = getSequencedValue(excludedColumnIndex);
 				// see `Map.Entry#hashCode`
@@ -84,6 +94,9 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 			return this.hashCode() - excludedhashcode;
 		};
 
-		return new MapOverIntFunction(getFactory(), retainedKeyset.getKeys(), retainedSequencedValues, retainedHashcode);
+		return new MapOverIntFunction(getFactory(),
+				retainedKeyset.getKeys(),
+				retainedSequencedValues,
+				retainedHashcode);
 	}
 }

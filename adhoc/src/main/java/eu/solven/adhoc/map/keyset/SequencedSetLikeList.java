@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.map.keyset;
 
 import java.util.AbstractList;
 import java.util.Collection;
@@ -42,6 +42,7 @@ import com.google.common.collect.Iterators;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
+import eu.solven.adhoc.map.factory.ILikeList;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -120,6 +121,11 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 	@Override
 	protected Set<String> delegate() {
 		return set;
+	}
+
+	@Override
+	public boolean contains(Object object) {
+		return set.keysAsHashSet.get().contains(object);
 	}
 
 	/**
@@ -271,6 +277,10 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 	public List<String> asList() {
 		return new SequenceSetAsList();
+	}
+
+	public NavigableSetLikeList sortedSet() {
+		return set;
 	}
 
 }

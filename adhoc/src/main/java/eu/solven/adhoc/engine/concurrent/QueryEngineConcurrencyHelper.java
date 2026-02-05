@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.concurrent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -88,11 +87,12 @@ public class QueryEngineConcurrencyHelper {
 				List<CubeQueryStep> rootInduced =
 						dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
 
-				QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
-						.fromQueriedToDependancies(dag)
-						.queryStepToValues(queryStepToValues)
-						.onReadyStep(cancellableStepConsumer);
-				List<QueryStepRecursiveAction> rootActions =
+				DagRecursiveAction.DagRecursiveActionBuilder<CubeQueryStep> actionTemplate =
+						DagRecursiveAction.<CubeQueryStep>builder()
+								.fromQueriedToDependencies(dag)
+								.queryStepToValues(queryStepToValues)
+								.onReadyStep(cancellableStepConsumer);
+				List<DagRecursiveAction<CubeQueryStep>> rootActions =
 						rootInduced.stream().map(step -> actionTemplate.step(step).build()).toList();
 
 				List<Runnable> stepCancellationListeners = new ArrayList<>();

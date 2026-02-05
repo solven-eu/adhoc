@@ -26,7 +26,7 @@ import java.util.List;
 
 import eu.solven.adhoc.compression.column.IAppendableColumnFactory;
 import eu.solven.adhoc.compression.column.ObjectArrayColumnsFactory;
-import eu.solven.adhoc.map.factory.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.NonNull;

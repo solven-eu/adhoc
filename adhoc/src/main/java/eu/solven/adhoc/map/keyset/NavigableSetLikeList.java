@@ -20,12 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.map.keyset;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -34,6 +33,7 @@ import com.google.common.collect.ForwardingNavigableSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
+import eu.solven.adhoc.map.factory.ILikeList;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;

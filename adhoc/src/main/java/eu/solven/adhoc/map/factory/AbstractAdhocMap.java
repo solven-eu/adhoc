@@ -39,7 +39,6 @@ import java.util.function.IntSupplier;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -47,6 +46,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
@@ -86,6 +86,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
+	@NonNull
 	final IntSupplier hashcodeSupplier;
 
 	/**
@@ -98,6 +99,12 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// TODO Purge policy
 	// TODO Compare perf with ThreadLocal
 	static final Map<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+
+	public AbstractAdhocMap(ISliceFactory factory, SequencedSetLikeList sequencedKeys) {
+		this.factory = factory;
+		this.sequencedKeys = sequencedKeys;
+		this.hashcodeSupplier = () -> computeHashCode(this);
+	}
 
 	/**
 	 * 
@@ -158,7 +165,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Called by `SliceAsMap` so it needs to be fast
 	@Override
 	public boolean containsKey(Object key) {
-		return sequencedKeys.set.keysAsHashSet.get().contains(key);
+		return sequencedKeys.contains(key);
 	}
 
 	@Override
@@ -176,23 +183,8 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	@Override
 	public int hashCode() {
 		// hashCode caching like String.hashCode
-		int h = hash;
 		if (hash == 0 && !hashIsZero) {
-			if (hashcodeSupplier == null) {
-				int hashcodeHolder = 0;
-
-				int size = size();
-				for (int i = 0; i < size; i++) {
-					String key = sequencedKeys.getKey(i);
-					Object value = getSequencedValue(i);
-					// see `Map.Entry#hashCode`
-					hashcodeHolder += Objects.hashCode(key) ^ Objects.hashCode(value);
-				}
-
-				h = hashcodeHolder;
-			} else {
-				h = hashcodeSupplier.getAsInt();
-			}
+			int h = hashcodeSupplier.getAsInt();
 
 			if (h == 0) {
 				hashIsZero = true;
@@ -203,8 +195,25 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		return hash;
 	}
 
+	/**
+	 * Standard Map .hashcode, specialized for {@link AbstractAdhocMap}.
+	 * 
+	 * @param map
+	 * @return
+	 */
+	@SuppressWarnings("PMD.LooseCoupling")
+	private static int computeHashCode(AbstractAdhocMap map) {
+		int hashcodeHolder = 0;
 
-	void setCachedHashcode(int h) {
+		int size = map.size();
+		for (int i = 0; i < size; i++) {
+			String key = map.sequencedKeys.getKey(i);
+			Object value = map.getSequencedValue(i);
+			// see `Map.Entry#hashCode`
+			hashcodeHolder += Objects.hashCode(key) ^ Objects.hashCode(value);
+		}
+
+		return hashcodeHolder;
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")
@@ -447,25 +456,29 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 				return originalIndex;
 			}).toArray();
 
-			ImmutableSet<String> excludedKeys = ImmutableSet.copyOf(Sets.difference(sequencedKeys, retainedKeyset));
-			int[] excludedIndexes = sequencedKeysAsList.stream().filter(existingColumn -> !retainedColumns.contains(existingColumn)).mapToInt(rejectedColumn -> {
-				int originalIndex = sequencedKeysAsList.indexOf(rejectedColumn);
+			int[] excludedIndexes = sequencedKeysAsList.stream()
+					.filter(existingColumn -> !retainedColumns.contains(existingColumn))
+					.mapToInt(rejectedColumn -> {
+						int originalIndex = sequencedKeysAsList.indexOf(rejectedColumn);
 
-				if (originalIndex < 0) {
-					// Throw is retaining a missing column: it does not follow resilient behavior of standard
-					// `.retainAll`
-					// but it may help having good performances.
-					throw new IllegalArgumentException(
-							"Missing %s amongst %s".formatted(rejectedColumn, sequencedKeys));
-				}
+						if (originalIndex < 0) {
+							// Throw is retaining a missing column: it does not follow resilient behavior of standard
+							// `.retainAll`
+							// but it may help having good performances.
+							throw new IllegalArgumentException(
+									"Missing %s amongst %s".formatted(rejectedColumn, sequencedKeys));
+						}
 
-				return originalIndex;
+						return originalIndex;
 
+					})
+					.toArray();
 
-			}).toArray();
-
-
-			return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).excludedIndexes(excludedIndexes).build();
+			return RetainedKeySet.builder()
+					.keys(retainedKeyset)
+					.sequencedIndexes(sequencedIndexes)
+					.excludedIndexes(excludedIndexes)
+					.build();
 		});
 
 	}

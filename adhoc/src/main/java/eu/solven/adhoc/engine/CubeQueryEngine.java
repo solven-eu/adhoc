@@ -58,6 +58,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;

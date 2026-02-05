@@ -148,6 +148,10 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		}
 	}
 
+	/**
+	 * This tests creates a DAG which looks like a diamond: a single direct step relies on multiple intermediate steps,
+	 * which all depends on the same root step.
+	 */
 	@Test
 	public void testConcurrentQuerySteps() {
 		PhasedTableWrapper phasedTable = (PhasedTableWrapper) table();
@@ -155,8 +159,10 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		int nbConcurrentSteps = 2;
 		Phaser phaser = new Phaser(0);
 
+		// Add a single base measure
 		forest.addMeasure(k1Sum);
 
+		// Then multiple intermediate measures
 		for (int i = 0; i < nbConcurrentSteps; i++) {
 			forest.addMeasure(Combinator.builder()
 					.name(k1Sum.getName() + "_phased_" + i)
@@ -166,6 +172,8 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 					.build());
 
 		}
+
+		// Then a single collection measure
 		forest.addMeasure(Combinator.builder()
 				.name("sum_phased")
 				.underlyings(
@@ -208,5 +216,4 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 			// Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
 		}
 	}
-
 }

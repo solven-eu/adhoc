@@ -38,6 +38,8 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
+import eu.solven.adhoc.map.keyset.NavigableSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder.Default;
@@ -147,7 +149,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 			return SequencedSetLikeList.fromCollection(keysAsList);
 		});
 
-		NavigableSetLikeList setLikeList = sequencedSetLikeList.set;
+		NavigableSetLikeList setLikeList = sequencedSetLikeList.sortedSet();
 
 		synchronized (this) {
 			int size = keySetDictionary.size();
