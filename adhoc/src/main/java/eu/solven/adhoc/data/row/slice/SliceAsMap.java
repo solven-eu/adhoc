@@ -41,6 +41,7 @@ import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
@@ -67,7 +68,7 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 
 	@Deprecated(since = "Should use a ISliceFactory")
 	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
-		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(), asMap);
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()), asMap);
 	}
 
 	public static IAdhocSlice fromMap(ISliceFactory factory, Map<String, ?> asMap) {

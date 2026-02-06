@@ -25,6 +25,7 @@ package eu.solven.adhoc.map;
 import java.util.Map;
 import java.util.Set;
 
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +38,7 @@ import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 public class TestAdhocMapHelpers {
 	@Test
 	public void testFromMapIdentity() {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory();
+		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
 		IAdhocMap original = sliceFactory.newMapBuilder().put("c", "v").build();
 		ITabularRecord originalRecord =

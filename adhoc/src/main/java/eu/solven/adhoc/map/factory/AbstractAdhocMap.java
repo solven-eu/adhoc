@@ -22,8 +22,11 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.AbstractCollection;
+import java.util.AbstractList;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +66,7 @@ import lombok.Value;
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
-public abstract class AbstractAdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
+public abstract class AbstractAdhocMap implements IAdhocMap {
 
 	@Getter
 	@NonNull
@@ -141,6 +144,37 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 		} else {
 			return es;
 		}
+	}
+
+	@Override
+	public int size() {
+		return sequencedKeys.size();
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return sequencedKeys.isEmpty();
+	}
+
+	@Override
+	public Set<String> keySet() {
+		return sequencedKeys;
+	}
+
+	@Override
+	public Collection<Object> values() {
+		return new AbstractList<>() {
+
+			@Override
+			public int size() {
+				return AbstractAdhocMap.this.size();
+			}
+
+			@Override
+			public Object get(int index) {
+				return getSequencedValue(index);
+			}
+		};
 	}
 
 	@Override
@@ -486,5 +520,25 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	@Override
 	public IAdhocMap retainAll(Set<String> columns) {
 		throw new NotYetImplementedException("TODO");
+	}
+
+	@Override
+	public Object put(String key, Object value) {
+		throw new UnsupportedAsImmutableException("Immutable");
+	}
+
+	@Override
+	public Object remove(Object key) {
+		throw new UnsupportedAsImmutableException("Immutable");
+	}
+
+	@Override
+	public void putAll(Map<? extends String, ?> m) {
+		throw new UnsupportedAsImmutableException("Immutable");
+	}
+
+	@Override
+	public void clear() {
+		throw new UnsupportedAsImmutableException("Immutable");
 	}
 }

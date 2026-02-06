@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
+
 /**
  * Some {@link ISliceFactory} will rely on some shared data-structure. This enables creating a context for given
  * sharing. Typically, a context is a single query.
@@ -31,5 +33,5 @@ package eu.solven.adhoc.map.factory;
 @FunctionalInterface
 public interface ISliceFactoryFactory {
 
-	ISliceFactory makeFactory();
+	ISliceFactory makeFactory(IHasQueryOptions queryOptions);
 }

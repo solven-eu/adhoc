@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine;
 
 import java.util.Map;
 
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +35,7 @@ public class TestAdhocFactories {
 	@Test
 	public void testNormalizeNull() {
 		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
 		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
 		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);

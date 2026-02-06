@@ -30,13 +30,13 @@ import java.util.Set;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
-import eu.solven.adhoc.compression.column.StandardFreezingStrategy;
+import eu.solven.adhoc.compression.column.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.column.freezer.LongFreezer;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**
- * Extends {@link StandardFreezingStrategy} by enabling FSST over columns of {@link String}.
+ * Extends {@link SynchronousFreezingStrategy} by enabling FSST over columns of {@link String}.
  * 
  * @author Benoit Lacelle
  * 

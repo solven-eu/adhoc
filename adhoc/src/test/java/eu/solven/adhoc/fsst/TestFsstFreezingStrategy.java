@@ -30,12 +30,12 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
-import eu.solven.adhoc.compression.column.StandardFreezingStrategy;
+import eu.solven.adhoc.compression.column.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 public class TestFsstFreezingStrategy {
-	StandardFreezingStrategy s =
-			StandardFreezingStrategy.builder().freezersWithContext(List.of(new FsstFreezingWithContext())).build();
+	SynchronousFreezingStrategy s =
+			SynchronousFreezingStrategy.builder().freezersWithContext(List.of(new FsstFreezingWithContext())).build();
 
 	@Test
 	public void testStrings() {

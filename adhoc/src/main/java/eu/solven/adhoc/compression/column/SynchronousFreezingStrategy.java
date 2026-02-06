@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,51 +22,52 @@
  */
 package eu.solven.adhoc.compression.column;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.page.IReadableColumn;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 
 /**
- * {@link IAppendableColumn} over a List.
+ * Synchronous {@link IFreezingStrategy}.
  * 
  * @author Benoit Lacelle
+ * @see AsynchronousFreezingStrategy
  */
-@Builder
-public class ObjectArrayColumn implements IAppendableColumn {
+@SuperBuilder
+public class SynchronousFreezingStrategy implements IFreezingStrategy {
 
-	@NonNull
 	@Default
-	final IFreezingStrategy freezer =
-			SynchronousFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
-
 	@NonNull
-	@Default
-	final List<Object> asArray = new ArrayList<>();
+	List<IFreezingWithContext> freezersWithContext = AdhocFreezingUnsafe.getFreezers();
 
 	@Override
-	public void append(Object normalizedValue) {
-		asArray.add(normalizedValue);
-	}
+	public IReadableColumn freeze(IAppendableColumn column) {
+		if (column instanceof ObjectArrayColumn arrayColumn) {
+			Map<String, Object> freezingContext = new LinkedHashMap<>();
 
-	@Override
-	public Object readValue(int rowIndex) {
-		return asArray.get(rowIndex);
-	}
+			Optional<IReadableColumn> output = Optional.empty();
+			for (IFreezingWithContext freezer : freezersWithContext) {
+				output = freezer.freeze(arrayColumn, freezingContext);
 
-	@Override
-	public IReadableColumn freeze() {
-		return freezer.freeze(this);
-	}
+				if (!output.isEmpty()) {
+					break;
+				}
+			}
 
-	public List<?> getAsArray() {
-		return Collections.unmodifiableList(asArray);
+			// TODO wrap in unmodifiable?
+			return output.orElse(column);
+		} else {
+			// TODO wrap in unmodifiable?
+			return column;
+		}
 	}
 
 }

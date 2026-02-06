@@ -22,52 +22,67 @@
  */
 package eu.solven.adhoc.compression.column;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
+import com.google.common.util.concurrent.MoreExecutors;
 import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
-import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveAction;
 
 /**
  * Standard {@link IFreezingStrategy}.
- * 
+ *
  * @author Benoit Lacelle
+ * @see  SynchronousFreezingStrategy
  */
 @SuperBuilder
-public class StandardFreezingStrategy implements IFreezingStrategy {
+@Slf4j
+public class AsynchronousFreezingStrategy implements IFreezingStrategy {
 
 	@Default
 	@NonNull
-	List<IFreezingWithContext> freezersWithContext = AdhocFreezingUnsafe.getFreezers();
+	IFreezingStrategy synchronousStrategy = SynchronousFreezingStrategy.builder().build();
 
-	// TODO This computation could be done asynchronously
+	@Default
+	@NonNull
+	Executor executor = MoreExecutors.directExecutor();
+
+    /**
+     * If true, the freezing operation will prioritize re-use current thread ForkJoinPool if any.
+     */
+    @Default
+    boolean forkIfInForkJoinPool = true;
+
 	@Override
 	public IReadableColumn freeze(IAppendableColumn column) {
-		if (column instanceof ObjectArrayColumn arrayColumn) {
-			Map<String, Object> freezingContext = new LinkedHashMap<>();
+		DynamicReadableColumn dynamicReadableColumn = new DynamicReadableColumn(column);
 
-			Optional<IReadableColumn> output = Optional.empty();
-			for (IFreezingWithContext freezer : freezersWithContext) {
-				output = freezer.freeze(arrayColumn, freezingContext);
+        if (forkIfInForkJoinPool && ForkJoinTask.inForkJoinPool()) {
+            new RecursiveAction() {
+                @Override
+                protected void compute() {
+                    synchronousFreeze(column, dynamicReadableColumn);
+                }
+            }.fork();
+        } else {
+            executor.execute(() -> {
+                synchronousFreeze(column, dynamicReadableColumn);
+            });
+        }
 
-				if (!output.isEmpty()) {
-					break;
-				}
-			}
-
-			// TODO wrap in unmodifiable?
-			return output.orElse(column);
-		} else {
-			// TODO wrap in unmodifiable?
-			return column;
-		}
+		return dynamicReadableColumn;
 	}
 
+    protected void synchronousFreeze(IAppendableColumn column, DynamicReadableColumn dynamicReadableColumn) {
+        dynamicReadableColumn.setRef(synchronousFreeze(column));
+    }
+
+    protected IReadableColumn synchronousFreeze(IAppendableColumn column) {
+        return synchronousStrategy.freeze(column);
+    }
 }

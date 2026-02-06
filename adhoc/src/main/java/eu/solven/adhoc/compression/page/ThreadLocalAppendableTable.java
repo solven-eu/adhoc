@@ -34,8 +34,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Standard {@link IAppendableTable}.
  * 
- * It is thread-safe by creating an {@link IAppendableTablePage} per calling thread. Given page should then written in a
- * monothreaded way.
+ * It is thread-safe by creating an {@link IAppendableTablePage} per calling thread. Given page should then write in a
+ * mono-threaded way.
  * 
  * @author Benoit Lacelle
  */

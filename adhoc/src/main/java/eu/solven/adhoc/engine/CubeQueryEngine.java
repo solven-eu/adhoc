@@ -542,7 +542,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// TODO We should ensure this slice is valid given current filter
 	protected IAdhocSlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
 		IMapBuilderPreKeys errorSliceAsMapBuilder = factories.getSliceFactoryFactory()
-				.makeFactory()
+				.makeFactory(queryStep)
 				.newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
 		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();

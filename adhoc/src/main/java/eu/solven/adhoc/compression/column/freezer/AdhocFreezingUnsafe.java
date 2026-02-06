@@ -57,7 +57,7 @@ public class AdhocFreezingUnsafe {
 
 	@Getter
 	@Setter
-	protected static List<IFreezingWithContext> freezers = DEFAULT_FREEZERS;
+	private static List<IFreezingWithContext> freezers = DEFAULT_FREEZERS;
 
 	private static final boolean DEFAULT_CHECK_POST_COMPRESSION = false;
 
@@ -66,6 +66,6 @@ public class AdhocFreezingUnsafe {
 	 */
 	@Getter
 	@Setter
-	protected static boolean checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
+	private static boolean checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
 
 }

@@ -43,7 +43,7 @@ public class ObjectArrayColumnsFactory implements IAppendableColumnFactory {
 	@NonNull
 	@Default
 	final IFreezingStrategy freezer =
-			StandardFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
+			SynchronousFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
 
 	@Override
 	public IAppendableColumn makeColumn(String key, long capacity) {

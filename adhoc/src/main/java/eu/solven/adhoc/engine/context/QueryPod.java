@@ -272,7 +272,8 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 				columnsManager = ColumnsManager.builder().build();
 			}
 			if (sliceFactory == null) {
-				sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory();
+				// BEWARE Should inject queryPod but the ref is not available yet
+				sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(query);
 			}
 			if (executorService == null) {
 				// By default, we do not jump into a separate thread/executorService, hence we do not rely on
