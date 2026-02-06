@@ -23,15 +23,17 @@
 package eu.solven.adhoc.compression;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.agrona.collections.Object2IntHashMap;
 
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
- * Simple {@link IDictionarizer} based on an {@link ConcurrentHashMap}.
+ * Simple {@link IDictionarizer} based on an {@link Map}.
  * 
  * @author Benoit Lacelle
  */
@@ -39,8 +41,12 @@ import lombok.Builder.Default;
 @Builder
 public class MapDictionarizer implements IDictionarizer {
 	@Default
-	final ConcurrentMap<Object, Integer> objectToInt = new ConcurrentHashMap<>();
+	@NonNull
+	// Agrona provides fast thread-safe primitive collections
+	final Object2IntHashMap<Object> objectToInt = new org.agrona.collections.Object2IntHashMap(-1);
 	@Default
+	@NonNull
+	// TODO Should we introduce batch-inserts?
 	final List<Object> intToObject = new CopyOnWriteArrayList<>();
 
 	@Override
@@ -52,11 +58,13 @@ public class MapDictionarizer implements IDictionarizer {
 	public int toInt(Object object) {
 		// ConcurrentHashMap guarantees the `ifAbsent` function to be called zero or once per `computeIfAbsent`
 		// invocation
-		return objectToInt.computeIfAbsent(object, o -> {
-			intToObject.add(o);
+		return objectToInt.computeIfAbsent(object, this::doMap);
+	}
 
-			return intToObject.size() - 1;
-		});
+	protected int doMap(Object o) {
+		intToObject.add(o);
+
+		return intToObject.size() - 1;
 	}
 
 }

@@ -4,8 +4,12 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.15]
 
+- Introduce `AsynchronousFreezingStrategy` which will freeze in a different thread and then update some reference.
+
 ### Changed
 - Prevent `QueryStepRecursiveAction` from executing multiple times shared tasks in a DAG.
+- `AbstractAdhocMap` does not extend `AbstractMap` to ensure all default methods have optimal implementation.
+- `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
 
 ## [0.0.14]
 

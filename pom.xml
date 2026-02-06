@@ -66,6 +66,8 @@
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
 		<jooq.version>3.20.11</jooq.version>
 
+		<guava.version>33.5.0-jre</guava.version>
+
 		<spotless.version>3.2.1</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 

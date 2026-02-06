@@ -167,7 +167,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// In most cases, the tableSlice should have same columns as requested by the groupBy
 			return tableSlice.getGroupBys();
 		} else {
-			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive most columns than expected,
+			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
 			// or in a different order.
 			IMapBuilderThroughKeys coordinatesBuilder = sliceFactory.newMapBuilder();
 

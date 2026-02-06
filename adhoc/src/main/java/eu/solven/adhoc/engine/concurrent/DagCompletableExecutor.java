@@ -78,6 +78,14 @@ public class DagCompletableExecutor<T> {
 	@NonNull
 	final Executor executor;
 
+	final TimeWeightedConcurrency tracker = TimeWeightedConcurrency.builder().build();
+
+	/**
+	 * An intermediate {@link CompletableFuture} enabling to cover the timeframe between register the task (in a
+	 * `computeIfAbsent`) and actually filling the task. Filling the task is not done synchronously, else it would lead
+	 * to recursive update in the `computeIfAbsent` (given each task may refer to subTasks, themselves calling
+	 * `computeIfAbsent`).
+	 */
 	public static class WiringFuture extends CompletableFuture<Void> {
 		final AtomicBoolean wired = new AtomicBoolean();
 	}
@@ -115,7 +123,6 @@ public class DagCompletableExecutor<T> {
 
 	protected void wire(T step, WiringFuture wiring) {
 		try {
-
 			Set<DefaultEdge> outgoingEdges = fromQueriedToDependencies.outgoingEdgesOf(step);
 
 			List<CompletableFuture<Void>> dependencyFutures = outgoingEdges.stream()
@@ -134,7 +141,16 @@ public class DagCompletableExecutor<T> {
 						step,
 						dependencyFutures.size(),
 						outgoingEdges.size());
-				onReadyStep.accept(step);
+				tracker.startConcurrentTask();
+				try {
+					onReadyStep.accept(step);
+				} finally {
+					tracker.stopConcurrentTask();
+				}
+
+				if (isDone()) {
+					log.info("mean-parallelism={}", tracker.getTimeWeightedParallelism());
+				}
 			}, executor);
 
 			stepToFuture.put(step, wiredFuture);
@@ -143,6 +159,12 @@ public class DagCompletableExecutor<T> {
 			wiring.completeExceptionally(t);
 			throw t;
 		}
+	}
+
+	protected boolean isDone() {
+		int vertexSize = fromQueriedToDependencies.vertexSet().size();
+		int ready = queryStepsDone.size();
+		return vertexSize == ready;
 	}
 
 	@Override

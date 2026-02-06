@@ -47,11 +47,13 @@ import lombok.extern.slf4j.Slf4j;
  * Wraps a {@link QueryStepsDag} step into a {@link RecursiveAction}, to be submitted into a {@link ForkJoinPool}.
  * 
  * @author Benoit Lacelle
+ * @deprecated Prefer {@link DagCompletableExecutor} for less deep stacks and no thread-starving.
  */
 @Builder(toBuilder = true)
 @Slf4j
 // BEWARE Adhoc does not enable remote execution of such task. Please fill a ticket if you believe it would be
 // beneficial.
+@Deprecated(since = "May lead to StackOverflowError of thread-starving", forRemoval = true)
 public class DagRecursiveAction<T> extends RecursiveAction {
 	private static final long serialVersionUID = -8742698545892380483L;
 
