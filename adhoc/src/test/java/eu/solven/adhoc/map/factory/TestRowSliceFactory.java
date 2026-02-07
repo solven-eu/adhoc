@@ -40,6 +40,13 @@ public class TestRowSliceFactory {
 	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	@Test
+	public void testToString() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+
+		Assertions.assertThat((Map) aAndB).hasToString("{a=a1, b=b1}");
+	}
+
+	@Test
 	public void isNorOrdered() {
 		Assertions.assertThat(factory.isNotOrdered(Set.of("a"))).isTrue();
 
@@ -85,5 +92,25 @@ public class TestRowSliceFactory {
 		// joint
 		IAdhocMap joint = aAndB.retainAll(Set.of("a", "c"));
 		Assertions.assertThat((Map) joint).isEqualTo(Map.of("a", "a1")).hasSameHashCodeAs(Map.of("a", "a1"));
+	}
+
+	@Test
+	public void testEquals_misOrdered() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+		IAdhocMap bAndA = factory.newMapBuilder(List.of("b", "a")).append("b1").append("a1").build();
+
+		Assertions.assertThat((Map) aAndB).isEqualTo(bAndA);
+
+		IAdhocMap aAndBMixed = factory.newMapBuilder(List.of("a", "b")).append("b1").append("a1").build();
+		IAdhocMap bAndAMixed = factory.newMapBuilder(List.of("b", "a")).append("a1").append("b1").build();
+
+		Assertions.assertThat((Map) aAndBMixed).isEqualTo(bAndAMixed);
+
+		Assertions.assertThat((Map) aAndB).isNotEqualTo(aAndBMixed);
+		Assertions.assertThat((Map) aAndB).isNotEqualTo(bAndAMixed);
+
+		Assertions.assertThat((Map) bAndA).isNotEqualTo(aAndBMixed);
+		Assertions.assertThat((Map) bAndA).isNotEqualTo(bAndAMixed);
+
 	}
 }

@@ -22,9 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.AbstractCollection;
 import java.util.AbstractList;
-import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
@@ -66,6 +64,7 @@ import lombok.Value;
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.GodClass")
 public abstract class AbstractAdhocMap implements IAdhocMap {
 
 	@Getter
@@ -270,7 +269,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 			// same values. `Objects.equals` will do a reference check
 			if (!equalsForInt(size(), this::getSortedValueRaw, objAsMap::getSortedValueRaw)) {
 				return false;
-			} else if (!Objects.equals(sequencedKeys.orderedKeys(), objAsMap.sequencedKeys.orderedKeys())) {
+			} else if (!Objects.equals(sequencedKeys.sortedKeys(), objAsMap.sequencedKeys.sortedKeys())) {
 				return false;
 			} else {
 				return true;
@@ -440,8 +439,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 *            a Set of columns to retains
 	 * @param sequencedKeys
 	 */
-	// BEWARE We store the mask 9as a Map) as it has higher change to be sameRef while `mask.KeySet` may be changed
-	private record RetainedKeysetCacheKey(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
+	private record RetainedKeysetCacheKey(Set<String> retainedColumns, List<String> sequencedKeys) {
 	}
 
 	/**
@@ -464,57 +462,87 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	}
 
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedKeysetCacheKey(retainedColumns, sequencedKeys), k -> {
-			Set<String> intersection;
-			if (sequencedKeys.containsAll(retainedColumns)) {
-				// In most cases, we retain a subSet
-				intersection = retainedColumns;
-			} else {
-				// `Sets.intersection` necessarily creates a new Set
-				intersection = Sets.intersection(sequencedKeys, retainedColumns);
+		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedKeysetCacheKey(retainedColumns, sequencedKeys.asList()),
+				k -> noCacheRetainKeyset(retainedColumns));
+
+	}
+
+	protected RetainedKeySet noCacheRetainKeyset(Set<String> retainedColumns) {
+		Set<String> intersection;
+		if (sequencedKeys.containsAll(retainedColumns)) {
+			// In most cases, we retain a subSet
+			intersection = retainedColumns;
+		} else {
+			// `Sets.intersection` necessarily creates a new Set
+			intersection = Sets.intersection(sequencedKeys, retainedColumns);
+		}
+		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
+
+		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
+			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
+
+			if (originalIndex < 0) {
+				// Throw is retaining a missing column: it does not follow resilient behavior of standard
+				// `.retainAll`
+				// but it may help having good performances.
+				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
 			}
-			SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
 
-			List<String> sequencedKeysAsList = this.sequencedKeys.asList();
-			int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
-				int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
+			return originalIndex;
+		}).toArray();
 
-				if (originalIndex < 0) {
-					// Throw is retaining a missing column: it does not follow resilient behavior of standard
-					// `.retainAll`
-					// but it may help having good performances.
-					throw new IllegalArgumentException(
-							"Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
-				}
+		int[] excludedIndexes = sequencedKeysAsList.stream()
+				.filter(existingColumn -> !retainedColumns.contains(existingColumn))
+				.mapToInt(rejectedColumn -> {
+					int originalIndex = sequencedKeysAsList.indexOf(rejectedColumn);
 
-				return originalIndex;
-			}).toArray();
+					if (originalIndex < 0) {
+						// Throw is retaining a missing column: it does not follow resilient behavior of standard
+						// `.retainAll`
+						// but it may help having good performances.
+						throw new IllegalArgumentException(
+								"Missing %s amongst %s".formatted(rejectedColumn, sequencedKeys));
+					}
 
-			int[] excludedIndexes = sequencedKeysAsList.stream()
-					.filter(existingColumn -> !retainedColumns.contains(existingColumn))
-					.mapToInt(rejectedColumn -> {
-						int originalIndex = sequencedKeysAsList.indexOf(rejectedColumn);
+					return originalIndex;
 
-						if (originalIndex < 0) {
-							// Throw is retaining a missing column: it does not follow resilient behavior of standard
-							// `.retainAll`
-							// but it may help having good performances.
-							throw new IllegalArgumentException(
-									"Missing %s amongst %s".formatted(rejectedColumn, sequencedKeys));
-						}
+				})
+				.toArray();
 
-						return originalIndex;
+		return RetainedKeySet.builder()
+				.keys(retainedKeyset)
+				.sequencedIndexes(sequencedIndexes)
+				.excludedIndexes(excludedIndexes)
+				.build();
+	}
 
-					})
-					.toArray();
+	@Override
+	// Duplicated from AbstractMap
+	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals",
+			"PMD.ConsecutiveAppendsShouldReuse",
+			"PMD.ConsecutiveLiteralAppends",
+			"PMD.CompareObjectsWithEquals" })
+	public String toString() {
+		Iterator<Map.Entry<String, Object>> i = entrySet().iterator();
+		if (!i.hasNext()) {
+			return "{}";
+		}
 
-			return RetainedKeySet.builder()
-					.keys(retainedKeyset)
-					.sequencedIndexes(sequencedIndexes)
-					.excludedIndexes(excludedIndexes)
-					.build();
-		});
-
+		StringBuilder sb = new StringBuilder();
+		sb.append('{');
+		for (;;) {
+			Map.Entry<String, Object> e = i.next();
+			String key = e.getKey();
+			Object value = e.getValue();
+			sb.append(key);
+			sb.append('=');
+			sb.append(value == this ? "(this Map)" : value);
+			if (!i.hasNext()) {
+				return sb.append('}').toString();
+			}
+			sb.append(',').append(' ');
+		}
 	}
 
 	@Override
@@ -524,21 +552,21 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 
 	@Override
 	public Object put(String key, Object value) {
-		throw new UnsupportedAsImmutableException("Immutable");
+		throw new UnsupportedAsImmutableException();
 	}
 
 	@Override
 	public Object remove(Object key) {
-		throw new UnsupportedAsImmutableException("Immutable");
+		throw new UnsupportedAsImmutableException();
 	}
 
 	@Override
 	public void putAll(Map<? extends String, ?> m) {
-		throw new UnsupportedAsImmutableException("Immutable");
+		throw new UnsupportedAsImmutableException();
 	}
 
 	@Override
 	public void clear() {
-		throw new UnsupportedAsImmutableException("Immutable");
+		throw new UnsupportedAsImmutableException();
 	}
 }

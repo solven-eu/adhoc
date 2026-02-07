@@ -108,7 +108,6 @@ public class BenchmarkMapDictionarizer {
 		return d;
 	}
 
-
 	@OperationsPerInvocation(16)
 	@Benchmark
 	public IDictionarizer map16_agrona() {

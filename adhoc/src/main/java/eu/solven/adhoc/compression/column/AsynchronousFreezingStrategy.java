@@ -22,7 +22,12 @@
  */
 package eu.solven.adhoc.compression.column;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveAction;
+
 import com.google.common.util.concurrent.MoreExecutors;
+
 import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder.Default;
@@ -30,15 +35,11 @@ import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.RecursiveAction;
-
 /**
  * Standard {@link IFreezingStrategy}.
  *
  * @author Benoit Lacelle
- * @see  SynchronousFreezingStrategy
+ * @see SynchronousFreezingStrategy
  */
 @SuperBuilder
 @Slf4j
@@ -52,37 +53,37 @@ public class AsynchronousFreezingStrategy implements IFreezingStrategy {
 	@NonNull
 	Executor executor = MoreExecutors.directExecutor();
 
-    /**
-     * If true, the freezing operation will prioritize re-use current thread ForkJoinPool if any.
-     */
-    @Default
-    boolean forkIfInForkJoinPool = true;
+	/**
+	 * If true, the freezing operation will prioritize re-use current thread ForkJoinPool if any.
+	 */
+	@Default
+	boolean forkIfInForkJoinPool = true;
 
 	@Override
 	public IReadableColumn freeze(IAppendableColumn column) {
 		DynamicReadableColumn dynamicReadableColumn = new DynamicReadableColumn(column);
 
-        if (forkIfInForkJoinPool && ForkJoinTask.inForkJoinPool()) {
-            new RecursiveAction() {
-                @Override
-                protected void compute() {
-                    synchronousFreeze(column, dynamicReadableColumn);
-                }
-            }.fork();
-        } else {
-            executor.execute(() -> {
-                synchronousFreeze(column, dynamicReadableColumn);
-            });
-        }
+		if (forkIfInForkJoinPool && ForkJoinTask.inForkJoinPool()) {
+			new RecursiveAction() {
+				@Override
+				protected void compute() {
+					synchronousFreeze(column, dynamicReadableColumn);
+				}
+			}.fork();
+		} else {
+			executor.execute(() -> {
+				synchronousFreeze(column, dynamicReadableColumn);
+			});
+		}
 
 		return dynamicReadableColumn;
 	}
 
-    protected void synchronousFreeze(IAppendableColumn column, DynamicReadableColumn dynamicReadableColumn) {
-        dynamicReadableColumn.setRef(synchronousFreeze(column));
-    }
+	protected void synchronousFreeze(IAppendableColumn column, DynamicReadableColumn dynamicReadableColumn) {
+		dynamicReadableColumn.setRef(synchronousFreeze(column));
+	}
 
-    protected IReadableColumn synchronousFreeze(IAppendableColumn column) {
-        return synchronousStrategy.freeze(column);
-    }
+	protected IReadableColumn synchronousFreeze(IAppendableColumn column) {
+		return synchronousStrategy.freeze(column);
+	}
 }

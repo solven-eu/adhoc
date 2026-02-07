@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @UtilityClass
 @Slf4j
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+@SuppressWarnings("PMD.FieldDeclarationsShouldBeAtStartOfClass")
 public class AdhocFreezingUnsafe {
 
 	public void resetToDefaults() {

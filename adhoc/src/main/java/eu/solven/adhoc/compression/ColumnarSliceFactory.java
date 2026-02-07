@@ -31,6 +31,7 @@ import eu.solven.adhoc.compression.page.IAppendableTableFactory;
 import eu.solven.adhoc.compression.page.ITableRowRead;
 import eu.solven.adhoc.compression.page.ITableRowWrite;
 import eu.solven.adhoc.compression.page.ThreadLocalAppendableTable;
+import eu.solven.adhoc.compression.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
@@ -65,8 +66,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 
 	@Default
 	@NonNull
-	protected final IAppendableTableFactory appendableTableFactory =
-			ThreadLocalAppendableTable.builder().capacity(AdhocUnsafe.getPageSize()).build();
+	protected final IAppendableTableFactory appendableTableFactory = new ThreadLocalAppendableTableFactory();
 
 	@Default
 	@NonNull

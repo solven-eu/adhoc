@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.compression.ColumnarSliceFactory;
@@ -86,5 +87,70 @@ public class TestColumnarSliceFactory {
 		// joint
 		IAdhocMap joint = aAndB.retainAll(Set.of("a", "c"));
 		Assertions.assertThat((Map) joint).isEqualTo(Map.of("a", "a1")).hasSameHashCodeAs(Map.of("a", "a1"));
+	}
+
+	@Test
+	public void testBuild_DifferentOrder() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1", "b1").build();
+		IAdhocMap bAndA = factory.newMapBuilder(List.of("b", "a")).append("b1", "a1").build();
+
+		Assertions.assertThat((Map) aAndB).isEqualTo(bAndA).isEqualTo(ImmutableMap.of("a", "a1", "b", "b1"));
+	}
+
+	@Test
+	public void testRetainAll_DifferentOrder() {
+		IAdhocMap aAndBandC = factory.newMapBuilder(List.of("a", "b", "c")).append("a1", "b1", "c1").build();
+
+		IAdhocMap retainAandB = aAndBandC.retainAll(ImmutableSet.of("b", "a"));
+
+		Assertions.assertThat((Map) retainAandB).isEqualTo(ImmutableMap.of("a", "a1", "b", "b1"));
+	}
+
+	@Test
+	public void testRetainAll_retainAllAgain() {
+		IAdhocMap aAndBandC = factory.newMapBuilder(List.of("a", "b", "c")).append("a1", "b1", "c1").build();
+
+		IAdhocMap retainAandB = aAndBandC.retainAll(ImmutableSet.of("a", "b"));
+		IAdhocMap retainA = retainAandB.retainAll(ImmutableSet.of("a"));
+
+		Assertions.assertThat((Map) retainA)
+				.isEqualTo(ImmutableMap.of("a", "a1"))
+				.hasSameHashCodeAs(ImmutableMap.of("a", "a1"));
+	}
+
+	@Test
+	public void testRetainAll_retainAllAgain_retainAllAgain() {
+		IAdhocMap aAndBandC = factory.newMapBuilder(List.of("a", "b", "c", "d")).append("a1", "b1", "c1", "d1").build();
+
+		IAdhocMap retainAandBandC = aAndBandC.retainAll(ImmutableSet.of("a", "b", "c"));
+		IAdhocMap retainAandB = retainAandBandC.retainAll(ImmutableSet.of("b", "c"));
+		IAdhocMap retainA = retainAandB.retainAll(ImmutableSet.of("b"));
+
+		Assertions.assertThat((Map) retainA)
+				.isEqualTo(ImmutableMap.of("b", "b1"))
+				.hasSameHashCodeAs(ImmutableMap.of("b", "b1"));
+	}
+
+	@Test
+	public void testIssueWithCacheBasedOnSetInsteadOfList() {
+		AbstractAdhocMap.CACHE_RETAINEDKEYS.clear();
+
+		{
+			IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1", "b1").build();
+			IAdhocMap onlyAfromAandB = aAndB.retainAll(Set.of("a"));
+
+			Assertions.assertThat((Map) onlyAfromAandB)
+					.isEqualTo(ImmutableMap.of("a", "a1"))
+					.hasSameHashCodeAs(ImmutableMap.of("a", "a1"));
+		}
+
+		{
+			IAdhocMap bAndA = factory.newMapBuilder(List.of("b", "a")).append("b1", "a1").build();
+			IAdhocMap onlyAfromBandA = bAndA.retainAll(ImmutableSet.of("a"));
+
+			Assertions.assertThat((Map) onlyAfromBandA)
+					.isEqualTo(ImmutableMap.of("a", "a1"))
+					.hasSameHashCodeAs(ImmutableMap.of("a", "a1"));
+		}
 	}
 }

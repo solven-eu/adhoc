@@ -116,7 +116,7 @@ public class DagCompletableExecutor<T> {
 	}
 
 	public CompletableFuture<Void> executeRecursively(List<T> steps) {
-		List<CompletableFuture<Void>> futures = steps.stream().map(step -> executeRecursively(step)).toList();
+		List<CompletableFuture<Void>> futures = steps.stream().map(this::executeRecursively).toList();
 
 		return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));
 	}

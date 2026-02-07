@@ -24,12 +24,12 @@ package eu.solven.adhoc.engine;
 
 import java.util.Map;
 
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 
 public class TestAdhocFactories {
 	@Test

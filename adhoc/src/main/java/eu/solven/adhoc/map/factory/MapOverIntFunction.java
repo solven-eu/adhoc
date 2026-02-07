@@ -31,6 +31,7 @@ import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Represents an {@link IAdhocMap} given an {@link IntFunction} representing dictionarized value.
@@ -68,12 +69,37 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 		return getSequencedValueRaw(sequencedKeys.unorderedIndex(index));
 	}
 
+	@RequiredArgsConstructor
+	final class RetainedIntFunction implements IntFunction<Object> {
+		final int[] sequencedIndexes;
+
+		@Override
+		public Object apply(int index) {
+			return sequencedValues.apply(sequencedIndexes[index]);
+		}
+
+		@SuppressWarnings("PMD.UseVarargs")
+		public IntFunction<Object> retain(int[] retainedIndexes) {
+			// TODO Could we unroll the double de-reference from the cache?
+			// It would prevent deep retainAll chains into deep de-reference chains
+			// Need micro-benchmark
+			// return retainedIndex -> this.apply(retainedIndexes[retainedIndex]);
+			return retainedIndex -> sequencedValues.apply(sequencedIndexes[retainedIndexes[retainedIndex]]);
+		}
+
+	}
+
 	@Override
 	public IAdhocMap retainAll(Set<String> retainedColumns) {
 		RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
 
 		int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();
-		IntFunction<Object> retainedSequencedValues = index -> sequencedValues.apply(sequencedIndexes[index]);
+		IntFunction<Object> retainedSequencedValues;
+		if (sequencedValues instanceof RetainedIntFunction retainedIntFunction) {
+			retainedSequencedValues = retainedIntFunction.retain(sequencedIndexes);
+		} else {
+			retainedSequencedValues = new RetainedIntFunction(sequencedIndexes);
+		}
 
 		// compute hashCode differentially based on excluded entries
 		// This is expected to be faster as we expect the parent map to be hashed at least once if the retained map is

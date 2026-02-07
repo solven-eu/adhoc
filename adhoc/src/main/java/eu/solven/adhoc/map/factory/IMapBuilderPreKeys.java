@@ -31,4 +31,14 @@ public interface IMapBuilderPreKeys extends IBuildableIntoMap {
 
 	IMapBuilderPreKeys append(Object value);
 
+	default IMapBuilderPreKeys append(Object first, Object... more) {
+		IMapBuilderPreKeys preKeys = append(first);
+
+		for (Object oneMore : more) {
+			preKeys = append(oneMore);
+		}
+
+		return preKeys;
+	}
+
 }

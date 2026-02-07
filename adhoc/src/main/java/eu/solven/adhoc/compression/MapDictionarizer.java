@@ -43,7 +43,8 @@ public class MapDictionarizer implements IDictionarizer {
 	@Default
 	@NonNull
 	// Agrona provides fast thread-safe primitive collections
-	final Object2IntHashMap<Object> objectToInt = new org.agrona.collections.Object2IntHashMap(-1);
+	@SuppressWarnings("PMD.LooseCoupling")
+	final Object2IntHashMap<Object> objectToInt = new Object2IntHashMap<>(-1);
 	@Default
 	@NonNull
 	// TODO Should we introduce batch-inserts?

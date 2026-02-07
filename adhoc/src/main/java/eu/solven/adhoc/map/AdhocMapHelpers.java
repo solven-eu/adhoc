@@ -57,7 +57,8 @@ public class AdhocMapHelpers {
 
 	@Deprecated
 	public static IAdhocMap fromMap(Map<String, ?> asMap) {
-		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()), asMap);
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()),
+				asMap);
 	}
 
 	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {

@@ -57,7 +57,7 @@ import lombok.NonNull;
  * This is NOT similar to a {@link NavigableSet}. It enables an order relatively to {@link NavigableSet}.
  * 
  * This should generally not be used as key, as two {@link SequencedSet} with different orders would be considered
- * equals. In such a case, one should rely on
+ * equals. In such a case, one should rely on `asList`.
  *
  * @author Benoit Lacelle
  */
@@ -162,7 +162,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		}
 	}
 
-	public List<String> orderedKeys() {
+	public List<String> sortedKeys() {
 		return set.keysAsSet.asList();
 	}
 
@@ -173,8 +173,8 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		if (this == keys) {
 			return 0;
 		}
-		var thisKeysIterator = this.orderedKeys().iterator();
-		var otherKeysIterator = keys.orderedKeys().iterator();
+		var thisKeysIterator = this.sortedKeys().iterator();
+		var otherKeysIterator = keys.sortedKeys().iterator();
 
 		return AdhocMapComparisonHelpers.compareKeySet(thisKeysIterator, otherKeysIterator);
 	}
@@ -184,7 +184,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		if (reversedOrdering.length == 0) {
 			return set.iterator();
 		} else {
-			return IntStream.of(reversedOrdering).mapToObj(i -> orderedKeys().get(i)).iterator();
+			return IntStream.of(reversedOrdering).mapToObj(i -> sortedKeys().get(i)).iterator();
 		}
 	}
 
