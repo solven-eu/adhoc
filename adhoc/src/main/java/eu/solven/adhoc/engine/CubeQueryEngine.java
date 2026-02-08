@@ -58,6 +58,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
@@ -482,8 +483,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		if (null != alreadyIn) {
 			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
 			// dependents.
-			// TODO Prevent an intermediate step to be computed multiple times
-			log.debug("A queryStep has been computed multiple times queryStep={}", queryPod);
+			log.warn("A queryStep has been computed multiple times queryStep={}. Should not happen since 0.0.14",
+					queryPod);
 		}
 	}
 
@@ -541,7 +542,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// TODO We should ensure this slice is valid given current filter
 	protected IAdhocSlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
 		IMapBuilderPreKeys errorSliceAsMapBuilder = factories.getSliceFactoryFactory()
-				.makeFactory()
+				.makeFactory(queryStep)
 				.newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
 		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();

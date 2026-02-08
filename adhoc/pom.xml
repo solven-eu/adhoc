@@ -83,6 +83,15 @@
 			<version>8.5.18</version>
 		</dependency>
 
+		<!-- Source: https://mvnrepository.com/artifact/org.agrona/agrona -->
+		<dependency>
+			<!-- Thread-Safe primitive collections -->
+			<!-- e.g. MapDictionarizer -->
+			<groupId>org.agrona</groupId>
+			<artifactId>agrona</artifactId>
+			<version>2.4.0</version>
+		</dependency>
+
 		<!--		<dependency>-->
 		<!-- Enable faster internalization of keySet in StandardSliceFactory-->
 		<!--			<groupId>com.github.takawitter</groupId>-->
@@ -192,6 +201,22 @@
 			<artifactId>pepper-unittest</artifactId>
 			<version>${pepper.version}</version>
 			<scope>test</scope>
+		</dependency>
+
+		<!-- Source:
+		https://mvnrepository.com/artifact/com.google.guava/guava-testlib -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava-testlib</artifactId>
+			<version>${guava.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<!-- Adhoc relies on Jupiter/JUnit5-->
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 </project>

@@ -53,12 +53,7 @@ public class AdhocFactories {
 
 	@NonNull
 	@Default
-	ISliceFactoryFactory sliceFactoryFactory = () -> ColumnarSliceFactory.builder().build();
-
-	// @NonNull
-	// @Default
-	// ISliceFactory sliceFactory = ColumnarSliceFactory.builder().build();
-	// DictionarizedSliceFactory.builder().build();
+	ISliceFactoryFactory sliceFactoryFactory = options -> ColumnarSliceFactory.builder().options(options).build();
 
 	@NonNull
 	@Default

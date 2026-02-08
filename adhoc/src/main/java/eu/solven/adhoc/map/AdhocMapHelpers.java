@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.experimental.UtilityClass;
@@ -43,7 +44,7 @@ public class AdhocMapHelpers {
 	/**
 	 * 
 	 * @param map
-	 * @return an immutable copy of the input, which may or may not be an {@link AdhocMap}
+	 * @return an immutable copy of the input, which may or may not be an {@link IAdhocMap}
 	 */
 	public static Map<String, ?> immutableCopyOf(Map<String, ?> map) {
 		if (map instanceof IImmutable) {
@@ -56,7 +57,8 @@ public class AdhocMapHelpers {
 
 	@Deprecated
 	public static IAdhocMap fromMap(Map<String, ?> asMap) {
-		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(), asMap);
+		return fromMap(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()),
+				asMap);
 	}
 
 	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {

@@ -22,8 +22,9 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.AbstractMap;
+import java.util.AbstractList;
 import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.AbstractIterator;
@@ -45,6 +47,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
@@ -56,12 +59,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
 /**
- * An abstract {@link IAdhocMap} based on on a {@link SequencedSetLikeList} as keySet, and a List as values.
+ * An abstract {@link IAdhocMap} based on a {@link SequencedSetLikeList} as keySet, and a List as values.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
-public abstract class AbstractAdhocMap extends AbstractMap<String, Object> implements IAdhocMap {
+@SuppressWarnings("PMD.GodClass")
+public abstract class AbstractAdhocMap implements IAdhocMap {
 
 	@Getter
 	@NonNull
@@ -84,6 +88,9 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
+	@NonNull
+	final IntSupplier hashcodeSupplier;
+
 	/**
 	 * Holds cached entrySet(). Note that AbstractMap fields are used for keySet() and values().
 	 */
@@ -93,7 +100,13 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 
 	// TODO Purge policy
 	// TODO Compare perf with ThreadLocal
-	static final Map<RetainedResult, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+	static final Map<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+
+	public AbstractAdhocMap(ISliceFactory factory, SequencedSetLikeList sequencedKeys) {
+		this.factory = factory;
+		this.sequencedKeys = sequencedKeys;
+		this.hashcodeSupplier = () -> computeHashCode(this);
+	}
 
 	/**
 	 * 
@@ -133,6 +146,37 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	@Override
+	public int size() {
+		return sequencedKeys.size();
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return sequencedKeys.isEmpty();
+	}
+
+	@Override
+	public Set<String> keySet() {
+		return sequencedKeys;
+	}
+
+	@Override
+	public Collection<Object> values() {
+		return new AbstractList<>() {
+
+			@Override
+			public int size() {
+				return AbstractAdhocMap.this.size();
+			}
+
+			@Override
+			public Object get(int index) {
+				return getSequencedValue(index);
+			}
+		};
+	}
+
+	@Override
 	public void forEach(BiConsumer<? super String, ? super Object> action) {
 		int size = size();
 		for (int i = 0; i < size; i++) {
@@ -154,7 +198,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	// Called by `SliceAsMap` so it needs to be fast
 	@Override
 	public boolean containsKey(Object key) {
-		return sequencedKeys.set.keysAsHashSet.get().contains(key);
+		return sequencedKeys.contains(key);
 	}
 
 	@Override
@@ -172,19 +216,8 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	@Override
 	public int hashCode() {
 		// hashCode caching like String.hashCode
-		int h = hash;
-		if (h == 0 && !hashIsZero) {
-			int[] hashcodeHolder = new int[1];
-
-			int size = size();
-			for (int i = 0; i < size; i++) {
-				String key = sequencedKeys.getKey(i);
-				Object value = getSequencedValue(i);
-				// see `Map.Entry#hashCode`
-				hashcodeHolder[0] += Objects.hashCode(key) ^ Objects.hashCode(value);
-			}
-
-			h = hashcodeHolder[0];
+		if (hash == 0 && !hashIsZero) {
+			int h = hashcodeSupplier.getAsInt();
 
 			if (h == 0) {
 				hashIsZero = true;
@@ -192,7 +225,28 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 				hash = h;
 			}
 		}
-		return h;
+		return hash;
+	}
+
+	/**
+	 * Standard Map .hashcode, specialized for {@link AbstractAdhocMap}.
+	 * 
+	 * @param map
+	 * @return
+	 */
+	@SuppressWarnings("PMD.LooseCoupling")
+	private static int computeHashCode(AbstractAdhocMap map) {
+		int hashcodeHolder = 0;
+
+		int size = map.size();
+		for (int i = 0; i < size; i++) {
+			String key = map.sequencedKeys.getKey(i);
+			Object value = map.getSequencedValue(i);
+			// see `Map.Entry#hashCode`
+			hashcodeHolder += Objects.hashCode(key) ^ Objects.hashCode(value);
+		}
+
+		return hashcodeHolder;
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")
@@ -215,7 +269,7 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 			// same values. `Objects.equals` will do a reference check
 			if (!equalsForInt(size(), this::getSortedValueRaw, objAsMap::getSortedValueRaw)) {
 				return false;
-			} else if (!Objects.equals(sequencedKeys.orderedKeys(), objAsMap.sequencedKeys.orderedKeys())) {
+			} else if (!Objects.equals(sequencedKeys.sortedKeys(), objAsMap.sequencedKeys.sortedKeys())) {
 				return false;
 			} else {
 				return true;
@@ -380,62 +434,139 @@ public abstract class AbstractAdhocMap extends AbstractMap<String, Object> imple
 	}
 
 	/**
-	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
-	 */
-	@Value
-	@Builder
-	public static class RetainedKeySet {
-		@NonNull
-		SequencedSetLikeList keys;
-
-		@NonNull
-		int[] sequencedIndexes;
-	}
-
-	/**
 	 *
 	 * @param retainedColumns
 	 *            a Set of columns to retains
 	 * @param sequencedKeys
 	 */
-	// BEWARE We store the mask as it has higher change to be sameRef while `mask.KeySet` may he changed
-	private record RetainedResult(Set<String> retainedColumns, SequencedSetLikeList sequencedKeys) {
+	private record RetainedKeysetCacheKey(Set<String> retainedColumns, List<String> sequencedKeys) {
+	}
+
+	/**
+	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
+	 */
+	@Value
+	@Builder
+	public static class RetainedKeySet {
+		// retains keys
+		@NonNull
+		SequencedSetLikeList keys;
+
+		// sequenced indexes, from retained Map, to underlying/original Map
+		@NonNull
+		int[] sequencedIndexes;
+
+		// excluded keys. Typically used to compute hashCode incrementally
+		@NonNull
+		int[] excludedIndexes;
 	}
 
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedResult(retainedColumns, sequencedKeys), k -> {
-			Set<String> intersection;
-			if (sequencedKeys.containsAll(retainedColumns)) {
-				// In most cases, we retain a subSet
-				intersection = retainedColumns;
-			} else {
-				// `Sets.intersection` necessarily creates a new Set
-				intersection = Sets.intersection(sequencedKeys, retainedColumns);
+		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedKeysetCacheKey(retainedColumns, sequencedKeys.asList()),
+				k -> noCacheRetainKeyset(retainedColumns));
+
+	}
+
+	protected RetainedKeySet noCacheRetainKeyset(Set<String> retainedColumns) {
+		Set<String> intersection;
+		if (sequencedKeys.containsAll(retainedColumns)) {
+			// In most cases, we retain a subSet
+			intersection = retainedColumns;
+		} else {
+			// `Sets.intersection` necessarily creates a new Set
+			intersection = Sets.intersection(sequencedKeys, retainedColumns);
+		}
+		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
+
+		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
+			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
+
+			if (originalIndex < 0) {
+				// Throw is retaining a missing column: it does not follow resilient behavior of standard
+				// `.retainAll`
+				// but it may help having good performances.
+				throw new IllegalArgumentException("Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
 			}
-			SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
 
-			List<String> sequencedKeysAsList = this.sequencedKeys.asList();
-			int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
-				int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
+			return originalIndex;
+		}).toArray();
 
-				if (originalIndex < 0) {
-					// Throw is retaining a missing column: it does not follow resilient behavior of standard
-					// `.retainALl`
-					// but it may help having good performances.
-					throw new IllegalArgumentException(
-							"Missing %s amongst %s".formatted(retainedColumn, sequencedKeys));
-				}
+		int[] excludedIndexes = sequencedKeysAsList.stream()
+				.filter(existingColumn -> !retainedColumns.contains(existingColumn))
+				.mapToInt(rejectedColumn -> {
+					int originalIndex = sequencedKeysAsList.indexOf(rejectedColumn);
 
-				return originalIndex;
-			}).toArray();
+					if (originalIndex < 0) {
+						// Throw is retaining a missing column: it does not follow resilient behavior of standard
+						// `.retainAll`
+						// but it may help having good performances.
+						throw new IllegalArgumentException(
+								"Missing %s amongst %s".formatted(rejectedColumn, sequencedKeys));
+					}
 
-			return RetainedKeySet.builder().keys(retainedKeyset).sequencedIndexes(sequencedIndexes).build();
-		});
+					return originalIndex;
 
+				})
+				.toArray();
+
+		return RetainedKeySet.builder()
+				.keys(retainedKeyset)
+				.sequencedIndexes(sequencedIndexes)
+				.excludedIndexes(excludedIndexes)
+				.build();
+	}
+
+	@Override
+	// Duplicated from AbstractMap
+	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals",
+			"PMD.ConsecutiveAppendsShouldReuse",
+			"PMD.ConsecutiveLiteralAppends",
+			"PMD.CompareObjectsWithEquals" })
+	public String toString() {
+		Iterator<Map.Entry<String, Object>> i = entrySet().iterator();
+		if (!i.hasNext()) {
+			return "{}";
+		}
+
+		StringBuilder sb = new StringBuilder();
+		sb.append('{');
+		for (;;) {
+			Map.Entry<String, Object> e = i.next();
+			String key = e.getKey();
+			Object value = e.getValue();
+			sb.append(key);
+			sb.append('=');
+			sb.append(value == this ? "(this Map)" : value);
+			if (!i.hasNext()) {
+				return sb.append('}').toString();
+			}
+			sb.append(',').append(' ');
+		}
 	}
 
 	@Override
 	public IAdhocMap retainAll(Set<String> columns) {
 		throw new NotYetImplementedException("TODO");
+	}
+
+	@Override
+	public Object put(String key, Object value) {
+		throw new UnsupportedAsImmutableException();
+	}
+
+	@Override
+	public Object remove(Object key) {
+		throw new UnsupportedAsImmutableException();
+	}
+
+	@Override
+	public void putAll(Map<? extends String, ?> m) {
+		throw new UnsupportedAsImmutableException();
+	}
+
+	@Override
+	public void clear() {
+		throw new UnsupportedAsImmutableException();
 	}
 }

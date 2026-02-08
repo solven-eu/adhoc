@@ -31,13 +31,15 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
 public class TestAdhocMapHelpers {
 	@Test
 	public void testFromMapIdentity() {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory();
+		ISliceFactory sliceFactory =
+				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
 		IAdhocMap original = sliceFactory.newMapBuilder().put("c", "v").build();
 		ITabularRecord originalRecord =

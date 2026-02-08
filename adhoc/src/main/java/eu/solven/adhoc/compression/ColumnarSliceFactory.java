@@ -27,9 +27,11 @@ import java.util.Collection;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.compression.page.IAppendableTable;
+import eu.solven.adhoc.compression.page.IAppendableTableFactory;
 import eu.solven.adhoc.compression.page.ITableRowRead;
 import eu.solven.adhoc.compression.page.ITableRowWrite;
 import eu.solven.adhoc.compression.page.ThreadLocalAppendableTable;
+import eu.solven.adhoc.compression.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
@@ -38,7 +40,8 @@ import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.MapOverIntFunction;
-import eu.solven.adhoc.map.factory.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -56,6 +59,14 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 public class ColumnarSliceFactory extends ASliceFactory {
+
+	@Default
+	@NonNull
+	protected final IHasQueryOptions options = IHasQueryOptions.noOption();
+
+	@Default
+	@NonNull
+	protected final IAppendableTableFactory appendableTableFactory = new ThreadLocalAppendableTableFactory();
 
 	@Default
 	@NonNull
@@ -77,12 +88,12 @@ public class ColumnarSliceFactory extends ASliceFactory {
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@NonNull
-		SequencedSetLikeList keysLikeList;
+		protected final SequencedSetLikeList keysLikeList;
 
 		@NonNull
-		IAppendableTable pageFactory;
+		protected final IAppendableTable pageFactory;
 
-		ITableRowWrite row;
+		protected ITableRowWrite row;
 
 		@Override
 		public Collection<? extends String> getKeys() {

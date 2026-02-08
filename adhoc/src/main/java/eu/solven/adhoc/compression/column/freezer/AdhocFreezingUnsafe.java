@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @UtilityClass
 @Slf4j
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+@SuppressWarnings("PMD.FieldDeclarationsShouldBeAtStartOfClass")
 public class AdhocFreezingUnsafe {
 
 	public void resetToDefaults() {
@@ -52,12 +52,13 @@ public class AdhocFreezingUnsafe {
 	private static final List<IFreezingWithContext> DEFAULT_FREEZERS = ImmutableList.<IFreezingWithContext>builder()
 			.add(new DistinctFreezer())
 			.add(new LongFreezer())
+			.add(new IntegerFreezer())
 			.add(new FsstFreezingWithContext())
 			.build();
 
 	@Getter
 	@Setter
-	protected static List<IFreezingWithContext> freezers = DEFAULT_FREEZERS;
+	private static List<IFreezingWithContext> freezers = DEFAULT_FREEZERS;
 
 	private static final boolean DEFAULT_CHECK_POST_COMPRESSION = false;
 
@@ -66,6 +67,6 @@ public class AdhocFreezingUnsafe {
 	 */
 	@Getter
 	@Setter
-	protected static boolean checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
+	private static boolean checkPostCompression = DEFAULT_CHECK_POST_COMPRESSION;
 
 }

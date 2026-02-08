@@ -44,8 +44,8 @@
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
-			<artifactId>unittest</artifactId>
-			<version>5.0</version>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

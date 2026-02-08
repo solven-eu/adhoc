@@ -20,11 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.concurrent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 
@@ -35,7 +37,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.engine.QueryStepRecursiveAction.QueryStepRecursiveActionBuilder;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -51,6 +52,9 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class QueryEngineConcurrencyHelper {
+	// BEWARE DagRecursiveAction leads to dead-lock in actual projects
+	// We seem to observe some form of thread-starving
+	private static final boolean RELY_ON_COMPLETIONFUTURE = true;
 
 	/**
 	 * Execute the steps as described by a DAG.
@@ -84,29 +88,7 @@ public class QueryEngineConcurrencyHelper {
 				// multi-threaded
 				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
 
-				// list root induced
-				List<CubeQueryStep> rootInduced =
-						dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
-
-				QueryStepRecursiveActionBuilder actionTemplate = QueryStepRecursiveAction.builder()
-						.fromQueriedToDependancies(dag)
-						.queryStepToValues(queryStepToValues)
-						.onReadyStep(cancellableStepConsumer);
-				List<QueryStepRecursiveAction> rootActions =
-						rootInduced.stream().map(step -> actionTemplate.step(step).build()).toList();
-
-				List<Runnable> stepCancellationListeners = new ArrayList<>();
-				rootActions.forEach(action -> {
-					stepCancellationListeners.add(() -> action.cancel(true));
-				});
-				stepCancellationListeners.forEach(queryPod::addCancellationListener);
-
-				// BEWARE: In case of exception, is it important to remove the cancellation listeners?
-				// try {
-				ForkJoinTask.invokeAll(rootActions);
-				// } finally {
-				// tasksCancellationListeners.forEach(queryPod::removeCancellationListener);
-				// }
+				invokeDagFromRoots(queryPod, queryStepToValues.keySet(), cancellableStepConsumer, dag);
 			} else {
 				// mono-threaded
 				queryStepsDag.iteratorFromInducerToInduced().forEachRemaining(cancellableStepConsumer);
@@ -124,6 +106,49 @@ public class QueryEngineConcurrencyHelper {
 			CancellationHelpers.afterCancellable(queryPod);
 		}
 		queryPod.removeCancellationListener(cancellationListener);
+	}
+
+	private static void invokeDagFromRoots(QueryPod queryPod,
+			Set<CubeQueryStep> queryStepsDone,
+			Consumer<? super CubeQueryStep> onReadyStep,
+			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag) {
+		// list root induced
+		List<CubeQueryStep> rootSteps = dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
+
+		if (RELY_ON_COMPLETIONFUTURE) {
+			DagCompletableExecutor<CubeQueryStep> executor = DagCompletableExecutor.<CubeQueryStep>builder()
+					.fromQueriedToDependencies(dag)
+					.queryStepsDone(queryStepsDone)
+					.onReadyStep(onReadyStep)
+					.executor(queryPod.getExecutorService())
+					.build();
+
+			CompletableFuture<Void> root = executor.executeRecursively(rootSteps);
+
+			root.join(); // wait for the whole DAG
+		} else {
+			DagRecursiveAction.DagRecursiveActionBuilder<CubeQueryStep> actionTemplate =
+					DagRecursiveAction.<CubeQueryStep>builder()
+							.fromQueriedToDependencies(dag)
+							.queryStepsDone(queryStepsDone)
+							.onReadyStep(onReadyStep);
+			List<DagRecursiveAction<CubeQueryStep>> rootActions =
+					rootSteps.stream().map(step -> actionTemplate.step(step).build()).toList();
+
+			List<Runnable> stepCancellationListeners = new ArrayList<>();
+			rootActions.forEach(action -> {
+				stepCancellationListeners.add(() -> action.cancel(true));
+			});
+			stepCancellationListeners.forEach(queryPod::addCancellationListener);
+
+			// BEWARE: In case of exception, is it important to remove the cancellation listeners?
+			// try {
+			ForkJoinTask.invokeAll(rootActions);
+			// } finally {
+			// tasksCancellationListeners.forEach(queryPod::removeCancellationListener);
+			// }
+		}
+
 	}
 
 }

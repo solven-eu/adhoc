@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.map.keyset;
 
 import java.util.AbstractList;
 import java.util.Collection;
@@ -42,6 +42,7 @@ import com.google.common.collect.Iterators;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
+import eu.solven.adhoc.map.factory.ILikeList;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -56,7 +57,7 @@ import lombok.NonNull;
  * This is NOT similar to a {@link NavigableSet}. It enables an order relatively to {@link NavigableSet}.
  * 
  * This should generally not be used as key, as two {@link SequencedSet} with different orders would be considered
- * equals. In such a case, one should rely on
+ * equals. In such a case, one should rely on `asList`.
  *
  * @author Benoit Lacelle
  */
@@ -122,6 +123,11 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		return set;
 	}
 
+	@Override
+	public boolean contains(Object object) {
+		return set.keysAsHashSet.get().contains(object);
+	}
+
 	/**
 	 * @param key
 	 * @return the index given the unordered keySet
@@ -156,7 +162,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		}
 	}
 
-	public List<String> orderedKeys() {
+	public List<String> sortedKeys() {
 		return set.keysAsSet.asList();
 	}
 
@@ -167,8 +173,8 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		if (this == keys) {
 			return 0;
 		}
-		var thisKeysIterator = this.orderedKeys().iterator();
-		var otherKeysIterator = keys.orderedKeys().iterator();
+		var thisKeysIterator = this.sortedKeys().iterator();
+		var otherKeysIterator = keys.sortedKeys().iterator();
 
 		return AdhocMapComparisonHelpers.compareKeySet(thisKeysIterator, otherKeysIterator);
 	}
@@ -178,7 +184,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		if (reversedOrdering.length == 0) {
 			return set.iterator();
 		} else {
-			return IntStream.of(reversedOrdering).mapToObj(i -> orderedKeys().get(i)).iterator();
+			return IntStream.of(reversedOrdering).mapToObj(i -> sortedKeys().get(i)).iterator();
 		}
 	}
 
@@ -271,6 +277,10 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 	public List<String> asList() {
 		return new SequenceSetAsList();
+	}
+
+	public NavigableSetLikeList sortedSet() {
+		return set;
 	}
 
 }

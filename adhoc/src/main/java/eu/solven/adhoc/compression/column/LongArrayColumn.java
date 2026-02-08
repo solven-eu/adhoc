@@ -27,7 +27,7 @@ import lombok.Builder;
 import lombok.NonNull;
 
 /**
- * {@link IAppendableColumn} over a List.
+ * {@link IReadableColumn} over an long[].
  * 
  * @author Benoit Lacelle
  */

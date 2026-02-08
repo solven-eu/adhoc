@@ -38,7 +38,10 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
+import eu.solven.adhoc.map.keyset.NavigableSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
@@ -78,7 +81,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	// Supplier as the sliceFactory may be configured lazily
 	private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> MapOverLists.builder()
-			.factory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory())
+			.factory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()))
 			.keys(SequencedSetLikeList.fromSet(Set.of()))
 			.sequencedValues(ImmutableList.of())
 			.build());
@@ -147,7 +150,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 			return SequencedSetLikeList.fromCollection(keysAsList);
 		});
 
-		NavigableSetLikeList setLikeList = sequencedSetLikeList.set;
+		NavigableSetLikeList setLikeList = sequencedSetLikeList.sortedSet();
 
 		synchronized (this) {
 			int size = keySetDictionary.size();

@@ -13,7 +13,7 @@
 	<rule ref="category/java/bestpractices.xml/LooseCoupling">
 		<properties>
 			<!-- https://github.com/pmd/pmd/issues/4622 -->
-			<property name="allowedTypes" value="org.springframework.http.HttpHeaders,java.util.Properties,com.google.common.collect.ImmutableSet,com.google.common.collect.ImmutableList,com.google.common.collect.ImmutableMap,eu.solven.adhoc.map.factory.NavigableSetLikeList,eu.solven.adhoc.map.factory.SequencedSetLikeList" />
+			<property name="allowedTypes" value="org.springframework.http.HttpHeaders,java.util.Properties,com.google.common.collect.ImmutableSet,com.google.common.collect.ImmutableList,com.google.common.collect.ImmutableMap,eu.solven.adhoc.map.keyset.NavigableSetLikeList,eu.solven.adhoc.map.keyset.SequencedSetLikeList" />
 		</properties>
 	</rule>
 	<rule ref="category/java/codestyle.xml">

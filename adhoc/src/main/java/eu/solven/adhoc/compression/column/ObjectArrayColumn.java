@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder;
@@ -43,11 +42,6 @@ public class ObjectArrayColumn implements IAppendableColumn {
 
 	@NonNull
 	@Default
-	final IFreezingStrategy freezer =
-			StandardFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
-
-	@NonNull
-	@Default
 	final List<Object> asArray = new ArrayList<>();
 
 	@Override
@@ -61,7 +55,7 @@ public class ObjectArrayColumn implements IAppendableColumn {
 	}
 
 	@Override
-	public IReadableColumn freeze() {
+	public IReadableColumn freeze(IFreezingStrategy freezer) {
 		return freezer.freeze(this);
 	}
 

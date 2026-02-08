@@ -20,12 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.concurrent;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
 import java.util.function.Consumer;
 
@@ -34,68 +36,84 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.QueryStepsDag;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Wraps a {@link QueryStepsDag} step into a {@link RecursiveAction}, to be submitted into a {@link ForkJoinPool}.
  * 
  * @author Benoit Lacelle
+ * @deprecated Prefer {@link DagCompletableExecutor} for less deep stacks and no thread-starving.
  */
 @Builder(toBuilder = true)
 @Slf4j
 // BEWARE Adhoc does not enable remote execution of such task. Please fill a ticket if you believe it would be
 // beneficial.
-@SuppressWarnings("PMD.NonSerializableClass")
-public class QueryStepRecursiveAction extends RecursiveAction {
+@Deprecated(since = "May lead to StackOverflowError of thread-starving", forRemoval = true)
+public class DagRecursiveAction<T> extends RecursiveAction {
 	private static final long serialVersionUID = -8742698545892380483L;
 
 	// BEWARE This should be immutable/not-mutated during the course of the related actions
 	@NonNull
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> fromQueriedToDependancies;
+	final DirectedAcyclicGraph<T, DefaultEdge> fromQueriedToDependencies;
 
 	@NonNull
-	CubeQueryStep step;
+	@With
+	final T step;
 
-	// BEWARE This should be a thread-safe Map!
-	// BEWARE This must not be an ImmutableMap, as this is modified to receive the results
 	@NonNull
-	Map<CubeQueryStep, ?> queryStepToValues;
+	@Default
+	final ConcurrentMap<T, DagRecursiveAction<T>> stepToTask = new ConcurrentHashMap<>();
+
+	// BEWARE This should be a thread-safe Set, typically as view of a Map receiving results in onReadyStep !
+	@NonNull
+	final Set<T> queryStepsDone;
 
 	// Similar to `Spliterator`: the action is delegated to some Consumer
 	@NonNull
-	Consumer<? super CubeQueryStep> onReadyStep;
+	final Consumer<? super T> onReadyStep;
 
 	@Override
 	protected void compute() {
-		Set<DefaultEdge> outgoingEdgesOf = fromQueriedToDependancies.outgoingEdgesOf(step);
-		List<CubeQueryStep> missingSteps = outgoingEdgesOf.stream()
-				.map(fromQueriedToDependancies::getEdgeTarget)
-				.filter(s -> !queryStepToValues.containsKey(s))
+		Set<DefaultEdge> outgoingEdgesOf = fromQueriedToDependencies.outgoingEdgesOf(step);
+		List<T> missingSteps = outgoingEdgesOf.stream()
+				.map(fromQueriedToDependencies::getEdgeTarget)
+				// Some tasks may be already done (e.g. cache, task already completed from another parent)
+				.filter(s -> !queryStepsDone.contains(s))
 				.toList();
 
-		if (!missingSteps.isEmpty()) {
-			// In general, all underlyings are missing. But we may imagine some tasks to be already computed for any
-			// reason (e.g. cache).
-			List<QueryStepRecursiveAction> missingTasks =
-					missingSteps.stream().map(missingStep -> this.toBuilder().step(missingStep).build()).toList();
+		List<DagRecursiveAction<T>> missingStepStasks =
+				// Ensure we have a single task per step, to enable sharing
+				missingSteps.stream().map(d -> stepToTask.computeIfAbsent(d, missingStep -> {
+					DagRecursiveAction<T> missingStepAction = this.toBuilder().step(missingStep).build();
 
-			// BEWARE This generates stacks as deep as the DAG: `-Xss4M`
-			log.debug("Invoking missing underlyings for step={} missing_steps={}",
-					step.getId(),
-					missingSteps.stream().map(CubeQueryStep::getId).toList());
-			invokeAll(missingTasks);
-		}
-		log.debug("Executing step: {}", step.getId());
+					// Fork only once, as ForkJoinTasks must not be forked multiple times (without reinitialization)
+					missingStepAction.fork();
+					log.debug("Forked task for step={}", missingStep);
+
+					return missingStepAction;
+				})).toList();
+
+		log.debug("About to join {} tasks", missingStepStasks.size());
+
+		// Join results
+		missingStepStasks.forEach(ForkJoinTask::join);
+
+		log.debug("Executing step: {} after having waiting for {} (amongst {})",
+				step,
+				missingStepStasks.size(),
+				outgoingEdgesOf.size());
 		onReadyStep.accept(step);
 	}
 
 	@Override
 	public String toString() {
-		int vertexSize = fromQueriedToDependancies.vertexSet().size();
-		int ready = queryStepToValues.size();
+		int vertexSize = fromQueriedToDependencies.vertexSet().size();
+		int ready = queryStepsDone.size();
 		return MoreObjects.toStringHelper(this)
 				.add("step", step)
 				.add("#ready", ready)

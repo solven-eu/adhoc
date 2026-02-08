@@ -34,6 +34,7 @@ import eu.solven.adhoc.compression.column.ObjectArrayColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**
+ * Turns an {@link ObjectArrayColumn} into a {@link LongArrayColumn}.
  * 
  * @author Benoit Lacelle
  */

@@ -66,6 +66,8 @@
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
 		<jooq.version>3.20.11</jooq.version>
 
+		<guava.version>33.5.0-jre</guava.version>
+
 		<spotless.version>3.2.1</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 
@@ -715,6 +717,20 @@
 			<!-- This would require adding a private repository holding activeviam jars -->
 			<!-- https://docs.activeviam.com/products/atoti/server/6.1.1/docs/start/download/ -->
 			<id>activeviam</id>
+			<modules>
+				<module>atoti</module>
+			</modules>
+		</profile>
+		<profile>
+			<!-- alias for activeviam -->
+			<id>activepivot</id>
+			<modules>
+				<module>atoti</module>
+			</modules>
+		</profile>
+		<profile>
+			<!-- alias for activeviam -->
+			<id>atoti</id>
 			<modules>
 				<module>atoti</module>
 			</modules>

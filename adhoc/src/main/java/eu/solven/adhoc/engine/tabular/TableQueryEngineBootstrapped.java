@@ -55,8 +55,8 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
-import eu.solven.adhoc.engine.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
@@ -927,7 +927,7 @@ public class TableQueryEngineBootstrapped {
 					stepToValues.putIfAbsent(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
 			if (alreadyPresent != null) {
 				// This may happen on CONCURRENT queries, as we might request the same underlying multiple times.
-				log.info("Already present: induced={} (from {} to {})",
+				log.warn("Already present: induced={} (from {} to {}). Should not happen since 0.0.14",
 						induced,
 						alreadyPresent.size(),
 						inducedValues.size());

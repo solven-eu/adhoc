@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.compression.page;
 
-import eu.solven.adhoc.map.factory.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 
 /**
  * Represents a table.

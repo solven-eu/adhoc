@@ -29,12 +29,13 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 
 public class TestAdhocFactories {
 	@Test
 	public void testNormalizeNull() {
 		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory();
+		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
 		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
 		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);

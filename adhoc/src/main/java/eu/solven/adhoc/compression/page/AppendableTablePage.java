@@ -33,6 +33,9 @@ import javax.annotation.concurrent.NotThreadSafe;
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.IAppendableColumnFactory;
 import eu.solven.adhoc.compression.column.ObjectArrayColumnsFactory;
+import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
+import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -57,6 +60,11 @@ public class AppendableTablePage implements IAppendableTablePage {
 	@Default
 	@NonNull
 	final IAppendableColumnFactory columnsFactory = ObjectArrayColumnsFactory.builder().build();
+
+	@NonNull
+	@Default
+	final IFreezingStrategy freezer =
+			SynchronousFreezingStrategy.builder().freezersWithContext(AdhocFreezingUnsafe.getFreezers()).build();
 
 	@Default
 	final int capacity = AdhocUnsafe.getPageSize();
@@ -144,7 +152,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 				// Convert from IAppendableColumns to IReadableColumns
 				AppendableTablePage.this.columnsWrite.get()
 						.stream()
-						.map(IAppendableColumn::freeze)
+						.map(c -> c.freeze(freezer))
 						.forEach(columnsReadLocal::add);
 
 				// isLastRowFrozen.set(true);
