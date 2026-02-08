@@ -20,48 +20,48 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.fsst.v3;
+package eu.solven.adhoc.fsst;
 
-import java.util.concurrent.TimeUnit;
-
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
-
-import eu.solven.adhoc.fsst.Counters;
+import org.jspecify.annotations.Nullable;
 
 /**
- * Benchmarks to compare {@link Counters} performances.
+ * Decodes FSST scheme.
  * 
  * @author Benoit Lacelle
  */
-@State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@BenchmarkMode(Mode.Throughput)
-@Threads(value = 1)
-@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(value = 1)
-public class CountersBenchmark {
+public interface IFsstDecoder {
 
-	Counters counters = new Counters();
+	/**
+	 * 
+	 * @param buf
+	 *            if null, will be initialized with reasonable size.
+	 * @param src
+	 * @return
+	 */
+	ByteSlice decode(@Nullable byte[] buf, ByteSlice src);
 
-	// 2026-01-29: this should demonstrate it is x2 faster to reset than to re-allocate
-	@Benchmark
-	public Counters newCounters() {
-		return new Counters();
-	}
+	/**
+	 * 
+	 * @param buf
+	 *            if null, will be initialized with reasonable size.
+	 * @param src
+	 * @return
+	 */
+	ByteSlice decode(@Nullable byte[] buf, byte[] src);
 
-	@Benchmark
-	public Counters resetCounters() {
-		counters.reset();
-		return counters;
-	}
+	/**
+	 * 
+	 * @param buf
+	 *            if null, will be initialized with reasonable size.
+	 * @param src
+	 * @param srcStart
+	 * @param srcEnd
+	 * @return
+	 */
+	ByteSlice decode(@Nullable byte[] buf, byte[] src, int srcStart, int srcEnd);
+
+	ByteSlice decodeAll(byte[] src);
+
+	ByteSlice decodeAll(ByteSlice src);
+
 }

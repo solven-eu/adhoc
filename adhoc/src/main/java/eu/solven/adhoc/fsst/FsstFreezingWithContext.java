@@ -30,10 +30,14 @@ import java.util.Set;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
+import eu.solven.adhoc.compression.column.freezer.FsstReadableColumn;
 import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.column.freezer.LongFreezer;
 import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
+import eu.solven.adhoc.fsst.ByteSlice;
+import eu.solven.adhoc.fsst.FsstTrain;
+import eu.solven.adhoc.fsst.SymbolTable;
 
 /**
  * Extends {@link SynchronousFreezingStrategy} by enabling FSST over columns of {@link String}.
@@ -71,14 +75,12 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected IReadableColumn readableColumn(List<byte[]> primitiveArray) {
-		SymbolTable table = FsstTrainer.train(primitiveArray.iterator());
+		SymbolTable table = FsstTrain.train(primitiveArray.toArray(byte[][]::new));
 
-		FsstEncoder enc = new FsstEncoder(table);
+		List<ByteSlice> encoded =
+				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();
 
-		List<byte[]> encoded = primitiveArray.stream().map(bytes -> bytes == null ? null : enc.encode(bytes)).toList();
-
-		FsstDecoder decoder = new FsstDecoder(table);
-		return FsstReadableColumn.builder().decoder(decoder).encoded(encoded).build();
+		return FsstReadableColumn.builder().decoder(table.getDecoding()).encoded(encoded).build();
 	}
 
 }
