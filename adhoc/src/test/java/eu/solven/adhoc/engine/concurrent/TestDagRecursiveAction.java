@@ -42,7 +42,16 @@ public class TestDagRecursiveAction {
 			AtomicLongMap<String> taskToCount,
 			Map<String, Object> queryStepToValues,
 			AtomicInteger nbExecution) {
-		DagRecursiveAction<String> rootTask = DagRecursiveAction.<String>builder()
+		DagRecursiveAction<String> rootTask = makeRootTask(dag, taskToCount, queryStepToValues, nbExecution);
+
+		ForkJoinPool.commonPool().submit(rootTask).join();
+	}
+
+	private DagRecursiveAction<String> makeRootTask(DirectedAcyclicGraph<String, DefaultEdge> dag,
+			AtomicLongMap<String> taskToCount,
+			Map<String, Object> queryStepToValues,
+			AtomicInteger nbExecution) {
+		return DagRecursiveAction.<String>builder()
 				.fromQueriedToDependencies(dag)
 				.step("a")
 				.queryStepsDone(queryStepToValues.keySet())
@@ -62,8 +71,31 @@ public class TestDagRecursiveAction {
 					queryStepToValues.put(string, nbExecution.getAndIncrement());
 				})
 				.build();
+	}
 
-		ForkJoinPool.commonPool().submit(rootTask).join();
+	@Test
+	public void testToString() {
+		DirectedAcyclicGraph<String, DefaultEdge> dag =
+				new DirectedAcyclicGraph<String, DefaultEdge>(DefaultEdge.class);
+
+		dag.addVertex("a");
+		dag.addVertex("c");
+
+		int nbIntermediate = 1024;
+
+		IntStream.range(0, nbIntermediate).forEach(i -> {
+			dag.addVertex("intermediate_" + i);
+			dag.addEdge("a", "intermediate_" + i);
+			dag.addEdge("intermediate_" + i, "c");
+		});
+
+		AtomicLongMap<String> taskToCount = AtomicLongMap.create();
+		Map<String, Object> queryStepToValues = new ConcurrentHashMap<>();
+		AtomicInteger nbExecution = new AtomicInteger();
+
+		DagRecursiveAction<String> rootTask = makeRootTask(dag, taskToCount, queryStepToValues, nbExecution);
+
+		Assertions.assertThat(rootTask).hasToString("DagRecursiveAction{step=a, #ready=0, #missing=1026}");
 	}
 
 	@Test

@@ -30,9 +30,9 @@ import java.util.Set;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
-import eu.solven.adhoc.compression.column.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.column.freezer.LongFreezer;
+import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**

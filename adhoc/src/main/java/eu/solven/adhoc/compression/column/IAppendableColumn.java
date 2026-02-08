@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.compression.column;
 
+import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**
@@ -33,6 +34,6 @@ public interface IAppendableColumn extends IReadableColumn {
 
 	void append(Object normalizedValue);
 
-	IReadableColumn freeze();
+	IReadableColumn freeze(IFreezingStrategy freezer);
 
 }

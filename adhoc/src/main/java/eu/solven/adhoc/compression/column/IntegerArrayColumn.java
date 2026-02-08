@@ -27,15 +27,15 @@ import lombok.Builder;
 import lombok.NonNull;
 
 /**
- * {@link IReadableColumn} over an long[].
+ * {@link IReadableColumn} over an int[].
  * 
  * @author Benoit Lacelle
  */
 @Builder
-public class LongArrayColumn implements IReadableColumn {
+public class IntegerArrayColumn implements IReadableColumn {
 
 	@NonNull
-	final long[] asArray;
+	final int[] asArray;
 
 	@Override
 	public Object readValue(int rowIndex) {

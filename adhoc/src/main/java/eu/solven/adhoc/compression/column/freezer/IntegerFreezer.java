@@ -20,53 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
-import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
-import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
-import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
+import eu.solven.adhoc.compression.column.IAppendableColumn;
+import eu.solven.adhoc.compression.column.IntegerArrayColumn;
+import eu.solven.adhoc.compression.column.ObjectArrayColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
-import lombok.Builder.Default;
-import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
 
 /**
- * Synchronous {@link IFreezingStrategy}.
+ * {@link IFreezingWithContext} when all values are {@link Integer}.
  * 
  * @author Benoit Lacelle
- * @see AsynchronousFreezingStrategy
  */
-@SuperBuilder
-public class SynchronousFreezingStrategy implements IFreezingStrategy {
-
-	@Default
-	@NonNull
-	List<IFreezingWithContext> freezersWithContext = AdhocFreezingUnsafe.getFreezers();
-
+public final class IntegerFreezer implements IFreezingWithContext {
 	@Override
-	public IReadableColumn freeze(IAppendableColumn column) {
+	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
 		if (column instanceof ObjectArrayColumn arrayColumn) {
-			Map<String, Object> freezingContext = new LinkedHashMap<>();
+			List<?> array = arrayColumn.getAsArray();
 
-			Optional<IReadableColumn> output = Optional.empty();
-			for (IFreezingWithContext freezer : freezersWithContext) {
-				output = freezer.freeze(arrayColumn, freezingContext);
+			Set<?> classes = LongFreezer.classesWithContext(freezingContext, array);
 
-				if (!output.isEmpty()) {
-					break;
-				}
+			if (classes.size() == 1 && classes.contains(Integer.class)) {
+				int[] primitiveArray = array.stream().mapToInt(Integer.class::cast).toArray();
+				return Optional.of(IntegerArrayColumn.builder().asArray(primitiveArray).build());
+			} else {
+				return Optional.empty();
 			}
-
-			// TODO wrap in unmodifiable?
-			return output.orElse(column);
 		} else {
-			// TODO wrap in unmodifiable?
-			return column;
+			return Optional.empty();
 		}
 	}
 

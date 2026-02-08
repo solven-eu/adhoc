@@ -20,15 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
-import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -36,7 +37,10 @@ import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Standard {@link IFreezingStrategy}.
+ * Asynchronous {@link IFreezingStrategy}, based on an {@link Executor} and a (supposedly synchronous)
+ * {@link IFreezingStrategy}.
+ * 
+ * It has a special behavior in case it is executed without a {@link ForkJoinPool}.
  *
  * @author Benoit Lacelle
  * @see SynchronousFreezingStrategy
@@ -49,6 +53,7 @@ public class AsynchronousFreezingStrategy implements IFreezingStrategy {
 	@NonNull
 	IFreezingStrategy synchronousStrategy = SynchronousFreezingStrategy.builder().build();
 
+	// By default, the freezing is done synchronously
 	@Default
 	@NonNull
 	Executor executor = MoreExecutors.directExecutor();

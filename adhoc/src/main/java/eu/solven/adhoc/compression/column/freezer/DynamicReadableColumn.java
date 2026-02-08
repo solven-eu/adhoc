@@ -22,45 +22,31 @@
  */
 package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
-import eu.solven.adhoc.compression.column.LongArrayColumn;
-import eu.solven.adhoc.compression.column.ObjectArrayColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
 /**
- * Turns an {@link ObjectArrayColumn} into a {@link LongArrayColumn}.
- * 
+ * Enable an {@link IAppendableColumn} to be switched to another instance dynamically. Typically used by asynchronous
+ * {@link eu.solven.adhoc.compression.column.freezer.IFreezingStrategy}.
+ *
  * @author Benoit Lacelle
  */
-public final class LongFreezer implements IFreezingWithContext {
-	@Override
-	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
-		if (column instanceof ObjectArrayColumn arrayColumn) {
-			List<?> array = arrayColumn.getAsArray();
+public class DynamicReadableColumn implements IReadableColumn {
 
-			Set<?> classes = classesWithContext(freezingContext, array);
+	final AtomicReference<IReadableColumn> ref = new AtomicReference<>();
 
-			if (classes.size() == 1 && classes.contains(Long.class)) {
-				long[] primitiveArray = array.stream().mapToLong(Long.class::cast).toArray();
-				return Optional.of(LongArrayColumn.builder().asArray(primitiveArray).build());
-			} else {
-				return Optional.empty();
-			}
-		} else {
-			return Optional.empty();
-		}
+	public DynamicReadableColumn(IReadableColumn initialColumn) {
+		ref.set(initialColumn);
 	}
 
-	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
-	public static Set<?> classesWithContext(Map<String, Object> freezingContext, List<?> array) {
-		return (Set<?>) freezingContext.computeIfAbsent("classes", k -> {
-			return array.stream().map(o -> o == null ? null : o.getClass()).collect(Collectors.toSet());
-		});
+	@Override
+	public Object readValue(int rowIndex) {
+		return ref.get().readValue(rowIndex);
+	}
+
+	public void setRef(IReadableColumn frozen) {
+		ref.set(frozen);
 	}
 }

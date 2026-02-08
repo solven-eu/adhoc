@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.compression.page;
 
-import eu.solven.adhoc.compression.column.AsynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.column.ObjectArrayColumnsFactory;
-import eu.solven.adhoc.compression.column.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.column.freezer.AdhocFreezingUnsafe;
+import eu.solven.adhoc.compression.column.freezer.AsynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -51,7 +51,8 @@ public class ThreadLocalAppendableTableFactory implements IAppendableTableFactor
 
 		return ThreadLocalAppendableTable.builder()
 				.capacity(AdhocUnsafe.getPageSize())
-				.columnsFactory(ObjectArrayColumnsFactory.builder().freezer(freezer).build())
+				.columnsFactory(ObjectArrayColumnsFactory.builder().build())
+				.freezer(freezer)
 				.build();
 	}
 }

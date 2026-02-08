@@ -52,6 +52,7 @@ public class AdhocFreezingUnsafe {
 	private static final List<IFreezingWithContext> DEFAULT_FREEZERS = ImmutableList.<IFreezingWithContext>builder()
 			.add(new DistinctFreezer())
 			.add(new LongFreezer())
+			.add(new IntegerFreezer())
 			.add(new FsstFreezingWithContext())
 			.build();
 

@@ -20,32 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.compression.column;
+package eu.solven.adhoc.compression.column.freezer;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import eu.solven.adhoc.compression.column.IAppendableColumn;
+import eu.solven.adhoc.compression.column.ObjectArrayColumn;
 import eu.solven.adhoc.compression.page.IReadableColumn;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 
 /**
- * Enable an {@link IAppendableColumn} to be switched to another instance dynamically. Typically used by asynchronous
- * {@link eu.solven.adhoc.compression.column.freezer.IFreezingStrategy}.
- *
+ * Synchronous {@link IFreezingStrategy}.
+ * 
  * @author Benoit Lacelle
+ * @see AsynchronousFreezingStrategy
  */
-public class DynamicReadableColumn implements IReadableColumn {
+@SuperBuilder
+public class SynchronousFreezingStrategy implements IFreezingStrategy {
 
-	final AtomicReference<IReadableColumn> ref = new AtomicReference<>();
-
-	public DynamicReadableColumn(IReadableColumn initialColumn) {
-		ref.set(initialColumn);
-	}
+	@Default
+	@NonNull
+	List<IFreezingWithContext> freezersWithContext = AdhocFreezingUnsafe.getFreezers();
 
 	@Override
-	public Object readValue(int rowIndex) {
-		return ref.get().readValue(rowIndex);
+	public IReadableColumn freeze(IAppendableColumn column) {
+		if (column instanceof ObjectArrayColumn arrayColumn) {
+			Map<String, Object> freezingContext = new LinkedHashMap<>();
+
+			Optional<IReadableColumn> output = Optional.empty();
+			for (IFreezingWithContext freezer : freezersWithContext) {
+				output = freezer.freeze(arrayColumn, freezingContext);
+
+				if (!output.isEmpty()) {
+					break;
+				}
+			}
+
+			// TODO wrap in unmodifiable?
+			return output.orElse(column);
+		} else {
+			// TODO wrap in unmodifiable?
+			return column;
+		}
 	}
 
-	public void setRef(IReadableColumn frozen) {
-		ref.set(frozen);
-	}
 }

@@ -26,6 +26,8 @@ import java.util.List;
 
 import eu.solven.adhoc.compression.column.IAppendableColumnFactory;
 import eu.solven.adhoc.compression.column.ObjectArrayColumnsFactory;
+import eu.solven.adhoc.compression.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
@@ -47,10 +49,14 @@ public abstract class AAppendableTable implements IAppendableTable {
 	final IAppendableColumnFactory columnsFactory = ObjectArrayColumnsFactory.builder().build();
 
 	@Default
+	@NonNull
+	IFreezingStrategy freezer = SynchronousFreezingStrategy.builder().build();
+
+	@Default
 	protected final int capacity = AdhocUnsafe.getPageSize();
 
 	protected IAppendableTablePage makePage() {
-		return AppendableTablePage.builder().capacity(capacity).columnsFactory(columnsFactory).build();
+		return AppendableTablePage.builder().capacity(capacity).columnsFactory(columnsFactory).freezer(freezer).build();
 	}
 
 	@Override

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -102,13 +103,22 @@ public class TestSequencedSetLikeList {
 
 	@Test
 	public void testAsList() {
-		SequencedSetLikeList abc = SequencedSetLikeList.fromSet(ImmutableSet.of("a", "c", "b"));
-		List<String> asList = abc.asList();
+		SequencedSetLikeList acb = SequencedSetLikeList.fromSet(ImmutableSet.of("a", "c", "b"));
+		List<String> asList = acb.asList();
 		List<String> rawList = List.of("a", "c", "b");
 
 		Assertions.assertThat(asList).isEqualTo(rawList).hasSameHashCodeAs(rawList);
 		Assertions.assertThat(asList).element(0).isEqualTo("a");
 		Assertions.assertThat(asList).element(1).isEqualTo("c");
 		Assertions.assertThat(asList).element(2).isEqualTo("b");
+
+		// various edge-cases in .equals
+		Assertions.assertThat(asList)
+				.isNotEqualTo(null)
+				.isEqualTo(asList)
+				.isNotEqualTo(ImmutableSet.of(rawList))
+				.isNotEqualTo(List.of("a", "c"))
+				.isNotEqualTo(List.of("a", "c", "b", "d"))
+				.isEqualTo(new LinkedList<>(rawList));
 	}
 }

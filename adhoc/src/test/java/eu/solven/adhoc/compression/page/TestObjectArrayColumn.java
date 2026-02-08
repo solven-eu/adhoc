@@ -30,9 +30,12 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.compression.column.LongArrayColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
+import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.dictionary.DictionarizedObjectColumn;
 
 public class TestObjectArrayColumn {
+	SynchronousFreezingStrategy freezer = SynchronousFreezingStrategy.builder().build();
+
 	@Test
 	public void testFromArray_empty() {
 		IReadableColumn c = ObjectArrayColumn.builder().asArray(List.of()).build();
@@ -56,7 +59,7 @@ public class TestObjectArrayColumn {
 	public void testFromArray_freeze_toDic() {
 		List<Object> list = IntStream.range(0, 32).<Object>mapToObj(i -> i % 2 == 0 ? "a" : "b").toList();
 
-		IReadableColumn c = ObjectArrayColumn.builder().asArray(list).build().freeze();
+		IReadableColumn c = ObjectArrayColumn.builder().asArray(list).build().freeze(freezer);
 		Assertions.assertThat(c).isInstanceOf(DictionarizedObjectColumn.class);
 		Assertions.assertThat(c.readValue(0)).isEqualTo("a");
 		Assertions.assertThat(c.readValue(1)).isEqualTo("b");
@@ -66,7 +69,7 @@ public class TestObjectArrayColumn {
 	public void testFromArray_freeze_toLong() {
 		List<Object> list = IntStream.range(0, 32).<Object>mapToObj(i -> (long) i).toList();
 
-		IReadableColumn c = ObjectArrayColumn.builder().asArray(list).build().freeze();
+		IReadableColumn c = ObjectArrayColumn.builder().asArray(list).build().freeze(freezer);
 		Assertions.assertThat(c).isInstanceOf(LongArrayColumn.class);
 		Assertions.assertThat(c.readValue(0)).isEqualTo(0L);
 		Assertions.assertThat(c.readValue(1)).isEqualTo(1L);
