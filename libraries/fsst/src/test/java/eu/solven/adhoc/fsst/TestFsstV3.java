@@ -30,10 +30,6 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.fsst.ByteSlice;
-import eu.solven.adhoc.fsst.FsstTrain;
-import eu.solven.adhoc.fsst.SymbolTable;
-import eu.solven.adhoc.fsst.SymbolTableExternalizable;
 import eu.solven.adhoc.fsst.SymbolUtil.Symbol;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.io.PepperSerializationHelper;
@@ -42,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestFsstV3 {
+	FsstTrain trainer = FsstTrain.builder().build();
 
 	@Test
 	public void setCodeLengthTest() {
@@ -55,7 +52,7 @@ public class TestFsstV3 {
 	// If optimal, we should have a single symbol
 	@Test
 	public void testTrain_8chars() {
-		SymbolTable table = FsstTrain.train(List.of("01234567"));
+		SymbolTable table = trainer.train(List.of("01234567"));
 
 		ByteSlice encoded = table.encodeAll("01234567");
 
@@ -69,7 +66,7 @@ public class TestFsstV3 {
 
 	@Test
 	public void testTrain_helloWorld() {
-		SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
+		SymbolTable table = trainer.train(List.of("hello hello hello"));
 
 		ByteSlice encoded = table.encodeAll("Hello World");
 
@@ -85,7 +82,7 @@ public class TestFsstV3 {
 	// TODO Could we improve this? Should be feasible given the low number of different symbols.
 	@Test
 	public void testTrain_hello() {
-		SymbolTable table = FsstTrain.train(List.of("hello hello hello"));
+		SymbolTable table = trainer.train(List.of("hello hello hello"));
 
 		ByteSlice encoded = table.encodeAll("Hello");
 
@@ -100,7 +97,7 @@ public class TestFsstV3 {
 	@Test
 	public void testTrain_2codes() {
 		// 1x 2x 3x 4x
-		SymbolTable table = FsstTrain.train(List.of("az_azaz_azazaz_azazazaz"));
+		SymbolTable table = trainer.train(List.of("az_azaz_azazaz_azazazaz"));
 
 		// 2x
 		ByteSlice encoded = table.encodeAll("azaz");
@@ -132,7 +129,7 @@ public class TestFsstV3 {
 			input[i] = recurrent;
 		}
 
-		SymbolTable table = FsstTrain.train(new byte[][] { input });
+		SymbolTable table = trainer.train(new byte[][] { input });
 
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
 		ByteSlice encoded = table.encodeAll(original);
@@ -147,7 +144,7 @@ public class TestFsstV3 {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		SymbolTable tableOriginal = FsstTrain.train(List.of("hello hello hello"));
+		SymbolTable tableOriginal = trainer.train(List.of("hello hello hello"));
 
 		byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
 		SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
@@ -174,7 +171,7 @@ public class TestFsstV3 {
 
 		// Compress input as a single entry
 		{
-			SymbolTable table = FsstTrain.train(input);
+			SymbolTable table = trainer.train(input);
 			ByteSlice encoded = table.encodeAll(input);
 
 			ByteSlice decoded = table.decodeAll(encoded);
@@ -197,7 +194,7 @@ public class TestFsstV3 {
 			List<String> inputs = List.of(input.split("[\r\n]+"));
 
 			for (int iRetry = 0; iRetry < nbRetryForBenchmark; iRetry++) {
-				SymbolTable table = FsstTrain.train(inputs);
+				SymbolTable table = trainer.train(inputs);
 
 				long sizeEncoded = 0;
 

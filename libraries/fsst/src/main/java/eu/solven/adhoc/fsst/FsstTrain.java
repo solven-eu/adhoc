@@ -33,9 +33,12 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.fsst.SymbolUtil.Symbol;
-import lombok.experimental.UtilityClass;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,14 +48,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings({ "checkstyle:MagicNumber", "PMD.GodClass" })
 @Slf4j
-@UtilityClass
+@Builder
 public class FsstTrain {
-	// --- Sampling constants ---
-	// we construct FSST symbol tables using a random sample of about 16KB (1<<14)
-	// https://github.com/cwida/fsst/blob/master/libfsst.hpp#L133
-	public static final int FSST_SAMPLE_TARGET = 1 << 14; // 16KB
-	public static final int FSST_SAMPLE_MAX_SZ = 2 * FSST_SAMPLE_TARGET;
-	public static final int FSST_SAMPLE_LINE = 1 << 9; // 512
 
 	// --- Candidate weighting / gain ---
 	public static final int SINGLE_BYTE_BOOST = 8;
@@ -60,7 +57,11 @@ public class FsstTrain {
 	public static final int MIN_COUNT_DENOMINATOR = 128;
 	public static final int RNG_SEED = 4_637_947;
 
-	public static SymbolTable train(byte[] inputs) {
+	@Default
+	@NonNull
+	final FsstTrainerConfig config = FsstTrainerConfig.builder().build();
+
+	public SymbolTable train(byte[] inputs) {
 		return train(new byte[][] { inputs });
 	}
 
@@ -68,8 +69,8 @@ public class FsstTrain {
 	 * Train builds and finalizes a compression Table from the provided corpora. It samples inputs, iteratively parses
 	 * and counts symbol usage, proposes merged symbols, retains top-gain candidates, and finalizes code layout.
 	 */
-	public static SymbolTable train(byte[][] inputs) {
-		SamplingResult sample = makeSample(inputs);
+	public SymbolTable train(byte[][] inputs) {
+		SamplingResult sample = makeSample(config, inputs);
 		SymbolTableTraining table = SymbolTableTraining.makeSymbolTable();
 
 		boolean needNewCounters = false;
@@ -141,12 +142,7 @@ public class FsstTrain {
 
 	}
 
-	/**
-	 * findNextSymbolFast returns the best match at data[position:] using the current Table: prefer 3–8 byte hash hits,
-	 * then unique 2-byte short codes, otherwise fall back to single-byte. Returns code and matched length.
-	 */
-	public static CodeAndLength findNextSymbolFast(SymbolTableTraining t, byte[] data, int position) {
-		long word = SymbolUtil.fsstUnalignedLoad(data, position);
+	CodeAndLength findNextSymbolFast(SymbolTableTraining t, long word) {
 		long prefix24 = word & IFsstConstants.fsstMask24;
 		int hashIndex = (int) (SymbolUtil.fsstHash(prefix24) & (IFsstConstants.fsstHashTabSize - 1));
 		Symbol hashSymbol = t.hashTab[hashIndex];
@@ -164,12 +160,30 @@ public class FsstTrain {
 		return new CodeAndLength(t.byteCodes[(int) (word & IFsstConstants.fsstMask8)] & IFsstConstants.fsstCodeMask, 1);
 	}
 
+	/**
+	 * findNextSymbolFast returns the best match at data[position:] using the current Table: prefer 3–8 byte hash hits,
+	 * then unique 2-byte short codes, otherwise fall back to single-byte. Returns code and matched length.
+	 */
+	public CodeAndLength findNextSymbolFast(SymbolTableTraining t, byte[] data, int position) {
+		long word = SymbolUtil.fsstUnalignedLoad(data, position);
+		return findNextSymbolFast(t, word);
+	}
+
+	/**
+	 * findNextSymbolFast returns the best match at data[position:] using the current Table: prefer 3–8 byte hash hits,
+	 * then unique 2-byte short codes, otherwise fall back to single-byte. Returns code and matched length.
+	 */
+	public CodeAndLength findNextSymbolFast(SymbolTableTraining t, IByteSlice data, int position) {
+		long word = SymbolUtil.fsstUnalignedLoad(data, position);
+		return findNextSymbolFast(t, word);
+	}
+
 	// https://github.com/cwida/fsst/blob/master/libfsst.cpp#L54
-	static boolean isEscapeCode(int pos) {
+	boolean isEscapeCode(int pos) {
 		return pos < IFsstConstants.fsstCodeBase;
 	}
 
-	static int encodedLength(int pos) {
+	int encodedLength(int pos) {
 		if (isEscapeCode(pos)) {
 			// If escaped, we write an escape byte, then the literal byte
 			return 2;
@@ -185,14 +199,14 @@ public class FsstTrain {
 	 * 
 	 * See {@link SymbolTable#encode(byte[], byte[])}
 	 */
-	public static long compressCount(SymbolTableTraining t, Counters c, SamplingResult samplingResult, int frac) {
+	public long compressCount(SymbolTableTraining t, Counters c, SamplingResult samplingResult, int frac) {
 		// length of the encoded, restricted to sampled input
 		int encodedLength = 0;
 
 		// Register code actually used to estimate the encoded length on a table pruned of unused symbols
 		boolean[] codeUsed = new boolean[2 * IFsstConstants.fsstCodeBase];
 
-		for (byte[] sample : samplingResult.samples) {
+		for (IByteSlice sample : samplingResult.samples) {
 			if (sample == null) {
 				continue;
 			}
@@ -206,63 +220,25 @@ public class FsstTrain {
 			// if (frac < 128 && (SymbolUtil.fsstHash(i) & IFsstConstants.fsstSampleMask) > frac) {
 			// continue;
 			// }
-			final int end = sample.length;
-			if (end == 0) {
-				// empty input
-				continue;
-			}
+			if (sample.isFastAsArray()) {
+				// When possible (e.g. on small string), we rely on a byte[] which is faster than IByteSlice abstraction
+				byte[] sampleAsArray = sample.asByteArray();
 
-			int cur = 0;
-
-			// initialize code 1, as then we loop from consecutive code1->code2
-			int code1 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
-			{
-				cur += t.symbols[code1].length();
-				encodedLength += encodedLength(code1);
-				codeUsed[code1] = true;
-			}
-
-			int start = 0;
-
-			while (true) {
-				// count single symbol (i.e. an option is not extending it)
-				c.incSingle(code1);
-
-				// as an alternative, consider just using the next byte
-				if (frac < 128 && cur > start + 1) {
-					// Prevent double-counting by skipping single-byte symbols
-					c.incSingle(sample[start] & 0xFF);
-				}
-				if (cur == end) {
-					break;
+				final int end = sampleAsArray.length;
+				if (end == 0) {
+					// empty input
+					continue;
 				}
 
-				// now match a new symbol
-				start = cur;
-
-				int code2;
-				if (cur + 7 < end) {
-					CodeAndLength result = findNextSymbolFast(t, sample, cur);
-					code2 = result.code;
-					cur += result.length;
-				} else {
-					code2 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
-					cur += t.symbols[code2].length();
+				encodedLength = compressCount(t, c, frac, encodedLength, codeUsed, sample, sampleAsArray, end);
+			} else {
+				final int end = sample.length();
+				if (end == 0) {
+					// empty input
+					continue;
 				}
 
-				// compute compressed output size
-				encodedLength += encodedLength(code2);
-				codeUsed[code2] = true;
-
-				if (frac < 128) {
-					// No need to count pairs in last pass
-					c.incPair(code1, code2);
-					if (t.symbols[code2].length() > 1) {
-						// Prevent double-counting by skipping single-byte symbols
-						c.incPair(code1, sample[start] & 0xFF);
-					}
-				}
-				code1 = code2;
+				encodedLength = compressCount(t, c, frac, encodedLength, codeUsed, sample, end);
 			}
 		}
 
@@ -281,19 +257,144 @@ public class FsstTrain {
 		return encodedLength;
 	}
 
+	private int compressCount(SymbolTableTraining t,
+			Counters c,
+			int frac,
+			int encodedLength,
+			boolean[] codeUsed,
+			IByteSlice sample,
+			final int end) {
+		int cur = 0;
+
+		// initialize code 1, as then we loop from consecutive code1->code2
+		int code1 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
+		{
+			cur += t.symbols[code1].length();
+			encodedLength += encodedLength(code1);
+			codeUsed[code1] = true;
+		}
+
+		int start = 0;
+
+		while (true) {
+			// count single symbol (i.e. an option is not extending it)
+			c.incSingle(code1);
+
+			// as an alternative, consider just using the next byte
+			if (frac < 128 && cur > start + 1) {
+				// Prevent double-counting by skipping single-byte symbols
+				c.incSingle(sample.read(start) & 0xFF);
+			}
+			if (cur == end) {
+				break;
+			}
+
+			// now match a new symbol
+			start = cur;
+
+			int code2;
+			if (cur + 7 < end) {
+				CodeAndLength result = findNextSymbolFast(t, sample, cur);
+				code2 = result.code;
+				cur += result.length;
+			} else {
+				code2 = t.findLongestSymbol(Symbol.fromBytes(sample, cur));
+				cur += t.symbols[code2].length();
+			}
+
+			// compute compressed output size
+			encodedLength += encodedLength(code2);
+			codeUsed[code2] = true;
+
+			if (frac < 128) {
+				// No need to count pairs in last pass
+				c.incPair(code1, code2);
+				if (t.symbols[code2].length() > 1) {
+					// Prevent double-counting by skipping single-byte symbols
+					c.incPair(code1, sample.read(start) & 0xFF);
+				}
+			}
+			code1 = code2;
+		}
+		return encodedLength;
+	}
+
+	private int compressCount(SymbolTableTraining t,
+			Counters c,
+			int frac,
+			int encodedLength,
+			boolean[] codeUsed,
+			IByteSlice sample,
+			byte[] sampleAsArray,
+			final int end) {
+		int cur = 0;
+
+		// initialize code 1, as then we loop from consecutive code1->code2
+		int code1 = t.findLongestSymbol(Symbol.fromBytes(sampleAsArray, cur));
+		{
+			cur += t.symbols[code1].length();
+			encodedLength += encodedLength(code1);
+			codeUsed[code1] = true;
+		}
+
+		int start = 0;
+
+		while (true) {
+			// count single symbol (i.e. an option is not extending it)
+			c.incSingle(code1);
+
+			// as an alternative, consider just using the next byte
+			if (frac < 128 && cur > start + 1) {
+				// Prevent double-counting by skipping single-byte symbols
+				c.incSingle(sampleAsArray[start] & 0xFF);
+			}
+			if (cur == end) {
+				break;
+			}
+
+			// now match a new symbol
+			start = cur;
+
+			int code2;
+			if (cur + 7 < end) {
+				CodeAndLength result = findNextSymbolFast(t, sampleAsArray, cur);
+				code2 = result.code;
+				cur += result.length;
+			} else {
+				code2 = t.findLongestSymbol(Symbol.fromBytes(sampleAsArray, cur));
+				cur += t.symbols[code2].length();
+			}
+
+			// compute compressed output size
+			encodedLength += encodedLength(code2);
+			codeUsed[code2] = true;
+
+			if (frac < 128) {
+				// No need to count pairs in last pass
+				c.incPair(code1, code2);
+				if (t.symbols[code2].length() > 1) {
+					// Prevent double-counting by skipping single-byte symbols
+					c.incPair(code1, sample.read(start) & 0xFF);
+				}
+			}
+			code1 = code2;
+		}
+		return encodedLength;
+	}
+
 	/**
 	 * QSym represents a candidate symbol with gain.
 	 */
 	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
 
-		// larger val breaks tie
-		public static final Comparator<QSym> COMPARATOR =
+	// larger val breaks tie
+	public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
-		@Override
-		public int compareTo(QSym o) {
-			return COMPARATOR.compare(this, o);
-		}
+	@Override
+	public int compareTo(QSym o) {
+		return COMPARATOR.compare(this, o);
+	}
 
 	}
 
@@ -302,7 +403,7 @@ public class FsstTrain {
 	 * (except in the last round), scores by gain≈frequency×length, keeps top-K via a min-heap, and updates the Table.
 	 * Reuses provided allocations to reduce GC pressure.
 	 */
-	public static SymbolTableTraining buildCandidates(SymbolTableTraining t, Counters c, int frac, boolean sampled) {
+	public SymbolTableTraining buildCandidates(SymbolTableTraining t, Counters c, int frac, boolean sampled) {
 		int minCount = minCount(frac, sampled);
 
 		Map<SymCodeless, QSym> candidates = buildCandidates(t, c, frac, minCount);
@@ -314,7 +415,7 @@ public class FsstTrain {
 		return finalizeCandidates(frac, sortedList, newSymboltable);
 	}
 
-	private static SymbolTableTraining finalizeCandidates(int frac,
+	private SymbolTableTraining finalizeCandidates(int frac,
 			List<QSym> sortedList,
 			SymbolTableTraining newSymboltable) {
 		List<QSym> betterToWorst = sortedList.reversed();
@@ -341,7 +442,7 @@ public class FsstTrain {
 		return newSymboltable;
 	}
 
-	private static List<QSym> sortCandidates(Map<SymCodeless, QSym> candidates) {
+	private List<QSym> sortCandidates(Map<SymCodeless, QSym> candidates) {
 		List<QSym> sortedList;
 		if (candidates.size() > SymbolUtil.fsstMaxSymbols) {
 			// Extract top-K into list in descending order
@@ -379,7 +480,7 @@ public class FsstTrain {
 	 * @return
 	 */
 	@SuppressWarnings("PMD.AvoidReassigningLoopVariables")
-	private static Map<SymCodeless, QSym> buildCandidates(SymbolTableTraining t, Counters c, int frac, int minCount) {
+	private Map<SymCodeless, QSym> buildCandidates(SymbolTableTraining t, Counters c, int frac, int minCount) {
 		Map<SymCodeless, QSym> candidates = HashMap.newHashMap(IFsstConstants.fsstCodeMax);
 		// Iterate through symbols have appeared at least once
 		int maxCodeExcluded = IFsstConstants.fsstCodeBase + t.getNSymbols();
@@ -460,7 +561,7 @@ public class FsstTrain {
 		return candidates;
 	}
 
-	private static int minCount(int frac, boolean sampled) {
+	private int minCount(int frac, boolean sampled) {
 		// on first iteration, minCount is 1
 		// on last iteration, minCount is 5
 		int minCount = Math.max(MIN_COUNT_NUMERATOR * frac / MIN_COUNT_DENOMINATOR, 1);
@@ -487,7 +588,7 @@ public class FsstTrain {
 	 * @param count
 	 *            is typically count of occurrence
 	 */
-	private static void addOrInc(Map<SymCodeless, QSym> candidates, Symbol sym, int count) {
+	private void addOrInc(Map<SymCodeless, QSym> candidates, Symbol sym, int count) {
 		SymCodeless key = new SymCodeless(sym.val, sym.length());
 
 		// If coded, we write 1
@@ -508,7 +609,7 @@ public class FsstTrain {
 	/**
 	 * Converts String to UTF-8 byte[] and trains a {@link SymbolTable}
 	 */
-	public static SymbolTable train(String... inputs) {
+	public SymbolTable train(String... inputs) {
 		byte[][] bytes = new byte[inputs.length][];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = inputs[i].getBytes(StandardCharsets.UTF_8);
@@ -519,7 +620,7 @@ public class FsstTrain {
 	/**
 	 * Converts String to UTF-8 byte[] and trains a {@link SymbolTable}
 	 */
-	public static SymbolTable train(List<String> inputs) {
+	public SymbolTable train(List<String> inputs) {
 		byte[][] bytes = new byte[inputs.size()][];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = inputs.get(i).getBytes(StandardCharsets.UTF_8);
@@ -527,7 +628,7 @@ public class FsstTrain {
 		return train(bytes);
 	}
 
-	private record SamplingResult(boolean isSampled, byte[][] samples) {
+	private record SamplingResult(boolean isSampled, List<? extends IByteSlice> samples) {
 
 	}
 
@@ -535,20 +636,21 @@ public class FsstTrain {
 	 * makeSample assembles a ~16KB deterministic pseudo-random sample composed of 512-byte slices from the inputs to
 	 * keep training fast yet representative.
 	 */
-	// TODO Migrate with ByteSlice
-	public static SamplingResult makeSample(byte[][] inputs) {
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
+	public SamplingResult makeSample(FsstTrainerConfig config, byte[][] inputs) {
 		int total = Arrays.stream(inputs).filter(arr -> arr != null).mapToInt(arr -> arr.length).sum();
-		if (total < FSST_SAMPLE_TARGET) {
+		if (total < config.getSampleTarget()) {
 			// Input is small enough: no need to sample it
-			return new SamplingResult(false, inputs);
+			return new SamplingResult(false,
+					Stream.of(inputs).map(a -> a == null ? null : IByteSlice.wrap(a)).toList());
 		}
 
-		byte[] buf = new byte[FSST_SAMPLE_MAX_SZ];
-		List<byte[]> sample = new ArrayList<>(inputs.length);
+		byte[] buf = new byte[config.getSampleMaxSize()];
+		List<ByteSlice> sample = new ArrayList<>(inputs.length);
 		int pos = 0;
 		long rng = SymbolUtil.fsstHash(RNG_SEED);
 
-		while (pos < FSST_SAMPLE_MAX_SZ) {
+		while (pos < buf.length) {
 			// Pick a random input
 			rng = SymbolUtil.fsstHash(rng);
 			int idx = (int) Long.remainderUnsigned(rng, inputs.length);
@@ -558,25 +660,24 @@ public class FsstTrain {
 			}
 
 			// Pick a random chunk
-			int numChunks = (inputs[idx].length + FSST_SAMPLE_LINE - 1) / FSST_SAMPLE_LINE;
+			int numChunks = (inputs[idx].length + config.getSampleLine() - 1) / config.getSampleLine();
 			rng = SymbolUtil.fsstHash(rng);
-			int off = FSST_SAMPLE_LINE * (int) Long.remainderUnsigned(rng, numChunks);
+			int off = config.getSampleLine() * (int) Long.remainderUnsigned(rng, numChunks);
 
 			// Adjust end if input is short
-			int n = Math.min(inputs[idx].length - off, FSST_SAMPLE_LINE);
-			if (pos + n > FSST_SAMPLE_MAX_SZ) {
+			int n = Math.min(inputs[idx].length - off, config.getSampleLine());
+			if (pos + n > buf.length) {
 				// Skip last chunk is growing too much
 				break;
 			}
-			System.arraycopy(inputs[idx], off, buf, pos, n);
-			sample.add(Arrays.copyOfRange(buf, pos, pos + n));
+			sample.add(new ByteSlice(inputs[idx], off, n));
 			pos += n;
 
-			if (pos >= FSST_SAMPLE_TARGET) {
+			if (pos >= config.getSampleTarget()) {
 				break;
 			}
 		}
-		return new SamplingResult(true, sample.toArray(new byte[0][]));
+		return new SamplingResult(true, sample);
 	}
 
 	/**

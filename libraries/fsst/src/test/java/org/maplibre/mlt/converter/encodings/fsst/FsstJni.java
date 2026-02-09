@@ -26,6 +26,8 @@ import java.nio.file.FileSystems;
 
 /**
  * Calls FSST through JNI.
+ * 
+ * This is copied from original repository, but we did not ported (yet?) the compilation of FSST in C++.
  */
 @SuppressWarnings({ "PMD", "checkstyle" })
 class FsstJni implements Fsst {

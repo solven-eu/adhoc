@@ -35,9 +35,6 @@ import eu.solven.adhoc.compression.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.compression.column.freezer.LongFreezer;
 import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
-import eu.solven.adhoc.fsst.ByteSlice;
-import eu.solven.adhoc.fsst.FsstTrain;
-import eu.solven.adhoc.fsst.SymbolTable;
 
 /**
  * Extends {@link SynchronousFreezingStrategy} by enabling FSST over columns of {@link String}.
@@ -75,7 +72,7 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected IReadableColumn readableColumn(List<byte[]> primitiveArray) {
-		SymbolTable table = FsstTrain.train(primitiveArray.toArray(byte[][]::new));
+		SymbolTable table = FsstTrain.builder().build().train(primitiveArray.toArray(byte[][]::new));
 
 		List<ByteSlice> encoded =
 				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();

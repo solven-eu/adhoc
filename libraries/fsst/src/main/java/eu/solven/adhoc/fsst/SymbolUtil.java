@@ -68,6 +68,33 @@ public final class SymbolUtil implements IFsstConstants {
 		};
 	}
 
+	public static long fsstUnalignedLoad(IByteSlice in, int offset) {
+		// ByteBuffer buf = ByteBuffer.wrap(b, offset, 8);
+		// buf.order(ByteOrder.LITTLE_ENDIAN);
+		// return buf.getLong();
+		int length = Math.min(in.length() - offset, 8);
+
+		return switch (length) {
+		case 1 -> in.read(offset) & 0xFFL;
+		case 2, 3, 4, 5, 6, 7 -> {
+			long v = 0;
+			for (int i = 0; i < length; i++) {
+				// make sure we cast to long BEFORE bit-shifting
+				v |= (in.read(i + offset) & 0xFFL) << (8 * i);
+			}
+			yield v;
+		}
+		// BEWARE JMH suggests unrolling the loop has no benefit
+		default -> (in.read(offset) & 0xFFL) | (in.read(offset + 1) & 0xFFL) << 8
+				| (in.read(offset + 2) & 0xFFL) << 16
+				| (in.read(offset + 3) & 0xFFL) << 24
+				| (in.read(offset + 4) & 0xFFL) << 32
+				| (in.read(offset + 5) & 0xFFL) << 40
+				| (in.read(offset + 6) & 0xFFL) << 48
+				| (in.read(offset + 7) & 0xFFL) << 56;
+		};
+	}
+
 	public static long fsstHash(long w) {
 		long x = w * fsstHashPrime;
 		return x ^ (x >>> fsstShift);
@@ -104,6 +131,13 @@ public final class SymbolUtil implements IFsstConstants {
 
 		public static Symbol fromBytes(byte[] in, int offset) {
 			int length = Math.min(in.length - offset, 8);
+			// assert length > 0;
+			long value = fsstUnalignedLoad(in, offset);
+			return new Symbol(value, evalICL(fsstCodeMax, length));
+		}
+
+		public static Symbol fromBytes(IByteSlice in, int offset) {
+			int length = Math.min(in.length() - offset, 8);
 			// assert length > 0;
 			long value = fsstUnalignedLoad(in, offset);
 			return new Symbol(value, evalICL(fsstCodeMax, length));

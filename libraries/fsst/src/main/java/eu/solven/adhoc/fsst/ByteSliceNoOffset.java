@@ -29,14 +29,15 @@ import lombok.AllArgsConstructor;
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
+ * Like {@link ByteSlice} with offset==0.
+ * 
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
-public final class ByteSlice implements IByteSlice {
-	public final byte[] array;
-	public final int offset;
+public final class ByteSliceNoOffset implements IByteSlice {
+	final byte[] array;
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	public final int length;
+	final int length;
 
 	@Override
 	public boolean isFastAsArray() {
@@ -55,10 +56,10 @@ public final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
 	public byte[] asByteArray() {
-		if (offset == 0 && array.length == length) {
+		if (array.length == length) {
 			return array;
 		} else {
-			return Arrays.copyOfRange(array, offset, offset + length);
+			return Arrays.copyOfRange(array, 0, length);
 		}
 	}
 
@@ -67,7 +68,7 @@ public final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("checkstyle:MagicNumber")
 	public int hashCode() {
 		int result = 0;
-		int fromIndex = offset;
+		int fromIndex = 0;
 		int end = fromIndex + length;
 		for (int i = fromIndex; i < end; i++) {
 			result = 31 * result + array[i];
@@ -86,12 +87,12 @@ public final class ByteSlice implements IByteSlice {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		ByteSlice other = (ByteSlice) obj;
+		ByteSliceNoOffset other = (ByteSliceNoOffset) obj;
 		if (length != other.length) {
 			return false;
 		}
 
-		int fromIndex = offset;
+		int fromIndex = 0;
 		int end = fromIndex + length;
 		for (int i = fromIndex; i < end; i++) {
 			if (this.array[i] != other.array[i]) {
@@ -104,7 +105,7 @@ public final class ByteSlice implements IByteSlice {
 
 	@Override
 	public byte read(int position) {
-		return array[offset + position];
+		return array[position];
 	}
 
 }

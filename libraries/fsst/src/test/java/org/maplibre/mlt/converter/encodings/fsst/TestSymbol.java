@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-
 class TestSymbol {
 	Symbol s1 = Symbol.of(1);
 	Symbol s2 = Symbol.of(2);

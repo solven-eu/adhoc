@@ -22,46 +22,31 @@
  */
 package eu.solven.adhoc.fsst;
 
-import java.util.concurrent.atomic.AtomicInteger;
+/**
+ * A byte wrapper, enabling some sub-byte[] without creating a new array.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IByteSlice {
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+	/**
+	 * Useful is critical section when one prefer to operate on a `byte[]`.
+	 * 
+	 * @return true if {@link #asByteArray()} is expected to be very fast (e.g. returning a reference).
+	 */
+	boolean isFastAsArray();
 
-public class TestCounters {
-	@Test
-	public void testCount() {
-		Counters c = new Counters();
+	/**
+	 * 
+	 * @return a non-defensive copy of this as a `byte[]`.
+	 */
+	byte[] asByteArray();
 
-		c.incSingle(3);
-		c.incPair(5, 7);
+	byte read(int position);
 
-		{
-			AtomicInteger codeHolder = new AtomicInteger(0);
-			Assertions.assertThat(c.nextNotZero(codeHolder)).isEqualTo(1);
-			Assertions.assertThat(codeHolder).hasValue(3);
-		}
+	int length();
 
-		{
-			AtomicInteger codeHolder = new AtomicInteger(17);
-			Assertions.assertThat(c.nextNotZero(codeHolder)).isEqualTo(0);
-			Assertions.assertThat(codeHolder).hasValue(IFsstConstants.fsstCodeMax);
-		}
-	}
-
-	@Test
-	public void testReset() {
-		Counters c = new Counters();
-
-		c.incSingle(3);
-		c.incPair(5, 7);
-
-		c.reset();
-
-		AtomicInteger codeHolder = new AtomicInteger(0);
-		Assertions.assertThat(c.nextNotZero(codeHolder)).isEqualTo(0);
-		Assertions.assertThat(codeHolder).hasValue(IFsstConstants.fsstCodeMax);
-
-		Assertions.assertThat(c.getPairList()).isEmpty();
-
+	static IByteSlice wrap(byte[] input) {
+		return new ByteSliceNoOffsetNoLength(input);
 	}
 }

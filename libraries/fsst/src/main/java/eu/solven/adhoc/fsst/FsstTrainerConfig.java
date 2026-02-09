@@ -22,46 +22,44 @@
  */
 package eu.solven.adhoc.fsst;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Value;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Enable customizing the FsstTrainer.
+ * 
+ * @author Benoit Lacelle
+ */
+@Builder
+@Value
+public class FsstTrainerConfig {
 
-public class TestCounters {
-	@Test
-	public void testCount() {
-		Counters c = new Counters();
+	public static final FsstTrainerConfig DEFAULTS = FsstTrainerConfig.builder().build();
 
-		c.incSingle(3);
-		c.incPair(5, 7);
+	// --- Sampling constants ---
+	// we construct FSST symbol tables using a random sample of about 16KB (1<<14)
+	// https://github.com/cwida/fsst/blob/master/libfsst.hpp#L133
+	private static final int FSST_SAMPLE_TARGET = 1 << 14; // 16KB
+	private static final int FSST_SAMPLE_MAX_SZ = 2 * FSST_SAMPLE_TARGET;
+	private static final int FSST_SAMPLE_LINE = 1 << 9; // 512
 
-		{
-			AtomicInteger codeHolder = new AtomicInteger(0);
-			Assertions.assertThat(c.nextNotZero(codeHolder)).isEqualTo(1);
-			Assertions.assertThat(codeHolder).hasValue(3);
+	// the target size of the whole sample
+	@Default
+	int sampleTarget = FSST_SAMPLE_TARGET;
+
+	// the target size of the sample chunk
+	@Default
+	int sampleLine = FSST_SAMPLE_LINE;
+
+	public int getSampleMaxSize() {
+		int maxSize = getSampleTarget() * 2;
+
+		if (maxSize < 0) {
+			maxSize = Integer.MAX_VALUE;
 		}
 
-		{
-			AtomicInteger codeHolder = new AtomicInteger(17);
-			Assertions.assertThat(c.nextNotZero(codeHolder)).isEqualTo(0);
-			Assertions.assertThat(codeHolder).hasValue(IFsstConstants.fsstCodeMax);
-		}
+		return maxSize;
 	}
 
-	@Test
-	public void testReset() {
-		Counters c = new Counters();
-
-		c.incSingle(3);
-		c.incPair(5, 7);
-
-		c.reset();
-
-		AtomicInteger codeHolder = new AtomicInteger(0);
-		Assertions.assertThat(c.nextNotZero(codeHolder)).isEqualTo(0);
-		Assertions.assertThat(codeHolder).hasValue(IFsstConstants.fsstCodeMax);
-
-		Assertions.assertThat(c.getPairList()).isEmpty();
-
-	}
 }

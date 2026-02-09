@@ -25,9 +25,6 @@ package eu.solven.adhoc.fsst;
 import org.maplibre.mlt.converter.encodings.fsst.Fsst;
 import org.maplibre.mlt.converter.encodings.fsst.SymbolTable;
 
-import eu.solven.adhoc.fsst.ByteSlice;
-import eu.solven.adhoc.fsst.FsstTrain;
-import eu.solven.adhoc.fsst.SymbolTableDecoding;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
@@ -41,7 +38,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 public class FsstAdhoc implements Fsst {
 
 	public eu.solven.adhoc.fsst.SymbolTable train(byte[] data) {
-		var st = FsstTrain.train(new byte[][] { data });
+		var st = FsstTrain.builder().build().train(new byte[][] { data });
 		return st;
 	}
 

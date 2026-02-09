@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.fsst.SymbolUtil;
 import eu.solven.adhoc.fsst.SymbolUtil.Symbol;
 
 public class TestSymbol {

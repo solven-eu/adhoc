@@ -59,13 +59,13 @@ public class FsstEncodeBenchmark {
 	private static final FsstAdhoc ADHOC = new FsstAdhoc();
 
 	// ~30 bytes
-	private static final byte[] SMALL = FsstTrainingEncodeBenchmark.SMALL;
+	private static final byte[] SMALL = FsstSingleStringBenchmark.SMALL;
 	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_SMALL = ADHOC.train(SMALL);
 	// ~600 bytes
-	private static final byte[] MEDIUM = FsstTrainingEncodeBenchmark.MEDIUM;
+	private static final byte[] MEDIUM = FsstSingleStringBenchmark.MEDIUM;
 	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_MEDIUM = ADHOC.train(MEDIUM);
 	// ~23kb
-	private static final byte[] LARGE = FsstTrainingEncodeBenchmark.LARGE;
+	private static final byte[] LARGE = FsstSingleStringBenchmark.LARGE;
 	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_LARGE = ADHOC.train(LARGE);
 	// 230kb
 	private static final byte[] XLARGE;

@@ -29,23 +29,22 @@ import lombok.AllArgsConstructor;
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
+ * Like {@link ByteSlice} with offset==0 and length matching the input.
+ * 
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
-public final class ByteSlice implements IByteSlice {
-	public final byte[] array;
-	public final int offset;
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	public final int length;
+public final class ByteSliceNoOffsetNoLength implements IByteSlice {
+	final byte[] array;
 
 	@Override
 	public boolean isFastAsArray() {
-		return false;
+		return true;
 	}
 
 	@Override
 	public int length() {
-		return length;
+		return array.length;
 	}
 
 	/**
@@ -55,24 +54,13 @@ public final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
 	public byte[] asByteArray() {
-		if (offset == 0 && array.length == length) {
-			return array;
-		} else {
-			return Arrays.copyOfRange(array, offset, offset + length);
-		}
+		return array;
 	}
 
 	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
-	@SuppressWarnings("checkstyle:MagicNumber")
 	public int hashCode() {
-		int result = 0;
-		int fromIndex = offset;
-		int end = fromIndex + length;
-		for (int i = fromIndex; i < end; i++) {
-			result = 31 * result + array[i];
-		}
-		return result;
+		return Arrays.hashCode(array);
 	}
 
 	@Override
@@ -86,25 +74,13 @@ public final class ByteSlice implements IByteSlice {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		ByteSlice other = (ByteSlice) obj;
-		if (length != other.length) {
-			return false;
-		}
-
-		int fromIndex = offset;
-		int end = fromIndex + length;
-		for (int i = fromIndex; i < end; i++) {
-			if (this.array[i] != other.array[i]) {
-				return false;
-			}
-		}
-
-		return true;
+		ByteSliceNoOffsetNoLength other = (ByteSliceNoOffsetNoLength) obj;
+		return Arrays.equals(array, other.array);
 	}
 
 	@Override
 	public byte read(int position) {
-		return array[offset + position];
+		return array[position];
 	}
 
 }
