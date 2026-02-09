@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -37,7 +38,7 @@ public class TestAdhocFactories {
 		AdhocFactories factories = AdhocFactories.builder().build();
 		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
+		IAdhocMap slice = sliceFactory.newMapBuilder(List.of("k")).append(null).build();
 		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
 	}
 }

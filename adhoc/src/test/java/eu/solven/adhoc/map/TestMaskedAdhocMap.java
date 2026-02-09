@@ -128,9 +128,9 @@ public class TestMaskedAdhocMap {
 
 		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
 			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
-			Assertions.assertThat((Map) masked3.decorated).isEqualTo(Map.of("a", "a1"));
+			Assertions.assertThat((Map) masked3.decorated).isEqualTo(Map.of());
 			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("b", "b2"));
-		});
+		}).isEqualTo(Map.of("b", "b2"));
 	}
 
 	@Test

@@ -35,8 +35,6 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.factory.IBuildableIntoMap;
-import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -161,7 +159,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		// BEWARE This order may differ from tableSlice due to calculatedColumns
 		// NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		IBuildableIntoMap buildableIntoMap;
 		if (
 		// groupBy.asList().equals(tableSlice.columnsKeySet()) Iterables.elementsEqual(tableSlice.columnsKeySet(),
 		// groupedByColumns)
@@ -172,28 +169,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} else {
 			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
 			// or in a different order (What would be the impact of different order else still relevant columns?).
-			IMapBuilderThroughKeys coordinatesBuilder = sliceFactory.newMapBuilder();
-
-			// `forEachGroupBy` enables not doing many individual `.get`
-			tableRecord.forEachGroupBy((sliceColumn, value) -> {
-				if (!groupBy.contains(sliceColumn)) {
-					return;
-				}
-
-				if (value == null) {
-					// We received an explicit null
-					// Typically happens on a failed LEFT JOIN
-					value = valueOnNull(queryPod, sliceColumn);
-
-					assert value != null : "`null` is not a legal column value";
-				}
-
-				coordinatesBuilder.put(sliceColumn, value);
-			});
-			buildableIntoMap = coordinatesBuilder;
+			return tableRecord.getGroupBys().retainAll(groupBy.sortedSet());
 		}
-
-		return buildableIntoMap.build().asSlice();
 	}
 
 	/**

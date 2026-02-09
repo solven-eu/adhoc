@@ -74,6 +74,7 @@ public interface ITableQueryOptimizer {
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
+		// The nodes which are explicitly requested. Typically roots of DAG, but may also be some shared inner nodes.
 		@NonNull
 		@Singular
 		ImmutableSet<CubeQueryStep> explicits;

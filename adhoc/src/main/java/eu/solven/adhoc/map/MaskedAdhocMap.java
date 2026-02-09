@@ -236,7 +236,7 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 		IAdhocMap retainedDecorated;
 		if (partitionedColumns.get(false).isEmpty()) {
 			// no impact on decorated
-			retainedDecorated = decorated;
+			retainedDecorated = AdhocMapHelpers.fromMap(decorated.getFactory(), Map.of());
 		} else if (retainedColumns.size() == partitionedColumns.get(false).size()) {
 			// Re-use the original Collection, which is typically a Guava ImmutableCollection
 			retainedDecorated = decorated.retainAll(retainedColumns);
@@ -258,7 +258,7 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 		return MaskedAdhocMap.builder().decorated(retainedDecorated).mask(retainedMask).build();
 	}
 
-	private Map<Boolean, ImmutableSet<String>> partitionColumns(Set<String> retainedColumns) {
+	protected Map<Boolean, ImmutableSet<String>> partitionColumns(Set<String> retainedColumns) {
 		Map<Boolean, ImmutableSet<String>> partitionedColumns;
 
 		// BEWARE This is a performance optimization for `ATableQueryOptimizer.evaluateInduced` as we will induce many

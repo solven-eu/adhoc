@@ -61,5 +61,19 @@ public interface IColumnFactory {
 	 */
 	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity);
 
+	/**
+	 * This method should be used when we know the insertion order is random, hence we should not rely on a Navigable
+	 * contract.
+	 * 
+	 * @param agg
+	 * @param initialCapacity
+	 *            0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
+	 *            value.
+	 * @return a column which will hold result for the given underlyings, allowing multiple writing (through merge) for
+	 *         the same slice.
+	 *
+	 */
+	<T> IMultitypeMergeableColumn<T> makeColumnRandomInsertions(IAggregation agg, int initialCapacity);
+
 	Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings);
 }

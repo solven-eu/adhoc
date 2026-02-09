@@ -12,6 +12,10 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
 - `IAppendableColumn.freeze()` turned to `IAppendableColumn.freeze(IFreezingStrategy)`
 
+### Removed
+
+- `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
+
 ## [0.0.14]
 
 ### Added
