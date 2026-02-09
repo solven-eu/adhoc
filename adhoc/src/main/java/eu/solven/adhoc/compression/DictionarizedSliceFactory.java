@@ -29,10 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.factory.ASliceFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
@@ -140,60 +138,6 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		}
 	}
 
-	/**
-	 * A {@link IHasEntries} in which keys are provided with their value.
-	 * <p>
-	 * To be used when the keySet is not known in advance.
-	 *
-	 * @author Benoit Lacelle
-	 */
-	@Builder
-	@Deprecated
-	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
-		@NonNull
-		ISliceFactory factory;
-
-		@NonNull
-		IDictionarizerFactory dictionaryFactory;
-
-		// Remember the ordered keys, as we expect to receive values in the same order
-		@Default
-		ImmutableList.Builder<String> keys = ImmutableList.builder();
-
-		@Default
-		IntList values = new IntArrayList();
-
-		@Override
-		public MapBuilderThroughKeys put(String key, Object value) {
-			keys.add(key);
-			Object normalizedValue = ((ICoordinateNormalizer) factory).normalizeCoordinate(value);
-			int dictionarizedValue = dictionaryFactory.makeDictionarizer(key).toInt(normalizedValue);
-			values.add(dictionarizedValue);
-
-			return this;
-		}
-
-		@Override
-		public Collection<? extends String> getKeys() {
-			return keys.build();
-		}
-
-		@Override
-		public Collection<?> getValues() {
-			throw new NotYetImplementedException("Undictionarize");
-		}
-
-		@Override
-		public IAdhocMap build() {
-			return factory.buildMap(this);
-		}
-	}
-
-	@Override
-	public MapBuilderThroughKeys newMapBuilder() {
-		return MapBuilderThroughKeys.builder().factory(this).dictionaryFactory(dictionaryFactory).build();
-	}
-
 	@Override
 	public IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys) {
 		assert !isNotOrdered(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
@@ -220,20 +164,6 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 					.keys(preKeys.keysLikeList)
 					.unorderedValues(i -> dictionaryFactory.makeDictionarizer(preKeys.keysLikeList.getKey(i))
 							.fromInt(values.getInt(i)))
-					.build();
-		} else if (hasEntries instanceof MapBuilderThroughKeys throughKeys) {
-			Collection<? extends String> keys = throughKeys.getKeys();
-			if (keys.size() != throughKeys.values.size()) {
-				throw new IllegalArgumentException("keys size (%s) differs from values size (%s)".formatted(keys.size(),
-						throughKeys.values.size()));
-			}
-
-			SequencedSetLikeList keyLikeList = internKeyset(keys);
-			return MapOverIntFunction.builder()
-					.factory(this)
-					.keys(keyLikeList)
-					.unorderedValues(i -> dictionaryFactory.makeDictionarizer(keyLikeList.getKey(i))
-							.fromInt(throughKeys.values.getInt(i)))
 					.build();
 		} else {
 			return buildMapNaively(hasEntries);

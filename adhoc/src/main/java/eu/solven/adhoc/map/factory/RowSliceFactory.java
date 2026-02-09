@@ -33,7 +33,6 @@ import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -93,56 +92,6 @@ public class RowSliceFactory extends ASliceFactory {
 		public IAdhocMap build() {
 			return factory.buildMap(this);
 		}
-	}
-
-	/**
-	 * A {@link IHasEntries} in which keys are provided with their value.
-	 * <p>
-	 * To be used when the keySet is not known in advance.
-	 *
-	 * @author Benoit Lacelle
-	 */
-	@Builder
-	@Deprecated
-	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
-		@NonNull
-		RowSliceFactory factory;
-
-		// Remember the ordered keys, as we expect to receive values in the same order
-		@Default
-		ImmutableList.Builder<String> keys = ImmutableList.builder();
-
-		@Default
-		ImmutableList.Builder<Object> values = ImmutableList.builder();
-
-		@Override
-		public MapBuilderThroughKeys put(String key, Object value) {
-			keys.add(key);
-			Object normalizedValue = factory.normalizeCoordinate(value);
-			values.add(normalizedValue);
-
-			return this;
-		}
-
-		@Override
-		public Collection<? extends String> getKeys() {
-			return keys.build();
-		}
-
-		@Override
-		public Collection<?> getValues() {
-			return values.build();
-		}
-
-		@Override
-		public IAdhocMap build() {
-			return factory.buildMap(this);
-		}
-	}
-
-	@Override
-	public MapBuilderThroughKeys newMapBuilder() {
-		return MapBuilderThroughKeys.builder().factory(this).build();
 	}
 
 	@Override

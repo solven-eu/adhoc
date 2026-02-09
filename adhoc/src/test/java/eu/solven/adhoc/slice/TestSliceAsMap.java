@@ -162,7 +162,7 @@ public class TestSliceAsMap {
 	@Test
 	public void testNullValue() {
 		RowSliceFactory factory = RowSliceFactory.builder().build();
-		IAdhocMap mapWithNullValue = factory.newMapBuilder().put("c", null).build();
+		IAdhocMap mapWithNullValue = factory.newMapBuilder(List.of("c")).append(null).build();
 		Assertions.assertThat(mapWithNullValue.get("c")).isEqualTo(null);
 		Assertions.assertThat(mapWithNullValue.entrySet().iterator().next().getValue()).isEqualTo(null);
 

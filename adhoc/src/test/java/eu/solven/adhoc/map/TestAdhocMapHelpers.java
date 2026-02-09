@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.map;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +42,7 @@ public class TestAdhocMapHelpers {
 		ISliceFactory sliceFactory =
 				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
-		IAdhocMap original = sliceFactory.newMapBuilder().put("c", "v").build();
+		IAdhocMap original = sliceFactory.newMapBuilder(List.of("c")).append("v").build();
 		ITabularRecord originalRecord =
 				TabularRecordOverMaps.builder().groupBy(original.asSlice()).aggregate("a", 123L).build();
 

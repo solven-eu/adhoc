@@ -50,16 +50,8 @@ public interface ISliceFactory {
 	 */
 	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
 
-	/**
-	 * BEWARE This should be used in last resort, when the keySet is not available.
-	 * 
-	 * @return an {@link IMapBuilderThroughKeys}, which can handle a stream of entries where the keySet is not known in
-	 *         advance.
-	 */
-	@Deprecated
-	IMapBuilderThroughKeys newMapBuilder();
-
 	IAdhocMap buildMap(IHasEntries hasEntries);
 
 	SequencedSetLikeList internKeyset(Collection<? extends String> keys);
+
 }

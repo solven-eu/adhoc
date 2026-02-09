@@ -41,14 +41,14 @@ public class TestDictionarizedSliceFactory {
 
 	@Test
 	public void testEmpty() {
-		IAdhocMap map = sliceFactory.newMapBuilder().build();
+		IAdhocMap map = sliceFactory.newMapBuilder(List.of()).build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of()).isEmpty();
 		Assertions.assertThat(map.entrySet()).isEqualTo(Set.of()).isEmpty();
 	}
 
 	@Test
 	public void testOneEntry() {
-		IAdhocMap map = sliceFactory.newMapBuilder().put("c", "v").build();
+		IAdhocMap map = sliceFactory.newMapBuilder(List.of("c")).append("v").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("c", "v"));
 
 		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(0)).isEqualTo("v");
@@ -56,7 +56,7 @@ public class TestDictionarizedSliceFactory {
 
 	@Test
 	public void testTwoEntry_reversed() {
-		IAdhocMap map = sliceFactory.newMapBuilder().put("b", "vB").put("a", "vA").build();
+		IAdhocMap map = sliceFactory.newMapBuilder(List.of("b", "a")).append("vB", "vA").build();
 		Assertions.assertThat((Map) map).isEqualTo(Map.of("a", "vA", "b", "vB"));
 
 		Assertions.assertThat(((AbstractAdhocMap) map).getSortedValueRaw(0)).isEqualTo("vA");

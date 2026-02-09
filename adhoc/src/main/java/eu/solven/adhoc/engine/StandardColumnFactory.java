@@ -62,4 +62,9 @@ public class StandardColumnFactory implements IColumnFactory {
 	public Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings) {
 		return bottomUpStrategy.distinctSlices(step, underlyings);
 	}
+
+	@Override
+	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInsertions(IAggregation agg, int initialCapacity) {
+		return bottomUpStrategy.makeColumnRandomInserts(agg, initialCapacity);
+	}
 }

@@ -752,6 +752,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
 - [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
 - [Feature] If a query generates a too large column, add investigation information (like the output of `COUNT(GROUP BY)` from table).
+- [Feature] Columns ordering should be evaluated dynamically, to increase order inference in Shiftor and table-columns inference..
 
 # Sponsors
 

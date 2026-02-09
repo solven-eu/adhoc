@@ -32,12 +32,9 @@ import eu.solven.adhoc.compression.page.ITableRowRead;
 import eu.solven.adhoc.compression.page.ITableRowWrite;
 import eu.solven.adhoc.compression.page.ThreadLocalAppendableTable;
 import eu.solven.adhoc.compression.page.ThreadLocalAppendableTableFactory;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.factory.ASliceFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.map.factory.IMapBuilderThroughKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
@@ -143,62 +140,6 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		}
 	}
 
-	/**
-	 * A {@link IHasEntries} in which keys are provided with their value.
-	 * <p>
-	 * To be used when the keySet is not known in advance.
-	 *
-	 * @author Benoit Lacelle
-	 */
-	@Builder
-	@Deprecated
-	public static class MapBuilderThroughKeys implements IMapBuilderThroughKeys, IHasEntries {
-		@NonNull
-		ISliceFactory factory;
-
-		@NonNull
-		IAppendableTable pageFactory;
-
-		// Remember the ordered keys, as we expect to receive values in the same order
-		@Default
-		ImmutableList.Builder<String> keys = ImmutableList.builder();
-
-		ITableRowWrite row;
-
-		@Override
-		public MapBuilderThroughKeys put(String key, Object value) {
-			if (row == null) {
-				row = pageFactory.nextRow();
-			}
-
-			keys.add(key);
-			Object normalizedValue = ((ICoordinateNormalizer) factory).normalizeCoordinate(value);
-			row.add(key, normalizedValue);
-
-			return this;
-		}
-
-		@Override
-		public Collection<? extends String> getKeys() {
-			return keys.build();
-		}
-
-		@Override
-		public Collection<?> getValues() {
-			throw new NotYetImplementedException("Undictionarize");
-		}
-
-		@Override
-		public IAdhocMap build() {
-			return factory.buildMap(this);
-		}
-	}
-
-	@Override
-	public MapBuilderThroughKeys newMapBuilder() {
-		return MapBuilderThroughKeys.builder().factory(this).pageFactory(appendableTable).build();
-	}
-
 	@Override
 	public IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys) {
 		assert !isNotOrdered(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
@@ -220,20 +161,6 @@ public class ColumnarSliceFactory extends ASliceFactory {
 			return MapOverIntFunction.builder()
 					.factory(this)
 					.keys(preKeys.keysLikeList)
-					.unorderedValues(frozen::readValue)
-					.build();
-		} else if (hasEntries instanceof MapBuilderThroughKeys throughKeys) {
-			Collection<? extends String> keys = throughKeys.getKeys();
-
-			if (throughKeys.row == null) {
-				return SliceAsMap.grandTotal().asAdhocMap();
-			}
-			ITableRowRead frozen = throughKeys.row.freeze();
-
-			SequencedSetLikeList keyLikeList = internKeyset(keys);
-			return MapOverIntFunction.builder()
-					.factory(this)
-					.keys(keyLikeList)
 					.unorderedValues(frozen::readValue)
 					.build();
 		} else {
