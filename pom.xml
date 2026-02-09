@@ -45,6 +45,8 @@
 		<module>spring</module>
 		<module>jmh</module>
 
+		<module>libraries</module>
+
 		<module>pivotable</module>
 	</modules>
 

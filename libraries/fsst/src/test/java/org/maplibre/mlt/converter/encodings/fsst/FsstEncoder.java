@@ -20,48 +20,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.fsst.v3;
-
-import java.util.concurrent.TimeUnit;
-
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
-
-import eu.solven.adhoc.fsst.Counters;
+package org.maplibre.mlt.converter.encodings.fsst;
 
 /**
- * Benchmarks to compare {@link Counters} performances.
+ * Encode given FSST.
  * 
  * @author Benoit Lacelle
  */
-@State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@BenchmarkMode(Mode.Throughput)
-@Threads(value = 1)
-@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(value = 1)
-public class CountersBenchmark {
+@SuppressWarnings({ "PMD", "checkstyle:all" })
+class FsstEncoder {
+	public static Fsst INSTANCE;
 
-	Counters counters = new Counters();
-
-	// 2026-01-29: this should demonstrate it is x2 faster to reset than to re-allocate
-	@Benchmark
-	public Counters newCounters() {
-		return new Counters();
+	public static boolean useNative(boolean value) {
+		if (value) {
+			if (!FsstJni.isLoaded()) {
+				INSTANCE = new FsstJni();
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			INSTANCE = new FsstJava();
+			return true;
+		}
 	}
 
-	@Benchmark
-	public Counters resetCounters() {
-		counters.reset();
-		return counters;
+	private static Fsst getInstance() {
+		if (INSTANCE == null) {
+			useNative(false);
+		}
+		return INSTANCE;
+	}
+
+	private FsstEncoder() {
+	}
+
+	public static SymbolTable encode(byte[] data) {
+		return getInstance().encode(data);
+	}
+
+	public static byte[] decode(byte[] symbols, int[] symbolLengths, byte[] compressedData, int decompressedLength) {
+		return getInstance().decode(symbols, symbolLengths, compressedData, decompressedLength);
+	}
+
+	/**
+	 * @deprecated use {@link #decode(byte[], int[], byte[], int)} instead with an explicit length
+	 */
+	@Deprecated
+	public static byte[] decode(byte[] symbols, int[] symbolLengths, byte[] compressedData) {
+		return getInstance().decode(symbols, symbolLengths, compressedData);
 	}
 }

@@ -20,48 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.fsst.v3;
-
-import java.util.concurrent.TimeUnit;
-
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
-
-import eu.solven.adhoc.fsst.Counters;
+package eu.solven.adhoc.fsst;
 
 /**
- * Benchmarks to compare {@link Counters} performances.
+ * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
  * @author Benoit Lacelle
  */
-@State(Scope.Benchmark)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@BenchmarkMode(Mode.Throughput)
-@Threads(value = 1)
-@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(value = 1)
-public class CountersBenchmark {
+public interface IByteSlice {
 
-	Counters counters = new Counters();
+	/**
+	 * Useful is critical section when one prefer to operate on a `byte[]`.
+	 * 
+	 * @return true if {@link #asByteArray()} is expected to be very fast (e.g. returning a reference).
+	 */
+	boolean isFastAsArray();
 
-	// 2026-01-29: this should demonstrate it is x2 faster to reset than to re-allocate
-	@Benchmark
-	public Counters newCounters() {
-		return new Counters();
-	}
+	/**
+	 * 
+	 * @return a non-defensive copy of this as a `byte[]`.
+	 */
+	byte[] asByteArray();
 
-	@Benchmark
-	public Counters resetCounters() {
-		counters.reset();
-		return counters;
+	byte read(int position);
+
+	int length();
+
+	static IByteSlice wrap(byte[] input) {
+		return new ByteSliceNoOffsetNoLength(input);
 	}
 }

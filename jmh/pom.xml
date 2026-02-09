@@ -52,10 +52,19 @@
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<!-- include MapLibre FSST implementation -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-fsst</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
 	</dependencies>
 
 	<build>
-		<!-- https://stackoverflow.com/questions/38056899/jmh-unable-to-find-the-resource-meta-inf-benchmarklist -->
+		<!--
+		https://stackoverflow.com/questions/38056899/jmh-unable-to-find-the-resource-meta-inf-benchmarklist -->
 		<plugins>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>

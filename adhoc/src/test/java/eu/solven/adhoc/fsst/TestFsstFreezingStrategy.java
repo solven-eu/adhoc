@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.compression.column.IAppendableColumn;
 import eu.solven.adhoc.compression.column.ObjectArrayColumn;
+import eu.solven.adhoc.compression.column.freezer.FsstReadableColumn;
 import eu.solven.adhoc.compression.column.freezer.SynchronousFreezingStrategy;
 import eu.solven.adhoc.compression.page.IReadableColumn;
 
