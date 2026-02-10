@@ -128,14 +128,4 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdh
 		throw new UnsupportedOperationException("%s is immutable".formatted(this.getClass().getName()));
 	}
 
-	@Override
-	public IValueReceiver set(IAdhocSlice key) {
-		throw new UnsupportedOperationException("%s is immutable".formatted(this.getClass().getName()));
-	}
-
-	// @Override
-	// public void ensureCapacity(int capacity) {
-	// masked.ensureCapacity(capacity);
-	// }
-
 }

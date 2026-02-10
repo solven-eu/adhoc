@@ -1,0 +1,93 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.engine.tabular.optimizer;
+
+import java.util.concurrent.TimeUnit;
+
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.engine.tabular.optimizer.TestBenchmarkTableQueryOptimizer.BenchmarkTableQueryOptimizerState;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Benchmarks related with {@link TableQueryOptimizer}.
+ *
+ * @author Benoit Lacelle
+ */
+@State(Scope.Benchmark)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@BenchmarkMode(Mode.Throughput)
+@Fork(value = 1)
+@Warmup(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
+@SuppressWarnings("checkstyle:MagicNumber")
+@Slf4j
+public class BenchmarkTableQueryOptimizer {
+	BenchmarkTableQueryOptimizerState state = new TestBenchmarkTableQueryOptimizer.BenchmarkTableQueryOptimizerState();
+
+	@Setup
+	public void setup() {
+		state.setup();
+	}
+
+	public static void main(String[] args) throws RunnerException {
+		Options opt = new OptionsBuilder().include(BenchmarkTableQueryOptimizer.class.getSimpleName()).forks(1).build();
+		new Runner(opt).run();
+	}
+
+	@Benchmark
+	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toGrandTotal() {
+		return state.evaluateInduced(state.getInducedGrandTotal());
+	}
+
+	@Benchmark
+	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toA() {
+		return state.evaluateInduced(state.getInducedByA());
+	}
+
+	@Benchmark
+	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toAB() {
+		return state.evaluateInduced(state.getInducedByAB());
+	}
+
+	@Benchmark
+	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toB_misordered() {
+		return state.evaluateInduced(state.getInducedByB());
+	}
+
+}

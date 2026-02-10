@@ -110,12 +110,6 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		}
 	}
 
-	/**
-	 * A put operation: it resets the values for given key, initializing it to the provided value.
-	 *
-	 * @param key
-	 *            if null, this behaves like `.clear`
-	 */
 	@Override
 	public IValueReceiver append(T key) {
 		int keyAsInt = key.intValue();
@@ -125,11 +119,6 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		}
 
 		return unsafePut(key, false);
-	}
-
-	@Override
-	public IValueReceiver set(T key) {
-		return unsafePut(key.intValue(), true);
 	}
 
 	/**

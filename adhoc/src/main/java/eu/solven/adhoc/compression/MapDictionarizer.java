@@ -25,6 +25,7 @@ package eu.solven.adhoc.compression;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.ToIntFunction;
 
 import org.agrona.collections.Object2IntHashMap;
 
@@ -50,6 +51,9 @@ public class MapDictionarizer implements IDictionarizer {
 	// TODO Should we introduce batch-inserts?
 	final List<Object> intToObject = new CopyOnWriteArrayList<>();
 
+	// BEWARE Caching the lambda, else the presence of `this` leads to an allocation on each call
+	final ToIntFunction<Object> doMapFunction = this::doMap;
+
 	@Override
 	public Object fromInt(int indexedValue) {
 		return intToObject.get(indexedValue);
@@ -59,7 +63,7 @@ public class MapDictionarizer implements IDictionarizer {
 	public int toInt(Object object) {
 		// ConcurrentHashMap guarantees the `ifAbsent` function to be called zero or once per `computeIfAbsent`
 		// invocation
-		return objectToInt.computeIfAbsent(object, this::doMap);
+		return objectToInt.computeIfAbsent(object, doMapFunction);
 	}
 
 	protected int doMap(Object o) {

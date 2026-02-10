@@ -101,11 +101,6 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public IValueReceiver set(T key) {
-		throw new UnsupportedOperationException("Read-Only");
-	}
-
-	@Override
 	public String toString() {
 		return "column=" + column;
 	}

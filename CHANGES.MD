@@ -4,17 +4,21 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.15]
 
+### Added
 - Introduce `AsynchronousFreezingStrategy` which will freeze in a different thread and then update some reference.
+- Introduce `IColumnFactory.makeColumnRandomInsertions(IAggregation, int)` which do not rely on sorting, useful when iteration order is random.
 
 ### Changed
 - Prevent `QueryStepRecursiveAction` from executing multiple times shared tasks in a DAG.
 - `AbstractAdhocMap` does not extend `AbstractMap` to ensure all default methods have optimal implementation.
 - `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
 - `IAppendableColumn.freeze()` turned to `IAppendableColumn.freeze(IFreezingStrategy)`
+- `MultitypeNavigableColumn` propagates the capacity to values.
 
 ### Removed
 
 - `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
+- `IMultitypeColumnFastGet.set(T)` is removed. You can rely on `.append(T)` which has a clearer semantic.
 
 ## [0.0.14]
 

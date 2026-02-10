@@ -38,7 +38,6 @@ import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.ToString;
@@ -163,11 +162,6 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.stream();
 		default -> IMultitypeColumn.defaultStream(this, stragegy);
 		};
-	}
-
-	@Override
-	public IValueReceiver set(T key) {
-		throw new NotYetImplementedException(".set({})".formatted(key));
 	}
 
 	@Override

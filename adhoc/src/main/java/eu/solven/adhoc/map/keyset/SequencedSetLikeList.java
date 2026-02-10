@@ -262,7 +262,7 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 			for (int i = 0; i < n; ++i) {
 				Object e = this.get(i);
-				hashCode = 31 * hashCode + (e == null ? 0 : e.hashCode());
+				hashCode = 31 * hashCode + Objects.hashCode(e);
 			}
 
 			return hashCode;

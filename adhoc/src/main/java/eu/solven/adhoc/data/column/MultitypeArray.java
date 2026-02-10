@@ -39,6 +39,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -74,7 +75,8 @@ public class MultitypeArray implements IMultitypeArray {
 	final List<Object> valuesO = new ArrayList<>(0);
 
 	@Default
-	final int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+	@Setter
+	int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
 
 	/**
 	 * To be called before a guaranteed `add` operation.

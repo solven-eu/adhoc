@@ -144,7 +144,7 @@ flowchart TD
     CubeQueryStep_userMeasure --> CubeQueryStep_underlyingMeasure
     CubeQueryStep_underlyingMeasure --> CubeQueryStep_aggregator
     CubeQueryStep_aggregator --> SplitTableQueries
-    SplitTableQueries --> TableQueryV2>
+    SplitTableQueries --> TableQueryV2
 ```
 
 - `CubeQuery --> CubeQueryStep_userMeasure` is mostly managed by `CubeQueryEngine.getRootMeasures(...)`

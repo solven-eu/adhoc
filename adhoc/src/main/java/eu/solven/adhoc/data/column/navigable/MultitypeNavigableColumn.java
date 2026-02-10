@@ -118,11 +118,6 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				"%s does not allow merging. index=%s key=%s".formatted(getClass(), index, keys.get(index)));
 	}
 
-	@Override
-	public IValueReceiver set(T key) {
-		return write(key, false, true);
-	}
-
 	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *
@@ -161,6 +156,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			} else if (keys instanceof ObjectArrayList<?> arrayList) {
 				arrayList.ensureCapacity(capacity);
 			}
+
+			if (values instanceof MultitypeArray array) {
+				array.setCapacity(capacity);
+			}
 		}
 	}
 
@@ -197,13 +196,28 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		IValueReceiver valueConsumer;
 
-		if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
+		boolean keysIsEmpty = keys.isEmpty();
+		int comparedWithLast;
+		if (keysIsEmpty) {
+			comparedWithLast = 0;
+		} else {
+			comparedWithLast = key.compareTo(keys.getLast());
+		}
+		if (keysIsEmpty || comparedWithLast > 0) {
 			checkSizeBeforeAdd();
 
 			// In most cases, we append a greater key, because we process sorted keys
 			lastInsertionIndex.set(keys.size());
 			keys.add(key);
 			valueConsumer = values.add();
+		} else if (comparedWithLast == 0) {
+			// In many cases, we accumulate in the greater/latest key, because we induce by removing columns
+			int index = keys.size() - 1;
+			if (mergeElseSet) {
+				valueConsumer = merge(index);
+			} else {
+				valueConsumer = set(index);
+			}
 		} else {
 			int index = getIndex(key);
 
@@ -318,7 +332,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
-						.valueProvider(vc -> values.read(i).acceptReceiver(vc))
+						.valueProvider(values.read(i)::acceptReceiver)
 						.build());
 	}
 

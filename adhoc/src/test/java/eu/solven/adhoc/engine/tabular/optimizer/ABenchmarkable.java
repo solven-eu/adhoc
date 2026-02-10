@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.primitive.IValueReceiver;
+import java.util.concurrent.Callable;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
- * 
- * @param <T>
- *            typically {@link SliceAsMap}
- * @author Benoit Lacelle
+ * A helper test class for test which can be turned into long-running profilable benchmarks.
  */
-public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
+public abstract class ABenchmarkable {
+
+	public abstract int nbIterations();
 
 	/**
-	 * Similar to a `.get` but the value is available through a {@link IValueReceiver}
-	 * 
-	 * @param slice
-	 * @param valueReceiver
+	 * Let's ensure the loop size is forced to 1 in CI, to prevent CI to be cluttered by long-running benchmarks.
 	 */
-	@Deprecated(since = "Prefer `IValueProvider onValue(T key)`")
-	default void onValue(T slice, IValueReceiver valueReceiver) {
-		onValue(slice).acceptReceiver(valueReceiver);
+	@Test
+	public void testCIisFine() {
+		Assertions.assertThat(nbIterations()).isEqualTo(1);
 	}
 
-	/**
-	 * 
-	 * @param key
-	 * @return an {@link IValueReceiver} to accept a value for given key. If the value is null, the operation should be
-	 *         without effect.
-	 */
-	IValueProvider onValue(T key);
+	public void doBenchmark(Runnable r) {
+		int nbIterations = nbIterations();
+		for (int i = 0; i < nbIterations; i++) {
+			r.run();
+		}
+	}
 
-	@Override
-	IMultitypeColumnFastGet<T> purgeAggregationCarriers();
+	public void doBenchmark(Callable<?> c) {
+		int nbIterations = nbIterations();
+		for (int i = 0; i < nbIterations; i++) {
+			try {
+				c.call();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+	}
 }

@@ -46,11 +46,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.compression.ColumnarSliceFactory;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
 
 /**
- * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
+ * Benchmarks related with {@link SliceAsMap#compareTo(IAdhocSlice)}
  * 
  * @author Benoit Lacelle
  */
