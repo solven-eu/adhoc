@@ -36,6 +36,13 @@
 			<groupId>eu.solven.apex</groupId>
 			<artifactId>apex-server-cube</artifactId>
 			<version>${apex.version}</version>
+			<exclusions>
+				<exclusion>
+					<!-- exclude pepper 4.X version -->
+					<groupId>io.github.solven-eu.pepper</groupId>
+					<artifactId>pepper-with-agent</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>

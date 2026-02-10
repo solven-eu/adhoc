@@ -146,11 +146,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		return unsafePut(key, false);
 	}
 
-	@Override
-	public IValueReceiver set(T key) {
-		return unsafePut(key, true);
-	}
-
 	/**
 	 * BEWARE This is unsafe as it will write without ensuring given key exists only in the provided type. One must
 	 * ensure he's not leading to `key` to be present for multi column/types.

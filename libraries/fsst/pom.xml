@@ -70,6 +70,8 @@
 				<executions>
 					<execution>
 						<goals>
+							<!-- Provides a tests jar, enabling integration
+							tests or benchmarks-->
 							<goal>test-jar</goal>
 						</goals>
 					</execution>

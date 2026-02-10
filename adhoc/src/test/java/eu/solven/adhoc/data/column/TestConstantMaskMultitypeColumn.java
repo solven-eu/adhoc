@@ -39,7 +39,7 @@ public class TestConstantMaskMultitypeColumn {
 
 		MultitypeHashColumn<IAdhocSlice> withoutMask = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
-		withoutMask.set(SliceAsMap.fromMap(Map.of())).onLong(123);
+		withoutMask.append(SliceAsMap.fromMap(Map.of())).onLong(123);
 
 		ConstantMaskMultitypeColumn withMask =
 				ConstantMaskMultitypeColumn.builder().masked(withoutMask).masks(mask).build();
@@ -55,7 +55,7 @@ public class TestConstantMaskMultitypeColumn {
 
 		MultitypeHashColumn<IAdhocSlice> withoutMask = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
-		withoutMask.set(SliceAsMap.fromMap(Map.of("k", "v1"))).onLong(123);
+		withoutMask.append(SliceAsMap.fromMap(Map.of("k", "v1"))).onLong(123);
 
 		ConstantMaskMultitypeColumn withMask =
 				ConstantMaskMultitypeColumn.builder().masked(withoutMask).masks(mask).build();
