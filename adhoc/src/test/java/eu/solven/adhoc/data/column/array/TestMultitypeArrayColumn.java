@@ -39,75 +39,20 @@ public class TestMultitypeArrayColumn {
 	@Test
 	public void testIntAndInt() {
 		column.append(k1, 123);
-		column.append(k1, 234);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(234L);
-		});
+		Assertions.assertThatThrownBy(() -> column.append(k1, 234)).isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
 	public void testIntAndLong() {
 		column.append(k1, 123);
-		column.append(k1, 234L);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(234L);
-		});
+		Assertions.assertThatThrownBy(() -> column.append(k1, 234L)).isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
 	public void testIntAndDouble() {
 		column.append(k1, 123);
-		column.append(k1, 23.45D);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(23.45D);
-		});
-	}
-
-	@Test
-	public void testIntAndString() {
-		column.append(k1, 123);
-		column.append(k1, "234");
-		column.append(k1, 345);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(345L);
-		});
-	}
-
-	@Test
-	public void testIntAndNull() {
-		column.append(k1, 123);
-		column.append(k1, null);
-		column.append(k1, 345);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(0L + 345);
-		});
-	}
-
-	@Test
-	public void testStringAndLocalDate() {
-		LocalDate today = LocalDate.now();
-
-		column.append(k1, "foo");
-		column.append(k1, today);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(today);
-		});
-	}
-
-	@Test
-	public void testStringAndString() {
-		column.append(k1, "123");
-		column.append(k1, "234");
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo("234");
-		});
+		Assertions.assertThatThrownBy(() -> column.append(k1, 23.45D))
+				.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test

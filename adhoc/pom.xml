@@ -226,13 +226,7 @@
 		</dependency>
 
 		<dependency>
-			<!-- Check RAM usage, or proper provisioning-->
-			<groupId>org.openjdk.jol</groupId>
-			<artifactId>jol-core</artifactId>
-			<version>0.17</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
+			<!-- Check RAM usage, or proper provisioning/capacity-->
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper-with-agent</artifactId>
 			<version>${pepper.version}</version>

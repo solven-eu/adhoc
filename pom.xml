@@ -48,6 +48,8 @@
 		<module>libraries</module>
 
 		<module>pivotable</module>
+
+		<module>training</module>
 	</modules>
 
 	<scm>

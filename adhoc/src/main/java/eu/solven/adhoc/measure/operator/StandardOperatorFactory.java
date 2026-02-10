@@ -183,6 +183,10 @@ public class StandardOperatorFactory implements IOperatorFactory {
 		}
 
 		try {
+			if (asClass.getConstructors().length == 0) {
+				// May happen on anonymous classe
+				throw new IllegalArgumentException("Not a single constructor in %s".formatted(className));
+			}
 			try {
 				Constructor<? extends T> constructorWithOptions = asClass.getConstructor(Map.class);
 				return constructorWithOptions.newInstance(options);

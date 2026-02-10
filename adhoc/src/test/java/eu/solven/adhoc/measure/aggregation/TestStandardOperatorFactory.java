@@ -58,6 +58,21 @@ public class TestStandardOperatorFactory {
 				.hasMessageContaining("someUnknownKey");
 	}
 
+	@Test
+	public void testAggregation_anonymousClass() {
+		IAggregation a = new IAggregation() {
+
+			@Override
+			public Object aggregate(Object left, Object right) {
+				throw new UnsupportedOperationException("Fake");
+			}
+		};
+
+		Assertions.assertThatThrownBy(() -> factory.makeAggregation(a.getClass().getName()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Not a single constructor in " + a.getClass().getName());
+	}
+
 	@RequiredArgsConstructor
 	public static class WithOptionsCombination implements ICombination {
 		@Getter
