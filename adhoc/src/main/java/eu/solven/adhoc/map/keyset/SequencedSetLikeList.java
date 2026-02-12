@@ -73,6 +73,9 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 
 	final int[] reversedOrdering;
 
+	// views
+	transient List<String> list;
+
 	@Builder
 	private SequencedSetLikeList(NavigableSetLikeList set, int... reordering) {
 		this.set = set;
@@ -276,7 +279,12 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 	}
 
 	public List<String> asList() {
-		return new SequenceSetAsList();
+		// Similar to ConcurrentHashMap.keySet
+		if (list == null) {
+			// Possible race-condition: it's acceptable
+			list = new SequenceSetAsList();
+		}
+		return list;
 	}
 
 	public NavigableSetLikeList sortedSet() {

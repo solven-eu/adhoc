@@ -82,34 +82,7 @@ public class PivotableTokenService {
 		return PivotableResourceServerConfiguration.loadOAuth2SigningKey(env, uuidGenerator);
 	}
 
-	public static void main(String[] args) {
-		JWK secretKey = generateSignatureSecret(new SecureRandom(), new JdkUuidGenerator());
-		log.info("Secret key for JWT signing: {}", secretKey.toJSONString());
-	}
-
-	@SneakyThrows(JOSEException.class)
-	// @SuppressWarnings("PMD.ReplaceJavaUtilDate")
-	public static JWK generateSignatureSecret(SecureRandom secureRandom, IUuidGenerator uuidGenerator) {
-		// https://connect2id.com/products/nimbus-jose-jwt/examples/jws-with-hmac
-		// Generate random 256-bit (32-byte) shared secret
-		// SecureRandom random = new SecureRandom();
-		//
-		String rawNbBits = PivotableResourceServerConfiguration.MAC_ALGORITHM.getName().substring("HS".length());
-		int nbBits = Integer.parseInt(rawNbBits);
-
-		OctetSequenceKey jwk = new OctetSequenceKeyGenerator(nbBits).secureRandom(secureRandom)
-				.keyID(uuidGenerator.randomUUID().toString())
-				.algorithm(JWSAlgorithm.parse(PivotableResourceServerConfiguration.MAC_ALGORITHM.getName()))
-				.issueTime(Date.from(Instant.now()))
-				.generate();
-
-		log.info("Generated a JWK with kid={}", jwk.getKeyID());
-
-		return jwk;
-	}
-
 	public String generateAccessToken(UUID accountId, Duration accessTokenValidity, boolean isRefreshToken) {
-
 		// Generating a Signed JWT
 		// https://auth0.com/blog/rs256-vs-hs256-whats-the-difference/
 		// https://security.stackexchange.com/questions/194830/recommended-asymmetric-algorithms-for-jwt

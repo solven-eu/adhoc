@@ -28,6 +28,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.session.ReactiveMapSessionRepository;
 import org.springframework.session.ReactiveSessionRepository;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -36,21 +38,30 @@ import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = { PivotableServerApplication.class }, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(classes = { PivotableServerApplication.class },
+		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+		properties = {
+				// config has to be setup is a very root location, but we have no application.yml to stand as a library
+				"spring.config.import=" + IPivotableSpringProfiles.C_CONFIG,
+				"spring.profiles.active" + "=" + IPivotableSpringProfiles.P_UNSAFE })
 @Slf4j
-public class TestSpringAutonomyDefault implements IPivotableSpringProfiles {
+public class TestSpringAutonomyUnsafe implements IPivotableSpringProfiles {
 
 	@Autowired
-	ApplicationContext appContest;
+	ApplicationContext appContext;
+	@Autowired
+	Environment env;
 
 	@Test
 	public void testSpringProfiles() {
-		log.info("startupDate: {}", appContest.getStartupDate());
+		log.info("startupDate: {}", appContext.getStartupDate());
+
+		Assertions.assertThat(env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_INMEMORY))).isTrue();
 	}
 
 	@Test
 	public void testSession() {
-		Assertions.assertThat(appContest.getBean(ReactiveSessionRepository.class))
+		Assertions.assertThat(appContext.getBean(ReactiveSessionRepository.class))
 				.isInstanceOf(ReactiveMapSessionRepository.class);
 	}
 }
