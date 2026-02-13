@@ -29,11 +29,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springdoc.webflux.core.providers.ActuatorWebFluxProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -55,11 +56,13 @@ import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerSecurityApplication.class,
-		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+		properties = IPivotableSpringProfiles.P_CONFIG_IMPORT)
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
 @AutoConfigureWebTestClient(timeout = "P1D")
+@EnableAutoConfiguration(exclude = { RedisAutoConfiguration.class })
 public class TestSecurity_WithoutAuth {
 
 	@Autowired
@@ -135,7 +138,7 @@ public class TestSecurity_WithoutAuth {
 
 	@Test
 	public void testLoginOptions() {
-		log.debug("About {}", GreetingHandler.class);
+		log.debug("About {}", PivotableLoginController.class);
 
 		webTestClient
 
@@ -148,18 +151,25 @@ public class TestSecurity_WithoutAuth {
 				.isOk()
 				.expectBody(Map.class)
 				.value(greeting -> {
-					Map<String, ?> asMap = (Map<String, ?>) greeting.get("map");
-					assertThat(asMap).hasSize(2).containsOnlyKeys("github", "google");
-
-					Assertions.assertThat((Map) asMap.get("github"))
-							.containsEntry("login_url", "/oauth2/authorization/github");
-
-					List<Map<String, ?>> asList = (List<Map<String, ?>>) greeting.get("list");
-					assertThat(asList).hasSize(2)
-							.element(0)
-							.asInstanceOf(InstanceOfAssertFactories.MAP)
-							.containsEntry("login_url", "/oauth2/authorization/github");
+					onLoginOptions(greeting);
 				});
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected void onLoginOptions(Map loginOptions) {
+		Map<String, ?> asMap = (Map<String, ?>) loginOptions.get("map");
+		assertThat(asMap).hasSize(3).containsKeys("github", "google", IPivotableSpringProfiles.P_FAKEUSER);
+
+		Assertions.assertThat((Map) asMap.get("github")).containsEntry("login_url", "/oauth2/authorization/github");
+
+		List<Map<String, ?>> asList = (List<Map<String, ?>>) loginOptions.get("list");
+		assertThat(asList).hasSize(3).anySatisfy(m -> {
+			Assertions.assertThat((Map) m).containsEntry("login_url", "/oauth2/authorization/github").hasSize(4);
+		}).anySatisfy(m -> {
+			Assertions.assertThat((Map) m).containsEntry("login_url", "/oauth2/authorization/google");
+		}).anySatisfy(m -> {
+			Assertions.assertThat((Map) m).containsEntry("login_url", "/html/login/basic");
+		});
 	}
 
 	@Test
@@ -321,9 +331,10 @@ public class TestSecurity_WithoutAuth {
 
 				// By default, oauth2 returns a 302 if not logged-in
 				.expectStatus()
-				.isFound()
-				.expectHeader()
-				.location("/login");
+				// .isFound()
+				// .expectHeader()
+				// .location("/login")
+				.isUnauthorized();
 	}
 
 	@Test
@@ -452,7 +463,14 @@ public class TestSecurity_WithoutAuth {
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
 				.expectStatus()
-				.is5xxServerError();
+				.is2xxSuccessful()
+				.expectBody()
+				.jsonPath("$.status")
+				.isEqualTo("UP")
+				.jsonPath("$.components.diskSpace.status")
+				.isEqualTo("UP")
+				.jsonPath("$.components.ssl.status")
+				.isEqualTo("UP");
 		webTestClient.get()
 				.uri("/actuator/beans")
 				.accept(MediaType.APPLICATION_JSON)

@@ -13,5 +13,6 @@ spring:
                         client-secret: ${adhoc.pivotable.login.oauth2.google.clientSecret:NEEDS_TO_BE_DEFINED}
 
 adhoc.pivotable.login.oauth2:
+    enabled: true
     github.enabled: true
     google.enabled: true

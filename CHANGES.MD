@@ -14,6 +14,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
 - `IAppendableColumn.freeze()` turned to `IAppendableColumn.freeze(IFreezingStrategy)`
 - `MultitypeNavigableColumn` propagates the capacity to values.
+- Pivotable spring profiles has been reworked. There is more a default `application.yml`, but one should import `pivotable-config.yml`.
 
 ### Removed
 

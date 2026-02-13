@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpHeaders;
@@ -61,6 +62,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
 import eu.solven.adhoc.pivotable.security.oauth2.PivotableOAuth2UserService;
+import graphql.com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -77,7 +79,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class PivotableLoginController {
 
-	final InMemoryReactiveClientRegistrationRepository clientRegistrationRepository;
+	final ApplicationContext appContext;
 
 	final PivotableUsersRegistry usersRegistry;
 	final Environment env;
@@ -88,38 +90,49 @@ public class PivotableLoginController {
 	public Map<String, ?> loginProviders() {
 		Map<String, Object> registrationIdToDetails = new TreeMap<>();
 
-		StreamSupport.stream(clientRegistrationRepository.spliterator(), false)
-				.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
-						.equals(registration.getAuthorizationGrantType()))
-				// e.g. `-Dadhoc.pivotable.login.oauth2.github.enabled=true`
-				// Enabling custom deactivation as Pivotable may bring some default
-				.filter(registration -> env.getProperty("adhoc.pivotable.login.oauth2.%s.enabled"
-						.formatted(registration.getRegistrationId()), Boolean.class, true))
-				.forEach(r -> {
-					// Typically 'github' or 'google'
-					String registrationId = r.getRegistrationId();
-					String loginUrl = "/oauth2/authorization/%s".formatted(registrationId);
+		if (appContext.getEnvironment().getProperty("adhoc.pivotable.login.oauth2.enabled", Boolean.class, true)) {
+			// BEWARE If the following fails, you probably lacks somr oauth2 registrations, as suggested in
+			// application-pivotable-demo_external_oauth2.yml
+			final InMemoryReactiveClientRegistrationRepository clientRegistrationRepository =
+					appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
 
-					Map<String, String> details = new LinkedHashMap<>();
+			StreamSupport.stream(clientRegistrationRepository.spliterator(), false)
+					.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
+							.equals(registration.getAuthorizationGrantType()))
+					// e.g. `-Dadhoc.pivotable.login.oauth2.github.enabled=true`
+					// Enabling custom deactivation as Pivotable may bring some default
+					.filter(registration -> env.getProperty("adhoc.pivotable.login.oauth2.%s.enabled"
+							.formatted(registration.getRegistrationId()), Boolean.class, true))
+					.forEach(r -> {
+						// Typically 'github' or 'google'
+						String registrationId = r.getRegistrationId();
+						String loginUrl = "/oauth2/authorization/%s".formatted(registrationId);
 
-					details.put("type", "oauth2");
-					details.put("registration_id", registrationId);
-					details.put("login_url", loginUrl);
+						Map<String, String> details = new LinkedHashMap<>();
 
-					if (PivotableOAuth2UserService.PROVIDERID_GOOGLE.equals(registrationId)) {
-						// https://developers.google.com/identity/branding-guidelines?hl=fr
-						details.put("button_img", "/ui/img/google-web_light_sq_ctn.svg");
-					} else if (PivotableOAuth2UserService.PROVIDERID_GITHUB.equals(registrationId)) {
-						// https://github.com/logos
-						details.put("button_img", "/ui/img/GitHub_Logo.png");
-					}
+						details.put("type", "oauth2");
+						details.put("registration_id", registrationId);
+						details.put("login_url", loginUrl);
 
-					registrationIdToDetails.put(registrationId, details);
-				});
+						if (PivotableOAuth2UserService.PROVIDERID_GOOGLE.equals(registrationId)) {
+							// https://developers.google.com/identity/branding-guidelines?hl=fr
+							details.put("button_img", "/ui/img/google-web_light_sq_ctn.svg");
+						} else if (PivotableOAuth2UserService.PROVIDERID_GITHUB.equals(registrationId)) {
+							// https://github.com/logos
+							details.put("button_img", "/ui/img/GitHub_Logo.png");
+						}
+
+						registrationIdToDetails.put(registrationId, details);
+					});
+		}
 
 		if (env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER))) {
 			registrationIdToDetails.put(IPivotableSpringProfiles.P_FAKEUSER,
-					Map.of("type", "basic", "registration_id", "BASIC", "login_url", "/html/login/basic"));
+					ImmutableMap.builder()
+							.put("type", "basic")
+							.put("registration_id", IPivotableSpringProfiles.P_FAKEUSER)
+							.put("login_url", "/html/login/basic")
+							.build());
 		}
 
 		return Map.of("map", registrationIdToDetails, "list", registrationIdToDetails.values());

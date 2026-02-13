@@ -1,5 +1,14 @@
 # Pivotable
 
+`Pivotable` is a library providing an API layer and a Single-Page-Application on top of Adhoc.
+
+While it can be considered as an autonomous/full-fledged application, it remains a customizable library.
+
+To rely on it through Spring, one should have the following configuration, either as an Environmenent property or in your own `application.yml`:
+```
+spring.config.import=classpath:pivotable-config.yml
+```
+
 ## Quick-Start
 
 Run the main in:

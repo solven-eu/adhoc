@@ -1,0 +1,28 @@
+spring:
+    profiles:
+        # Do not add any default `include`, else `default` would never kicks in
+        group:
+            pivotable-server_defaults:
+                - pivotable
+                - pivotable-self_endpoint
+                - pivotable-simple_datasets
+            # prodmode should be used only for production application, hence with safe parameters
+            pivotable-prdmode:
+                - pivotable-server_defaults
+            # heroku is an external environment: it may be prodmode or devmode
+            pivotable-heroku:
+                - pivotable-server_defaults
+            # unsafe activates various parameters not qualifiable for prodmode, but making development or demonstrations easier
+            # unsafe provides various unsafe default parameters (like an unsafe signingKey)
+            # unsafe_server provides unsafe security (JWT signature, etc)
+            pivotable-unsafe:
+                - pivotable-server_defaults
+                # fakeuser introduces a default fakeAccount able to login with BASIC
+                - pivotable-unsafe_fakeuser
+                # inmemory will make the application independant of any persistence layer
+                - pivotable-inmemory
+                - pivotable-unsafe_external_oauth2
+            # activates various oauth2 providers with an unsafe (e.g. public credentials) configurationb
+            pivotable-unsafe_external_oauth2:
+                - pivotable-server_defaults
+                - pivotable-demo_external_oauth2

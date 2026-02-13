@@ -105,6 +105,10 @@ public class TestSequencedSetLikeList {
 	public void testAsList() {
 		SequencedSetLikeList acb = SequencedSetLikeList.fromSet(ImmutableSet.of("a", "c", "b"));
 		List<String> asList = acb.asList();
+
+		// Returns the same ref for very fast hashcode/equals in AbstractAdhocMap.retainKeySet
+		Assertions.assertThat(asList).isSameAs(acb.asList());
+
 		List<String> rawList = List.of("a", "c", "b");
 
 		Assertions.assertThat(asList).isEqualTo(rawList).hasSameHashCodeAs(rawList);
