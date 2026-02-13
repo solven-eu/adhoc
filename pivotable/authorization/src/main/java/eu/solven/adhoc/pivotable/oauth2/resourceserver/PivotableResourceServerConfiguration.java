@@ -83,7 +83,6 @@ public class PivotableResourceServerConfiguration {
 	}
 
 	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
-	@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE")
 	public static OctetSequenceKey loadOAuth2SigningKey(Environment env, IUuidGenerator uuidGenerator)
 			throws ParseException {
 		String secretKeySpec = env.getRequiredProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY);
@@ -117,6 +116,7 @@ public class PivotableResourceServerConfiguration {
 		return octetSequenceKey;
 	}
 
+	@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE")
 	private static String generateSigningKey(IUuidGenerator uuidGenerator) {
 		String secretKeySpec;
 		// Rely on the PID so that the signingKey is not changed on a SpringBootDevMode reload
@@ -137,12 +137,12 @@ public class PivotableResourceServerConfiguration {
 		// Generate random 256-bit (32-byte) shared secret
 		// SecureRandom random = new SecureRandom();
 		//
-		String rawNbBits = PivotableResourceServerConfiguration.MAC_ALGORITHM.getName().substring("HS".length());
+		String rawNbBits = MAC_ALGORITHM.getName().substring("HS".length());
 		int nbBits = Integer.parseInt(rawNbBits);
 
 		OctetSequenceKey jwk = new OctetSequenceKeyGenerator(nbBits).secureRandom(secureRandom)
 				.keyID(uuidGenerator.randomUUID().toString())
-				.algorithm(JWSAlgorithm.parse(PivotableResourceServerConfiguration.MAC_ALGORITHM.getName()))
+				.algorithm(JWSAlgorithm.parse(MAC_ALGORITHM.getName()))
 				.issueTime(Date.from(Instant.now()))
 				.generate();
 

@@ -29,7 +29,9 @@ package eu.solven.adhoc.app;
  *
  */
 public interface IPivotableSpringProfiles {
+	// config has to be setup is a very root location, but we have no application.yml to stand as a library
 	String C_CONFIG = "classpath:pivotable-config.yml";
+	String P_CONFIG_IMPORT = "spring.config.import=" + C_CONFIG;
 
 	// Default logging configuration
 	String P_LOGGING = "logging";

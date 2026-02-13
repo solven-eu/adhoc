@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.pivotable.oauth2.authorizationserver;
 
-import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,9 +37,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.gen.OctetSequenceKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
@@ -51,7 +48,6 @@ import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.tools.IUuidGenerator;
-import eu.solven.adhoc.tools.JdkUuidGenerator;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 

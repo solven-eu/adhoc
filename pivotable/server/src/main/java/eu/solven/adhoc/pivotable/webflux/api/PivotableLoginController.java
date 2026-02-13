@@ -62,6 +62,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
 import eu.solven.adhoc.pivotable.security.oauth2.PivotableOAuth2UserService;
+import graphql.com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -127,7 +128,11 @@ public class PivotableLoginController {
 
 		if (env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER))) {
 			registrationIdToDetails.put(IPivotableSpringProfiles.P_FAKEUSER,
-					Map.of("type", "basic", "registration_id", "BASIC", "login_url", "/html/login/basic"));
+					ImmutableMap.builder()
+							.put("type", "basic")
+							.put("registration_id", IPivotableSpringProfiles.P_FAKEUSER)
+							.put("login_url", "/html/login/basic")
+							.build());
 		}
 
 		return Map.of("map", registrationIdToDetails, "list", registrationIdToDetails.values());

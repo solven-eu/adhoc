@@ -32,6 +32,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.session.ReactiveMapSessionRepository;
 import org.springframework.session.ReactiveSessionRepository;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
@@ -40,10 +41,8 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = { PivotableServerApplication.class },
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-		properties = {
-				// config has to be setup is a very root location, but we have no application.yml to stand as a library
-				"spring.config.import=" + IPivotableSpringProfiles.C_CONFIG,
-				"spring.profiles.active" + "=" + IPivotableSpringProfiles.P_UNSAFE })
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT })
+@ActiveProfiles(IPivotableSpringProfiles.P_UNSAFE)
 @Slf4j
 public class TestSpringAutonomyUnsafe implements IPivotableSpringProfiles {
 
