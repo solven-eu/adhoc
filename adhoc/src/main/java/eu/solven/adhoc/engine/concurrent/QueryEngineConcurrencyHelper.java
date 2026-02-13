@@ -121,6 +121,7 @@ public class QueryEngineConcurrencyHelper {
 					.queryStepsDone(queryStepsDone)
 					.onReadyStep(onReadyStep)
 					.executor(queryPod.getExecutorService())
+					.hasOptions(queryPod)
 					.build();
 
 			CompletableFuture<Void> root = executor.executeRecursively(rootSteps);

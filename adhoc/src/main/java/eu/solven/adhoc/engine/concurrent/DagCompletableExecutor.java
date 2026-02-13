@@ -36,6 +36,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 
+import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -77,6 +78,9 @@ public class DagCompletableExecutor<T> {
 
 	@NonNull
 	final Executor executor;
+
+	@NonNull
+	final IHasQueryOptions hasOptions;
 
 	final TimeWeightedConcurrency tracker = TimeWeightedConcurrency.builder().build();
 
@@ -148,8 +152,8 @@ public class DagCompletableExecutor<T> {
 					tracker.stopConcurrentTask();
 				}
 
-				if (isDone()) {
-					log.info("mean-parallelism={}", tracker.getTimeWeightedParallelism());
+				if (isDone() && hasOptions.isDebugOrExplain()) {
+					log.info("[EXPLAIN] mean-parallelism={}", tracker.getTimeWeightedParallelism());
 				}
 			}, executor);
 

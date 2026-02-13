@@ -4,10 +4,13 @@
 
 While it can be considered as an autonomous/full-fledged application, it remains a customizable library.
 
-To rely on it through Spring, one should have the following configuration, either as an Environmenent property or in your own `application.yml`:
-```
-spring.config.import=classpath:pivotable-config.yml
-```
+To rely on it through Spring, one should have the following configuration in your own configuration:
+- `Environment`: `SPRING_CONFIG_IMPORT=classpath:pivotable-config.yml`
+- `Property`: `-Dspring.config.import=classpath:pivotable-config.yml`
+- `application.yml`: `spring.config.import: classpath:pivotable-config.yml`
+- `application.properties`: `spring.config.import=classpath:pivotable-config.yml`
+
+This is not provided by default as we keep Pivotable behaving as a library, and Spring-Boot required this property to be in the root configuration.
 
 ## Quick-Start
 
@@ -81,7 +84,7 @@ The generation of JWTs is managed by `PivotableTokenService`.
 The main class to define authentication methods is `PivotableLoginController`.
 
 Pivotable provides 2 authentication methods by default:
-- BASIC, through the Spring profile `fakeuser`
+- BASIC, through the Spring profile `pivotable-unsafe_fakeuser`
 - OAuth2, with examples provided for Google and Github, relying on core [SpringBoot](https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html).
 
 One can register an additional oauth2 method with:
