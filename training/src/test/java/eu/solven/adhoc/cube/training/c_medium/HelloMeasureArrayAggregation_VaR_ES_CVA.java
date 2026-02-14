@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.cube.training.c_medium;
 
-/**
- * Interface for Map builder instanced created by for {@link ISliceFactory}.
- * 
- * @author Benoit Lacelle
- */
-public interface IMapBuilderPreKeys extends IBuildableIntoMap {
-
-	IMapBuilderPreKeys append(Object value);
-
-	default IMapBuilderPreKeys append(Iterable<?> value) {
-		if (value == null) {
-			return append((Object) null);
-		}
-
-		IMapBuilderPreKeys preKeys = this;
-
-		for (Object oneMore : value) {
-			preKeys = append(oneMore);
-		}
-
-		return preKeys;
-	}
-
-	default IMapBuilderPreKeys append(Object first, Object... more) {
-		IMapBuilderPreKeys preKeys = append(first);
-
-		if (more == null) {
-			preKeys = append(null);
-		} else {
-			for (Object oneMore : more) {
-				preKeys = append(oneMore);
-			}
-		}
-
-		return preKeys;
-	}
-
+public class HelloMeasureArrayAggregation_VaR_ES_CVA {
+	// TODO
+	// For now, you can see TestTableQuery_DuckDb_VaR
 }

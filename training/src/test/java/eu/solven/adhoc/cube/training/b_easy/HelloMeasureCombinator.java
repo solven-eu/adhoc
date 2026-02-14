@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube.training.easy;
+package eu.solven.adhoc.cube.training.b_easy;
 
 import java.util.List;
 import java.util.Map;
@@ -45,47 +45,80 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class HelloMeasureCombinator {
-	public static class SumPositiveCombination implements ICombination {
-		@Override
-		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-			return underlyingValues.stream().map(o -> {
-				if (o == null) {
-					return null;
-				} else if (o instanceof Number n) {
-					return Math.abs(n.doubleValue());
-				} else {
-					// received a String? Return as-is
-					return null;
-				}
-			}).filter(d -> d != null).mapToDouble(d -> d).sum();
-		}
-	}
 
 	@Test
-	public void helloCubeQuery() {
+	public void helloSum() {
 		InMemoryTable table = InMemoryTable.builder().build();
-		table.add(ImmutableMap.of("a", "a1", "b", "b1", "v1", 1, "v2", 2));
-		table.add(ImmutableMap.of("a", "a1", "b", "b2", "v2", -7));
-		table.add(ImmutableMap.of("a", "a2", "b", "b1", "v1", -11));
+		table.add(ImmutableMap.of("color", "blue", "ccy", "EUR", "delta", 1, "gamma", 2));
+		table.add(ImmutableMap.of("color", "blue", "ccy", "USD", "gamma", -7));
+		table.add(ImmutableMap.of("color", "red", "ccy", "EUR", "delta", -11));
 
-		IMeasure sum = Combinator.sum("v1", "v2");
+		IMeasure sum = Combinator.sum("delta", "gamma");
 		MeasureForest forest = MeasureForest.builder()
 				.name("someForest")
-				.measure(Aggregator.sum("v1"))
-				.measure(Aggregator.sum("v2"))
+				.measure(Aggregator.sum("delta"))
+				.measure(Aggregator.sum("gamma"))
 				.measure(sum)
 				.build();
 
 		ICubeWrapper cube = CubeWrapper.builder().table(table).forest(forest).build();
 
-		ICubeQuery query = CubeQuery.builder().groupByAlso("a").measure(sum.getName()).andFilter("b", "b1").build();
+		ICubeQuery query = CubeQuery.builder().groupByAlso("color").measure(sum.getName()).build();
 
 		ITabularView result = cube.execute(query);
 		MapBasedTabularView resultListBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(resultListBased.getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of(sum.getName(), 1L + 2L))
-				.containsEntry(Map.of("a", "a2"), Map.of(sum.getName(), 11L));
+				.containsEntry(Map.of("color", "blue"), Map.of(sum.getName(), 1L + 2L - 7L))
+				.containsEntry(Map.of("color", "red"), Map.of(sum.getName(), -11L));
+	}
+
+	public static class SumPositiveCombination implements ICombination {
+		@Override
+		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+			return underlyingValues.stream().filter(Number.class::isInstance).mapToDouble(o -> {
+				if (o instanceof Number n) {
+					return Math.abs(n.doubleValue());
+				} else {
+					return 0D;
+				}
+			}).sum();
+		}
+	}
+
+	@Test
+	public void helloCustomSum() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		table.add(ImmutableMap.of("color", "blue", "ccy", "EUR", "delta", 1, "gamma", 2));
+		table.add(ImmutableMap.of("color", "blue", "ccy", "USD", "gamma", -7));
+		table.add(ImmutableMap.of("color", "red", "ccy", "EUR", "delta", -11));
+
+		IMeasure sum = Combinator.sum("delta", "gamma");
+		IMeasure sumCustom = Combinator.builder()
+				.name("mySum")
+				.combinationKey(SumPositiveCombination.class.getName())
+				.underlying("delta")
+				.underlying("gamma")
+				.build();
+		MeasureForest forest = MeasureForest.builder()
+				.name("someForest")
+				.measure(Aggregator.sum("delta"))
+				.measure(Aggregator.sum("gamma"))
+				.measure(sum)
+				.measure(sumCustom)
+				.build();
+
+		ICubeWrapper cube = CubeWrapper.builder().table(table).forest(forest).build();
+
+		ICubeQuery query = CubeQuery.builder().groupByAlso("color").measure(sumCustom.getName()).build();
+
+		ITabularView result = cube.execute(query);
+		MapBasedTabularView resultListBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(resultListBased.getCoordinatesToValues())
+				.hasSize(2)
+				.containsEntry(Map.of("color", "blue"), Map.of(sumCustom.getName(), 0D + 1L - (2L - 7L)))
+				.containsEntry(Map.of("color", "red"), Map.of(sumCustom.getName(), 0D + 11L));
 	}
 }

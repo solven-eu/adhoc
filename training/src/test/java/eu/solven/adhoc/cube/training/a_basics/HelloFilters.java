@@ -20,9 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube.training.easy;
+package eu.solven.adhoc.cube.training.a_basics;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -34,54 +35,63 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
 
-public class HelloAggregations {
-	// Create your own aggregation function
-	public static final class ConcatAggregation implements IAggregation {
-		@Override
-		public Object aggregate(Object left, Object right) {
-			if (left == null && right == null) {
-				// For any reason, both were null
-				return null;
-			} else if (left == null) {
-				// Ensure type consistency
-				return right.toString();
-			} else if (right == null) {
-				// Ensure type consistency
-				return left.toString();
-			} else {
-				// Do the concatenation
-				return left.toString() + "-" + right.toString();
-			}
-		}
+public class HelloFilters {
+	@Test
+	public void helloFilters() {
+		Assertions.assertThat(FilterBuilder.or()
+				.filter(ColumnFilter.match("a", ComparingMatcher.greaterThanOrEqual(123L)))
+				.filter(ColumnFilter.match("b", ComparingMatcher.strictlyLowerThan(234L)))
+				// `.combine` will not apply optimization (but trivial ones)
+				.combine()).hasToString("a>=123|b<234");
 	}
 
 	@Test
-	public void helloCustomAggregation() {
+	public void helloFiltersLike() {
+		Assertions.assertThat(ColumnFilter.matchLike("a", "pre%")).hasToString("a LIKE 'pre%'");
+		Assertions.assertThat(ColumnFilter.matchPattern("a", Pattern.compile("pre.*")))
+				.hasToString("a matches `RegexMatcher(pattern=pre.*)`");
+	}
+
+	@Test
+	public void helloFilterBuilderOptimizations() {
+		Assertions.assertThat(FilterBuilder.or()
+				.filter(ColumnFilter.match("a", ComparingMatcher.greaterThanOrEqual(123L)))
+				.filter(ColumnFilter.match("b", ComparingMatcher.strictlyLowerThan(234L)))
+				// `.combine` will not apply optimization (but trivial ones)
+				.combine()).hasToString("a>=123|b<234");
+
+		Assertions.assertThat(FilterBuilder.or()
+				.filter(ColumnFilter.match("a", ComparingMatcher.greaterThanOrEqual(123L)))
+				.filter(ColumnFilter.match("b", ComparingMatcher.strictlyLowerThan(234L)))
+				.filter(ColumnFilter.matchEq("a", 345L))
+				// `.optimize` will simplify boolean expressions
+				.optimize()).hasToString("b<234|a>=123");
+	}
+
+	@Test
+	public void helloCustomFilter() {
 		InMemoryTable table = InMemoryTable.builder().build();
 		table.add(ImmutableMap.of("a", "a1", "b", "b1", "v1", 1, "v2", 2));
 		table.add(ImmutableMap.of("a", "a1", "b", "b2", "v2", 7));
 		table.add(ImmutableMap.of("a", "a2", "b", "b1", "v1", 11));
 
+		IMeasure sum = Combinator.sum("v1", "v2");
 		MeasureForest forest = MeasureForest.builder()
 				.name("someForest")
-				.measure(Aggregator.builder()
-						.name("v1")
-						.aggregationKey(ConcatAggregation.class.getName())
-						.columnName("v1")
-						.build())
-				.measure(Aggregator.builder()
-						.name("v2")
-						.aggregationKey(ConcatAggregation.class.getName())
-						.columnName("v2")
-						.build())
+				.measure(Aggregator.sum("v1"))
+				.measure(Aggregator.sum("v2"))
+				.measure(sum)
 				.build();
 
 		ICubeWrapper cube = CubeWrapper.builder().table(table).forest(forest).build();
@@ -90,13 +100,13 @@ public class HelloAggregations {
 			return someA instanceof String someAString && someAString.endsWith("1");
 		});
 
-		ICubeQuery query = CubeQuery.builder().groupByAlso("a").measure("v1", "v2").filter(customFilter).build();
+		ICubeQuery query = CubeQuery.builder().groupByAlso("a").measure(sum.getName()).filter(customFilter).build();
 
 		ITabularView result = cube.execute(query);
 		MapBasedTabularView resultListBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(resultListBased.getCoordinatesToValues())
 				.hasSize(1)
-				.containsEntry(Map.of("a", "a1"), Map.of("v1", "1", "v2", "2-7"));
+				.containsEntry(Map.of("a", "a1"), Map.of(sum.getName(), 1L + 2L + 7L));
 	}
 }

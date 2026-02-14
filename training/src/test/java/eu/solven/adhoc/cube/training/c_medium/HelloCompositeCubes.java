@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cube.training.medium;
+package eu.solven.adhoc.cube.training.c_medium;
 
 import java.util.Map;
 
