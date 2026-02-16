@@ -32,8 +32,9 @@ import lombok.AllArgsConstructor;
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
-public final class ByteSlice implements IByteSlice {
+final class ByteSlice implements IByteSlice {
 	public final byte[] array;
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final int offset;
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final int length;
@@ -42,10 +43,19 @@ public final class ByteSlice implements IByteSlice {
 	public boolean isFastAsArray() {
 		return false;
 	}
+	@Override
+	public byte[] refHolderArray() {
+		return array;
+	}
 
 	@Override
 	public int length() {
 		return length;
+	}
+
+	@Override
+	public int offset() {
+		return offset;
 	}
 
 	/**

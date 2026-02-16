@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.filter;
+package eu.solven.adhoc.options.filter;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +29,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.query.filter.FilterUtility;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestFilterUtility {
 	FilterUtility filterUtility = FilterUtility.builder().build();

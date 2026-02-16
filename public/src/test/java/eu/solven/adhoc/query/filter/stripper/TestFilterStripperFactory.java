@@ -27,6 +27,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.stripper.FilterStripper;
+import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
 
 public class TestFilterStripperFactory {
 	@Test

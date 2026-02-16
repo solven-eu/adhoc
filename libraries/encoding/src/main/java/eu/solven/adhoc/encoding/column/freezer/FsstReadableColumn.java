@@ -26,7 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.fsst.ByteSlice;
+import eu.solven.adhoc.encoding.fsst.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.IFsstDecoder;
 import lombok.Builder;
 import lombok.NonNull;
@@ -42,18 +42,21 @@ public class FsstReadableColumn implements IReadableColumn {
 	protected IFsstDecoder decoder;
 
 	@NonNull
-	protected List<ByteSlice> encoded;
+	protected List<IByteSlice> encoded;
 
 	@Override
 	public Object readValue(int rowIndex) {
-		ByteSlice encodedBytes = encoded.get(rowIndex);
+		IByteSlice encodedBytes = encoded.get(rowIndex);
 
 		if (encodedBytes == null) {
 			return null;
 		}
 
-		ByteSlice decodedBytes = decoder.decodeAll(encodedBytes);
-		return new String(decodedBytes.array, decodedBytes.offset, decodedBytes.length, StandardCharsets.UTF_8);
+		IByteSlice decodedBytes = decoder.decodeAll(encodedBytes);
+		return new String(decodedBytes.refHolderArray(),
+				decodedBytes.offset(),
+				decodedBytes.length(),
+				StandardCharsets.UTF_8);
 	}
 
 }

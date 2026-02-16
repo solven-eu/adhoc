@@ -34,7 +34,7 @@ import lombok.AllArgsConstructor;
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
-public final class ByteSliceNoOffsetNoLength implements IByteSlice {
+final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	final byte[] array;
 
 	@Override
@@ -43,8 +43,18 @@ public final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	}
 
 	@Override
+	public byte[] refHolderArray() {
+		return array;
+	}
+
+	@Override
 	public int length() {
 		return array.length;
+	}
+
+	@Override
+	public int offset() {
+		return 0;
 	}
 
 	/**

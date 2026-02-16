@@ -74,7 +74,7 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	protected IReadableColumn readableColumn(List<byte[]> primitiveArray) {
 		SymbolTable table = FsstTrainer.builder().build().train(primitiveArray.toArray(byte[][]::new));
 
-		List<ByteSlice> encoded =
+		List<IByteSlice> encoded =
 				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();
 
 		return FsstReadableColumn.builder().decoder(table.getDecoding()).encoded(encoded).build();

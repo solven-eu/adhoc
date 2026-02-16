@@ -44,7 +44,7 @@ public class FsstAdhoc implements Fsst {
 
 	public SymbolTable encode(byte[] data, eu.solven.adhoc.encoding.fsst.SymbolTable st2) {
 		SymbolTableDecoding st = st2.decoding;
-		ByteSlice encoded = st2.encodeAll(data);
+		IByteSlice encoded = st2.encodeAll(data);
 
 		ByteArrayList concatenatedSymbols = new ByteArrayList();
 		IntArrayList symbolsLength = new IntArrayList(st.decLen.length);

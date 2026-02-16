@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @ThreadSafe
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
-public class SymbolTable implements IFsstConstants, IFsstDecoder {
+class SymbolTable implements IFsstConstants, IFsstDecoder {
 	// Used for encoding
 	final SymbolTableTraining symbols;
 
@@ -48,7 +48,7 @@ public class SymbolTable implements IFsstConstants, IFsstDecoder {
 
 	// Encode compresses input, reusing buf if provided.
 	// Returns compressed data (may be a different slice than buf).
-	public ByteSlice encode(byte[] buf, byte[] input) {
+	public IByteSlice encode(byte[] buf, byte[] input) {
 		if (buf == null || buf.length < 2 * input.length + fsstOutputPadding) {
 			buf = new byte[2 * input.length + fsstOutputPadding];
 		}
@@ -72,10 +72,10 @@ public class SymbolTable implements IFsstConstants, IFsstDecoder {
 			byte[] encBuf = Arrays.copyOfRange(input, pos, pos + 8);
 			outPos = encodeChunk(buf, outPos, encBuf, 0, tailLen);
 		}
-		return new ByteSlice(buf, 0, outPos);
+		return new ByteSliceNoOffset(buf, outPos);
 	}
 
-	public ByteSlice encodeAll(byte[] input) {
+	public IByteSlice encodeAll(byte[] input) {
 		return encode(null, input);
 	}
 
@@ -144,32 +144,32 @@ public class SymbolTable implements IFsstConstants, IFsstDecoder {
 		return dstPos;
 	}
 
-	public ByteSlice encodeAll(String string) {
+	public IByteSlice encodeAll(String string) {
 		return encodeAll(string.getBytes(StandardCharsets.UTF_8));
 	}
 
 	@Override
-	public ByteSlice decode(byte[] buf, ByteSlice src) {
+	public IByteSlice decode(byte[] buf, IByteSlice src) {
 		return decoding.decode(buf, src);
 	}
 
 	@Override
-	public ByteSlice decode(byte[] buf, byte[] src) {
+	public IByteSlice decode(byte[] buf, byte[] src) {
 		return decoding.decode(buf, src);
 	}
 
 	@Override
-	public ByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
+	public IByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
 		return decoding.decode(buf, src, srcStart, srcEnd);
 	}
 
 	@Override
-	public ByteSlice decodeAll(byte[] src) {
+	public IByteSlice decodeAll(byte[] src) {
 		return decoding.decode(null, src);
 	}
 
 	@Override
-	public ByteSlice decodeAll(ByteSlice src) {
+	public IByteSlice decodeAll(IByteSlice src) {
 		return decoding.decode(null, src);
 	}
 }

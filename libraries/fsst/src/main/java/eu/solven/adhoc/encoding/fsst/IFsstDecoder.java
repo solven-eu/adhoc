@@ -38,7 +38,7 @@ public interface IFsstDecoder {
 	 * @param src
 	 * @return
 	 */
-	ByteSlice decode(@Nullable byte[] buf, ByteSlice src);
+	IByteSlice decode(@Nullable byte[] buf, IByteSlice src);
 
 	/**
 	 * 
@@ -47,7 +47,7 @@ public interface IFsstDecoder {
 	 * @param src
 	 * @return
 	 */
-	ByteSlice decode(@Nullable byte[] buf, byte[] src);
+	IByteSlice decode(@Nullable byte[] buf, byte[] src);
 
 	/**
 	 * 
@@ -58,10 +58,10 @@ public interface IFsstDecoder {
 	 * @param srcEnd
 	 * @return
 	 */
-	ByteSlice decode(@Nullable byte[] buf, byte[] src, int srcStart, int srcEnd);
+	IByteSlice decode(@Nullable byte[] buf, byte[] src, int srcStart, int srcEnd);
 
-	ByteSlice decodeAll(byte[] src);
+	IByteSlice decodeAll(byte[] src);
 
-	ByteSlice decodeAll(ByteSlice src);
+	IByteSlice decodeAll(IByteSlice src);
 
 }

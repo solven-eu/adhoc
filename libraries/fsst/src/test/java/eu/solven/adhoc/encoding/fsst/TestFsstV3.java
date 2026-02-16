@@ -54,12 +54,13 @@ public class TestFsstV3 {
 	public void testTrain_8chars() {
 		SymbolTable table = trainer.train(List.of("01234567"));
 
-		ByteSlice encoded = table.encodeAll("01234567");
+		IByteSlice encoded = table.encodeAll("01234567");
 
-		Assertions.assertThat(encoded.length).isEqualTo(16);
+		Assertions.assertThat(encoded.length()).isEqualTo(16);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+		IByteSlice decoded = table.decodeAll(encoded);
+		String decodedString =
+				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("01234567");
 	}
@@ -68,12 +69,13 @@ public class TestFsstV3 {
 	public void testTrain_helloWorld() {
 		SymbolTable table = trainer.train(List.of("hello hello hello"));
 
-		ByteSlice encoded = table.encodeAll("Hello World");
+		IByteSlice encoded = table.encodeAll("Hello World");
 
-		Assertions.assertThat(encoded.length).isEqualTo(22);
+		Assertions.assertThat(encoded.length()).isEqualTo(22);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+		IByteSlice decoded = table.decodeAll(encoded);
+		String decodedString =
+				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello World");
 	}
@@ -84,12 +86,13 @@ public class TestFsstV3 {
 	public void testTrain_hello() {
 		SymbolTable table = trainer.train(List.of("hello hello hello"));
 
-		ByteSlice encoded = table.encodeAll("Hello");
+		IByteSlice encoded = table.encodeAll("Hello");
 
-		Assertions.assertThat(encoded.length).isEqualTo(10);
+		Assertions.assertThat(encoded.length()).isEqualTo(10);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+		IByteSlice decoded = table.decodeAll(encoded);
+		String decodedString =
+				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
@@ -100,12 +103,13 @@ public class TestFsstV3 {
 		SymbolTable table = trainer.train(List.of("az_azaz_azazaz_azazazaz"));
 
 		// 2x
-		ByteSlice encoded = table.encodeAll("azaz");
+		IByteSlice encoded = table.encodeAll("azaz");
 
-		Assertions.assertThat(encoded.length).isEqualTo(2);
+		Assertions.assertThat(encoded.length()).isEqualTo(2);
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+		IByteSlice decoded = table.decodeAll(encoded);
+		String decodedString =
+				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("azaz");
 	}
@@ -132,14 +136,14 @@ public class TestFsstV3 {
 		SymbolTable table = trainer.train(new byte[][] { input });
 
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
-		ByteSlice encoded = table.encodeAll(original);
+		IByteSlice encoded = table.encodeAll(original);
 
-		Assertions.assertThat(encoded.length).isEqualTo(4);
+		Assertions.assertThat(encoded.length()).isEqualTo(4);
 
-		ByteSlice decoded = table.decodeAll(encoded);
+		IByteSlice decoded = table.decodeAll(encoded);
 
-		Assertions.assertThat(decoded.length).isEqualTo(original.length);
-		Assertions.assertThat(decoded.array).contains(original);
+		Assertions.assertThat(decoded.length()).isEqualTo(original.length);
+		Assertions.assertThat(decoded.refHolderArray()).contains(original);
 	}
 
 	@Test
@@ -149,10 +153,11 @@ public class TestFsstV3 {
 		byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
 		SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
 
-		ByteSlice encoded = table.encodeAll("Hello");
+		IByteSlice encoded = table.encodeAll("Hello");
 
-		ByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+		IByteSlice decoded = table.decodeAll(encoded);
+		String decodedString =
+				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
@@ -172,15 +177,16 @@ public class TestFsstV3 {
 		// Compress input as a single entry
 		{
 			SymbolTable table = trainer.train(input);
-			ByteSlice encoded = table.encodeAll(input);
+			IByteSlice encoded = table.encodeAll(input);
 
-			ByteSlice decoded = table.decodeAll(encoded);
-			String decodedString = new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+			IByteSlice decoded = table.decodeAll(encoded);
+			String decodedString =
+					new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 			Assertions.assertThat(decodedString).isEqualTo(input);
 
 			long sizeTable = byteLength(table);
-			long sizeEncoded = encoded.length;
+			long sizeEncoded = encoded.length();
 			log.info("row-basis Compressed {} from bytes={} to bytes={} (table={} encoded={})",
 					filename,
 					PepperLogHelper.humanBytes(input.getBytes(StandardCharsets.UTF_8).length),
@@ -200,13 +206,15 @@ public class TestFsstV3 {
 
 				for (int i = 0; i < inputs.size(); i++) {
 					String entry = inputs.get(i);
-					ByteSlice encoded = table.encodeAll(entry);
+					IByteSlice encoded = table.encodeAll(entry);
 
-					sizeEncoded += encoded.length;
+					sizeEncoded += encoded.length();
 
-					ByteSlice decoded = table.decodeAll(encoded);
-					String decodedString =
-							new String(decoded.array, decoded.offset, decoded.length, StandardCharsets.UTF_8);
+					IByteSlice decoded = table.decodeAll(encoded);
+					String decodedString = new String(decoded.refHolderArray(),
+							decoded.offset(),
+							decoded.length(),
+							StandardCharsets.UTF_8);
 
 					Assertions.assertThat(decodedString).isEqualTo(entry);
 				}

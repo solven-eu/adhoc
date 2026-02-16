@@ -20,19 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.options;
 
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestStandardQueryOptions {
@@ -50,17 +47,6 @@ public class TestStandardQueryOptions {
 		ObjectMapper om = PepperJacksonTestHelper.makeObjectMapper();
 
 		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
-	}
-
-	@Disabled("TODO Custom options can not be (de)serialized properly for now")
-	@Test
-	public void testJackson_internalQueryOption() throws JsonProcessingException {
-		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
-				InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
-
-		Assertions.assertThat(option).isEqualTo("""
-				"DISABLE_AGGREGATOR_INDUCTION"
-				""".trim());
 	}
 
 	@Test

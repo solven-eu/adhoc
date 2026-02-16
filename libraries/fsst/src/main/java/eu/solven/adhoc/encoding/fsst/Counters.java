@@ -43,7 +43,7 @@ import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 // https://github.com/cwida/fsst/blob/master/libfsst.hpp#L340
 // TODO There is an alternative implementation if not 32bits. Should we implement it?
 @NotThreadSafe
-public class Counters {
+class Counters {
 	// Must be relative to the maximum sampling size to prevent saturation
 	private static final int MAX_COUNT = 0xFFFF;
 

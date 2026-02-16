@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
 @ThreadSafe
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
-public class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
+class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
 	// Decoder tables
 	public final byte[] decLen; // code -> symbol length
 	public final long[] decSymbol; // code -> symbol value
@@ -45,18 +45,18 @@ public class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
 	final int suffixLim;
 
 	@Override
-	public ByteSlice decode(byte[] buf, ByteSlice src) {
-		return decode(buf, src.array, src.offset, src.offset + src.length);
+	public IByteSlice decode(byte[] buf, IByteSlice src) {
+		return decode(buf, src.refHolderArray(), src.offset(), src.offset() + src.length());
 	}
 
 	@Override
-	public ByteSlice decode(byte[] buf, byte[] src) {
+	public IByteSlice decode(byte[] buf, byte[] src) {
 		return decode(buf, src, 0, src.length);
 	}
 
 	@SuppressWarnings("PMD.AssignmentInOperand")
 	@Override
-	public ByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
+	public IByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
 		if (buf == null) {
 			buf = new byte[src.length * 4 + 8];
 		}
@@ -100,12 +100,12 @@ public class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
 	}
 
 	@Override
-	public ByteSlice decodeAll(byte[] src) {
+	public IByteSlice decodeAll(byte[] src) {
 		return decode(null, src);
 	}
 
 	@Override
-	public ByteSlice decodeAll(ByteSlice src) {
+	public IByteSlice decodeAll(IByteSlice src) {
 		return decode(null, src);
 	}
 }

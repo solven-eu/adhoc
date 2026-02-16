@@ -39,7 +39,7 @@ import lombok.experimental.UtilityClass;
 // https://github.com/axiomhq/fsst/blob/main/symbol.go
 @SuppressWarnings("checkstyle:MagicNumber")
 @UtilityClass
-public final class SymbolUtil implements IFsstConstants {
+final class SymbolUtil implements IFsstConstants {
 
 	public static long fsstUnalignedLoad(byte[] in, int offset) {
 		// ByteBuffer buf = ByteBuffer.wrap(b, offset, 8);

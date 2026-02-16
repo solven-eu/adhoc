@@ -88,27 +88,15 @@ public class AdhocMapComparisonHelpers {
 		}
 	}
 
-	public static int compareValues(List<Object> thisOrderedValues, List<Object> otherOrderedValues) {
+	public static int compareValues(List<?> thisOrderedValues, List<?> otherOrderedValues) {
 		int size = thisOrderedValues.size();
 		if (size != otherOrderedValues.size()) {
 			throw new IllegalStateException("%s != %s".formatted(size, otherOrderedValues.size()));
 		}
-		for (int i = 0; i < size; i++) {
-			Object thisCoordinate = thisOrderedValues.get(i);
-			Object otherCoordinate = otherOrderedValues.get(i);
-			int valueCompare = valueComparator.compare(thisCoordinate, otherCoordinate);
-
-			if (valueCompare != 0) {
-				return valueCompare;
-			}
-		}
-
-		return 0;
+		return compareValues(size, thisOrderedValues::get, otherOrderedValues::get);
 	}
 
-	public static int compareValues(int size,
-			IntFunction<Object> thisOrderedValues,
-			IntFunction<Object> otherOrderedValues) {
+	public static int compareValues(int size, IntFunction<?> thisOrderedValues, IntFunction<?> otherOrderedValues) {
 		for (int i = 0; i < size; i++) {
 			Object thisCoordinate = thisOrderedValues.apply(i);
 			Object otherCoordinate = otherOrderedValues.apply(i);
@@ -122,7 +110,7 @@ public class AdhocMapComparisonHelpers {
 		return 0;
 	}
 
-	public static int compareValues2(Iterator<Object> thisOrderedValues, Iterator<Object> otherOrderedValues) {
+	public static int compareValues2(Iterator<?> thisOrderedValues, Iterator<?> otherOrderedValues) {
 		while (thisOrderedValues.hasNext()) {
 			if (!otherOrderedValues.hasNext()) {
 				throw new IllegalStateException(

@@ -37,6 +37,7 @@ public interface IByteSlice {
 	boolean isFastAsArray();
 
 	/**
+	 * May or may not be the original array
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
 	 */
@@ -44,7 +45,16 @@ public interface IByteSlice {
 
 	byte read(int position);
 
+	/**
+	 * The inner array
+	 * 
+	 * @return a non-defensive reference to the internal array
+	 */
+	byte[] refHolderArray();
+
 	int length();
+
+	int offset();
 
 	static IByteSlice wrap(byte[] input) {
 		return new ByteSliceNoOffsetNoLength(input);

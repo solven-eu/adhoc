@@ -42,7 +42,7 @@ import lombok.RequiredArgsConstructor;
 @NotThreadSafe
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings("checkstyle:MagicNumber")
-public final class SymbolTableTraining implements IFsstConstants {
+final class SymbolTableTraining implements IFsstConstants {
 
 	final int[] shortCodes;
 	final int[] byteCodes;
