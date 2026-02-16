@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestFsstV3 {
-	FsstTrain trainer = FsstTrain.builder().build();
+	FsstTrainer trainer = FsstTrainer.builder().build();
 
 	@Test
 	public void setCodeLengthTest() {

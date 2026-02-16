@@ -57,14 +57,18 @@ public final class SymbolUtil implements IFsstConstants {
 			}
 			yield v;
 		}
+
 		// BEWARE JMH suggests unrolling the loop has no benefit
-		default -> (in[offset] & 0xFFL) | (in[offset + 1] & 0xFFL) << 8
+		case 8 -> (in[offset] & 0xFFL) | (in[offset + 1] & 0xFFL) << 8
 				| (in[offset + 2] & 0xFFL) << 16
 				| (in[offset + 3] & 0xFFL) << 24
 				| (in[offset + 4] & 0xFFL) << 32
 				| (in[offset + 5] & 0xFFL) << 40
 				| (in[offset + 6] & 0xFFL) << 48
 				| (in[offset + 7] & 0xFFL) << 56;
+		// BEWARE This method is very critical for performance
+		// If this has negative impact on performance, we should do an assert.
+		default -> throw new IllegalArgumentException();
 		};
 	}
 
@@ -85,13 +89,16 @@ public final class SymbolUtil implements IFsstConstants {
 			yield v;
 		}
 		// BEWARE JMH suggests unrolling the loop has no benefit
-		default -> (in.read(offset) & 0xFFL) | (in.read(offset + 1) & 0xFFL) << 8
+		case 8 -> (in.read(offset) & 0xFFL) | (in.read(offset + 1) & 0xFFL) << 8
 				| (in.read(offset + 2) & 0xFFL) << 16
 				| (in.read(offset + 3) & 0xFFL) << 24
 				| (in.read(offset + 4) & 0xFFL) << 32
 				| (in.read(offset + 5) & 0xFFL) << 40
 				| (in.read(offset + 6) & 0xFFL) << 48
 				| (in.read(offset + 7) & 0xFFL) << 56;
+		// BEWARE This method is very critical for performance
+		// If this has negative impact on performance, we should do an assert.
+		default -> throw new IllegalArgumentException();
 		};
 	}
 

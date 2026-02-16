@@ -49,13 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "checkstyle:MagicNumber", "PMD.GodClass" })
 @Slf4j
 @Builder
-public class FsstTrain {
-
-	// --- Candidate weighting / gain ---
-	public static final int SINGLE_BYTE_BOOST = 8;
-	public static final int MIN_COUNT_NUMERATOR = 5;
-	public static final int MIN_COUNT_DENOMINATOR = 128;
-	public static final int RNG_SEED = 4_637_947;
+public class FsstTrainer {
 
 	@Default
 	@NonNull
@@ -387,14 +381,14 @@ public class FsstTrain {
 	 */
 	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
 
-	// larger val breaks tie
-	public static final Comparator<QSym> COMPARATOR =
+		// larger val breaks tie
+		public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
-	@Override
-	public int compareTo(QSym o) {
-		return COMPARATOR.compare(this, o);
-	}
+		@Override
+		public int compareTo(QSym o) {
+			return COMPARATOR.compare(this, o);
+		}
 
 	}
 
@@ -426,12 +420,12 @@ public class FsstTrain {
 				int gain = q.gain;
 
 				if (q.symbol.length() == 1) {
-					gain /= SINGLE_BYTE_BOOST;
+					gain /= config.getSingleByteBoost();
 				}
 
-				long gainMinusCost = gain - (q.symbol.length() + 1);
+				int cost = q.symbol.length() + 1;
 
-				if (gainMinusCost > 0) {
+				if (gain > cost) {
 					newSymboltable.addSymbol(q.symbol);
 				}
 			} else {
@@ -502,7 +496,7 @@ public class FsstTrain {
 					// heuristic: promoting single-byte symbols (*8) helps reduce exception rates and increases
 					// [de]compression
 					// TODO Should not be applied on latest step
-					weight *= SINGLE_BYTE_BOOST;
+					weight *= config.getSingleByteBoost();
 				}
 
 				if (weight >= minCount) {
@@ -564,7 +558,7 @@ public class FsstTrain {
 	private int minCount(int frac, boolean sampled) {
 		// on first iteration, minCount is 1
 		// on last iteration, minCount is 5
-		int minCount = Math.max(MIN_COUNT_NUMERATOR * frac / MIN_COUNT_DENOMINATOR, 1);
+		int minCount = Math.max(config.getMinCountNumerator() * frac / config.getMinCountDenominator(), 1);
 		assert minCount > 0;
 
 		// TODO Should improve this else we may discord good symbols on very short training data (e.g. just a
@@ -648,7 +642,7 @@ public class FsstTrain {
 		byte[] buf = new byte[config.getSampleMaxSize()];
 		List<ByteSlice> sample = new ArrayList<>(inputs.length);
 		int pos = 0;
-		long rng = SymbolUtil.fsstHash(RNG_SEED);
+		long rng = SymbolUtil.fsstHash(config.getRngSeed());
 
 		while (pos < buf.length) {
 			// Pick a random input

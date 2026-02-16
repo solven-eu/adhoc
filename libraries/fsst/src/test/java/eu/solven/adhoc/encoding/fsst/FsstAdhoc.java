@@ -38,7 +38,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 public class FsstAdhoc implements Fsst {
 
 	public eu.solven.adhoc.encoding.fsst.SymbolTable train(byte[] data) {
-		var st = FsstTrain.builder().build().train(new byte[][] { data });
+		var st = FsstTrainer.builder().build().train(new byte[][] { data });
 		return st;
 	}
 

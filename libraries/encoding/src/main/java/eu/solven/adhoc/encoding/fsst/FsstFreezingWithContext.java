@@ -72,7 +72,7 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected IReadableColumn readableColumn(List<byte[]> primitiveArray) {
-		SymbolTable table = FsstTrain.builder().build().train(primitiveArray.toArray(byte[][]::new));
+		SymbolTable table = FsstTrainer.builder().build().train(primitiveArray.toArray(byte[][]::new));
 
 		List<ByteSlice> encoded =
 				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();

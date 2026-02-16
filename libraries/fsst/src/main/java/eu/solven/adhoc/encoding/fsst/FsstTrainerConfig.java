@@ -44,6 +44,12 @@ public class FsstTrainerConfig {
 	private static final int FSST_SAMPLE_MAX_SZ = 2 * FSST_SAMPLE_TARGET;
 	private static final int FSST_SAMPLE_LINE = 1 << 9; // 512
 
+	// --- Candidate weighting / gain ---
+	private static final int SINGLE_BYTE_BOOST = 8;
+	private static final int MIN_COUNT_NUMERATOR = 5;
+	private static final int MIN_COUNT_DENOMINATOR = 128;
+	private static final int RNG_SEED = 4_637_947;
+
 	// the target size of the whole sample
 	@Default
 	int sampleTarget = FSST_SAMPLE_TARGET;
@@ -51,6 +57,15 @@ public class FsstTrainerConfig {
 	// the target size of the sample chunk
 	@Default
 	int sampleLine = FSST_SAMPLE_LINE;
+
+	@Default
+	int singleByteBoost = SINGLE_BYTE_BOOST;
+	@Default
+	int minCountNumerator = MIN_COUNT_NUMERATOR;
+	@Default
+	int minCountDenominator = MIN_COUNT_DENOMINATOR;
+	@Default
+	int rngSeed = RNG_SEED;
 
 	public int getSampleMaxSize() {
 		int maxSize = getSampleTarget() * 2;
