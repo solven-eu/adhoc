@@ -33,13 +33,6 @@ public interface IAppendableTable {
 
 	/**
 	 * 
-	 * @return a row, able to write into any column.
-	 */
-	@Deprecated
-	ITableRowWrite nextRow();
-
-	/**
-	 * 
 	 * @param keysLikeList
 	 * @return a row, able to write only into given columns, in given order.
 	 */

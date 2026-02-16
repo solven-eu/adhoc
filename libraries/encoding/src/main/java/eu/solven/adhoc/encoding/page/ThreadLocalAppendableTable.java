@@ -43,27 +43,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ThreadSafe
 public class ThreadLocalAppendableTable extends AAppendableTable {
-	// This could be replaced by an AtomicReference if the IAppendableTablePage implementation was thread-safe.
-	protected final ThreadLocal<IAppendableTablePage> refFlexiblePage = new ThreadLocal<>();
 	protected final ThreadLocal<Map<List<String>, IAppendableTablePage>> keyToPage = new ThreadLocal<>() {
 		@Override
 		protected Map<List<String>, IAppendableTablePage> initialValue() {
 			return new LinkedHashMap<>();
 		}
 	};
-
-	@Override
-	protected IAppendableTablePage getCurrentPage() {
-		return refFlexiblePage.get();
-	}
-
-	@Override
-	protected IAppendableTablePage compareAndSetPage(IAppendableTablePage currentPage,
-			IAppendableTablePage newCandidate) {
-		refFlexiblePage.set(newCandidate);
-
-		return newCandidate;
-	}
 
 	@Override
 	protected IAppendableTablePage getCurrentPage(List<String> keysAsList) {

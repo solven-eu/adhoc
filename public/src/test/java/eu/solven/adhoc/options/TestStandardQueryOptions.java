@@ -69,4 +69,19 @@ public class TestStandardQueryOptions {
 		Assertions.assertThat(StandardQueryOptions.NON_BLOCKING.isActive(Set.of(StandardQueryOptions.BLOCKING)))
 				.isFalse();
 	}
+
+	@Test
+	public void testIsExplain_noOption() {
+		Assertions.assertThat(IHasQueryOptions.noOption().isExplain()).isFalse();
+		Assertions.assertThat(IHasQueryOptions.noOption().isDebug()).isFalse();
+		Assertions.assertThat(IHasQueryOptions.noOption().isDebugOrExplain()).isFalse();
+	}
+
+	@Test
+	public void testIsExplain_EXPLAIN() {
+		IHasQueryOptions options = () -> Set.of(StandardQueryOptions.EXPLAIN);
+		Assertions.assertThat(options.isExplain()).isTrue();
+		Assertions.assertThat(options.isDebug()).isFalse();
+		Assertions.assertThat(options.isDebugOrExplain()).isTrue();
+	}
 }

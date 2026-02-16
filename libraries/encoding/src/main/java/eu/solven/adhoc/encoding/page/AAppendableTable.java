@@ -59,40 +59,6 @@ public abstract class AAppendableTable implements IAppendableTable {
 	}
 
 	@Override
-	public ITableRowWrite nextRow() {
-		while (true) {
-			IAppendableTablePage currentPage = getCurrentPage();
-			if (currentPage == null) {
-				nextPage(currentPage);
-			} else {
-				ITableRowWrite nextRow = currentPage.pollNextRow();
-				if (nextRow == null) {
-					nextPage(currentPage);
-				} else {
-					return nextRow;
-				}
-			}
-		}
-	}
-
-	protected abstract IAppendableTablePage getCurrentPage();
-
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected void nextPage(IAppendableTablePage currentPage) {
-		// the page is full
-		IAppendableTablePage newCandidate = makePage();
-		IAppendableTablePage witnessPage = compareAndSetPage(currentPage, newCandidate);
-		if (witnessPage == currentPage) {
-			// This thread has actually updated the page
-			// newCandidate.allocate();
-			log.trace("New page");
-		}
-	}
-
-	protected abstract IAppendableTablePage compareAndSetPage(IAppendableTablePage currentPage,
-			IAppendableTablePage newCandidate);
-
-	@Override
 	public ITableRowWrite nextRow(ILikeList<String> keysLikeList) {
 		while (true) {
 			List<String> keysAsList = keysLikeList.asList();
@@ -101,7 +67,7 @@ public abstract class AAppendableTable implements IAppendableTable {
 			if (nextRow == null) {
 				IAppendableTablePage newCandidate = makePage();
 				if (compareAndSetPage(keysAsList, currentPage, newCandidate)) {
-					log.trace("New page");
+					log.trace("New page for keys={}", keysAsList);
 				}
 			} else {
 				return nextRow;

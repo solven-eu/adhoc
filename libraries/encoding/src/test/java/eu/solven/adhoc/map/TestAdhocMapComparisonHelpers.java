@@ -27,14 +27,31 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
+
 public class TestAdhocMapComparisonHelpers {
 	@Test
-	public void testCompareString() {
+	public void testCompareKeys_String() {
 		Assertions.assertThat(AdhocMapComparisonHelpers.compareKey("a", "c")).isEqualTo(-2);
 	}
 
 	@Test
-	public void testCompareList() {
+	public void testCompareKeys_KeySet() {
+		Assertions.assertThat(AdhocMapComparisonHelpers.compareKeySet(ImmutableSet.of("a").iterator(),
+				ImmutableSet.of("c").iterator())).isEqualTo(-2);
+
+		Assertions.assertThat(AdhocMapComparisonHelpers.compareKeySet(ImmutableSet.of("a", "b").iterator(),
+				ImmutableSet.of("c", "b").iterator())).isEqualTo(-2);
+
+		Assertions.assertThat(AdhocMapComparisonHelpers.compareKeySet(ImmutableSet.of("a", "b").iterator(),
+				ImmutableSet.of("a", "b").iterator())).isEqualTo(0);
+
+		Assertions.assertThat(AdhocMapComparisonHelpers.compareKeySet(ImmutableSet.of("a", "b").iterator(),
+				ImmutableSet.of("a", "c").iterator())).isEqualTo(-1);
+	}
+
+	@Test
+	public void testCompareValues_List() {
 		Assertions.assertThat(AdhocMapComparisonHelpers.compareValues(List.of("a"), List.of("c"))).isEqualTo(-2);
 		Assertions.assertThat(AdhocMapComparisonHelpers.compareValues(List.of("b", "a"), List.of("b", "c")))
 				.isEqualTo(-2);
@@ -43,7 +60,7 @@ public class TestAdhocMapComparisonHelpers {
 	}
 
 	@Test
-	public void testCompareIterators() {
+	public void testCompareValues_Iterators() {
 		Assertions
 				.assertThat(AdhocMapComparisonHelpers.compareValues2(List.of("a").iterator(), List.of("c").iterator()))
 				.isEqualTo(-2);
