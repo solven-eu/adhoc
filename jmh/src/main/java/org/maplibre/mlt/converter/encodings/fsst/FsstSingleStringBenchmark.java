@@ -36,7 +36,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
-import eu.solven.adhoc.fsst.FsstAdhoc;
+import eu.solven.adhoc.encoding.fsst.FsstAdhoc;
 
 /**
  * Benchmarks for `training+encode` FSST. It comes from MapTitle owns benchmarks, but it is really representative of

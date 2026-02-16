@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestInternalQueryOptions {

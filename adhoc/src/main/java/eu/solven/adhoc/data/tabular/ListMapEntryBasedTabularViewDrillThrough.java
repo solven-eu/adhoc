@@ -28,7 +28,7 @@ import java.util.Map;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.jackson.Jacksonized;
 

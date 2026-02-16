@@ -22,14 +22,18 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.util.List;
+
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.cleanthat.SuppressCleanthat;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -44,13 +48,16 @@ public interface IJooqTableQueryFactory {
 	/**
 	 * The result of splitting an {@link TableQueryV2} into a leg executable by the SQL database, and a filter to be
 	 * applied manually over the output from the database.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	@Value
 	@Builder
+	// For some reason, cleanthat is modifying this class
+	@SuppressCleanthat
 	class QueryWithLeftover {
-		ResultQuery<Record> query;
+		// May have multiple queries (e.g. if partitioning modulo some partitionKey)
+		private final List<ResultQuery<Record>> queries;
 
 		/**
 		 * a filter to apply over the results from the SQL engine. Typically used for custom {@link ISliceFilter}, which
@@ -62,6 +69,11 @@ public interface IJooqTableQueryFactory {
 		ImmutableMap<String, ISliceFilter> aggregatorToLeftovers;
 
 		AggregatedRecordFields fields;
+
+		@Deprecated(since = "This may fail if the query has been partitioned. Might be fine for unitTests.")
+		public ResultQuery<Record> getQuery() {
+			return Iterables.getOnlyElement(queries);
+		}
 	}
 
 	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);

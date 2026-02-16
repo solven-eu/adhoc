@@ -36,7 +36,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
-import eu.solven.adhoc.fsst.SymbolUtil;
+import eu.solven.adhoc.encoding.fsst.SymbolUtil;
 
 /**
  * Benchmarks for SymbolUtil, especially `fsstUnalignedLoad` which is one of FSST hotspots.

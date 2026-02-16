@@ -34,22 +34,22 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestTransformator_Combinator_ColumnSizeLimit extends ADagTest implements IAdhocTestConstants {
 
 	@BeforeEach
 	public void setLimitTo2() {
-		AdhocUnsafe.setLimitColumnSize(2);
+		AdhocColumnUnsafe.setLimitColumnSize(2);
 	}
 
 	@AfterEach
 	public void resetLimit() {
-		AdhocUnsafe.resetAll();
+		AdhocColumnUnsafe.resetAll();
 	}
 
 	@Override

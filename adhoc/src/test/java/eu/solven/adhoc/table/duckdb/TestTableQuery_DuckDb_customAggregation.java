@@ -32,7 +32,6 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Name;
-import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +45,6 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -56,6 +54,7 @@ import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Value;
+import lombok.experimental.SuperBuilder;
 
 /**
  * Check an advanced scenario where we receive String values, and we want to aggregate them as
@@ -151,13 +150,8 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		}
 	}
 
+	@SuperBuilder
 	public static class CustomAggregationJooqTableQueryFactory extends JooqTableQueryFactory {
-
-		public CustomAggregationJooqTableQueryFactory(IOperatorFactory operatorFactory,
-				TableLike<?> table,
-				DSLContext dslContext) {
-			super(operatorFactory, table, dslContext);
-		}
 
 		@Override
 		protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator,
@@ -181,9 +175,11 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		return new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new CustomAggregationJooqTableQueryFactory(jooqTableWrapperParameters.getOperatorFactory(),
-						jooqTableWrapperParameters.getTable(),
-						dslContext);
+				return CustomAggregationJooqTableQueryFactory.builder()
+						.operatorFactory(jooqTableWrapperParameters.getOperatorFactory())
+						.table(jooqTableWrapperParameters.getTable())
+						.dslContext(dslContext)
+						.build();
 			}
 		};
 	}

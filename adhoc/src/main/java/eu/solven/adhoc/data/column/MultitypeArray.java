@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.IValueFunction;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -84,7 +84,7 @@ public class MultitypeArray implements IMultitypeArray {
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			ensureCapacityForType(type);

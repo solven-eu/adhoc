@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.compression.ColumnarSliceFactory;
+import eu.solven.adhoc.encoding.dictionary.ColumnarSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 
 public class TestColumnarSliceFactory {

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 
 public class TestAdhocFactories {
 	@Test

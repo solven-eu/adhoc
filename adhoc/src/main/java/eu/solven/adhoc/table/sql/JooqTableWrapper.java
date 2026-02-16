@@ -95,6 +95,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
+@SuppressWarnings("PMD.GodClass")
 public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
 
 	@NonNull
@@ -266,14 +267,19 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 		Stream<ITabularRecord> tableStream = toMapStream(queryPod, resultQuery);
 
-		Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
-		// Given the groupBy, we are guaranteed to receive distinct records
-		int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
-		Stream<ITabularRecord> modifiedStream =
-				StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, false);
-
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
+		Stream<ITabularRecord> modifiedStream;
+		if (distinctSlices) {
+			Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
+
+			int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
+			modifiedStream =
+					StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, tableStream.isParallel());
+		} else {
+			modifiedStream = tableStream;
+
+		}
 		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> modifiedStream);
 	}
 
@@ -282,8 +288,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	protected boolean areDistinctSliced(TableQueryV2 tableQuery, QueryWithLeftover resultQuery) {
-		if (resultQuery.getLeftover().isMatchAll() && resultQuery.getAggregatorToLeftovers().isEmpty()) {
+		if (resultQuery.getQueries().size() >= 2) {
+			// Given the groupBy, we are guaranteed to receive distinct records
+			// Clarify when partitioning breaks isDistinct
+			return false;
+		} else if (resultQuery.getLeftover().isMatchAll() && resultQuery.getAggregatorToLeftovers().isEmpty()) {
 			// SQL Engines guarantee a single record per groupBy
+			// InMemoryTable does not manage aggregation: how is this managed?
 			return true;
 		} else {
 			// We may have queried columns which are not part of the groupBy
@@ -326,13 +337,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery);
 
-		ResultQuery<Record> resultQuery = sqlQuery.getQuery();
+		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
 
-		return toStream(queryPod, resultQuery).map(r -> intoTabularRecord(tabularRecordFactory, r))
+		return resultQuery.stream()
+				.flatMap(oneQuery -> toStream(queryPod, oneQuery))
+				.map(r -> intoTabularRecord(tabularRecordFactory, r))
 				// leftover in WHERE
-				.filter(row -> {
-					return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
-				})
+				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
 				// leftover in FILTER
 				.map(row -> {
 					Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();

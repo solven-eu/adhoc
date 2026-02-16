@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.model;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.model.lambda.LambdaAggregation;
-import eu.solven.adhoc.measure.model.lambda.LambdaAggregation.ILambdaAggregation;
+import eu.solven.adhoc.measure.lambda.LambdaAggregation;
+import eu.solven.adhoc.measure.lambda.LambdaAggregation.ILambdaAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;

@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -55,7 +56,6 @@ import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.AdhocBenchmark;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
@@ -71,12 +71,12 @@ public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements I
 	@BeforeAll
 	public static void setLimits() {
 		log.info("{} is evaluated on cardinality={}", TestTransformator_Shiftor_Perf.class.getName(), maxCardinality);
-		AdhocUnsafe.setLimitColumnSize(maxCardinality * nbDays + 10);
+		AdhocColumnUnsafe.setLimitColumnSize(maxCardinality * nbDays + 10);
 	}
 
 	@AfterAll
 	public static void resetLimits() {
-		AdhocUnsafe.resetProperties();
+		AdhocColumnUnsafe.resetProperties();
 	}
 
 	LocalDate today = LocalDate.now();

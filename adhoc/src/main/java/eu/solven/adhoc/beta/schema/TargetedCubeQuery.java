@@ -24,7 +24,7 @@ package eu.solven.adhoc.beta.schema;
 
 import java.util.UUID;
 
-import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.Builder;
 import lombok.NonNull;

@@ -49,6 +49,7 @@ import eu.solven.adhoc.data.column.IMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.StreamStrategy;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -148,7 +149,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		long size = size();
 
 		// TODO Log the first and last elements
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			if (keys instanceof ArrayList<?> arrayList) {

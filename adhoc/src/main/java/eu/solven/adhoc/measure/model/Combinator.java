@@ -33,8 +33,8 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.lambda.LambdaCombination;
-import eu.solven.adhoc.measure.model.lambda.LambdaCombination.ILambdaCombination;
+import eu.solven.adhoc.measure.lambda.LambdaCombination;
+import eu.solven.adhoc.measure.lambda.LambdaCombination.ILambdaCombination;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;

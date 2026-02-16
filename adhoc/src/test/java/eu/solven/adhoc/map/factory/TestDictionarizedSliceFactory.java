@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.compression.DictionarizedSliceFactory;
+import eu.solven.adhoc.encoding.dictionary.DictionarizedSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
 

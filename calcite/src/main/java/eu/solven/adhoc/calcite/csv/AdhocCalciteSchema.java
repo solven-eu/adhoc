@@ -30,7 +30,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.options.IQueryOption;
 import lombok.RequiredArgsConstructor;
 
 /**

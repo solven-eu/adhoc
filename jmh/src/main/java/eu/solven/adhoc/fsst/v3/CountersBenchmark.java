@@ -35,7 +35,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
-import eu.solven.adhoc.fsst.Counters;
+import eu.solven.adhoc.encoding.fsst.Counters;
 
 /**
  * Benchmarks to compare {@link Counters} performances.

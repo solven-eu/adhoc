@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.context;
 
 import java.util.Set;
 
-import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 
 /**

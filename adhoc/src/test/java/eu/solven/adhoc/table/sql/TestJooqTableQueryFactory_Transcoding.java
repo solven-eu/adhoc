@@ -56,12 +56,14 @@ public class TestJooqTableQueryFactory_Transcoding {
 			.dslContext(DSL.using(SQLDialect.DUCKDB))
 			.build();
 
+	ISliceToJooqCondition conditionFactory = queryFactory.makeToCondition();
+
 	AliasingContext transcodingContext = AliasingContext.builder().aliaser(aliaser).build();
 
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				queryFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				conditionFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""

@@ -70,8 +70,6 @@
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
 		<jooq.version>3.20.11</jooq.version>
 
-		<guava.version>33.5.0-jre</guava.version>
-
 		<spotless.version>3.2.1</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 
@@ -79,6 +77,7 @@
 		<!-- Typically not optional when referred by pivotable-server-->
 		<evalex.ezylang.version>3.6.0</evalex.ezylang.version>
 		<duckdb.version>1.4.4.0</duckdb.version>
+		<guava.version>33.5.0-jre</guava.version>
 
 		<arrow.version>18.3.0</arrow.version>
 
