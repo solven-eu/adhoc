@@ -39,7 +39,6 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 
 public class TestFilterOptimizerHelpers {

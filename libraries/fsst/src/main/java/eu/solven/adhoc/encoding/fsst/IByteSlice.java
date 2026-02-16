@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.fsst;
 
+import java.nio.charset.Charset;
+
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
@@ -32,7 +34,7 @@ public interface IByteSlice {
 	/**
 	 * Useful is critical section when one prefer to operate on a `byte[]`.
 	 * 
-	 * @return true if {@link #asByteArray()} is expected to be very fast (e.g. returning a reference).
+	 * @return true if {@link #cropped()} is expected to be very fast (e.g. returning a reference).
 	 */
 	boolean isFastAsArray();
 
@@ -41,7 +43,7 @@ public interface IByteSlice {
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
 	 */
-	byte[] asByteArray();
+	byte[] cropped();
 
 	byte read(int position);
 
@@ -50,11 +52,20 @@ public interface IByteSlice {
 	 * 
 	 * @return a non-defensive reference to the internal array
 	 */
-	byte[] refHolderArray();
+	byte[] array();
 
 	int length();
 
 	int offset();
+
+	/**
+	 * 
+	 * @param charset
+	 * @return a {@link String} build over current {@link IByteSlice}.
+	 */
+	default String asString(Charset charset) {
+		return new String(array(), offset(), length(), charset);
+	}
 
 	static IByteSlice wrap(byte[] input) {
 		return new ByteSliceNoOffsetNoLength(input);

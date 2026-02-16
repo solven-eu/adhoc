@@ -35,6 +35,7 @@ import lombok.AllArgsConstructor;
  */
 @AllArgsConstructor
 final class ByteSliceNoOffsetNoLength implements IByteSlice {
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	final byte[] array;
 
 	@Override
@@ -42,8 +43,9 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 		return true;
 	}
 
+	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] refHolderArray() {
+	public byte[] array() {
 		return array;
 	}
 
@@ -63,7 +65,7 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	 */
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] asByteArray() {
+	public byte[] cropped() {
 		return array;
 	}
 

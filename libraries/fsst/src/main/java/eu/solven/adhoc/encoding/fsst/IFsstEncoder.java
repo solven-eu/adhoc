@@ -20,40 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.column.freezer;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
-import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.fsst.IByteSlice;
-import eu.solven.adhoc.encoding.fsst.IFsstDecoder;
-import lombok.Builder;
-import lombok.NonNull;
+package eu.solven.adhoc.encoding.fsst;
 
 /**
+ * Able to decode FSST encoded `byte[]`.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class FsstReadableColumn implements IReadableColumn {
+public interface IFsstEncoder {
 
-	@NonNull
-	protected IFsstDecoder decoder;
+	IByteSlice encodeAll(byte[] input);
 
-	@NonNull
-	protected List<IByteSlice> encoded;
-
-	@Override
-	public Object readValue(int rowIndex) {
-		IByteSlice encodedBytes = encoded.get(rowIndex);
-
-		if (encodedBytes == null) {
-			return null;
-		}
-
-		IByteSlice decodedBytes = decoder.decodeAll(encodedBytes);
-		return new String(decodedBytes.array(), decodedBytes.offset(), decodedBytes.length(), StandardCharsets.UTF_8);
-	}
-
+	IByteSlice encode(byte[] buf, byte[] input);
 }

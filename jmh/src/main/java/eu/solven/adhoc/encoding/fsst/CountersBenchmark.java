@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.fsst.v3;
+package eu.solven.adhoc.encoding.fsst;
 
 import java.util.concurrent.TimeUnit;
 
@@ -34,8 +34,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-
-import eu.solven.adhoc.encoding.fsst.Counters;
 
 /**
  * Benchmarks to compare {@link Counters} performances.

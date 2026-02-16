@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.encoding.fsst;
 
+import java.nio.charset.StandardCharsets;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -30,5 +33,13 @@ public class TestByteSlice {
 	@Test
 	public void testEquals() {
 		EqualsVerifier.forClass(ByteSlice.class);
+	}
+
+	@Test
+	public void testToString() {
+		String original = "hello";
+		String restored = IByteSlice.wrap(original.getBytes(StandardCharsets.UTF_8)).asString(StandardCharsets.UTF_8);
+
+		Assertions.assertThat(restored).isEqualTo(original);
 	}
 }

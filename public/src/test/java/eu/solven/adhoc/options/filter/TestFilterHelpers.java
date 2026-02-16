@@ -39,6 +39,8 @@ import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.IColumnFilter;
+import eu.solven.adhoc.query.filter.IFilterVisitor;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.NotFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
@@ -193,9 +195,19 @@ public class TestFilterHelpers {
 	}
 
 	@Test
-	public void testAsMap_or() {
+	public void testAsMap_column() {
 		Assertions.assertThat(FilterHelpers.asMap(ColumnFilter.matchEq("c", "v"))).isEqualTo(Map.of("c", "v"));
+	}
 
+	@Test
+	public void testAsMap_and() {
+		Assertions.assertThat(FilterHelpers.asMap(AndFilter.and(Map.of("a", "a1")))).isEqualTo(Map.of("a", "a1"));
+
+		Assertions.assertThat(FilterHelpers.asMap(ISliceFilter.MATCH_ALL)).isEmpty();
+	}
+
+	@Test
+	public void testAsMap_or() {
 		// BEWARE We may introduce a `toList` to manage OR.
 		Assertions.assertThatThrownBy(() -> FilterHelpers
 				.asMap(FilterBuilder.or(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")).optimize()))
@@ -504,6 +516,35 @@ public class TestFilterHelpers {
 		} finally {
 			AdhocUnsafe.resetAll();
 		}
+	}
+
+	@Test
+	public void testVisit() {
+		IFilterVisitor visitor = new IFilterVisitor() {
+
+			@Override
+			public boolean testOrOperands(Set<? extends ISliceFilter> operands) {
+				return false;
+			}
+
+			@Override
+			public boolean testNegatedOperand(ISliceFilter negated) {
+				return false;
+			}
+
+			@Override
+			public boolean testColumnOperand(IColumnFilter columnFilter) {
+				return false;
+			}
+
+			@Override
+			public boolean testAndOperands(Set<? extends ISliceFilter> operands) {
+				return false;
+			}
+		};
+		Assertions.assertThat(FilterHelpers.visit(ISliceFilter.MATCH_ALL, visitor)).isFalse();
+		Assertions.assertThat(FilterHelpers.visit(ISliceFilter.MATCH_NONE, visitor)).isFalse();
+		Assertions.assertThat(FilterHelpers.visit(ColumnFilter.notEq("a", "a1"), visitor)).isFalse();
 	}
 
 }

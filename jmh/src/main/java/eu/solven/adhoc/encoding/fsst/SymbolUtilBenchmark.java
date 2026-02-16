@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.fsst.v3;
+package eu.solven.adhoc.encoding.fsst;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,8 +35,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-
-import eu.solven.adhoc.encoding.fsst.SymbolUtil;
 
 /**
  * Benchmarks for SymbolUtil, especially `fsstUnalignedLoad` which is one of FSST hotspots.

@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @ThreadSafe
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
-class SymbolTable implements IFsstConstants, IFsstDecoder {
+class SymbolTable implements IFsstConstants, IFsstEncoding {
 	// Used for encoding
 	final SymbolTableTraining symbols;
 
@@ -48,6 +48,7 @@ class SymbolTable implements IFsstConstants, IFsstDecoder {
 
 	// Encode compresses input, reusing buf if provided.
 	// Returns compressed data (may be a different slice than buf).
+	@Override
 	public IByteSlice encode(byte[] buf, byte[] input) {
 		if (buf == null || buf.length < 2 * input.length + fsstOutputPadding) {
 			buf = new byte[2 * input.length + fsstOutputPadding];
@@ -75,6 +76,7 @@ class SymbolTable implements IFsstConstants, IFsstDecoder {
 		return new ByteSliceNoOffset(buf, outPos);
 	}
 
+	@Override
 	public IByteSlice encodeAll(byte[] input) {
 		return encode(null, input);
 	}

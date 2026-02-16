@@ -59,8 +59,7 @@ public class TestFsstV3 {
 		Assertions.assertThat(encoded.length()).isEqualTo(16);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString =
-				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("01234567");
 	}
@@ -74,8 +73,7 @@ public class TestFsstV3 {
 		Assertions.assertThat(encoded.length()).isEqualTo(22);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString =
-				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello World");
 	}
@@ -91,8 +89,7 @@ public class TestFsstV3 {
 		Assertions.assertThat(encoded.length()).isEqualTo(10);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString =
-				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
@@ -108,8 +105,7 @@ public class TestFsstV3 {
 		Assertions.assertThat(encoded.length()).isEqualTo(2);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString =
-				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("azaz");
 	}
@@ -143,7 +139,7 @@ public class TestFsstV3 {
 		IByteSlice decoded = table.decodeAll(encoded);
 
 		Assertions.assertThat(decoded.length()).isEqualTo(original.length);
-		Assertions.assertThat(decoded.refHolderArray()).contains(original);
+		Assertions.assertThat(decoded.array()).contains(original);
 	}
 
 	@Test
@@ -156,8 +152,7 @@ public class TestFsstV3 {
 		IByteSlice encoded = table.encodeAll("Hello");
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString =
-				new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
@@ -181,7 +176,7 @@ public class TestFsstV3 {
 
 			IByteSlice decoded = table.decodeAll(encoded);
 			String decodedString =
-					new String(decoded.refHolderArray(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+					new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 			Assertions.assertThat(decodedString).isEqualTo(input);
 
@@ -211,10 +206,8 @@ public class TestFsstV3 {
 					sizeEncoded += encoded.length();
 
 					IByteSlice decoded = table.decodeAll(encoded);
-					String decodedString = new String(decoded.refHolderArray(),
-							decoded.offset(),
-							decoded.length(),
-							StandardCharsets.UTF_8);
+					String decodedString =
+							new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
 
 					Assertions.assertThat(decodedString).isEqualTo(entry);
 				}

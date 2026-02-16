@@ -216,7 +216,7 @@ public class FsstTrainer {
 			// }
 			if (sample.isFastAsArray()) {
 				// When possible (e.g. on small string), we rely on a byte[] which is faster than IByteSlice abstraction
-				byte[] sampleAsArray = sample.asByteArray();
+				byte[] sampleAsArray = sample.cropped();
 
 				final int end = sampleAsArray.length;
 				if (end == 0) {
@@ -381,14 +381,14 @@ public class FsstTrainer {
 	 */
 	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
 
-		// larger val breaks tie
-		public static final Comparator<QSym> COMPARATOR =
+	// larger val breaks tie
+	public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
-		@Override
-		public int compareTo(QSym o) {
-			return COMPARATOR.compare(this, o);
-		}
+	@Override
+	public int compareTo(QSym o) {
+		return COMPARATOR.compare(this, o);
+	}
 
 	}
 

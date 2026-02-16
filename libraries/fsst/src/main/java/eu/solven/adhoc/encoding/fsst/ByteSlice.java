@@ -33,6 +33,7 @@ import lombok.AllArgsConstructor;
  */
 @AllArgsConstructor
 final class ByteSlice implements IByteSlice {
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final byte[] array;
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final int offset;
@@ -43,8 +44,10 @@ final class ByteSlice implements IByteSlice {
 	public boolean isFastAsArray() {
 		return false;
 	}
+
+	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] refHolderArray() {
+	public byte[] array() {
 		return array;
 	}
 
@@ -64,7 +67,7 @@ final class ByteSlice implements IByteSlice {
 	 */
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] asByteArray() {
+	public byte[] cropped() {
 		if (offset == 0 && array.length == length) {
 			return array;
 		} else {

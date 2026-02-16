@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
 
 public class TestFilterOptimizerCache {
 	FilterOptimizer optimizer = FilterOptimizer.builder().build();
