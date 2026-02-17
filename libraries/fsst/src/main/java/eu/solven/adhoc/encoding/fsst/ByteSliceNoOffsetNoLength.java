@@ -74,7 +74,6 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 		return array;
 	}
 
-	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
 	public int hashCode() {
 		return Arrays.hashCode(array);

@@ -82,7 +82,6 @@ final class ByteSliceNoOffset implements IByteSlice {
 
 	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
-	@SuppressWarnings("checkstyle:MagicNumber")
 	public int hashCode() {
 		return ByteSlice.hashCode(array, 0, length);
 	}
@@ -95,23 +94,10 @@ final class ByteSliceNoOffset implements IByteSlice {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
+		if (!(obj instanceof IByteSlice otherByteSlice)) {
 			return false;
 		}
-		ByteSliceNoOffset other = (ByteSliceNoOffset) obj;
-		if (length != other.length) {
-			return false;
-		}
-
-		int fromIndex = 0;
-		int end = fromIndex + length;
-		for (int i = fromIndex; i < end; i++) {
-			if (this.array[i] != other.array[i]) {
-				return false;
-			}
-		}
-
-		return true;
+		return ByteSlice.equals(this, otherByteSlice);
 	}
 
 	@Override

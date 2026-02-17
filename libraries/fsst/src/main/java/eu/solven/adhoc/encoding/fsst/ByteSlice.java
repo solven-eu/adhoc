@@ -84,11 +84,11 @@ final class ByteSlice implements IByteSlice {
 
 	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
-	@SuppressWarnings("checkstyle:MagicNumber")
 	public int hashCode() {
 		return hashCode(array, offset, length);
 	}
 
+	@SuppressWarnings("checkstyle:MagicNumber")
 	static int hashCode(byte[] array, int offset, int length) {
 		int result = 1;
 		int fromIndex = offset;
