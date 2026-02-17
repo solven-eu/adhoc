@@ -41,6 +41,8 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 final class SymbolUtil implements IFsstConstants {
 
+	// lambda and vectorization follows design principles from jdk.internal.util.ArraysSupport.hashCode(byte[], int,
+	// int, int)
 	public static long fsstUnalignedLoad(byte[] in, int offset) {
 		// ByteBuffer buf = ByteBuffer.wrap(b, offset, 8);
 		// buf.order(ByteOrder.LITTLE_ENDIAN);

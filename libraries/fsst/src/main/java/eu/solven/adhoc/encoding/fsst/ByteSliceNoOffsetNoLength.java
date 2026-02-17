@@ -59,6 +59,11 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 		return 0;
 	}
 
+	@Override
+	public String toString() {
+		return Arrays.toString(cropped());
+	}
+
 	/**
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
@@ -83,11 +88,10 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
+		if (!(obj instanceof IByteSlice otherByteSlice)) {
 			return false;
 		}
-		ByteSliceNoOffsetNoLength other = (ByteSliceNoOffsetNoLength) obj;
-		return Arrays.equals(array, other.array);
+		return ByteSlice.equals(this, otherByteSlice);
 	}
 
 	@Override

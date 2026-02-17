@@ -23,6 +23,7 @@
 package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -36,10 +37,31 @@ public class TestByteSlice {
 	}
 
 	@Test
-	public void testToString() {
+	public void testLengthOffset() {
 		String original = "hello";
-		String restored = IByteSlice.wrap(original.getBytes(StandardCharsets.UTF_8)).asString(StandardCharsets.UTF_8);
+		byte[] originalBytesStrict = original.getBytes(StandardCharsets.UTF_8);
+		int offset = 2;
+		byte[] offsetBytes = new byte[offset + originalBytesStrict.length + offset];
 
-		Assertions.assertThat(restored).isEqualTo(original);
+		// Make sure all inputs are non-zero, to check they are actually discarded
+		Arrays.fill(offsetBytes, (byte) 7);
+
+		System.arraycopy(originalBytesStrict, 0, offsetBytes, offset, originalBytesStrict.length);
+
+		IByteSlice byteSlice = new ByteSlice(offsetBytes, offset, originalBytesStrict.length);
+
+		Assertions.assertThat(byteSlice.asString(StandardCharsets.UTF_8)).isEqualTo(original);
+		Assertions.assertThat(byteSlice).hasToString("[104, 101, 108, 108, 111]");
+
+		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytesStrict));
+		Assertions.assertThat(byteSlice)
+				.isEqualTo(ByteSlice.builder()
+						.array(offsetBytes)
+						.offset(offset)
+						.length(originalBytesStrict.length)
+						.build());
+
+		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
+		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
 	}
 }

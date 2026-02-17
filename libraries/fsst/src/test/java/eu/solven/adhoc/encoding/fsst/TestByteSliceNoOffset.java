@@ -20,35 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map;
+package eu.solven.adhoc.encoding.fsst;
 
-import java.util.Comparator;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestComparableElseClassComparatorV2 {
-	Comparator<Object> comparator = new ComparableElseClassComparatorV2();
+public class TestByteSliceNoOffset {
 
 	@Test
-	public void testCompare_null() {
-		Assertions.assertThat(comparator.compare(1, null)).isEqualTo(-1);
-		Assertions.assertThat(comparator.compare(null, "foo")).isEqualTo(1);
-	}
+	public void testLengthOffset() {
+		String original = "hello";
+		byte[] originalBytesStrict = original.getBytes(StandardCharsets.UTF_8);
+		int suffix = 2;
+		byte[] offsetBytes = new byte[originalBytesStrict.length + suffix];
 
-	@Test
-	public void testCompare_sameClass() {
-		Assertions.assertThat(comparator.compare(1, 2)).isEqualTo(-1);
-		Assertions.assertThat(comparator.compare("foo", "bar")).isEqualTo(4);
+		// Make sure all inputs are non-zero, to check they are actually discarded
+		Arrays.fill(offsetBytes, (byte) 7);
 
-		Assertions.assertThat(comparator.compare("foo", 123)).isEqualTo(10);
-		Assertions.assertThat(comparator.compare(123, "foo")).isEqualTo(-10);
-	}
+		// Copy the content with a suffix
+		System.arraycopy(originalBytesStrict, 0, offsetBytes, 0, originalBytesStrict.length);
 
-	@Test
-	public void testCompare_notComparable() {
-		Assertions.assertThat(comparator.compare(List.of("foo"), List.of("bar"))).isEqualTo(4);
-		Assertions.assertThat(comparator.compare(List.of("bar"), List.of("foo"))).isEqualTo(-4);
+		IByteSlice byteSlice = new ByteSliceNoOffset(offsetBytes, originalBytesStrict.length);
+
+		Assertions.assertThat(byteSlice.asString(StandardCharsets.UTF_8)).isEqualTo(original);
+		Assertions.assertThat(byteSlice).hasToString("[104, 101, 108, 108, 111]");
+
+		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytesStrict));
+		Assertions.assertThat(byteSlice)
+				.isEqualTo(ByteSlice.builder().array(offsetBytes).length(originalBytesStrict.length).build());
+
+		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
+		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
 	}
 }

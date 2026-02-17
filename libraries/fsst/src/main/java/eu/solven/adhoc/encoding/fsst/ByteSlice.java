@@ -25,6 +25,7 @@ package eu.solven.adhoc.encoding.fsst;
 import java.util.Arrays;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
@@ -32,6 +33,7 @@ import lombok.AllArgsConstructor;
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
+@Builder
 final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final byte[] array;
@@ -61,6 +63,11 @@ final class ByteSlice implements IByteSlice {
 		return offset;
 	}
 
+	@Override
+	public String toString() {
+		return Arrays.toString(cropped());
+	}
+
 	/**
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
@@ -79,7 +86,11 @@ final class ByteSlice implements IByteSlice {
 	@Override
 	@SuppressWarnings("checkstyle:MagicNumber")
 	public int hashCode() {
-		int result = 0;
+		return hashCode(array, offset, length);
+	}
+
+	static int hashCode(byte[] array, int offset, int length) {
+		int result = 1;
 		int fromIndex = offset;
 		int end = fromIndex + length;
 		for (int i = fromIndex; i < end; i++) {
@@ -96,18 +107,21 @@ final class ByteSlice implements IByteSlice {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		ByteSlice other = (ByteSlice) obj;
-		if (length != other.length) {
+		if (!(obj instanceof IByteSlice otherByteSlice)) {
 			return false;
 		}
 
-		int fromIndex = offset;
-		int end = fromIndex + length;
-		for (int i = fromIndex; i < end; i++) {
-			if (this.array[i] != other.array[i]) {
+		return equals(this, otherByteSlice);
+	}
+
+	public static boolean equals(IByteSlice left, IByteSlice right) {
+		int length = left.length();
+		if (length != right.length()) {
+			return false;
+		}
+
+		for (int i = 0; i < length; i++) {
+			if (left.read(i) != right.read(i)) {
 				return false;
 			}
 		}
@@ -118,6 +132,30 @@ final class ByteSlice implements IByteSlice {
 	@Override
 	public byte read(int position) {
 		return array[offset + position];
+	}
+
+	/**
+	 * Lombok @Builder
+	 */
+	public static class ByteSliceBuilder {
+		// By default, there is no offset
+		public int offset = 0;
+		// By default,the length comes from the array
+		public int length = -1;
+
+		public IByteSlice build() {
+			if (offset == -1) {
+				if (length == -1) {
+					return new ByteSliceNoOffsetNoLength(array);
+				} else {
+					return new ByteSliceNoOffset(array, length);
+				}
+			}
+			if (length == -1) {
+				length = array.length;
+			}
+			return new ByteSlice(array, offset, length);
+		}
 	}
 
 }

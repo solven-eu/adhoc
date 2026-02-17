@@ -61,6 +61,11 @@ final class ByteSliceNoOffset implements IByteSlice {
 		return 0;
 	}
 
+	@Override
+	public String toString() {
+		return Arrays.toString(cropped());
+	}
+
 	/**
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
@@ -79,13 +84,7 @@ final class ByteSliceNoOffset implements IByteSlice {
 	@Override
 	@SuppressWarnings("checkstyle:MagicNumber")
 	public int hashCode() {
-		int result = 0;
-		int fromIndex = 0;
-		int end = fromIndex + length;
-		for (int i = fromIndex; i < end; i++) {
-			result = 31 * result + array[i];
-		}
-		return result;
+		return ByteSlice.hashCode(array, 0, length);
 	}
 
 	@Override
