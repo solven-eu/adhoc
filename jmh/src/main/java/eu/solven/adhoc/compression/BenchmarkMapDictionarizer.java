@@ -42,7 +42,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.compression.packing.FlexiblePackedIntegers;
+import eu.solven.adhoc.encoding.dictionary.IDictionarizer;
+import eu.solven.adhoc.encoding.dictionary.MapDictionarizer;
+import eu.solven.adhoc.encoding.packing.FlexiblePackedIntegers;
 
 /**
  * Benchmarks related with {@link FlexiblePackedIntegers}

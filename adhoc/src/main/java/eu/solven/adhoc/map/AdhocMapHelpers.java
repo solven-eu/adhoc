@@ -23,12 +23,14 @@
 package eu.solven.adhoc.map;
 
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.experimental.UtilityClass;
@@ -69,6 +71,22 @@ public class AdhocMapHelpers {
 		IMapBuilderPreKeys builder = factory.newMapBuilder(asMap.keySet());
 		asMap.values().forEach(builder::append);
 		return builder.build();
+	}
+
+	// BEWARE This is a very inefficient implementation
+	public static int compareMap(IAdhocMap left, IAdhocMap right) {
+		NavigableMap<String, Object> leftSorted = new TreeMap<>(left);
+		NavigableMap<String, Object> rightSorted = new TreeMap<>(right);
+
+		int compareKeySet = AdhocMapComparisonHelpers.compareKeySet(leftSorted.keySet().iterator(),
+				rightSorted.keySet().iterator());
+
+		if (compareKeySet != 0) {
+			return compareKeySet;
+		}
+
+		return AdhocMapComparisonHelpers.compareValues2(leftSorted.values().iterator(),
+				rightSorted.values().iterator());
 	}
 
 }

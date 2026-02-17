@@ -43,7 +43,22 @@ public class TestRowSliceFactory {
 	public void testToString() {
 		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
 
-		Assertions.assertThat((Map) aAndB).hasToString("{a=a1, b=b1}");
+		MapVerifier.forInstance(aAndB).verify();
+	}
+
+	@Test
+	public void testNullValue() {
+		IAdhocMap aAndNull = factory.newMapBuilder(List.of("a", "b")).append("a1").append(null).build();
+		MapVerifier.forInstance(aAndNull).verify();
+
+		IAdhocMap nullOnly = factory.newMapBuilder(List.of("a")).append(null).build();
+		MapVerifier.forInstance(nullOnly).verify();
+	}
+
+	@Test
+	public void testAppendArray_null() {
+		IAdhocMap aAndNull = factory.newMapBuilder(List.of("a", "b")).append("a1", null).build();
+		MapVerifier.forInstance(aAndNull).verify();
 	}
 
 	@Test

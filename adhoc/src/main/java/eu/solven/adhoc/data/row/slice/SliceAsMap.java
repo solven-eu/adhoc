@@ -41,7 +41,7 @@ import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;

@@ -35,6 +35,7 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -85,7 +86,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			ensureCapacity(type);
@@ -97,15 +98,15 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		// TODO Capacity management does not follow the rest of the code (see MultitypeArray)
 		if (type == IMultitypeConstants.MASK_LONG) {
 			if (measureToAggregateL instanceof LongArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocColumnUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
 			if (measureToAggregateD instanceof DoubleArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocColumnUnsafe.getDefaultColumnCapacity());
 			}
 		} else if (type == IMultitypeConstants.MASK_OBJECT) {
 			if (measureToAggregateO instanceof ObjectArrayList openHashMap) {
-				openHashMap.ensureCapacity(AdhocUnsafe.getDefaultColumnCapacity());
+				openHashMap.ensureCapacity(AdhocColumnUnsafe.getDefaultColumnCapacity());
 			}
 		}
 	}

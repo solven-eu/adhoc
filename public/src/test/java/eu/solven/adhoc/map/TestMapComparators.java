@@ -26,8 +26,10 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.NavigableMap;
 
-import org.junit.jupiter.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableSortedMap;
 
 public class TestMapComparators {
 	// Test to check the API over advanced generics
@@ -40,7 +42,7 @@ public class TestMapComparators {
 				MapComparators.<Map<String, ?>>mapComparator();
 
 		// Just for SonarCloud
-		Assertions.assertTrue(true);
+		Assertions.assertThat(comparatorWildcardWildcard).isNotNull();
 	}
 
 	// Test to check the API over advanced generics
@@ -53,7 +55,7 @@ public class TestMapComparators {
 				MapComparators.<NavigableMap<String, ?>>mapComparator();
 
 		// Just for SonarCloud
-		Assertions.assertTrue(true);
+		Assertions.assertThat(comparatorWildcardWildcard).isNotNull();
 	}
 
 	// Test to check the API over advanced generics
@@ -66,6 +68,15 @@ public class TestMapComparators {
 				MapComparators.<NavigableMap<String, ?>>navigableMapComparator();
 
 		// Just for SonarCloud
-		Assertions.assertTrue(true);
+		Assertions.assertThat(comparatorWildcardWildcard).isNotNull();
+	}
+
+	@Test
+	public void testAsNavigable() {
+		Assertions.assertThat(MapComparators.navigableMapComparator()
+				.compare(ImmutableSortedMap.of(), ImmutableSortedMap.of("a", 1L))).isEqualTo(1);
+
+		Assertions.assertThat(MapComparators.navigableMapComparator()
+				.compare(ImmutableSortedMap.of("a", 0L), ImmutableSortedMap.of("a", 1L))).isEqualTo(-1);
 	}
 }

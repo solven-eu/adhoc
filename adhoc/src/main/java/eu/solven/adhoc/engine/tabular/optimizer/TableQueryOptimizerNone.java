@@ -30,7 +30,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.extern.slf4j.Slf4j;
 

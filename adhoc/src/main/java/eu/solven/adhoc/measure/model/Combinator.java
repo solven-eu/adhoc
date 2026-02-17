@@ -33,6 +33,8 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.lambda.LambdaCombination;
+import eu.solven.adhoc.measure.lambda.LambdaCombination.ILambdaCombination;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
@@ -137,5 +139,15 @@ public class Combinator implements ICombinator, IHasCombinationKey {
 				.underlying(first)
 				.underlying(second)
 				.build();
+	}
+
+	/**
+	 * Lombok @Builder
+	 */
+	public static class CombinatorBuilder {
+		public CombinatorBuilder lambda(ILambdaCombination lambda) {
+			return combinationKey(LambdaCombination.class.getName()).combinationOption(LambdaCombination.K_LAMBDA,
+					lambda);
+		}
 	}
 }

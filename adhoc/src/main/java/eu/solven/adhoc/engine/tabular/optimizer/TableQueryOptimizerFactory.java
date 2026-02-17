@@ -23,8 +23,8 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.RequiredArgsConstructor;
 

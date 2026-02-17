@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -92,7 +93,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			ensureCapacityForType(type);

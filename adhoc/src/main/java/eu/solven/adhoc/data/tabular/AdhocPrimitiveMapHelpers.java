@@ -24,7 +24,7 @@ package eu.solven.adhoc.data.tabular;
 
 import java.util.Collection;
 
-import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.experimental.UtilityClass;
@@ -40,7 +40,7 @@ import lombok.experimental.UtilityClass;
 public class AdhocPrimitiveMapHelpers {
 
 	public static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
-		return newHashMapDefaultMinus1(AdhocUnsafe.getDefaultColumnCapacity());
+		return newHashMapDefaultMinus1(AdhocColumnUnsafe.getDefaultColumnCapacity());
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")

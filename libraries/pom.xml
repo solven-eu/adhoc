@@ -15,5 +15,6 @@
 
 	<modules>
 		<module>fsst</module>
+		<module>encoding</module>
 	</modules>
 </project>

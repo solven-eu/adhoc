@@ -11,15 +11,23 @@
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 
-	<description>This module helps training people into the project</description>
+	<description>Training materials for onboarding using and contributing developers</description>
 
-	<properties />
+	<properties>
+		<maven.install.skip>true</maven.install.skip>
+		<maven.deploy.skip>true</maven.deploy.skip>
+	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>pivotable-server</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 		</dependency>
 
 		<dependency>

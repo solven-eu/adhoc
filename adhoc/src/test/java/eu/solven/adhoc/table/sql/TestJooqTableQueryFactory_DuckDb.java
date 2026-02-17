@@ -62,6 +62,8 @@ public class TestJooqTableQueryFactory_DuckDb {
 			.dslContext(DSL.using(SQLDialect.DUCKDB))
 			.build();
 
+	ISliceToJooqCondition conditionFactory = queryFactory.makeToCondition();
+
 	@Test
 	public void testBuilder() {
 		Assertions.assertThat(queryFactory.getCapabilities().isAbleToGroupByAll()).isTrue();
@@ -70,7 +72,8 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testToCondition_ColumnEquals() {
-		Condition condition = queryFactory.toConditionSplitLeftover(ColumnFilter.matchEq("k1", "v1")).getCondition();
+		Condition condition =
+				conditionFactory.toConditionSplitLeftover(ColumnFilter.matchEq("k1", "v1")).getCondition();
 
 		Assertions.assertThat(condition.toString()).isEqualTo("""
 				"k1" = 'v1'""");
@@ -80,7 +83,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testToCondition_AndColumnsEquals() {
 		// ImmutableMap for ordering, as we later check the .toString
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				queryFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				conditionFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -94,7 +97,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testToCondition_OrColumnsEquals() {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -108,7 +111,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testToCondition_NotFilter() {
 		ISliceFilter filter =
 				FilterBuilder.or(ColumnFilter.matchEq("k1", "v1"), ColumnFilter.matchEq("k2", "v2")).combine().negate();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -128,7 +131,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testToCondition_NotMatcher() {
 		ISliceFilter filter =
 				FilterBuilder.and(ColumnFilter.notEq("k1", "v1"), ColumnFilter.notEq("k2", "v2")).combine();
-		JooqTableQueryFactory.ConditionWithFilter condition = queryFactory.toConditionSplitLeftover(filter);
+		JooqTableQueryFactory.ConditionWithFilter condition = conditionFactory.toConditionSplitLeftover(filter);
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""

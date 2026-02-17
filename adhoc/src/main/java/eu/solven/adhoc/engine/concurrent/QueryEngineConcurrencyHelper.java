@@ -42,7 +42,7 @@ import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -121,6 +121,7 @@ public class QueryEngineConcurrencyHelper {
 					.queryStepsDone(queryStepsDone)
 					.onReadyStep(onReadyStep)
 					.executor(queryPod.getExecutorService())
+					.hasOptions(queryPod)
 					.build();
 
 			CompletableFuture<Void> root = executor.executeRecursively(rootSteps);

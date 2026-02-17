@@ -38,8 +38,9 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.springframework.util.Assert;
 
-import eu.solven.adhoc.fsst.ByteSlice;
-import eu.solven.adhoc.fsst.FsstAdhoc;
+import eu.solven.adhoc.encoding.fsst.FsstAdhoc;
+import eu.solven.adhoc.encoding.fsst.IByteSlice;
+import eu.solven.adhoc.encoding.fsst.IFsstEncoding;
 
 /**
  * Benchmark for FSST encoding methods
@@ -60,16 +61,16 @@ public class FsstEncodeBenchmark {
 
 	// ~30 bytes
 	private static final byte[] SMALL = FsstSingleStringBenchmark.SMALL;
-	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_SMALL = ADHOC.train(SMALL);
+	private static final IFsstEncoding TRAINED_SMALL = ADHOC.train(SMALL);
 	// ~600 bytes
 	private static final byte[] MEDIUM = FsstSingleStringBenchmark.MEDIUM;
-	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_MEDIUM = ADHOC.train(MEDIUM);
+	private static final IFsstEncoding TRAINED_MEDIUM = ADHOC.train(MEDIUM);
 	// ~23kb
 	private static final byte[] LARGE = FsstSingleStringBenchmark.LARGE;
-	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_LARGE = ADHOC.train(LARGE);
+	private static final IFsstEncoding TRAINED_LARGE = ADHOC.train(LARGE);
 	// 230kb
 	private static final byte[] XLARGE;
-	private static final eu.solven.adhoc.fsst.SymbolTable TRAINED_XLLARGE;
+	private static final IFsstEncoding TRAINED_XLLARGE;
 
 	static {
 		XLARGE = new byte[LARGE.length * 10];
@@ -106,7 +107,7 @@ public class FsstEncodeBenchmark {
 
 	@Benchmark
 	@OperationsPerInvocation(26)
-	public ByteSlice encodeSmallAdhoc(EntryCounters ec, ByteCounters bc) {
+	public IByteSlice encodeSmallAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 26;
 		return TRAINED_SMALL.encodeAll(SMALL);
@@ -114,7 +115,7 @@ public class FsstEncodeBenchmark {
 
 	@Benchmark
 	@OperationsPerInvocation(664)
-	public ByteSlice encodeMediumAdhoc(EntryCounters ec, ByteCounters bc) {
+	public IByteSlice encodeMediumAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 664;
 		return TRAINED_MEDIUM.encodeAll(MEDIUM);
@@ -122,7 +123,7 @@ public class FsstEncodeBenchmark {
 
 	@Benchmark
 	@OperationsPerInvocation(23_038)
-	public ByteSlice encodeLargeAdhoc(EntryCounters ec, ByteCounters bc) {
+	public IByteSlice encodeLargeAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 23_038;
 		return TRAINED_LARGE.encodeAll(LARGE);
@@ -130,7 +131,7 @@ public class FsstEncodeBenchmark {
 
 	@Benchmark
 	@OperationsPerInvocation(230_380)
-	public ByteSlice encodeExtraLargeAdhoc(EntryCounters ec, ByteCounters bc) {
+	public IByteSlice encodeExtraLargeAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 230_380;
 		return TRAINED_XLLARGE.encodeAll(XLARGE);

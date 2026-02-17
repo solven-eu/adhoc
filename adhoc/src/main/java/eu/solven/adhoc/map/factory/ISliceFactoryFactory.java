@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 
 /**
  * Some {@link ISliceFactory} will rely on some shared data-structure. This enables creating a context for given

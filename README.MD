@@ -753,6 +753,7 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
 - [Feature] If a query generates a too large column, add investigation information (like the output of `COUNT(GROUP BY)` from table).
 - [Feature] Columns ordering should be evaluated dynamically, to increase order inference in Shiftor and table-columns inference..
+- [Performance] Table queries should be automatically partitioned table-side on some access. Typically, if one know the underlying data is partitioned by `c`, we should be able to query from `WHERE c % 8 = 0` to `WHERE c % 8 = 7`
 
 # Sponsors
 

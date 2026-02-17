@@ -38,6 +38,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.ProductCombination;
@@ -51,7 +52,6 @@ import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.util.AdhocBenchmark;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -68,12 +68,12 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 	@BeforeAll
 	public static void setLimits() {
 		log.info("Evaluating on cardinality={}", maxCardinality);
-		AdhocUnsafe.setLimitColumnSize(maxCardinality + 10);
+		AdhocColumnUnsafe.setLimitColumnSize(maxCardinality + 10);
 	}
 
 	@AfterAll
 	public static void resetLimits() {
-		AdhocUnsafe.resetProperties();
+		AdhocColumnUnsafe.resetProperties();
 	}
 
 	String tableName = "someTableName";

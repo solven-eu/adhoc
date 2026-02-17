@@ -33,7 +33,7 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.experimental.UtilityClass;
 

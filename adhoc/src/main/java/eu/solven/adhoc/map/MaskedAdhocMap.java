@@ -70,10 +70,10 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 			if (otherMasked.mask.equals(this.mask)) {
 				return this.decorated.compareTo(otherMasked.decorated);
 			} else {
-				return AdhocMapComparisonHelpers.compareMap(this, o);
+				return AdhocMapHelpers.compareMap(this, o);
 			}
 		} else {
-			return AdhocMapComparisonHelpers.compareMap(this, o);
+			return AdhocMapHelpers.compareMap(this, o);
 		}
 	}
 

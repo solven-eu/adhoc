@@ -43,7 +43,6 @@ public class TestAggregatingColumns {
 
 	@Test
 	public void testUnknownKey() {
-
 		aggregatingColumns.contribute("k", a).onLong(123);
 
 		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a);

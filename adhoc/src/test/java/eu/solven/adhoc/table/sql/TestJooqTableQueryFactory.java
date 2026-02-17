@@ -53,4 +53,13 @@ public class TestJooqTableQueryFactory {
 		Assertions.assertThat(queryFactory.getCapabilities().isAbleToGroupByAll()).isFalse();
 		Assertions.assertThat(queryFactory.getCapabilities().isAbleToFilterAggregates()).isFalse();
 	}
+	//
+	// @Test
+	// public void testBuilder_Capabilities() {
+	// JooqTableQueryFactory queryFactory =
+	// JooqTableQueryFactory.builder().table(table).dslContext(DSL.using(SQLDialect.DUCKDB)).build();
+	//
+	// Assertions.assertThat(queryFactory.getCapabilities().isAbleToGroupByAll()).isFalse();
+	// Assertions.assertThat(queryFactory.getCapabilities().isAbleToFilterAggregates()).isFalse();
+	// }
 }

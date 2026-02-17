@@ -48,8 +48,12 @@ public interface IMapBuilderPreKeys extends IBuildableIntoMap {
 	default IMapBuilderPreKeys append(Object first, Object... more) {
 		IMapBuilderPreKeys preKeys = append(first);
 
-		for (Object oneMore : more) {
-			preKeys = append(oneMore);
+		if (more == null) {
+			preKeys = append(null);
+		} else {
+			for (Object oneMore : more) {
+				preKeys = append(oneMore);
+			}
 		}
 
 		return preKeys;
