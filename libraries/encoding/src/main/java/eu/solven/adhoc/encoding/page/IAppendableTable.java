@@ -29,6 +29,7 @@ import eu.solven.adhoc.encoding.page.row.ILikeList;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IAppendableTable {
 
 	/**
