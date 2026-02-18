@@ -44,6 +44,8 @@ public class TestDagRecursiveAction {
 			AtomicInteger nbExecution) {
 		DagRecursiveAction<String> rootTask = makeRootTask(dag, taskToCount, queryStepToValues, nbExecution);
 
+		// This may throw a StackOverFlow: this is known, and shall lead to the full removal of DagRecursiveAction
+		// 2026-02-17: it is kept a bit longer to confirm DagCompletableExecutor is working fine
 		ForkJoinPool.commonPool().submit(rootTask).join();
 	}
 
