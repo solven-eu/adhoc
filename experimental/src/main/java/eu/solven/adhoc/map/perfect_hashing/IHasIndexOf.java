@@ -22,26 +22,20 @@
  */
 package eu.solven.adhoc.map.perfect_hashing;
 
-import java.util.Collections;
-import java.util.SortedSet;
-
-import com.google.common.collect.ImmutableSortedSet;
-
-import lombok.Builder;
-import lombok.Singular;
+import java.util.List;
 
 /**
- * Default (but slow) {@link IHasIndexOf} over a {@link SortedSet}.
+ * For data-structure with an `.indexOf` (e.g. like {@link List#indexOf(Object)}).
  * 
  * @author Benoit Lacelle
+ * 
+ * @param <T>
  */
-@Builder
-public class SortedSetString implements IHasIndexOf<String> {
-	@Singular
-	final ImmutableSortedSet<String> keys;
+@FunctionalInterface
+public interface IHasIndexOf<T> {
+	int indexOf(T key);
 
-	@Override
-	public int indexOf(String key) {
-		return Collections.binarySearch(keys.asList(), key);
+	default int unsafeIndexOf(T key) {
+		return indexOf(key);
 	}
 }

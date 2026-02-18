@@ -22,26 +22,18 @@
  */
 package eu.solven.adhoc.map.perfect_hashing;
 
-import java.util.Collections;
-import java.util.SortedSet;
+import java.util.Collection;
 
-import com.google.common.collect.ImmutableSortedSet;
-
-import lombok.Builder;
-import lombok.Singular;
+import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 
 /**
- * Default (but slow) {@link IHasIndexOf} over a {@link SortedSet}.
+ * Creates an {@link Object2IntFunction} hashing function, given a fixed {@link Collection}.
  * 
  * @author Benoit Lacelle
+ * @param <T>
  */
-@Builder
-public class SortedSetString implements IHasIndexOf<String> {
-	@Singular
-	final ImmutableSortedSet<String> keys;
+@FunctionalInterface
+public interface IHasIndexOfFactory<T> {
 
-	@Override
-	public int indexOf(String key) {
-		return Collections.binarySearch(keys.asList(), key);
-	}
+	IHasIndexOf<T> makeHasIndexOf(Collection<T> keys);
 }

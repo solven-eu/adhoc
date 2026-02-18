@@ -91,15 +91,6 @@
 			<groupId>org.apache.arrow</groupId>
 			<artifactId>arrow-memory-netty</artifactId>
 		</dependency>
-		
-		<!-- Source: https://mvnrepository.com/artifact/it.unimi.dsi/sux4j -->
-		<dependency>
-			<!-- Used for perfect hashing in NavigableSetLikeList-->
-		    <groupId>it.unimi.dsi</groupId>
-		    <artifactId>sux4j</artifactId>
-		    <version>5.4.1</version>
-		    <scope>compile</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>org.mongodb</groupId>

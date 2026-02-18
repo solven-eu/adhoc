@@ -45,6 +45,16 @@
 			<artifactId>adhoc-experimental</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<!-- Source: https://mvnrepository.com/artifact/it.unimi.dsi/sux4j -->
+		<dependency>
+			<!-- Used for perfect hashing in BenchmarkPerfectHashing-->
+		    <groupId>it.unimi.dsi</groupId>
+		    <artifactId>sux4j</artifactId>
+		    <version>5.4.1</version>
+		    <scope>compile</scope>
+		</dependency>
+
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>

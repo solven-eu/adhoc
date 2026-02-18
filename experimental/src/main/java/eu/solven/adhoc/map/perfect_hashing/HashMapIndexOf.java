@@ -22,26 +22,32 @@
  */
 package eu.solven.adhoc.map.perfect_hashing;
 
-import java.util.Collections;
-import java.util.SortedSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-import com.google.common.collect.ImmutableSortedSet;
-
-import lombok.Builder;
-import lombok.Singular;
+import lombok.RequiredArgsConstructor;
 
 /**
- * Default (but slow) {@link IHasIndexOf} over a {@link SortedSet}.
+ * {@link IHasIndexOf} based on a {@link HashMap}.
  * 
  * @author Benoit Lacelle
+ * @param <T>
  */
-@Builder
-public class SortedSetString implements IHasIndexOf<String> {
-	@Singular
-	final ImmutableSortedSet<String> keys;
+@RequiredArgsConstructor
+public class HashMapIndexOf<T> implements IHasIndexOf<T> {
+	final Map<T, Integer> asMap;
+
+	public static <T> IHasIndexOf<T> make(Collection<T> keys) {
+		Map<T, Integer> asMap = HashMap.newHashMap(keys.size());
+		keys.forEach(key -> asMap.put(key, asMap.size()));
+
+		return new HashMapIndexOf<>(asMap);
+	}
 
 	@Override
-	public int indexOf(String key) {
-		return Collections.binarySearch(keys.asList(), key);
+	public int indexOf(T key) {
+		return asMap.getOrDefault(key, -1);
 	}
+
 }

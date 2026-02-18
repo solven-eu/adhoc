@@ -22,26 +22,20 @@
  */
 package eu.solven.adhoc.map.perfect_hashing;
 
-import java.util.Collections;
-import java.util.SortedSet;
+import java.util.List;
 
-import com.google.common.collect.ImmutableSortedSet;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-import lombok.Builder;
-import lombok.Singular;
+public class TestSortedSetString {
+	@Test
+	public void testSimple() {
+		SortedSetString sorted = SortedSetString.builder().keys(List.of("c", "a", "b")).build();
 
-/**
- * Default (but slow) {@link IHasIndexOf} over a {@link SortedSet}.
- * 
- * @author Benoit Lacelle
- */
-@Builder
-public class SortedSetString implements IHasIndexOf<String> {
-	@Singular
-	final ImmutableSortedSet<String> keys;
+		Assertions.assertThat(sorted.indexOf("a")).isEqualTo(0);
+		Assertions.assertThat(sorted.indexOf("b")).isEqualTo(1);
+		Assertions.assertThat(sorted.indexOf("c")).isEqualTo(2);
 
-	@Override
-	public int indexOf(String key) {
-		return Collections.binarySearch(keys.asList(), key);
+		Assertions.assertThat(sorted.indexOf("abc")).isEqualTo(-2);
 	}
 }

@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.map.perfect_hashing;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +44,14 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import com.google.common.primitives.Ints;
+
+import it.unimi.dsi.bits.TransformationStrategies;
+import it.unimi.dsi.fastutil.objects.Object2IntFunction;
+import it.unimi.dsi.sux4j.mph.GOVMinimalPerfectHashFunction;
+
 /**
- * Benchmarks related with {@link ISortedSetString}, i.e. faster way to get the rank of a String in a
+ * Benchmarks related with {@link IHasIndexOf<String>}, i.e. faster way to get the rank of a String in a
  * {@link NavigableSet}.
  * 
  * @author Benoit Lacelle
@@ -58,12 +67,27 @@ public class BenchmarkPerfectHashing {
 
 	List<String> keys = List.of("a", "b", "c", "d", "e");
 
-	ISortedSetString guavaSet = SortedSetString.builder().keys(keys).build();
-	ISortedSetString guavaSetWithHashMap = SortedSetStringWithHashMap.builder().keys(keys).build();
-	ISortedSetString guavaSetWithPerfectHash = SortedSetStringWithPerfectHash.builder().keys(keys).build();
-	ISortedSetString guavaSetWithSimplePerfectHash = SortedSetStringWithSimplePerfectHash.builder().keys(keys).build();
-	ISortedSetString guavaSetWithSimplePerfectHashV2 =
-			SortedSetStringWithSimplePerfectHashV2.builder().keys(keys).build();
+	private Object2IntFunction<String> sux4jHashing(Collection<String> keys) {
+
+		try {
+			return new GOVMinimalPerfectHashFunction.Builder<String>().keys(keys)
+					.transform(TransformationStrategies.utf16())
+					.build()
+					.andThenInt(Ints::saturatedCast);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Issue with " + keys, e);
+		}
+	}
+
+	IHasIndexOf<String> guavaSet = SortedSetString.builder().keys(keys).build();
+	IHasIndexOf<String> guavaSetWithHashMap =
+			CollectionWithCustomIndexOf.<String>builder().keys(keys).hashMap().build();
+	IHasIndexOf<String> guavaSetWithPerfectHash = CollectionWithCustomIndexOf.<String>builder()
+			.keys(keys)
+			.factory(keys -> this.sux4jHashing(keys)::getInt)
+			.build();
+	IHasIndexOf<String> guavaSetWithSimplePerfectHashV2 =
+			CollectionWithCustomIndexOf.<String>builder().keys(keys).unsafePerfectHash().build();
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkPerfectHashing.class.getSimpleName())
@@ -88,27 +112,17 @@ public class BenchmarkPerfectHashing {
 	}
 
 	@Benchmark
-	public int get_guava_withPerfectHash() {
+	public int get_guava_withSux4J() {
 		return guavaSetWithPerfectHash.indexOf("c");
 	}
 
 	@Benchmark
 	public int get_guava_withSimplePerfectHash() {
-		return guavaSetWithSimplePerfectHash.indexOf("c");
-	}
-
-	@Benchmark
-	public int get_guava_withSimplePerfectHash_unsafe() {
-		return guavaSetWithSimplePerfectHash.unsafeIndexOf("c");
-	}
-
-	@Benchmark
-	public int get_guava_withSimplePerfectHash_v2() {
 		return guavaSetWithSimplePerfectHashV2.indexOf("c");
 	}
 
 	@Benchmark
-	public int get_guava_withSimplePerfectHash_v2_unsafe() {
+	public int get_guava_withSimplePerfectHash_unsafe() {
 		return guavaSetWithSimplePerfectHashV2.unsafeIndexOf("c");
 	}
 
