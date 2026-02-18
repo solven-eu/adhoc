@@ -24,6 +24,8 @@ package eu.solven.adhoc.pivotable.app.it.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,6 +52,7 @@ import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingController;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
+import eu.solven.pepper.spring.PepperResourceHelper;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -87,8 +90,14 @@ public class TestSecurity_WithoutAuth {
 	}
 
 	@Test
-	public void testApiFavicon() {
+	public void testApiFavicon() throws FileNotFoundException, IOException {
 		log.debug("About {}", GreetingHandler.class);
+
+		byte[] favicon = PepperResourceHelper.loadAsBinary("static/favicon.ico");
+
+		// If this test fails, you man need to `mvn clean install` the `js` module
+		Assertions.assertThat(favicon).hasSize(96_557);
+		new String(favicon);
 
 		webTestClient
 
@@ -99,7 +108,7 @@ public class TestSecurity_WithoutAuth {
 				.expectStatus()
 				.isOk()
 				.expectBody(byte[].class)
-				.value(byteArray -> assertThat(byteArray).hasSize(96_557));
+				.value(byteArray -> assertThat(byteArray).hasSize(favicon.length));
 	}
 
 	@Test
