@@ -29,7 +29,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import com.google.errorprone.annotations.ThreadSafe;
+
 import eu.solven.adhoc.encoding.fsst.IFsstConstants;
+import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,7 +46,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-public class SimplePerfectHash<T> implements IHasIndexOf<T> {
+@ThreadSafe
+public class SimplePerfectHash<T> implements IHasIndexOf<T>, IImmutable {
 	private static final int HASH_PRIME = (int) IFsstConstants.fsstHashPrime;
 	// Most JVMs has constrain over the largest array, even if a lot of RAM/Heap is available
 	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 128;
@@ -54,6 +58,8 @@ public class SimplePerfectHash<T> implements IHasIndexOf<T> {
 	final int[] remapped;
 	final int shift;
 
+	// TODO JMH to compare with HashMap
+	// In Adhoc, it is a small deal as these are created in very small number
 	public static <T> IHasIndexOf<T> make(Collection<T> keys) {
 		int n = keys.size();
 		if (keys.stream().distinct().count() < n) {
