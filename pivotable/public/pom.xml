@@ -28,12 +28,6 @@
     <groupId>tools.jackson.core</groupId>
     <artifactId>jackson-databind</artifactId>
 </dependency>
-<dependency>
-			<!-- PivotableJackson -->
-    <groupId>tools.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
-<!--		    <version>${jackson-bom.version}</version>-->
-</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
