@@ -53,11 +53,12 @@ import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IHasOperatorFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -77,7 +78,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder(toBuilder = true)
 @Slf4j
-public class CubeWrapper implements ICubeWrapper {
+public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 	@NonNull
 	@Builder.Default
 	@Getter
@@ -288,6 +289,34 @@ public class CubeWrapper implements ICubeWrapper {
 		}
 
 		return columnToSample;
+	}
+
+	@Override
+	public Map<String, ?> getHealthDetails() {
+		Map<String, Object> details = new LinkedHashMap<>();
+
+		Map<String, Object> tableDetails = new LinkedHashMap<>();
+		tableDetails.put("name", table.getName());
+		tableDetails.put("type", table.getClass().getName());
+
+		if (table instanceof IHasHealthDetails tableHasHealth) {
+			tableDetails.putAll(tableHasHealth.getHealthDetails());
+		}
+
+		details.put("table", tableDetails);
+
+		return details;
+	}
+
+	public static Map<String, Object> makeDetails(ICubeWrapper cube) {
+		Map<String, Object> details = new LinkedHashMap<>();
+		details.put("columns", cube.columnsKeySet().size());
+		details.put("measures", cube.getMeasures().size());
+
+		if (cube instanceof IHasHealthDetails hasHealthDetails) {
+			details.putAll(hasHealthDetails.getHealthDetails());
+		}
+		return details;
 	}
 
 }

@@ -26,11 +26,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +41,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -142,11 +143,40 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 				queryPod.cancel();
 
-				List<Map<String, ?>> asList = stream.toList();
+				Assertions.assertThatThrownBy(() -> stream.toList())
+						.isInstanceOf(CancelledQueryException.class)
+						.hasMessage("Query is cancelled");
 
+				// !!! BEWARE !!! Unclear how we got ride of the previous dubious behavior
 				// BEWARE We seemingly receive a result as the query is so small it is fully executed when cancelled
-				Assertions.assertThat(asList).hasSize(1).contains(Map.of("k1", 0L + 357));
+				// Assertions.assertThat(asList).hasSize(1).contains(Map.of("k1", 0L + 357));
 			}
+		} finally {
+			Files.delete(tmpParquetPath);
+		}
+	}
+
+	@Test
+	public void testGetDetails() throws IOException, SQLException {
+		// Duplicated from TestDatabaseQuery_DuckDb_FromParquet
+		Path tmpParquetPath = Files.createTempFile(this.getClass().getSimpleName(), ".parquet");
+		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
+
+		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
+
+		try {
+			DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
+					.dslSupplier(dslSupplier)
+					.tableName(DSL.unquotedName(tableExpression))
+					.build();
+			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
+
+			Assertions.assertThat((Map) jooqDb.getHealthDetails())
+					.containsEntry("dialect", SQLDialect.DUCKDB)
+					.containsKey("dslContextCreationTime")
+					.containsEntry("tableLike", tableExpression)
+					.hasSize(3);
 		} finally {
 			Files.delete(tmpParquetPath);
 		}

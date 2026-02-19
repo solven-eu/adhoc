@@ -1,0 +1,1 @@
+Copied from https://github.com/cwida/fsst/tree/master/paper/dbtext

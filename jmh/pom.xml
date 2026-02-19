@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.0.16-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-jmh</artifactId>
@@ -40,6 +40,20 @@
 			<artifactId>adhoc</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-experimental</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<!-- Source: https://mvnrepository.com/artifact/it.unimi.dsi/sux4j -->
+		<dependency>
+			<!-- Used for perfect hashing in BenchmarkPerfectHashing-->
+			<groupId>it.unimi.dsi</groupId>
+			<artifactId>sux4j</artifactId>
+			<version>5.4.1</version>
+			<scope>compile</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
@@ -47,15 +61,32 @@
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<!-- Enable shared code between benchmarks and profilable tests -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+
+		<dependency>
+			<!-- include MapLibre FSST implementation -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-fsst</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
 	</dependencies>
 
 	<build>
-		<!-- https://stackoverflow.com/questions/38056899/jmh-unable-to-find-the-resource-meta-inf-benchmarklist -->
+		<!--
+		https://stackoverflow.com/questions/38056899/jmh-unable-to-find-the-resource-meta-inf-benchmarklist -->
 		<plugins>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.6.2</version>
+				<version>3.6.3</version>
 				<executions>
 					<execution>
 						<id>run-benchmarks</id>

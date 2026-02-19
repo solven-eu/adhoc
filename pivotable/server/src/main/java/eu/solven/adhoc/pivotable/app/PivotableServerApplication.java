@@ -24,8 +24,10 @@ package eu.solven.adhoc.pivotable.app;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -41,6 +43,7 @@ import eu.solven.adhoc.pivotable.app.example.InjectWorldCupExampleCubesConfig;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
+import eu.solven.adhoc.pivotable.webflux.actuator.AdhocSchemaHealthIndicator;
 import eu.solven.adhoc.tools.GitPropertySourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,19 +65,27 @@ import lombok.extern.slf4j.Slf4j;
 		InjectPixarExampleCubesConfig.class,
 		InjectWorldCupExampleCubesConfig.class,
 
-})
+		AdhocSchemaHealthIndicator.class, })
 @Slf4j
 public class PivotableServerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication springApp = new SpringApplication(PivotableServerApplication.class);
+		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
+		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
 
-		// https://docs.spring.io/spring-boot/reference/actuator/process-monitoring.html
-		springApp.addListeners(new ApplicationPidFileWriter());
-
-		springApp.setAdditionalProfiles(IPivotableSpringProfiles.P_DEFAULT
-		// If the dataset is load available on disk, the cube will be automatically skipped
-				, IPivotableSpringProfiles.P_ADVANCED_DATASETS);
+		SpringApplication springApp = new SpringApplicationBuilder(PivotableServerApplication.class)
+				// A real-project should set this in its application.yml
+				// Pivotable does not provide an application.yml to prevent conflicts
+				.properties(IPivotableSpringProfiles.P_CONFIG_IMPORT)
+				.bannerMode(Mode.OFF)
+				// https://docs.spring.io/spring-boot/reference/actuator/process-monitoring.html
+				.listeners(new ApplicationPidFileWriter())
+				.profiles(IPivotableSpringProfiles.P_UNSAFE
+				// If the dataset is not available on disk, the cube will be automatically skipped
+						, IPivotableSpringProfiles.P_ADVANCED_DATASETS)
+				.build();
 
 		springApp.run(args);
 	}

@@ -31,12 +31,12 @@ export default {
         await page.getByRole("link", { name: /You need to login/ }).click();
 
         await expect(page.getByRole("link", { name: /github/ })).toBeVisible();
-        await expect(page.getByRole("link", { name: /BASIC/ })).toBeVisible();
+        await expect(page.getByRole("link", { name: /pivotable-unsafe_fakeuser/ })).toBeVisible();
     },
 
     async login(page) {
         await this.showLoginOptions(page);
-        await page.getByRole("link", { name: /BASIC/ }).click();
+        await page.getByRole("link", { name: /pivotable-unsafe_fakeuser/ }).click();
         await page.getByRole("button", { name: /Login fakeUser/ }).click();
 
         await expect(page.getByText(/Welcome Fake User/)).toBeVisible();
@@ -47,7 +47,7 @@ export default {
     async queryPivotable(page) {
         await page.goto("http://localhost:8080/");
         await page.getByRole("link", { name: /You need to login/ }).click();
-        await page.getByRole("link", { name: "BASIC" }).click();
+        await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
         await page.getByRole("button", { name: "Login fakeUser" }).click();
         await page.getByRole("link", { name: "Browse through endpoints" }).click();
         await page.getByRole("link", { name: /WorldCupPlayers/ }).click();

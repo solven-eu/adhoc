@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.0.16-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc</artifactId>
@@ -25,12 +25,19 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-encoding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.roaringbitmap/RoaringBitmap -->
 		<dependency>
 			<!-- Used as bitset in MultitypeArrayColumn -->
 			<groupId>org.roaringbitmap</groupId>
 			<artifactId>RoaringBitmap</artifactId>
-			<!-- Can not upgrade due to https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
+			<!-- Can not upgrade due to
+			https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
 			<version>1.3.0</version>
 		</dependency>
 
@@ -133,7 +140,7 @@
 			<!-- JdbcClient for inserting arrays-->
 			<groupId>org.apache.arrow.adbc</groupId>
 			<artifactId>adbc-driver-jdbc</artifactId>
-			<version>0.21.0</version>
+			<version>0.22.0</version>
 			<scope>test</scope>
 		</dependency>
 		<!--<dependency>-->
@@ -145,8 +152,10 @@
 		<!--</dependency>-->
 		<!-- https://mvnrepository.com/artifact/com.github.haifengl/smile-core -->
 		<dependency>
+			<!-- Used by ExampleVaRQuickSelectCombination -->
 			<groupId>com.github.haifengl</groupId>
 			<artifactId>smile-core</artifactId>
+			<!-- Smile v5 requires Java25 -->
 			<version>4.4.2</version>
 			<scope>test</scope>
 		</dependency>
@@ -182,6 +191,55 @@
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Source:
+		https://mvnrepository.com/artifact/com.google.guava/guava-testlib -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava-testlib</artifactId>
+			<version>${guava.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<!-- Adhoc relies on Jupiter/JUnit5-->
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<!-- Check RAM usage, or proper provisioning/capacity-->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-with-agent</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Source: https://mvnrepository.com/artifact/io.github.solven-eu.cleanthat/annotations -->
+		<dependency>
+			<groupId>io.github.solven-eu.cleanthat</groupId>
+			<artifactId>annotations</artifactId>
+			<version>2.25</version>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<!-- Provides a tests jar, enabling integration
+							tests or benchmarks-->
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

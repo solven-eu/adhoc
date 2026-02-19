@@ -34,9 +34,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.pepper.mappath.MapPathGet;
 
 /**

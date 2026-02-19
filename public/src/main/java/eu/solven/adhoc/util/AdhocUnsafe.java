@@ -55,18 +55,15 @@ public class AdhocUnsafe {
 	}
 
 	public static void resetProperties() {
-		log.info("Resetting AdhocUnsafe configuration");
+		log.info("Resetting {} configuration", AdhocUnsafe.class.getName());
 
 		// This default should be big enough to show all informations in most cases, without printing huge information
 		// on edge-cases
 		// Typically, 5 is too small as many projects generates more than 5 filtered columns
 		limitOrdinalToString = 16;
-		limitColumnSize = 1_000_000;
 		failFast = true;
 		parallelism = defaultParallelism();
-		defaultColumnCapacity = limitColumnSize;
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
-		pageSize = DEFAULT_PAGE_SIZE;
 	}
 
 	public static void resetAll() {
@@ -79,17 +76,12 @@ public class AdhocUnsafe {
 	public static void reloadProperties() {
 		// Customize with `-Dadhoc.limitOrdinalToString=32`
 		limitOrdinalToString = safeLoadIntegerProperty("adhoc.limitOrdinalToString", 16);
-		// Customize with `-Dadhoc.limitColumnSize=10000`
-		limitColumnSize = safeLoadIntegerProperty("adhoc.limitColumnSize", 1_000_000);
 		// Customize with `-Dadhoc.pivotable.limitCoordinates=25000`
 		// Customize with `-Dadhoc.failfast=false`
 		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
 		// Customize with `-Dadhoc.parallelism=16`
 		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
-		// Customize with `-Dadhoc.defaultColumnCapacity=100_000`
-		defaultColumnCapacity = safeLoadIntegerProperty("adhoc.defaultColumnCapacity", limitColumnSize);
 		cartesianProductLimit = safeLoadIntegerProperty("adhoc.cartesianProductLimit", DEFAULT_CARTESIAN_PRODUCT_LIMIT);
-		pageSize = safeLoadIntegerProperty("adhoc.pageSize", DEFAULT_PAGE_SIZE);
 	}
 
 	public static int safeLoadIntegerProperty(String key, int defaultValue) {
@@ -128,16 +120,6 @@ public class AdhocUnsafe {
 	private static int limitOrdinalToString;
 
 	/**
-	 * This will limit data-structures to go over this size.
-	 * 
-	 * Used to prevent one query consuming too much memory. This applied to both pre-aggregated columns, and
-	 * transformator columns.
-	 */
-	@Setter
-	@Getter
-	private static int limitColumnSize;
-
-	/**
 	 * On multiple occasions, we encounter exceptions which are not fatal. Should we be resilient, or fail-fast?
 	 */
 	// By default, failFast. This is a simple flag for projects preferring resiliency.
@@ -145,17 +127,6 @@ public class AdhocUnsafe {
 	private static boolean failFast;
 
 	private static int parallelism;
-
-	/**
-	 * Used as default capacity when allocating chunks of data.
-	 */
-	@Setter
-	private static int defaultColumnCapacity;
-
-	private static final int DEFAULT_PAGE_SIZE = 16 * 1024;
-	@Setter
-	@Getter
-	public static int pageSize = DEFAULT_PAGE_SIZE;
 
 	/**
 	 * Used for unitTests
@@ -253,23 +224,6 @@ public class AdhocUnsafe {
 			.name("adhoc-maintenance-", 0)
 			.factory());
 
-	/**
-	 * Relates with {@value #limitColumnSize}, as if a data-structure has the same capacity and maximum size, it is
-	 * guaranteed never to need being grown/re-hashed.
-	 * 
-	 * @return the default capacity for structured.
-	 */
-	public static int getDefaultColumnCapacity() {
-		if (defaultColumnCapacity >= 0) {
-			// the default capacity is capped by the limit over columnLength
-			return Math.min(limitColumnSize, defaultColumnCapacity);
-		}
-
-		// There is no default capacity: fallback on limitColumnSize. This way, data-structures would never grow nor
-		// re-hash.
-		return limitColumnSize;
-	}
-
 	public static void inFailFast() {
 		if (!failFast) {
 			log.info("Switching failfast=true");
@@ -281,14 +235,6 @@ public class AdhocUnsafe {
 		if (failFast) {
 			log.info("Switching failfast=false");
 			failFast = false;
-		}
-	}
-
-	public static void checkColumnSize(long size) {
-		if (size >= getLimitColumnSize()) {
-			throw new IllegalStateException(
-					"Can not add as size=%s and limit=%s Consider `AdhocUnsafe.setLimitColumnSize(X)` or -Dadhoc.limitColumnSize=X"
-							.formatted(size, AdhocUnsafe.getLimitColumnSize()));
 		}
 	}
 }

@@ -69,4 +69,12 @@ public class NullMatcher implements IValueMatcher, IColumnToString {
 	public String toString() {
 		return "===null";
 	}
+
+	public static Object unwrapNull(Object v) {
+		if (v == NULL_HOLDER) {
+			return null;
+		} else {
+			return v;
+		}
+	}
 }

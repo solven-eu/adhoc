@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;

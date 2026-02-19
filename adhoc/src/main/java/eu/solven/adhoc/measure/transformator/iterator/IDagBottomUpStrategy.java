@@ -37,6 +37,12 @@ import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
  * Wraps the strategy to store results from {@link ITransformatorQueryStep}, and to merge underlyings
  * {@link ITransformatorQueryStep} results.
  * 
+ * It refers to bottom-up as these columns are the typical output of a DAG of {@link CubeQueryStep}, where each step
+ * processes multiple underlying columns to produce an output columns. The input columns has to be aligned, in the sense
+ * we iterate through the union of input columns slices, processing each slice given its values for each input columns.
+ * It is relevant to have a common ordering through columns, so that the iteration is naturally aligned. We may also
+ * just rely on hash structures.
+ * 
  * @author Benoit Lacelle
  */
 public interface IDagBottomUpStrategy {
@@ -44,7 +50,7 @@ public interface IDagBottomUpStrategy {
 	/**
 	 * 
 	 * @param initialCapacity
-	 *            -1 is no estimation is available
+	 *            -1 if no estimation is available
 	 * @return the storage for a {@link ITransformatorQueryStep} output.
 	 */
 	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
@@ -58,6 +64,17 @@ public interface IDagBottomUpStrategy {
 	 * @return
 	 */
 	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity);
+
+	/**
+	 * When insertions does not follow any ordering.
+	 * 
+	 * @param <T>
+	 * @param agg
+	 * @param initialCapacity
+	 *            -1 is no estimation is available
+	 * @return
+	 */
+	<T> IMultitypeMergeableColumn<T> makeColumnRandomInserts(IAggregation agg, int initialCapacity);
 
 	/**
 	 * 

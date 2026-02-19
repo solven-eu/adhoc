@@ -26,8 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.JwtUserContextHolder;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
@@ -39,7 +41,9 @@ import lombok.extern.slf4j.Slf4j;
 		classes = { PivotableWebFluxSpringConfig.class,
 				PivotableComponentsConfiguration.class,
 				JwtUserContextHolder.class, },
-		webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, })
+@ActiveProfiles(IPivotableSpringProfiles.P_UNSAFE)
 @Slf4j
 @EnableAutoConfiguration
 public class TestPivotableRouterSpringConfig {

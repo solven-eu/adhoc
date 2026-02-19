@@ -144,7 +144,7 @@ flowchart TD
     CubeQueryStep_userMeasure --> CubeQueryStep_underlyingMeasure
     CubeQueryStep_underlyingMeasure --> CubeQueryStep_aggregator
     CubeQueryStep_aggregator --> SplitTableQueries
-    SplitTableQueries --> TableQueryV2>
+    SplitTableQueries --> TableQueryV2
 ```
 
 - `CubeQuery --> CubeQueryStep_userMeasure` is mostly managed by `CubeQueryEngine.getRootMeasures(...)`
@@ -658,6 +658,56 @@ The column `customColumn` or `"customTable"."customColumn"` can now be reference
 
 `ICalculatedColumn` enables
 
+# Optimization
+
+## By caching in static caches
+
+In some cases, it seemed simpler to optimize the CPU performance by caching some intermediate results in static variables.
+
+A specific case is `.retainAll`:
+- When inducing an `ISliceToValue` by removing some columns in the `GROUP BY`
+- we can infer the induced sliced from the inducer slice with a `.retainAll(inducedColumns)`
+- which is called once per inducer slice.
+
+This step essentially relies on an operations similar to `Map.ketSet().retainAll(inducedColumns)` which is expensive as called once per slice, and exactly the same for each slice of the same `inducer+induced`.
+
+To improve this scenario, we introduce:
+- a ThreadLocal cache in `MaskedAdhocMap`, which operates as a Map from `inducedColumns+inducerColumns` to `maskedRetains+decoratedRetained`
+- we know ThreadLocal can be quite slow, but we observes this design enables great improvements at low design cost
+- typically, it does not require evolving the API by transporting the cached-result through the stack down to the deeper structure doing `.retainAll`
+
+# Compression
+
+Adhoc relies on various compression techniques to reduces the RAM consumption. It relies on multiple principles:
+- Most algorithm are mono-threaded, enabling a higher-level concurrency. For instance, dictionarization is mono-threaded per-block, concurrency applying through blocks.
+- While we may rely on caches, these are generally applicable on a per-query basis: dictionarization should not occur through queries.
+- Slices/columns/coordinates/members are compressed by expecting a lot of redundancy through (e.g. see `DistinctFreezer`).
+- Values/aggregates are compressed by expecting a lot of variability: they are generally compressed but not necessarily compressed (e.g. see `MultitypeHashColumn`).
+
+
+# Adhoc Unsafe
+
+Various inner parameters can be customized through static variables.
+
+## AdhocUnsafe
+
+## AdhocUnsafeMap
+
+Enables:
+- Clearing cross-queries caches related to `.retainAll`
+
+## AdhocFactoriesUnsafe
+
+Enables:
+- Custom factories as used by `AdhocFactories`
+
+## AdhocFreezingUnsafe
+
+Enables:
+- Custom freezers. Normal customization goes with `IFreezingStrategy`.
+- `AdhocFreezingUnsafe.setCheckPostCompression(true);` can be used to investigate data-corruption in compression algorithms.
+
+
 # Roadmap / Limitations to lift soon
 
 ## Recent changes
@@ -698,11 +748,12 @@ Known limitations would generally trigger a [`NotYetImplementedException`](https
 - [Pivotable] Enable browser-back to restore previous query.
 - [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
 - [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
-- [Concurrency] Prevent `QueryStepRecursiveAction` to request multiple times the same underlying queryStep
 - [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
 - [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
 - [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
 - [Feature] If a query generates a too large column, add investigation information (like the output of `COUNT(GROUP BY)` from table).
+- [Feature] Columns ordering should be evaluated dynamically, to increase order inference in Shiftor and table-columns inference..
+- [Performance] Table queries should be automatically partitioned table-side on some access. Typically, if one know the underlying data is partitioned by `c`, we should be able to query from `WHERE c % 8 = 0` to `WHERE c % 8 = 7`
 
 # Sponsors
 

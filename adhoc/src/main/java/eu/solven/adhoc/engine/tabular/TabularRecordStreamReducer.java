@@ -35,15 +35,13 @@ import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.query.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
@@ -91,6 +89,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate =
 				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
+		NavigableSet<String> groupedByColumns = tableQuery.getGroupBy().getGroupedByColumns();
+		SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
+
 		// Process the underlying stream of data to execute aggregations
 		try {
 			stream.records()
@@ -98,13 +99,12 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					// For any reason, `closeHandler` is not called automatically on a terminal
 					// operation
 					// .onClose(aggregatedRecordLogger.closeHandler())
-					.forEach(input -> forEachRow(input, peekOnCoordinate, grid));
+					.forEach(input -> forEachRow(sequencedKeyset, input, peekOnCoordinate, grid));
 
 			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
 			aggregatedRecordLogger.closeHandler();
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
-				NavigableSet<String> groupedByColumns = tableQuery.getGroupBy().getGroupedByColumns();
 				IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
 
 				tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
@@ -117,10 +117,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		return grid;
 	}
 
-	protected void forEachRow(ITabularRecord tableRow,
+	protected void forEachRow(SequencedSetLikeList sequencedKeyset,
+			ITabularRecord tableRow,
 			BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate,
 			IMultitypeMergeableGrid<IAdhocSlice> sliceToAgg) {
-		IAdhocSlice coordinates = makeCoordinate(queryPod, tableQuery, tableRow);
+		IAdhocSlice coordinates = makeCoordinate(sequencedKeyset, tableRow);
 
 		peekOnCoordinate.accept(tableRow, coordinates);
 
@@ -146,38 +147,30 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	}
 
 	/**
-	 * @param tableQuery
-	 * @param tableSlice
-	 * @return the coordinate for given input, or empty if the input is not compatible with given groupBys.
+	 * @param groupBy
+	 * @param tableRecord
+	 * @return the coordinate for given input.
 	 */
-	protected IAdhocSlice makeCoordinate(QueryPod queryPod, IHasGroupBy tableQuery, ITabularRecord tableSlice) {
-		IAdhocGroupBy groupBy = tableQuery.getGroupBy();
-		if (groupBy.isGrandTotal()) {
+	protected IAdhocSlice makeCoordinate(SequencedSetLikeList groupBy, ITabularRecord tableRecord) {
+		if (groupBy.isEmpty()) {
 			return SliceAsMap.grandTotal();
 		}
 
-		NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
+		// BEWARE This order may differ from tableSlice due to calculatedColumns
+		// NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-		MapBuilderPreKeys coordinatesBuilder = sliceFactory.newMapBuilder(groupedByColumns);
-
-		// `forEachGroupBy` enables not doing many individual `.get`
-		tableSlice.forEachGroupBy((sliceColumn, value) -> {
-			if (!groupedByColumns.contains(sliceColumn)) {
-				return;
-			}
-
-			if (value == null) {
-				// We received an explicit null
-				// Typically happens on a failed LEFT JOIN
-				value = valueOnNull(queryPod, sliceColumn);
-
-				assert value != null : "`null` is not a legal column value";
-			}
-
-			coordinatesBuilder.append(value);
-		});
-
-		return coordinatesBuilder.build().asSlice();
+		if (
+		// groupBy.asList().equals(tableSlice.columnsKeySet()) Iterables.elementsEqual(tableSlice.columnsKeySet(),
+		// groupedByColumns)
+		groupBy.size() == tableRecord.columnsKeySet().size()) {
+			// BEWARE Could we have same size but different columns?
+			// In most cases, the tableSlice should have same columns as requested by the groupBy
+			return tableRecord.getGroupBys();
+		} else {
+			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
+			// or in a different order (What would be the impact of different order else still relevant columns?).
+			return tableRecord.getGroupBys().retainAll(groupBy.sortedSet());
+		}
 	}
 
 	/**

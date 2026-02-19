@@ -32,15 +32,14 @@ import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.table.IAliasedAggregator;
 import eu.solven.adhoc.util.AdhocCollectionHelpers;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -66,7 +65,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// aggregators).
 	@NonNull
 	@Default
-	List<T> indexToSlice = new ArrayList<>(AdhocUnsafe.getDefaultColumnCapacity());
+	List<T> indexToSlice = new ArrayList<>(AdhocColumnUnsafe.getDefaultColumnCapacity());
 
 	@NonNull
 	@Default
@@ -137,7 +136,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
 		// Reverse from `slice->index` to `index->slice`
-		Object2IntMap<T> sliceToIndex = new Object2IntOpenHashMap<>(indexToSlice.size());
+		Object2IntMap<T> sliceToIndex = AdhocPrimitiveMapHelpers.newHashMapDefaultMinus1(indexToSlice.size());
 		for (int i = 0; i < indexToSlice.size(); i++) {
 			sliceToIndex.put(indexToSlice.get(i), i);
 		}

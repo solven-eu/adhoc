@@ -71,7 +71,7 @@ public class PivotableSecuritySpringConfig {
 	@Bean
 	public Void checkSecured(Environment env) {
 		boolean acceptUnsafe = env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_UNSAFE,
-				IPivotableSpringProfiles.P_UNSAFE_SERVER,
+				// IPivotableSpringProfiles.P_UNSAFE_SERVER,
 				IPivotableSpringProfiles.P_FAKEUSER,
 				IPivotableSpringProfiles.P_UNSAFE_EXTERNAL_OAUTH2));
 

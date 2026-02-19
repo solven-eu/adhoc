@@ -37,7 +37,6 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
@@ -45,7 +44,6 @@ import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -151,19 +149,6 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 	protected IAdhocSlice queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
-		MapBuilderPreKeys mapBuilder = factories.getSliceFactory().newMapBuilder(groupedByColumns);
-
-		IAdhocSlice slice = bucketedSlice.getSlice();
-		groupedByColumns.forEach(groupBy -> {
-			Object value = slice.getGroupBy(groupBy);
-
-			if (value == null) {
-				value = NullMatcher.NULL_HOLDER;
-			}
-
-			mapBuilder.append(value);
-		});
-
-		return mapBuilder.build().asSlice();
+		return bucketedSlice.getSlice().retainAll(groupedByColumns);
 	}
 }

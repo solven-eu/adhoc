@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.0.16-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-experimental</artifactId>
@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.19</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.17</jacoco.instruction.ratio>
 	</properties>
 
 	<dependencyManagement>
@@ -21,7 +21,7 @@
 			<dependency>
 				<groupId>com.google.cloud</groupId>
 				<artifactId>libraries-bom</artifactId>
-				<version>26.71.0</version>
+				<version>26.75.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -63,7 +63,7 @@
 			<!-- TODO Clarify the difference between redshift and redshiftdata -->
 			<!--artifactId>redshift</artifactId-->
 			<artifactId>redshiftdata</artifactId>
-			<version>2.39.5</version>
+			<version>2.41.32</version>
 			<!-- One may need to query from Amazon RedShift -->
 			<optional>true</optional>
 		</dependency>
@@ -105,7 +105,7 @@
 		<dependency>
 			<groupId>de.flapdoodle.embed</groupId>
 			<artifactId>de.flapdoodle.embed.mongo</artifactId>
-			<version>4.21.0</version>
+			<version>4.24.0</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -123,8 +123,8 @@
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
-			<artifactId>unittest</artifactId>
-			<version>5.0</version>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

@@ -29,45 +29,50 @@ package eu.solven.adhoc.app;
  *
  */
 public interface IPivotableSpringProfiles {
+	// config has to be setup is a very root location, but we have no application.yml to stand as a library
+	String C_CONFIG = "classpath:pivotable-config.yml";
+	String P_CONFIG_IMPORT = "spring.config.import=" + C_CONFIG;
+
 	// Default logging configuration
 	String P_LOGGING = "logging";
 
-	// The default profile, activated when no other profile is defined. Typically useful for local runs.
-	String P_DEFAULT = "default";
-	// This will provide reasonable default for a fast+non_prod run
-	String P_DEFAULT_SERVER = "default_server";
+	// Active default pivotable configuration
+	String P_PIVOTABLE = "pivotable";
 
+	// The default profile, activated when no other profile is defined. Typically useful for local runs.
 	// Activates the whole unsafe configuration
-	String P_UNSAFE = "unsafe";
+	// Provides unsafe security settings (like DEV OAuth2 providers, and an unsafe JWT signingKey)
+	// String P_UNSAFE_SERVER = "pivotable-unsafe_server";
+	// Provides unsafe JWT signingKey
+	String P_UNSAFE = "pivotable-unsafe";
+	// This will provide reasonable default for a fast+non_prod run
+	String P_DEFAULT_SERVER = "pivotable-server_defaults";
+
 	// If true, we bypass the User login in the UI (i.e. the external-OAuth2 step required to produce account+player
 	// tokens)
-	String P_FAKEUSER = "fakeuser";
+	String P_FAKEUSER = "pivotable-unsafe_fakeuser";
 	// `fake_player` will enable relying on the fakePlayer but it will not tweat security related to
 	// String P_FAKE_PLAYER = "fake_player";
 
 	// The server hosting pivotable also host an adhoc endpoint
-	String P_SELF_ENDPOINT = "self_endpoint";
-	String P_SIMPLE_DATASETS = "simple_datasets";
-	String P_ADVANCED_DATASETS = "advanced_datasets";
+	String P_SELF_ENDPOINT = "pivotable-self_endpoint";
+	String P_SIMPLE_DATASETS = "pivotable-simple_datasets";
+	String P_ADVANCED_DATASETS = "pivotable-advanced_datasets";
 
-	// Provides unsafe security settings (like DEV OAuth2 providers, and an unsafe JWT signingKey)
-	String P_UNSAFE_SERVER = "unsafe_server";
-	// Provides unsafe JWT signingKey
-	String P_UNSAFE_OAUTH2 = "unsafe_oauth2";
 	// if true, we rely on external but unsafe OAuth2 Identity Providers
-	String P_UNSAFE_EXTERNAL_OAUTH2 = "unsafe_external_oauth2";
+	String P_UNSAFE_EXTERNAL_OAUTH2 = "pivotable-unsafe_external_oauth2";
 
 	// Used when deployed on Heroku.
-	String P_HEROKU = "heroku";
+	String P_HEROKU = "pivotable-heroku";
 
 	// String P_SECURED = "secured";
 
 	// Opposite to devmode. Should be activated in production
 	// Checks there is not a single unsafe|fake configurations activated
-	String P_PRDMODE = "prdmode";
+	String P_PRDMODE = "pivotable-prdmode";
 
 	// InMemory enables easy run but lack of persistence
-	String P_INMEMORY = "inmemory";
+	String P_INMEMORY = "pivotable-inmemory";
 	// Redis will use some Redis persistence storage
-	String P_REDIS = "redis";
+	String P_REDIS = "pivotable-redis";
 }

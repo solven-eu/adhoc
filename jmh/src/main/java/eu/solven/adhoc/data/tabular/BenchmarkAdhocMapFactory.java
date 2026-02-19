@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.tabular;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -45,7 +46,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.StandardSliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 /**
  * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
@@ -61,7 +62,7 @@ import eu.solven.adhoc.map.StandardSliceFactory;
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkAdhocMapFactory {
 
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	Supplier<Map<String, ?>> supplierJava = () -> {
 		Map<String, Object> hashMap = HashMap.newHashMap(2);
@@ -70,9 +71,10 @@ public class BenchmarkAdhocMapFactory {
 		return hashMap;
 	};
 	Supplier<Map<String, ?>> supplierGuava = () -> ImmutableMap.of("a", "a1", "b", "b1");
-	Supplier<Map<String, ?>> supplierAdhoc = () -> factory.newMapBuilder().put("a", "a1").put("b", "b1").build();
+	Supplier<Map<String, ?>> supplierAdhoc =
+			() -> factory.newMapBuilder(supplierGuava.get().keySet()).append(supplierGuava.get().values()).build();
 	Supplier<Map<String, ?>> supplierAdhocDisordered =
-			() -> factory.newMapBuilder().put("b", "b1").put("a", "a1").build();
+			() -> factory.newMapBuilder(List.of("b", "a")).append("b1", "a1").build();
 
 	Supplier<Map<String, ?>> supplierJava_b2 = () -> {
 		Map<String, Object> hashMap = HashMap.newHashMap(2);
@@ -81,9 +83,11 @@ public class BenchmarkAdhocMapFactory {
 		return hashMap;
 	};
 	Supplier<Map<String, ?>> supplierGuava_b2 = () -> ImmutableMap.of("a", "a1", "b", "b2");
-	Supplier<Map<String, ?>> supplierAdhoc_b2 = () -> factory.newMapBuilder().put("a", "a1").put("b", "b2").build();
+	Supplier<Map<String, ?>> supplierAdhoc_b2 = () -> factory.newMapBuilder(supplierGuava_b2.get().keySet())
+			.append(supplierGuava_b2.get().values())
+			.build();
 	Supplier<Map<String, ?>> supplierAdhocDisordered_b2 =
-			() -> factory.newMapBuilder().put("b", "b2").put("a", "a1").build();
+			() -> factory.newMapBuilder(List.of("b", "a")).append("b2", "a1").build();
 
 	Map<String, ?> mapJava = supplierJava.get();
 	Map<String, ?> mapGuava = supplierGuava.get();

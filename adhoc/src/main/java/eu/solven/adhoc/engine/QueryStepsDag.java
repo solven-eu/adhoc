@@ -105,4 +105,9 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 		return inducedToInducer;
 	}
 
+	@Override
+	public long edgeCount() {
+		return inducedToInducer.iterables().edgeCount();
+	}
+
 }

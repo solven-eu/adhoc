@@ -11,7 +11,7 @@
 
 	<groupId>eu.solven.adhoc</groupId>
 	<artifactId>aggregator-adhoc</artifactId>
-	<version>0.0.14-SNAPSHOT</version>
+	<version>0.0.16-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 
@@ -45,7 +45,11 @@
 		<module>spring</module>
 		<module>jmh</module>
 
+		<module>libraries</module>
+
 		<module>pivotable</module>
+
+		<module>training</module>
 	</modules>
 
 	<scm>
@@ -64,15 +68,16 @@
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
-		<jooq.version>3.20.9</jooq.version>
+		<jooq.version>3.20.11</jooq.version>
 
-		<spotless.version>3.0.0</spotless.version>
+		<spotless.version>3.2.1</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 
 		<!-- Optional dependencies -->
 		<!-- Typically not optional when referred by pivotable-server-->
-		<evalex.ezylang.version>3.5.0</evalex.ezylang.version>
-		<duckdb.version>1.4.2.0</duckdb.version>
+		<evalex.ezylang.version>3.6.0</evalex.ezylang.version>
+		<duckdb.version>1.4.4.0</duckdb.version>
+		<guava.version>33.5.0-jre</guava.version>
 
 		<arrow.version>18.3.0</arrow.version>
 
@@ -89,6 +94,7 @@
 		<!-- https://github.com/spotbugs/spotbugs-maven-plugin/issues/75 -->
 		<staticChecksOverBytecode>process-classes</staticChecksOverBytecode>
 
+		<!-- By default, benchmarks are not executed-->
 		<excludedGroups>adhoc-benchmark</excludedGroups>
 
 		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs -->
@@ -98,13 +104,17 @@
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<!-- https://mvnrepository.com/artifact/com.puppycrawl.tools/checkstyle -->
-		<checkstyle.version>12.1.2</checkstyle.version>
+		<checkstyle.version>13.2.0</checkstyle.version>
 		<!-- https://mvnrepository.com/artifact/info.novatec.ita/stereotype.check.plugin -->
 		<stereotype.check.plugin.version>4.0.0</stereotype.check.plugin.version>
 		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-pmd-plugin -->
 		<maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
 		<!-- https://mvnrepository.com/artifact/net.sourceforge.pmd/pmd -->
-		<pmd.version>7.17.0</pmd.version>
+		<pmd.version>7.20.0</pmd.version>
+
+		<!-- https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
+		<customArgLine />
+		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError ${customArgLine}</argLine>
 	</properties>
 
 	<dependencies>
@@ -508,9 +518,9 @@
 							</importOrder>
 
 							<eclipse>
-								<!--
-                                https://github.com/diffplug/spotless/tree/main/lib-extra/src/main/resources/com/diffplug/spotless/extra/eclipse_jdt_formatter -->
-								<!-- <version>4.18.0</version>-->
+								<!-- matches the version of Eclipse IDE-->
+								<!-- https://download.eclipse.org/eclipse/downloads/ -->
+								<version>4.38</version>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse_java_code_formatter.xml</file>
 							</eclipse>
 
@@ -669,7 +679,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.1</version>
 				<configuration>
 					<!-- https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#autoVersionSubmodules -->
 					<autoVersionSubmodules>true</autoVersionSubmodules>
@@ -692,7 +702,7 @@
 			<plugin>
 				<groupId>org.sonatype.central</groupId>
 				<artifactId>central-publishing-maven-plugin</artifactId>
-				<version>0.9.0</version>
+				<version>0.10.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>central</publishingServerId>
@@ -711,6 +721,20 @@
 			<!-- This would require adding a private repository holding activeviam jars -->
 			<!-- https://docs.activeviam.com/products/atoti/server/6.1.1/docs/start/download/ -->
 			<id>activeviam</id>
+			<modules>
+				<module>atoti</module>
+			</modules>
+		</profile>
+		<profile>
+			<!-- alias for activeviam -->
+			<id>activepivot</id>
+			<modules>
+				<module>atoti</module>
+			</modules>
+		</profile>
+		<profile>
+			<!-- alias for activeviam -->
+			<id>atoti</id>
 			<modules>
 				<module>atoti</module>
 			</modules>
@@ -791,6 +815,26 @@
 
 				<!-- Dependency will be checked with style -->
 				<enforcer.skip>true</enforcer.skip>
+			</properties>
+		</profile>
+
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>benchmark-with</id>
+			<properties>
+				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
+			</properties>
+		</profile>
+		<profile>
+			<!-- Used to recompile quickly only the core components -->
+			<id>benchmark-only</id>
+			<properties>
+				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
+				<!-- https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups -->
+				<groups>adhoc-benchmark</groups>
+				<excludedGroups />
 			</properties>
 		</profile>
 	</profiles>

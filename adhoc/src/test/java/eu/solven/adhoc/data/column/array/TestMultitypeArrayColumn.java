@@ -38,81 +38,26 @@ public class TestMultitypeArrayColumn {
 
 	@Test
 	public void testIntAndInt() {
-		column.set(k1, 123);
-		column.set(k1, 234);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(234L);
-		});
+		column.append(k1, 123);
+		Assertions.assertThatThrownBy(() -> column.append(k1, 234)).isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
 	public void testIntAndLong() {
-		column.set(k1, 123);
-		column.set(k1, 234L);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(234L);
-		});
+		column.append(k1, 123);
+		Assertions.assertThatThrownBy(() -> column.append(k1, 234L)).isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
 	public void testIntAndDouble() {
-		column.set(k1, 123);
-		column.set(k1, 23.45D);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(23.45D);
-		});
-	}
-
-	@Test
-	public void testIntAndString() {
-		column.set(k1, 123);
-		column.set(k1, "234");
-		column.set(k1, 345);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(345L);
-		});
-	}
-
-	@Test
-	public void testIntAndNull() {
-		column.set(k1, 123);
-		column.set(k1, null);
-		column.set(k1, 345);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(0L + 345);
-		});
-	}
-
-	@Test
-	public void testStringAndLocalDate() {
-		LocalDate today = LocalDate.now();
-
-		column.set(k1, "foo");
-		column.set(k1, today);
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo(today);
-		});
-	}
-
-	@Test
-	public void testStringAndString() {
-		column.set(k1, "123");
-		column.set(k1, "234");
-
-		column.onValue(k1, o -> {
-			Assertions.assertThat(o).isEqualTo("234");
-		});
+		column.append(k1, 123);
+		Assertions.assertThatThrownBy(() -> column.append(k1, 23.45D))
+				.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 	@Test
 	public void testClearKey() {
-		column.set(k1, 123);
+		column.append(k1, 123);
 		column.clearKey(k1);
 
 		Assertions.assertThat(column.size()).isEqualTo(0);
@@ -120,7 +65,7 @@ public class TestMultitypeArrayColumn {
 
 	@Test
 	public void testAppendNullOnInt() {
-		column.set(k1, 123);
+		column.append(k1, 123);
 
 		// TODO We may accept `null`, applying a `remove`
 		Assertions.assertThatThrownBy(() -> column.append(k1)).isInstanceOf(UnsupportedOperationException.class);
@@ -130,8 +75,8 @@ public class TestMultitypeArrayColumn {
 	public void testToString() {
 		LocalDate today = LocalDate.now();
 
-		column.set(k1).onObject(today);
-		column.set(k2).onLong(123);
+		column.append(k1).onObject(today);
+		column.append(k2).onLong(123);
 
 		// The order of types is fixed, and the order within each type is guaranteed
 		// This structure is not sorted
@@ -147,8 +92,8 @@ public class TestMultitypeArrayColumn {
 	public void testStream() {
 		LocalDate today = LocalDate.now();
 
-		column.set(k1).onObject(today);
-		column.set(k2).onLong(123);
+		column.append(k1).onObject(today);
+		column.append(k2).onLong(123);
 
 		List<Entry<Integer, Object>> listOfEntry = column.stream(slice -> v -> Map.entry(slice, v)).toList();
 

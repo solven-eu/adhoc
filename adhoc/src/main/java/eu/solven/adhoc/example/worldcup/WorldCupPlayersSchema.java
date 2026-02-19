@@ -67,12 +67,12 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
-import eu.solven.adhoc.table.sql.JooqTableCapabilities;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -190,6 +190,20 @@ public class WorldCupPlayersSchema {
 		return f -> SimpleFilterEditor.shiftIfPresent(f, "year", upToFunction());
 	}
 
+	@SuperBuilder
+	private static final class WorldCupQueryFactory extends JooqTableQueryFactory {
+
+		@Override
+		protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator, Field<Object> fieldToAggregate) {
+			if (aggregator.getAggregationKey().equals(EventAggregation.class.getName())) {
+				// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
+				return DSL.aggregate("array_agg", Object.class, fieldToAggregate);
+			} else {
+				return super.onCustomAggregation(aggregator, fieldToAggregate);
+			}
+		}
+	}
+
 	public ITableWrapper getTable(String tableName) {
 		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
 
@@ -208,24 +222,14 @@ public class WorldCupPlayersSchema {
 				.build();
 
 		return new JooqTableWrapper(tableName, tableParameters) {
+
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-				return new JooqTableQueryFactory(tableParameters.getOperatorFactory(),
-						tableParameters.getTable(),
-						dslContext,
-						JooqTableCapabilities.from(dslContext.dialect())) {
-
-					@Override
-					protected AggregateFunction<?> onCustomAggregation(Aggregator aggregator,
-							Field<Object> fieldToAggregate) {
-						if (aggregator.getAggregationKey().equals(EventAggregation.class.getName())) {
-							// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-							return DSL.aggregate("array_agg", Object.class, fieldToAggregate);
-						} else {
-							return super.onCustomAggregation(aggregator, fieldToAggregate);
-						}
-					}
-				};
+				return WorldCupQueryFactory.builder()
+						.operatorFactory(tableParameters.getOperatorFactory())
+						.table(tableParameters.getTable())
+						.dslContext(dslContext)
+						.build();
 			}
 		};
 	}

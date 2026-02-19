@@ -54,25 +54,6 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 */
 	IValueProvider onValue(T key);
 
-	/**
-	 * Similar to a `.set` but the value is available through a {@link IValueReceiver}
-	 * 
-	 * @param slice
-	 * @param o
-	 */
-	@Deprecated(since = "Prefer `IValueProvider set(T key)`")
-	default void set(T slice, Object o) {
-		set(slice).onObject(o);
-	}
-
-	/**
-	 * 
-	 * @param key
-	 * @return a IValueReceiver to provide the value
-	 */
-	@Deprecated(since = "Should be removed from the API")
-	IValueReceiver set(T key);
-
 	@Override
 	IMultitypeColumnFastGet<T> purgeAggregationCarriers();
 }

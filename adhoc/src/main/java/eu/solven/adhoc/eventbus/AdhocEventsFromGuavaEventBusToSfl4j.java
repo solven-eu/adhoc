@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
+@Deprecated(forRemoval = true)
 public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener {
 	public static final String EOL = System.lineSeparator();
 	private static final Pattern EOL_PATTERN = Pattern.compile(System.lineSeparator());

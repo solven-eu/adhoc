@@ -38,7 +38,7 @@ import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -74,6 +74,7 @@ public interface ITableQueryOptimizer {
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
+		// The nodes which are explicitly requested. Typically roots of DAG, but may also be some shared inner nodes.
 		@NonNull
 		@Singular
 		ImmutableSet<CubeQueryStep> explicits;
@@ -89,6 +90,11 @@ public interface ITableQueryOptimizer {
 
 		public static SplitTableQueries empty() {
 			return SplitTableQueries.builder().inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class)).build();
+		}
+
+		@Override
+		public long edgeCount() {
+			return inducedToInducer.iterables().edgeCount();
 		}
 	}
 

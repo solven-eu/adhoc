@@ -1,5 +1,17 @@
 # Pivotable
 
+`Pivotable` is a library providing an API layer and a Single-Page-Application on top of Adhoc.
+
+While it can be considered as an autonomous/full-fledged application, it remains a customizable library.
+
+To rely on it through Spring, one should have the following configuration in your own configuration:
+- `Environment`: `SPRING_CONFIG_IMPORT=classpath:pivotable-config.yml`
+- `Property`: `-Dspring.config.import=classpath:pivotable-config.yml`
+- `application.yml`: `spring.config.import: classpath:pivotable-config.yml`
+- `application.properties`: `spring.config.import=classpath:pivotable-config.yml`
+
+This is not provided by default as we keep Pivotable behaving as a library, and Spring-Boot required this property to be in the root configuration.
+
 ## Quick-Start
 
 Run the main in:
@@ -59,3 +71,32 @@ The default implementations is based over:
 - Enable quick developments
 - Make not be satisfactory for production application (as it is sub-optimal by not being compiled)
 - Make not be satisfactory for a full-fledged application (as it has strong restrictions in term of available tools (no TypeScript, no `.vue` files, etc)).
+
+# Authentication
+
+Pivotable authentication relies on a custom JWT. The JWT is generated following a login flow.
+
+The signature of JWTs is managed by `PivotableResourceServerConfiguration`.
+The generation of JWTs is managed by `PivotableTokenService`.
+
+## Custom Authentication
+
+The main class to define authentication methods is `PivotableLoginController`.
+
+Pivotable provides 2 authentication methods by default:
+- BASIC, through the Spring profile `pivotable-unsafe_fakeuser`
+- OAuth2, with examples provided for Google and Github, relying on core [SpringBoot](https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html).
+
+One can register an additional oauth2 method with:
+
+```
+spring:
+    application.name: pivotable-server
+    security:
+        oauth2:
+            client:
+                registration:
+                    some_provider_id:
+                        clientId: someClientId
+                        clientSecret: someClientSecret
+```

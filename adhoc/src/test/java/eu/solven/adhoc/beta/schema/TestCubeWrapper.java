@@ -27,6 +27,8 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -140,5 +142,27 @@ public class TestCubeWrapper {
 				.containsEntry("aliasC",
 						ColumnMetadata.builder().name("aliasC").type(Object.class).tag("alias").build())
 				.hasSize(2);
+	}
+
+	@Test
+	public void testgetHealth() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		table.add(Map.of("rawC", "someV"));
+
+		CubeWrapper cube = CubeWrapper.builder()
+				.name(this.getClass().getSimpleName())
+				.forest(MeasureForest.empty())
+				.table(table)
+				.build();
+
+		Assertions.assertThat((Map) cube.getHealthDetails())
+				.containsEntry("table",
+						ImmutableMap.builder()
+								.put("name", "inMemory")
+								.put("rows", 1)
+								.put("type", InMemoryTable.class.getName())
+								.build())
+				.hasSize(1);
 	}
 }

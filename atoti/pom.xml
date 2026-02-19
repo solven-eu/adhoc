@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.0.16-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-atoti</artifactId>
@@ -28,14 +28,8 @@
 
 		<dependency>
 			<groupId>com.activeviam.activepivot</groupId>
-			<artifactId>activepivot-intf</artifactId>
+			<artifactId>activepivot-server-spring</artifactId>
 			<version>${activepivot.server.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>eu.solven.apex</groupId>
-			<artifactId>apex-server-cube</artifactId>
-			<version>${apex.version}</version>
 		</dependency>
 
 		<dependency>

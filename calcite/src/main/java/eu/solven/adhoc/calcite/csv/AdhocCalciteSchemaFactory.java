@@ -41,8 +41,8 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.pepper.mappath.MapPathGet;
 

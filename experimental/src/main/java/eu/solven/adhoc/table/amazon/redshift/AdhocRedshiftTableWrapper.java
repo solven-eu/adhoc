@@ -35,12 +35,11 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.redshiftdata.RedshiftDataAsyncClient;
 import software.amazon.awssdk.services.redshiftdata.model.ExecuteStatementRequest;
@@ -107,7 +106,7 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 						}
 
 						// Extract and print the field values using streams if the response is valid.
-						return response.records().stream().map(row -> toTabularRecord(sqlQuery, row));
+						return response.records().stream().map(row -> toTabularRecord(queryPod, sqlQuery, row));
 					})
 					.join();
 		}).thenApply(result -> {
@@ -130,7 +129,8 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 		// }
 	}
 
-	protected TabularRecordOverMaps toTabularRecord(IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
+	protected TabularRecordOverMaps toTabularRecord(QueryPod queryPod,
+			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
 			List<Field> row) {
 		Map<String, Object> aggregates = new LinkedHashMap<>();
 
@@ -147,9 +147,8 @@ public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		@NonNull
 		ImmutableList<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
-		MapBuilderPreKeys slice = sliceFactory.newMapBuilder(aggregateGroupBys);
+		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(aggregateGroupBys);
 
 		{
 			for (int i = 0; i < aggregateGroupBys.size(); i++) {

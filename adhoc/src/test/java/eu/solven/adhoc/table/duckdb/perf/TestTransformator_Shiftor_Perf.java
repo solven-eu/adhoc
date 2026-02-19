@@ -1,0 +1,234 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.table.duckdb.perf;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.assertj.core.api.Assertions;
+import org.duckdb.DuckDBAppender;
+import org.duckdb.DuckDBConnection;
+import org.jooq.impl.SQLDataType;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
+import eu.solven.adhoc.measure.sum.SubstractionCombination;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.AdhocBenchmark;
+import eu.solven.adhoc.util.IStopwatchFactory;
+import eu.solven.adhoc.util.NotYetImplementedException;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@AdhocBenchmark
+public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements IAdhocTestConstants {
+	static final int maxCardinality = 1000;
+	static final int nbDays = 10_000;
+
+	String tableName = "someTableName";
+
+	@BeforeAll
+	public static void setLimits() {
+		log.info("{} is evaluated on cardinality={}", TestTransformator_Shiftor_Perf.class.getName(), maxCardinality);
+		AdhocColumnUnsafe.setLimitColumnSize(maxCardinality * nbDays + 10);
+	}
+
+	@AfterAll
+	public static void resetLimits() {
+		AdhocColumnUnsafe.resetProperties();
+	}
+
+	LocalDate today = LocalDate.now();
+
+	@Override
+	public ITableWrapper makeTable() {
+		return new JooqTableWrapper(tableName,
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+	}
+
+	@BeforeEach
+	public void feedTable() {
+		dsl.createTableIfNotExists(tableName)
+				.column("l", SQLDataType.VARCHAR)
+				// Write as long to reduce the effect of ICoordinateNormalizer
+				.column("row_index", SQLDataType.BIGINT)
+				.column("d", SQLDataType.DATE)
+				.column("k1", SQLDataType.INTEGER)
+				.execute();
+
+		dsl.connection(c -> {
+			DuckDBConnection duckDBC = c.unwrap(DuckDBConnection.class);
+
+			DuckDBAppender appender = duckDBC.createAppender(tableName);
+
+			for (int i = 0; i < maxCardinality; i++) {
+				for (int d = 0; d < nbDays; d++) {
+					appender.beginRow();
+
+					appender.append("A");
+					// Write as long to reduce the effect of ICoordinateNormalizer
+					appender.append((long) i);
+					appender.append(today.minusDays(d));
+					appender.append((i + (nbDays - d) * (nbDays - d)));
+
+					appender.endRow();
+					// dsl.insertInto(DSL.table(tableName))
+					// .set(ImmutableMap.<String, Object>builder()
+					// .put("l", "A")
+					// // Write as long to reduce the effect of ICoordinateNormalizer
+					// .put("row_index", (long) i)
+					// .put("d", today.minusDays(d))
+					// .put("k1", (i + (nbDays - d) * (nbDays - d)))
+					// .build())
+					// .execute();
+				}
+			}
+		});
+	}
+
+	public IStopwatchFactory makeStopwatchFactory() {
+		return IStopwatchFactory.guavaStopwatchFactory();
+	}
+
+	public static class PreviousDayFilterEditor implements IFilterEditor {
+
+		@Override
+		public ISliceFilter editFilter(ISliceFilter filter) {
+			IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(filter, "d");
+
+			if (IValueMatcher.MATCH_ALL.equals(valueMatcher) || IValueMatcher.MATCH_NONE.equals(valueMatcher)) {
+				return filter;
+			} else if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+				LocalDate shiftedDate = shiftDate((LocalDate) equalsMatcher.getOperand());
+				return SimpleFilterEditor.shift(filter, "d", shiftedDate);
+			} else {
+				throw new NotYetImplementedException("Not managed: filter=%s".formatted(valueMatcher));
+			}
+		}
+
+		protected LocalDate shiftDate(LocalDate date) {
+			return date.minusDays(1);
+		}
+
+	}
+
+	String m = "previousYesterday";
+	String dToD = "dayToDay";
+
+	@BeforeEach
+	public void registerMeasures() {
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(Shiftor.builder()
+				.name(m)
+				.underlying(k1Sum.getName())
+				.editorKey(PreviousDayFilterEditor.class.getName())
+				.build());
+
+		forest.addMeasure(Combinator.builder()
+				.name(dToD)
+				.underlyings(List.of(k1Sum.getName(), m))
+				.combinationKey(SubstractionCombination.KEY)
+				.build());
+	}
+
+	@Test
+	public void testGrandTotal() {
+		List<String> messages = AdhocExplainerTestHelper.listenForExplainNoPerf(eventBusGuava());
+
+		ITabularView output = cube().execute(CubeQuery.builder().measure(dToD).explain(true).build());
+
+		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of(dToD, 0L));
+
+	}
+
+	@Test
+	public void testGroupByDate_maxRow() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
+
+		ITabularView output = cube().execute(
+				CubeQuery.builder().measure(dToD).groupByAlso("d").andFilter("row_index", maxCardinality - 1).build());
+
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
+				.hasSize(nbDays)
+				.containsEntry(Map.of("d", today),
+						Map.of(dToD,
+								0L + (maxCardinality - 1 + (nbDays - 0) * (nbDays - 0))
+										- (maxCardinality - 1 + (nbDays - 1) * (nbDays - 1))))
+				.containsEntry(Map.of("d", today.minusDays(1)),
+						Map.of(dToD,
+								0L + (maxCardinality - 1 + (nbDays - 1) * (nbDays - 1))
+										- (maxCardinality - 1 + (nbDays - 2) * (nbDays - 2))))
+				.containsEntry(Map.of("d", today.minusDays(nbDays - 1)),
+						Map.of(dToD, 0L + (maxCardinality - 1 + (nbDays - (nbDays - 1)) * (nbDays - (nbDays - 1)))
+						// lastDay has no previous day
+								- 0L));
+
+		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+	}
+
+	@Test
+	public void testGroupByRow_Today() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
+
+		ITabularView output = cube()
+				.execute(CubeQuery.builder().measure(dToD).groupByAlso("row_index").andFilter("d", today).build());
+
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
+				.hasSize(maxCardinality)
+				.containsEntry(Map.of("row_index", 0L),
+						Map.of(dToD,
+								0L + (maxCardinality + (nbDays) * (nbDays))
+										- (maxCardinality + (nbDays - 1) * (nbDays - 1))))
+				.containsEntry(Map.of("row_index", 1L),
+						Map.of(dToD,
+								0L + (maxCardinality - 1 + (nbDays) * (nbDays))
+										- (maxCardinality - 1 + (nbDays - 1) * (nbDays - 1))));
+
+		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+	}
+
+}

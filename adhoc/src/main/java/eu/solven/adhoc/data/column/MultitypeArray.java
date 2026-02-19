@@ -26,11 +26,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.IValueFunction;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -39,6 +39,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -74,7 +75,8 @@ public class MultitypeArray implements IMultitypeArray {
 	final List<Object> valuesO = new ArrayList<>(0);
 
 	@Default
-	final int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+	@Setter
+	int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -82,7 +84,7 @@ public class MultitypeArray implements IMultitypeArray {
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			ensureCapacityForType(type);

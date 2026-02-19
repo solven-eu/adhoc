@@ -61,4 +61,9 @@ public class PrefixAliaser implements ITableAliaser, ITableReverseAliaser {
 	public int estimateQueriedSize(Set<String> underlyingKeys) {
 		return underlyingKeys.size();
 	}
+
+	@Override
+	public boolean isIdentity() {
+		return prefix.isEmpty();
+	}
 }

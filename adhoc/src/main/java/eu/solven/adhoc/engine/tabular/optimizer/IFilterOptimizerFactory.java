@@ -23,10 +23,10 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 /**
  * Helps creating a {@link IFilterOptimizer}.
@@ -58,7 +58,7 @@ public interface IFilterOptimizerFactory {
 
 			@Override
 			public IFilterOptimizer makeOptimizer() {
-				return FilterOptimizer.builder().build();
+				return AdhocUnsafe.filterOptimizer;
 			}
 
 			@Override

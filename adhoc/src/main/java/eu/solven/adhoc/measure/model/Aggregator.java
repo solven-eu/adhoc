@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.model;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.measure.lambda.LambdaAggregation;
+import eu.solven.adhoc.measure.lambda.LambdaAggregation.ILambdaAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -86,6 +88,11 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 			} else {
 				return this;
 			}
+		}
+
+		public AggregatorBuilder lambda(ILambdaAggregation lambda) {
+			return aggregationKey(LambdaAggregation.class.getName()).aggregationOption(LambdaAggregation.K_LAMBDA,
+					lambda);
 		}
 	}
 

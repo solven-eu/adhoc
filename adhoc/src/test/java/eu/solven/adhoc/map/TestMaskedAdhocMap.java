@@ -22,21 +22,32 @@
  */
 package eu.solven.adhoc.map;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.map.MaskedAdhocMap.RetainAllKeys;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
+
 public class TestMaskedAdhocMap {
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
+
+	@Test
+	public void testEqualsVerifier() {
+		// Does not work due to extending AbstractMap and `keySet` is a private field
+		// EqualsVerifier.forClass(MaskedAdhocMap.class).verify();
+	}
 
 	@Test
 	public void testCompare_withSameMask() {
-		IAdhocMap decorated1 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated1 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked1 = MaskedAdhocMap.builder().decorated(decorated1).mask(Map.of("k2", "v2")).build();
 
-		IAdhocMap decorated2 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated2 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked2 = MaskedAdhocMap.builder().decorated(decorated2).mask(Map.of("k2", "v2")).build();
 
 		Assertions.assertThat((Map) masked1).isEqualTo(masked2);
@@ -45,10 +56,10 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testCompare_differentMask() {
-		IAdhocMap decorated1 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated1 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked1 = MaskedAdhocMap.builder().decorated(decorated1).mask(Map.of("k2", "v2")).build();
 
-		IAdhocMap decorated2 = StandardSliceFactory.fromMap(factory, Map.of("k2", "v2"));
+		IAdhocMap decorated2 = AdhocMapHelpers.fromMap(factory, Map.of("k2", "v2"));
 		MaskedAdhocMap masked2 = MaskedAdhocMap.builder().decorated(decorated2).mask(Map.of("k", "v")).build();
 
 		Assertions.assertThat((Map) masked1).isEqualTo(masked2);
@@ -57,7 +68,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testImmutable() {
-		IAdhocMap decorated1 = StandardSliceFactory.fromMap(factory, Map.of("k", "v"));
+		IAdhocMap decorated1 = AdhocMapHelpers.fromMap(factory, Map.of("k", "v"));
 		MaskedAdhocMap masked1 = MaskedAdhocMap.builder().decorated(decorated1).mask(Map.of("k2", "v2")).build();
 
 		Assertions.assertThatThrownBy(() -> masked1.clear()).isInstanceOf(UnsupportedOperationException.class);
@@ -69,7 +80,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testEquals() {
-		IAdhocMap decorated = StandardSliceFactory.fromMap(StandardSliceFactory.builder().build(), Map.of("a", "a1"));
+		IAdhocMap decorated = AdhocMapHelpers.fromMap(RowSliceFactory.builder().build(), Map.of("a", "a1"));
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
@@ -94,5 +105,95 @@ public class TestMaskedAdhocMap {
 
 		Assertions.assertThat((Map) masked).containsKey("b");
 		Mockito.verify(decorated, Mockito.times(1)).containsKey("b");
+	}
+
+	@Test
+	public void testRetainAll_excludeMask() {
+		IAdhocMap decorated = RowSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retainA = masked.retainAll(Set.of("a"));
+
+		Assertions.assertThat((Map) retainA).isEqualTo(Map.of("a", "a1"));
+	}
+
+	@Test
+	public void testRetainAll_excludeOnlyMask() {
+		IAdhocMap decorated = RowSliceFactory.builder().build().newMapBuilder(List.of("a")).append("a1").build();
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retainA = masked.retainAll(Set.of("b"));
+
+		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
+			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
+			Assertions.assertThat((Map) masked3.decorated).isEqualTo(Map.of());
+			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("b", "b2"));
+		}).isEqualTo(Map.of("b", "b2"));
+	}
+
+	@Test
+	public void testRetainAll_excludePartialMaskPartialDecorated() {
+		IAdhocMap decorated =
+				RowSliceFactory.builder().build().newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+		Map<String, ?> mask = Map.of("c", "c2", "d", "d2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retainA = masked.retainAll(Set.of("b", "c"));
+
+		Assertions.assertThat((Map) retainA).isInstanceOfSatisfying(MaskedAdhocMap.class, masked2 -> {
+			MaskedAdhocMap masked3 = (MaskedAdhocMap) masked2;
+			Assertions.assertThat((Map) masked3.decorated).isEqualTo(Map.of("b", "b1"));
+			Assertions.assertThat((Map) masked3.mask).isEqualTo(Map.of("c", "c2"));
+		});
+	}
+
+	@Test
+	public void testRetainAll_Cache_sameRefMask() {
+		Map<String, ?> mask = Map.of("b", "b1");
+
+		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a"), mask, Map.of());
+		Assertions.assertThat(result.isCompatible(Set.of("a"), mask)).isTrue();
+	}
+
+	@Test
+	public void testRetainAll_Cache_equalsMask() {
+		Map<String, ?> mask = Map.of("b", "b1");
+
+		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a"), mask, Map.of());
+		Assertions.assertThat(result.isCompatible(Set.of("a"), Map.of("b", "b1"))).isTrue();
+	}
+
+	@Test
+	public void testRetainAll_Cache_notEqualsSameKeySetMask() {
+		Map<String, ?> mask = Map.of("b", "b1");
+
+		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a"), mask, Map.of());
+		Assertions.assertThat(result.isCompatible(Set.of("a"), Map.of("b", "b2"))).isTrue();
+	}
+
+	@Test
+	public void testRetainAll_Cache_notEqualsMask() {
+		Map<String, ?> mask = Map.of("b", "b1");
+
+		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a"), mask, Map.of());
+		Assertions.assertThat(result.isCompatible(Set.of("a"), Map.of("c", "b1"))).isFalse();
+	}
+
+	@Test
+	public void testRetainAll_Cache_retainedLess() {
+		Map<String, ?> mask = Map.of("b", "b1");
+
+		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a", "b"), mask, Map.of());
+		Assertions.assertThat(result.isCompatible(Set.of("a"), mask)).isFalse();
+	}
+
+	@Test
+	public void testRetainAll_Cache_retainedMore() {
+		Map<String, ?> mask = Map.of("b", "b1");
+
+		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a", "b"), mask, Map.of());
+		Assertions.assertThat(result.isCompatible(Set.of("a", "b", "c"), mask)).isFalse();
 	}
 }

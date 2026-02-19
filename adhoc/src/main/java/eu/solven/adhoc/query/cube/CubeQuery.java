@@ -37,9 +37,10 @@ import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IColumnFilter;
@@ -174,7 +175,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		 * @return the builder
 		 */
 		public CubeQueryBuilder andFilter(String column, Object value) {
-			return andFilter(ColumnFilter.builder().column(column).matching(value).build());
+			return andFilter(ColumnFilter.matchLax(column, value));
 		}
 
 		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {

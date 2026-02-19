@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,12 @@ public class TestAdhocEventsFromGuavaEventBusToSfl4j {
 		logWatcher = new ListAppender<>();
 		logWatcher.start();
 		((Logger) LoggerFactory.getLogger(AdhocEventsFromGuavaEventBusToSfl4j.class)).addAppender(logWatcher);
+	}
+
+	@AfterEach
+	void teardown() {
+		// Ensure we detach the ListAppender, else it may lead to memory leaks through unrelated tests
+		((Logger) LoggerFactory.getLogger(AdhocEventsFromGuavaEventBusToSfl4j.class)).detachAppender(logWatcher);
 	}
 
 	@Test

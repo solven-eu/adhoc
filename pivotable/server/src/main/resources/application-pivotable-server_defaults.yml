@@ -1,0 +1,31 @@
+# Reasonnable default server configuration, generally useful for Pivotable
+
+spring:
+    application.name: pivotable-server
+    graphql:
+        graphiql:
+            enabled: true
+
+server:
+  # https://stackoverflow.com/questions/55237276/how-to-return-gzip-responses-with-spring-webflux
+  compression:
+    enabled: true
+    mime-types: application/json, application/hal+json
+    min-response-size: 1024
+  # https://stackoverflow.com/questions/53810900/why-there-is-no-exception-stack-trace-in-spring-webflux-with-default-configurati
+  error.includeStacktrace: ALWAYS
+
+# Relates with ApplicationPidFileWriter
+spring.pid.fail-on-write-error:
+  true
+
+springdoc.show-actuator: true
+  
+# https://stackoverflow.com/questions/55877188/spring-boot-actuator-returns-404-not-found
+management.endpoints.web.exposure.include: health,info,beans
+
+
+management:
+  endpoint:
+    health:
+      show-details: always

@@ -44,7 +44,7 @@ class SmileEditDistance {
 	 * @return the distance.
 	 */
 	@SuppressWarnings("PMD.AvoidArrayLoops")
-	public static int levenshtein(String x, String y) {
+	static int levenshtein(String x, String y) {
 		// switch parameters to use the shorter one as y to save space.
 		if (x.length() < y.length()) {
 			String swap = x;

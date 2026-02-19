@@ -50,8 +50,8 @@ import eu.solven.adhoc.measure.model.Shiftor;
  * It is expected to give better results on measure having a {@link Dispatchor} or {@link Shiftor} underlying: these
  * relies on a hash-column, but a measure depending on them may also receive underlyings with a navigable-column: we
  * should give priority to navigable ordering, and process hashes as left-overs. It would also give better result as it
- * enables switching automatically to a hash-column, instead of doing many insertions at random index if we stick to a
- * navigable-column.
+ * enables switching automatically to a hash-column, instead of doing many insertions at random index (hence
+ * binarySearch) if we stick to a navigable-column.
  * 
  * @author Benoit Lacelle
  */
@@ -62,21 +62,24 @@ public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrateg
 	@Override
 	public <T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity) {
 		MultitypeNavigableColumn navigable = MultitypeNavigableColumn.builder().capacity(initialCapacity).build();
-		return (IMultitypeColumnFastGet) MultitypeNavigableElseHashColumn.builder()
-				.navigable(navigable)
-				.hash(MultitypeHashColumn.builder().capacity(initialCapacity).build())
-				.build();
+		MultitypeHashColumn<T> hash = MultitypeHashColumn.<T>builder().capacity(initialCapacity).build();
+		return MultitypeNavigableElseHashColumn.builder().navigable(navigable).hash(hash).build();
 	}
 
 	@Override
 	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
+		MultitypeNavigableMergeableColumn navigable =
+				MultitypeNavigableMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build();
+		IMultitypeMergeableColumn<Object> hash = makeColumnRandomInserts(agg, initialCapacity);
 		return (IMultitypeMergeableColumn) MultitypeNavigableElseHashMergeableColumn.mergeable(agg)
-				.navigable((MultitypeNavigableMergeableColumn) MultitypeNavigableMergeableColumn.builder()
-						.aggregation(agg)
-						.capacity(initialCapacity)
-						.build())
-				.hash(MultitypeHashMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build())
+				.navigable(navigable)
+				.hash(hash)
 				.build();
+	}
+
+	@Override
+	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInserts(IAggregation agg, int initialCapacity) {
+		return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).capacity(initialCapacity).build();
 	}
 
 	@Override

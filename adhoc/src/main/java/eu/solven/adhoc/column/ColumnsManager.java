@@ -48,7 +48,6 @@ import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.AdhocExceptionAsMeasureValueHelper;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -59,7 +58,7 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
@@ -196,7 +195,7 @@ public class ColumnsManager implements IColumnsManager {
 					.source(this)
 					.build());
 		}
-		if (queryPod.isExplain() && !transcodingContext.isOnlyIdentity()) {
+		if (queryPod.isExplain() && !transcodingContext.isIdentity()) {
 			eventBus.post(AdhocLogEvent.builder()
 					.explain(true)
 					.messageT("Transcoded context is %s", transcodingContext)
@@ -308,6 +307,11 @@ public class ColumnsManager implements IColumnsManager {
 			public int estimateQueriedSize(Set<String> underlyingKeys) {
 				return estimatedSize;
 			}
+
+			@Override
+			public boolean isIdentity() {
+				return transcodingContext.isIdentity();
+			}
 		};
 	}
 
@@ -318,15 +322,17 @@ public class ColumnsManager implements IColumnsManager {
 			return row;
 		}
 
-		Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys().getCoordinates());
+		// Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys().getCoordinates());
+
+		Map<String, Object> computed = new LinkedHashMap<>();
 
 		columns.forEach((columnName, column) -> {
 			// TODO handle recursive formulas (e.g. a formula relying on another formula)
-			enrichedGroupBy.put(columnName, column.computeCoordinate(row));
+			computed.put(columnName, column.computeCoordinate(row));
 		});
 
 		return TabularRecordOverMaps.builder()
-				.slice(SliceAsMap.fromMap(enrichedGroupBy))
+				.slice(row.getGroupBys().addColumns(computed))
 				.aggregates(row.aggregatesAsMap())
 				.build();
 	}

@@ -153,7 +153,7 @@ public class MoreFilterHelpers {
 	 *
 	 * @return true if the input matches the filter, where each column in input is transcoded.
 	 */
-	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterParameters`")
+	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterMatcher`")
 	public static boolean match(ITableAliaser transcoder,
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,

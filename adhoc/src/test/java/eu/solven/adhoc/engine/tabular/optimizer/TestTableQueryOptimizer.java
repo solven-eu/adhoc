@@ -28,6 +28,8 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSortedSet;
+
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
@@ -306,5 +308,22 @@ public class TestTableQueryOptimizer {
 				.hasSize(2)
 				.contains(CubeQueryStep.edit(tq1).measure(Aggregator.sum("m1")).build())
 				.contains(CubeQueryStep.edit(tq2).measure(Aggregator.sum("m1")).build());
+	}
+
+	@Test
+	public void testBreakSorting() {
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a"), ImmutableSortedSet.of("a"))).isFalse();
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a"), ImmutableSortedSet.of())).isFalse();
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a"), ImmutableSortedSet.of("a", "b")))
+				.isTrue();
+
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of("a")))
+				.isFalse();
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of()))
+				.isFalse();
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of("b")))
+				.isTrue();
+		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of("a", "c")))
+				.isTrue();
 	}
 }

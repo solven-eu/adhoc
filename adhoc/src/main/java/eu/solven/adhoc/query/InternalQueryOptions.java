@@ -31,6 +31,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 

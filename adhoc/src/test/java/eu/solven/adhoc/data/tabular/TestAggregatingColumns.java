@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.util.ReflectionUtils;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.UndictionarizedColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -38,16 +39,13 @@ import it.unimi.dsi.fastutil.objects.Object2LongMap;
 
 public class TestAggregatingColumns {
 	Aggregator a = Aggregator.sum("c");
+	AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
 
 	@Test
 	public void testUnknownKey() {
-		AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
-
 		aggregatingColumns.contribute("k", a).onLong(123);
 
-		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a
-		// , false
-		);
+		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a);
 
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();
@@ -56,8 +54,6 @@ public class TestAggregatingColumns {
 
 	@Test
 	public void testClose_empty() {
-		AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
-
 		Assertions.assertThat(aggregatingColumns.sliceToIndex)
 				.isInstanceOfSatisfying(Object2IntOpenHashMap.class, openHashMap -> {
 					Field field = ReflectionUtils.findField(Object2IntOpenHashMap.class, "value");
@@ -78,8 +74,6 @@ public class TestAggregatingColumns {
 
 	@Test
 	public void testClose_has1() {
-		AggregatingColumns<String> aggregatingColumns = AggregatingColumns.<String>builder().build();
-
 		aggregatingColumns.openSlice("row").contribute(a).onDouble(123D);
 
 		Assertions.assertThat(aggregatingColumns.sliceToIndex)

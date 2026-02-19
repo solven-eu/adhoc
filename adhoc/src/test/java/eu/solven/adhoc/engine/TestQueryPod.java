@@ -78,12 +78,23 @@ public class TestQueryPod {
 		QueryPod queryContext =
 				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.adhocCommonPool).build();
 
-		Assertions.assertThat(queryContext.getExecutorService().toString())
-				.startsWith("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator")
-				.contains("java.util.concurrent.ForkJoinPool");
+		if (Runtime.version().feature() >= 25) {
+			// ForkJoinPool is a ScheduledExecutorService from Java25
+			Assertions.assertThat(queryContext.getExecutorService().toString())
+					.startsWith("com.google.common.util.concurrent.MoreExecutors$ScheduledListeningDecorator")
+					.contains("java.util.concurrent.ForkJoinPool");
 
-		Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
-				// java.util.concurrent.ForkJoinPool
-				.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator");
+			Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
+					// java.util.concurrent.ForkJoinPool
+					.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ScheduledListeningDecorator");
+		} else {
+			Assertions.assertThat(queryContext.getExecutorService().toString())
+					.startsWith("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator")
+					.contains("java.util.concurrent.ForkJoinPool");
+
+			Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
+					// java.util.concurrent.ForkJoinPool
+					.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator");
+		}
 	}
 }

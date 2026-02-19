@@ -54,6 +54,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -63,18 +64,15 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.ISliceCompressor;
-import eu.solven.adhoc.data.row.slice.NoopSliceCompressor;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
@@ -82,10 +80,9 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.pepper.mappath.MapPathGet;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
@@ -95,20 +92,17 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-public class JooqTableWrapper implements ITableWrapper, IHasCache {
+@SuppressWarnings("PMD.GodClass")
+public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
 
 	@NonNull
 	final String name;
 
 	@NonNull
 	final JooqTableWrapperParameters tableParameters;
-
-	@NonNull
-	@Default
-	protected ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
 
 	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()
 			// https://github.com/google/guava/wiki/cachesexplained#refresh
@@ -123,10 +117,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				}
 			})
 			.build(CacheLoader.asyncReloading(CacheLoader.from(this::noCacheGetFields), AdhocUnsafe.maintenancePool));
-
-	public JooqTableWrapper(String name, JooqTableWrapperParameters tableParameters) {
-		this(name, tableParameters, StandardSliceFactory.builder().build());
-	}
 
 	@Override
 	public String getName() {
@@ -248,7 +238,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 		}
 
 		JooqTableWrapperParameters parameters = parametersBuilder.build();
-		return new JooqTableWrapper(tableName, parameters, StandardSliceFactory.builder().build());
+		return new JooqTableWrapper(tableName, parameters);
 	}
 
 	public DSLContext makeDsl() {
@@ -277,18 +267,20 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 		Stream<ITabularRecord> tableStream = toMapStream(queryPod, resultQuery);
 
-		Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
-		// Given the groupBy, we are guaranteed to receive distinct records
-		int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
-		Stream<ITabularRecord> modifiedStream =
-				StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, false);
-
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
-		return new SuppliedTabularRecordStream(tableQuery,
-				distinctSlices,
-				// sliceFactory.getNullPlaceholder(),
-				() -> modifiedStream);
+		Stream<ITabularRecord> modifiedStream;
+		if (distinctSlices) {
+			Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
+
+			int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
+			modifiedStream =
+					StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, tableStream.isParallel());
+		} else {
+			modifiedStream = tableStream;
+
+		}
+		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> modifiedStream);
 	}
 
 	protected String toSQL(ResultQuery<Record> resultQuery) {
@@ -296,8 +288,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	protected boolean areDistinctSliced(TableQueryV2 tableQuery, QueryWithLeftover resultQuery) {
-		if (resultQuery.getLeftover().isMatchAll() && resultQuery.getAggregatorToLeftovers().isEmpty()) {
+		if (resultQuery.getQueries().size() >= 2) {
+			// Given the groupBy, we are guaranteed to receive distinct records
+			// Clarify when partitioning breaks isDistinct
+			return false;
+		} else if (resultQuery.getLeftover().isMatchAll() && resultQuery.getAggregatorToLeftovers().isEmpty()) {
 			// SQL Engines guarantee a single record per groupBy
+			// InMemoryTable does not manage aggregation: how is this managed?
 			return true;
 		} else {
 			// We may have queried columns which are not part of the groupBy
@@ -338,25 +335,15 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(sqlQuery);
+		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery);
 
-		ISliceCompressor sliceCompressor = makeSliceCompressor();
+		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
 
-		ResultQuery<Record> resultQuery = sqlQuery.getQuery();
-
-		return toStream(queryPod, resultQuery).map(r -> intoTabularRecord(tabularRecordFactory, r))
+		return resultQuery.stream()
+				.flatMap(oneQuery -> toStream(queryPod, oneQuery))
+				.map(r -> intoTabularRecord(tabularRecordFactory, r))
 				// leftover in WHERE
-				.filter(row -> {
-					return MoreFilterHelpers.match(sqlQuery.getLeftover(), row);
-				})
-				// DESIGN NOTE: we dictionarize after the leftover filter. Is it premature? It fits with
-				// dictionarization being fully independant of slice initial creation.
-				.map(row -> {
-					return TabularRecordOverMaps.builder()
-							.aggregates(row.aggregatesAsMap())
-							.slice(sliceCompressor.compress(row.getGroupBys()))
-							.build();
-				})
+				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
 				// leftover in FILTER
 				.map(row -> {
 					Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();
@@ -382,8 +369,9 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 				});
 	}
 
-	protected JooqTabularRecordFactory makeTabularRecordFactory(IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		return new JooqTabularRecordFactory(sqlQuery.getFields(), sliceFactory);
+	protected ITabularRecordFactory makeTabularRecordFactory(QueryPod queryPod,
+			IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+		return new JooqTabularRecordFactory(sqlQuery.getFields(), queryPod.getSliceFactory());
 	}
 
 	protected Stream<Record> toStream(QueryPod queryPod, ResultQuery<Record> resultQuery) {
@@ -426,11 +414,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 		});
 	}
 
-	protected ISliceCompressor makeSliceCompressor() {
-		// ByPageSliceDictionarizer.builder().build()
-		return new NoopSliceCompressor();
-	}
-
 	// Inspired from AbstractRecord.intoMap
 	// Take original `queriedColumns` as the record may not clearly express aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
@@ -471,7 +454,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
 			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
@@ -481,11 +464,20 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache {
 	@Override
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		// TODO How should `null` be reported?
-		if (SQLDialect.DUCKDB.equals(tableParameters.getDslSupplier().getDSLContext().dialect())) {
+		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
 			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);
 		}
+	}
+
+	@Override
+	public Map<String, ?> getHealthDetails() {
+		return ImmutableMap.<String, Object>builder()
+				.put("tableLike", tableParameters.getTable().toString())
+				.put("dialect", tableParameters.getDslSupplier().getDSLContext().dialect())
+				.put("dslContextCreationTime", tableParameters.getDslSupplier().getDSLContext().creationTime())
+				.build();
 	}
 
 }

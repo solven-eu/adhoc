@@ -28,8 +28,8 @@ import java.util.Map;
 
 import eu.solven.adhoc.data.row.ITabularRecordFactory;
 import eu.solven.adhoc.data.row.TabularRecordBuilder;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -62,7 +62,7 @@ public class JooqTabularRecordFactory implements ITabularRecordFactory {
 	public TabularRecordBuilder makeTabularRecordBuilder() {
 		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(getAggregates().size());
 
-		MapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(getColumns());
+		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(getColumns());
 
 		return new TabularRecordBuilder(aggregates, sliceBuilder);
 	}

@@ -67,7 +67,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerSecurityApplication.class,
-		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+		properties = IPivotableSpringProfiles.P_CONFIG_IMPORT)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, })
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
@@ -140,7 +141,7 @@ public class TestSecurity_WithOAuth2User {
 
 	@Test
 	public void testLoginOptions() {
-		log.debug("About {}", GreetingHandler.class);
+		log.debug("About {}", PivotableLoginController.class);
 
 		getWebTestClient()
 
@@ -160,15 +161,17 @@ public class TestSecurity_WithOAuth2User {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void onLoginOptions(Map loginOptions) {
 		Map<String, ?> asMap = (Map<String, ?>) loginOptions.get("map");
-		assertThat(asMap).hasSize(2).containsKeys("github", "google");
+		assertThat(asMap).hasSize(3).containsKeys("github", "google", IPivotableSpringProfiles.P_FAKEUSER);
 
 		Assertions.assertThat((Map) asMap.get("github")).containsEntry("login_url", "/oauth2/authorization/github");
 
 		List<Map<String, ?>> asList = (List<Map<String, ?>>) loginOptions.get("list");
-		assertThat(asList).hasSize(2).anySatisfy(m -> {
+		assertThat(asList).hasSize(3).anySatisfy(m -> {
 			Assertions.assertThat((Map) m).containsEntry("login_url", "/oauth2/authorization/github").hasSize(4);
 		}).anySatisfy(m -> {
 			Assertions.assertThat((Map) m).containsEntry("login_url", "/oauth2/authorization/google");
+		}).anySatisfy(m -> {
+			Assertions.assertThat((Map) m).containsEntry("login_url", "/html/login/basic");
 		});
 	}
 

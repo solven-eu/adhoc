@@ -1,4 +1,4 @@
-name: Playwright Tests
+name: JS Integration (Playwright) Tests
 on:
   push:
     branches: [ main, master ]
@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     # Package the server to serve API and JS
     - name: Set up JDK 21
@@ -33,7 +33,7 @@ jobs:
     - name: Run Playwright tests
       working-directory: ./pivotable/js
       run: npm run pw_localhost8080
-    - uses: actions/upload-artifact@v5
+    - uses: actions/upload-artifact@v6
       if: always()
       with:
         name: playwright-report

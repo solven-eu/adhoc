@@ -37,6 +37,7 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -92,7 +93,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	protected void checkSizeBeforeAdd(int type) {
 		long size = size();
 
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			ensureCapacityForType(type);
@@ -117,7 +118,18 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	protected boolean containsKey(T key) {
-		return sliceToValueL.containsKey(key) || sliceToValueD.containsKey(key) || sliceToValueO.containsKey(key);
+		// `isEmpty` does not really improve performance, but it prevents
+		// sliceToValueL from soaking profiling when empty
+		if (!sliceToValueL.isEmpty() && sliceToValueL.containsKey(key)) {
+			return true;
+		}
+		if (!sliceToValueD.isEmpty() && sliceToValueD.containsKey(key)) {
+			return true;
+		}
+		if (!sliceToValueO.isEmpty() && sliceToValueO.containsKey(key)) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -133,11 +145,6 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		}
 
 		return unsafePut(key, false);
-	}
-
-	@Override
-	public IValueReceiver set(T key) {
-		return unsafePut(key, true);
 	}
 
 	/**

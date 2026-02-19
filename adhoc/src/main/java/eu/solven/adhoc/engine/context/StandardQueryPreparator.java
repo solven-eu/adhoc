@@ -40,15 +40,16 @@ import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.IQueryOption;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -105,6 +106,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				.columnsManager(columnsManager)
 				.executorService(getExecutorService(preparedQuery))
 				.queryStepCache(getQueryStepCache(preparedQuery))
+				.sliceFactory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(preparedQuery))
 				.build();
 
 		// Filtering the forest is useful for edge-cades like:

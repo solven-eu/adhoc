@@ -56,7 +56,8 @@ public class TestPivotableTokenService {
 	@Test
 	public void testJwt_refreshToken() throws JOSEException, ParseException {
 		SecureRandom secureRandom = new SecureRandom(new byte[] { 0, 1, 2 });
-		JWK signatureSecret = PivotableTokenService.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE);
+		JWK signatureSecret =
+				PivotableResourceServerConfiguration.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE);
 		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://some.issuer.domain");
 		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, signatureSecret.toJSONString());
 
@@ -89,7 +90,8 @@ public class TestPivotableTokenService {
 	@Test
 	public void testJwt_accessToken() throws JOSEException, ParseException {
 		SecureRandom secureRandom = new SecureRandom(new byte[] { 0, 1, 2 });
-		JWK signatureSecret = PivotableTokenService.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE);
+		JWK signatureSecret =
+				PivotableResourceServerConfiguration.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE);
 		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://some.issuer.domain");
 		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, signatureSecret.toJSONString());
 

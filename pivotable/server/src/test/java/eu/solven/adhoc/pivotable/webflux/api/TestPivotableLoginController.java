@@ -27,6 +27,8 @@ import java.security.SecureRandom;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.context.ApplicationContext;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
@@ -37,6 +39,7 @@ import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
+import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
 import eu.solven.adhoc.tools.IUuidGenerator;
 import eu.solven.adhoc.tools.JdkUuidGenerator;
 
@@ -65,10 +68,16 @@ public class TestPivotableLoginController {
 		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.adhoc");
 		SecureRandom secureRandom = new SecureRandom(new byte[] { 0, 1, 2 });
 		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY,
-				PivotableTokenService.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE).toJSONString());
+				PivotableResourceServerConfiguration.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE)
+						.toJSONString());
 
 		kumiteTokenService = new PivotableTokenService(env, uuidGenerator);
-		controller = new PivotableLoginController(clientRegistrationRepository, usersRegistry, env, kumiteTokenService);
+		ApplicationContext appContext = Mockito.mock(ApplicationContext.class);
+		Mockito.when(appContext.getEnvironment()).thenReturn(new MockEnvironment());
+		Mockito.doReturn(clientRegistrationRepository)
+				.when(appContext)
+				.getBean(InMemoryReactiveClientRegistrationRepository.class);
+		controller = new PivotableLoginController(appContext, usersRegistry, env, kumiteTokenService);
 	}
 
 	@Test

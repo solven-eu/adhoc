@@ -119,8 +119,8 @@ public class FilterHelpers {
 				if (splitOrs.isEmpty()) {
 					return IValueMatcher.MATCH_NONE;
 				} else if (splitOrs.size() == 1) {
-					throw new UnsupportedOperationException(
-							"filter:%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+					throw new UnsupportedOperationException("filter:%s column:%s is not managed"
+							.formatted(PepperLogHelper.getObjectAndClass(filter), column));
 				} else {
 					Set<IValueMatcher> orMatchers = splitOrs.stream()
 							.map(f -> getValueMatcherLax(f, column, throwOnOr))
@@ -131,8 +131,8 @@ public class FilterHelpers {
 						// This is a common factor to all OR operands
 						return orMatchers.iterator().next();
 					} else if (throwOnOr) {
-						throw new UnsupportedOperationException(
-								"filter:%s is not managed".formatted(PepperLogHelper.getObjectAndClass(filter)));
+						throw new UnsupportedOperationException("filter:%s column:%s is not managed"
+								.formatted(PepperLogHelper.getObjectAndClass(filter), column));
 					} else {
 						return OrMatcher.or(orMatchers.stream()
 								// .filter(m -> !IValueMatcher.MATCH_ALL.equals(m))
@@ -201,26 +201,6 @@ public class FilterHelpers {
 		}
 	}
 
-	@Deprecated
-	public static Set<String> getFilteredColumnsFlatMap(ISliceFilter filter) {
-		return streamFilteredColumns(filter).collect(ImmutableSet.toImmutableSet());
-	}
-
-	@Deprecated
-	static Stream<String> streamFilteredColumns(ISliceFilter filter) {
-		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			return Stream.of(columnFilter.getColumn());
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			return andFilter.getOperands().stream().flatMap(FilterHelpers::streamFilteredColumns);
-		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			return orFilter.getOperands().stream().flatMap(FilterHelpers::streamFilteredColumns);
-		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			return streamFilteredColumns(notFilter.getNegated());
-		} else {
-			throw new NotYetImplementedException("filter=%s".formatted(PepperLogHelper.getObjectAndClass(filter)));
-		}
-	}
-
 	public static IValueMatcher wrapWithToString(IValueMatcher valueMatcher, Supplier<String> toString) {
 		return new IValueMatcher() {
 			@Override
@@ -236,6 +216,7 @@ public class FilterHelpers {
 		};
 	}
 
+	@Deprecated(since = "Is this useful API?")
 	public static boolean visit(ISliceFilter filter, IFilterVisitor filterVisitor) {
 		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			return filterVisitor.testAndOperands(andFilter.getOperands());

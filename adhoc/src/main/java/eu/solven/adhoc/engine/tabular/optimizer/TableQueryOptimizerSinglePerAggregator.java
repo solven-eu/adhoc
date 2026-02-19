@@ -43,8 +43,8 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterUtility;
@@ -57,7 +57,6 @@ import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -286,7 +285,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
 			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
 		} else {
-			filterStripperFactory = AdhocUnsafe.filterStripperFactory;
+			filterStripperFactory = factories.getFilterStripperFactory();
 		}
 		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
 	}

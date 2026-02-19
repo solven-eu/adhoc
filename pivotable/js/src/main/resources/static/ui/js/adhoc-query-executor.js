@@ -298,6 +298,7 @@ export default {
 							}
 
 							// https://stackoverflow.com/questions/35038857/setting-query-string-using-fetch-get-request
+							props.tabularView.loading.fetching = true;
 							const responseStateOnly = await userStore.authenticatedFetch(
 								url +
 									"/result?" +
@@ -307,8 +308,11 @@ export default {
 									}).toString(),
 								fetchStateOnlyOptions,
 							);
+							props.tabularView.loading.fetching = false;
+							props.tabularView.loading.latestFetched = new Date();
 
 							if (responseStateOnly.status !== 200) {
+								console.error("Fetching error body from", responseStateOnly);
 								const errorBody = await responseStateOnly.json();
 								throw new Error("Issue fetch result: " + JSON.stringify(errorBody));
 							}
@@ -331,7 +335,9 @@ export default {
 								function sleep(time) {
 									return new Promise((resolve) => setTimeout(resolve, time));
 								}
+								props.tabularView.loading.sleeping = true;
 								await sleep(retryInMs);
+								props.tabularView.loading.sleeping = false;
 							} else {
 								console.log("query #", latestSendQueryIdSnapshot, "has state", responseStateOnlyJson.state);
 								break;

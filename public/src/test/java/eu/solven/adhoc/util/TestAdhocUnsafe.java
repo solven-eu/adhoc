@@ -37,10 +37,8 @@ public class TestAdhocUnsafe {
 
 	@Test
 	public void testDefaults() {
-		Assertions.assertThat(AdhocUnsafe.getLimitColumnSize()).isEqualTo(1_000_000);
 		Assertions.assertThat(AdhocUnsafe.getLimitOrdinalToString()).isEqualTo(16);
 		Assertions.assertThat(AdhocUnsafe.isFailFast()).isEqualTo(true);
-		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(1_000_000);
 	}
 
 	@Test
@@ -53,36 +51,6 @@ public class TestAdhocUnsafe {
 
 		System.setProperty(someKey, "10000000");
 		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(10_000_000);
-	}
-
-	@Test
-	public void testLimitColumnSize() {
-		String someKey = "adhoc.limitColumnSize";
-
-		System.setProperty(someKey, "123");
-		AdhocUnsafe.reloadProperties();
-
-		Assertions.assertThat(AdhocUnsafe.getLimitColumnSize()).isEqualTo(123);
-		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(123);
-	}
-
-	@Test
-	public void testDefaultCapacity_property() {
-		String someKey = "adhoc.defaultColumnCapacity";
-
-		System.setProperty(someKey, "123");
-		AdhocUnsafe.reloadProperties();
-
-		Assertions.assertThat(AdhocUnsafe.getLimitColumnSize()).isEqualTo(1_000_000);
-		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(123);
-	}
-
-	@Test
-	public void testDefaultCapacity_programmatic() {
-		AdhocUnsafe.setDefaultColumnCapacity(123);
-
-		Assertions.assertThat(AdhocUnsafe.getLimitColumnSize()).isEqualTo(1_000_000);
-		Assertions.assertThat(AdhocUnsafe.getDefaultColumnCapacity()).isEqualTo(123);
 	}
 
 	@Test

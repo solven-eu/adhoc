@@ -23,6 +23,7 @@
 package eu.solven.adhoc.map;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -32,10 +33,11 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderThroughKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 public class TestAdhocMapFactory {
-	StandardSliceFactory factory = StandardSliceFactory.builder().build();
+	RowSliceFactory factory = RowSliceFactory.builder().build();
 
 	private void verifyForEach(Map<String, ?> a1b1) {
 		Map<String, Object> mapFromForEach = new LinkedHashMap<>();
@@ -47,33 +49,17 @@ public class TestAdhocMapFactory {
 		Assertions.assertThat(a1b1).isEqualTo(mapFromEntrySet);
 	}
 
-	// @Test
-	// public void benchmarkCreateFresh() {
-	// // Useful for profiling slow sections, but irrelevant to compare performances
-	// for (int i = 0; i < 100000000; i++) {
-	// factory.newMapBuilder().put("a", "a1").put("b", "b1").build();
-	// }
-	// }
-	//
-	// @Test
-	// public void benchmarkCreateFromSet() {
-	// // Useful for profiling slow sections, but irrelevant to compare performances
-	// for (int i = 0; i < 100000000; i++) {
-	// factory.newMapBuilder(ImmutableSet.of("a", "b")).append("a1").append("b1").build();
-	// }
-	// }
-
 	@Test
 	public void testFromFresh() {
-		Map<String, ?> a1b1 = factory.newMapBuilder().put("a", "a1").put("b", "b1").build();
+		Map<String, ?> a1b1 = factory.newMapBuilder(List.of("a", "b")).append("a1", "b1").build();
 		Assertions.assertThat(a1b1).isEqualTo(Map.of("a", "a1", "b", "b1"));
 		verifyForEach(a1b1);
 
-		Map<String, ?> b1a1 = factory.newMapBuilder().put("b", "b1").put("a", "a1").build();
+		Map<String, ?> b1a1 = factory.newMapBuilder(List.of("b", "a")).append("b1", "a1").build();
 		Assertions.assertThat(a1b1).isEqualTo(b1a1);
 		verifyForEach(b1a1);
 
-		Map<String, ?> a1b2 = factory.newMapBuilder().put("a", "a1").put("b", "b2").build();
+		Map<String, ?> a1b2 = factory.newMapBuilder(List.of("a", "b")).append("a1", "b2").build();
 		Assertions.assertThat(a1b1).isNotEqualTo(a1b2);
 	}
 
@@ -81,9 +67,9 @@ public class TestAdhocMapFactory {
 	public void testFromFresh_permutations() {
 		Map<String, Object> reference = Map.of("a", "a1", "b", "b1", "c", "c1");
 		Collections2.permutations(reference.entrySet().stream().toList()).forEach(permutation -> {
-			MapBuilderThroughKeys builder = factory.newMapBuilder();
+			IMapBuilderPreKeys builder = factory.newMapBuilder(permutation.stream().map(Map.Entry::getKey).toList());
 
-			permutation.forEach(e -> builder.put(e.getKey(), e.getValue()));
+			permutation.forEach(e -> builder.append(e.getValue()));
 
 			Assertions.assertThat((Map) builder.build()).isEqualTo(reference);
 		});
@@ -91,7 +77,7 @@ public class TestAdhocMapFactory {
 
 	@Test
 	public void testFromFresh_duplicateKeys() {
-		Assertions.assertThatThrownBy(() -> factory.newMapBuilder().put("a", "a1").put("a", "b2").build())
+		Assertions.assertThatThrownBy(() -> factory.newMapBuilder(List.of("a", "a")).append("a1", "b2").build())
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 

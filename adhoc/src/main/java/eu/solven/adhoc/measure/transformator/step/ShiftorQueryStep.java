@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -42,7 +43,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -111,9 +112,10 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		MapBuilderPreKeys builder = factories.getSliceFactory().newMapBuilder(step.getGroupBy().getGroupedByColumns());
+		NavigableSet<String> columns = step.getGroupBy().getGroupedByColumns();
+		IMapBuilderPreKeys builder = slice.getSlice().getFactory().newMapBuilder(columns);
 
-		step.getGroupBy().getGroupedByColumns().forEach(column -> {
+		columns.forEach(column -> {
 			Optional<?> optOperand = EqualsMatcher.extractOperand(FilterHelpers.getValueMatcher(editedSlice, column));
 
 			Object value;

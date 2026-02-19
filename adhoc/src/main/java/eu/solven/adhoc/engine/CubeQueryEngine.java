@@ -58,6 +58,7 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.engine.observability.DagExplainer;
@@ -74,7 +75,7 @@ import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
 import eu.solven.adhoc.eventbus.QueryStepIsEvaluating;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
@@ -85,8 +86,8 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -482,8 +483,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		if (null != alreadyIn) {
 			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
 			// dependents.
-			// TODO Prevent an intermediate step to be computed multiple times
-			log.debug("A queryStep has been computed multiple times queryStep={}", queryPod);
+			log.warn("A queryStep has been computed multiple times queryStep={}. Should not happen since 0.0.14",
+					queryPod);
 		}
 	}
 
@@ -540,8 +541,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	// TODO We should ensure this slice is valid given current filter
 	protected IAdhocSlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
-		MapBuilderPreKeys errorSliceAsMapBuilder =
-				factories.getSliceFactory().newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
+		IMapBuilderPreKeys errorSliceAsMapBuilder = factories.getSliceFactoryFactory()
+				.makeFactory(queryStep)
+				.newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
 		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();
 

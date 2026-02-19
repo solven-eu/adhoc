@@ -41,6 +41,7 @@ import org.springframework.util.ClassUtils;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -53,9 +54,8 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory;
-import eu.solven.adhoc.map.StandardSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
@@ -64,6 +64,7 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -79,7 +80,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @SuperBuilder
-public class InMemoryTable implements ITableWrapper {
+public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	@Default
 	@NonNull
@@ -89,10 +90,6 @@ public class InMemoryTable implements ITableWrapper {
 	@NonNull
 	@Default
 	List<Map<String, ?>> rows = new ArrayList<>();
-
-	@NonNull
-	@Default
-	ISliceFactory sliceFactory = StandardSliceFactory.builder().build();
 
 	@Default
 	boolean distinctSlices = false;
@@ -183,8 +180,10 @@ public class InMemoryTable implements ITableWrapper {
 						.forEach(a -> columnToAggregators.put(aggregatedColumn, a));
 			});
 
+			ISliceFactory sliceFactory = queryPod.getSliceFactory();
+
 			Stream<ITabularRecord> stream = matchingRows.map(row -> {
-				return toRecord(tableQuery, columnToAggregators, groupByColumns, row);
+				return toRecord(sliceFactory, tableQuery, columnToAggregators, groupByColumns, row);
 			});
 
 			if (isEmptyAggregation) {
@@ -270,7 +269,8 @@ public class InMemoryTable implements ITableWrapper {
 		}
 	}
 
-	protected ITabularRecord toRecord(TableQueryV2 tableQuery,
+	protected ITabularRecord toRecord(ISliceFactory sliceFactory,
+			TableQueryV2 tableQuery,
 			SetMultimap<String, FilteredAggregator> columnToAggregators,
 			Set<String> groupByColumns,
 			Map<String, ?> row) {
@@ -312,7 +312,7 @@ public class InMemoryTable implements ITableWrapper {
 			});
 		});
 
-		MapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
+		IMapBuilderPreKeys groupByBuilder = sliceFactory.newMapBuilder(groupByColumns);
 		groupByColumns.forEach(groupByColumn -> {
 			Object value = row.get(groupByColumn);
 			groupByBuilder.append(value);
@@ -364,6 +364,11 @@ public class InMemoryTable implements ITableWrapper {
 				.forEach(entry -> toStringHelper.add("#" + index.getAndIncrement(), entry));
 
 		return toStringHelper.toString();
+	}
+
+	@Override
+	public Map<String, ?> getHealthDetails() {
+		return ImmutableMap.of("rows", rows.size());
 	}
 
 }

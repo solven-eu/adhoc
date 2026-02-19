@@ -2,6 +2,46 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+## [0.0.16]
+
+### Added
+- Introduce `Combinator.CombinatorBuilder.lambda(ILambdaCombination)` which enables defining an `ICombination` through a lambda.
+- Introduce `Aggregator.AggregatorBuilder.lambda(ILambdaAggregation)` which enables defining an `IAggregation` through a lambda.
+- Introduce `adhoc-encoding` module, to remove core algorithms from Adhoc Query Engine.
+- Prepare partitioning of table queries (e.g. `IQueryPartitionor`), to help concurrency in table own engine, and in Adhoc by received partitioned results.
+
+## [0.0.15]
+
+### Added
+- Introduce `AsynchronousFreezingStrategy` which will freeze in a different thread and then update some reference.
+- Introduce `IColumnFactory.makeColumnRandomInsertions(IAggregation, int)` which do not rely on sorting, useful when iteration order is random.
+
+### Changed
+- Prevent `QueryStepRecursiveAction` from executing multiple times shared tasks in a DAG.
+- `AbstractAdhocMap` does not extend `AbstractMap` to ensure all default methods have optimal implementation.
+- `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
+- `IAppendableColumn.freeze()` turned to `IAppendableColumn.freeze(IFreezingStrategy)`
+- `MultitypeNavigableColumn` propagates the capacity to values.
+- Pivotable spring profiles has been reworked. There is more a default `application.yml`, but one should import `pivotable-config.yml`.
+
+### Removed
+
+- `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
+- `IMultitypeColumnFastGet.set(T)` is removed. You can rely on `.append(T)` which has a clearer semantic.
+
+## [0.0.14]
+
+### Added
+- Spring Actuator Health is enriched through `AdhocSchemaHealthIndicator`
+- FSST String compression is a `IFreezingWithContext`. Relates with https://github.com/cwida/fsst
+- Introduces `IAdhocMap.retainAll` to make an immutable copy with a subset of columns.
+
+### Changed
+- `ISliceFactory` actually enable compression, based on dictionarisation, or `long[]` or `int[]`, or FSST for `String`.
+
+### Fixed
+- `CubeQuery.CubeQueryBuilder.andFilter(String, Object)` now relies on `ColumnFilter.matchLax(String, Object)`.
+
 ## [0.0.13]
 
 ### Added
@@ -9,8 +49,10 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
 - Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
 - Pivotable will automatically cancel currently running queries if another query is triggered.
+- `IAdhocMap.retainAll(Set<String>)` enables faster creation of `IAdhocMap` over a subset of columns (e.g. inducing).
 
 ### Changed
+- Refactored `ISliceFactory`, preparing the ability to rely on dictionarized and column-oriented storage.
 
 ### Removed
 

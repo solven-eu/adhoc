@@ -39,11 +39,12 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.pepper.memory.PepperFootprintHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TestMultitypeNavigableColumn {
-	MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().build();
+	MultitypeNavigableColumn<String> column = MultitypeNavigableColumn.<String>builder().capacity(123).build();
 
 	@Test
 	public void testCopyFromNotSorted_multiTypes() {
@@ -243,6 +244,18 @@ public class TestMultitypeNavigableColumn {
 		Assertions.assertThat(column.lastInsertionIndex).hasValue(-1);
 
 		Assertions.assertThat(IValueProvider.getValue(column.onValue("unknownKey"))).isNull();
+	}
+
+	@Test
+	public void testCapacity() {
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(40);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(152);
+
+		column.append("k").onLong(7L);
+
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(584);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(1136);
+
 	}
 
 }

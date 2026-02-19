@@ -28,9 +28,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
-import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestSpringImplicitOptions {

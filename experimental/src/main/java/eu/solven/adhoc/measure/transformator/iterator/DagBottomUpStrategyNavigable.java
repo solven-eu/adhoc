@@ -32,6 +32,7 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -63,6 +64,14 @@ public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 	@Override
 	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
 		return (IMultitypeMergeableColumn) MultitypeNavigableMergeableColumn.builder().aggregation(agg).build();
+	}
+
+	@Override
+	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInserts(IAggregation agg, int initialCapacity) {
+		return (IMultitypeMergeableColumn) MultitypeHashMergeableColumn.builder()
+				.aggregation(agg)
+				.capacity(initialCapacity)
+				.build();
 	}
 
 	@Override

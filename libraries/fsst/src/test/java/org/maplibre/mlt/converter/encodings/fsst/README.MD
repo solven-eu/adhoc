@@ -1,0 +1,3 @@
+- https://github.com/maplibre/maplibre-tile-spec/tree/main/java/mlt-core/src/main/java/org/maplibre/mlt/converter/encodings/fsst
+  - https://github.com/maplibre/maplibre-tile-spec/issues/150
+  - https://github.com/maplibre/maplibre-tile-spec/pull/251

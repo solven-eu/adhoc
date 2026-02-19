@@ -22,20 +22,23 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.List;
+import java.util.Map;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.ISliceFactory;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.options.IHasQueryOptions;
 
 public class TestAdhocFactories {
 	@Test
 	public void testNormalizeNull() {
 		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactory();
+		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
-		IAdhocMap slice = sliceFactory.newMapBuilder().put("k", null).build();
-		Assertions.assertThat(slice.get("k")).isSameAs(NullMatcher.NULL_HOLDER);
+		IAdhocMap slice = sliceFactory.newMapBuilder(List.of("k")).append(null).build();
+		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
 	}
 }

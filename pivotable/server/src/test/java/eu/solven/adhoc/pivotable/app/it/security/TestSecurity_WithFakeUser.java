@@ -57,7 +57,7 @@ public class TestSecurity_WithFakeUser extends TestSecurity_WithOAuth2User {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void onLoginOptions(Map loginOptions) {
 		Map<String, ?> asMap = (Map<String, ?>) loginOptions.get("map");
-		Assertions.assertThat(asMap).hasSize(3).containsKeys("github", "google", "fakeuser");
+		Assertions.assertThat(asMap).hasSize(3).containsKeys("github", "google", IPivotableSpringProfiles.P_FAKEUSER);
 
 		Assertions.assertThat((Map) asMap.get("github")).containsEntry("login_url", "/oauth2/authorization/github");
 

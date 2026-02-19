@@ -53,7 +53,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.query.IQueryOption;
+import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.extern.slf4j.Slf4j;

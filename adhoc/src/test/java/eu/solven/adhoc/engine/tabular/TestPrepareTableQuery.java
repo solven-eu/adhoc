@@ -38,15 +38,14 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
 	ITableQueryOptimizer optimizer =
 			engine.optimizerFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
-	TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(optimizer);
 
 	@Override
 	public void feedTable() {
@@ -69,7 +68,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -95,7 +95,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -126,7 +127,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();
@@ -156,7 +158,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.table(table())
 				.queryStepCache(queryStepCache)
 				.build();
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(queryPod, engine().makeQueryStepsDag(queryPod));
+		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
 			Assertions.assertThat(dbQuery.getFilter().isMatchAll()).isTrue();

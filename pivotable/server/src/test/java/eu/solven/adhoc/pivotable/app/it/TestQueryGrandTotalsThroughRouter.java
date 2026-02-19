@@ -63,7 +63,9 @@ import reactor.core.publisher.Flux;
  * @see 'TestTSPLifecycle'
  */
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = PivotableServerApplication.class,
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, })
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, IPivotableSpringProfiles.P_INMEMORY })
 @TestPropertySource(properties = { "adhoc.pivotable.random.seed=123",
 		PivotableWebclientServerProperties.KEY_PLAYER_CONTESTBASEURL + "=http://localhost:LocalServerPort" })

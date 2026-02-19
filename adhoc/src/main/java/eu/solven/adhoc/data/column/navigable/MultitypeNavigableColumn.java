@@ -44,12 +44,12 @@ import com.google.common.primitives.Ints;
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.IColumnValueConverter;
-import eu.solven.adhoc.data.column.IIsSorted;
 import eu.solven.adhoc.data.column.IMultitypeArray;
 import eu.solven.adhoc.data.column.IMultitypeColumn;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.data.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.StreamStrategy;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -73,7 +73,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMultitypeColumnFastGet<T>, IIsSorted {
+public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMultitypeColumnFastGetSorted<T> {
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 
 		@Override
@@ -119,22 +119,18 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 				"%s does not allow merging. index=%s key=%s".formatted(getClass(), index, keys.get(index)));
 	}
 
-	@Override
-	public IValueReceiver set(T key) {
-		return write(key, false, true);
-	}
-
 	/**
 	 * A put operation: it resets the values for given key, initializing it to the provided value.
 	 *
 	 * @param key
-	 * @return a {@link IValueReceiver}. If pushing null, this behave like `.clear`
+	 * @return a {@link IValueReceiver}. If pushing null, this behaves like `.clear`
 	 */
 	@Override
 	public IValueReceiver append(T key) {
 		return write(key, true, true);
 	}
 
+	@Override
 	public Optional<IValueReceiver> appendIfOptimal(T key) {
 		IValueReceiver valueReceiver = write(key, true, false);
 
@@ -153,13 +149,17 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		long size = size();
 
 		// TODO Log the first and last elements
-		AdhocUnsafe.checkColumnSize(size);
+		AdhocColumnUnsafe.checkColumnSize(size);
 
 		if (size == 0) {
 			if (keys instanceof ArrayList<?> arrayList) {
 				arrayList.ensureCapacity(capacity);
 			} else if (keys instanceof ObjectArrayList<?> arrayList) {
 				arrayList.ensureCapacity(capacity);
+			}
+
+			if (values instanceof MultitypeArray array) {
+				array.setCapacity(capacity);
 			}
 		}
 	}
@@ -197,13 +197,28 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 
 		IValueReceiver valueConsumer;
 
-		if (keys.isEmpty() || key.compareTo(keys.getLast()) > 0) {
+		boolean keysIsEmpty = keys.isEmpty();
+		int comparedWithLast;
+		if (keysIsEmpty) {
+			comparedWithLast = 0;
+		} else {
+			comparedWithLast = key.compareTo(keys.getLast());
+		}
+		if (keysIsEmpty || comparedWithLast > 0) {
 			checkSizeBeforeAdd();
 
 			// In most cases, we append a greater key, because we process sorted keys
 			lastInsertionIndex.set(keys.size());
 			keys.add(key);
 			valueConsumer = values.add();
+		} else if (comparedWithLast == 0) {
+			// In many cases, we accumulate in the greater/latest key, because we induce by removing columns
+			int index = keys.size() - 1;
+			if (mergeElseSet) {
+				valueConsumer = merge(index);
+			} else {
+				valueConsumer = set(index);
+			}
 		} else {
 			int index = getIndex(key);
 
@@ -318,7 +333,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		return IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
-						.valueProvider(vc -> values.read(i).acceptReceiver(vc))
+						.valueProvider(values.read(i)::acceptReceiver)
 						.build());
 	}
 
@@ -397,11 +412,11 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 	}
 
 	@Override
-	public MultitypeNavigableColumn<T> purgeAggregationCarriers() {
+	public IMultitypeColumnFastGetSorted<T> purgeAggregationCarriers() {
 		doLock();
 
-		return MultitypeNavigableColumn.builder()
-				.keys((List) keys)
+		return MultitypeNavigableColumn.<T>builder()
+				.keys(keys)
 				.locked(true)
 				.values(values.purgeAggregationCarriers())
 				.build();
@@ -439,13 +454,4 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			}
 		}
 	}
-
-	// @Override
-	// public void ensureCapacity(int capacity) {
-	// if (keys instanceof ArrayList<?> arrayList) {
-	// arrayList.ensureCapacity(capacity);
-	// } else if (keys instanceof ObjectArrayList<?> arrayList) {
-	// arrayList.ensureCapacity(capacity);
-	// }
-	// }
 }

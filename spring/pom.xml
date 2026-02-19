@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.0.16-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-spring</artifactId>
@@ -44,8 +44,8 @@
 
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
-			<artifactId>unittest</artifactId>
-			<version>5.0</version>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

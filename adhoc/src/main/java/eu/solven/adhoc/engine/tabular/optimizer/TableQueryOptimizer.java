@@ -42,7 +42,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;

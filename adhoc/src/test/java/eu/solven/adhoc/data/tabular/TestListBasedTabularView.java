@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.query.StandardQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;

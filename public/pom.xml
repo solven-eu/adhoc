@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.14-SNAPSHOT</version>
+		<version>0.0.16-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-public</artifactId>
@@ -22,7 +22,7 @@
 			<!-- ImmutableSet -->
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>33.5.0-jre</version>
+			<version>${guava.version}</version>
 		</dependency>
 
 		<dependency>

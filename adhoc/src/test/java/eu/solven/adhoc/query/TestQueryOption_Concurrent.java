@@ -38,6 +38,7 @@ import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
