@@ -59,6 +59,7 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 	final Supplier<ImmutableSet<String>> keysAsHashSet = Suppliers.memoize(() -> ImmutableSet.copyOf(getKeysAsSet()));
 
 	@NonNull
+	@SuppressWarnings("PMD.LinguisticNaming")
 	final IHasIndexOf<String> hasIndexOf;
 
 	/**

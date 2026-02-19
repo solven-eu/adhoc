@@ -97,7 +97,7 @@ public class TestSecurity_WithoutAuth {
 
 		// If this test fails, you man need to `mvn clean install` the `js` module
 		Assertions.assertThat(favicon).hasSize(96_557);
-		
+
 		webTestClient
 
 				.get()
