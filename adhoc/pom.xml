@@ -156,7 +156,7 @@
 			<groupId>com.github.haifengl</groupId>
 			<artifactId>smile-core</artifactId>
 			<!-- Smile v5 requires Java25 -->
-			<version>4.4.2</version>
+			<version>5.2.0</version>
 			<scope>test</scope>
 		</dependency>
 
