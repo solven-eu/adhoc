@@ -29,24 +29,19 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import eu.solven.adhoc.data.tabular.IReadableTabularView;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.adhoc.resource.AdhocJackson;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestQueryResultHolder {
 	@Test
 	public void testRetryIn_Jackson() {
 		QueryResultHolder holder = QueryResultHolder.retry(AsynchronousStatus.RUNNING, Duration.ofSeconds(5));
 
-		ObjectMapper objectMapper = PepperJacksonTestHelper.makeObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS);
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
-		String asString = PepperJacksonTestHelper.asString(objectMapper, QueryResultHolder.class, holder);
+		String asString = objectMapper.writeValueAsString(holder);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
@@ -64,11 +59,9 @@ public class TestQueryResultHolder {
 				.build();
 		QueryResultHolder holder = QueryResultHolder.served(AsynchronousStatus.SERVED, view);
 
-		ObjectMapper objectMapper = PepperJacksonTestHelper.makeObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.enable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS);
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
-		String asString = PepperJacksonTestHelper.asString(objectMapper, QueryResultHolder.class, holder);
+		String asString = objectMapper.writeValueAsString(holder);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

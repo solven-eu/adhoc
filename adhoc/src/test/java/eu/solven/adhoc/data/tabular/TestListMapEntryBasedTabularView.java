@@ -28,21 +28,20 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularView.TabularEntry;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;
 
 public class TestListMapEntryBasedTabularView {
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		ListMapEntryBasedTabularView view = ListMapEntryBasedTabularView.builder().build();
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
 
-		String asString = PepperJacksonTestHelper.verifyJackson(ListMapEntryBasedTabularView.class, view);
+		String asString = PepperJackson3TestHelper.verifyJackson(ListMapEntryBasedTabularView.class, view);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

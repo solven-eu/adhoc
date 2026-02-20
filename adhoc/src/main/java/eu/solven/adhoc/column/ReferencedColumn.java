@@ -22,13 +22,12 @@
  */
 package eu.solven.adhoc.column;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import eu.solven.adhoc.query.filter.value.IHasWrapped;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A simple column, explicitly referred.

@@ -33,10 +33,6 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -56,6 +52,9 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.PerformanceGateway;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestAndFilter {
 	AtomicInteger nbSkip = new AtomicInteger();
@@ -181,13 +180,15 @@ public class TestAndFilter {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		ISliceFilter filter = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b2"));
+	public void testJackson() {
+		ISliceFilter filter =
+				AndFilter.and(ImmutableMap.<String, Object>builder().put("a", "a1").put("b", "b2").build());
 
-		ObjectMapper objectMapper = JsonMapper.builder().build();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-		objectMapper.registerModule(AdhocPublicJackson.makeModule());
+		ObjectMapper objectMapper = JsonMapper.builder()
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				.addModule(AdhocPublicJackson.makeModule())
+				.build();
 
 		String asString = objectMapper.writeValueAsString(filter);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
@@ -204,8 +205,7 @@ public class TestAndFilter {
 				    "valueMatcher" : "b2",
 				    "nullIfAbsent" : true
 				  } ]
-				}
-				""".trim());
+				}""");
 
 		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
 
@@ -213,11 +213,12 @@ public class TestAndFilter {
 	}
 
 	@Test
-	public void testJackson_empty() throws JsonProcessingException {
-		ObjectMapper objectMapper = new ObjectMapper();
+	public void testJackson_empty() {
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-		objectMapper.registerModule(AdhocPublicJackson.makeModule());
+		ObjectMapper objectMapper = JsonMapper.builder()
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				.addModule(AdhocPublicJackson.makeModule())
+				.build();
 
 		ISliceFilter fromString = objectMapper.readValue("{}", ISliceFilter.class);
 
@@ -225,11 +226,12 @@ public class TestAndFilter {
 	}
 
 	@Test
-	public void testJackson_matchAll() throws JsonProcessingException {
-		ObjectMapper objectMapper = new ObjectMapper();
+	public void testJackson_matchAll() {
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-		objectMapper.registerModule(AdhocPublicJackson.makeModule());
+		ObjectMapper objectMapper = JsonMapper.builder()
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				.addModule(AdhocPublicJackson.makeModule())
+				.build();
 
 		String asString = objectMapper.writeValueAsString(ISliceFilter.MATCH_ALL);
 		Assertions.assertThat(asString).isEqualTo("""

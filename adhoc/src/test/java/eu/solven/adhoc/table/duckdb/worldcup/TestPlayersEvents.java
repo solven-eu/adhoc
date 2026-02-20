@@ -25,11 +25,10 @@ package eu.solven.adhoc.table.duckdb.worldcup;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.example.worldcup.PlayersEvents;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestPlayersEvents {
@@ -39,10 +38,10 @@ public class TestPlayersEvents {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		AtomicLongMap<Integer> goalEvents = AtomicLongMap.create();
 		goalEvents.put(12, 23);
-		String toString = PepperJacksonTestHelper.makeObjectMapper()
+		String toString = PepperJackson3TestHelper.makeObjectMapper()
 				.writeValueAsString(PlayersEvents.builder().typeToMinuteToCount("G", goalEvents).build());
 
 		Assertions.assertThat(toString).isEqualTo("""
@@ -54,7 +53,7 @@ public class TestPlayersEvents {
 	}
 
 	@Test
-	public void testMerge() throws JsonProcessingException {
+	public void testMerge() {
 		AtomicLongMap<Integer> goalEvents = AtomicLongMap.create();
 		goalEvents.put(12, 23);
 
@@ -70,7 +69,7 @@ public class TestPlayersEvents {
 						.typeToMinuteToCount("Y", yellowEvents)
 						.build());
 
-		String toString = PepperJacksonTestHelper.makeObjectMapper().writeValueAsString(merged);
+		String toString = PepperJackson3TestHelper.makeObjectMapper().writeValueAsString(merged);
 
 		Assertions.assertThat(toString).isEqualTo("""
 				{
@@ -85,7 +84,7 @@ public class TestPlayersEvents {
 	}
 
 	@Test
-	public void testMerge_sameMinute() throws JsonProcessingException {
+	public void testMerge_sameMinute() {
 		AtomicLongMap<Integer> goalEvents = AtomicLongMap.create();
 		goalEvents.put(12, 23);
 
@@ -101,7 +100,7 @@ public class TestPlayersEvents {
 						.typeToMinuteToCount("Y", yellowEvents)
 						.build());
 
-		String toString = PepperJacksonTestHelper.makeObjectMapper().writeValueAsString(merged);
+		String toString = PepperJackson3TestHelper.makeObjectMapper().writeValueAsString(merged);
 
 		Assertions.assertThat(toString).isEqualTo("""
 				{

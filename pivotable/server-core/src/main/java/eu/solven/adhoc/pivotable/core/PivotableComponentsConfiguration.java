@@ -40,7 +40,6 @@ import eu.solven.adhoc.pivotable.eventbus.EventBusLogger;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.JacksonModule;
 import tools.jackson.databind.module.SimpleModule;
 
 /**
@@ -107,8 +106,8 @@ public class PivotableComponentsConfiguration {
 		return builder -> {
 			SimpleModule module = new SimpleModule();
 			module.addSerializer(new ThrowableAsStackSerializer());
-			
-			builder.addserializerFactory().withAdditionalKeySerializers();
+
+			// builder.addserializerFactory().withAdditionalKeySerializers();
 			// AdhocJackson.indentArrayWithEol(builder);
 		};
 	}

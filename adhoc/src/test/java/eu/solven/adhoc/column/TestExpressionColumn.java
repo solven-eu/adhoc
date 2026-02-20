@@ -25,9 +25,7 @@ package eu.solven.adhoc.column;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestExpressionColumn {
@@ -37,8 +35,8 @@ public class TestExpressionColumn {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class,
+	public void testJackson() {
+		String asString = PepperJackson3TestHelper.verifyJackson(IAdhocColumn.class,
 				TableExpressionColumn.builder().name("someColumn").sql("someSQL").build());
 
 		Assertions.assertThat(asString).isEqualTo("""

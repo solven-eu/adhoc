@@ -25,7 +25,7 @@ package eu.solven.adhoc.pivotable.webflux.api;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import lombok.AllArgsConstructor;
 
 /**

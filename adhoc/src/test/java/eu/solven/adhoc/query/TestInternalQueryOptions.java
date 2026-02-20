@@ -26,8 +26,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
@@ -35,7 +33,7 @@ public class TestInternalQueryOptions {
 
 	@Disabled("TODO")
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
 				InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
 
@@ -46,7 +44,7 @@ public class TestInternalQueryOptions {
 
 	@Disabled("TODO Custom options can not be (de)serialized properly for now")
 	@Test
-	public void testJackson_internalQueryOption() throws JsonProcessingException {
+	public void testJackson_internalQueryOption() {
 		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class,
 				InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER);
 

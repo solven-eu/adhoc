@@ -32,7 +32,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestTargetedCubeQuery {
@@ -53,7 +53,7 @@ public class TestTargetedCubeQuery {
 						.build())
 				.build();
 
-		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);
+		String asString = PepperJackson3TestHelper.verifyJackson(TargetedCubeQuery.class, query);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
@@ -94,7 +94,7 @@ public class TestTargetedCubeQuery {
 						.build())
 				.build();
 
-		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);
+		String asString = PepperJackson3TestHelper.verifyJackson(TargetedCubeQuery.class, query);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

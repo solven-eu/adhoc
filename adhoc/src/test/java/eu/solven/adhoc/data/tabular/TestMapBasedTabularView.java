@@ -27,16 +27,14 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import tools.jackson.databind.exc.InvalidDefinitionException;
 
 public class TestMapBasedTabularView {
 
 	@Test
-	public void testJackson_KO() throws JsonProcessingException {
+	public void testJackson_KO() {
 		MapBasedTabularView view = MapBasedTabularView.builder().build();
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), "m", 123);

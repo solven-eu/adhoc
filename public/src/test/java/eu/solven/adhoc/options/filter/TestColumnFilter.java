@@ -27,8 +27,6 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -40,14 +38,16 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.SameMatcher;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestColumnFilter {
 
 	@Test
-	public void testJackson_equals() throws JsonProcessingException {
+	public void testJackson_equals() {
 		ISliceFilter ksEqualsV = ColumnFilter.matchEq("k", "v");
 
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = JsonMapper.builder().build();
 
 		String asString = objectMapper.writeValueAsString(ksEqualsV);
 		Assertions.assertThat(asString).isEqualTo("""

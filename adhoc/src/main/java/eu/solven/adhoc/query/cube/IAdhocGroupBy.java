@@ -27,10 +27,10 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * A {@link List} of columns. Typically used by {@link ICubeQuery}.

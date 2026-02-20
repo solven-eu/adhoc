@@ -35,8 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springdoc.webflux.core.providers.ActuatorWebFluxProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.MediaType;
@@ -65,7 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
 @AutoConfigureWebTestClient(timeout = "P1D")
-@EnableAutoConfiguration(exclude = { RedisAutoConfiguration.class })
+// @EnableAutoConfiguration(exclude = { RedisAutoConfiguration.class })
 public class TestSecurity_WithoutAuth {
 
 	@Autowired

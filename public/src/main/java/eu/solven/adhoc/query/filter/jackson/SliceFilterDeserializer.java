@@ -24,14 +24,14 @@ package eu.solven.adhoc.query.filter.jackson;
 
 import java.beans.Customizer;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
-import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.deser.jackson.JsonNodeDeserializer;
+import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.jsontype.TypeDeserializer;
 
 /**
@@ -40,12 +40,10 @@ import tools.jackson.databind.jsontype.TypeDeserializer;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class SliceFilterDeserializer extends JsonNodeDeserializer<ISliceFilter> implements ResolvableDeserializer {
-	// private static final long serialVersionUID = 8174515895932210350L;
+public class SliceFilterDeserializer extends ValueDeserializer<ISliceFilter> {
+	private final ValueDeserializer<?> base;
 
-	private final JsonNodeDeserializer<?> base;
-
-	public SliceFilterDeserializer(JsonNodeDeserializer<?> base) {
+	public SliceFilterDeserializer(ValueDeserializer<?> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
@@ -55,44 +53,44 @@ public class SliceFilterDeserializer extends JsonNodeDeserializer<ISliceFilter> 
 	}
 
 	protected ISliceFilter onText(JsonParser p) throws IOException {
-		if ("matchAll".equalsIgnoreCase(p.getText())) {
+		if ("matchAll".equalsIgnoreCase(p.getString())) {
 			return ISliceFilter.MATCH_ALL;
-		} else if ("matchNone".equalsIgnoreCase(p.getText())) {
+		} else if ("matchNone".equalsIgnoreCase(p.getString())) {
 			return ISliceFilter.MATCH_NONE;
 		} else {
-			throw new IllegalArgumentException("Not managed text: %s".formatted(p.getText()));
+			throw new IllegalArgumentException("Not managed text: %s".formatted(p.getString()));
 		}
 	}
 
 	@Override
-	public Object deserializeWithType(JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer)
-			throws IOException, JacksonException {
-		if (p.hasTextCharacters()) {
-			return onText(p);
+	public Object deserializeWithType(JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer) {
+		if (p.hasStringCharacters()) {
+			try {
+				return onText(p);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		} else if (base == null) {
 			throw new IllegalStateException(
 					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			return base.deserializeWithType(p, ctxt, typeDeserializer);
+			return (ISliceFilter) base.deserializeWithType(p, ctxt, typeDeserializer);
 		}
 	}
 
 	@Override
-	public ISliceFilter deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-		if (p.hasTextCharacters()) {
-			return onText(p);
+	public ISliceFilter deserialize(JsonParser p, DeserializationContext ctxt) {
+		if (p.hasStringCharacters()) {
+			try {
+				return onText(p);
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
 		} else if (base == null) {
 			throw new IllegalStateException(
 					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
 			return (ISliceFilter) base.deserialize(p, ctxt);
-		}
-	}
-
-	@Override
-	public void resolve(DeserializationContext ctxt) throws JsonMappingException {
-		if (base instanceof ResolvableDeserializer resolvable) {
-			resolvable.resolve(ctxt);
 		}
 	}
 

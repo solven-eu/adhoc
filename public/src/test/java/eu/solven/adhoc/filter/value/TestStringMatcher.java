@@ -27,12 +27,11 @@ import java.time.LocalDate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestStringMatcher {
 	LocalDate today = LocalDate.now();
@@ -51,12 +50,11 @@ public class TestStringMatcher {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		IValueMatcher stringMatcher = StringMatcher.hasToString(today);
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
 		String asString = objectMapper.writeValueAsString(stringMatcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""

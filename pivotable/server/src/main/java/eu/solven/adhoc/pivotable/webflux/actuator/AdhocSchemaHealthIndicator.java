@@ -22,16 +22,15 @@
  */
 package eu.solven.adhoc.pivotable.webflux.actuator;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
-import org.springframework.boot.actuate.health.AbstractReactiveHealthIndicator;
-import org.springframework.boot.actuate.health.CompositeReactiveHealthContributor;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.NamedContributor;
-import org.springframework.boot.actuate.health.ReactiveHealthContributor;
-import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
+import org.springframework.boot.health.contributor.AbstractReactiveHealthIndicator;
+import org.springframework.boot.health.contributor.CompositeReactiveHealthContributor;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.ReactiveHealthContributors;
+import org.springframework.boot.health.contributor.ReactiveHealthIndicator;
 import org.springframework.stereotype.Component;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -75,12 +74,10 @@ public class AdhocSchemaHealthIndicator implements CompositeReactiveHealthContri
 	}
 
 	@Override
-	public Iterator<NamedContributor<ReactiveHealthContributor>> iterator() {
+	public Stream<ReactiveHealthContributors.Entry> stream() {
 		return schema.getCubes()
 				.stream()
 				.map(ICubeWrapper::getName)
-				.<NamedContributor<ReactiveHealthContributor>>map(
-						cubeName -> NamedContributor.of(cubeName, getContributor(cubeName)))
-				.iterator();
+				.map(cubeName -> new ReactiveHealthContributors.Entry(cubeName, getContributor(cubeName)));
 	}
 }

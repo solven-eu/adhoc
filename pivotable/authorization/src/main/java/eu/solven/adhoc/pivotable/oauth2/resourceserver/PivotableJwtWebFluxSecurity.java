@@ -37,7 +37,7 @@ import org.springframework.security.web.server.savedrequest.NoOpServerRequestCac
 import com.nimbusds.jwt.JWT;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

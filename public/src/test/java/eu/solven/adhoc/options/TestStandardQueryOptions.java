@@ -27,15 +27,15 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestStandardQueryOptions {
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		String option = PepperJacksonTestHelper.verifyJackson(IQueryOption.class, StandardQueryOptions.EXPLAIN);
+	public void testJackson() {
+		String option = PepperJackson3TestHelper.verifyJackson(IQueryOption.class, StandardQueryOptions.EXPLAIN);
 
 		Assertions.assertThat(option).isEqualTo("""
 				"EXPLAIN"
@@ -43,14 +43,16 @@ public class TestStandardQueryOptions {
 	}
 
 	@Test
-	public void testJackson_readLowerCase() throws JsonProcessingException {
-		ObjectMapper om = PepperJacksonTestHelper.makeObjectMapper();
+	public void testJackson_readLowerCase() {
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
-		Assertions.assertThat(om.readValue("\"eXpLaIn\"", IQueryOption.class)).isEqualTo(StandardQueryOptions.EXPLAIN);
+		Assertions.assertThat(objectMapper.readValue("\"eXpLaIn\"", IQueryOption.class))
+				.isEqualTo(StandardQueryOptions.EXPLAIN);
 	}
 
 	@Test
-	public void testConcurrentAndSequential() throws JsonProcessingException {
+	public void testConcurrentAndSequential() {
 		Assertions.assertThat(StandardQueryOptions.CONCURRENT.isActive(Set.of())).isFalse();
 		Assertions.assertThat(StandardQueryOptions.CONCURRENT.isActive(Set.of(StandardQueryOptions.CONCURRENT)))
 				.isTrue();

@@ -25,12 +25,11 @@ package eu.solven.adhoc.pivotable.login;
 import java.util.Set;
 import java.util.UUID;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.annotation.JsonNaming;
 
 /**
  * Comes from Kumite. Is it relevant in Pivotable?

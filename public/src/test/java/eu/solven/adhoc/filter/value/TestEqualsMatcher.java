@@ -30,10 +30,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 import eu.solven.adhoc.query.filter.value.EqualsDoubleMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsLongMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -43,6 +39,9 @@ import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestEqualsMatcher {
 	@Test
@@ -71,12 +70,11 @@ public class TestEqualsMatcher {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		IValueMatcher matcher = EqualsMatcher.matchEq("azerty");
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
@@ -90,12 +88,11 @@ public class TestEqualsMatcher {
 
 	@Disabled("https://github.com/FasterXML/jackson-databind/issues/5030")
 	@Test
-	public void testJackson_toMap() throws JsonProcessingException {
+	public void testJackson_toMap() {
 		IValueMatcher matcher = EqualsMatcher.matchEq("azerty");
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
 		Map asMap = objectMapper.convertValue(matcher, Map.class);
 		Assertions.assertThat(asMap).hasSize(2).containsEntry("type", "equals");
@@ -107,7 +104,7 @@ public class TestEqualsMatcher {
 
 	// Ensure we can parse a EqualsMatcher with the default serialization format
 	@Test
-	public void testJackson_fromExplicit() throws JsonProcessingException {
+	public void testJackson_fromExplicit() {
 		IValueMatcher matcher = EqualsMatcher.matchEq("azerty");
 
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -125,7 +122,7 @@ public class TestEqualsMatcher {
 	}
 
 	@Test
-	public void testJackson_fromExplicit_int() throws JsonProcessingException {
+	public void testJackson_fromExplicit_int() {
 		IValueMatcher matcher = EqualsMatcher.matchEq(3);
 
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -143,12 +140,11 @@ public class TestEqualsMatcher {
 	}
 
 	@Test
-	public void testJackson_integer() throws JsonProcessingException {
+	public void testJackson_integer() {
 		IValueMatcher matcher = EqualsMatcher.matchEq(3);
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualTo("3");
@@ -161,7 +157,7 @@ public class TestEqualsMatcher {
 	// When receiving a filter through json, we have no guarantee regarding the actual type
 	// Still, one generally expect when filtering that `3 == 3L`
 	@Test
-	public void testIntEqualsLong() throws JsonProcessingException {
+	public void testIntEqualsLong() {
 		IValueMatcher matcher = EqualsMatcher.matchEq(3);
 
 		Assertions.assertThat(matcher.match((int) 3)).isTrue();
@@ -180,13 +176,13 @@ public class TestEqualsMatcher {
 
 	// This checks commutativity of equals on cross-type edge-case
 	@Test
-	public void testIntEqualsFloat() throws JsonProcessingException {
+	public void testIntEqualsFloat() {
 		Assertions.assertThat(EqualsMatcher.matchEq(3).match((float) 3)).isTrue();
 		Assertions.assertThat(EqualsMatcher.matchEq(3.0).match(3)).isTrue();
 	}
 
 	@Test
-	public void testIntEqualsString() throws JsonProcessingException {
+	public void testIntEqualsString() {
 		Assertions.assertThat(EqualsMatcher.matchEq(3).match("3")).isFalse();
 		Assertions.assertThat(EqualsMatcher.matchEq("3").match(3)).isFalse();
 	}
@@ -194,7 +190,7 @@ public class TestEqualsMatcher {
 	// When receiving a filter through json, we have no guarantee regarding the actual type
 	// Still, one generally expect when filtering that `1.2 == 1.2D`
 	@Test
-	public void testFloatEqualsDouble_imperfect() throws JsonProcessingException {
+	public void testFloatEqualsDouble_imperfect() {
 		IValueMatcher matcher = EqualsMatcher.matchEq(1.2);
 
 		// Not equals to `1.2F` as `1.2` is not perfectible representable by a float
@@ -207,7 +203,7 @@ public class TestEqualsMatcher {
 	}
 
 	@Test
-	public void testFloatEqualsDouble_perfect() throws JsonProcessingException {
+	public void testFloatEqualsDouble_perfect() {
 		IValueMatcher matcher = EqualsMatcher.matchEq(0.5);
 
 		// Equals to `0.5F` as `0.5` is not perfectible representable by a float
@@ -220,7 +216,7 @@ public class TestEqualsMatcher {
 	}
 
 	@Test
-	public void testFloatEqualsDouble_similarToInt() throws JsonProcessingException {
+	public void testFloatEqualsDouble_similarToInt() {
 		IValueMatcher matcher = EqualsMatcher.matchEq(3D);
 
 		Assertions.assertThat(matcher.match((float) 3)).isTrue();

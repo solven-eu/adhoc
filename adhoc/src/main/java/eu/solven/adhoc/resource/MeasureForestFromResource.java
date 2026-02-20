@@ -38,8 +38,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.core.io.Resource;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -60,6 +58,7 @@ import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Helps reading and writing {@link MeasureForest} into resource files.
@@ -199,11 +198,7 @@ public class MeasureForestFromResource {
 				.map(m -> asMap(objectMapper, m))
 				.collect(Collectors.toList());
 
-		try {
-			return objectMapper.writeValueAsString(asMaps);
-		} catch (JsonProcessingException e) {
-			throw new IllegalArgumentException(e);
-		}
+		return objectMapper.writeValueAsString(asMaps);
 	}
 
 	/**
@@ -230,11 +225,7 @@ public class MeasureForestFromResource {
 			nameToForest.add(ImmutableMap.of(K_NAME, forestName, "measures", asMaps));
 		});
 
-		try {
-			return objectMapper.writeValueAsString(nameToForest);
-		} catch (JsonProcessingException e) {
-			throw new IllegalArgumentException(e);
-		}
+		return objectMapper.writeValueAsString(nameToForest);
 	}
 
 	// https://stackoverflow.com/questions/25387978/how-to-add-custom-deserializer-to-interface-using-jackson

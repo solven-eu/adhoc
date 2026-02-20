@@ -25,11 +25,9 @@ package eu.solven.adhoc.column;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import tools.jackson.databind.exc.InvalidDefinitionException;
 
 public class TestFunctionCalculatedColumn {
 	@Test
@@ -38,7 +36,7 @@ public class TestFunctionCalculatedColumn {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		Assertions
 				.assertThatThrownBy(() -> PepperJacksonTestHelper.verifyJackson(FunctionCalculatedColumn.class,
 						FunctionCalculatedColumn.builder()

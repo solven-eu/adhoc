@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivottable.api;
+package eu.solven.adhoc.pivotable.api;
 
 /**
  * Constants related to Pivotable API

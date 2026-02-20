@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.query.filter.value;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
@@ -32,6 +30,7 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.jackson.Jacksonized;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * To be used with {@link ColumnFilter}, for equality-based matchers.

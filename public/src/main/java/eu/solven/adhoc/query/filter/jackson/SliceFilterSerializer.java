@@ -23,18 +23,14 @@
 package eu.solven.adhoc.query.filter.jackson;
 
 import java.beans.Customizer;
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.ResolvableSerializer;
-
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.resource.AdhocPublicJackson;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * {@link Customizer} serialization to write matchAll and matchNone as plain {@link String}.
@@ -42,53 +38,56 @@ import eu.solven.adhoc.resource.AdhocPublicJackson;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class SliceFilterSerializer extends JsonSerializer<ISliceFilter> implements ResolvableSerializer {
-	private final JsonSerializer<Object> base;
+public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
+	private final ValueSerializer<ISliceFilter> base;
 
-	public SliceFilterSerializer(JsonSerializer<Object> base) {
+	public SliceFilterSerializer(ValueSerializer<ISliceFilter> base) {
+		super(ISliceFilter.class);
 		this.base = Objects.requireNonNull(base);
 	}
 
 	// Used before AdhocFilterSerializerModifier rewrap it
 	public SliceFilterSerializer() {
+		super(ISliceFilter.class);
 		this.base = null;
 	}
 
 	@Override
 	public void serializeWithType(ISliceFilter value,
 			JsonGenerator gen,
-			SerializerProvider serializers,
-			TypeSerializer typeSer) throws IOException {
+			SerializationContext ctxt,
+			TypeSerializer typeSer) {
 		if (ISliceFilter.MATCH_ALL.equals(value)) {
 			gen.writeString("matchAll");
 		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
-		} else if (base == null) {
-			throw new IllegalStateException(
-					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
+			// } else if (base == null) {
+			// throw new IllegalStateException(
+			// "You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			base.serializeWithType(value, gen, serializers, typeSer);
+			ValueSerializer<Object> delegate = ctxt.findValueSerializer(value.getClass());
+			// if (this == delegate) {
+			super.serializeWithType(value, gen, ctxt, typeSer);
+			base.serializeWithType(value, gen, ctxt, typeSer);
+			// } else {
+			delegate.serializeWithType(value, gen, ctxt, typeSer);
+			// }
 		}
 	}
 
 	@Override
-	public void serialize(ISliceFilter value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+	public void serialize(ISliceFilter value, JsonGenerator gen, SerializationContext ctxt) {
 		if (ISliceFilter.MATCH_ALL.equals(value)) {
 			gen.writeString("matchAll");
 		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
-		} else if (base == null) {
-			throw new IllegalStateException(
-					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
+			// } else if (base == null) {
+			// throw new IllegalStateException(
+			// "You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			base.serialize(value, gen, serializers);
-		}
-	}
-
-	@Override
-	public void resolve(SerializerProvider provider) throws JsonMappingException {
-		if (base instanceof ResolvableSerializer resolvable) {
-			resolvable.resolve(provider);
+			ValueSerializer<Object> delegate = ctxt.findValueSerializer(value.getClass());
+			delegate.serialize(value, gen, ctxt);
+			// base.serialize(value, gen, ctxt);
 		}
 	}
 

@@ -31,8 +31,6 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -52,6 +50,7 @@ import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestFilterHelpers {
 
@@ -183,7 +182,7 @@ public class TestFilterHelpers {
 	}
 
 	@Test
-	public void testWrapToString() throws JsonProcessingException {
+	public void testWrapToString() {
 		IValueMatcher wrappedWithToString = FilterHelpers.wrapWithToString(v -> "foo".equals(v), () -> "someToString");
 
 		Assertions.assertThat(wrappedWithToString.toString()).isEqualTo("someToString");

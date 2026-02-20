@@ -37,6 +37,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
@@ -44,7 +45,6 @@ import eu.solven.adhoc.pivotable.greeting.Greeting;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;

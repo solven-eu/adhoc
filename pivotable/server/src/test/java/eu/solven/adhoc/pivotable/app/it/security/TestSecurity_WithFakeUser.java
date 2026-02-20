@@ -37,9 +37,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
+import eu.solven.adhoc.pivotable.app.PivotableJackson;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
-import eu.solven.adhoc.pivottable.app.PivotableJackson;
 import lombok.extern.slf4j.Slf4j;
 
 /**

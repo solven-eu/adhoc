@@ -27,10 +27,9 @@ import java.lang.reflect.Method;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 import lombok.experimental.UtilityClass;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 
 /**
  * Jackson specific classes for Adhoc classes.
@@ -48,7 +47,8 @@ public class AdhocJackson {
 	public static ObjectMapper makeObjectMapper(String format) {
 		ObjectMapper objectMapper;
 		if ("yml".equalsIgnoreCase(format) || "yaml".equalsIgnoreCase(format)) {
-			String yamlFactoryClass = "com.fasterxml.jackson.dataformat.yaml.YAMLFactory";
+			// Used to be `com.fasterxml.jackson.dataformat.yaml.YAMLFactory`
+			String yamlFactoryClass = "tools.jackson.dataformat.yaml.YAMLFactory";
 			if (!ClassUtils.isPresent(yamlFactoryClass, null)) {
 				// Adhoc has optional=true, as only a minority of projects uses this library
 				throw new IllegalArgumentException(
@@ -74,10 +74,10 @@ public class AdhocJackson {
 		}
 
 		// We prefer pretty-printing the output
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-		objectMapper.registerModule(AdhocPublicJackson.makeModule());
-
-		return objectMapper;
+		return objectMapper.rebuild()
+				// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				.addModule(AdhocPublicJackson.makeModule())
+				.build();
 	}
 }

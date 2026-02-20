@@ -25,13 +25,12 @@ package eu.solven.adhoc.query.groupby;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestGroupByColumns {

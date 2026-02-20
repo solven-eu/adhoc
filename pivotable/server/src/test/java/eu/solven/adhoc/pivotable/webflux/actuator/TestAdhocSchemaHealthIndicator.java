@@ -24,13 +24,13 @@ package eu.solven.adhoc.pivotable.webflux.actuator;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
-import org.springframework.boot.actuate.health.Status;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.ReactiveHealthIndicator;
 import org.springframework.mock.env.MockEnvironment;
 
 import com.google.common.collect.ImmutableMap;
 
+import ch.qos.logback.core.status.Status;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.measure.MeasureForest;
@@ -45,8 +45,8 @@ public class TestAdhocSchemaHealthIndicator {
 		AdhocSchemaHealthIndicator indicator = new AdhocSchemaHealthIndicator(schema);
 
 		ReactiveHealthIndicator contributor = indicator.getContributor("notExisting");
-		Health health = contributor.getHealth(false).block();
-		Assertions.assertThat(health.getStatus()).isEqualTo(Status.UNKNOWN);
+		Health health = contributor.health(false).block();
+		Assertions.assertThat(health.getStatus()).isEqualTo(org.springframework.boot.health.contributor.Status.UNKNOWN);
 	}
 
 	@Test
@@ -59,8 +59,8 @@ public class TestAdhocSchemaHealthIndicator {
 		AdhocSchemaHealthIndicator indicator = new AdhocSchemaHealthIndicator(schema);
 
 		ReactiveHealthIndicator contributor = indicator.getContributor(cube.getName());
-		Health health = contributor.getHealth(true).block();
-		Assertions.assertThat(health.getStatus()).isEqualTo(Status.UP);
+		Health health = contributor.health(true).block();
+		Assertions.assertThat(health.getStatus()).isEqualTo(org.springframework.boot.health.contributor.Status.UP);
 		Assertions.assertThat(health.getDetails())
 				.containsEntry("columns", 0)
 				.containsEntry("measures", 0)

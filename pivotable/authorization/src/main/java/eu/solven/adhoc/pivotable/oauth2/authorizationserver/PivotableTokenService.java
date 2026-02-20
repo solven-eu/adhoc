@@ -41,12 +41,12 @@ import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.login.ITokenHolder;
 import eu.solven.adhoc.pivotable.login.RefreshTokenWrapper;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import eu.solven.adhoc.tools.IUuidGenerator;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

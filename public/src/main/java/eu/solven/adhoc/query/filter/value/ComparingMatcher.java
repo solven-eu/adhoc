@@ -24,6 +24,8 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Comparator;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -41,6 +43,7 @@ import lombok.extern.jackson.Jacksonized;
  *
  */
 @Value
+@JsonPropertyOrder(alphabetic = true)
 public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 	// Can not be an IValueMatcher
 	@NonNull

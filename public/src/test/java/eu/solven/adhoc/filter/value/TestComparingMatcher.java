@@ -29,25 +29,24 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class TestComparingMatcher {
+	// https://github.com/FasterXML/jackson-databind/issues/5704
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		ComparingMatcher matcher = ComparingMatcher.builder().greaterThan(true).operand(123).build();
 
-		ObjectMapper objectMapper = new ObjectMapper();
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
 
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
@@ -57,8 +56,7 @@ public class TestComparingMatcher {
 				  "greaterThan" : true,
 				  "matchIfEqual" : false,
 				  "matchIfNull" : false
-				}
-								""".trim());
+				}""");
 
 		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
 

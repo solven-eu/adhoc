@@ -28,27 +28,25 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 @Slf4j
 public class TestListBasedTabularView {
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		ListBasedTabularView view = ListBasedTabularView.builder().build();
 
 		view.appendSlice(SliceAsMap.fromMap(Map.of("c1", "v1")), Map.of("m", 123));
 
-		String asString = PepperJacksonTestHelper.verifyJackson(ListBasedTabularView.class, view);
+		String asString = PepperJackson3TestHelper.verifyJackson(ListBasedTabularView.class, view);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
@@ -66,7 +64,7 @@ public class TestListBasedTabularView {
 	}
 
 	@Test
-	public void testEmpty() throws JsonProcessingException {
+	public void testEmpty() {
 		Assertions.assertThat(ListBasedTabularView.empty().isEmpty()).isTrue();
 	}
 
@@ -102,7 +100,7 @@ public class TestListBasedTabularView {
 	}
 
 	@Test
-	public void testException() throws JsonProcessingException {
+	public void testException() {
 		log.debug("Typically useful for {}", StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE);
 
 		ListBasedTabularView view = ListBasedTabularView.builder()
@@ -110,11 +108,11 @@ public class TestListBasedTabularView {
 				.values(List.of(Map.of("m", new RuntimeException("someIssue"))))
 				.build();
 
-		ObjectMapper objectMapper = AdhocPublicJackson.indentArrayWithEol(PepperJacksonTestHelper.makeObjectMapper());
+		ObjectMapper objectMapper = AdhocPublicJackson.indentArrayWithEol(PepperJackson3TestHelper.makeObjectMapper());
 
 		SimpleModule adhocModule = new SimpleModule("Adhoc");
 		adhocModule.addSerializer(new ThrowableAsStackSerializer());
-		objectMapper.registerModule(adhocModule);
+		objectMapper = objectMapper.rebuild().addModule(adhocModule).build();
 
 		String asString = objectMapper.writeValueAsString(view);
 		Assertions.assertThat(asString.replaceAll("[\r\n]", "\n"))

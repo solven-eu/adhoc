@@ -39,16 +39,14 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.server.WebExceptionHandler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.pivotable.security.AccountForbiddenOperation;
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
-import eu.solven.adhoc.pivottable.app.PivotableJackson;
+import eu.solven.adhoc.resource.AdhocJackson;
 import eu.solven.pepper.system.PepperEnvHelper;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Convert an applicative {@link Throwable} into a relevant {@link HttpStatus}
@@ -64,7 +62,7 @@ import reactor.core.publisher.Mono;
 // https://stackoverflow.com/questions/51931178/error-handling-in-webflux-with-routerfunction
 public class PivotableWebExceptionHandler implements WebExceptionHandler {
 
-	final ObjectMapper objectMapper = PivotableJackson.objectMapper();
+	final ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 
 	@Override
 	public Mono<Void> handle(@NonNull ServerWebExchange exchange, @NonNull Throwable e) {
@@ -112,7 +110,7 @@ public class PivotableWebExceptionHandler implements WebExceptionHandler {
 		String respondyBodyAsString;
 		try {
 			respondyBodyAsString = objectMapper.writeValueAsString(responseBody);
-		} catch (JsonProcessingException ee) {
+		} catch (RuntimeException ee) {
 			log.error("Issue producing responseBody given {}", responseBody, ee);
 			respondyBodyAsString = "{\"error_message\":\"something_went_very_wrong\"}";
 		}
