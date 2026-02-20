@@ -29,7 +29,7 @@ import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -51,7 +51,7 @@ public class TestGroupByColumns {
 	public void testJackson() throws JsonProcessingException {
 		IAdhocGroupBy groupByAsc = GroupByColumns.named("a", "b");
 
-		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocGroupBy.class, groupByAsc);
+		String asString = PepperJackson3TestHelper.verifyJackson(IAdhocGroupBy.class, groupByAsc);
 		Assertions.assertThat(asString).isEqualTo("""
 				{
 				  "columns" : [ "a", "b" ]
