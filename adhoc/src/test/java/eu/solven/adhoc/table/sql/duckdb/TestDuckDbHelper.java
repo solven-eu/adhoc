@@ -54,30 +54,30 @@ public class TestDuckDbHelper {
 
 	@Test
 	public void testFilterExpr_like() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(LikeMatcher.matching("%abc"))).isEqualTo("LIKE '%abc'");
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(LikeMatcher.matching("%abc"))).isEqualTo("LIKE '%abc'");
 	}
 
 	@Test
 	public void testFilterExpr_notLike() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(NotMatcher.not(LikeMatcher.matching("%abc"))))
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(NotMatcher.not(LikeMatcher.matching("%abc"))))
 				.isEqualTo("NOT LIKE '%abc'");
 	}
 
 	@Test
 	public void testFilterExpr_matchAll() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_ALL)).isEqualTo("1 = 1");
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(IValueMatcher.MATCH_ALL)).isEqualTo("1 = 1");
 	}
 
 	@Test
 	public void testFilterExpr_matchNone() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_NONE)).isEqualTo("1 = 0");
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(IValueMatcher.MATCH_NONE)).isEqualTo("1 = 0");
 	}
 
 	@Test
 	public void testAppendGetCoordinatesMeasures_qualified() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123, "table.column", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
+		DuckDBHelper.appendGetCoordinatesMeasures(123, "table.column", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
 
 		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
 				.table(DSL.table("someTable"))
@@ -97,7 +97,7 @@ public class TestDuckDbHelper {
 	public void testAppendGetCoordinatesMeasures_qualified_quoted() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123,
+		DuckDBHelper.appendGetCoordinatesMeasures(123,
 				"\"table\".\"column\"",
 				IValueMatcher.MATCH_ALL,
 				7,
@@ -123,7 +123,7 @@ public class TestDuckDbHelper {
 	public void testAppendGetCoordinatesMeasures_withSpace() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123, "pre post", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
+		DuckDBHelper.appendGetCoordinatesMeasures(123, "pre post", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
 
 		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
 				.table(DSL.table("someTable"))
@@ -145,7 +145,7 @@ public class TestDuckDbHelper {
 	public void testMakeConnections_withPool() {
 		// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#rocket-initialization
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl(DuckDbHelper.getInMemoryJdbcUrl());
+		config.setJdbcUrl(DuckDBHelper.getInMemoryJdbcUrl());
 		config.setConnectionTimeout(TimeUnit.SECONDS.toMillis(5));
 
 		HikariDataSource ds = new HikariDataSource(config);

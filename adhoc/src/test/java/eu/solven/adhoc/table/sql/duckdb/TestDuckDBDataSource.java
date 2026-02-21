@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class TestDuckDBDataSource {
-	DuckDBDataSource dataSource = new DuckDBDataSource(DuckDbHelper.makeFreshInMemoryDb());
+	DuckDBDataSource dataSource = new DuckDBDataSource(DuckDBHelper.makeFreshInMemoryDb());
 
 	@Test
 	public void testCloseCurrentThreadReUse() throws SQLException {

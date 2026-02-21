@@ -62,7 +62,7 @@ import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import eu.solven.pepper.spring.PepperResourceHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +90,7 @@ public class InjectPixarExampleCubesConfig {
 
 	@SuppressWarnings("checkstyle.MethodLength")
 	protected void registerPixarFilms(AdhocSchema schema) {
-		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
 

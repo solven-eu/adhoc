@@ -55,12 +55,12 @@ import software.amazon.awssdk.services.redshiftdata.model.RedshiftDataException;
  */
 // https://docs.aws.amazon.com/redshift/latest/mgmt/data-api.html
 @Slf4j
-public class AdhocRedshiftTableWrapper extends JooqTableWrapper {
+public class RedshiftTableWrapper extends JooqTableWrapper {
 
-	final AdhocRedshiftTableWrapperParameters redShiftParameters;
+	final RedshiftTableWrapperParameters redShiftParameters;
 
 	@Builder(builderMethodName = "redshift")
-	public AdhocRedshiftTableWrapper(String name, AdhocRedshiftTableWrapperParameters redShiftParameters) {
+	public RedshiftTableWrapper(String name, RedshiftTableWrapperParameters redShiftParameters) {
 		super(name, redShiftParameters.getBase());
 
 		this.redShiftParameters = redShiftParameters;

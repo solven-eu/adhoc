@@ -76,7 +76,7 @@ import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.pepper.mappath.MapPathGet;
@@ -337,36 +337,49 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
 		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery);
 
+		Stream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, sqlQuery, tabularRecordFactory);
+		return tabularRecords
+				// leftover in WHERE
+				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
+				// leftover in FILTER
+				.map(row -> applyAggregatorLeftovers(sqlQuery, row));
+	}
+
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
+			ITabularRecordFactory tabularRecordFactory) {
 		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
 
 		return resultQuery.stream()
 				.flatMap(oneQuery -> toStream(queryPod, oneQuery))
-				.map(r -> intoTabularRecord(tabularRecordFactory, r))
-				// leftover in WHERE
-				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
-				// leftover in FILTER
-				.map(row -> {
-					Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();
-					if (aggregatorToLeftovers.isEmpty()) {
-						return row;
-					} else {
-						// Copy aggregates as we may remove if the leftover does not match
-						Map<String, ?> aggregates = new LinkedHashMap<>(row.aggregatesAsMap());
+				.map(r -> intoTabularRecord(tabularRecordFactory, r));
+	}
 
-						aggregatorToLeftovers.forEach((measure, leftover) -> {
-							Object currentValue = aggregates.get(measure);
+	/**
+	 * Applies any aggregator-level leftover filters that could not be pushed into the SQL FILTER clause.
+	 */
+	protected ITabularRecord applyAggregatorLeftovers(IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
+			ITabularRecord row) {
+		Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();
+		if (aggregatorToLeftovers.isEmpty()) {
+			return row;
+		} else {
+			// Copy aggregates as we may remove if the leftover does not match
+			Map<String, ?> aggregates = new LinkedHashMap<>(row.aggregatesAsMap());
 
-							if (currentValue == null) {
-								// Aggregate is null: no point in checking the leftover on FILTER
-								log.trace("Skip removing null aggregate");
-							} else if (!MoreFilterHelpers.match(leftover, row)) {
-								aggregates.remove(measure);
-							}
-						});
+			aggregatorToLeftovers.forEach((measure, leftover) -> {
+				Object currentValue = aggregates.get(measure);
 
-						return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
-					}
-				});
+				if (currentValue == null) {
+					// Aggregate is null: no point in checking the leftover on FILTER
+					log.trace("Skip removing null aggregate");
+				} else if (!MoreFilterHelpers.match(leftover, row)) {
+					aggregates.remove(measure);
+				}
+			});
+
+			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
+		}
 	}
 
 	protected ITabularRecordFactory makeTabularRecordFactory(QueryPod queryPod,
@@ -455,7 +468,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
-			return DuckDbHelper.getCoordinates(this, column, valueMatcher, limit);
+			return DuckDBHelper.getCoordinates(this, column, valueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
 		}
@@ -465,7 +478,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	public Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		// TODO How should `null` be reported?
 		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
-			return DuckDbHelper.getCoordinates(this, columnToValueMatcher, limit);
+			return DuckDBHelper.getCoordinates(this, columnToValueMatcher, limit);
 		} else {
 			return ITableWrapper.super.getCoordinates(columnToValueMatcher, limit);
 		}

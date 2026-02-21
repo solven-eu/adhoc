@@ -367,7 +367,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 					}).toList();
 				} catch (RuntimeException e) {
 					String msgE = "Issue computing the underlying querySteps for %s".formatted(queryStep);
-					throw AdhocExceptionHelpers.wrap(e, msgE);
+					throw AdhocExceptionHelpers.wrap(msgE, e);
 				}
 
 				registerUnderlyings(queryStep, underlyingSteps);

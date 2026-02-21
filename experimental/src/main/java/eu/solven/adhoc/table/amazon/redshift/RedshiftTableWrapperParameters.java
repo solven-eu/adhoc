@@ -20,54 +20,61 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.google.bigquery;
-
-import org.jooq.Name;
-import org.jooq.SQLDialect;
-import org.jooq.impl.DSL;
-
-import com.google.cloud.bigquery.BigQueryOptions;
+package eu.solven.adhoc.table.amazon.redshift;
 
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
+import software.amazon.awssdk.services.redshiftdata.RedshiftDataAsyncClient;
 
 /**
- * Parameters for {@link AdhocBigQueryTableWrapper}.
+ * Parameters to configure a {@link RedshiftTableWrapper}.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder
-public class AdhocBigQueryTableWrapperParameters {
+public class RedshiftTableWrapperParameters {
 	@NonNull
 	JooqTableWrapperParameters base;
 
 	@NonNull
-	@Default
-	final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
+	RedshiftDataAsyncClient asyncDataClient;
 
-	// TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
 	@NonNull
-	@Default
-	final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
+	String workgroupName;
 
-	/**
-	 * BEWARE This will not define underlying default dialect to MYSQL.
-	 * 
-	 * @return
-	 */
-	public static AdhocBigQueryTableWrapperParametersBuilder builder() {
-		return new AdhocBigQueryTableWrapperParametersBuilder();
-	}
+	@NonNull
+	String database;
 
-	public static AdhocBigQueryTableWrapperParametersBuilder builder(Name tableName) {
-		return new AdhocBigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
-				// Google BigQuery seems not very far from MySQL
-				.dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
-				.tableName(tableName)
-				.build());
-	}
+	@NonNull
+	String dbUser;
+
+	//
+	// @NonNull
+	// @Default
+	// final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
+	//
+	// // TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
+	// @NonNull
+	// @Default
+	// final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
+	//
+	// /**
+	// * BEWARE This will not define underlying default dialect to MYSQL.
+	// *
+	// * @return
+	// */
+	// public static AdhocBigQueryTableWrapperParametersBuilder builder() {
+	// return new AdhocBigQueryTableWrapperParametersBuilder();
+	// }
+	//
+	// public static AdhocBigQueryTableWrapperParametersBuilder builder(Name tableName) {
+	// return new AdhocBigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
+	// // Google BigQuery seems not very far from MySQL
+	// .dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
+	// .tableName(tableName)
+	// .build());
+	// }
 }

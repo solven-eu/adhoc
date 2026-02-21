@@ -110,7 +110,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 			} else {
 				String msgE = "Issue processing stream from %s".formatted(stream);
-				throw AdhocExceptionHelpers.wrap(e, msgE);
+				throw AdhocExceptionHelpers.wrap(msgE, e);
 			}
 		}
 

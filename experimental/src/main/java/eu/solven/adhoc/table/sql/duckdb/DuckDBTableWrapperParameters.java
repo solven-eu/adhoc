@@ -20,34 +20,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.exception;
+package eu.solven.adhoc.table.sql.duckdb;
 
-import java.util.concurrent.CompletionException;
+import org.jooq.Name;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
-import lombok.experimental.UtilityClass;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
 
 /**
- * Utilities related to {@link Exception} and {@link Throwable}.
+ * Parameters for {@link DuckDBTableWrapper}.
  * 
  * @author Benoit Lacelle
  */
-@UtilityClass
-public class AdhocExceptionHelpers {
+@Value
+@Builder
+public class DuckDBTableWrapperParameters {
+	/**
+	 * Number of rows per Arrow record batch transferred from DuckDB.
+	 */
+	private static final long DEFAULT_ARROW_BATCH_SIZE = 2048;
 
-	public static RuntimeException wrap(String eMsg, RuntimeException e) {
-		if (e instanceof IllegalStateException illegalStateE) {
-			// We want to keep bubbling an IllegalStateException
-			return new IllegalStateException(eMsg, illegalStateE);
-		} else if (e instanceof CompletionException completionE) {
-			if (completionE.getCause() instanceof IllegalStateException) {
-				// We want to keep bubbling an IllegalStateException
-				return new IllegalStateException(eMsg, completionE);
-			} else {
-				return new IllegalArgumentException(eMsg, completionE);
-			}
-		} else {
-			return new IllegalArgumentException(eMsg, e);
-		}
+	@NonNull
+	JooqTableWrapperParameters base;
+
+	@Default
+	long arrowBatchSize = DEFAULT_ARROW_BATCH_SIZE;
+
+	/**
+	 * BEWARE This will not define underlying default dialect to MYSQL.
+	 * 
+	 * @return
+	 */
+	public static DuckDBTableWrapperParametersBuilder builder() {
+		return new DuckDBTableWrapperParametersBuilder();
 	}
 
+	public static DuckDBTableWrapperParametersBuilder builder(Name tableName) {
+		return new DuckDBTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
+				.dslSupplier(() -> DSL.using(SQLDialect.DUCKDB))
+				.tableName(tableName)
+				.build());
+	}
 }

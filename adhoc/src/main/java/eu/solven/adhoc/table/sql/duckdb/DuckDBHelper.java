@@ -64,7 +64,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 @UtilityClass
-public class DuckDbHelper {
+public class DuckDBHelper {
 
 	public static String getInMemoryJdbcUrl() {
 		return "jdbc:duckdb:";

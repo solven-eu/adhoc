@@ -49,7 +49,7 @@ public class AggregatedRecordFields {
 	@NonNull
 	@Singular
 	ImmutableList<String> columns;
-	// Additional columns for the leftover filters
+	// Additional columns needed for the leftover filters
 	@NonNull
 	@Singular
 	ImmutableList<String> leftovers;

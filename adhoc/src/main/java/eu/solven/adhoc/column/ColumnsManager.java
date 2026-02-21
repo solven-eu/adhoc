@@ -213,7 +213,7 @@ public class ColumnsManager implements IColumnsManager {
 				tabularRecordStream = AdhocExceptionAsMeasureValueHelper.makeErrorStream(transcodedQuery, e);
 			} else {
 				String msgE = "Issue opening stream from %s for query=%s".formatted(table, transcodedQuery);
-				throw AdhocExceptionHelpers.wrap(e, msgE);
+				throw AdhocExceptionHelpers.wrap(msgE,e);
 			}
 		}
 
