@@ -27,10 +27,11 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestSortedSetString {
+public class TestImmutableCollectionHasIndexOf {
 	@Test
 	public void testSimple() {
-		SortedSetString sorted = SortedSetString.builder().keys(List.of("c", "a", "b")).build();
+		ImmutableSortedSetHasIndexOf sorted =
+				ImmutableSortedSetHasIndexOf.builder().keys(List.of("c", "a", "b")).build();
 
 		Assertions.assertThat(sorted.indexOf("a")).isEqualTo(0);
 		Assertions.assertThat(sorted.indexOf("b")).isEqualTo(1);

@@ -79,7 +79,7 @@ public class BenchmarkPerfectHashing {
 		}
 	}
 
-	IHasIndexOf<String> guavaSet = SortedSetString.builder().keys(keys).build();
+	IHasIndexOf<String> guavaSet = ImmutableSortedSetHasIndexOf.builder().keys(keys).build();
 	IHasIndexOf<String> guavaSetWithHashMap =
 			CollectionWithCustomIndexOf.<String>builder().keys(keys).hashMap().build();
 	IHasIndexOf<String> guavaSetWithPerfectHash = CollectionWithCustomIndexOf.<String>builder()
