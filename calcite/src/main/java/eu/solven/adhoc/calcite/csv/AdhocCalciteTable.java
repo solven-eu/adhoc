@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.calcite.csv;
 
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -46,9 +45,6 @@ import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
@@ -57,6 +53,7 @@ import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Table based on a {@link ICubeWrapper}.
@@ -230,12 +227,8 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 		public Enumerable<Object> aggregate(List<Map.Entry<String, Class<?>>> fields, List adhocQuery) {
 			Object rawQuery = adhocQuery.get(0);
 
-			ICubeQuery q;
-			try {
-				q = new ObjectMapper().readValue(rawQuery.toString(), CubeQuery.class);
-			} catch (JsonProcessingException e) {
-				throw new UncheckedIOException(e);
-			}
+			ICubeQuery q = new ObjectMapper().readValue(rawQuery.toString(), CubeQuery.class);
+
 			return getTable().aggregate(
 					// getMongoDb(),
 					fields,

@@ -24,8 +24,6 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Comparator;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
 import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -43,7 +41,6 @@ import lombok.extern.jackson.Jacksonized;
  *
  */
 @Value
-@JsonPropertyOrder(alphabetic = true)
 public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 	// Can not be an IValueMatcher
 	@NonNull
@@ -59,7 +56,8 @@ public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 
 	@Builder(toBuilder = true)
 	@Jacksonized
-	private ComparingMatcher(Object operand, boolean greaterThan, boolean matchIfEqual, boolean matchIfNull) {
+	@Deprecated(since = "public only to workaround https://github.com/FasterXML/jackson-databind/issues/5704")
+	public ComparingMatcher(Object operand, boolean greaterThan, boolean matchIfEqual, boolean matchIfNull) {
 		this.operand = AdhocPrimitiveHelpers.normalizeValue(operand);
 		this.greaterThan = greaterThan;
 		this.matchIfEqual = matchIfEqual;

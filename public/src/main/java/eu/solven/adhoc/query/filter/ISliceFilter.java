@@ -26,11 +26,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import eu.solven.adhoc.query.filter.jackson.SliceFilterDeserializer;
-import eu.solven.adhoc.query.filter.jackson.SliceFilterSerializer;
-import tools.jackson.databind.annotation.JsonDeserialize;
-import tools.jackson.databind.annotation.JsonSerialize;
-
 /**
  * Enable filter in a CubeQuery
  * 
@@ -45,8 +40,8 @@ import tools.jackson.databind.annotation.JsonSerialize;
 		@JsonSubTypes.Type(value = NotFilter.class, name = "not"),
 		@JsonSubTypes.Type(value = ColumnFilter.class, name = "column"), })
 // Custom serialization is configured with `AdhocPublicJackson.makeAdhocModule()`
-@JsonSerialize(using = SliceFilterSerializer.class)
-@JsonDeserialize(using = SliceFilterDeserializer.class)
+// @JsonSerialize(using = SliceFilterSerializer.class)
+// @JsonDeserialize(using = SliceFilterDeserializer.class)
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
 public interface ISliceFilter {
 	ISliceFilter MATCH_ALL = AndFilter.builder().build();

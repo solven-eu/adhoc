@@ -25,18 +25,16 @@ package eu.solven.adhoc.pivotable.app.it;
 import java.time.Duration;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
-import org.springframework.web.context.WebApplicationContext;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
@@ -53,17 +51,17 @@ import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE,
 		IPivotableSpringProfiles.P_INMEMORY,
 		IPivotableSpringProfiles.P_SELF_ENDPOINT })
 @Slf4j
+@AutoConfigureWebTestClient
 public class TestPivotableApiRouter {
 
 	String v1 = IPivotableApiConstants.PREFIX_V1;
 
 	@Autowired
-	WebApplicationContext wac;
 	WebTestClient webTestClient;
 
 	@Autowired
@@ -71,14 +69,6 @@ public class TestPivotableApiRouter {
 
 	protected String generateAccessToken() {
 		return tokenService.generateAccessToken(FakeUser.ACCOUNT_ID, Duration.ofMinutes(1), false);
-	}
-
-	WebTestClient client;
-
-	@BeforeEach
-	void setUp() {
-		// https://docs.spring.io/spring-framework/reference/testing/webtestclient.html
-		client = MockMvcWebTestClient.bindToApplicationContext(this.wac).build();
 	}
 
 	@Test

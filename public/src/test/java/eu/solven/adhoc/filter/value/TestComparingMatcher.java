@@ -45,8 +45,13 @@ public class TestComparingMatcher {
 	public void testJackson() {
 		ComparingMatcher matcher = ComparingMatcher.builder().greaterThan(true).operand(123).build();
 
-		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		ObjectMapper objectMapper = JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build();
+		ObjectMapper objectMapper = JsonMapper.builder()
+				// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				// https://github.com/FasterXML/jackson-databind/issues/5704
+				// `@JsonPropertyOrder(alphabetic = false)` is not functional
+				// .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+				.build();
 
 		String asString = objectMapper.writeValueAsString(matcher);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""

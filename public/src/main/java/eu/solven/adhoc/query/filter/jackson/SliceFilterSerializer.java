@@ -53,6 +53,14 @@ public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
 	}
 
 	@Override
+	public void resolve(SerializationContext ctxt) {
+		super.resolve(ctxt);
+		if (base != null) {
+			base.resolve(ctxt);
+		}
+	}
+
+	@Override
 	public void serializeWithType(ISliceFilter value,
 			JsonGenerator gen,
 			SerializationContext ctxt,
@@ -65,12 +73,15 @@ public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
 			// throw new IllegalStateException(
 			// "You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			ValueSerializer<Object> delegate = ctxt.findValueSerializer(value.getClass());
+			ValueSerializer<ISliceFilter> base2 = base;
+			if (base2 == null) {
+				base2 = (ValueSerializer) ctxt.findValueSerializer(value.getClass());
+			}
 			// if (this == delegate) {
-			super.serializeWithType(value, gen, ctxt, typeSer);
-			base.serializeWithType(value, gen, ctxt, typeSer);
+			// super.serializeWithType(value, gen, ctxt, typeSer);
+			base2.serializeWithType(value, gen, ctxt, typeSer);
 			// } else {
-			delegate.serializeWithType(value, gen, ctxt, typeSer);
+			// delegate.serializeWithType(value, gen, ctxt, typeSer);
 			// }
 		}
 	}

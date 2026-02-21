@@ -30,11 +30,14 @@ import tools.jackson.core.util.DefaultIndenter;
 import tools.jackson.core.util.DefaultPrettyPrinter;
 import tools.jackson.databind.BeanDescription.Supplier;
 import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.ValueSerializer;
 import tools.jackson.databind.deser.ValueDeserializerModifier;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
 import tools.jackson.databind.ser.ValueSerializerModifier;
 
@@ -80,7 +83,7 @@ public class AdhocPublicJackson {
 	public static SimpleModule makeModule() {
 		SimpleModule adhocModule = new SimpleModule("AdhocModule");
 
-		// adhocModule.setSerializerModifier(new SliceFilterSerializerModifier());
+		adhocModule.setSerializerModifier(new SliceFilterSerializerModifier());
 		adhocModule.setDeserializerModifier(new SliceFilterDeserializerModifier());
 
 		return adhocModule;
@@ -97,5 +100,15 @@ public class AdhocPublicJackson {
 		DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
 		prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 		return objectMapper.rebuild().defaultPrettyPrinter(prettyPrinter).build();
+	}
+
+	public static ObjectMapper makeObjectMapper() {
+		return JsonMapper.builder()
+				// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				// https://github.com/FasterXML/jackson-databind/issues/5704
+				// `@JsonPropertyOrder(alphabetic = false)` is not functional
+				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+				.build();
 	}
 }

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -44,7 +45,8 @@ public class TestEvaluatedExpressionColumn {
 	public void testJackson() {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + b").build();
-		String asString = PepperJackson3TestHelper.verifyJackson(IAdhocColumn.class, column);
+		String asString = PepperJackson3TestHelper
+				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), IAdhocColumn.class, column);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

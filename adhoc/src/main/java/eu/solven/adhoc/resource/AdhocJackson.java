@@ -28,6 +28,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 import lombok.experimental.UtilityClass;
+import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 
@@ -77,6 +78,9 @@ public class AdhocJackson {
 		return objectMapper.rebuild()
 				// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 				.enable(SerializationFeature.INDENT_OUTPUT)
+				// https://github.com/FasterXML/jackson-databind/issues/5704
+				// `@JsonPropertyOrder(alphabetic = false)` is not functional
+				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
 				.addModule(AdhocPublicJackson.makeModule())
 				.build();
 	}

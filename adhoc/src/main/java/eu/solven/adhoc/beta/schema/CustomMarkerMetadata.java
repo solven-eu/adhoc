@@ -27,6 +27,7 @@ import java.util.Set;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Helps defining a customMarker single data-point. Typically used for UI read/write of customMarkers.
@@ -35,6 +36,8 @@ import lombok.Value;
  */
 @Value
 @Builder
+// TODO Unclear why we need deserialization. It appears needed with SpringBoot4.
+@Jacksonized
 public class CustomMarkerMetadata {
 	@NonNull
 	String name;

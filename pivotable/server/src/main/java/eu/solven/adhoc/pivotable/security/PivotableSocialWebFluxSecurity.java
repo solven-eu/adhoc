@@ -45,6 +45,8 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationFailureHandler;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.security.web.server.csrf.WebSessionServerCsrfTokenRepository;
@@ -198,13 +200,13 @@ public class PivotableSocialWebFluxSecurity {
 				// How to request prompt=consent for Github?
 				// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html
 				// https://stackoverflow.com/questions/74242738/how-to-logout-from-oauth-signed-in-web-app-with-github
-				// .oauth2Login(oauth2 -> {
-				// String loginSuccess = "/html/login?success";
-				// oauth2.authenticationSuccessHandler(new RedirectServerAuthenticationSuccessHandler(loginSuccess));
-				//
-				// String loginError = "/html/login?error";
-				// oauth2.authenticationFailureHandler(new RedirectServerAuthenticationFailureHandler(loginError));
-				// })
+				.oauth2Login(oauth2 -> {
+					String loginSuccess = "/html/login?success";
+					oauth2.authenticationSuccessHandler(new RedirectServerAuthenticationSuccessHandler(loginSuccess));
+
+					String loginError = "/html/login?error";
+					oauth2.authenticationFailureHandler(new RedirectServerAuthenticationFailureHandler(loginError));
+				})
 				// .oauth2Client(oauth2 -> oauth2.)
 
 				.httpBasic(basic -> {

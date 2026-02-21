@@ -52,6 +52,14 @@ public class SliceFilterDeserializer extends ValueDeserializer<ISliceFilter> {
 		this.base = null;
 	}
 
+	@Override
+	public void resolve(DeserializationContext ctxt) {
+		super.resolve(ctxt);
+		if (base != null) {
+			base.resolve(ctxt);
+		}
+	}
+
 	protected ISliceFilter onText(JsonParser p) throws IOException {
 		if ("matchAll".equalsIgnoreCase(p.getString())) {
 			return ISliceFilter.MATCH_ALL;

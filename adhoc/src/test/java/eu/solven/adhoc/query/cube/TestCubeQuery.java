@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 
 public class TestCubeQuery {
 	@Test
@@ -34,5 +35,12 @@ public class TestCubeQuery {
 		ISliceFilter filter =
 				CubeQuery.builder().andFilter("a", "a1").andFilter("b", IValueMatcher.MATCH_ALL).build().getFilter();
 		Assertions.assertThat(filter).hasToString("a==a1");
+	}
+
+	@Test
+	public void testJackson() {
+		CubeQuery query = CubeQuery.builder().andFilter("a", "a1").andFilter("b", IValueMatcher.MATCH_ALL).build();
+
+		PepperJackson3TestHelper.verifyJackson(query);
 	}
 }

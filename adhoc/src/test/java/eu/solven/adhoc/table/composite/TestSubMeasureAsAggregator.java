@@ -27,6 +27,7 @@ import java.util.Arrays;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -44,7 +45,8 @@ public class TestSubMeasureAsAggregator {
 				.underlyings(Arrays.asList("u1", "u2"))
 				.build();
 
-		String asString = PepperJackson3TestHelper.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
+		String asString = PepperJackson3TestHelper
+				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), SubMeasureAsAggregator.class, subMeasure);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
