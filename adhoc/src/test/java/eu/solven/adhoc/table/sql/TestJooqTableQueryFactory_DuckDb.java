@@ -51,10 +51,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 
 public class TestJooqTableQueryFactory_DuckDb {
 	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
+		AdhocJooqHelper.disableBanners();
 	}
 
 	JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()

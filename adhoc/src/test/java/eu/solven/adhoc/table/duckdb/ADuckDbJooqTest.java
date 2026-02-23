@@ -25,16 +25,14 @@ package eu.solven.adhoc.table.duckdb;
 import org.jooq.DSLContext;
 
 import eu.solven.adhoc.ARawDagTest;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
 
 public abstract class ADuckDbJooqTest extends ARawDagTest {
 
 	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
+		AdhocJooqHelper.disableBanners();
 	}
 
 	protected final DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();

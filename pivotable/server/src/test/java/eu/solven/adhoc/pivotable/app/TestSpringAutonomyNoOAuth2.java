@@ -38,6 +38,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
@@ -56,6 +57,9 @@ import lombok.extern.slf4j.Slf4j;
 		IPivotableSpringProfiles.P_INMEMORY })
 @Slf4j
 public class TestSpringAutonomyNoOAuth2 implements IPivotableSpringProfiles {
+	static {
+		AdhocJooqHelper.disableBanners();
+	}
 
 	@Autowired
 	ApplicationContext appContext;

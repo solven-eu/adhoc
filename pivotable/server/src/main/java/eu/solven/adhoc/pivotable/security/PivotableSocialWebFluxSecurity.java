@@ -39,21 +39,17 @@ import org.springframework.security.authentication.UserDetailsRepositoryReactive
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity.HttpBasicSpec;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcReactiveOAuth2UserService;
-import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.server.resource.web.server.BearerTokenServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationFailureHandler;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
-import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.security.web.server.csrf.WebSessionServerCsrfTokenRepository;
@@ -65,7 +61,6 @@ import eu.solven.adhoc.pivotable.security.oauth2.PivotableOAuth2UserService;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 /**
  * Enable authentication with social identity providers (e.g. GitHub, Google).
@@ -180,18 +175,29 @@ public class PivotableSocialWebFluxSecurity {
 						.pathMatchers("/ui/js/**", "/ui/img/**", "/webjars/**", "/favicon.ico")
 						.permitAll()
 
+						// PivotableLoginController
 						// If there is no logged-in user, we return a 401.
 						// `permitAll` is useful to return a 401 manually, else `.oauth2Login` would return a 302
-//						.pathMatchers("/api/login/v1/json",
-//								// `BASIC` should be added here only if fakeUser
-//								"/api/login/v1/basic",
-//								"/api/login/v1/user",
-//								"/api/login/v1/oauth2/token",
-//								"/api/login/v1/html",
-//								"/api/login/v1/providers",
-//								"/api/login/v1/csrf",
-//								"/api/login/v1/logout")
-//						.authenticated()
+						.pathMatchers(
+								// `/json` returns a custom/explicit JSON in case of 401
+								"/api/login/v1/json",
+								// `/providers` are public as we need to see available providers before being logged-in
+								"/api/login/v1/providers",
+								// `/csrf` deserves being provided even for anonymous user
+								// https://stackoverflow.com/questions/30767893/does-an-anonymous-comment-post-form-need-csrf-token-if-not-why-does-so-use-it-a
+								"/api/login/v1/csrf",
+								// if not logged in, we redirect to the login URL
+								// if logged in, we redirect to the loginSuccess URL
+								"/api/login/v1/html")
+						.permitAll()
+
+						.pathMatchers(
+								// // `BASIC` should be added here only if fakeUser
+								"/api/login/v1/basic",
+								"/api/login/v1/user",
+								"/api/login/v1/oauth2/token",
+								"/api/login/v1/logout")
+						.authenticated()
 
 						// The rest needs to be authenticated
 						.anyExchange()
@@ -229,14 +235,9 @@ public class PivotableSocialWebFluxSecurity {
 							new BearerTokenServerAuthenticationEntryPoint();
 					authenticationEntryPoint.setRealmName("Pivotable Login Realm");
 					e.authenticationEntryPoint(authenticationEntryPoint);
-				})
-				;
+				});
 
 		if (env.getProperty(PivotableLoginController.P_OAUTH2, Boolean.class, true)) {
-
-//			final InMemoryReactiveClientRegistrationRepository clientRegistrationRepository =
-//					appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
-			
 			commonConf = commonConf
 					// How to request prompt=consent for Github?
 					// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html

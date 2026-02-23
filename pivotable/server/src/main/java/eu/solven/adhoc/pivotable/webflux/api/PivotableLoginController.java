@@ -157,7 +157,6 @@ public class PivotableLoginController {
 	// This API enables fetching the login status without getting a 401/generating a JS error/generating an exception.
 	@GetMapping("/json")
 	public Mono<? extends Map<String, ?>> loginStatus(@AuthenticationPrincipal OAuth2User oauth2User) {
-		System.out.println("AAAAAAAAAAAAAA");
 		return userMayEmpty().map(user -> Map.of("login", HttpStatus.OK.value()))
 				.switchIfEmpty(Mono.just(Map.of("login", HttpStatus.UNAUTHORIZED.value())));
 	}

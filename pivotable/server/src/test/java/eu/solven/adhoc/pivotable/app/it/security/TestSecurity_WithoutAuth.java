@@ -63,7 +63,6 @@ import lombok.extern.slf4j.Slf4j;
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
 @AutoConfigureWebTestClient(timeout = "P1D")
-// @EnableAutoConfiguration(exclude = { RedisAutoConfiguration.class })
 public class TestSecurity_WithoutAuth {
 
 	@Autowired
@@ -248,12 +247,13 @@ public class TestSecurity_WithoutAuth {
 				.exchange()
 
 				.expectStatus()
-				.isOk()
-				.expectBody(Map.class)
-				.value(bodyAsMap -> {
-					// Ensure the csrfToken is not in the body, as it would make it easier to leak
-					Assertions.assertThat(bodyAsMap).containsEntry("Location", "/html/login?logout").hasSize(1);
-				});
+				// .isOk()
+				// .expectBody(Map.class)
+				// .value(bodyAsMap -> {
+				// // Ensure the csrfToken is not in the body, as it would make it easier to leak
+				// Assertions.assertThat(bodyAsMap).containsEntry("Location", "/html/login?logout").hasSize(1);
+				// })
+				.isUnauthorized();
 	}
 
 	@Test
@@ -281,6 +281,7 @@ public class TestSecurity_WithoutAuth {
 				.expectBody(Map.class)
 				.value(bodyAsMap -> {
 					// Ensure the csrfToken is not in the body, as it would make it easier to leak
+					// Fact is we do lead the csrfToken in body for easier usage
 					Assertions.assertThat(bodyAsMap).containsEntry("header", "X-CSRF-TOKEN").hasSize(1);
 				});
 

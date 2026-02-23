@@ -51,7 +51,9 @@ import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@SpringBootTest(classes = PivotableServerApplication.class,
+		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+		properties = IPivotableSpringProfiles.P_CONFIG_IMPORT)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE,
 		IPivotableSpringProfiles.P_INMEMORY,
 		IPivotableSpringProfiles.P_SELF_ENDPOINT })
