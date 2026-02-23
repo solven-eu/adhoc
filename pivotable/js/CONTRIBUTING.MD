@@ -24,6 +24,7 @@ https://vitest.dev/guide/
 
 https://playwright.dev/docs/intro
 
+    npm run pw_localhost8080_ui
     npx playwright test --ui
     npx playwright show-report
 
