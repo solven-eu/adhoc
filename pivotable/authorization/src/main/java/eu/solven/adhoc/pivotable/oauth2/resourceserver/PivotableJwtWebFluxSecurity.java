@@ -117,11 +117,11 @@ public class PivotableJwtWebFluxSecurity {
 						.authenticated())
 
 				// Default OAuth2 behavior is to redirect to login pages
-				// If not loged-in, we want to receive 401 and not 302 (which are good for UX)
+				// If not logged-in, we want to receive 401 and not 302 (which are good for UX while this covers API)
 				.exceptionHandling(e -> {
 					BearerTokenServerAuthenticationEntryPoint authenticationEntryPoint =
 							new BearerTokenServerAuthenticationEntryPoint();
-					authenticationEntryPoint.setRealmName("Pivotable Realm");
+					authenticationEntryPoint.setRealmName("Pivotable API Realm");
 					e.authenticationEntryPoint(authenticationEntryPoint);
 				})
 

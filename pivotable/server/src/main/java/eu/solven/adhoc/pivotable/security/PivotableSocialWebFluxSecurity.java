@@ -26,6 +26,8 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
@@ -37,16 +39,21 @@ import org.springframework.security.authentication.UserDetailsRepositoryReactive
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity.HttpBasicSpec;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcReactiveOAuth2UserService;
+import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.server.resource.web.server.BearerTokenServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationFailureHandler;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
+import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.security.web.server.csrf.WebSessionServerCsrfTokenRepository;
@@ -55,8 +62,10 @@ import org.springframework.security.web.server.util.matcher.ServerWebExchangeMat
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
 import eu.solven.adhoc.pivotable.security.oauth2.PivotableOAuth2UserService;
+import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 /**
  * Enable authentication with social identity providers (e.g. GitHub, Google).
@@ -72,6 +81,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableSocialWebFluxSecurity {
+	@Autowired
+	ApplicationContext appContext;
 
 	// https://github.com/spring-projects/spring-security/issues/15846
 	@Bean
@@ -104,7 +115,7 @@ public class PivotableSocialWebFluxSecurity {
 			log.info("{}=false", IPivotableSpringProfiles.P_FAKEUSER);
 		}
 
-		return http
+		ServerHttpSecurity commonConf = http
 				// We restrict the scope of this UI securityFilterChain to UI routes
 				// Not matching routes will be handled by the API securityFilterChain
 				.securityMatcher(ServerWebExchangeMatchers.pathMatchers(
@@ -171,16 +182,16 @@ public class PivotableSocialWebFluxSecurity {
 
 						// If there is no logged-in user, we return a 401.
 						// `permitAll` is useful to return a 401 manually, else `.oauth2Login` would return a 302
-						.pathMatchers("/api/login/v1/json",
-								// `BASIC` should be added here only if fakeUser
-								"/api/login/v1/basic",
-								"/api/login/v1/user",
-								"/api/login/v1/oauth2/token",
-								"/api/login/v1/html",
-								"/api/login/v1/providers",
-								"/api/login/v1/csrf",
-								"/api/login/v1/logout")
-						.permitAll()
+//						.pathMatchers("/api/login/v1/json",
+//								// `BASIC` should be added here only if fakeUser
+//								"/api/login/v1/basic",
+//								"/api/login/v1/user",
+//								"/api/login/v1/oauth2/token",
+//								"/api/login/v1/html",
+//								"/api/login/v1/providers",
+//								"/api/login/v1/csrf",
+//								"/api/login/v1/logout")
+//						.authenticated()
 
 						// The rest needs to be authenticated
 						.anyExchange()
@@ -197,17 +208,6 @@ public class PivotableSocialWebFluxSecurity {
 							// Required not to get an NPE at `.build()`
 							.authenticationManager(ram);
 				})
-				// How to request prompt=consent for Github?
-				// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html
-				// https://stackoverflow.com/questions/74242738/how-to-logout-from-oauth-signed-in-web-app-with-github
-				.oauth2Login(oauth2 -> {
-					String loginSuccess = "/html/login?success";
-					oauth2.authenticationSuccessHandler(new RedirectServerAuthenticationSuccessHandler(loginSuccess));
-
-					String loginError = "/html/login?error";
-					oauth2.authenticationFailureHandler(new RedirectServerAuthenticationFailureHandler(loginError));
-				})
-				// .oauth2Client(oauth2 -> oauth2.)
 
 				.httpBasic(basic -> {
 					if (isFakeUser) {
@@ -223,6 +223,37 @@ public class PivotableSocialWebFluxSecurity {
 					logoutSuccessHandler.setLogoutSuccessUrl(URI.create("/api/login/v1/logout"));
 					logout.logoutSuccessHandler(logoutSuccessHandler);
 				})
+
+				.exceptionHandling(e -> {
+					BearerTokenServerAuthenticationEntryPoint authenticationEntryPoint =
+							new BearerTokenServerAuthenticationEntryPoint();
+					authenticationEntryPoint.setRealmName("Pivotable Login Realm");
+					e.authenticationEntryPoint(authenticationEntryPoint);
+				})
+				;
+
+		if (env.getProperty(PivotableLoginController.P_OAUTH2, Boolean.class, true)) {
+
+//			final InMemoryReactiveClientRegistrationRepository clientRegistrationRepository =
+//					appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
+			
+			commonConf = commonConf
+					// How to request prompt=consent for Github?
+					// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html
+					// https://stackoverflow.com/questions/74242738/how-to-logout-from-oauth-signed-in-web-app-with-github
+					.oauth2Login(oauth2 -> {
+						String loginSuccess = "/html/login?success";
+						oauth2.authenticationSuccessHandler(
+								new RedirectServerAuthenticationSuccessHandler(loginSuccess));
+
+						String loginError = "/html/login?error";
+						oauth2.authenticationFailureHandler(new RedirectServerAuthenticationFailureHandler(loginError));
+					})
+			// .oauth2Client(oauth2 -> oauth2.)
+			;
+		}
+
+		return commonConf
 
 				.build();
 	}
