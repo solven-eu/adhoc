@@ -31,7 +31,7 @@ jobs:
       # Playwright browser binaries (~300 MB) are keyed on the lockfile so the
       # cache is invalidated automatically when the Playwright version changes.
       # See https://playwright.dev/docs/ci#caching-browsers
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       id: playwright-cache
       with:
         path: ~/.cache/ms-playwright
