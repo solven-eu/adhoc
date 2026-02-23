@@ -136,6 +136,22 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<annotationProcessorPaths>
+							<!-- https://projectlombok.org/setup/maven -->
+							<!-- https://github.com/projectlombok/lombok/issues/3967 -->
+							<path>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+								<version>${lombok.version}</version>
+							</path>
+						</annotationProcessorPaths>
+					</configuration>
+				</plugin>
+
+				<plugin>
 					<!-- We want to provide source jars -->
 					<!-- https://maven.apache.org/plugins/maven-source-plugin/ -->
 					<!-- Needed by Sonatype deployment-->
