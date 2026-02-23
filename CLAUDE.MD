@@ -38,6 +38,7 @@ These are **mandatory** — follow them exactly:
 - **SLF4J logging**: always use `{}` placeholders, never string concatenation.
   - Correct: `log.debug("Processing {} rows", count);`
   - Wrong:   `log.debug("Processing " + count + " rows");`
+- **Inline URL references**: When writing comments, Javadoc, or YAML workflow steps, add URLs that explain *why* the code is written the way it is. Preferred sources (in order): official documentation, GitHub issues/PRs, StackOverflow answers. Example: `// See https://github.com/foo/bar/issues/42`
 
 ---
 

@@ -1,0 +1,61 @@
+# OpenSSF Scorecard — automated security best-practices audit
+# Documentation: https://github.com/ossf/scorecard-action
+# Results are published to the GitHub Security dashboard (SARIF) and
+# to the public Scorecard API: https://securityscorecards.dev
+
+name: Scorecard
+
+on:
+  push:
+    branches: [ "master" ]
+  # Run weekly so the score stays fresh even without code changes
+  # (e.g. when upstream dependency scores change)
+  schedule:
+    - cron: '30 1 * * 6'
+
+# Restrict all tokens to read-only by default; individual jobs
+# can escalate only the permissions they actually need.
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to upload SARIF results to GitHub Code Scanning
+      security-events: write
+      # Required by ossf/scorecard-action to publish results via OIDC
+      id-token: write
+
+    steps:
+      - name: "Checkout code"
+        # persist-credentials: false prevents the token from leaking to
+        # subprocesses, which is a Scorecard check in itself
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: "Run analysis"
+        # https://github.com/ossf/scorecard-action
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # publish_results pushes the score to the public Scorecard API
+          # and enables the dynamic badge at securityscorecards.dev
+          publish_results: true
+
+      - name: "Upload artifact"
+        # Keep the raw SARIF file as a workflow artifact for local inspection
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - name: "Upload to code-scanning"
+        # Surfaces Scorecard findings in GitHub → Security → Code scanning alerts
+        # https://docs.github.com/en/code-security/code-scanning
+        uses: github/codeql-action/upload-sarif@b20883b0cd1f46c72ae0ba6d1090936928f9fa30 # v4.32.0
+        with:
+          sarif_file: results.sarif
