@@ -66,7 +66,7 @@
 
 		<lombok.version>edge-SNAPSHOT</lombok.version>
 
-		<pepper.version>5.4-SNAPSHOT</pepper.version>
+		<pepper.version>5.4</pepper.version>
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
