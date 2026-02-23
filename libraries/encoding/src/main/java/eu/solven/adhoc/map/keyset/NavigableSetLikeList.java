@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.map.keyset;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -34,6 +33,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
 import eu.solven.adhoc.encoding.page.row.ILikeList;
+import eu.solven.adhoc.map.perfect_hashing.CollectionWithCustomIndexOf;
+import eu.solven.adhoc.map.perfect_hashing.IHasIndexOf;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,7 +48,6 @@ import lombok.NonNull;
  *
  * @author Benoit Lacelle
  */
-@Builder
 public final class NavigableSetLikeList extends ForwardingNavigableSet<String> implements ILikeList<String> {
 	// the keySet as an ordered Set
 	// Useful for quick `.equals` operations
@@ -57,6 +57,10 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 
 	// cache lazily the keySet as a hashSet for faster `.containsKey`
 	final Supplier<ImmutableSet<String>> keysAsHashSet = Suppliers.memoize(() -> ImmutableSet.copyOf(getKeysAsSet()));
+
+	@NonNull
+	@SuppressWarnings("PMD.LinguisticNaming")
+	final IHasIndexOf<String> hasIndexOf;
 
 	/**
 	 * Cache the hash code for the string
@@ -69,6 +73,12 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 	 */
 	// Like String, as ImmutableSortedSet does not cache the hash
 	private boolean hashIsZero; // Default to false;
+
+	@Builder
+	protected NavigableSetLikeList(ImmutableSortedSet<String> keysAsSet) {
+		this.keysAsSet = keysAsSet;
+		this.hasIndexOf = CollectionWithCustomIndexOf.<String>builder().keys(getKeysAsSet()).perfectHash().build();
+	}
 
 	@Override
 	protected NavigableSet<String> delegate() {
@@ -118,7 +128,7 @@ public final class NavigableSetLikeList extends ForwardingNavigableSet<String> i
 	@Override
 	public int indexOf(Object key) {
 		if (key instanceof String s) {
-			return Collections.binarySearch(keysAsSet.asList(), s);
+			return hasIndexOf.indexOf(s);
 		} else {
 			return -1;
 		}
