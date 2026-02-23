@@ -6,7 +6,7 @@ on:
     branches: [ main, master ]
 jobs:
   test:
-    timeout-minutes: 5
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -27,8 +27,20 @@ jobs:
     - name: Install NPM dependencies
       working-directory: ./pivotable/js
       run: npm ci
+    - name: Cache Playwright browsers
+      # Playwright browser binaries (~300 MB) are keyed on the lockfile so the
+      # cache is invalidated automatically when the Playwright version changes.
+      # See https://playwright.dev/docs/ci#caching-browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('pivotable/js/package-lock.json') }}
     - name: Install Playwright Browsers
       working-directory: ./pivotable/js
+      # --with-deps installs browser binaries + required OS packages.
+      # Skip on cache hit: binaries are restored, OS packages are pre-installed on ubuntu-latest.
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps
     - name: Run Playwright tests
       working-directory: ./pivotable/js
