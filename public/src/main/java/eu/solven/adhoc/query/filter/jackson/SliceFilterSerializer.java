@@ -25,6 +25,8 @@ package eu.solven.adhoc.query.filter.jackson;
 import java.beans.Customizer;
 import java.util.Objects;
 
+import org.jspecify.annotations.NonNull;
+
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
@@ -36,28 +38,22 @@ import tools.jackson.databind.ser.std.StdSerializer;
  * {@link Customizer} serialization to write matchAll and matchNone as plain {@link String}.
  * 
  * @author Benoit Lacelle
+ * @see SliceFilterSerializerModifier
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
 public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
-	private final ValueSerializer<ISliceFilter> base;
+	@NonNull
+	final ValueSerializer<ISliceFilter> base;
 
 	public SliceFilterSerializer(ValueSerializer<ISliceFilter> base) {
 		super(ISliceFilter.class);
 		this.base = Objects.requireNonNull(base);
 	}
 
-	// Used before AdhocFilterSerializerModifier rewrap it
-	public SliceFilterSerializer() {
-		super(ISliceFilter.class);
-		this.base = null;
-	}
-
 	@Override
 	public void resolve(SerializationContext ctxt) {
 		super.resolve(ctxt);
-		if (base != null) {
-			base.resolve(ctxt);
-		}
+		base.resolve(ctxt);
 	}
 
 	@Override
@@ -69,20 +65,8 @@ public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
 			gen.writeString("matchAll");
 		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
-			// } else if (base == null) {
-			// throw new IllegalStateException(
-			// "You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			ValueSerializer<ISliceFilter> base2 = base;
-			if (base2 == null) {
-				base2 = (ValueSerializer) ctxt.findValueSerializer(value.getClass());
-			}
-			// if (this == delegate) {
-			// super.serializeWithType(value, gen, ctxt, typeSer);
-			base2.serializeWithType(value, gen, ctxt, typeSer);
-			// } else {
-			// delegate.serializeWithType(value, gen, ctxt, typeSer);
-			// }
+			base.serializeWithType(value, gen, ctxt, typeSer);
 		}
 	}
 
@@ -92,13 +76,8 @@ public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
 			gen.writeString("matchAll");
 		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
-			// } else if (base == null) {
-			// throw new IllegalStateException(
-			// "You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
 		} else {
-			ValueSerializer<Object> delegate = ctxt.findValueSerializer(value.getClass());
-			delegate.serialize(value, gen, ctxt);
-			// base.serialize(value, gen, ctxt);
+			base.serialize(value, gen, ctxt);
 		}
 	}
 

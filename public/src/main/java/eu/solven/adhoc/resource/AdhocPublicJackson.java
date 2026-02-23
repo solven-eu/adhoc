@@ -49,7 +49,7 @@ import tools.jackson.databind.ser.ValueSerializerModifier;
 @UtilityClass
 public class AdhocPublicJackson {
 	// https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-	protected static class SliceFilterSerializerModifier extends ValueSerializerModifier {
+	public static class SliceFilterSerializerModifier extends ValueSerializerModifier {
 		private static final long serialVersionUID = -9176152914317924040L;
 
 		@Override
@@ -65,7 +65,7 @@ public class AdhocPublicJackson {
 	}
 
 	// https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-	protected static class SliceFilterDeserializerModifier extends ValueDeserializerModifier {
+	public static class SliceFilterDeserializerModifier extends ValueDeserializerModifier {
 		private static final long serialVersionUID = -9176152914317924040L;
 
 		@Override
@@ -83,6 +83,12 @@ public class AdhocPublicJackson {
 	public static SimpleModule makeModule() {
 		SimpleModule adhocModule = new SimpleModule("AdhocModule");
 
+		// This design is a bit cumbersome
+		// As we want some class to be serialized as a String when they are very simple (e.g. `matchAll`), we need a
+		// custom Serializer. We can not use `@JsonSerializer` as we do not want to code manually the standard
+		// serialization. Especially as we rely on `@JsonInfoType`. So we rely on these modifiers to intercept the
+		// default serializers, and code our own serializer which may either write a String, or rely on the standard
+		// serialization.
 		adhocModule.setSerializerModifier(new SliceFilterSerializerModifier());
 		adhocModule.setDeserializerModifier(new SliceFilterDeserializerModifier());
 
