@@ -22,10 +22,12 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
+import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
 import org.jooq.exception.DataAccessException;
@@ -40,6 +42,7 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
@@ -184,33 +187,71 @@ public class TestDuckDBHelper {
 	}
 
 	@Test
-	public void testGetCoordinates_unknown() {
+	public void testGetCoordinates_unknown_matchAll() {
 		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
 		JooqTableWrapperParameters tableParameters =
 				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
-		Assertions.assertThatThrownBy(() -> DuckDBHelper.getCoordinates(
-				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
-				"unknownColumn",
-				IValueMatcher.MATCH_ALL,
-				7)).isInstanceOf(DataAccessException.class);
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		Assertions
+				.assertThatThrownBy(
+						() -> DuckDBHelper.getCoordinates(table, "unknownColumn", IValueMatcher.MATCH_ALL, 7))
+				.isInstanceOf(DataAccessException.class);
 	}
 
 	@Test
-	public void testGetCoordinates_matcher() {
+	public void testGetCoordinates_unknown_stringMatcher() {
 		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
 		JooqTableWrapperParameters tableParameters =
 				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
-		Assertions.assertThatThrownBy(() -> DuckDBHelper.getCoordinates(
-				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
-				"unknownColumn",
-				IValueMatcher.MATCH_ALL,
-				7)).isInstanceOf(DataAccessException.class);
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		Assertions
+				.assertThatThrownBy(
+						() -> DuckDBHelper.getCoordinates(table, "unknownColumn", StringMatcher.hasToString("a1"), 7))
+				.isInstanceOf(DataAccessException.class);
+	}
+
+	@Test
+	public void testGetCoordinates_matcherString() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		DSLContext dslContext = dslSupplier.getDSLContext();
+		dslContext.createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a1")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a2")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "b1")).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		CoordinatesSample sample = DuckDBHelper.getCoordinates(table, "someColumn", StringMatcher.hasToString("a1"), 7);
+
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(1);
+		Assertions.assertThat(sample.getCoordinates()).contains("a1");
+	}
+
+	@Test
+	public void testGetCoordinates_matcherLike() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		DSLContext dslContext = dslSupplier.getDSLContext();
+		dslContext.createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a1")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a2")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "b1")).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		CoordinatesSample sample = DuckDBHelper.getCoordinates(table, "someColumn", LikeMatcher.matching("a%"), 7);
+
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(2);
+		Assertions.assertThat(sample.getCoordinates()).contains("a1", "a2");
 	}
 
 }
