@@ -20,61 +20,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.amazon.redshift;
+package eu.solven.adhoc.table.google.bigquery;
+
+import org.jooq.Name;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
+
+import com.google.cloud.bigquery.BigQueryOptions;
 
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
-import software.amazon.awssdk.services.redshiftdata.RedshiftDataAsyncClient;
 
 /**
- * Parameters to configure a {@link AdhocRedshiftTableWrapper}.
+ * Parameters for {@link BigQueryTableWrapper}.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder
-public class AdhocRedshiftTableWrapperParameters {
+public class BigQueryTableWrapperParameters {
 	@NonNull
 	JooqTableWrapperParameters base;
 
 	@NonNull
-	RedshiftDataAsyncClient asyncDataClient;
+	@Default
+	final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
 
+	// TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
 	@NonNull
-	String workgroupName;
+	@Default
+	final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
 
-	@NonNull
-	String database;
+	/**
+	 * BEWARE This will not define underlying default dialect to MYSQL.
+	 * 
+	 * @return
+	 */
+	public static BigQueryTableWrapperParametersBuilder builder() {
+		return new BigQueryTableWrapperParametersBuilder();
+	}
 
-	@NonNull
-	String dbUser;
-
-	//
-	// @NonNull
-	// @Default
-	// final BigQueryOptions bigQueryOptions = BigQueryOptions.getDefaultInstance();
-	//
-	// // TODO Is there scenarios where we do not rely on the same projectId as from BigQueryOptions?
-	// @NonNull
-	// @Default
-	// final String projectId = BigQueryOptions.getDefaultInstance().getProjectId();
-	//
-	// /**
-	// * BEWARE This will not define underlying default dialect to MYSQL.
-	// *
-	// * @return
-	// */
-	// public static AdhocBigQueryTableWrapperParametersBuilder builder() {
-	// return new AdhocBigQueryTableWrapperParametersBuilder();
-	// }
-	//
-	// public static AdhocBigQueryTableWrapperParametersBuilder builder(Name tableName) {
-	// return new AdhocBigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
-	// // Google BigQuery seems not very far from MySQL
-	// .dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
-	// .tableName(tableName)
-	// .build());
-	// }
+	public static BigQueryTableWrapperParametersBuilder builder(Name tableName) {
+		return new BigQueryTableWrapperParametersBuilder().base(JooqTableWrapperParameters.builder()
+				// Google BigQuery seems not very far from MySQL
+				.dslSupplier(() -> DSL.using(SQLDialect.MYSQL))
+				.tableName(tableName)
+				.build());
+	}
 }

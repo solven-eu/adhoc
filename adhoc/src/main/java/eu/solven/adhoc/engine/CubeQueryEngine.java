@@ -184,7 +184,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 			String eMsg = "Issue executing query=%s options=%s".formatted(queryPod.getQuery(), queryPod.getOptions());
 
-			throw AdhocExceptionHelpers.wrap(e, eMsg);
+			throw AdhocExceptionHelpers.wrap(eMsg, e);
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception
@@ -435,7 +435,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			try {
 				onQueryStep(queryPod, queryStepsDag, queryStepToValues, queryStep);
 			} catch (RuntimeException e) {
-				throw AdhocExceptionHelpers.wrap(e, "Issue processing step=%s".formatted(queryStep));
+				throw AdhocExceptionHelpers.wrap("Issue processing step=%s".formatted(queryStep), e);
 			}
 		};
 
@@ -528,7 +528,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				column.append(errorSlice).onObject(e);
 				coordinatesToValues = SliceToValue.forGroupBy(queryStep).values(column).build();
 			} else {
-				throw AdhocExceptionHelpers.wrap(e, "Issue processing queryStep=%s".formatted(queryStep));
+				throw AdhocExceptionHelpers.wrap("Issue processing queryStep=%s".formatted(queryStep), e);
 			}
 		}
 

@@ -44,12 +44,12 @@ import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.StandardDSLSupplier;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestTableQuery_DuckDb_stopWatch extends ADuckDbJooqTest implements IAdhocTestConstants {
 
 	protected final DSLSupplier dslSupplier =
-			StandardDSLSupplier.builder().connection(DuckDbHelper.makeFreshInMemoryDb()).stopWatch().build();
+			StandardDSLSupplier.builder().connection(DuckDBHelper.makeFreshInMemoryDb()).stopWatch().build();
 	protected final DSLContext dsl = dslSupplier.getDSLContext();
 
 	String tableName = "someTableName";

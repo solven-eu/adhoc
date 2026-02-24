@@ -48,7 +48,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestJooqTableWrapper implements IAdhocTestConstants {
 	static {
@@ -69,7 +69,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try {
-			DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+			DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))
@@ -114,7 +114,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try {
-			DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+			DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))
@@ -165,7 +165,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try {
-			DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+			DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))

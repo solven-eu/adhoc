@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.jooq.Record;
+import org.jooq.ResultQuery;
 import org.jooq.conf.ParamType;
 
 import com.google.cloud.bigquery.BigQuery;
@@ -42,12 +44,13 @@ import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordFactory;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,20 +60,33 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
+public class BigQueryTableWrapper extends JooqTableWrapper {
 
-	final AdhocBigQueryTableWrapperParameters bigQueryParameters;
+	final BigQueryTableWrapperParameters bigQueryParameters;
 
 	@Builder(builderMethodName = "bigquery")
-	public AdhocBigQueryTableWrapper(String name, AdhocBigQueryTableWrapperParameters bigQueryParameters) {
+	public BigQueryTableWrapper(String name, BigQueryTableWrapperParameters bigQueryParameters) {
 		super(name, bigQueryParameters.getBase());
 
 		this.bigQueryParameters = bigQueryParameters;
 	}
 
 	@Override
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		String sql = sqlQuery.getQuery().getSQL(ParamType.INLINED);
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
+			ITabularRecordFactory tabularRecordFactory) {
+		return sqlQuery.getQueries()
+				.stream()
+				.flatMap(oneQuery -> toBigQueryStream(queryPod, oneQuery, tabularRecordFactory));
+	}
+
+	protected Stream<ITabularRecord> toBigQueryStream(QueryPod queryPod,
+			ResultQuery<Record> sqlQuery,
+			ITabularRecordFactory tabularRecordFactory) {
+		if (queryPod.isCancelled()) {
+			throw new CancelledQueryException("Query is cancelled before Arrow stream open");
+		}
+		String sql = sqlQuery.getSQL(ParamType.INLINED);
 
 		QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(sql)
 				// Use standard SQL syntax for queries.
@@ -114,52 +130,53 @@ public class AdhocBigQueryTableWrapper extends JooqTableWrapper {
 		Schema schema = result.getSchema();
 
 		// Print all pages of the results.
-		return result.streamAll().map(row -> {
-			Map<String, Object> aggregates = new LinkedHashMap<>();
+		return result.streamAll().map(row -> toTabularRecord(queryPod, tabularRecordFactory, schema, row));
+	}
 
-			{
-				List<String> aggregateColumns = sqlQuery.getFields().getAggregates();
-				for (int i = 0; i < aggregateColumns.size(); i++) {
-					Field field = schema.getFields().get(i);
+	protected ITabularRecord toTabularRecord(QueryPod queryPod,
+			ITabularRecordFactory tabularRecordFactory,
+			Schema schema,
+			List<FieldValue> row) {
+		Map<String, Object> aggregates = new LinkedHashMap<>();
 
-					Object value;
-					FieldValue fieldValue = row.get(i);
-					if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
-						value = fieldValue.getLongValue();
-					} else {
-						value = fieldValue.getValue();
-					}
+		{
+			List<String> aggregateColumns = tabularRecordFactory.getAggregates();
+			for (int i = 0; i < aggregateColumns.size(); i++) {
+				Field field = schema.getFields().get(i);
 
-					String columnName = aggregateColumns.get(i);
-					aggregates.put(columnName, value);
+				Object value;
+				FieldValue fieldValue = row.get(i);
+				if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
+					value = fieldValue.getLongValue();
+				} else {
+					value = fieldValue.getValue();
 				}
+
+				String columnName = aggregateColumns.get(i);
+				aggregates.put(columnName, value);
 			}
+		}
 
-			List<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
-			IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(aggregateGroupBys);
+		List<String> aggregateGroupBys = tabularRecordFactory.getColumns();
+		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(aggregateGroupBys);
 
-			{
-				for (int i = 0; i < aggregateGroupBys.size(); i++) {
-					Field field = schema.getFields().get(aggregateGroupBys.size() + i);
+		{
+			for (int i = 0; i < aggregateGroupBys.size(); i++) {
+				Field field = schema.getFields().get(aggregateGroupBys.size() + i);
 
-					Object value;
-					FieldValue fieldValue = row.get(aggregateGroupBys.size() + i);
-					if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
-						value = fieldValue.getLongValue();
-					} else {
-						value = fieldValue.getValue();
-					}
-
-					slice.append(value);
+				Object value;
+				FieldValue fieldValue = row.get(aggregateGroupBys.size() + i);
+				if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
+					value = fieldValue.getLongValue();
+				} else {
+					value = fieldValue.getValue();
 				}
-			}
 
-			if (!sqlQuery.getFields().getLeftovers().isEmpty()) {
-				throw new NotYetImplementedException("TODO");
+				slice.append(value);
 			}
+		}
 
-			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
-		});
+		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
 	}
 
 	@Override

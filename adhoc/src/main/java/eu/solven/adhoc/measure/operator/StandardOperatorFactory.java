@@ -141,7 +141,7 @@ public class StandardOperatorFactory implements IOperatorFactory {
 			try {
 				Class.forName("com.ezylang.evalex.Expression");
 			} catch (ClassNotFoundException e) {
-				throw new IllegalStateException("com.ezylang:EvalEx is seemingly not present in the class-loaded."
+				throw new IllegalStateException("com.ezylang:EvalEx is seemingly not present in the class-loader."
 						+ " It is an `<optional>true</optional>` maven dependency you need to activate manually", e);
 			}
 			yield EvaluatedExpressionCombination.parse(enrichedOptions);

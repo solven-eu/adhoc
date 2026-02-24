@@ -43,7 +43,8 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- https://cloud.google.com/bigquery/docs/reference/libraries#client-libraries-install-java -->
+		<!--
+		https://cloud.google.com/bigquery/docs/reference/libraries#client-libraries-install-java -->
 		<dependency>
 			<groupId>com.google.cloud</groupId>
 			<artifactId>google-cloud-bigquery</artifactId>
@@ -58,6 +59,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
+		<dependency>
+			<groupId>org.duckdb</groupId>
+			<artifactId>duckdb_jdbc</artifactId>
+			<version>${duckdb.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
 			<!-- TODO Clarify the difference between redshift and redshiftdata -->
@@ -69,7 +78,8 @@
 		</dependency>
 
 		<dependency>
-			<!-- Helps generating .dot files for Graphviz, to understand measures -->
+			<!-- Helps generating .dot files for Graphviz, to understand
+			measures -->
 			<groupId>guru.nidi</groupId>
 			<artifactId>graphviz-java</artifactId>
 			<version>0.18.1</version>
@@ -93,6 +103,21 @@
 		</dependency>
 
 		<dependency>
+			<!-- Used by DuckDB for arrow -->
+			<groupId>org.apache.arrow</groupId>
+			<artifactId>arrow-c-data</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<!-- Used by TestTableQuery_DuckDb_Arrow -->
+			<groupId>com.ezylang</groupId>
+			<artifactId>EvalEx</artifactId>
+			<version>${evalex.ezylang.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>org.mongodb</groupId>
 			<artifactId>mongodb-driver-core</artifactId>
 			<optional>true</optional>
@@ -107,6 +132,14 @@
 			<artifactId>de.flapdoodle.embed.mongo</artifactId>
 			<version>4.24.0</version>
 			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<!-- Enable shared code between benchmarks and profilable tests -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
 		</dependency>
 
 		<dependency>

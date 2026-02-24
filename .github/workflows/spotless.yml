@@ -27,7 +27,15 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        cache: maven
+    # Workflow-scoped cache avoids cross-workflow cache pollution.
+    # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
+    - name: Cache Maven local repository
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: maven-spotless-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-spotless-${{ runner.os }}-
     #- name: Download dependencies
     #  # This is useful not to clutter the package command with download logs
     #  run: mvn dependency:resolve dependency:resolve-plugins --batch-mode

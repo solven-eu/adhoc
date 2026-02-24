@@ -47,6 +47,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
@@ -64,7 +65,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 @UtilityClass
-public class DuckDbHelper {
+public class DuckDBHelper {
 
 	public static String getInMemoryJdbcUrl() {
 		return "jdbc:duckdb:";
@@ -121,6 +122,7 @@ public class DuckDbHelper {
 	 *
 	 * @param table
 	 * @param columnToValueMatcher
+	 *            column name to an {@link IValueMatcher}
 	 * @param limit
 	 *            the maximum number of coordinates per column
 	 * @return
@@ -254,6 +256,8 @@ public class DuckDbHelper {
 			return "1 = 0";
 		} else if (valueMatcher instanceof NotMatcher notMatcher) {
 			return "NOT " + toFilterExpression(notMatcher.getNegated());
+		} else if (valueMatcher instanceof StringMatcher stringMatcher) {
+			return " = '%s'".formatted(stringMatcher.getString());
 		} else if (valueMatcher instanceof LikeMatcher likeMatcher) {
 			return "LIKE '%s'".formatted(likeMatcher.getPattern());
 		} else {

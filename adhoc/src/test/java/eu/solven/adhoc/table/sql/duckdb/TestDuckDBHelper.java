@@ -22,29 +22,37 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
+import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestDuckDbHelper {
+public class TestDuckDBHelper {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -54,30 +62,30 @@ public class TestDuckDbHelper {
 
 	@Test
 	public void testFilterExpr_like() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(LikeMatcher.matching("%abc"))).isEqualTo("LIKE '%abc'");
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(LikeMatcher.matching("%abc"))).isEqualTo("LIKE '%abc'");
 	}
 
 	@Test
 	public void testFilterExpr_notLike() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(NotMatcher.not(LikeMatcher.matching("%abc"))))
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(NotMatcher.not(LikeMatcher.matching("%abc"))))
 				.isEqualTo("NOT LIKE '%abc'");
 	}
 
 	@Test
 	public void testFilterExpr_matchAll() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_ALL)).isEqualTo("1 = 1");
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(IValueMatcher.MATCH_ALL)).isEqualTo("1 = 1");
 	}
 
 	@Test
 	public void testFilterExpr_matchNone() {
-		Assertions.assertThat(DuckDbHelper.toFilterExpression(IValueMatcher.MATCH_NONE)).isEqualTo("1 = 0");
+		Assertions.assertThat(DuckDBHelper.toFilterExpression(IValueMatcher.MATCH_NONE)).isEqualTo("1 = 0");
 	}
 
 	@Test
 	public void testAppendGetCoordinatesMeasures_qualified() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123, "table.column", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
+		DuckDBHelper.appendGetCoordinatesMeasures(123, "table.column", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
 
 		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
 				.table(DSL.table("someTable"))
@@ -97,7 +105,7 @@ public class TestDuckDbHelper {
 	public void testAppendGetCoordinatesMeasures_qualified_quoted() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123,
+		DuckDBHelper.appendGetCoordinatesMeasures(123,
 				"\"table\".\"column\"",
 				IValueMatcher.MATCH_ALL,
 				7,
@@ -123,7 +131,7 @@ public class TestDuckDbHelper {
 	public void testAppendGetCoordinatesMeasures_withSpace() {
 		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
 
-		DuckDbHelper.appendGetCoordinatesMeasures(123, "pre post", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
+		DuckDBHelper.appendGetCoordinatesMeasures(123, "pre post", IValueMatcher.MATCH_ALL, 7, tableQueryBuilder);
 
 		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
 				.table(DSL.table("someTable"))
@@ -145,7 +153,7 @@ public class TestDuckDbHelper {
 	public void testMakeConnections_withPool() {
 		// https://github.com/brettwooldridge/HikariCP?tab=readme-ov-file#rocket-initialization
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl(DuckDbHelper.getInMemoryJdbcUrl());
+		config.setJdbcUrl(DuckDBHelper.getInMemoryJdbcUrl());
 		config.setConnectionTimeout(TimeUnit.SECONDS.toMillis(5));
 
 		HikariDataSource ds = new HikariDataSource(config);
@@ -159,4 +167,91 @@ public class TestDuckDbHelper {
 			supplier.getDSLContext();
 		});
 	}
+
+	@Test
+	public void testGetCoordinates_empty() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		CoordinatesSample sample = DuckDBHelper.getCoordinates(
+				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
+				"someColumn",
+				IValueMatcher.MATCH_ALL,
+				7);
+
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(0);
+		Assertions.assertThat(sample.getCoordinates()).isEmpty();
+	}
+
+	@Test
+	public void testGetCoordinates_unknown_matchAll() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		Assertions
+				.assertThatThrownBy(
+						() -> DuckDBHelper.getCoordinates(table, "unknownColumn", IValueMatcher.MATCH_ALL, 7))
+				.isInstanceOf(DataAccessException.class);
+	}
+
+	@Test
+	public void testGetCoordinates_unknown_stringMatcher() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		Assertions
+				.assertThatThrownBy(
+						() -> DuckDBHelper.getCoordinates(table, "unknownColumn", StringMatcher.hasToString("a1"), 7))
+				.isInstanceOf(DataAccessException.class);
+	}
+
+	@Test
+	public void testGetCoordinates_matcherString() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		DSLContext dslContext = dslSupplier.getDSLContext();
+		dslContext.createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a1")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a2")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "b1")).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		CoordinatesSample sample = DuckDBHelper.getCoordinates(table, "someColumn", StringMatcher.hasToString("a1"), 7);
+
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(1);
+		Assertions.assertThat(sample.getCoordinates()).contains("a1");
+	}
+
+	@Test
+	public void testGetCoordinates_matcherLike() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		DSLContext dslContext = dslSupplier.getDSLContext();
+		dslContext.createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a1")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "a2")).execute();
+		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "b1")).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
+		CoordinatesSample sample = DuckDBHelper.getCoordinates(table, "someColumn", LikeMatcher.matching("a%"), 7);
+
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(2);
+		Assertions.assertThat(sample.getCoordinates()).contains("a1", "a2");
+	}
+
 }

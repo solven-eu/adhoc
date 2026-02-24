@@ -9,6 +9,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduce `Aggregator.AggregatorBuilder.lambda(ILambdaAggregation)` which enables defining an `IAggregation` through a lambda.
 - Introduce `adhoc-encoding` module, to remove core algorithms from Adhoc Query Engine.
 - Prepare partitioning of table queries (e.g. `IQueryPartitionor`), to help concurrency in table own engine, and in Adhoc by received partitioned results.
+- `DuckDBTableWrapper` enables Arrow-support for fetching query results.
 
 ## [0.0.15]
 

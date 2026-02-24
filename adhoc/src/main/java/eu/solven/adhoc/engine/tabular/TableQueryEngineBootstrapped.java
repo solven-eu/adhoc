@@ -880,7 +880,7 @@ public class TableQueryEngineBootstrapped {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);
 			} catch (RuntimeException e) {
-				throw AdhocExceptionHelpers.wrap(e, "Issue inducing step=%s".formatted(induced));
+				throw AdhocExceptionHelpers.wrap("Issue inducing step=%s".formatted(induced), e);
 			}
 		};
 
