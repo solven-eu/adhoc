@@ -10,7 +10,6 @@ import eu.solven.adhoc.data.row.ITabularRecordFactory;
 import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapper.ArrowReflection;
 
 // -------------------------------------------------------------------------
 // Spliterator over Arrow record batches

@@ -184,7 +184,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 			String eMsg = "Issue executing query=%s options=%s".formatted(queryPod.getQuery(), queryPod.getOptions());
 
-			throw AdhocExceptionHelpers.wrap(eMsg,e);
+			throw AdhocExceptionHelpers.wrap(eMsg, e);
 		} finally {
 			if (!postedAboutDone) {
 				// This may happen in case of OutOfMemoryError, or any uncaught exception

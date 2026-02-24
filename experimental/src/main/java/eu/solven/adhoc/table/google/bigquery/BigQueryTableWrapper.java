@@ -34,7 +34,6 @@ import org.jooq.conf.ParamType;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValue;
-import com.google.cloud.bigquery.FieldValueList;
 import com.google.cloud.bigquery.Job;
 import com.google.cloud.bigquery.JobException;
 import com.google.cloud.bigquery.JobId;
@@ -137,7 +136,7 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 	protected ITabularRecord toTabularRecord(QueryPod queryPod,
 			ITabularRecordFactory tabularRecordFactory,
 			Schema schema,
-			FieldValueList row) {
+			List<FieldValue> row) {
 		Map<String, Object> aggregates = new LinkedHashMap<>();
 
 		{
