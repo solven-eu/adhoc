@@ -198,7 +198,6 @@ public class TestDuckDBHelper {
 				7)).isInstanceOf(DataAccessException.class);
 	}
 
-
 	@Test
 	public void testGetCoordinates_matcher() {
 		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();

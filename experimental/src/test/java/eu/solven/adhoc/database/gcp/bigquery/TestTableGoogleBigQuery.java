@@ -104,10 +104,10 @@ public class TestTableGoogleBigQuery {
 				.setRetrySettings(RetrySettings.newBuilder().setMaxAttempts(3).build())
 				.build();
 
-		BigQueryTableWrapperParameters dbParameters = BigQueryTableWrapperParameters
-				.builder(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
-				.bigQueryOptions(bigQueryOptions)
-				.build();
+		BigQueryTableWrapperParameters dbParameters =
+				BigQueryTableWrapperParameters.builder(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
+						.bigQueryOptions(bigQueryOptions)
+						.build();
 		BigQueryTableWrapper bgDbWrapper =
 				BigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
 
