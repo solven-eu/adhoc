@@ -28,12 +28,15 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
@@ -41,10 +44,12 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.DSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
+import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestDuckDbHelper {
+public class TestDuckDBHelper {
 	static {
 		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
 		System.setProperty("org.jooq.no-logo", "true");
@@ -159,4 +164,54 @@ public class TestDuckDbHelper {
 			supplier.getDSLContext();
 		});
 	}
+
+	@Test
+	public void testGetCoordinates_empty() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		CoordinatesSample sample = DuckDBHelper.getCoordinates(
+				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
+				"someColumn",
+				IValueMatcher.MATCH_ALL,
+				7);
+
+		Assertions.assertThat(sample.getEstimatedCardinality()).isEqualTo(0);
+		Assertions.assertThat(sample.getCoordinates()).isEmpty();
+	}
+
+	@Test
+	public void testGetCoordinates_unknown() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		Assertions.assertThatThrownBy(() -> DuckDBHelper.getCoordinates(
+				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
+				"unknownColumn",
+				IValueMatcher.MATCH_ALL,
+				7)).isInstanceOf(DataAccessException.class);
+	}
+
+
+	@Test
+	public void testGetCoordinates_matcher() {
+		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+
+		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
+
+		JooqTableWrapperParameters tableParameters =
+				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+		Assertions.assertThatThrownBy(() -> DuckDBHelper.getCoordinates(
+				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
+				"unknownColumn",
+				IValueMatcher.MATCH_ALL,
+				7)).isInstanceOf(DataAccessException.class);
+	}
+
 }
