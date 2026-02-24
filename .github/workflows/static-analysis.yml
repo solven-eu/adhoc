@@ -27,6 +27,14 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-        cache: maven
+    # Workflow-scoped cache avoids cross-workflow cache pollution.
+    # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
+    - name: Cache Maven local repository
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2/repository
+        key: maven-static-analysis-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-static-analysis-${{ runner.os }}-
     - name: Check with Static tools (PMD, checkstyle, SpotBugs)
       run: mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode
