@@ -18,12 +18,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        java-version: ['21', '25']
+
     steps:
     - uses: actions/checkout@v6
-    - name: Set up JDK 21
+    - name: Set up JDK ${{ matrix.java-version }}
       uses: actions/setup-java@v5
       with:
-        java-version: '21'
+        java-version: ${{ matrix.java-version }}
         distribution: 'temurin'
         cache: maven
     - name: Download dependencies
@@ -44,16 +48,19 @@ jobs:
     #    path: server/target/*-exec.jar
 
     - name: Upload coverage reports to Codecov
+      if: matrix.java-version == '21'
       uses: codecov/codecov-action@v5
       with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
     # https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/
     - name: SonarQubeScan
+      if: matrix.java-version == '21'
       uses: SonarSource/sonarqube-scan-action@v7
-      env: 
+      env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
+      if: matrix.java-version == '21'
       uses: advanced-security/maven-dependency-submission-action@df268dd1684fb95352aa463056e3cf41f9acb94b

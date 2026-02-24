@@ -75,6 +75,6 @@ cd pivotable/js && npm run format && mvn spotless:apply
 - Do **NOT** alter business logic or algorithm behaviour.
 - Do **NOT** reorder imports (Spotless handles that).
 - Do **NOT** add or remove `@Override`, `@SuppressWarnings`, or other annotations unless fixing a clear error.
-- Do **NOT** commit — the CI workflow handles all commits and PRs.
+- Do **NOT** commit directly to `master`. Always work on a dedicated feature branch (e.g. `git checkout -b chore/my-task`). The CI workflow handles merging and PRs.
 - Do **NOT** merge pull requests, or offer to merge them. PRs are always reviewed and merged by a human through the GitHub UI.
 - Do **NOT** duplicate what Checkstyle / PMD / SpotBugs / Spotless already enforce deterministically (whitespace, brace style, unused imports, etc.).
