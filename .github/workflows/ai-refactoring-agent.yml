@@ -17,7 +17,7 @@ permissions:
 
 jobs:
 
-  # ── Job 1 ── AI-powered refactoring towards recently-introduced helpers ───────
+  # ── Job 1 ── AI-powered refactoring towards existing helpers and dependency utilities ───────
   ai-review:
     runs-on: ubuntu-latest
     outputs:
@@ -27,7 +27,6 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: master
-          fetch-depth: 0  # full history so git log --since works correctly
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
@@ -50,7 +49,7 @@ jobs:
           git checkout -b "$BRANCH"
           git push origin "$BRANCH"
 
-      - name: Compile project (gives Claude full context)
+      - name: Compile project (gives Claude full symbol context)
         run: mvn package -Pfast --file pom.xml --batch-mode -q
 
       - name: Build Claude prompt
@@ -67,7 +66,10 @@ jobs:
 
           cat > /tmp/refactoring-prompt.txt << EOF
           Read and follow CLAUDE-REFACTORING.MD.
-          Apply helper-method refactorings to at most 20 Java source files under ${SCOPE}.
+          Detect duplicated code patterns in production source files under ${SCOPE}, then replace
+          each duplicate with a call to an existing method that already encapsulates it (same
+          class, parent class, own static helper, or dependency utility such as Guava / Pepper).
+          Apply refactorings to at most 20 Java source files.
           Do NOT commit.
           EOF
 
@@ -127,12 +129,12 @@ jobs:
 
           Automated PR from the [AI Refactoring Agent](https://github.com/solven-eu/adhoc/actions/runs/${{ github.run_id }}) (run \`${{ github.run_id }}\`).
 
-          The agent scans utility / helper classes introduced in the last 60 days, identifies the
-          raw inline patterns they encapsulate, and replaces remaining occurrences in production
-          source code with the corresponding helper call.
+          The agent scans production source files for inline patterns that can be replaced by an
+          equivalent call to an existing utility method — either from our own helpers in
+          \`src/main/java\` or from well-known dependency utilities (Guava, Pepper, etc.).
 
           ### Changes may include
-          - Raw inline patterns replaced by equivalent calls to recently introduced helper methods
+          - Raw inline patterns replaced by equivalent calls to helper methods
           - Corresponding imports added where needed
 
           ### Review checklist
