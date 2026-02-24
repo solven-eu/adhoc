@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -155,9 +152,6 @@ public class DuckDBTableWrapper extends JooqTableWrapper {
 			} else {
 				throw new IllegalStateException("Failed to open Arrow stream for table=" + getName(), e);
 			}
-		} catch (Exception e) {
-			closeAll(resources);
-			throw new IllegalArgumentException("Failed to open Arrow stream for table=" + getName(), e);
 		} catch (Throwable e) {
 			// catch Throwable to ensure not leaking resources
 			closeAll(resources);
