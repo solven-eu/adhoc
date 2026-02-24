@@ -1,0 +1,147 @@
+name: AI Refactoring Agent
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # nightly at 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      target_module:
+        description: 'Restrict Claude to one Maven module (e.g. public). Leave empty for all modules.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write  # required by gh label create
+
+jobs:
+
+  # ── Job 1 ── AI-powered refactoring towards existing helpers and dependency utilities ───────
+  ai-review:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.detect-changes.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push agent branch
+        run: |
+          BRANCH="ai-refactoring-agent/nightly-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+
+      - name: Compile project (gives Claude full symbol context)
+        run: mvn package -Pfast --file pom.xml --batch-mode -q
+
+      - name: Build Claude prompt
+        # CLAUDE.md (auto-loaded by the CLI) carries base conventions.
+        # CLAUDE-REFACTORING.MD carries refactoring-specific instructions.
+        # This prompt only needs to specify the target scope for this run.
+        run: |
+          MODULE="${{ github.event.inputs.target_module }}"
+          if [ -n "$MODULE" ]; then
+            SCOPE="${MODULE}/src/main/java"
+          else
+            SCOPE="src/main/java"
+          fi
+
+          cat > /tmp/refactoring-prompt.txt << EOF
+          Read and follow CLAUDE-REFACTORING.MD.
+          Detect duplicated code patterns in production source files under ${SCOPE}, then replace
+          each duplicate with a call to an existing method that already encapsulates it (same
+          class, parent class, own static helper, or dependency utility such as Guava / Pepper).
+          Apply refactorings to at most 20 Java source files.
+          Do NOT commit.
+          EOF
+
+      - name: Run Claude AI refactoring
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: claude --dangerously-skip-permissions -p "$(cat /tmp/refactoring-prompt.txt)"
+
+      - name: Re-apply Spotless (safety net for any formatter drift)
+        run: mvn spotless:apply --file pom.xml --batch-mode
+
+      - name: Verify static analysis (fail fast before opening a PR)
+        # Mirrors what static-analysis.yml does on every PR. Running it here avoids
+        # opening a PR that would immediately have a red CI status requiring human intervention.
+        run: mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode
+
+      - name: Detect and commit changes
+        id: detect-changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git add -A
+            git commit -m "chore: AI refactoring towards helper methods via Claude [skip ci]"
+            git push origin HEAD
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Job 2 ── Open a PR if the AI job produced changes ────────────────────────
+  open-pr:
+    needs: ai-review
+    runs-on: ubuntu-latest
+    if: ${{ !failure() && !cancelled() && needs.ai-review.outputs.changed == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+
+      - name: Create ai-refactoring label (idempotent)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create ai-refactoring \
+            --color 06B6D4 \
+            --description "Changes made by the AI refactoring agent" \
+            || true
+
+      - name: Open Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="ai-refactoring-agent/nightly-${{ github.run_id }}"
+          gh pr create \
+            --title "chore: AI refactoring towards helper methods (run ${{ github.run_id }})" \
+            --body "## Summary
+
+          Automated PR from the [AI Refactoring Agent](https://github.com/solven-eu/adhoc/actions/runs/${{ github.run_id }}) (run \`${{ github.run_id }}\`).
+
+          The agent scans production source files for inline patterns that can be replaced by an
+          equivalent call to an existing utility method — either from our own helpers in
+          \`src/main/java\` or from well-known dependency utilities (Guava, Pepper, etc.).
+
+          ### Changes may include
+          - Raw inline patterns replaced by equivalent calls to helper methods
+          - Corresponding imports added where needed
+
+          ### Review checklist
+          - [ ] CI passes (Build, Spotless, Static Analysis)
+          - [ ] No unintended logic changes (each replacement must be semantically identical)
+          - [ ] Imports are correct and no unused imports were left behind
+          " \
+            --base master \
+            --head "$BRANCH" \
+            --label ai-refactoring
