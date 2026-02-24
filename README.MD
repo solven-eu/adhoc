@@ -6,6 +6,7 @@
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![codecov](https://codecov.io/gh/solven-eu/adhoc/graph/badge.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/solven-eu/adhoc/badge)](https://securityscorecards.dev/viewer/?uri=github.com/solven-eu/adhoc)
 
 ## Motivation
 

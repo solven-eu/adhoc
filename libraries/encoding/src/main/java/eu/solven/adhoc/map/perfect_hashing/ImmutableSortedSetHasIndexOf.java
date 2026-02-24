@@ -36,7 +36,7 @@ import lombok.Singular;
  * @author Benoit Lacelle
  */
 @Builder
-public class SortedSetString implements IHasIndexOf<String> {
+public class ImmutableSortedSetHasIndexOf implements IHasIndexOf<String> {
 	@Singular
 	final ImmutableSortedSet<String> keys;
 
