@@ -53,6 +53,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -71,7 +72,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 @Deprecated(since = "May need time to stabilize")
-public class CachingTableWrapper implements ITableWrapper {
+public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	// ~1GB
 	private static final int DEFAULT_MAX_WEIGHT = 1024 * 1024 * 1024;
 
@@ -156,6 +157,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		return nbRecords * recordWidth;
 	}
 
+	@Override
 	public void invalidateAll() {
 		cache.invalidateAll();
 	}

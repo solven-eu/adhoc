@@ -59,6 +59,14 @@ Each `IAdhocMap` is similar to a `HashMap`. However:
   - `IAppendableColumnFactory` enables one `IAppendableColumn` per key
   - `IFreezingStrategy` enables encoding/compression per-block, once a page is full.
 
+## Encodings
+
+Adhoc enables encoding/compression, through `IFreezingStrategy`:
+- Dictionarization (i.e. mapping from a `List<Object>` into an `int[]` and a `Map<Integer, Object>`).
+- Primitive columns (i.e. mapping from a `List<Object>` into a `long[]` if all objects are longs).
+- Binary packing (i.e. packing multiple `int`s into a `long` if input integers are known to have a small range (e.g. from 0 to 32))
+- String encoding with `FSST`. Expect typically from `75%` to `25%` reduction in RAM usage.
+
 # Values / Aggregates
 
 `CubeQueryStep` are typically a `Map` from a `slice`/`map` to a value/aggregate. Given aggregate can be any `Object`, but it is often a `long` or a `double` (for sum aggregation).
@@ -69,4 +77,112 @@ We rely on data-structure enabling mapping from a slice to a `long`/`double`/`Ob
 - `MultitypeNavigableElseHashColumn` is a tree-based append-only structures, efficiently storing inputs of diverse types.
 - `MultitypeNavigableElseHashMergeableColumn` extends `MultitypeNavigableElseHashColumn` by enabling merging into existing slices.
 
-Tree-based structures are useful as
+Tree-based structures are useful as some computations needs to iterate along multiple structures at the same time (e.g. a `CubeQueryStep` iterates along its underlyings on a per-slice basis).
+
+# Cache
+
+There is multiple caches in Adhoc. They can be disabled on a query basis with `StandardQueryOptions.NO_CACHE`.
+
+## Static caches
+
+- `AbstractAdhocMap.CACHE_RETAINEDKEYS` enable computing once and for all some basic structures given a `GROUP BY`.
+
+These caches:
+- can be cleared with `AdhocUnsafeMap.clearCaches()`.
+- does not implement `IHasCache`.
+
+## Structural caches
+
+- `ASliceFactory.listToKeyset` will save a `SequencedSetLikeList` per `GROUP BY`.
+
+These caches:
+- does implement `IHasCache`.
+
+## Cross-queries caches
+
+- `JooqTableWrapper.fieldsCache` is a cache for metadata from the table (e.g. columns metadata).
+- `PivotableAsynchronousQueriesManager.queryIdToView` holds query results of asynchronous queries.
+- `IQueryStepCache` enables caching of `cubeQueryStep` results from one query to another. It is typically an LRU cache. It is a property of `StandardQueryPreparator`.
+- `CachingTableWrapper` is an `ITableWrapper` decorator enabling caching. It is deprecated as it seems less relevant and more difficult to tweak than a proper `IQueryStepCache`. 
+
+These caches:
+- does implement `IHasCache`.
+
+### CachingTableWrapper
+
+This may not lead to expected performances as reading from the cache leads to additional effort (e.g. merging a `ISliceToValue` from the table for one measure, and another from the cache for another measure requires some JOIN operation (e.g. aligning the slices from the 2 distinct `ISliceToValue`), which may not happen if both measures was queried in the same `tableQuery`).
+
+## Intra-query caches
+
+- `CubeQueryStep.getCache()` is a `ConcurrentMap` you can freely read-write for caching elements of business-logic at a given step. `ManyToMany1DDecomposition` is  usage example.
+- `CubeQueryStep.getTransverseCache()` is another `ConcurrentMap` which is shared by all `CubeQuerySteps`. It enables two different measures to share some cached value.
+- `FilterOptimizerWithCache` enables faster `ISliceFilter` operations in the context of a single query.
+
+These caches:
+- may not implement `IHasCache`.
+
+# Filters - Boolean Arithmetic
+
+`ISliceFilter` implements boolean arithmetic, by relying on 4 operators:
+- AND: a standard AND operator. If empty, it means `matchAll`.
+- OR: a standard OR operator. If empty, it means `matchNone`.
+- NOT: a standard NOT operator.
+- ColumnFilter: enables an `IValueMatcher` over a column
+
+Given we build DAG of `CubeQueryStep`s, and `CubeQueryStep.filter` is part of the `hashCode/equals` contract, we need `ISliceFilter` to be consistent regarding `hashCode/equals`. This is a very subtle requirement, as many different boolean expressions can be equivalent (e.g. `!(true) == false` or `a==a1|a==a2 == a=in=(a1,a2)`).
+
+`IFilterOptimizer` enables simplifying `ISliceFilter`/boolean expressions while ensuring 2 equivalent `ISliceFilter` are actually equal. This is a complex component as it should be:
+- fast, as we tend to receive complex boolean expression, especially given deep tree of measures (as filters are modified by `Shiftor` or other transformators).
+- consistent, as the engine may itself split filters (e.g. when building a DAG of induced tableResults).
+- optimizing, to help producing simpler queries to the `ITableWrapper`
+
+Current `ISliceFilter` optimizations includes:
+- `a==a1|a:like:a%` is automatically turned into `a:like:a%`
+- a cost function, to decide when to prefer `!a&!b&!c` over `!(a|b|c)`.
+
+## IValueMatcher vs ISliceFilter
+
+A `ISliceFilter` represents a slice over a cube: simplest filters are essentially a `Map` (meaning an `AND`) from a `column` to an `IValueMatcher`.
+A `IValueMatcher` represents a slice within given column.
+
+Current `IValueMatcher` optimizations includes:
+- `==a1|like:a%` is automatically turned into `like:a%`
+
+# `ITableQuery` optimizations - Grouping `Aggregators` into an optimal set of `SQL`s
+
+Given a set of `CubeQueryStep` referring an `Aggregator`, these may be grouped together to minimize the number of queries submitted to `ITableWrapper`.
+
+For instance:
+- `SUM(a) WHERE f1 AND f2` and `SUM(B) WHERE f1` may be grouped into `SUM(a) FILTER f2, SUM(b) WHERE f1`
+
+It is also possible to change the way queries are grouped together (typically on a per-`GROUP BY` basis) in order to execute less queries (though these queries would query irrelevant information):
+
+```java
+CubeWrapper cube = CubeWrapper.builder()
+    .name(table.getName())
+    .table(table)
+    .forest(forest)
+    .engine(CubeQueryEngine.builder()
+            .tableQueryEngine(TableQueryEngine.builder().optimizerFactory(new ITableQueryOptimizerFactory() {
+
+                @Override
+                public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
+                    if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+                        return new TableQueryOptimizerNone(factories);
+                    } else {
+                        return new TableQueryOptimizerSinglePerAggregator(factories);
+                    }
+                }
+            }).build())
+            .build())
+    .build();
+```
+
+`TableQueryOptimizerSinglePerAggregator` will merge all `GROUP BY` in a union of columns, and filters into a `OR`. Hence, in a single query, 
+it will be able to fetch al lthe necessary information.
+
+For instance:
+- Given `SUM(a1) GROUP BY b1 WHERE c1`
+- and `SUM(a2) GROUP BY b2 WHERE c2`
+- it will query `SUM(a1), SUM(a2) GROUP BY b1, b2 WHERE c1 OR c2`
+- If `GROUP BY b1, b2` is dense, and returns `p * q` cells where `p` is `GROUP BY b1` cardinality and `q` is `GROUP BY b2` cardinality, it leads to a query sensibly more complex than the 2 simpler ones.

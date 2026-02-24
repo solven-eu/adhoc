@@ -40,6 +40,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 		@JsonSubTypes.Type(value = NotFilter.class, name = "not"),
 		@JsonSubTypes.Type(value = ColumnFilter.class, name = "column"), })
 // Custom serialization is configured with `AdhocPublicJackson.makeAdhocModule()`
+// It is not mandatory, but helpful to generate nicer JSON.
 // @JsonSerialize(using = AdhocFilterSerializer.class)
 // @JsonDeserialize(using = AdhocFilterDeserializer.class)
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
