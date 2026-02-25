@@ -2,13 +2,7 @@ classDiagram
     direction TB
 
     %% ─── Interfaces ────────────────────────────────────────────────
-    class ICubeQueryEngine {
-    }
     class IOperatorFactory {
-    }
-    class IColumnFactory {
-    }
-    class IDagBottomUpStrategy {
     }
     class ISliceFactoryFactory {
     }
@@ -18,29 +12,11 @@ classDiagram
     }
     class ITableQueryEngine {
     }
-    class ITableQueryOptimizerFactory {
-    }
     class ITableWrapper {
-    }
-    class ICubeWrapper {
-    }
-    class IColumnsManager {
-    }
-    class ITableAliaser {
-    }
-    class IMissingColumnManager {
-    }
-    class ICoordinateNormalizer {
-    }
-    class ICustomTypeManager {
-    }
-    class IColumnGenerator {
     }
     class IDSLSupplier {
     }
     class IMeasureForest {
-    }
-    class IQueryPreparator {
     }
     class IImplicitFilter {
     }
@@ -141,29 +117,16 @@ classDiagram
     }
 
     %% ─── Implements / Extends ──────────────────────────────────────
-    ICubeWrapper <|.. CubeWrapper
-    ICubeQueryEngine <|.. CubeQueryEngine
-    IColumnFactory <|.. StandardColumnFactory
-    IDagBottomUpStrategy <|.. DagBottomUpStrategyNavigableElseHash
     ITableQueryEngine <|.. TableQueryEngine
-    ITableQueryOptimizerFactory <|.. TableQueryOptimizerFactory
     ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. CompositeCubesTableWrapper
-    IColumnsManager <|.. ColumnsManager
-    ITableAliaser <|.. IdentityImplicitAliaser
-    IMissingColumnManager <|.. StandardMissingColumnManager
-    ICoordinateNormalizer <|.. StandardCoordinateNormalizer
-    ICustomTypeManager <|.. StandardCustomTypeManager
-    IColumnGenerator <|.. EmptyColumnGenerator
     ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. InMemoryTable
     ITableWrapper <|.. JooqTableWrapper
     IDSLSupplier <|.. StandardDSLSupplier
     ITableWrapper <|.. AAdhocAtotiTable
-    ITableAliaser <|.. AtotiAliaser
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
-    IQueryPreparator <|.. StandardQueryPreparator
 
     %% ─── Composition ───────────────────────────────────────────────
     CubeWrapper *-- CubeQueryEngine : engine

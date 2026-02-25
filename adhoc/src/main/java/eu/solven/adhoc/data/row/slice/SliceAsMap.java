@@ -133,7 +133,7 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		return Maps.transformValues(asMap, this::explicitNull);
 	}
 
-	protected Object explicitNull(Object v) {
+	Object explicitNull(Object v) {
 		return NullMatcher.unwrapNull(v);
 	}
 

@@ -63,12 +63,6 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 				    direction TB
 
 				    %% ─── Interfaces ────────────────────────────────────────────────
-				    class ISimpleEngine {
-				    }
-				    class ISubEngine {
-				    }
-				    class ISubPiece {
-				    }
 				    class ISimpleWidget {
 				    }
 
@@ -88,8 +82,6 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 				    }
 
 				    %% ─── Implements / Extends ──────────────────────────────────────
-				    ISimpleEngine <|.. SimpleEngine
-				    ISubEngine <|.. SimpleSubEngine
 				    ISimpleWidget <|.. SimpleWidgetA
 				    ISimpleWidget <|.. SimpleWidgetB
 
@@ -97,6 +89,6 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 				    SimpleRoot *-- SimpleEngine : engine
 				    SimpleRoot *-- ISimpleWidget : widget
 				    SimpleEngine *-- SimpleSubEngine : subEngine
-				""");
+								""");
 	}
 }

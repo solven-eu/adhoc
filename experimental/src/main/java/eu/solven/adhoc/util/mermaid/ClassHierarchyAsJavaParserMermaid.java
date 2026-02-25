@@ -264,6 +264,7 @@ public class ClassHierarchyAsJavaParserMermaid {
 			}
 		}
 
+		removeUnreferencedInterfaces(graph);
 		removeDisconnectedFromRoot(graph, nameToNode.get(rootClassName));
 
 		int componentCount = new ConnectivityInspector<>(graph).connectedSets().size();
@@ -293,6 +294,26 @@ public class ClassHierarchyAsJavaParserMermaid {
 		}
 		Set<ClassNode> rootComponent = new ConnectivityInspector<>(graph).connectedSetOf(root);
 		graph.vertexSet().stream().filter(n -> !rootComponent.contains(n)).toList().forEach(graph::removeVertex);
+	}
+
+	/**
+	 * Removes interface nodes that are not the target of any {@link EdgeKind#HAS_FIELD} edge.
+	 *
+	 * <p>
+	 * An interface is only meaningful in the diagram when at least one class declares a field of that interface type.
+	 * Interfaces that appear solely via {@code implements} relationships (but are never used as a field type) are
+	 * removed together with all their edges.
+	 *
+	 * @param graph
+	 *            the graph produced by {@link #buildGraph(String)}, modified in place
+	 */
+	public static void removeUnreferencedInterfaces(Graph<ClassNode, ClassEdge> graph) {
+		graph.vertexSet()
+				.stream()
+				.filter(ClassNode::isInterface)
+				.filter(n -> graph.incomingEdgesOf(n).stream().noneMatch(e -> e.getKind() == EdgeKind.HAS_FIELD))
+				.toList()
+				.forEach(graph::removeVertex);
 	}
 
 	/**
