@@ -59,13 +59,14 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * Unlike the reflection-based {@link ClassHierarchyAsMermaid}, this implementation reads source code directly,
- * capturing {@code @Builder.Default} field initializers to show the <em>actual default wiring</em>.
+ * capturing field initializers to show the <em>actual default wiring</em>.
  *
  * <ul>
- * <li>For {@code @Default} fields the composition edge points to the <strong>concrete default class</strong> (e.g.
- * {@code CubeQueryEngine}), not the interface.</li>
- * <li>For non-{@code @Default} fields the edge points to the declared interface type, and <strong>all known
- * implementations</strong> found in the source are added as nodes implementing that interface.</li>
+ * <li>For fields <strong>with a default value</strong> (either a {@code @Builder.Default} annotation or any field
+ * initializer), the composition edge targets the <strong>concrete default class</strong>; the declared interface type
+ * is shown as a hint inside the owning class box.</li>
+ * <li>For fields <strong>without a default value</strong>, the composition edge targets the declared interface type,
+ * and <strong>all known implementations</strong> found in the source are added as nodes below the interface.</li>
  * <li>Interface nodes are only added when they appear as a field type — superinterfaces are <strong>not</strong> added
  * automatically.</li>
  * </ul>
@@ -87,10 +88,10 @@ public class ClassHierarchyAsJavaParserMermaid {
 	List<Path> sourceRoots;
 
 	/** Default value for {@link #maxDepth}. */
-	static final int DEFAULT_MAX_DEPTH = 4;
+	static final int DEFAULT_MAX_DEPTH = 40;
 
 	/** Maximum directory depth when searching for {@code src/main/java} roots under the project directory. */
-	static final int SOURCE_ROOT_SEARCH_DEPTH = 3;
+	static final int SOURCE_ROOT_SEARCH_DEPTH = 30;
 
 	/** Initial capacity for the {@link StringBuilder} used when building the Mermaid diagram output. */
 	static final int DIAGRAM_BUILDER_INITIAL_CAPACITY = 512;
@@ -185,10 +186,12 @@ public class ClassHierarchyAsJavaParserMermaid {
 	 * <p>
 	 * Rules for field traversal:
 	 * <ul>
-	 * <li><b>{@code @Default} field</b> — both the declared interface type and the concrete default class (extracted
-	 * from the initializer expression) are added as nodes; the composition edge targets the concrete class.</li>
-	 * <li><b>non-{@code @Default} field</b> — the declared interface type is added, together with all concrete classes
-	 * that directly implement it (found in the parsed sources); the composition edge targets the interface.</li>
+	 * <li><b>Field with a default value</b> (either a {@code @Builder.Default} annotation or any field initializer) —
+	 * both the declared interface type and the concrete default class are added as nodes; the composition edge targets
+	 * the <strong>concrete class</strong>, and the interface type is shown as a hint in the owning class box.</li>
+	 * <li><b>Field without a default value</b> — the declared interface type is added, together with all concrete
+	 * classes that directly implement it (found in the parsed sources); the composition edge targets the
+	 * interface.</li>
 	 * </ul>
 	 *
 	 * @param rootClassName
@@ -196,7 +199,9 @@ public class ClassHierarchyAsJavaParserMermaid {
 	 * @return a manipulable JGraphT graph
 	 */
 	public Graph<ClassNode, ClassEdge> buildGraph(String rootClassName) {
+		// load classes ASTs
 		Map<String, TypeDeclaration<?>> nameToDecl = parseAllSources();
+		// map from interfaces to classes
 		Map<String, List<String>> interfaceToImpls = buildInterfaceToImpls(nameToDecl);
 
 		// Phase 1: BFS to decide which class/interface names to include
@@ -238,9 +243,10 @@ public class ClassHierarchyAsJavaParserMermaid {
 					String declaredType = rawName(field.getVariable(0).getType().asString());
 					String fieldName = field.getVariable(0).getNameAsString();
 
-					// Composition target: concrete default class (if @Default) or declared interface type
+					// Composition target: concrete default class (when a default value exists) or declared interface
+					// type
 					String compositionTarget = declaredType;
-					if (hasDefaultAnnotation(field)) {
+					if (hasDefaultValue(field)) {
 						String defaultClass =
 								field.getVariable(0).getInitializer().map(this::extractFirstClassName).orElse(null);
 						if (defaultClass != null && nameToNode.containsKey(defaultClass)) {
@@ -300,9 +306,9 @@ public class ClassHierarchyAsJavaParserMermaid {
 			ClassNode target = graph.getEdgeTarget(edge);
 			EdgeKind kind = edge.getKind();
 			if (kind == EdgeKind.IMPLEMENTS) {
-				implementsRels.add(source.getSimpleName() + " ..|> " + target.getSimpleName());
+				implementsRels.add(target.getSimpleName() + " <|.. " + source.getSimpleName());
 			} else if (kind == EdgeKind.EXTENDS) {
-				implementsRels.add(source.getSimpleName() + " --|> " + target.getSimpleName());
+				implementsRels.add(target.getSimpleName() + " <|-- " + source.getSimpleName());
 			} else if (kind == EdgeKind.HAS_FIELD) {
 				compositionRels
 						.add(source.getSimpleName() + " *-- " + target.getSimpleName() + " : " + edge.getFieldName());
@@ -375,8 +381,8 @@ public class ClassHierarchyAsJavaParserMermaid {
 			}
 			String declaredType = rawName(field.getVariable(0).getType().asString());
 
-			if (hasDefaultAnnotation(field)) {
-				// @Default: add the declared type (interface) and the concrete default class
+			if (hasDefaultValue(field)) {
+				// Has a default: add the declared type (interface) and the concrete default class
 				collectNodes(declaredType, depth + 1, visited, nameToDecl, interfaceToImpls);
 				field.getVariable(0).getInitializer().ifPresent(init -> {
 					String defaultClass = extractFirstClassName(init);
@@ -419,9 +425,17 @@ public class ClassHierarchyAsJavaParserMermaid {
 			try (Stream<Path> files = Files.walk(root)) {
 				files.filter(p -> p.toString().endsWith(".java")).forEach(javaFile -> {
 					try {
-						parser.parse(javaFile)
-								.getResult()
-								.ifPresent(cu -> cu.getTypes().forEach(t -> result.put(t.getNameAsString(), t)));
+						parser.parse(javaFile).getResult().stream().flatMap(cu -> cu.getTypes().stream()).flatMap(t -> {
+							if (t.isClassOrInterfaceDeclaration()) {
+								return Stream.concat(Stream.of(t),
+										t.getMembers()
+												.stream()
+												.filter(b -> b.isClassOrInterfaceDeclaration())
+												.map(b -> b.asClassOrInterfaceDeclaration()));
+							} else {
+								return Stream.of(t);
+							}
+						}).forEach(t -> result.put(t.getNameAsString(), t));
 					} catch (IOException e) {
 						log.warn("Failed to parse {}", javaFile, e);
 					}
@@ -456,6 +470,14 @@ public class ClassHierarchyAsJavaParserMermaid {
 			String name = a.getNameAsString();
 			return "Default".equals(name) || "Builder.Default".equals(name);
 		});
+	}
+
+	/**
+	 * Returns {@code true} when the field carries a known default value, either via a {@code @Builder.Default}
+	 * annotation or via a plain field initializer (e.g. {@code private IFoo foo = new ConcreteA()}).
+	 */
+	private boolean hasDefaultValue(FieldDeclaration field) {
+		return hasDefaultAnnotation(field) || field.getVariable(0).getInitializer().isPresent();
 	}
 
 	/**

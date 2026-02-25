@@ -26,13 +26,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.Graph;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.util.mermaid.ClassHierarchyAsJavaParserMermaid.ClassEdge;
-import eu.solven.adhoc.util.mermaid.ClassHierarchyAsJavaParserMermaid.ClassNode;
-import eu.solven.adhoc.util.mermaid.ClassHierarchyAsJavaParserMermaid.EdgeKind;
 
 /**
  * Focused unit test for {@link ClassHierarchyAsJavaParserMermaid} using minimal fixture classes.
@@ -49,7 +43,7 @@ import eu.solven.adhoc.util.mermaid.ClassHierarchyAsJavaParserMermaid.EdgeKind;
  * Maven sets the working directory to the module root, so {@code Path.of("src/test/java/...")} resolves correctly. See
  * https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#workingDirectory
  */
-@Disabled("WIP")
+// @Disabled("WIP")
 public class TestClassHierarchyAsJavaParserMermaidSimple {
 
 	/** Source root scoped to just the fixture package to keep the test fast and isolated. */
@@ -57,38 +51,6 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 
 	private ClassHierarchyAsJavaParserMermaid analyzer() {
 		return ClassHierarchyAsJavaParserMermaid.builder().sourceRoot(FIXTURE_ROOT).build();
-	}
-
-	@Test
-	public void testDefaultFieldPointsToConcrete() throws IOException {
-		Graph<ClassNode, ClassEdge> graph = analyzer().buildGraph("SimpleRoot");
-
-		// SimpleRoot is the diagram root
-		Assertions.assertThat(graph.vertexSet()).extracting(ClassNode::getSimpleName).contains("SimpleRoot");
-
-		// engine has @Default → HAS_FIELD edge targets the concrete class (SimpleEngine), not the interface
-		Assertions.assertThat(graph.edgeSet())
-				.filteredOn(e -> e.getKind() == EdgeKind.HAS_FIELD)
-				.filteredOn(e -> "engine".equals(e.getFieldName()))
-				.extracting(e -> graph.getEdgeTarget(e).getSimpleName())
-				.containsExactly("SimpleEngine");
-	}
-
-	@Test
-	public void testNonDefaultFieldExposesImplementations() throws IOException {
-		Graph<ClassNode, ClassEdge> graph = analyzer().buildGraph("SimpleRoot");
-
-		// widget has no @Default → HAS_FIELD edge targets the declared interface
-		Assertions.assertThat(graph.edgeSet())
-				.filteredOn(e -> e.getKind() == EdgeKind.HAS_FIELD)
-				.filteredOn(e -> "widget".equals(e.getFieldName()))
-				.extracting(e -> graph.getEdgeTarget(e).getSimpleName())
-				.containsExactly("ISimpleWidget");
-
-		// Both concrete implementations of ISimpleWidget appear as vertices in the graph
-		Assertions.assertThat(graph.vertexSet())
-				.extracting(ClassNode::getSimpleName)
-				.contains("SimpleWidgetA", "SimpleWidgetB");
 	}
 
 	@Test
@@ -102,10 +64,12 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 
 				    %% ─── Interfaces ────────────────────────────────────────────────
 				    class ISimpleEngine {
-				        <<interface>>
+				    }
+				    class ISubEngine {
+				    }
+				    class ISubPiece {
 				    }
 				    class ISimpleWidget {
-				        <<interface>>
 				    }
 
 				    %% ─── Concrete classes ──────────────────────────────────────────
@@ -114,6 +78,9 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 				        ISimpleWidget widget
 				    }
 				    class SimpleEngine {
+				        ISubEngine subEngine
+				    }
+				    class SimpleSubEngine {
 				    }
 				    class SimpleWidgetA {
 				    }
@@ -121,13 +88,15 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 				    }
 
 				    %% ─── Implements / Extends ──────────────────────────────────────
-				    SimpleEngine ..|> ISimpleEngine
-				    SimpleWidgetA ..|> ISimpleWidget
-				    SimpleWidgetB ..|> ISimpleWidget
+				    ISimpleEngine <|.. SimpleEngine
+				    ISubEngine <|.. SimpleSubEngine
+				    ISimpleWidget <|.. SimpleWidgetA
+				    ISimpleWidget <|.. SimpleWidgetB
 
 				    %% ─── Composition ───────────────────────────────────────────────
 				    SimpleRoot *-- SimpleEngine : engine
 				    SimpleRoot *-- ISimpleWidget : widget
+				    SimpleEngine *-- SimpleSubEngine : subEngine
 				""");
 	}
 }

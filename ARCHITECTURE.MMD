@@ -1,281 +1,250 @@
 classDiagram
-    direction LR
+    direction TB
 
+    %% ─── Interfaces ────────────────────────────────────────────────
+    class ICubeQueryEngine {
+    }
+    class IOperatorFactory {
+    }
+    class IColumnFactory {
+    }
+    class IDagBottomUpStrategy {
+    }
+    class ISliceFactoryFactory {
+    }
+    class IFilterOptimizerFactory {
+    }
+    class IFilterStripperFactory {
+    }
+    class IStopwatchFactory {
+    }
+    class IAdhocEventBus {
+    }
+    class ITableQueryEngine {
+    }
+    class ITableQueryOptimizerFactory {
+    }
+    class ITableWrapper {
+    }
+    class ICubeWrapper {
+    }
+    class IColumnsManager {
+    }
+    class ITableAliaser {
+    }
+    class IMissingColumnManager {
+    }
+    class ICoordinateNormalizer {
+    }
+    class ICustomTypeManager {
+    }
+    class ICalculatedColumn {
+    }
+    class IColumnGenerator {
+    }
+    class DSLSupplier {
+    }
+    class ISliceFilter {
+    }
+    class IAdhocGroupBy {
+    }
+    class IAdhocColumn {
+    }
+    class IQueryOption {
+    }
+    class ITabularRecord {
+    }
+    class IMeasureForest {
+    }
+    class IMeasure {
+    }
+    class IQueryPreparator {
+    }
+    class IImplicitFilter {
+    }
+    class IImplicitOptions {
+    }
+    class IQueryStepCache {
+    }
 
-    %% ─── Implements ────────────────────────────────────────────────
-    CubeWrapper ..|> ICubeWrapper
-    CubeWrapper ..|> IHasHealthDetails
-    ICubeWrapper ..|> IHasColumns
-    ICubeWrapper ..|> IHasName
-    ICubeWrapper ..|> IHasMeasures
-    IHasColumns ..|> IHasColumnsKeySet
-    IHasColumns ..|> IHasColumnTypes
-    MongoTableWrapper ..|> ITableWrapper
-    ITableWrapper ..|> IHasColumns
-    ITableWrapper ..|> IHasName
-    JooqTableWrapper --|> RedshiftTableWrapper
-    JooqTableWrapper ..|> ITableWrapper
-    JooqTableWrapper ..|> IHasCache
-    JooqTableWrapper ..|> IHasHealthDetails
-    JooqTableWrapper --|> BigQueryTableWrapper
-    JooqTableWrapper --|> DuckDBTableWrapper
-    ASliceFactory --|> ColumnarSliceFactory
-    ASliceFactory ..|> ISliceFactory
-    ASliceFactory ..|> ICoordinateNormalizer
-    ASliceFactory ..|> IHasCache
-    ASliceFactory --|> DictionarizedSliceFactory
-    ASliceFactory --|> RowSliceFactory
-    StandardCoordinateNormalizer ..|> ICoordinateNormalizer
-    SequencedSetLikeList ..|> ILikeList
-    IHasQueryOptions ..|> IIsExplainable
-    IHasQueryOptions ..|> IIsDebugable
-    CubeQueryStep ..|> IWhereGroupByQuery
-    CubeQueryStep ..|> IHasCustomMarker
-    CubeQueryStep ..|> IHasQueryOptions
-    CubeQueryStep ..|> IHasCache
-    IWhereGroupByQuery ..|> IHasFilters
-    IWhereGroupByQuery ..|> IHasGroupBy
-    MeasurelessQuery ..|> IWhereGroupByQuery
-    MeasurelessQuery ..|> IHasCustomMarker
-    MeasurelessQuery ..|> IHasQueryOptions
-    AdhocSubQuery ..|> ICubeQuery
-    AdhocSubQuery ..|> IHasParentQueryId
-    ICubeQuery ..|> IWhereGroupByQuery
-    ICubeQuery ..|> IHasMeasures
-    ICubeQuery ..|> IHasCustomMarker
-    ICubeQuery ..|> IHasQueryOptions
-    CubeQuery ..|> ICubeQuery
-    CubeQuery ..|> IHasCustomMarker
-    CubeQuery ..|> IHasQueryOptions
-    TableQuery ..|> IWhereGroupByQuery
-    TableQuery ..|> IHasCustomMarker
-    TableQuery ..|> IHasQueryOptions
-    TableQueryV2 ..|> IWhereGroupByQuery
-    TableQueryV2 ..|> IHasCustomMarker
-    TableQueryV2 ..|> IHasQueryOptions
-    Partitionor ..|> IMeasure
-    Partitionor ..|> ICombineUnderlyingMeasures
-    Partitionor ..|> IHasAggregationKey
-    Partitionor ..|> IHasGroupBy
-    IMeasure ..|> IHasName
-    IMeasure ..|> IHasTags
-    ICombineUnderlyingMeasures ..|> IHasUnderlyingMeasures
-    ICombineUnderlyingMeasures ..|> IHasCombinationKey
-    IHasUnderlyingMeasures ..|> IHasUnderlyingNames
-    CachingOperatorFactory ..|> IOperatorFactory
-    CachingOperatorFactory ..|> IHasCache
-    CompositeOperatorFactory ..|> IOperatorFactory
-    DummyOperatorFactory ..|> IOperatorFactory
-    StandardOperatorFactory ..|> IOperatorFactory
-    CustomOperatorFactory ..|> IOperatorFactory
-    IDecomposition ..|> IColumnGenerator
-    IColumnGenerator ..|> IHasColumnTypes
-    CachingTableWrapper ..|> ITableWrapper
-    CachingTableWrapper ..|> IHasCache
-    FilterOptimizerWithCache ..|> IHasCache
-    FilterOptimizer --|> FilterOptimizerWithCache
-    FilterOptimizer ..|> IFilterOptimizer
-    FilterOptimizer ..|> IHasFilterStripperFactory
-    FilterOptimizerIntraCache ..|> IFilterOptimizer
-    InMemoryTable ..|> ITableWrapper
-    InMemoryTable ..|> IHasHealthDetails
-    CompositeCubesTableWrapper ..|> ITableWrapper
-    CompositeCubesTableWrapper ..|> IHasHealthDetails
-    IColumnsManager ..|> IHasColumnTypes
-    ColumnMetadata ..|> IHasName
-    ColumnMetadata ..|> IHasTags
-    ColumnWithCalculatedCoordinates ..|> IAdhocColumn
-    ColumnWithCalculatedCoordinates ..|> IHasCalculatedCoordinates
-    IAdhocColumn ..|> IHasName
-    EvaluatedExpressionColumn ..|> IAdhocColumn
-    EvaluatedExpressionColumn ..|> ICalculatedColumn
-    ICalculatedColumn ..|> IAdhocColumn
-    FunctionCalculatedColumn ..|> IAdhocColumn
-    FunctionCalculatedColumn ..|> ICalculatedColumn
-    ReferencedColumn ..|> IAdhocColumn
-    ReferencedColumn ..|> IHasWrapped
-    ReferencedMeasure ..|> IMeasure
-    ReferencedMeasure ..|> IReferencedMeasure
-    ReferencedMeasure ..|> IHasWrapped
-    EqualsMatcher --|> EqualsDoubleMatcher
-    EqualsMatcher ..|> IValueMatcher
-    EqualsMatcher ..|> IHasWrapped
-    EqualsMatcher ..|> IColumnToString
-    EqualsMatcher --|> EqualsLongMatcher
-    EqualsMatcher --|> EqualsObjectMatcher
-    TableExpressionColumn ..|> IAdhocColumn
-    TableExpressionColumn ..|> IHasSqlExpression
-    CalculatedCoordinate ..|> ICalculatedCoordinate
-    MeasureForest ..|> IMeasureForest
-    IMeasureForest ..|> IHasName
-    IMeasureForest ..|> IHasMeasures
-    IMeasureForest ..|> IMeasureResolver
-    QueryPod ..|> IHasQueryOptions
-    QueryPod ..|> IMeasureResolver
-    QueryPod ..|> IHasMeasures
-    QueryPod ..|> IIsCancellable
-    UnsafeMeasureForest ..|> IMeasureForest
-    Aggregator ..|> ITableMeasure
-    Aggregator ..|> IHasAggregationKey
-    Aggregator ..|> IAliasedAggregator
-    ITableMeasure ..|> IMeasure
-    SubMeasureAsAggregator ..|> ITableMeasure
-    SubMeasureAsAggregator ..|> IHasAggregationKey
-    FilteredAggregator ..|> IAliasedAggregator
-    Columnator ..|> ICombinator
-    ICombinator ..|> IMeasure
-    ICombinator ..|> ICombineUnderlyingMeasures
-    Combinator ..|> ICombinator
-    Combinator ..|> IHasCombinationKey
-    RatioByCombinator ..|> ICombinator
-    Dispatchor ..|> IMeasure
-    Dispatchor ..|> IHasUnderlyingMeasures
-    Dispatchor ..|> IHasAggregationKey
-    Dispatchor ..|> IHasDecompositionKey
-    Dispatchor ..|> IMayHaveColumnGenerator
-    EmptyMeasure ..|> IMeasure
-    EmptyMeasure ..|> IHasUnderlyingMeasures
-    Filtrator ..|> IMeasure
-    Filtrator ..|> IHasUnderlyingMeasures
-    Shiftor ..|> IMeasure
-    Shiftor ..|> IHasUnderlyingMeasures
-    Unfiltrator ..|> IMeasure
-    Unfiltrator ..|> IHasUnderlyingMeasures
-    EmptyTableWrapper ..|> ITableWrapper
-    CustomMarkerEditor ..|> IMeasure
-    CustomMarkerEditor ..|> IHasUnderlyingMeasures
-    CustomMeasureForResource ..|> IMeasure
-    CustomMeasureForResource ..|> IHasUnderlyingMeasures
-    FailingTableWrapper ..|> ITableWrapper
-    PhasedTableWrapper ..|> ITableWrapper
-    HideAggregatorsTabularRecord ..|> ITabularRecord
-    ITabularRecord ..|> ITabularGroupByRecord
-    ITabularGroupByRecord ..|> IHasColumnsKeySet
-    TabularGroupByRecordOverMap ..|> ITabularGroupByRecord
-    IAdhocSlice ..|> ITabularGroupByRecord
-    IAdhocSlice ..|> IHasAdhocMap
-    SliceAsMap ..|> IAdhocSlice
-    SliceAsMap ..|> IHasAdhocMap
-    TabularRecordOverMaps ..|> ITabularRecord
-    CubeQueryEngine ..|> ICubeQueryEngine
-    CubeQueryEngine ..|> IHasOperatorFactory
-    AdhocBlackHole ..|> IValueReceiver
-    AdhocBlackHole ..|> IAdhocEventBus
-    TableQueryEngine ..|> ITableQueryEngine
-    StandardQueryPreparator ..|> IQueryPreparator
-    SpringImplicitOptions ..|> IImplicitOptions
+    %% ─── Concrete classes ──────────────────────────────────────────
+    class CubeWrapper {
+        ICubeQueryEngine engine
+        ITableWrapper table
+        IMeasureForest forest
+        IColumnsManager columnsManager
+        IQueryPreparator queryPreparator
+    }
+    class CubeQueryEngine {
+        AdhocFactories factories
+        IAdhocEventBus eventBus
+        ITableQueryEngine tableQueryEngine
+    }
+    class AdhocFactories {
+        IOperatorFactory operatorFactory
+        IColumnFactory columnFactory
+        ISliceFactoryFactory sliceFactoryFactory
+        IFilterOptimizerFactory filterOptimizerFactory
+        IFilterStripperFactory filterStripperFactory
+        IStopwatchFactory stopwatchFactory
+    }
+    class StandardColumnFactory {
+        IDagBottomUpStrategy bottomUpStrategy
+    }
+    class DagBottomUpStrategyNavigableElseHash {
+    }
+    class AdhocUnsafe {
+    }
+    class UnsafeAdhocEventBusHelpers {
+    }
+    class TableQueryEngine {
+        AdhocFactories factories
+        IAdhocEventBus eventBus
+        ITableQueryOptimizerFactory optimizerFactory
+    }
+    class TableQueryOptimizerFactory {
+    }
+    class CachingTableWrapper {
+        ITableWrapper decorated
+    }
+    class CompositeCubesTableWrapper {
+        IColumnsManager columnsManager
+    }
+    class ColumnsManager {
+        IAdhocEventBus eventBus
+        ITableAliaser aliaser
+        IMissingColumnManager missingColumnManager
+        ICustomTypeManager customTypeManager
+        IColumnGenerator columnGenerator
+    }
+    class IdentityImplicitAliaser {
+    }
+    class StandardMissingColumnManager {
+        ICoordinateNormalizer coordinateNormalizer
+    }
+    class StandardCoordinateNormalizer {
+    }
+    class StandardCustomTypeManager {
+    }
+    class EmptyColumnGenerator {
+    }
+    class EmptyTableWrapper {
+    }
+    class InMemoryTable {
+    }
+    class JooqTableWrapper {
+        JooqTableWrapperParameters tableParameters
+    }
+    class JooqTableWrapperParameters {
+        IOperatorFactory operatorFactory
+        DSLSupplier dslSupplier
+    }
+    class StandardDSLSupplier {
+    }
+    class AtotiAliaser {
+    }
+    class CachingKey {
+        TableQueryV2 tableQuery
+    }
+    class TableQueryV2 {
+        ISliceFilter filter
+        IAdhocGroupBy groupBy
+        AdhocTopClause topClause
+    }
+    class FilteredAggregator {
+        Aggregator aggregator
+        ISliceFilter filter
+    }
+    class Aggregator {
+        String aggregationKey
+    }
+    class SumAggregation {
+    }
+    class AdhocTopClause {
+    }
+    class CachingValue {
+    }
+    class MeasureForest {
+    }
+    class UnsafeMeasureForest {
+    }
+    class StandardQueryPreparator {
+        IImplicitFilter implicitFilter
+        IImplicitOptions implicitOptions
+        ListeningExecutorService concurrentExecutorService
+        IQueryStepCache queryStepCache
+    }
+
+    %% ─── Abstract classes ──────────────────────────────────────────
+    class AAdhocAtotiTable {
+        ITableAliaser transcoder
+    }
+
+    %% ─── Implements / Extends ──────────────────────────────────────
+    ICubeWrapper <|.. CubeWrapper
+    ICubeQueryEngine <|.. CubeQueryEngine
+    IColumnFactory <|.. StandardColumnFactory
+    IDagBottomUpStrategy <|.. DagBottomUpStrategyNavigableElseHash
+    ITableQueryEngine <|.. TableQueryEngine
+    ITableQueryOptimizerFactory <|.. TableQueryOptimizerFactory
+    ITableWrapper <|.. CachingTableWrapper
+    ITableWrapper <|.. CompositeCubesTableWrapper
+    IColumnsManager <|.. ColumnsManager
+    ITableAliaser <|.. IdentityImplicitAliaser
+    IMissingColumnManager <|.. StandardMissingColumnManager
+    ICoordinateNormalizer <|.. StandardCoordinateNormalizer
+    ICustomTypeManager <|.. StandardCustomTypeManager
+    IAdhocColumn <|-- ICalculatedColumn
+    IColumnGenerator <|.. EmptyColumnGenerator
+    ITableWrapper <|.. EmptyTableWrapper
+    ITableWrapper <|.. InMemoryTable
+    ITableWrapper <|.. JooqTableWrapper
+    DSLSupplier <|.. StandardDSLSupplier
+    ITableWrapper <|.. AAdhocAtotiTable
+    ITableAliaser <|.. AtotiAliaser
+    IMeasureForest <|.. MeasureForest
+    IMeasureForest <|.. UnsafeMeasureForest
+    IQueryPreparator <|.. StandardQueryPreparator
 
     %% ─── Composition ───────────────────────────────────────────────
-    CubeWrapper *-- ICubeQueryEngine
-    CubeWrapper *-- ITableWrapper
-    CubeWrapper *-- IMeasureForest
-    CubeWrapper *-- IColumnsManager
-    CubeWrapper *-- IQueryPreparator
-    RedshiftTableWrapper *-- RedshiftTableWrapperParameters
-    RedshiftTableWrapper *-- JooqTableWrapperParameters
-    JooqTableWrapper *-- JooqTableWrapperParameters
-    BigQueryTableWrapper *-- BigQueryTableWrapperParameters
-    BigQueryTableWrapper *-- JooqTableWrapperParameters
-    BigQueryTableWrapperParameters *-- JooqTableWrapperParameters
-    JooqTableWrapperParameters *-- IOperatorFactory
-    DuckDBTableWrapper *-- DuckDBTableWrapperParameters
-    DuckDBTableWrapper *-- JooqTableWrapperParameters
-    DuckDBTableWrapperParameters *-- JooqTableWrapperParameters
-    ColumnarSliceFactory *-- IHasQueryOptions
-    ColumnarSliceFactory *-- IAppendableTableFactory
-    ColumnarSliceFactory *-- IAppendableTable
-    ColumnarSliceFactory "1" *-- "n" SequencedSetLikeList
-    ColumnarSliceFactory *-- ICoordinateNormalizer
-    ASliceFactory "1" *-- "n" SequencedSetLikeList
-    ASliceFactory *-- ICoordinateNormalizer
-    DictionarizedSliceFactory "1" *-- "n" SequencedSetLikeList
-    DictionarizedSliceFactory *-- ICoordinateNormalizer
-    RowSliceFactory "1" *-- "n" SequencedSetLikeList
-    RowSliceFactory *-- ICoordinateNormalizer
-    CubeQueryStep *-- IMeasure
-    CubeQueryStep *-- ISliceFilter
-    CubeQueryStep *-- IAdhocGroupBy
-    CubeQueryStep "1" *-- "n" IQueryOption
-    MeasurelessQuery *-- ISliceFilter
-    MeasurelessQuery *-- IAdhocGroupBy
-    MeasurelessQuery "1" *-- "n" IQueryOption
-    AdhocSubQuery *-- ICubeQuery
-    AdhocSubQuery *-- AdhocQueryId
-    CubeQuery *-- ISliceFilter
-    CubeQuery *-- IAdhocGroupBy
-    CubeQuery "1" *-- "n" IMeasure
-    CubeQuery "1" *-- "n" IQueryOption
-    TableQuery *-- ISliceFilter
-    TableQuery *-- IAdhocGroupBy
-    TableQuery "1" *-- "n" Aggregator
-    TableQuery "1" *-- "n" IQueryOption
-    TableQueryV2 *-- ISliceFilter
-    TableQueryV2 *-- IAdhocGroupBy
-    TableQueryV2 "1" *-- "n" FilteredAggregator
-    TableQueryV2 "1" *-- "n" IQueryOption
-    Partitionor *-- IAdhocGroupBy
-    CachingOperatorFactory *-- IOperatorFactory
-    CachingOperatorFactory "1" *-- "n" OperatorFactoryKey
-    CachingOperatorFactory "1" *-- "n" IAggregation
-    CachingOperatorFactory "1" *-- "n" ICombination
-    CachingOperatorFactory "1" *-- "n" IDecomposition
-    CachingOperatorFactory "1" *-- "n" IFilterEditor
-    CompositeOperatorFactory "1" *-- "n" IOperatorFactory
-    DummyOperatorFactory *-- IAggregation
-    DummyOperatorFactory *-- ICombination
-    DummyOperatorFactory *-- IDecomposition
-    DummyOperatorFactory *-- IFilterEditor
-    StandardOperatorFactory *-- IOperatorFactory
-    CustomOperatorFactory *-- IOperatorFactory
-    CachingTableWrapper *-- ITableWrapper
-    FilterOptimizerWithCache "1" *-- "n" ISliceFilter
-    FilterOptimizerWithCache *-- IOptimizerEventListener
-    FilterOptimizerWithCache *-- IFilterCostFunction
-    FilterOptimizerWithCache *-- IFilterStripperFactory
-    FilterOptimizer *-- IOptimizerEventListener
-    FilterOptimizer *-- IFilterCostFunction
-    FilterOptimizer *-- IFilterStripperFactory
-    FilterOptimizerIntraCache *-- IOptimizerEventListener
-    CompositeCubesTableWrapper "1" *-- "n" ICubeWrapper
-    CompositeCubesTableWrapper *-- IColumnsManager
-    RedshiftTableWrapperParameters *-- JooqTableWrapperParameters
-    ColumnWithCalculatedCoordinates *-- IAdhocColumn
-    ColumnWithCalculatedCoordinates "1" *-- "n" ICalculatedCoordinate
-    FunctionCalculatedColumn "1" *-- "n" ITabularGroupByRecord
-    CalculatedCoordinate *-- ISliceFilter
-    MeasureForest "1" *-- "n" IMeasure
-    QueryPod *-- ICubeQuery
-    QueryPod *-- AdhocQueryId
-    QueryPod *-- IMeasureForest
-    QueryPod *-- ITableWrapper
-    QueryPod *-- ISliceFactory
-    QueryPod *-- IColumnsManager
-    QueryPod *-- IQueryStepCache
-    UnsafeMeasureForest "1" *-- "n" IMeasure
-    FilteredAggregator *-- Aggregator
-    FilteredAggregator *-- ISliceFilter
-    Columnator *-- Mode
-    RatioByCombinator *-- ISliceFilter
-    Filtrator *-- ISliceFilter
-    Unfiltrator *-- Mode
-    CustomMarkerEditor *-- ICustomMarkerEditor
-    PhasedTableWrapper *-- TableWrapperPhasers
-    HideAggregatorsTabularRecord *-- ITabularRecord
-    TabularGroupByRecordOverMap *-- IAdhocSlice
-    SliceAsMap *-- ISliceFactory
-    TabularRecordOverMaps *-- ITabularGroupByRecord
-    CubeQueryEngine *-- AdhocFactories
-    CubeQueryEngine *-- IAdhocEventBus
-    CubeQueryEngine *-- ITableQueryEngine
-    AdhocFactories *-- IOperatorFactory
-    AdhocFactories *-- IColumnFactory
-    AdhocFactories *-- ISliceFactoryFactory
-    AdhocFactories *-- IFilterOptimizerFactory
-    AdhocFactories *-- IFilterStripperFactory
-    AdhocFactories *-- IStopwatchFactory
-    TableQueryEngine *-- AdhocFactories
-    TableQueryEngine *-- IAdhocEventBus
-    StandardQueryPreparator *-- IImplicitFilter
-    StandardQueryPreparator *-- IImplicitOptions
-    StandardQueryPreparator *-- IQueryStepCache
-    SpringImplicitOptions "1" *-- "n" IQueryOption
+    CubeWrapper *-- CubeQueryEngine : engine
+    CubeWrapper *-- ITableWrapper : table
+    CubeWrapper *-- IMeasureForest : forest
+    CubeWrapper *-- ColumnsManager : columnsManager
+    CubeWrapper *-- StandardQueryPreparator : queryPreparator
+    CubeQueryEngine *-- AdhocFactories : factories
+    CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
+    CubeQueryEngine *-- ITableQueryEngine : tableQueryEngine
+    AdhocFactories *-- IOperatorFactory : operatorFactory
+    AdhocFactories *-- StandardColumnFactory : columnFactory
+    AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
+    AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
+    AdhocFactories *-- AdhocUnsafe : filterStripperFactory
+    AdhocFactories *-- IStopwatchFactory : stopwatchFactory
+    StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
+    TableQueryEngine *-- AdhocFactories : factories
+    TableQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
+    TableQueryEngine *-- TableQueryOptimizerFactory : optimizerFactory
+    CachingTableWrapper *-- ITableWrapper : decorated
+    CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
+    ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
+    ColumnsManager *-- IdentityImplicitAliaser : aliaser
+    ColumnsManager *-- StandardMissingColumnManager : missingColumnManager
+    ColumnsManager *-- StandardCustomTypeManager : customTypeManager
+    ColumnsManager *-- EmptyColumnGenerator : columnGenerator
+    StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
+    JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
+    JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
+    JooqTableWrapperParameters *-- DSLSupplier : dslSupplier
+    AAdhocAtotiTable *-- AtotiAliaser : transcoder
+    CachingKey *-- TableQueryV2 : tableQuery
+    TableQueryV2 *-- ISliceFilter : filter
+    TableQueryV2 *-- IAdhocGroupBy : groupBy
+    TableQueryV2 *-- AdhocTopClause : topClause
+    FilteredAggregator *-- Aggregator : aggregator
+    FilteredAggregator *-- ISliceFilter : filter
+    Aggregator *-- SumAggregation : aggregationKey
+    StandardQueryPreparator *-- IImplicitFilter : implicitFilter
+    StandardQueryPreparator *-- IImplicitOptions : implicitOptions
+    StandardQueryPreparator *-- AdhocUnsafe : concurrentExecutorService
+    StandardQueryPreparator *-- IQueryStepCache : queryStepCache
