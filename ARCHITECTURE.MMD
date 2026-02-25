@@ -14,11 +14,7 @@ classDiagram
     }
     class IFilterOptimizerFactory {
     }
-    class IFilterStripperFactory {
-    }
     class IStopwatchFactory {
-    }
-    class IAdhocEventBus {
     }
     class ITableQueryEngine {
     }
@@ -38,25 +34,11 @@ classDiagram
     }
     class ICustomTypeManager {
     }
-    class ICalculatedColumn {
-    }
     class IColumnGenerator {
     }
-    class DSLSupplier {
-    }
-    class ISliceFilter {
-    }
-    class IAdhocGroupBy {
-    }
-    class IAdhocColumn {
-    }
-    class IQueryOption {
-    }
-    class ITabularRecord {
+    class IDSLSupplier {
     }
     class IMeasureForest {
-    }
-    class IMeasure {
     }
     class IQueryPreparator {
     }
@@ -137,32 +119,11 @@ classDiagram
     }
     class JooqTableWrapperParameters {
         IOperatorFactory operatorFactory
-        DSLSupplier dslSupplier
+        IDSLSupplier dslSupplier
     }
     class StandardDSLSupplier {
     }
     class AtotiAliaser {
-    }
-    class CachingKey {
-        TableQueryV2 tableQuery
-    }
-    class TableQueryV2 {
-        ISliceFilter filter
-        IAdhocGroupBy groupBy
-        AdhocTopClause topClause
-    }
-    class FilteredAggregator {
-        Aggregator aggregator
-        ISliceFilter filter
-    }
-    class Aggregator {
-        String aggregationKey
-    }
-    class SumAggregation {
-    }
-    class AdhocTopClause {
-    }
-    class CachingValue {
     }
     class MeasureForest {
     }
@@ -171,7 +132,6 @@ classDiagram
     class StandardQueryPreparator {
         IImplicitFilter implicitFilter
         IImplicitOptions implicitOptions
-        ListeningExecutorService concurrentExecutorService
         IQueryStepCache queryStepCache
     }
 
@@ -194,12 +154,11 @@ classDiagram
     IMissingColumnManager <|.. StandardMissingColumnManager
     ICoordinateNormalizer <|.. StandardCoordinateNormalizer
     ICustomTypeManager <|.. StandardCustomTypeManager
-    IAdhocColumn <|-- ICalculatedColumn
     IColumnGenerator <|.. EmptyColumnGenerator
     ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. InMemoryTable
     ITableWrapper <|.. JooqTableWrapper
-    DSLSupplier <|.. StandardDSLSupplier
+    IDSLSupplier <|.. StandardDSLSupplier
     ITableWrapper <|.. AAdhocAtotiTable
     ITableAliaser <|.. AtotiAliaser
     IMeasureForest <|.. MeasureForest
@@ -235,16 +194,8 @@ classDiagram
     StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
     JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
-    JooqTableWrapperParameters *-- DSLSupplier : dslSupplier
+    JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
     AAdhocAtotiTable *-- AtotiAliaser : transcoder
-    CachingKey *-- TableQueryV2 : tableQuery
-    TableQueryV2 *-- ISliceFilter : filter
-    TableQueryV2 *-- IAdhocGroupBy : groupBy
-    TableQueryV2 *-- AdhocTopClause : topClause
-    FilteredAggregator *-- Aggregator : aggregator
-    FilteredAggregator *-- ISliceFilter : filter
-    Aggregator *-- SumAggregation : aggregationKey
     StandardQueryPreparator *-- IImplicitFilter : implicitFilter
     StandardQueryPreparator *-- IImplicitOptions : implicitOptions
-    StandardQueryPreparator *-- AdhocUnsafe : concurrentExecutorService
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache

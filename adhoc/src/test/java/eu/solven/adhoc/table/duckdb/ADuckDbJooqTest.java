@@ -25,7 +25,7 @@ package eu.solven.adhoc.table.duckdb;
 import org.jooq.DSLContext;
 
 import eu.solven.adhoc.ARawDagTest;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public abstract class ADuckDbJooqTest extends ARawDagTest {
@@ -37,6 +37,6 @@ public abstract class ADuckDbJooqTest extends ARawDagTest {
 		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	protected final DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+	protected final IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 	protected final DSLContext dsl = dslSupplier.getDSLContext();
 }

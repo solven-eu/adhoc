@@ -44,13 +44,13 @@ import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Defines a {@link DSLSupplier} given a {@link Configuration}.
+ * Defines a {@link IDSLSupplier} given a {@link Configuration}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Builder
-public class StandardDSLSupplier implements DSLSupplier {
+public class StandardDSLSupplier implements IDSLSupplier {
 	final Configuration configuration;
 
 	@Override

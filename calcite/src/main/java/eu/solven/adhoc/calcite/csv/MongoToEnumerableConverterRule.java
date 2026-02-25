@@ -28,13 +28,13 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
 
 /**
- * Rule to convert a relational expression from {@link AdhocCalciteRel#CONVENTION} to {@link EnumerableConvention}.
+ * Rule to convert a relational expression from {@link IAdhocCalciteRel#CONVENTION} to {@link EnumerableConvention}.
  */
 public class MongoToEnumerableConverterRule extends ConverterRule {
 	/** Singleton instance of MongoToEnumerableConverterRule. */
 	public static final ConverterRule INSTANCE = Config.INSTANCE
 			.withConversion(RelNode.class,
-					AdhocCalciteRel.CONVENTION,
+					IAdhocCalciteRel.CONVENTION,
 					EnumerableConvention.INSTANCE,
 					"MongoToEnumerableConverterRule")
 			.withRuleFactory(MongoToEnumerableConverterRule::new)

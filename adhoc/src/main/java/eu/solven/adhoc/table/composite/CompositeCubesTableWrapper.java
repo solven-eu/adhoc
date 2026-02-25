@@ -447,7 +447,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @param slice
 	 *            a slice from the underlying cube
 	 * @param measures
-	 * @param missingColumns
+	 * @param missingColumnsMask
 	 *            the columns in the compositeQuery groupBy, missing in the underlying cube
 	 * @return
 	 */

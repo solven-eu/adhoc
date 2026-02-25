@@ -64,6 +64,13 @@ public class TestClassHierarchyAsJavaParserMermaid {
 		}
 	}
 
+	/**
+	 * Prints a Mermaid {@code classDiagram} rooted at {@code CubeWrapper} to stdout.
+	 *
+	 * <p>
+	 * Source roots are discovered automatically under the Maven multi-module project root. The output can be pasted at
+	 * https://mermaid.live
+	 */
 	@Test
 	public void testGenerateDiagramAndWriteToFile() throws IOException {
 		ClassHierarchyAsJavaParserMermaid analyzer =

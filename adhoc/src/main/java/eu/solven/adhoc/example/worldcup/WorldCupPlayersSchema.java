@@ -64,7 +64,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
@@ -205,7 +205,7 @@ public class WorldCupPlayersSchema {
 	}
 
 	public ITableWrapper getTable(String tableName) {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
 

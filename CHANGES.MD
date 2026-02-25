@@ -15,6 +15,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Optimize `CompositeCubesTableWrapper.transcodeSliceToComposite` by computing the missing columns mask only once, and leveraging `IAdhocSlice.addColumns(Map<String, ?>)`.
 - `adhoc-atoti` dependencies over ActivePivot/Atoti are not minimal (e.g. no more `activepivot-server-spring`).
 - Move Checkstyle configuration so that a call to `mvn checkstyle:check` relies on the standard Adhoc configuration.
+- `DSLSupplier` is renamed `IDSLSupplier`.
 
 ## [0.0.15]
 

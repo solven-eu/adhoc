@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.jgrapht.Graph;
+import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.github.javaparser.JavaParser;
@@ -249,7 +250,8 @@ public class ClassHierarchyAsJavaParserMermaid {
 					if (hasDefaultValue(field)) {
 						String defaultClass =
 								field.getVariable(0).getInitializer().map(this::extractFirstClassName).orElse(null);
-						if (defaultClass != null && nameToNode.containsKey(defaultClass)) {
+						if (defaultClass != null && nameToNode.containsKey(declaredType)
+								&& nameToNode.containsKey(defaultClass)) {
 							compositionTarget = defaultClass;
 						}
 					}
@@ -262,7 +264,35 @@ public class ClassHierarchyAsJavaParserMermaid {
 			}
 		}
 
+		removeDisconnectedFromRoot(graph, nameToNode.get(rootClassName));
+
+		int componentCount = new ConnectivityInspector<>(graph).connectedSets().size();
+		log.info("Graph has {} vertices, {} edges, {} connected component(s)",
+				graph.vertexSet().size(),
+				graph.edgeSet().size(),
+				componentCount);
+
 		return graph;
+	}
+
+	/**
+	 * Removes all vertices that are not in the same weakly-connected component as {@code root}.
+	 *
+	 * <p>
+	 * Any cluster that has no path to or from the root (ignoring edge direction) is dropped entirely. This keeps the
+	 * diagram focused on types that are actually reachable from the entry point.
+	 *
+	 * @param graph
+	 *            the graph produced by {@link #buildGraph(String)}, modified in place
+	 * @param root
+	 *            the root node; if {@code null} (root class not found) the graph is left unchanged
+	 */
+	public static void removeDisconnectedFromRoot(Graph<ClassNode, ClassEdge> graph, ClassNode root) {
+		if (root == null) {
+			return;
+		}
+		Set<ClassNode> rootComponent = new ConnectivityInspector<>(graph).connectedSetOf(root);
+		graph.vertexSet().stream().filter(n -> !rootComponent.contains(n)).toList().forEach(graph::removeVertex);
 	}
 
 	/**
@@ -382,11 +412,12 @@ public class ClassHierarchyAsJavaParserMermaid {
 			String declaredType = rawName(field.getVariable(0).getType().asString());
 
 			if (hasDefaultValue(field)) {
-				// Has a default: add the declared type (interface) and the concrete default class
+				// Has a default: add the declared type (interface) and, when it is a project type, the concrete default
+				// class
 				collectNodes(declaredType, depth + 1, visited, nameToDecl, interfaceToImpls);
 				field.getVariable(0).getInitializer().ifPresent(init -> {
 					String defaultClass = extractFirstClassName(init);
-					if (defaultClass != null) {
+					if (defaultClass != null && nameToDecl.containsKey(declaredType)) {
 						collectNodes(defaultClass, depth + 1, visited, nameToDecl, interfaceToImpls);
 					}
 				});
@@ -511,24 +542,4 @@ public class ClassHierarchyAsJavaParserMermaid {
 		}
 	}
 
-	// ── Standalone entry point ───────────────────────────────────────────────
-
-	/**
-	 * Prints a Mermaid {@code classDiagram} rooted at {@code CubeWrapper} to stdout.
-	 *
-	 * <p>
-	 * Source roots are discovered automatically under the Maven multi-module project root. The output can be pasted at
-	 * https://mermaid.live
-	 */
-	public static void main(String[] args) throws IOException {
-		Path projectRoot = Path.of(System.getProperty("maven.multiModuleProjectDirectory", ".."));
-		List<Path> roots;
-		try (Stream<Path> walk = Files.walk(projectRoot, SOURCE_ROOT_SEARCH_DEPTH)) {
-			roots = walk.filter(p -> p.endsWith("src/main/java")).filter(Files::isDirectory).toList();
-		}
-		ClassHierarchyAsJavaParserMermaid analyzer =
-				ClassHierarchyAsJavaParserMermaid.builder().sourceRoots(roots).build();
-		Graph<ClassNode, ClassEdge> graph = analyzer.buildGraph("CubeWrapper");
-		log.info("{}", analyzer.toMermaid(graph));
-	}
 }
