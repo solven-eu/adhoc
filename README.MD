@@ -137,6 +137,8 @@ flowchart TD
     ITableWrapper --> BigQuery
 ```
 
+[Class graph](ARCHITECTURE.MMD)
+
 ## General Query Flow
 
 ``` mermaid

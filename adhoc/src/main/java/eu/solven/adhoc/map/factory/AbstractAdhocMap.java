@@ -46,12 +46,12 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -414,7 +414,8 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	@Override
 	public int compareTo(IAdhocMap otherI) {
 		if (!(otherI instanceof AbstractAdhocMap other)) {
-			throw new NotYetImplementedException("other=%s".formatted(PepperLogHelper.getObjectAndClass(otherI)));
+			// BEWARE This may happen with MaskedAdhocMap. It's a design issue
+			return AdhocMapHelpers.compareMap(this, otherI);
 		}
 
 		if (this == other) {

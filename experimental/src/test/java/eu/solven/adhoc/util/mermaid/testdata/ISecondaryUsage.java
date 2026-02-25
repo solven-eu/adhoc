@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.options.filter.value;
+package eu.solven.adhoc.util.mermaid.testdata;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Used to demonstrate secondary interfaces are not in the graph
+ */
+public interface ISecondaryUsage {
 
-import eu.solven.adhoc.query.filter.value.NullMatcher;
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-public class TestNullMatcher {
-	@Test
-	public void testHashCodeEquals() {
-		EqualsVerifier.forClass(NullMatcher.class).verify();
-	}
-
-	@Test
-	public void testToString() {
-		NullMatcher matcher = NullMatcher.builder().build();
-
-		Assertions.assertThat(matcher.toString()).isEqualTo("===null");
-		Assertions.assertThat(matcher.toString("c", false)).isEqualTo("c IS NULL");
-		Assertions.assertThat(matcher.toString("c", true)).isEqualTo("c IS NOT NULL");
-	}
-
-	@Test
-	public void testNullMarker() {
-		Assertions.assertThat(NullMatcher.NULL_HOLDER).hasToString("NULL");
-	}
 }

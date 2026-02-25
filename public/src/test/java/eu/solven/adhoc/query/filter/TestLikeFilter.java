@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.options.filter;
+package eu.solven.adhoc.query.filter;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;

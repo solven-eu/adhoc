@@ -183,4 +183,12 @@ public class TestSliceAsMap {
 				.isEqualTo(rawMap.entrySet())
 				.hasSameHashCodeAs(rawMap.entrySet());
 	}
+
+	@Test
+	public void testGetCoordinates() {
+		Map<String, String> rawMap = Map.of("a", "vA", "b", "vB");
+		IAdhocMap slice = AdhocMapHelpers.fromMap(rawMap);
+
+		Assertions.assertThat(slice.asSlice().getCoordinates()).isEqualTo(rawMap);
+	}
 }

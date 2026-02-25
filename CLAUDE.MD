@@ -2,6 +2,8 @@
 
 > This file is auto-loaded by the Claude Code CLI at startup.
 > It constrains what the agent is allowed to do inside this repository.
+>
+> **Living document**: when the user corrects a recurring behaviour (e.g. "stop using `head`", "use this command instead"), update this file immediately so the correction applies to all future sessions.
 
 ---
 
@@ -10,7 +12,7 @@
 - **Language / runtime**: Java 21, multi-module Maven project
 - **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks)
 - **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
-- **Static analysis**: Checkstyle, PMD, SpotBugs (run via `mvn verify`)
+- **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok
 
 ### Module structure (top-level Maven modules)
@@ -70,6 +72,7 @@ cd pivotable/js && npm run format && mvn spotless:apply
 
 - Do **NOT** modify test files (`src/test/java/**`).
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
+- Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
 - Do **NOT** modify anything under `pivotable/js/` (JS/TS handled by Prettier separately).
 - Do **NOT** change method or constructor **signatures**.
 - Do **NOT** rename classes, methods, fields, or variables.
@@ -79,3 +82,4 @@ cd pivotable/js && npm run format && mvn spotless:apply
 - Do **NOT** commit directly to `master`. Always work on a dedicated feature branch (e.g. `git checkout -b chore/my-task`). The CI workflow handles merging and PRs.
 - Do **NOT** merge pull requests, or offer to merge them. PRs are always reviewed and merged by a human through the GitHub UI.
 - Do **NOT** duplicate what Checkstyle / PMD / SpotBugs / Spotless already enforce deterministically (whitespace, brace style, unused imports, etc.).
+- Do **NOT** pipe Bash commands through `head`, `tail`, `grep`, `sed`, `awk`, or `echo`. Run commands directly and let the full output be captured. Use the dedicated `Grep` tool for content searches.

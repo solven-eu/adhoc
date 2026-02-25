@@ -20,44 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.options.filter;
-
-import java.util.Map;
-import java.util.Set;
+package eu.solven.adhoc.query.filter.value;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableSet;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-import eu.solven.adhoc.query.filter.FilterUtility;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
-
-public class TestFilterUtility {
-	FilterUtility filterUtility = FilterUtility.builder().build();
-
+public class TestNullMatcher {
 	@Test
-	public void testCommonOr() {
-		Set<ISliceFilter> filters =
-				ImmutableSet.of(OrFilter.or(Map.of("a", "a1", "b", "b1")), OrFilter.or(Map.of("a", "a1", "b", "b2")));
-
-		ISliceFilter commonOr = filterUtility.commonOr(filters);
-
-		Assertions.assertThat(commonOr).isEqualTo(OrFilter.or(Map.of("a", "a1")));
+	public void testHashCodeEquals() {
+		EqualsVerifier.forClass(NullMatcher.class).verify();
 	}
 
 	@Test
-	public void testCommonOr_matchAll() {
-		Set<ISliceFilter> filters = ImmutableSet.of(ISliceFilter.MATCH_ALL,
-				OrFilter.or(Map.of("a", "a1", "b", "b1")),
-				OrFilter.or(Map.of("a", "a1", "b", "b2")));
+	public void testToString() {
+		NullMatcher matcher = NullMatcher.builder().build();
 
-		ISliceFilter commonOr = filterUtility.commonOr(filters);
+		Assertions.assertThat(matcher.toString()).isEqualTo("===null");
+		Assertions.assertThat(matcher.toString("c", false)).isEqualTo("c IS NULL");
+		Assertions.assertThat(matcher.toString("c", true)).isEqualTo("c IS NOT NULL");
+	}
 
-		Assertions.assertThat(commonOr)
-				// TODO Should we treat `.matchAll` as some wildcard regarding parts?
-				// .isEqualTo(OrFilter.or(Map.of("a", "a1")))
-				.isEqualTo(ISliceFilter.MATCH_NONE);
+	@Test
+	public void testNullMarker() {
+		Assertions.assertThat(NullMatcher.NULL_HOLDER).hasToString("NULL");
 	}
 }
