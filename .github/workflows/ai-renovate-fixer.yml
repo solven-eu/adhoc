@@ -33,10 +33,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Allow commits from renovate[bot] AND github-actions[bot] (previous fixer runs).
+          # Only bail out when a human has pushed to the branch.
           NON_RENOVATE=$(gh pr view "${{ github.event.pull_request.number }}" \
             --repo "${{ github.repository }}" \
             --json commits \
-            --jq '[.commits[].authors[].login] | map(select(test("renovate"; "i") | not)) | length')
+            --jq '[.commits[].authors[].login] | map(select(test("renovate|github-actions"; "i") | not)) | length')
           echo "non_renovate_count=${NON_RENOVATE}"
           if [ "${NON_RENOVATE}" -eq 0 ]; then
             echo "only_renovate=true" >> "$GITHUB_OUTPUT"
