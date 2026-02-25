@@ -335,8 +335,20 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-checkstyle-plugin</artifactId>
 					<version>${maven-checkstyle-plugin.version}</version>
+					<!-- Make sure the configuration is not in execution blocks, so then are re-used by explicit invocation (vs lifecycle phase) -->
 					<configuration>
 						<excludes>**/generated/**</excludes>
+
+						<configLocation>${maven.multiModuleProjectDirectory}/.cleanthat/checkstyle.xml</configLocation>
+						<!-- https://github.com/redisson/redisson/issues/2048 -->
+						<propertyExpansion>checkstyle.config.path=${maven.multiModuleProjectDirectory}/.cleanthat/</propertyExpansion>
+
+						<inputEncoding>UTF-8</inputEncoding>
+						<consoleOutput>true</consoleOutput>
+						<failsOnError>true</failsOnError>
+						<!-- Prevent [WARNING] Unable to locate Source XRef to link to - DISABLED -->
+						<!-- only with goal checkstyle-aggregate or checkstyle generating a report -->
+						<!--<linkXRef>false</linkXRef> -->
 					</configuration>
 					<dependencies>
 						<dependency>
@@ -361,18 +373,6 @@
 							<!-- default phase is verify, which is after tests. -->
 							<!-- We prefer to run static analysis before tests not to wait -->
 							<phase>${staticChecks}</phase>
-							<configuration>
-								<configLocation>${maven.multiModuleProjectDirectory}/.cleanthat/checkstyle.xml</configLocation>
-								<!-- https://github.com/redisson/redisson/issues/2048 -->
-								<propertyExpansion>checkstyle.config.path=${maven.multiModuleProjectDirectory}/.cleanthat/</propertyExpansion>
-
-								<inputEncoding>UTF-8</inputEncoding>
-								<consoleOutput>true</consoleOutput>
-								<failsOnError>true</failsOnError>
-								<!-- Prevent [WARNING] Unable to locate Source XRef to link to - DISABLED -->
-								<!-- only with goal checkstyle-aggregate or checkstyle generating a report -->
-								<!--<linkXRef>false</linkXRef> -->
-							</configuration>
 						</execution>
 					</executions>
 				</plugin>
@@ -665,12 +665,14 @@
 			</plugins>
 		</pluginManagement>
 
+		<!-- It is useful to reference the plugins here, so that the pluginManagement configuration kicks in also when the plugin is requested directly (vs bound to a lifecycle phase)-->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
 			</plugin>
 			<plugin>
+				<!-- mvn spotless:apply -->
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
 			</plugin>
@@ -681,10 +683,12 @@
 
 			<!-- checkers after formatters -->
 			<plugin>
+				<!-- mvn checkstyle:check -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 			</plugin>
 			<plugin>
+				<!-- mvn pmd:check -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-pmd-plugin</artifactId>
 			</plugin>

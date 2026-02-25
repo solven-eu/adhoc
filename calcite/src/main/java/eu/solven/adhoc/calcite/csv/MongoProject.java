@@ -47,14 +47,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Deprecated
-public class MongoProject extends Project implements AdhocCalciteRel {
+public class MongoProject extends Project implements IAdhocCalciteRel {
 	public MongoProject(RelOptCluster cluster,
 			RelTraitSet traitSet,
 			RelNode input,
 			List<? extends RexNode> projects,
 			RelDataType rowType) {
 		super(cluster, traitSet, ImmutableList.of(), input, projects, rowType, ImmutableSet.of());
-		assert getConvention() == AdhocCalciteRel.CONVENTION;
+		assert getConvention() == IAdhocCalciteRel.CONVENTION;
 		assert getConvention() == input.getConvention();
 	}
 

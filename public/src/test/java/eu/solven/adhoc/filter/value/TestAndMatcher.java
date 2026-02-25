@@ -117,6 +117,26 @@ public class TestAndMatcher {
 	}
 
 	@Test
+	public void testJackson_matchAll() throws JsonProcessingException {
+		IValueMatcher matcher = IValueMatcher.MATCH_ALL;
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+		String asString = objectMapper.writeValueAsString(matcher);
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
+				{
+				  "type" : "and",
+				  "operands" : [ ]
+				}""");
+
+		IValueMatcher fromString = objectMapper.readValue(asString, IValueMatcher.class);
+
+		Assertions.assertThat(fromString).isEqualTo(matcher);
+	}
+
+	@Test
 	public void testToString_or() {
 		IValueMatcher matcher = AndMatcher.and(LikeMatcher.matching("a%"),
 				OrMatcher.or(LikeMatcher.matching("%b%"), LikeMatcher.matching("%c%")));

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,23 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb;
+package eu.solven.adhoc.util.mermaid.testdata;
 
-import org.jooq.DSLContext;
+public interface ISubPiece {
+	class SubPieceA implements ISubPiece {
 
-import eu.solven.adhoc.ARawDagTest;
-import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-
-public abstract class ADuckDbJooqTest extends ARawDagTest {
-
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
 	}
 
-	protected final IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
-	protected final DSLContext dsl = dslSupplier.getDSLContext();
+	class SubPieceB implements ISubPiece {
+
+	}
+
 }

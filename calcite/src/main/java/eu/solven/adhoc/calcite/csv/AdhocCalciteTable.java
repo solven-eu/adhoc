@@ -110,7 +110,7 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 	public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
 		final RelOptCluster cluster = context.getCluster();
 		return new AdhocCalciteTableScan(cluster,
-				cluster.traitSetOf(AdhocCalciteRel.CONVENTION),
+				cluster.traitSetOf(IAdhocCalciteRel.CONVENTION),
 				relOptTable,
 				this,
 				null);

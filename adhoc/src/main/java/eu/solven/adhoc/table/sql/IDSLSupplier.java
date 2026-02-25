@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.sql.Connection;
+
 import javax.sql.DataSource;
 
 import org.jooq.DSLContext;
@@ -34,25 +36,30 @@ import org.jooq.SQLDialect;
  *
  */
 @FunctionalInterface
-public interface DSLSupplier {
+public interface IDSLSupplier {
+	/**
+	 * A {@link DSLContext} is JooQ abstraction around an SQL {@link Connection}
+	 * 
+	 * @return
+	 */
 	DSLContext getDSLContext();
 
 	/**
 	 * Without a connection or data source, this executor cannot execute queries. Use it to render SQL only.
 	 * 
 	 * @param sqlDialect
-	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
+	 * @return a {@link IDSLSupplier} based on provided {@link SQLDialect}
 	 */
-	static DSLSupplier fromDialect(SQLDialect sqlDialect) {
+	static IDSLSupplier fromDialect(SQLDialect sqlDialect) {
 		return StandardDSLSupplier.builder().dialect(sqlDialect).build();
 	}
 
-	static DSLSupplier fromDatasource(DataSource datasource, SQLDialect sqlDialect) {
+	static IDSLSupplier fromDatasource(DataSource datasource, SQLDialect sqlDialect) {
 		return StandardDSLSupplier.builder().dialect(sqlDialect).dataSource(datasource).build();
 	}
 
 	@Deprecated(since = "Unstable API")
-	static DSLSupplier fromDatasourceStopWatch(DataSource datasource, SQLDialect sqlDialect) {
+	static IDSLSupplier fromDatasourceStopWatch(DataSource datasource, SQLDialect sqlDialect) {
 		return StandardDSLSupplier.builder().dialect(sqlDialect).dataSource(datasource).stopWatch().build();
 	}
 }

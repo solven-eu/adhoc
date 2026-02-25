@@ -11,6 +11,12 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Prepare partitioning of table queries (e.g. `IQueryPartitionor`), to help concurrency in table own engine, and in Adhoc by received partitioned results.
 - `DuckDBTableWrapper` enables Arrow-support for fetching query results.
 
+### Changed
+- Optimize `CompositeCubesTableWrapper.transcodeSliceToComposite` by computing the missing columns mask only once, and leveraging `IAdhocSlice.addColumns(Map<String, ?>)`.
+- `adhoc-atoti` dependencies over ActivePivot/Atoti are not minimal (e.g. no more `activepivot-server-spring`).
+- Move Checkstyle configuration so that a call to `mvn checkstyle:check` relies on the standard Adhoc configuration.
+- `DSLSupplier` is renamed `IDSLSupplier`.
+
 ## [0.0.15]
 
 ### Added

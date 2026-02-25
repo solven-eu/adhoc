@@ -69,7 +69,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try {
-			DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))
@@ -114,7 +114,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try {
-			DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))
@@ -165,7 +165,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tableName);
 
 		try {
-			DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
 					.dslSupplier(dslSupplier)
 					.tableName(DSL.unquotedName(tableExpression))

@@ -54,7 +54,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Aggregate} relational expression in MongoDB.
  */
-public class AdhocCalciteAggregate extends Aggregate implements AdhocCalciteRel {
+public class AdhocCalciteAggregate extends Aggregate implements IAdhocCalciteRel {
 	public AdhocCalciteAggregate(RelOptCluster cluster,
 			RelTraitSet traitSet,
 			RelNode input,
@@ -62,7 +62,7 @@ public class AdhocCalciteAggregate extends Aggregate implements AdhocCalciteRel 
 			@Nullable List<ImmutableBitSet> groupSets,
 			List<AggregateCall> aggCalls) throws InvalidRelException {
 		super(cluster, traitSet, ImmutableList.of(), input, groupSet, groupSets, aggCalls);
-		assert getConvention() == AdhocCalciteRel.CONVENTION;
+		assert getConvention() == IAdhocCalciteRel.CONVENTION;
 		assert getConvention() == input.getConvention();
 
 		// for (AggregateCall aggCall : aggCalls) {

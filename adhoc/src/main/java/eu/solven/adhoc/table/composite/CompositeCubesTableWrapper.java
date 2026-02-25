@@ -57,7 +57,6 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
@@ -272,10 +271,19 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			NavigableSet<String> subMissingColumns =
 					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), subColumns));
 
+			Map<String, Object> missingColumnsAsmask;
+
+			if (subMissingColumns.isEmpty()) {
+				missingColumnsAsmask = Map.of();
+			} else {
+				missingColumnsAsmask = LinkedHashMap.newLinkedHashMap(subMissingColumns.size());
+				subMissingColumns.forEach(column -> missingColumnsAsmask.put(column, missingColumn(subCube, column)));
+			}
+
 			ITabularView subView = e.getValue();
 			return subView.stream((slice) -> {
 				return oAsMap -> {
-					return transcodeSliceToComposite(subCube, slice, oAsMap, subMissingColumns);
+					return transcodeSliceToComposite(subCube, slice, oAsMap, missingColumnsAsmask);
 				};
 			});
 		});
@@ -439,27 +447,22 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @param slice
 	 *            a slice from the underlying cube
 	 * @param measures
-	 * @param missingColumns
+	 * @param missingColumnsMask
 	 *            the columns in the compositeQuery groupBy, missing in the underlying cube
 	 * @return
 	 */
 	protected ITabularRecord transcodeSliceToComposite(ICubeWrapper cube,
 			IAdhocSlice slice,
 			Map<String, ?> measures,
-			NavigableSet<String> missingColumns) {
-		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
-
-		// TODO ensureCapacity given missingColumns
+			Map<String, ?> missingColumnsMask) {
 		IAdhocSlice groupBys;
-		if (missingColumns.isEmpty()) {
+		if (missingColumnsMask.isEmpty()) {
 			groupBys = slice;
 		} else {
-			Map<String, Object> groupBysTmp = new LinkedHashMap<>(slice.getCoordinates());
-			missingColumns.forEach(column -> groupBysTmp.put(column, missingColumn(cube, column)));
-			groupBys = SliceAsMap.fromMap(groupBysTmp);
+			groupBys = slice.addColumns(missingColumnsMask);
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(measures).slice(groupBys).build();
 	}
 
 	protected Object missingColumn(ICubeWrapper cube, String column) {

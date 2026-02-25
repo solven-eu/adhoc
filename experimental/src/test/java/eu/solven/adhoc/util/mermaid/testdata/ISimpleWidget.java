@@ -20,34 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.util.mermaid.testdata;
 
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
-
-/**
- * Rule to convert a relational expression from {@link IAdhocCalciteRel#CONVENTION} to {@link EnumerableConvention}.
- */
-public class MongoToEnumerableConverterRule extends ConverterRule {
-	/** Singleton instance of MongoToEnumerableConverterRule. */
-	public static final ConverterRule INSTANCE = Config.INSTANCE
-			.withConversion(RelNode.class,
-					IAdhocCalciteRel.CONVENTION,
-					EnumerableConvention.INSTANCE,
-					"MongoToEnumerableConverterRule")
-			.withRuleFactory(MongoToEnumerableConverterRule::new)
-			.toRule(MongoToEnumerableConverterRule.class);
-
-	/** Called from the Config. */
-	protected MongoToEnumerableConverterRule(Config config) {
-		super(config);
+/** Test fixture: widget interface with no {@code @Default}, exposing all known implementations. */
+public interface ISimpleWidget extends ISecondaryUsage {
+	class SimpleWidgetA implements ISimpleWidget {
 	}
 
-	@Override
-	public RelNode convert(RelNode rel) {
-		RelTraitSet newTraitSet = rel.getTraitSet().replace(getOutConvention());
-		return new MongoToEnumerableConverter(rel.getCluster(), newTraitSet, rel);
+	class SimpleWidgetB implements ISimpleWidget {
 	}
 }

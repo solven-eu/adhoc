@@ -20,34 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.query.filter;
 
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
+import java.util.Map;
+import java.util.Set;
 
-/**
- * Rule to convert a relational expression from {@link IAdhocCalciteRel#CONVENTION} to {@link EnumerableConvention}.
- */
-public class MongoToEnumerableConverterRule extends ConverterRule {
-	/** Singleton instance of MongoToEnumerableConverterRule. */
-	public static final ConverterRule INSTANCE = Config.INSTANCE
-			.withConversion(RelNode.class,
-					IAdhocCalciteRel.CONVENTION,
-					EnumerableConvention.INSTANCE,
-					"MongoToEnumerableConverterRule")
-			.withRuleFactory(MongoToEnumerableConverterRule::new)
-			.toRule(MongoToEnumerableConverterRule.class);
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-	/** Called from the Config. */
-	protected MongoToEnumerableConverterRule(Config config) {
-		super(config);
+import com.google.common.collect.ImmutableSet;
+
+public class TestFilterUtility {
+	FilterUtility filterUtility = FilterUtility.builder().build();
+
+	@Test
+	public void testCommonOr() {
+		Set<ISliceFilter> filters =
+				ImmutableSet.of(OrFilter.or(Map.of("a", "a1", "b", "b1")), OrFilter.or(Map.of("a", "a1", "b", "b2")));
+
+		ISliceFilter commonOr = filterUtility.commonOr(filters);
+
+		Assertions.assertThat(commonOr).isEqualTo(OrFilter.or(Map.of("a", "a1")));
 	}
 
-	@Override
-	public RelNode convert(RelNode rel) {
-		RelTraitSet newTraitSet = rel.getTraitSet().replace(getOutConvention());
-		return new MongoToEnumerableConverter(rel.getCluster(), newTraitSet, rel);
+	@Test
+	public void testCommonOr_matchAll() {
+		Set<ISliceFilter> filters = ImmutableSet.of(ISliceFilter.MATCH_ALL,
+				OrFilter.or(Map.of("a", "a1", "b", "b1")),
+				OrFilter.or(Map.of("a", "a1", "b", "b2")));
+
+		ISliceFilter commonOr = filterUtility.commonOr(filters);
+
+		Assertions.assertThat(commonOr)
+				// TODO Should we treat `.matchAll` as some wildcard regarding parts?
+				// .isEqualTo(OrFilter.or(Map.of("a", "a1")))
+				.isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 }

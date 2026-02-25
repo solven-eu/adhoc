@@ -58,7 +58,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.DivideCombination;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
@@ -90,7 +90,7 @@ public class InjectPixarExampleCubesConfig {
 
 	@SuppressWarnings("checkstyle.MethodLength")
 	protected void registerPixarFilms(AdhocSchema schema) {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
 

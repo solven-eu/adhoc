@@ -36,14 +36,14 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 /**
  * Relational expression that uses Mongo calling convention.
  */
-public interface AdhocCalciteRel extends RelNode {
+public interface IAdhocCalciteRel extends RelNode {
 	void implement(AdhocCalciteRelImplementor implementor);
 
 	/** Calling convention for relational operations that occur in MongoDB. */
-	Convention CONVENTION = new Convention.Impl("ADHOC", AdhocCalciteRel.class);
+	Convention CONVENTION = new Convention.Impl("ADHOC", IAdhocCalciteRel.class);
 
 	/**
-	 * Callback for the implementation process that converts a tree of {@link AdhocCalciteRel} nodes into a MongoDB
+	 * Callback for the implementation process that converts a tree of {@link IAdhocCalciteRel} nodes into a MongoDB
 	 * query.
 	 */
 	class AdhocCalciteRelImplementor {
@@ -63,7 +63,7 @@ public interface AdhocCalciteRel extends RelNode {
 
 		public void visitChild(int ordinal, RelNode input) {
 			assert ordinal == 0;
-			((AdhocCalciteRel) input).implement(this);
+			((IAdhocCalciteRel) input).implement(this);
 		}
 
 		public void clearProject() {

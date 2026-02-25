@@ -20,34 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.calcite.csv;
+package eu.solven.adhoc.util.mermaid.testdata;
 
-import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.convert.ConverterRule;
+import eu.solven.adhoc.util.mermaid.testdata.ISimpleEngine.SimpleEngine;
+import lombok.Builder;
+import lombok.Builder.Default;
 
 /**
- * Rule to convert a relational expression from {@link IAdhocCalciteRel#CONVENTION} to {@link EnumerableConvention}.
+ * Test fixture: root class with two fields.
+ *
+ * <ul>
+ * <li>{@code engine} — has a {@code @Default} value; the graph should expose only the concrete default class.</li>
+ * <li>{@code widget} — no default; the graph should expose the interface and all known implementations.</li>
+ * </ul>
  */
-public class MongoToEnumerableConverterRule extends ConverterRule {
-	/** Singleton instance of MongoToEnumerableConverterRule. */
-	public static final ConverterRule INSTANCE = Config.INSTANCE
-			.withConversion(RelNode.class,
-					IAdhocCalciteRel.CONVENTION,
-					EnumerableConvention.INSTANCE,
-					"MongoToEnumerableConverterRule")
-			.withRuleFactory(MongoToEnumerableConverterRule::new)
-			.toRule(MongoToEnumerableConverterRule.class);
+@Builder
+public class SimpleRoot {
 
-	/** Called from the Config. */
-	protected MongoToEnumerableConverterRule(Config config) {
-		super(config);
-	}
+	/** Wired to a concrete default: the diagram should show {@link SimpleEngine}, not {@link ISimpleEngine}. */
+	@Default
+	ISimpleEngine engine = new SimpleEngine();
 
-	@Override
-	public RelNode convert(RelNode rel) {
-		RelTraitSet newTraitSet = rel.getTraitSet().replace(getOutConvention());
-		return new MongoToEnumerableConverter(rel.getCluster(), newTraitSet, rel);
-	}
+	/** No default: the diagram should show {@link ISimpleWidget} and its known implementations. */
+	ISimpleWidget widget;
 }

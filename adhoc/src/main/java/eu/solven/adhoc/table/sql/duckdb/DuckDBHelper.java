@@ -51,7 +51,7 @@ import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.StandardDSLSupplier;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -89,9 +89,9 @@ public class DuckDBHelper {
 	}
 
 	/**
-	 * @return a {@link DSLSupplier} based on provided {@link SQLDialect}
+	 * @return a {@link IDSLSupplier} based on provided {@link SQLDialect}
 	 */
-	public static @NonNull DSLSupplier inMemoryDSLSupplier() {
+	public static @NonNull IDSLSupplier inMemoryDSLSupplier() {
 		DuckDBConnection duckDbConnection = makeFreshInMemoryDb();
 		return dslSupplier(duckDbConnection);
 	}
@@ -103,7 +103,7 @@ public class DuckDBHelper {
 	 * @param duckDbConnection
 	 * @return
 	 */
-	public static DSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
+	public static IDSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
 		DataSource dataSource = new DuckDBDataSource(duckDbConnection);
 
 		return StandardDSLSupplier.builder().dialect(SQLDialect.DUCKDB).dataSource(dataSource).build();

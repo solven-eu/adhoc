@@ -44,7 +44,7 @@ import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -158,7 +158,7 @@ public class TestDuckDBHelper {
 
 		HikariDataSource ds = new HikariDataSource(config);
 
-		DSLSupplier supplier = DSLSupplier.fromDatasource(ds, SQLDialect.DUCKDB);
+		IDSLSupplier supplier = IDSLSupplier.fromDatasource(ds, SQLDialect.DUCKDB);
 
 		IntStream.rangeClosed(0, 16 * 1024).forEach(i -> {
 			if (Integer.bitCount(i) == 1) {
@@ -170,7 +170,7 @@ public class TestDuckDBHelper {
 
 	@Test
 	public void testGetCoordinates_empty() {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
@@ -188,7 +188,7 @@ public class TestDuckDBHelper {
 
 	@Test
 	public void testGetCoordinates_unknown_matchAll() {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
@@ -203,7 +203,7 @@ public class TestDuckDBHelper {
 
 	@Test
 	public void testGetCoordinates_unknown_stringMatcher() {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
@@ -218,7 +218,7 @@ public class TestDuckDBHelper {
 
 	@Test
 	public void testGetCoordinates_matcherString() {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
 		dslContext.createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
@@ -237,7 +237,7 @@ public class TestDuckDBHelper {
 
 	@Test
 	public void testGetCoordinates_matcherLike() {
-		DSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
 		dslContext.createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();

@@ -95,6 +95,23 @@ public class TestMaskedAdhocMap {
 	}
 
 	@Test
+	public void testEquals_maskedVsDecorated() {
+		IAdhocMap decorated = AdhocMapHelpers.fromMap(RowSliceFactory.builder().build(), Map.of("a", "a1"));
+		Map<String, ?> mask = Map.of("b", "b2");
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap decoratedWithoutMask =
+				AdhocMapHelpers.fromMap(RowSliceFactory.builder().build(), Map.of("a", "a1", "b", "b2"));
+
+		// `.equals` any Map
+		Assertions.assertThat((Map) masked).isNotEqualTo(decorated).isEqualTo(decoratedWithoutMask);
+		Assertions.assertThat((Comparable) masked).isGreaterThan(decorated).isEqualByComparingTo(decoratedWithoutMask);
+
+		Assertions.assertThat((Map) decoratedWithoutMask).isNotEqualTo(decorated).isEqualTo(masked);
+		Assertions.assertThat((Comparable) decoratedWithoutMask).isGreaterThan(decorated).isEqualByComparingTo(masked);
+	}
+
+	@Test
 	public void testContainsKey() {
 		IAdhocMap decorated = Mockito.mock(IAdhocMap.class);
 		Map<String, ?> mask = Map.of("b", "b2");

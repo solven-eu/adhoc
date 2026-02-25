@@ -38,11 +38,11 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
-import eu.solven.adhoc.map.keyset.NavigableSetLikeList;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 
@@ -53,7 +53,7 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormalizer {
+public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormalizer, IHasCache {
 	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a",
 	// "b")).append("a1").append("b1")` as the order
 	// of the Set is not consistent with the input array
@@ -72,8 +72,6 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 		NOT_ORDERED_CLASSES = builder.build();
 	}
 
-	final ConcurrentMap<Integer, NavigableSetLikeList> keySetDictionary = new ConcurrentHashMap<>();
-	final ConcurrentMap<NavigableSetLikeList, Integer> keySetDictionaryReverse = new ConcurrentHashMap<>();
 	final ConcurrentMap<List<String>, SequencedSetLikeList> listToKeyset = new ConcurrentHashMap<>();
 
 	@Default
@@ -88,6 +86,11 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	public static IAdhocMap of() {
 		return EMPTY.get();
+	}
+
+	@Override
+	public void invalidateAll() {
+		listToKeyset.clear();
 	}
 
 	@Override
@@ -131,34 +134,15 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	@Override
 	public SequencedSetLikeList internKeyset(Collection<? extends String> keys) {
-		List<? extends String> keysAsList = copyAsList(keys);
+		List<String> keysAsList = copyAsList(keys);
 
 		SequencedSetLikeList optExisting = listToKeyset.get(keysAsList);
 
 		if (optExisting != null) {
 			return optExisting;
 		} else {
-			return register(keysAsList);
+			return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
 		}
-	}
-
-	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
-	protected SequencedSetLikeList register(Collection<? extends String> keys) {
-		List<String> keysAsList = copyAsList(keys);
-
-		SequencedSetLikeList sequencedSetLikeList = listToKeyset.computeIfAbsent(keysAsList, k -> {
-			return SequencedSetLikeList.fromCollection(keysAsList);
-		});
-
-		NavigableSetLikeList setLikeList = sequencedSetLikeList.sortedSet();
-
-		synchronized (this) {
-			int size = keySetDictionary.size();
-			keySetDictionary.put(size, setLikeList);
-			keySetDictionaryReverse.put(setLikeList, size);
-		}
-
-		return sequencedSetLikeList;
 	}
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {
