@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.fsst;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
+
 /**
  * Able to decode FSST encoded `byte[]`.
  * 
@@ -29,7 +31,9 @@ package eu.solven.adhoc.encoding.fsst;
  */
 public interface IFsstEncoder {
 
-	IByteSlice encodeAll(byte[] input);
+	default IByteSlice encodeAll(IByteSlice input) {
+		return encode(null, input);
+	}
 
-	IByteSlice encode(byte[] buf, byte[] input);
+	IByteSlice encode(byte[] buf, IByteSlice input);
 }

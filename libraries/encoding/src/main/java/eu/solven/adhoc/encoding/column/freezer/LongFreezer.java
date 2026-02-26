@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
@@ -44,7 +43,7 @@ public final class LongFreezer implements IFreezingWithContext {
 		if (column instanceof ObjectArrayColumn arrayColumn) {
 			List<?> array = arrayColumn.getAsArray();
 
-			Set<?> classes = classesWithContext(freezingContext, array);
+			Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
 
 			if (classes.size() == 1 && classes.contains(Long.class)) {
 				long[] primitiveArray = array.stream().mapToLong(Long.class::cast).toArray();
@@ -55,12 +54,5 @@ public final class LongFreezer implements IFreezingWithContext {
 		} else {
 			return Optional.empty();
 		}
-	}
-
-	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
-	public static Set<?> classesWithContext(Map<String, Object> freezingContext, List<?> array) {
-		return (Set<?>) freezingContext.computeIfAbsent("classes", k -> {
-			return array.stream().map(o -> o == null ? null : o.getClass()).collect(Collectors.toSet());
-		});
 	}
 }

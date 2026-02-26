@@ -26,6 +26,7 @@ import java.util.Arrays;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -36,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 @ThreadSafe
 @RequiredArgsConstructor
 @SuppressWarnings("checkstyle:MagicNumber")
-class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
+class SymbolTableDecoder implements IFsstConstants, IFsstDecoder {
 	// Decoder tables
 	public final byte[] decLen; // code -> symbol length
 	public final long[] decSymbol; // code -> symbol value
@@ -96,7 +97,7 @@ class SymbolTableDecoding implements IFsstConstants, IFsstDecoder {
 				buf[bufPos++] = src[srcPos++];
 			}
 		}
-		return new ByteSlice(buf, 0, bufPos);
+		return IByteSlice.wrap(buf, bufPos);
 	}
 
 	@Override

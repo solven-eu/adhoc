@@ -20,31 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.bytes;
 
 import java.util.Arrays;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
+ * Like {@link ByteSlice} with offset==0 and length matching the input.
+ * 
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
-@Builder
-final class ByteSlice implements IByteSlice {
+final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	public final byte[] array;
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	public final int offset;
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	public final int length;
+	final byte[] array;
 
 	@Override
 	public boolean isFastAsArray() {
-		return false;
+		return true;
 	}
 
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
@@ -55,12 +51,12 @@ final class ByteSlice implements IByteSlice {
 
 	@Override
 	public int length() {
-		return length;
+		return array.length;
 	}
 
 	@Override
 	public int offset() {
-		return offset;
+		return 0;
 	}
 
 	@Override
@@ -75,28 +71,12 @@ final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
 	public byte[] cropped() {
-		if (offset == 0 && array.length == length) {
-			return array;
-		} else {
-			return Arrays.copyOfRange(array, offset, offset + length);
-		}
+		return array;
 	}
 
-	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
 	public int hashCode() {
-		return hashCode(array, offset, length);
-	}
-
-	@SuppressWarnings("checkstyle:MagicNumber")
-	static int hashCode(byte[] array, int offset, int length) {
-		int result = 1;
-		int fromIndex = offset;
-		int end = fromIndex + length;
-		for (int i = fromIndex; i < end; i++) {
-			result = 31 * result + array[i];
-		}
-		return result;
+		return Arrays.hashCode(array);
 	}
 
 	@Override
@@ -110,52 +90,12 @@ final class ByteSlice implements IByteSlice {
 		if (!(obj instanceof IByteSlice otherByteSlice)) {
 			return false;
 		}
-
-		return equals(this, otherByteSlice);
-	}
-
-	public static boolean equals(IByteSlice left, IByteSlice right) {
-		int length = left.length();
-		if (length != right.length()) {
-			return false;
-		}
-
-		for (int i = 0; i < length; i++) {
-			if (left.read(i) != right.read(i)) {
-				return false;
-			}
-		}
-
-		return true;
+		return ByteSlice.equals(this, otherByteSlice);
 	}
 
 	@Override
 	public byte read(int position) {
-		return array[offset + position];
-	}
-
-	/**
-	 * Lombok @Builder
-	 */
-	public static class ByteSliceBuilder {
-		// By default, there is no offset
-		public int offset = 0;
-		// By default,the length comes from the array
-		public int length = -1;
-
-		public IByteSlice build() {
-			if (offset == -1) {
-				if (length == -1) {
-					return new ByteSliceNoOffsetNoLength(array);
-				} else {
-					return new ByteSliceNoOffset(array, length);
-				}
-			}
-			if (length == -1) {
-				length = array.length;
-			}
-			return new ByteSlice(array, offset, length);
-		}
+		return array[position];
 	}
 
 }

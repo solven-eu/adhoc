@@ -25,8 +25,8 @@ package eu.solven.adhoc.encoding.column.freezer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.fsst.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.IFsstDecoder;
 import lombok.Builder;
 import lombok.NonNull;

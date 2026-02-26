@@ -28,12 +28,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
+
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
+import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
+import eu.solven.adhoc.encoding.column.freezer.FreezerHelpers;
 import eu.solven.adhoc.encoding.column.freezer.FsstReadableColumn;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
-import eu.solven.adhoc.encoding.column.freezer.LongFreezer;
 import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
 
 /**
@@ -43,6 +47,8 @@ import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
  * 
  */
 public class FsstFreezingWithContext implements IFreezingWithContext {
+	private static final Set<Class<? extends Object>> FREEZABLE_CLASSES =
+			Sets.newHashSet(String.class, Utf8ByteSlice.class, null);
 
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	@Override
@@ -50,18 +56,22 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 		if (column instanceof ObjectArrayColumn arrayColumn) {
 			List<?> array = arrayColumn.getAsArray();
 
-			Set<?> classes = LongFreezer.classesWithContext(freezingContext, array);
+			Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
 
-			if (classes.size() == 1 && classes.contains(String.class)
-					|| classes.size() == 2 && classes.contains(String.class) && classes.contains(null)) {
-				List<byte[]> primitiveArray = array.stream()
-						.map(s -> s == null ? null : s.toString().getBytes(StandardCharsets.UTF_8))
-						.toList();
+			if (Sets.difference(classes, FREEZABLE_CLASSES).isEmpty()) {
+				List<IByteSlice> primitiveArray = array.stream().map(this::toByteSlice).toList();
 				return Optional.of(readableColumn(primitiveArray));
 			}
 		}
 
 		return Optional.empty();
+	}
+
+	protected IByteSlice toByteSlice(Object s) {
+		if (s == null || s instanceof Utf8ByteSlice) {
+			return (IByteSlice) s;
+		}
+		return IByteSlice.wrap(s.toString().getBytes(StandardCharsets.UTF_8));
 	}
 
 	/**
@@ -71,7 +81,7 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	 * @return an FSST-encoded {@link IReadableColumn}
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
-	protected IReadableColumn readableColumn(List<byte[]> primitiveArray) {
+	protected IReadableColumn readableColumn(List<IByteSlice> primitiveArray) {
 		SymbolTable table = FsstTrainer.builder().build().train(primitiveArray.toArray(byte[][]::new));
 
 		List<IByteSlice> encoded =

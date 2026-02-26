@@ -22,35 +22,50 @@
  */
 package eu.solven.adhoc.encoding.column.freezer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.column.IntegerArrayColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
+import eu.solven.adhoc.encoding.fsst.FsstFreezingWithContext;
 
 /**
- * {@link IFreezingWithContext} when all values are {@link Integer}.
- * 
+ * Fallback {@link IFreezingWithContext} that normalises {@link AdhocUtf8} values to {@link String}.
+ *
+ * <p>
+ * {@link FsstFreezingWithContext} consumes columns whose values are exclusively {@link AdhocUtf8} or {@link String}.
+ * When the column is mixed (e.g. {@link AdhocUtf8} alongside numeric types), FSST declines and this freezer converts
+ * each {@link AdhocUtf8} to a {@link String} so that downstream code never observes raw {@link AdhocUtf8} instances.
+ *
+ * <p>
+ * This freezer should be registered <em>after</em> {@link FsstFreezingWithContext} in the freezer chain so that the
+ * FSST path still fires when applicable.
+ *
  * @author Benoit Lacelle
  */
-public final class IntegerFreezer implements IFreezingWithContext {
+public final class Utf8ToStringFreezer implements IFreezingWithContext {
+
 	@Override
 	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
-		if (column instanceof ObjectArrayColumn arrayColumn) {
-			List<?> array = arrayColumn.getAsArray();
+		if (!(column instanceof ObjectArrayColumn arrayColumn)) {
+			return Optional.empty();
+		}
 
-			Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
+		List<?> array = arrayColumn.getAsArray();
 
-			if (classes.size() == 1 && classes.contains(Integer.class)) {
-				int[] primitiveArray = array.stream().mapToInt(Integer.class::cast).toArray();
-				return Optional.of(IntegerArrayColumn.builder().asArray(primitiveArray).build());
-			} else {
-				return Optional.empty();
+		Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
+
+		if (classes.contains(Utf8ByteSlice.class)) {
+			List<Object> normalized = new ArrayList<>(array.size());
+			for (Object v : array) {
+				normalized.add(v instanceof Utf8ByteSlice u ? u.toString() : v);
 			}
+			return Optional.of(ObjectArrayColumn.builder().asArray(normalized).build());
 		} else {
 			return Optional.empty();
 		}

@@ -30,6 +30,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.io.PepperSerializationHelper;
@@ -132,7 +133,7 @@ public class TestFsstV3 {
 		SymbolTable table = trainer.train(new byte[][] { input });
 
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
-		IByteSlice encoded = table.encodeAll(original);
+		IByteSlice encoded = table.encodeAll(IByteSlice.wrap(original));
 
 		Assertions.assertThat(encoded.length()).isEqualTo(4);
 

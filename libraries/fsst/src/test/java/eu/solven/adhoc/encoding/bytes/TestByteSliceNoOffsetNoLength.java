@@ -20,13 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.bytes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.encoding.bytes.ByteSlice;
+import eu.solven.adhoc.encoding.bytes.ByteSliceNoOffsetNoLength;
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 
 public class TestByteSliceNoOffsetNoLength {
 

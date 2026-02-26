@@ -20,82 +20,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.bytes;
 
-import java.util.Arrays;
-
-import lombok.AllArgsConstructor;
+import java.nio.charset.Charset;
 
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
- * Like {@link ByteSlice} with offset==0 and length matching the input.
- * 
  * @author Benoit Lacelle
  */
-@AllArgsConstructor
-final class ByteSliceNoOffsetNoLength implements IByteSlice {
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	final byte[] array;
-
-	@Override
-	public boolean isFastAsArray() {
-		return true;
-	}
-
-	@SuppressWarnings("PMD.MethodReturnsInternalArray")
-	@Override
-	public byte[] array() {
-		return array;
-	}
-
-	@Override
-	public int length() {
-		return array.length;
-	}
-
-	@Override
-	public int offset() {
-		return 0;
-	}
-
-	@Override
-	public String toString() {
-		return Arrays.toString(cropped());
-	}
+public interface IByteSlice {
 
 	/**
+	 * Useful is critical section when one prefer to operate on a `byte[]`.
+	 * 
+	 * @return true if {@link #cropped()} is expected to be very fast (e.g. returning a reference).
+	 */
+	boolean isFastAsArray();
+
+	/**
+	 * May or may not be the original array
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
 	 */
-	@SuppressWarnings("PMD.MethodReturnsInternalArray")
-	@Override
-	public byte[] cropped() {
-		return array;
+	byte[] cropped();
+
+	byte read(int position);
+
+	/**
+	 * The inner array
+	 * 
+	 * @return a non-defensive reference to the internal array
+	 */
+	byte[] array();
+
+	int length();
+
+	int offset();
+
+	/**
+	 * 
+	 * @param charset
+	 * @return a {@link String} build over current {@link IByteSlice}.
+	 */
+	default String asString(Charset charset) {
+		return new String(array(), offset(), length(), charset);
 	}
 
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(array);
+	static IByteSlice wrap(byte[] input) {
+		return new ByteSliceNoOffsetNoLength(input);
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof IByteSlice otherByteSlice)) {
-			return false;
-		}
-		return ByteSlice.equals(this, otherByteSlice);
+	static IByteSlice wrap(byte[] array, int length) {
+		return new ByteSliceNoOffset(array, length);
 	}
 
-	@Override
-	public byte read(int position) {
-		return array[position];
+	static IByteSlice wrap(byte[] array, int offset, int length) {
+		return new ByteSlice(array, offset, length);
 	}
-
 }

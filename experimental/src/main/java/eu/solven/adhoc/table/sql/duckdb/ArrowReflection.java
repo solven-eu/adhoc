@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
+import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +49,12 @@ final class ArrowReflection {
 	static final Method GET_FIELD_VECTORS;
 	static final Method GET_OBJECT;
 
+	// Arrow's Text (org.apache.arrow.vector.util.Text) wraps a byte[] with a valid-length field.
+	// We reflect these to extract the raw bytes without decoding to String.
+	// See https://github.com/apache/arrow/blob/main/java/vector/src/main/java/org/apache/arrow/vector/util/Text.java
+	static final Method TEXT_GET_BYTES;
+	static final Method TEXT_GET_LENGTH;
+
 	static {
 		try {
 			// module: arrow-vector
@@ -60,6 +68,10 @@ final class ArrowReflection {
 
 			Class<?> vectorClass = Class.forName("org.apache.arrow.vector.ValueVector");
 			GET_OBJECT = vectorClass.getMethod("getObject", int.class);
+
+			Class<?> textClass = Class.forName("org.apache.arrow.vector.util.Text");
+			TEXT_GET_BYTES = textClass.getMethod("getBytes");
+			TEXT_GET_LENGTH = textClass.getMethod("getLength");
 		} catch (ClassNotFoundException | NoSuchMethodException e) {
 			throw new ExceptionInInitializerError(e);
 		}
@@ -96,8 +108,10 @@ final class ArrowReflection {
 	 * Converts Arrow-specific value types to plain Java types expected by the rest of the pipeline.
 	 *
 	 * <p>
-	 * For example, {@code VarCharVector.getObject()} returns an {@code org.apache.arrow.vector.util.Text} instance
-	 * rather than a {@link String}; this method normalises such values.
+	 * {@code VarCharVector.getObject()} returns an {@code org.apache.arrow.vector.util.Text} wrapping a UTF-8
+	 * byte-buffer. To avoid a UTF-8&nbsp;→&nbsp;UTF-16&nbsp;→&nbsp;UTF-8 round-trip when the value is later
+	 * FSST-compressed, this method wraps the raw buffer in an {@link AdhocUtf8} (zero copy) instead of decoding to a
+	 * {@link String}.
 	 */
 	static Object convertValue(Object value) {
 		if (value == null) {
@@ -105,7 +119,13 @@ final class ArrowReflection {
 		}
 		// Arrow VarCharVector returns org.apache.arrow.vector.util.Text
 		if ("org.apache.arrow.vector.util.Text".equals(value.getClass().getName())) {
-			return value.toString();
+			try {
+				byte[] buf = (byte[]) TEXT_GET_BYTES.invoke(value);
+				int len = (int) TEXT_GET_LENGTH.invoke(value);
+				return Utf8ByteSlice.builder().byteSlice(IByteSlice.wrap(buf, len)).build();
+			} catch (InvocationTargetException | IllegalAccessException e) {
+				throw new IllegalStateException("Failed to extract bytes from Arrow Text", e);
+			}
 		}
 		if (value instanceof BigDecimal bigD && bigD.scale() <= 0) {
 			// Converts int/long to BigInteger

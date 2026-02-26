@@ -35,6 +35,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -381,14 +382,14 @@ public class FsstTrainer {
 	 */
 	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
 
-	// larger val breaks tie
-	public static final Comparator<QSym> COMPARATOR =
+		// larger val breaks tie
+		public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
-	@Override
-	public int compareTo(QSym o) {
-		return COMPARATOR.compare(this, o);
-	}
+		@Override
+		public int compareTo(QSym o) {
+			return COMPARATOR.compare(this, o);
+		}
 
 	}
 
@@ -640,7 +641,7 @@ public class FsstTrainer {
 		}
 
 		byte[] buf = new byte[config.getSampleMaxSize()];
-		List<ByteSlice> sample = new ArrayList<>(inputs.length);
+		List<IByteSlice> sample = new ArrayList<>(inputs.length);
 		int pos = 0;
 		long rng = SymbolUtil.fsstHash(config.getRngSeed());
 
@@ -664,7 +665,7 @@ public class FsstTrainer {
 				// Skip last chunk is growing too much
 				break;
 			}
-			sample.add(new ByteSlice(inputs[idx], off, n));
+			sample.add(IByteSlice.wrap(inputs[idx], off, n));
 			pos += n;
 
 			if (pos >= config.getSampleTarget()) {
