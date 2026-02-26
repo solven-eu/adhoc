@@ -104,6 +104,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	 *
 	 * @author Benoit Lacelle
 	 */
+	@Deprecated(since = "not used anymore", forRemoval = true)
 	public interface IHasEntries {
 		Collection<? extends String> getKeys();
 

@@ -60,6 +60,8 @@ public class ImmutableHelpers {
 		if (iterable instanceof ILikeList likeList) {
 			// For performance, we expect to be generally in this branch
 			return ImmutableList.copyOf(likeList.asList());
+		} else if (iterable instanceof IImmutable && iterable instanceof List list) {
+			return list;
 		} else {
 			return ImmutableList.copyOf(iterable);
 		}

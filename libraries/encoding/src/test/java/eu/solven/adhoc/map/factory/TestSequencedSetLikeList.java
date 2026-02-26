@@ -66,6 +66,7 @@ public class TestSequencedSetLikeList {
 		Assertions.assertThat(Iterators.toArray(sequence.iterator(), Object.class)).containsExactly("b", "a");
 		// Make sure toArray is sequenced
 		Assertions.assertThat(sequence.toArray()).containsExactly("b", "a");
+		Assertions.assertThat(sequence.toArray(new String[3])).containsExactly("b", "a", null);
 		Assertions.assertThat(ImmutableList.copyOf(sequence)).containsExactly("b", "a");
 	}
 
@@ -106,7 +107,13 @@ public class TestSequencedSetLikeList {
 		SequencedSetLikeList cab = SequencedSetLikeList.fromSet(ImmutableSet.of("c", "a", "b"));
 
 		Assertions.assertThat((Set) abc).isEqualTo(bca).hasSameHashCodeAs(bca).isEqualTo(cab).hasSameHashCodeAs(cab);
-		Assertions.assertThat(abc.asList()).isEqualTo(List.of("a", "b", "c")).hasSameHashCodeAs(List.of("a", "b", "c"));
+		Assertions.assertThat(abc.asList())
+				.isEqualTo(List.of("a", "b", "c"))
+				.hasSameHashCodeAs(List.of("a", "b", "c"))
+
+				.isNotEqualTo(List.of("a", "b"))
+				.isNotEqualTo(List.of("a", "c", "b"))
+				.isNotEqualTo(List.of("a", "b", "c", "d"));
 	}
 
 	@Test
