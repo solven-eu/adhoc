@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.encoding.dictionary.ColumnarSliceFactory;
+import eu.solven.adhoc.encoding.page.ColumnarSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;

@@ -20,19 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.dictionary;
+package eu.solven.adhoc.encoding.page;
 
 import java.util.Collection;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
-import eu.solven.adhoc.encoding.page.IAppendableTable;
-import eu.solven.adhoc.encoding.page.IAppendableTableFactory;
-import eu.solven.adhoc.encoding.page.ITableRowRead;
-import eu.solven.adhoc.encoding.page.ITableRowWrite;
-import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTable;
-import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
+import eu.solven.adhoc.encoding.dictionary.DictionarizedSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
@@ -41,6 +35,7 @@ import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -150,7 +145,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 		return MapBuilderPreKeys.builder()
 				.factory(this)
 				.pageFactory(appendableTable)
-				.keys(ImmutableList.copyOf(keys))
+				.keys(ImmutableHelpers.copyOf(keys))
 				.build();
 	}
 

@@ -41,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 // Not thread-safe due to shared encBuf
 @NotThreadSafe
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 final class SymbolTableTraining implements IFsstConstants {
 
 	final int[] shortCodes;

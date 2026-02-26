@@ -34,6 +34,7 @@ import lombok.Builder;
  */
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("PMD.PublicMemberInNonPublicType")
 final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final byte[] array;

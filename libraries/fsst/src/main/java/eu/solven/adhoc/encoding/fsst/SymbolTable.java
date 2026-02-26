@@ -37,7 +37,7 @@ import lombok.RequiredArgsConstructor;
  */
 @ThreadSafe
 @RequiredArgsConstructor
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 class SymbolTable implements IFsstConstants, IFsstEncoding {
 	final SymbolTableEncoder encoder;
 

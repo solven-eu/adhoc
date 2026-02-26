@@ -36,7 +36,7 @@ import lombok.RequiredArgsConstructor;
  */
 @ThreadSafe
 @RequiredArgsConstructor
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 class SymbolTableDecoder implements IFsstConstants, IFsstDecoder {
 	// Decoder tables
 	public final byte[] decLen; // code -> symbol length

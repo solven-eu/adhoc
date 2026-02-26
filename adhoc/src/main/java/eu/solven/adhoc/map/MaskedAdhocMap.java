@@ -187,7 +187,7 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 			Map<Boolean, ImmutableSet<String>> partitioned) {
 
 		@SuppressWarnings("PMD.CompareObjectsWithEquals")
-		public boolean isCompatible(Set<String> retainedColumns, Map<String, ?> mask) {
+		boolean isCompatible(Set<String> retainedColumns, Map<String, ?> mask) {
 			boolean sameRetained = this.retainedColumns.equals(retainedColumns);
 
 			if (!sameRetained) {

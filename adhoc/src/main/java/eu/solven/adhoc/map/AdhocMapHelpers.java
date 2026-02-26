@@ -26,13 +26,10 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
-import eu.solven.adhoc.util.immutable.IImmutable;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -42,20 +39,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class AdhocMapHelpers {
-
-	/**
-	 * 
-	 * @param map
-	 * @return an immutable copy of the input, which may or may not be an {@link IAdhocMap}
-	 */
-	public static Map<String, ?> immutableCopyOf(Map<String, ?> map) {
-		if (map instanceof IImmutable) {
-			// For performance, we expect to be generally in this branch
-			return map;
-		} else {
-			return ImmutableMap.copyOf(map);
-		}
-	}
 
 	@Deprecated
 	public static IAdhocMap fromMap(Map<String, ?> asMap) {

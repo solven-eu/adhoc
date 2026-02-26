@@ -40,7 +40,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Pivotable spring profiles has been reworked. There is more a default `application.yml`, but one should import `pivotable-config.yml`.
 
 ### Removed
-
 - `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
 - `IMultitypeColumnFastGet.set(T)` is removed. You can rely on `.append(T)` which has a clearer semantic.
 
