@@ -37,7 +37,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 // https://github.com/axiomhq/fsst/blob/main/symbol.go
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 @UtilityClass
 final class SymbolUtil implements IFsstConstants {
 

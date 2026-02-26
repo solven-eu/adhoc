@@ -41,7 +41,7 @@ import lombok.NoArgsConstructor;
  * 
  */
 // empty constructor for Externalizable
-@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MissingSerialVersionUID" })
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MissingSerialVersionUID", "PMD.PublicMemberInNonPublicType" })
 @NoArgsConstructor
 final class SymbolTableExternalizable implements IFsstConstants, Externalizable {
 	// not final for readExternal
