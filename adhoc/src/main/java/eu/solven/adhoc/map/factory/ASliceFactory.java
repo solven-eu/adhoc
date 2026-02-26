@@ -104,6 +104,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	 *
 	 * @author Benoit Lacelle
 	 */
+	@Deprecated(since = "not used anymore", forRemoval = true)
 	public interface IHasEntries {
 		Collection<? extends String> getKeys();
 
@@ -136,13 +137,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	public SequencedSetLikeList internKeyset(Collection<? extends String> keys) {
 		List<String> keysAsList = copyAsList(keys);
 
-		SequencedSetLikeList optExisting = listToKeyset.get(keysAsList);
-
-		if (optExisting != null) {
-			return optExisting;
-		} else {
-			return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
-		}
+		return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
 	}
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {

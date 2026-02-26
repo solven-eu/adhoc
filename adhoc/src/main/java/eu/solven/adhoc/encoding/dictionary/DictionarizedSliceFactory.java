@@ -35,6 +35,7 @@ import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -148,7 +149,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		return MapBuilderPreKeys.builder()
 				.factory(this)
 				.dictionaryFactory(dictionaryFactory)
-				.keys(ImmutableList.copyOf(keys))
+				.keys(ImmutableHelpers.copyOf(keys))
 				.build();
 	}
 

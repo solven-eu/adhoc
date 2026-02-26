@@ -30,8 +30,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -59,6 +61,13 @@ public class TestSequencedSetLikeList {
 		Assertions.assertThat(sequence.indexOf("a")).isEqualTo(1);
 
 		Assertions.assertThat((Set) sequence).hasToString("[b, a]");
+
+		// Make sure iterator is sequenced
+		Assertions.assertThat(Iterators.toArray(sequence.iterator(), Object.class)).containsExactly("b", "a");
+		// Make sure toArray is sequenced
+		Assertions.assertThat(sequence.toArray()).containsExactly("b", "a");
+		Assertions.assertThat(sequence.toArray(new String[3])).containsExactly("b", "a", null);
+		Assertions.assertThat(ImmutableList.copyOf(sequence)).containsExactly("b", "a");
 	}
 
 	@Test
@@ -98,7 +107,13 @@ public class TestSequencedSetLikeList {
 		SequencedSetLikeList cab = SequencedSetLikeList.fromSet(ImmutableSet.of("c", "a", "b"));
 
 		Assertions.assertThat((Set) abc).isEqualTo(bca).hasSameHashCodeAs(bca).isEqualTo(cab).hasSameHashCodeAs(cab);
-		Assertions.assertThat(abc.asList()).isEqualTo(List.of("a", "b", "c")).hasSameHashCodeAs(List.of("a", "b", "c"));
+		Assertions.assertThat(abc.asList())
+				.isEqualTo(List.of("a", "b", "c"))
+				.hasSameHashCodeAs(List.of("a", "b", "c"))
+
+				.isNotEqualTo(List.of("a", "b"))
+				.isNotEqualTo(List.of("a", "c", "b"))
+				.isNotEqualTo(List.of("a", "b", "c", "d"));
 	}
 
 	@Test

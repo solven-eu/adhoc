@@ -53,10 +53,10 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 	@Builder(builderMethodName = "builderCustomHashcode")
 	public MapOverIntFunction(ISliceFactory factory,
 			SequencedSetLikeList keys,
-			IntFunction<Object> unorderedValues,
+			IntFunction<Object> sequencedValues,
 			IntSupplier hashcodeSupplier) {
 		super(factory, keys, hashcodeSupplier);
-		this.sequencedValues = unorderedValues;
+		this.sequencedValues = sequencedValues;
 	}
 
 	@Override
@@ -79,7 +79,7 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 		}
 
 		@SuppressWarnings("PMD.UseVarargs")
-		public IntFunction<Object> retain(int[] retainedIndexes) {
+		IntFunction<Object> retain(int[] retainedIndexes) {
 			// TODO Could we unroll the double de-reference from the cache?
 			// It would prevent deep retainAll chains into deep de-reference chains
 			// Need micro-benchmark
