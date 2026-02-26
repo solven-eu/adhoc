@@ -155,6 +155,7 @@ public class TestDuckDBHelper {
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl(DuckDBHelper.getInMemoryJdbcUrl());
 		config.setConnectionTimeout(TimeUnit.SECONDS.toMillis(5));
+		config.setAutoCommit(false);
 
 		HikariDataSource ds = new HikariDataSource(config);
 

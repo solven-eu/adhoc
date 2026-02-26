@@ -28,8 +28,6 @@ import java.util.Arrays;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.encoding.bytes.ByteSlice;
-import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestByteSlice {

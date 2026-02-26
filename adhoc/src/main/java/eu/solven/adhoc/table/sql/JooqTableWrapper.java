@@ -409,8 +409,8 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		};
 
 		AtomicBoolean isSecondCancellationListenerRegistered = new AtomicBoolean();
-
-		return resultQuery.stream().onClose(() -> {
+		
+		return resultQuery.fetchSize(this.tableParameters.getStatementFetchSize()).stream().onClose(() -> {
 			queryPod.removeCancellationListener(cancellationListener);
 			queryPod.removeCancellationListener(cancellationListenerOnceStarted);
 

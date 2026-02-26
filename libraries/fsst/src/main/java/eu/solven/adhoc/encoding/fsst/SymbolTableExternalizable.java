@@ -144,7 +144,7 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 		t.buildIndices();
 		SymbolTableDecoder decoded = t.buildDecoderTables(suffixLim);
 
-		this.symbolTable = new SymbolTable(new SymbolTableEncoder(t,suffixLim), decoded);
+		this.symbolTable = new SymbolTable(new SymbolTableEncoder(t, suffixLim), decoded);
 		SymbolTableDecoder fDecoding = decoded;
 		SymbolTableDecoder tDecoding = this.symbolTable.decoding;
 		System.arraycopy(fDecoding.decLen, 0, tDecoding.decLen, 0, tDecoding.decLen.length);

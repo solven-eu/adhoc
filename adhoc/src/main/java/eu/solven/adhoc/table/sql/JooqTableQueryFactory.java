@@ -162,6 +162,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Override
 	public QueryWithLeftover prepareQuery(TableQueryV2 tableQuery) {
+		dslContext.connection(c -> {
+			if (c.getAutoCommit()) {
+				// Performance check-up
+				log.warn("autoCommit should not be true. connection={}", c);
+			}
+		});
+
 		ISliceToJooqCondition toCondition = makeToCondition();
 
 		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);
