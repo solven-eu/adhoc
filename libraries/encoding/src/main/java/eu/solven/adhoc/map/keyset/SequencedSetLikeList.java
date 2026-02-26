@@ -288,6 +288,18 @@ public final class SequencedSetLikeList extends ForwardingSet<String>
 		return list;
 	}
 
+	// ensure toArray is sequenced
+	@Override
+	public Object[] toArray() {
+		return asList().toArray();
+	}
+
+	// ensure toArray is sequenced
+	@Override
+	public <T> T[] toArray(T[] array) {
+		return super.toArray(array);
+	}
+
 	public NavigableSetLikeList sortedSet() {
 		return set;
 	}

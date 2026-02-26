@@ -20,10 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.encoding.page;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,39 +29,14 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.encoding.dictionary.ColumnarSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.AdhocUnsafeMap;
 
 public class TestColumnarSliceFactory {
 	ColumnarSliceFactory factory = ColumnarSliceFactory.builder().build();
-
-	@Test
-	public void isNorOrdered() {
-		Assertions.assertThat(factory.isNotOrdered(Set.of("a"))).isTrue();
-
-		{
-			HashSet<String> hashSet = new HashSet<>();
-			Assertions.assertThat(factory.isNotOrdered(hashSet)).isFalse();
-		}
-
-		// HashMap keySet is kind-of ordered, in the sense we expect to iterate in `.values` with same ordering as
-		// `.keySet`
-		{
-			HashMap<String, Object> hashMap = new HashMap<>();
-			Assertions.assertThat(factory.isNotOrdered(hashMap.keySet())).isFalse();
-		}
-
-		// Empty so ordered
-		Assertions.assertThat(factory.isNotOrdered(Set.of())).isFalse();
-		// These implementations are ordered
-		Assertions.assertThat(factory.isNotOrdered(List.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableList.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableSet.of())).isFalse();
-	}
 
 	@Test
 	public void testRetainAll() {
@@ -133,7 +106,7 @@ public class TestColumnarSliceFactory {
 
 	@Test
 	public void testIssueWithCacheBasedOnSetInsteadOfList() {
-		AbstractAdhocMap.CACHE_RETAINEDKEYS.clear();
+		AdhocUnsafeMap.clearCaches();
 
 		{
 			IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1", "b1").build();

@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Getter;
@@ -98,7 +99,7 @@ public class RowSliceFactory extends ASliceFactory {
 	public IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys) {
 		assert !isNotOrdered(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
 
-		return MapBuilderPreKeys.builder().factory(this).keys(ImmutableList.copyOf(keys)).build();
+		return MapBuilderPreKeys.builder().factory(this).keys(ImmutableHelpers.copyOf(keys)).build();
 	}
 
 	@Override

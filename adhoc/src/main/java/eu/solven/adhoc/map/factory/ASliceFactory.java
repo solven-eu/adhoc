@@ -136,13 +136,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	public SequencedSetLikeList internKeyset(Collection<? extends String> keys) {
 		List<String> keysAsList = copyAsList(keys);
 
-		SequencedSetLikeList optExisting = listToKeyset.get(keysAsList);
-
-		if (optExisting != null) {
-			return optExisting;
-		} else {
-			return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
-		}
+		return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
 	}
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {

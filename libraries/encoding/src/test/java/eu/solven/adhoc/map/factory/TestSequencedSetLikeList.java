@@ -30,8 +30,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Iterators;
 
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -59,6 +61,12 @@ public class TestSequencedSetLikeList {
 		Assertions.assertThat(sequence.indexOf("a")).isEqualTo(1);
 
 		Assertions.assertThat((Set) sequence).hasToString("[b, a]");
+
+		// Make sure iterator is sequenced
+		Assertions.assertThat(Iterators.toArray(sequence.iterator(), Object.class)).containsExactly("b", "a");
+		// Make sure toArray is sequenced
+		Assertions.assertThat(sequence.toArray()).containsExactly("b", "a");
+		Assertions.assertThat(ImmutableList.copyOf(sequence)).containsExactly("b", "a");
 	}
 
 	@Test
