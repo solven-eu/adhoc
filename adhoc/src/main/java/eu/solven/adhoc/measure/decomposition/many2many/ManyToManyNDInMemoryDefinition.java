@@ -26,9 +26,9 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
@@ -54,7 +54,7 @@ public class ManyToManyNDInMemoryDefinition implements IManyToManyNDDefinition {
 			Collection<Map<String, IValueMatcher>> matchers = e.getValue();
 
 			return matchers.stream().anyMatch(matcher -> doElementMatch(matcher, columnToElement));
-		}).map(Map.Entry::getKey).collect(Collectors.toSet());
+		}).map(Map.Entry::getKey).collect(ImmutableSet.toImmutableSet());
 	}
 
 	protected boolean doElementMatch(Map<String, IValueMatcher> matcher, Map<String, ?> columnToElement) {
@@ -85,7 +85,7 @@ public class ManyToManyNDInMemoryDefinition implements IManyToManyNDDefinition {
 
 	@Override
 	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
-		return streamMatchingGroups(groupMatcher).collect(Collectors.toSet());
+		return streamMatchingGroups(groupMatcher).collect(ImmutableSet.toImmutableSet());
 	}
 
 	public void putElementToGroup(Map<String, IValueMatcher> element, Object rawGroup) {

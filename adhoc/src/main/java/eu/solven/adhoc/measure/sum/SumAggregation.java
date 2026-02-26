@@ -101,7 +101,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 			return charSequence.toString();
 		} else {
 			// Wrap into a List, so this aggregate function return either a long/double, or Set
-			return List.of(r);
+			return ImmutableList.of(r);
 		}
 	}
 

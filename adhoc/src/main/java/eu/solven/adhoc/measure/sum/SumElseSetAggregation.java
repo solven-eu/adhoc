@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.sum;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
@@ -55,10 +54,10 @@ public class SumElseSetAggregation extends SumAggregation {
 	@Override
 	protected Object wrapNotANumber(Object r) {
 		if (r instanceof Collection<?> asCollection) {
-			return asCollection.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+			return asCollection.stream().filter(Objects::nonNull).collect(ImmutableSet.toImmutableSet());
 		} else {
 			// Wrap into a Set, so this aggregate function return either a long/double, or a Set of errors
-			return Set.of(r);
+			return ImmutableSet.of(r);
 		}
 	}
 

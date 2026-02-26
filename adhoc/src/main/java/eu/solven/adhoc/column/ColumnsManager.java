@@ -31,7 +31,6 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.event.Level;
@@ -341,7 +340,7 @@ public class ColumnsManager implements IColumnsManager {
 		Set<String> mayBeTypeTranscoded = transcodingContext.underlyings()
 				.stream()
 				.filter(customTypeManager::mayTranscode)
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 
 		return new IColumnValueTranscoder() {
 
@@ -432,7 +431,7 @@ public class ColumnsManager implements IColumnsManager {
 					.aggregator(transcodedAggregator)
 					.filter(transcodeFilter(transcodingContext, filteredAggregator.getFilter()))
 					.build();
-		}).collect(Collectors.toSet());
+		}).collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override

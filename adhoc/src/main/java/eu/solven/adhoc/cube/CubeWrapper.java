@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
 import com.google.common.util.concurrent.Futures;
@@ -252,7 +252,7 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 
 		Set<String> generatedColumns = columnGenerators.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 
 		Map<String, CoordinatesSample> columnToSample = new TreeMap<>();
 

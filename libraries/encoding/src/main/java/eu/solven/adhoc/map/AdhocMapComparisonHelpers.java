@@ -40,8 +40,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class AdhocMapComparisonHelpers {
-	private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2(AdhocUnsafe.getNullComparator());
-
 	public static int compareKeySet(Iterator<String> thisKeysIterator, Iterator<String> otherKeysIterator) {
 		// Loop until the iterator has values.
 		while (true) {
@@ -98,6 +96,8 @@ public class AdhocMapComparisonHelpers {
 	}
 
 	public static int compareValues(int size, IntFunction<?> thisOrderedValues, IntFunction<?> otherOrderedValues) {
+		Comparator<Object> valueComparator = AdhocUnsafe.getValueComparator();
+		
 		for (int i = 0; i < size; i++) {
 			Object thisCoordinate = thisOrderedValues.apply(i);
 			Object otherCoordinate = otherOrderedValues.apply(i);
@@ -111,7 +111,10 @@ public class AdhocMapComparisonHelpers {
 		return 0;
 	}
 
+	// BEWARE This method assume both iterators has same size
 	public static int compareValues2(Iterator<?> thisOrderedValues, Iterator<?> otherOrderedValues) {
+		Comparator<Object> valueComparator = AdhocUnsafe.getValueComparator();
+		
 		while (thisOrderedValues.hasNext()) {
 			if (!otherOrderedValues.hasNext()) {
 				throw new IllegalStateException(

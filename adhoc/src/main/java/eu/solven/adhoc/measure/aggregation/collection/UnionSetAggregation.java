@@ -82,7 +82,7 @@ public class UnionSetAggregation extends AUnionCollectionAggregation {
 		} else if (unnest && l instanceof Iterable<?> lAsIterable) {
 			asSet = ImmutableSet.copyOf(lAsIterable);
 		} else {
-			asSet = Set.of(l);
+			asSet = ImmutableSet.of(l);
 		}
 		return asSet;
 	}

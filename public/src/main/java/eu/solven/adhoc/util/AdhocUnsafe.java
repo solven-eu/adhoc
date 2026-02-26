@@ -66,6 +66,7 @@ public class AdhocUnsafe {
 		failFast = true;
 		parallelism = defaultParallelism();
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
+		setNullComparator(DEFAULT_NULL_COMPARATOR);
 	}
 
 	public static void resetAll() {
@@ -242,6 +243,13 @@ public class AdhocUnsafe {
 
 	public static final Comparator<Object> DEFAULT_NULL_COMPARATOR = ComparableElseClassComparatorV2.nullsHigh();
 	@Getter
-	@Setter
 	private static Comparator<Object> nullComparator = DEFAULT_NULL_COMPARATOR;
+
+	public static void setNullComparator(Comparator<Object> nullComparator) {
+		AdhocUnsafe.nullComparator = nullComparator;
+		valueComparator = new ComparableElseClassComparatorV2(AdhocUnsafe.nullComparator);
+	}
+
+	@Getter
+	private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2(nullComparator);
 }

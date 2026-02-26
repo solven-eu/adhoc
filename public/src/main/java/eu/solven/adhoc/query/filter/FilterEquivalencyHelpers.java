@@ -24,8 +24,8 @@ package eu.solven.adhoc.query.filter;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -50,7 +50,7 @@ public class FilterEquivalencyHelpers {
 	 */
 	// https://en.wikipedia.org/wiki/Disjunctive_normal_form
 	public boolean areEquivalent(ISliceFilter left, ISliceFilter right) {
-		ISliceFilter commonAnd = FilterHelpers.commonAnd(Set.of(left, right));
+		ISliceFilter commonAnd = FilterHelpers.commonAnd(ImmutableSet.of(left, right));
 
 		ISliceFilter leftWithoutCommon = FilterHelpers.stripWhereFromFilter(commonAnd, left);
 		ISliceFilter rightWithoutCommon = FilterHelpers.stripWhereFromFilter(commonAnd, right);
@@ -75,14 +75,14 @@ public class FilterEquivalencyHelpers {
 				return in.getOperands()
 						.stream()
 						.map(o -> ColumnFilter.matchEq(column.getColumn(), o))
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 			} else if (valueMatcher instanceof NotMatcher not && not.getNegated() instanceof InMatcher in) {
 				return in.getOperands()
 						.stream()
 						.map(o -> ColumnFilter.matchEq(column.getColumn(), o).negate())
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 			} else {
-				return Set.of(column);
+				return ImmutableSet.of(column);
 			}
 		} else if (filter instanceof IAndFilter and) {
 			Set<ISliceFilter> operands = and.getOperands();
@@ -95,19 +95,19 @@ public class FilterEquivalencyHelpers {
 			Set<List<ISliceFilter>> ors = Sets.cartesianProduct(operandDnfs);
 
 			// Each cartesianProduct entry is a simple AND
-			return ors.stream().map(l -> FilterBuilder.and(l).optimize()).collect(Collectors.toSet());
+			return ors.stream().map(l -> FilterBuilder.and(l).optimize()).collect(ImmutableSet.toImmutableSet());
 		} else if (filter instanceof IOrFilter or) {
 			Set<ISliceFilter> operands = or.getOperands();
 
 			// Turn each OR operand into an OR of simpler DNFs
 			List<Set<ISliceFilter>> operandDnfs = operands.stream().map(FilterEquivalencyHelpers::dnf).toList();
 
-			return operandDnfs.stream().flatMap(Set::stream).collect(Collectors.toSet());
+			return operandDnfs.stream().flatMap(Set::stream).collect(ImmutableSet.toImmutableSet());
 		} else if (filter instanceof INotFilter not) {
 			// TODO This is false: we must turn a `!(a&b)` into `!a|!b`
 			Set<ISliceFilter> negatedDnf = dnf(not.getNegated());
 
-			return negatedDnf.stream().map(ISliceFilter::negate).collect(Collectors.toSet());
+			return negatedDnf.stream().map(ISliceFilter::negate).collect(ImmutableSet.toImmutableSet());
 		} else {
 			throw new NotYetImplementedException("Not managed: %s".formatted(filter));
 		}
