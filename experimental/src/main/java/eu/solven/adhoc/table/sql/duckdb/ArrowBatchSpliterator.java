@@ -108,23 +108,24 @@ public final class ArrowBatchSpliterator implements Spliterator<ITabularRecord> 
 		int vectorIndex = 0;
 
 		for (int i = 0; i < aggregates.size(); i++, vectorIndex++) {
-			Object raw = getVectorValue(vectorIndex, rowIndex);
-			if (raw != null) {
-				builder.appendAggregate(aggregates.get(i), ArrowReflection.convertValue(raw));
+			Object value = getVectorValue(vectorIndex, rowIndex);
+			if (value != null) {
+				builder.appendAggregate(aggregates.get(i), value);
 			}
 		}
 
 		for (int i = 0; i < columns.size(); i++, vectorIndex++) {
-			Object raw = getVectorValue(vectorIndex, rowIndex);
-			builder.appendGroupBy(ArrowReflection.convertValue(raw));
+			builder.appendGroupBy(getVectorValue(vectorIndex, rowIndex));
 		}
 
 		return builder.build();
 	}
 
 	private Object getVectorValue(int vectorIndex, int rowIndex) {
+		Object vector = currentVectors.get(vectorIndex);
 		try {
-			return ArrowReflection.GET_OBJECT.invoke(currentVectors.get(vectorIndex), rowIndex);
+			Object raw = ArrowReflection.GET_OBJECT.invoke(vector, rowIndex);
+			return ArrowReflection.convertValue(raw, vector);
 		} catch (InvocationTargetException e) {
 			throw new IllegalStateException("Error reading Arrow vector value", e.getCause());
 		} catch (IllegalAccessException e) {

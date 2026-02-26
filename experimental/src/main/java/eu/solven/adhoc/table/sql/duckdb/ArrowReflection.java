@@ -25,6 +25,8 @@ package eu.solven.adhoc.table.sql.duckdb;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -110,5 +112,36 @@ final class ArrowReflection {
 			return bigD.toBigInteger();
 		}
 		return value;
+	}
+
+	/**
+	 * Converts an Arrow-specific value to a plain Java type, using the vector's runtime class to resolve temporal types
+	 * that Arrow encodes as raw numbers (e.g. {@code DateDayVector} returns days-since-epoch as {@link Integer}).
+	 *
+	 * <p>
+	 * See https://arrow.apache.org/docs/java/vector.html for the mapping between Arrow vector types and Java values.
+	 */
+	// TODO Should prepare converter given the schema once instead of per value
+	static Object convertValue(Object value, Object vector) {
+		if (value == null) {
+			return null;
+		}
+		// See https://arrow.apache.org/docs/format/Columnar.html#date-layout
+		// See https://arrow.apache.org/docs/format/Columnar.html#timestamp-layout
+		return switch (vector.getClass().getSimpleName()) {
+		case "DateDayVector" -> LocalDate.ofEpochDay((Integer) value);
+		case "DateMilliVector" -> LocalDate.ofEpochDay((Long) value / 86_400_000L);
+		case "TimeStampSecVector", "TimeStampSecTZVector" -> Instant.ofEpochSecond((Long) value);
+		case "TimeStampMilliVector", "TimeStampMilliTZVector" -> Instant.ofEpochMilli((Long) value);
+		case "TimeStampMicroVector", "TimeStampMicroTZVector" -> {
+			long micros = (Long) value;
+			yield Instant.ofEpochSecond(micros / 1_000_000L, micros % 1_000_000L * 1_000L);
+		}
+		case "TimeStampNanoVector", "TimeStampNanoTZVector" -> {
+			long nanos = (Long) value;
+			yield Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
+		}
+		default -> convertValue(value);
+		};
 	}
 }

@@ -60,7 +60,7 @@ import lombok.extern.jackson.Jacksonized;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions {
 
