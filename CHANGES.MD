@@ -16,6 +16,11 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `adhoc-atoti` dependencies over ActivePivot/Atoti are not minimal (e.g. no more `activepivot-server-spring`).
 - Move Checkstyle configuration so that a call to `mvn checkstyle:check` relies on the standard Adhoc configuration.
 - `DSLSupplier` is renamed `IDSLSupplier`.
+- `AdhocMapHelpers.immutableCoyOf(Map)` is moved to `ImmutableHelpers.copyOf(Map)`
+
+### Fixed
+- `SequencedSetLikeList.toArray()` now returns a sequenced array. It fixes bugs around `ImmutableList.copyOf()`.
+- `AbstractAdhocMap.compareTo` was not managing `NULL_HOLDER` properly.
 
 ## [0.0.15]
 

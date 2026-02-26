@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.function.IntFunction;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -39,7 +40,7 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class AdhocMapComparisonHelpers {
-	private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2();
+	private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2(AdhocUnsafe.getNullComparator());
 
 	public static int compareKeySet(Iterator<String> thisKeysIterator, Iterator<String> otherKeysIterator) {
 		// Loop until the iterator has values.

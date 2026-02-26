@@ -41,7 +41,9 @@ import eu.solven.adhoc.util.immutable.IImmutable;
  * It is immutable as it is used as key in some {@link Map}, and it may cache the hashCode.
  * 
  * It is {@link Comparable} to enables {@link HashMap} optimizations on hashCode collisions
- * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn
+ * (https://openjdk.org/jeps/180). Also to enable faster operations in MultitypeNavigableColumn. The contract is the
+ * following: compare `ordered .keySet()` then compare `ordered .values()`. Ordering is mandatory as Map with same
+ * entries but ordered differently needs to be equals (and consistent in Comparable).
  * 
  * @author Benoit Lacelle
  */
