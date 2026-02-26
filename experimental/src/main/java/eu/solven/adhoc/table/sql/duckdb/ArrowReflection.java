@@ -27,7 +27,11 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.data.row.ITabularRecordFactory;
+import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import lombok.experimental.UtilityClass;
@@ -43,11 +47,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 final class ArrowReflection {
 
+	// Time-unit conversion constants used for Arrow temporal vectors.
+	// See https://arrow.apache.org/docs/format/Columnar.html#date-layout
+	// See https://arrow.apache.org/docs/format/Columnar.html#timestamp-layout
+	private static final long MILLIS_PER_DAY = 86_400_000L;
+	private static final long MICROS_PER_SECOND = 1_000_000L;
+	private static final long NANOS_PER_MICRO = 1_000L;
+	private static final long NANOS_PER_SECOND = 1_000_000_000L;
+
 	static final Method LOAD_NEXT_BATCH;
 	static final Method GET_VECTOR_SCHEMA_ROOT;
 	static final Method GET_ROW_COUNT;
 	static final Method GET_FIELD_VECTORS;
 	static final Method GET_OBJECT;
+
+	// VectorSchemaRoot.slice(int index, int length) creates a new root sharing the same ArrowBuf
+	// objects via reference counting. Safe to use after loadNextBatch() because the original
+	// vectors decrement the ref-count (but don't free) when they are cleared for the next batch.
+	// See https://arrow.apache.org/docs/java/vector_schema_root.html
+	static final Method SLICE;
 
 	// Arrow's Text (org.apache.arrow.vector.util.Text) wraps a byte[] with a valid-length field.
 	// We reflect these to extract the raw bytes without decoding to String.
@@ -65,6 +83,7 @@ final class ArrowReflection {
 			Class<?> rootClass = Class.forName("org.apache.arrow.vector.VectorSchemaRoot");
 			GET_ROW_COUNT = rootClass.getMethod("getRowCount");
 			GET_FIELD_VECTORS = rootClass.getMethod("getFieldVectors");
+			SLICE = rootClass.getMethod("slice", int.class, int.class);
 
 			Class<?> vectorClass = Class.forName("org.apache.arrow.vector.ValueVector");
 			GET_OBJECT = vectorClass.getMethod("getObject", int.class);
@@ -102,6 +121,58 @@ final class ArrowReflection {
 		} catch (Exception e) {
 			log.warn("Error closing Arrow reader", e);
 		}
+	}
+
+	/**
+	 * Closes a {@code VectorSchemaRoot}, decrementing the reference counts of its underlying {@code ArrowBuf} objects.
+	 * Must be called on every sliced root produced by {@link #SLICE} once the slice is fully consumed.
+	 */
+	static void closeRoot(Object root) {
+		try {
+			root.getClass().getMethod("close").invoke(root);
+		} catch (Exception e) {
+			log.warn("Error closing Arrow VectorSchemaRoot", e);
+		}
+	}
+
+	/**
+	 * Reads one value from a vector, applying type conversion via {@link #convertValue(Object, Object)}.
+	 */
+	static Object getVectorValue(List<?> vectors, int vectorIndex, int rowIndex) {
+		Object vector = vectors.get(vectorIndex);
+		try {
+			Object raw = GET_OBJECT.invoke(vector, rowIndex);
+			return convertValue(raw, vector);
+		} catch (InvocationTargetException e) {
+			throw new IllegalStateException("Error reading Arrow vector value", e.getCause());
+		} catch (IllegalAccessException e) {
+			throw new IllegalStateException("Unexpected reflection access error", e);
+		}
+	}
+
+	/**
+	 * Builds a {@link ITabularRecord} for {@code rowIndex} from the given vectors.
+	 */
+	static ITabularRecord buildRecord(List<?> vectors, int rowIndex, ITabularRecordFactory factory) {
+		TabularRecordBuilder builder = factory.makeTabularRecordBuilder();
+
+		List<String> aggregates = factory.getAggregates();
+		List<String> columns = factory.getColumns();
+
+		int vectorIndex = 0;
+
+		for (int i = 0; i < aggregates.size(); i++, vectorIndex++) {
+			Object value = getVectorValue(vectors, vectorIndex, rowIndex);
+			if (value != null) {
+				builder.appendAggregate(aggregates.get(i), value);
+			}
+		}
+
+		for (int i = 0; i < columns.size(); i++, vectorIndex++) {
+			builder.appendGroupBy(getVectorValue(vectors, vectorIndex, rowIndex));
+		}
+
+		return builder.build();
 	}
 
 	/**
@@ -150,16 +221,16 @@ final class ArrowReflection {
 		// See https://arrow.apache.org/docs/format/Columnar.html#timestamp-layout
 		return switch (vector.getClass().getSimpleName()) {
 		case "DateDayVector" -> LocalDate.ofEpochDay((Integer) value);
-		case "DateMilliVector" -> LocalDate.ofEpochDay((Long) value / 86_400_000L);
+		case "DateMilliVector" -> LocalDate.ofEpochDay((Long) value / MILLIS_PER_DAY);
 		case "TimeStampSecVector", "TimeStampSecTZVector" -> Instant.ofEpochSecond((Long) value);
 		case "TimeStampMilliVector", "TimeStampMilliTZVector" -> Instant.ofEpochMilli((Long) value);
 		case "TimeStampMicroVector", "TimeStampMicroTZVector" -> {
 			long micros = (Long) value;
-			yield Instant.ofEpochSecond(micros / 1_000_000L, micros % 1_000_000L * 1_000L);
+			yield Instant.ofEpochSecond(micros / MICROS_PER_SECOND, micros % MICROS_PER_SECOND * NANOS_PER_MICRO);
 		}
 		case "TimeStampNanoVector", "TimeStampNanoTZVector" -> {
 			long nanos = (Long) value;
-			yield Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
+			yield Instant.ofEpochSecond(nanos / NANOS_PER_SECOND, nanos % NANOS_PER_SECOND);
 		}
 		default -> convertValue(value);
 		};
