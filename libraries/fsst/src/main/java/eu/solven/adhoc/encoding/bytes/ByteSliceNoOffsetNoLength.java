@@ -35,17 +35,11 @@ import lombok.AllArgsConstructor;
  */
 @AllArgsConstructor
 final class ByteSliceNoOffsetNoLength implements IByteSlice {
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	final byte[] array;
-
-	@Override
-	public boolean isFastAsArray() {
-		return true;
-	}
 
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] array() {
+	public byte[] buffer() {
 		return array;
 	}
 
@@ -61,7 +55,12 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 
 	@Override
 	public String toString() {
-		return Arrays.toString(cropped());
+		return Arrays.toString(crop());
+	}
+
+	@Override
+	public boolean isFastCrop() {
+		return true;
 	}
 
 	/**
@@ -70,7 +69,7 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	 */
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] cropped() {
+	public byte[] crop() {
 		return array;
 	}
 
@@ -79,6 +78,19 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 		return Arrays.hashCode(array);
 	}
 
+	@Override
+	public IByteSlice sub(int off, int length) {
+		if (length > length()) {
+			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
+		}
+		if (off == 0) {
+			return new ByteSliceNoOffset(array, length);
+		} else {
+			return ByteSlice.builder().buffer(array).offset(off).length(length).build();
+		}
+	}
+
+	// CPD-OFF
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -96,17 +108,5 @@ final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	@Override
 	public byte read(int position) {
 		return array[position];
-	}
-
-	@Override
-	public IByteSlice sub(int off, int length) {
-		if (length > length()) {
-			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
-		}
-		if (off == 0) {
-			return new ByteSliceNoOffset(array, length);
-		} else {
-			return ByteSlice.builder().array(array).offset(off).length(length).build();
-		}
 	}
 }

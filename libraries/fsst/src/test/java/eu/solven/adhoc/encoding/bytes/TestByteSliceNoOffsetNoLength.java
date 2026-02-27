@@ -43,8 +43,8 @@ public class TestByteSliceNoOffsetNoLength {
 		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytes));
 		Assertions.assertThat(byteSlice).isEqualTo(IByteSlice.wrap(originalBytes));
 
-		Assertions.assertThat(byteSlice.array()).isSameAs(originalBytes);
-		Assertions.assertThat(byteSlice.cropped()).isSameAs(originalBytes);
+		Assertions.assertThat(byteSlice.buffer()).isSameAs(originalBytes);
+		Assertions.assertThat(byteSlice.crop()).isSameAs(originalBytes);
 	}
 
 	@Test
@@ -58,10 +58,10 @@ public class TestByteSliceNoOffsetNoLength {
 		Assertions.assertThat(byteSlice).hasToString("[104, 101, 108, 108, 111]");
 
 		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytes));
-		Assertions.assertThat(byteSlice).isEqualTo(ByteSlice.builder().array(originalBytes).build());
+		Assertions.assertThat(byteSlice).isEqualTo(ByteSlice.builder().buffer(originalBytes).build());
 
-		Assertions.assertThat(byteSlice.array()).isSameAs(originalBytes);
-		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytes);
+		Assertions.assertThat(byteSlice.buffer()).isSameAs(originalBytes);
+		Assertions.assertThat(byteSlice.crop()).containsExactly(originalBytes);
 	}
 
 	@Test
@@ -69,13 +69,13 @@ public class TestByteSliceNoOffsetNoLength {
 		String original = "hello";
 		byte[] originalBytesStrict = original.getBytes(StandardCharsets.UTF_8);
 
-		IByteSlice byteSlice = ByteSlice.builder().array(originalBytesStrict).length(0).build();
+		IByteSlice byteSlice = ByteSlice.builder().buffer(originalBytesStrict).length(0).build();
 
 		Assertions.assertThat(byteSlice.asString(StandardCharsets.UTF_8)).isEqualTo("");
 
 		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(new byte[0]));
 
-		Assertions.assertThat(byteSlice.array()).containsExactly(originalBytesStrict);
-		Assertions.assertThat(byteSlice.cropped()).containsExactly(new byte[0]);
+		Assertions.assertThat(byteSlice.buffer()).containsExactly(originalBytesStrict);
+		Assertions.assertThat(byteSlice.crop()).containsExactly(new byte[0]);
 	}
 }

@@ -36,19 +36,14 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 final class ByteSliceNoOffset implements IByteSlice {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	final byte[] array;
+	final byte[] buffer;
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	final int length;
 
-	@Override
-	public boolean isFastAsArray() {
-		return false;
-	}
-
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] array() {
-		return array;
+	public byte[] buffer() {
+		return buffer;
 	}
 
 	@Override
@@ -63,7 +58,12 @@ final class ByteSliceNoOffset implements IByteSlice {
 
 	@Override
 	public String toString() {
-		return Arrays.toString(cropped());
+		return Arrays.toString(crop());
+	}
+
+	@Override
+	public boolean isFastCrop() {
+		return buffer.length == length;
 	}
 
 	/**
@@ -72,20 +72,34 @@ final class ByteSliceNoOffset implements IByteSlice {
 	 */
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] cropped() {
-		if (array.length == length) {
-			return array;
+	public byte[] crop() {
+		if (buffer.length == length) {
+			return buffer;
 		} else {
-			return Arrays.copyOfRange(array, 0, length);
+			return Arrays.copyOfRange(buffer, 0, length);
 		}
 	}
 
-	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
 	public int hashCode() {
-		return ByteSlice.hashCode(array, 0, length);
+		return ByteSlice.hashCode(buffer, 0, length);
 	}
 
+	@Override
+	public IByteSlice sub(int off, int length) {
+		if (length > length()) {
+			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
+		}
+
+		// TODO assert inputs are more restrictive than current filter
+		if (off == 0) {
+			return new ByteSliceNoOffset(buffer, length);
+		} else {
+			return ByteSlice.builder().buffer(buffer).offset(off).length(length).build();
+		}
+	}
+
+	// CPD-OFF
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -102,21 +116,6 @@ final class ByteSliceNoOffset implements IByteSlice {
 
 	@Override
 	public byte read(int position) {
-		return array[position];
+		return buffer[position];
 	}
-
-	@Override
-	public IByteSlice sub(int off, int length) {
-		if (length > length()) {
-			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
-		}
-
-		// TODO assert inputs are more restrictive than current filter
-		if (off == 0) {
-			return new ByteSliceNoOffset(array, length);
-		} else {
-			return ByteSlice.builder().array(array).offset(off).length(length).build();
-		}
-	}
-
 }

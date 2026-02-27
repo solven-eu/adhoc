@@ -52,8 +52,8 @@ class SymbolTableEncoder implements IFsstConstants, IFsstEncoder {
 			buf = new byte[2 * input.length() + fsstOutputPadding];
 		}
 
-		if (input.isFastAsArray()) {
-			return encodeArray(buf, input.array());
+		if (input.isFastCrop()) {
+			return encodeArray(buf, input.buffer());
 		}
 		return encodeSlice(buf, input);
 	}

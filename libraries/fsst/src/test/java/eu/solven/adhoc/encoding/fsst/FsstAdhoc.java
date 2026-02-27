@@ -70,7 +70,7 @@ public class FsstAdhoc implements Fsst {
 
 		return new org.maplibre.mlt.converter.encodings.fsst.SymbolTable(concatenatedSymbols.elements(),
 				symbolsLength.elements(),
-				encoded.cropped(),
+				encoded.crop(),
 				data.length);
 	}
 

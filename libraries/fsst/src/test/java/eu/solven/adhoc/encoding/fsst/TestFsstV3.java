@@ -140,7 +140,7 @@ public class TestFsstV3 {
 		IByteSlice decoded = table.decodeAll(encoded);
 
 		Assertions.assertThat(decoded.length()).isEqualTo(original.length);
-		Assertions.assertThat(decoded.array()).contains(original);
+		Assertions.assertThat(decoded.buffer()).contains(original);
 	}
 
 	@Test

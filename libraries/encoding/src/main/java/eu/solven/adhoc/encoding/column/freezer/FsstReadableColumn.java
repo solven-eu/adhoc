@@ -53,7 +53,7 @@ public class FsstReadableColumn implements IReadableColumn {
 		}
 
 		IByteSlice decodedBytes = decoder.decodeAll(encodedBytes);
-		return new String(decodedBytes.array(), decodedBytes.offset(), decodedBytes.length(), StandardCharsets.UTF_8);
+		return new String(decodedBytes.buffer(), decodedBytes.offset(), decodedBytes.length(), StandardCharsets.UTF_8);
 	}
 
 }

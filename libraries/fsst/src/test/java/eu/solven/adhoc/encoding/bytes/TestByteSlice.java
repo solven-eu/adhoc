@@ -56,32 +56,52 @@ public class TestByteSlice {
 		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytesStrict));
 		Assertions.assertThat(byteSlice)
 				.isEqualTo(ByteSlice.builder()
-						.array(offsetBytes)
+						.buffer(offsetBytes)
 						.offset(offset)
 						.length(originalBytesStrict.length)
 						.build());
 
-		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
-		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
+		Assertions.assertThat(byteSlice.buffer()).isSameAs(offsetBytes);
+		Assertions.assertThat(byteSlice.crop()).containsExactly(originalBytesStrict);
 	}
 
 	@Test
 	public void testSub() {
-		IByteSlice byteSlice = IByteSlice.wrap("123".getBytes(StandardCharsets.UTF_8));
-		IByteSlice sub = byteSlice.sub(1, 1);
+		IByteSlice byteSlice = IByteSlice.wrap("12345".getBytes(StandardCharsets.UTF_8));
+		IByteSlice sub = byteSlice.sub(1, 3);
 
+		// sub from byteSlice which is a ByteSliceNoOffsetNoLength
 		Assertions.assertThat(sub).isInstanceOfSatisfying(ByteSlice.class, s -> {
-			Assertions.assertThat(s.asString(StandardCharsets.UTF_8)).isEqualTo("2");
+			Assertions.assertThat(s.asString(StandardCharsets.UTF_8)).isEqualTo("234");
+		});
+
+		Assertions.assertThat(sub.sub(1, 1)).isInstanceOfSatisfying(ByteSlice.class, s -> {
+			Assertions.assertThat(s.asString(StandardCharsets.UTF_8)).isEqualTo("3");
 		});
 	}
 
 	@Test
 	public void testBuilder_noOffsetNoLength() {
-		IByteSlice byteSlice = ByteSlice.builder().array(new byte[] { '0', '1', '2' }).build();
+		IByteSlice byteSlice = ByteSlice.builder().buffer(new byte[] { '0', '1', '2' }).build();
 
 		Assertions.assertThat(byteSlice).isInstanceOfSatisfying(ByteSliceNoOffsetNoLength.class, s -> {
 			Assertions.assertThat(s.asString(StandardCharsets.UTF_8)).isEqualTo("012");
 		});
+	}
+
+	@Test
+	public void testCropped() {
+		IByteSlice byteSlice = IByteSlice.wrap("12345".getBytes(StandardCharsets.UTF_8));
+		Assertions.assertThat(byteSlice.crop()).isSameAs(byteSlice.buffer());
+
+		IByteSlice sub = byteSlice.sub(1, 3);
+		Assertions.assertThat(sub.crop()).isNotSameAs(byteSlice.buffer());
+	}
+
+	@Test
+	public void testCropped_forcedByteSliceNoOffsetNoLength() {
+		IByteSlice byteSlice = new ByteSlice("12345".getBytes(StandardCharsets.UTF_8), 0, 5);
+		Assertions.assertThat(byteSlice.crop()).isSameAs(byteSlice.buffer());
 	}
 
 }

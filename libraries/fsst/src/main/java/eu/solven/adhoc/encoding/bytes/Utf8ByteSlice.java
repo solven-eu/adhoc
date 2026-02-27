@@ -38,13 +38,13 @@ public class Utf8ByteSlice implements IByteSlice {
 	final IByteSlice byteSlice;
 
 	@Override
-	public boolean isFastAsArray() {
-		return byteSlice.isFastAsArray();
+	public boolean isFastCrop() {
+		return byteSlice.isFastCrop();
 	}
 
 	@Override
-	public byte[] cropped() {
-		return byteSlice.cropped();
+	public byte[] crop() {
+		return byteSlice.crop();
 	}
 
 	@Override
@@ -53,8 +53,8 @@ public class Utf8ByteSlice implements IByteSlice {
 	}
 
 	@Override
-	public byte[] array() {
-		return byteSlice.array();
+	public byte[] buffer() {
+		return byteSlice.buffer();
 	}
 
 	@Override

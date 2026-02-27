@@ -223,9 +223,9 @@ public class FsstTrainer {
 			// if (frac < 128 && (SymbolUtil.fsstHash(i) & IFsstConstants.fsstSampleMask) > frac) {
 			// continue;
 			// }
-			if (sample.isFastAsArray()) {
+			if (sample.isFastCrop()) {
 				// When possible (e.g. on small string), we rely on a byte[] which is faster than IByteSlice abstraction
-				byte[] sampleAsArray = sample.cropped();
+				byte[] sampleAsArray = sample.crop();
 
 				final int end = sampleAsArray.length;
 				if (end == 0) {

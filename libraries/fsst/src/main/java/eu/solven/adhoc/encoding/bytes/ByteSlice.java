@@ -37,21 +37,16 @@ import lombok.Builder;
 @SuppressWarnings("PMD.PublicMemberInNonPublicType")
 final class ByteSlice implements IByteSlice {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	public final byte[] array;
+	public final byte[] buffer;
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final int offset;
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	public final int length;
 
-	@Override
-	public boolean isFastAsArray() {
-		return false;
-	}
-
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] array() {
-		return array;
+	public byte[] buffer() {
+		return buffer;
 	}
 
 	@Override
@@ -66,7 +61,12 @@ final class ByteSlice implements IByteSlice {
 
 	@Override
 	public String toString() {
-		return Arrays.toString(cropped());
+		return Arrays.toString(crop());
+	}
+
+	@Override
+	public boolean isFastCrop() {
+		return offset == 0 && buffer.length == length;
 	}
 
 	/**
@@ -75,20 +75,20 @@ final class ByteSlice implements IByteSlice {
 	 */
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] cropped() {
-		if (offset == 0 && array.length == length) {
-			return array;
+	public byte[] crop() {
+		if (offset == 0 && buffer.length == length) {
+			return buffer;
 		} else {
-			return Arrays.copyOfRange(array, offset, offset + length);
+			return Arrays.copyOfRange(buffer, offset, offset + length);
 		}
 	}
 
-	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@Override
 	public int hashCode() {
-		return hashCode(array, offset, length);
+		return hashCode(buffer, offset, length);
 	}
 
+	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
 	@SuppressWarnings("checkstyle:MagicNumber")
 	static int hashCode(byte[] array, int offset, int length) {
 		int result = 1;
@@ -132,7 +132,7 @@ final class ByteSlice implements IByteSlice {
 
 	@Override
 	public byte read(int position) {
-		return array[offset + position];
+		return buffer[offset + position];
 	}
 
 	@Override
@@ -141,7 +141,7 @@ final class ByteSlice implements IByteSlice {
 			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
 		}
 		// TODO assert inputs are more restrictive than current filter
-		return ByteSlice.builder().array(array).offset(this.offset + off).length(length).build();
+		return ByteSlice.builder().buffer(buffer).offset(this.offset + off).length(length).build();
 	}
 
 	/**
@@ -156,15 +156,15 @@ final class ByteSlice implements IByteSlice {
 		public IByteSlice build() {
 			if (offset == 0) {
 				if (length == -1) {
-					return new ByteSliceNoOffsetNoLength(array);
+					return new ByteSliceNoOffsetNoLength(buffer);
 				} else {
-					return new ByteSliceNoOffset(array, length);
+					return new ByteSliceNoOffset(buffer, length);
 				}
 			}
 			if (length == -1) {
-				length = array.length;
+				length = buffer.length;
 			}
-			return new ByteSlice(array, offset, length);
+			return new ByteSlice(buffer, offset, length);
 		}
 	}
 

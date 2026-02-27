@@ -47,7 +47,7 @@ class SymbolTableDecoder implements IFsstConstants, IFsstDecoder {
 
 	@Override
 	public IByteSlice decode(byte[] buf, IByteSlice src) {
-		return decode(buf, src.array(), src.offset(), src.offset() + src.length());
+		return decode(buf, src.buffer(), src.offset(), src.offset() + src.length());
 	}
 
 	@Override

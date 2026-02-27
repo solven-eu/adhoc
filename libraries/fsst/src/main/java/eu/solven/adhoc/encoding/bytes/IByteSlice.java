@@ -34,25 +34,25 @@ public interface IByteSlice {
 	/**
 	 * Useful is critical section when one prefer to operate on a `byte[]`.
 	 * 
-	 * @return true if {@link #cropped()} is expected to be very fast (e.g. returning a reference).
+	 * @return true if {@link #crop()} is expected to be very fast (e.g. returning a reference).
 	 */
-	boolean isFastAsArray();
+	boolean isFastCrop();
 
 	/**
-	 * May or may not be the original array
+	 * A byte[] with no offset and matching length. May or may not be the original array.
 	 * 
 	 * @return a non-defensive copy of this as a `byte[]`.
 	 */
-	byte[] cropped();
+	byte[] crop();
 
 	byte read(int position);
 
 	/**
-	 * The inner array
+	 * The inner array. The actual byte slice is a fraction of given buffer.
 	 * 
 	 * @return a non-defensive reference to the internal array
 	 */
-	byte[] array();
+	byte[] buffer();
 
 	int length();
 
@@ -64,7 +64,7 @@ public interface IByteSlice {
 	 * @return a {@link String} build over current {@link IByteSlice}.
 	 */
 	default String asString(Charset charset) {
-		return new String(array(), offset(), length(), charset);
+		return new String(buffer(), offset(), length(), charset);
 	}
 
 	static IByteSlice wrap(byte[] input) {

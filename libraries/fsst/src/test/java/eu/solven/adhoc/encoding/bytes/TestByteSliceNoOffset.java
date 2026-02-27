@@ -50,9 +50,26 @@ public class TestByteSliceNoOffset {
 
 		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytesStrict));
 		Assertions.assertThat(byteSlice)
-				.isEqualTo(ByteSlice.builder().array(offsetBytes).length(originalBytesStrict.length).build());
+				.isEqualTo(ByteSlice.builder().buffer(offsetBytes).length(originalBytesStrict.length).build());
 
-		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
-		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
+		Assertions.assertThat(byteSlice.buffer()).isSameAs(offsetBytes);
+		Assertions.assertThat(byteSlice.crop()).containsExactly(originalBytesStrict);
+	}
+
+	@Test
+	public void testSub() {
+		IByteSlice byteSlice = ByteSlice.builder().buffer("hello".getBytes(StandardCharsets.UTF_8)).length(3).build();
+
+		Assertions.assertThat(byteSlice).isInstanceOf(ByteSliceNoOffset.class);
+
+		Assertions.assertThat(byteSlice.sub(1, 1).asString(StandardCharsets.UTF_8)).isEqualTo("e");
+	}
+
+	@Test
+	public void testCropped_forced() {
+		IByteSlice suboptimal = new ByteSliceNoOffset("hello".getBytes(StandardCharsets.UTF_8), 5);
+		Assertions.assertThat(suboptimal).isInstanceOf(ByteSliceNoOffset.class);
+
+		Assertions.assertThat(suboptimal.crop()).isSameAs(suboptimal.buffer());
 	}
 }
