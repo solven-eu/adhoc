@@ -124,7 +124,7 @@ class SymbolTableEncoder implements IFsstConstants, IFsstEncoder {
 	 */
 	// encodeChunk compresses buf[0:end] to dst starting at dstPos.
 	// buf must have >=8 bytes padding after end for safe unaligned loads.
-	@SuppressWarnings("PMD.AssignmentInOperand")
+	@SuppressWarnings({ "PMD.AssignmentInOperand", "CPD-START" })
 	private int encodeChunk(byte[] dst, int dstPos, byte[] input, int pos, int end) {
 		while (pos < end) {
 			long word = SymbolUtil.fsstUnalignedLoad(input, pos);

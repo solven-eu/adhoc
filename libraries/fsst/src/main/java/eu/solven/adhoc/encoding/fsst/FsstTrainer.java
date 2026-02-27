@@ -24,7 +24,6 @@ package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -65,7 +64,16 @@ public class FsstTrainer {
 	 * and counts symbol usage, proposes merged symbols, retains top-gain candidates, and finalizes code layout.
 	 */
 	public SymbolTable train(byte[][] inputs) {
+		SamplingResult sample = makeSample(config, Stream.of(inputs).map(IByteSlice::wrap).toList());
+		return train(sample);
+	}
+
+	public SymbolTable train(List<IByteSlice> inputs) {
 		SamplingResult sample = makeSample(config, inputs);
+		return train(sample);
+	}
+
+	protected SymbolTable train(SamplingResult sample) {
 		SymbolTableTraining table = SymbolTableTraining.makeSymbolTable();
 
 		boolean needNewCounters = false;
@@ -615,7 +623,7 @@ public class FsstTrainer {
 	/**
 	 * Converts String to UTF-8 byte[] and trains a {@link SymbolTable}
 	 */
-	public SymbolTable train(List<String> inputs) {
+	public SymbolTable trainOverStrings(List<String> inputs) {
 		byte[][] bytes = new byte[inputs.size()][];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = inputs.get(i).getBytes(StandardCharsets.UTF_8);
@@ -632,40 +640,39 @@ public class FsstTrainer {
 	 * keep training fast yet representative.
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
-	public SamplingResult makeSample(FsstTrainerConfig config, byte[][] inputs) {
-		int total = Arrays.stream(inputs).filter(arr -> arr != null).mapToInt(arr -> arr.length).sum();
+	public SamplingResult makeSample(FsstTrainerConfig config, List<IByteSlice> inputs) {
+		int total = inputs.stream().filter(arr -> arr != null).mapToInt(IByteSlice::length).sum();
 		if (total < config.getSampleTarget()) {
 			// Input is small enough: no need to sample it
-			return new SamplingResult(false,
-					Stream.of(inputs).map(a -> a == null ? null : IByteSlice.wrap(a)).toList());
+			return new SamplingResult(false, inputs);
 		}
 
 		byte[] buf = new byte[config.getSampleMaxSize()];
-		List<IByteSlice> sample = new ArrayList<>(inputs.length);
+		List<IByteSlice> sample = new ArrayList<>(inputs.size());
 		int pos = 0;
 		long rng = SymbolUtil.fsstHash(config.getRngSeed());
 
 		while (pos < buf.length) {
 			// Pick a random input
 			rng = SymbolUtil.fsstHash(rng);
-			int idx = (int) Long.remainderUnsigned(rng, inputs.length);
-			while (inputs[idx] == null || inputs[idx].length == 0) {
+			int idx = (int) Long.remainderUnsigned(rng, inputs.size());
+			while (inputs.get(idx) == null || inputs.get(idx).length() == 0) {
 				// Skip empty inputs
-				idx = (idx + 1) % inputs.length;
+				idx = (idx + 1) % inputs.size();
 			}
 
 			// Pick a random chunk
-			int numChunks = (inputs[idx].length + config.getSampleLine() - 1) / config.getSampleLine();
+			int numChunks = (inputs.get(idx).length() + config.getSampleLine() - 1) / config.getSampleLine();
 			rng = SymbolUtil.fsstHash(rng);
 			int off = config.getSampleLine() * (int) Long.remainderUnsigned(rng, numChunks);
 
 			// Adjust end if input is short
-			int n = Math.min(inputs[idx].length - off, config.getSampleLine());
+			int n = Math.min(inputs.get(idx).length() - off, config.getSampleLine());
 			if (pos + n > buf.length) {
 				// Skip last chunk is growing too much
 				break;
 			}
-			sample.add(IByteSlice.wrap(inputs[idx], off, n));
+			sample.add(inputs.get(idx).sub(off, n));
 			pos += n;
 
 			if (pos >= config.getSampleTarget()) {

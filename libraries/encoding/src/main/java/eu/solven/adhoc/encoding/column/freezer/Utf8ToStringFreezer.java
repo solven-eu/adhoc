@@ -50,6 +50,7 @@ import eu.solven.adhoc.encoding.fsst.FsstFreezingWithContext;
  */
 public final class Utf8ToStringFreezer implements IFreezingWithContext {
 
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	@Override
 	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
 		if (!(column instanceof ObjectArrayColumn arrayColumn)) {

@@ -145,4 +145,12 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		return AggregatingColumns.undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
 	}
 
+	@Override
+	public String toString() {
+		return new StringBuilder().append("#slices=")
+				.append(indexToSlice.size())
+				.append("aggregators=")
+				.append(aggregatorToAggregates.keySet())
+				.toString();
+	}
 }

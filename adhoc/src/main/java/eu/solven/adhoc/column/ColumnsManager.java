@@ -259,11 +259,6 @@ public class ColumnsManager implements IColumnsManager {
 			}
 
 			@Override
-			public void close() {
-				tabularRecordStream.close();
-			}
-
-			@Override
 			public Stream<ITabularRecord> records() {
 				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
 				ITableReverseAliaser columnTranscoder = prepareColumnTranscoder(transcodingContext);
@@ -280,6 +275,11 @@ public class ColumnsManager implements IColumnsManager {
 						.map(row -> evaluateCalculated(transcodingContext, row))
 						// TODO Filter
 						.filter(row -> filterCalculatedColumns(postFilterer, row));
+			}
+
+			@Override
+			public void close() {
+				tabularRecordStream.close();
 			}
 
 			@Override

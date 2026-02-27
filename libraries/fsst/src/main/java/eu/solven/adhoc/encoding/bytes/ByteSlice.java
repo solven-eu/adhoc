@@ -135,6 +135,12 @@ final class ByteSlice implements IByteSlice {
 		return array[offset + position];
 	}
 
+	@Override
+	public IByteSlice sub(int off, int length) {
+		// TODO assert inputs are more restrictive than current filter
+		return ByteSlice.builder().array(array).offset(this.offset + off).length(length).build();
+	}
+
 	/**
 	 * Lombok @Builder
 	 */

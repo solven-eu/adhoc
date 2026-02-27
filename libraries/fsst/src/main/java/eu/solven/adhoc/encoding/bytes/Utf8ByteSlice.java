@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.encoding.bytes;
 
+import java.nio.charset.StandardCharsets;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import lombok.Builder;
 
 /**
@@ -61,5 +65,20 @@ public class Utf8ByteSlice implements IByteSlice {
 	@Override
 	public int offset() {
 		return byteSlice.offset();
+	}
+
+	@Override
+	public IByteSlice sub(int off, int length) {
+		return byteSlice.sub(off, length);
+	}
+
+	@Override
+	@JsonValue
+	public String toString() {
+		return asString(StandardCharsets.UTF_8);
+	}
+
+	public static Utf8ByteSlice fromString(String string) {
+		return Utf8ByteSlice.builder().byteSlice(IByteSlice.wrap(string.getBytes(StandardCharsets.UTF_8))).build();
 	}
 }

@@ -53,7 +53,7 @@ public class TestFsstV3 {
 	// If optimal, we should have a single symbol
 	@Test
 	public void testTrain_8chars() {
-		SymbolTable table = trainer.train(List.of("01234567"));
+		SymbolTable table = trainer.trainOverStrings(List.of("01234567"));
 
 		IByteSlice encoded = table.encodeAll("01234567");
 
@@ -67,7 +67,7 @@ public class TestFsstV3 {
 
 	@Test
 	public void testTrain_helloWorld() {
-		SymbolTable table = trainer.train(List.of("hello hello hello"));
+		SymbolTable table = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		IByteSlice encoded = table.encodeAll("Hello World");
 
@@ -83,7 +83,7 @@ public class TestFsstV3 {
 	// TODO Could we improve this? Should be feasible given the low number of different symbols.
 	@Test
 	public void testTrain_hello() {
-		SymbolTable table = trainer.train(List.of("hello hello hello"));
+		SymbolTable table = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		IByteSlice encoded = table.encodeAll("Hello");
 
@@ -98,7 +98,7 @@ public class TestFsstV3 {
 	@Test
 	public void testTrain_2codes() {
 		// 1x 2x 3x 4x
-		SymbolTable table = trainer.train(List.of("az_azaz_azazaz_azazazaz"));
+		SymbolTable table = trainer.trainOverStrings(List.of("az_azaz_azazaz_azazazaz"));
 
 		// 2x
 		IByteSlice encoded = table.encodeAll("azaz");
@@ -145,7 +145,7 @@ public class TestFsstV3 {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		SymbolTable tableOriginal = trainer.train(List.of("hello hello hello"));
+		SymbolTable tableOriginal = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
 		SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
@@ -196,7 +196,7 @@ public class TestFsstV3 {
 			List<String> inputs = List.of(input.split("[\r\n]+"));
 
 			for (int iRetry = 0; iRetry < nbRetryForBenchmark; iRetry++) {
-				SymbolTable table = trainer.train(inputs);
+				SymbolTable table = trainer.trainOverStrings(inputs);
 
 				long sizeEncoded = 0;
 

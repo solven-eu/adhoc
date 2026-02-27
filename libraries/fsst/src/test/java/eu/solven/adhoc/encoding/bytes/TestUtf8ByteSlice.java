@@ -20,21 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.bytes;
 
-import eu.solven.adhoc.encoding.bytes.IByteSlice;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-/**
- * Able to decode FSST encoded `byte[]`.
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IFsstEncoder {
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
-	default IByteSlice encodeAll(IByteSlice input) {
-		return encode(null, input);
+public class TestUtf8ByteSlice {
+	@Test
+	public void testUtf8ByteSlice() {
+		Utf8ByteSlice slice = Utf8ByteSlice.fromString("foo");
+
+		Assertions.assertThat(slice).hasToString("foo");
 	}
 
-	IByteSlice encode(byte[] buf, IByteSlice input);
+	@Test
+	public void testJackson() {
+		Utf8ByteSlice original = Utf8ByteSlice.fromString("foo");
+		String asString = PepperJacksonTestHelper.asString(Object.class, original);
+
+		Assertions.assertThat(asString).isEqualTo("\"foo\"");
+	}
 }

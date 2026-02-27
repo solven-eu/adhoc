@@ -60,6 +60,7 @@ public class JooqTableWrapperParameters {
 	// columns
 	// https://github.com/apache/metamodel/blob/master/jdbc/src/main/java/org/apache/metamodel/jdbc/FetchSizeCalculator.java
 	// If we encounter OutOfMemoryError, we should lower this parameter.
+	@Default
 	final int statementFetchSize = DEFAULT_FETCH_SIZE;
 
 	/**

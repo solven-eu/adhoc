@@ -65,26 +65,26 @@ public class TestRowSliceFactory {
 
 	@Test
 	public void isNorOrdered() {
-		Assertions.assertThat(factory.isNotOrdered(Set.of("a"))).isTrue();
+		Assertions.assertThat(factory.isNotSequenced(Set.of("a"))).isTrue();
 
 		{
 			HashSet<String> hashSet = new HashSet<>();
-			Assertions.assertThat(factory.isNotOrdered(hashSet)).isFalse();
+			Assertions.assertThat(factory.isNotSequenced(hashSet)).isFalse();
 		}
 
 		// HashMap keySet is kind-of ordered, in the sense we expect to iterate in `.values` with same ordering as
 		// `.keySet`
 		{
 			HashMap<String, Object> hashMap = new HashMap<>();
-			Assertions.assertThat(factory.isNotOrdered(hashMap.keySet())).isFalse();
+			Assertions.assertThat(factory.isNotSequenced(hashMap.keySet())).isFalse();
 		}
 
 		// Empty so ordered
-		Assertions.assertThat(factory.isNotOrdered(Set.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(Set.of())).isFalse();
 		// These implementations are ordered
-		Assertions.assertThat(factory.isNotOrdered(List.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableList.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableSet.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(List.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(ImmutableList.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(ImmutableSet.of())).isFalse();
 	}
 
 	@Test

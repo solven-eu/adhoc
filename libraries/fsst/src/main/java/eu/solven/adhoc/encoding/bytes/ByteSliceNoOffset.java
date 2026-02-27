@@ -105,4 +105,10 @@ final class ByteSliceNoOffset implements IByteSlice {
 		return array[position];
 	}
 
+	@Override
+	public IByteSlice sub(int off, int length) {
+		// TODO assert inputs are more restrictive than current filter
+		return ByteSlice.builder().array(array).offset(off).length(length).build();
+	}
+
 }

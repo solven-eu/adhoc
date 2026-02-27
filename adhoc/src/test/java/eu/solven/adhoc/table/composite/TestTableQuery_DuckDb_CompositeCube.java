@@ -611,7 +611,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								|   \\  size=0 duration=42ms
 								\\-- #2 m=k3(SUM) filter=matchNone groupBy=(a) customMarker=JPY
 								    \\  size=0 duration=42ms
-								Executed status=OK duration=75ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k3), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cubeElseTable=true, cube=composite))
+								Executed status=OK duration=75ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cubeElseTable=true, cube=composite))
 								/-- time=117ms for openingStream
 								|/- time=17ms for mergingAggregates
 								|/- time=18ms sizes=[0, 0, 0] for sortingColumns
@@ -683,7 +683,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								|   \\-- #2 m=k1(SUM) filter=b==b1 groupBy=(a) customMarker=JPY
 								|       \\  size=1 duration=24ms
 								\\-- !2
-								Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==b1, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
+								Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==b1, groupBy=(a), measures=[ReferencedMeasure(ref=k1), Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
 								/-- time=13ms for openingStream
 								|/- time=15ms for mergingAggregates
 								|/- time=16ms sizes=[0] for sortingColumns
@@ -699,7 +699,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								|   \\-- #2 m=k1(SUM) filter=matchNone groupBy=(a) customMarker=JPY
 								|       \\  size=0 duration=45ms
 								\\-- !2
-								Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={}), ReferencedMeasure(ref=k1)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
+								Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k1), Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
 								/-- time=150ms for openingStream
 								|/- time=19ms for mergingAggregates
 								|/- time=20ms sizes=[1, 1] for sortingColumns

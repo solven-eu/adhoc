@@ -52,7 +52,7 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 
 	@NonNull
 	@Default
-	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+	protected IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
 	protected abstract int dictionarize(T key);
 
@@ -92,5 +92,4 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 
 		return sortedEntries;
 	}
-
 }

@@ -57,7 +57,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	// Used to prevent the following pattern: `.newMapBuilder(Set.of("a",
 	// "b")).append("a1").append("b1")` as the order
 	// of the Set is not consistent with the input array
-	private static final Set<Class<? extends Set>> NOT_ORDERED_CLASSES;
+	private static final Set<Class<? extends Set>> NOT_SEQUENCED_CLASSES;
 
 	static {
 		ImmutableSet.Builder<Class<? extends Set>> builder = ImmutableSet.builder();
@@ -69,7 +69,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 		builder.add(HashSet.class);
 
-		NOT_ORDERED_CLASSES = builder.build();
+		NOT_SEQUENCED_CLASSES = builder.build();
 	}
 
 	final ConcurrentMap<List<String>, SequencedSetLikeList> listToKeyset = new ConcurrentHashMap<>();
@@ -120,12 +120,12 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	 * @param set
 	 * @return true if the input if an ordered {@link Set}
 	 */
-	protected boolean isNotOrdered(Iterable<? extends String> set) {
+	protected boolean isNotSequenced(Iterable<? extends String> set) {
 		if (set instanceof Collection<?> c && c.isEmpty()) {
 			return false;
 		}
 
-		if (NOT_ORDERED_CLASSES.contains(set.getClass())) {
+		if (NOT_SEQUENCED_CLASSES.contains(set.getClass())) {
 			return true;
 		}
 

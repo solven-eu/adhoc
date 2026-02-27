@@ -78,4 +78,6 @@ public interface IByteSlice {
 	static IByteSlice wrap(byte[] array, int offset, int length) {
 		return new ByteSlice(array, offset, length);
 	}
+
+	IByteSlice sub(int off, int length);
 }

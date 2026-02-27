@@ -29,6 +29,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.google.common.primitives.Ints;
+
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordFactory;
 import eu.solven.adhoc.data.row.TabularRecordBuilder;
@@ -192,8 +194,8 @@ final class ArrowReflection {
 		if ("org.apache.arrow.vector.util.Text".equals(value.getClass().getName())) {
 			try {
 				byte[] buf = (byte[]) TEXT_GET_BYTES.invoke(value);
-				int len = (int) TEXT_GET_LENGTH.invoke(value);
-				return Utf8ByteSlice.builder().byteSlice(IByteSlice.wrap(buf, len)).build();
+				long len = (long) TEXT_GET_LENGTH.invoke(value);
+				return Utf8ByteSlice.builder().byteSlice(IByteSlice.wrap(buf, Ints.checkedCast(len))).build();
 			} catch (InvocationTargetException | IllegalAccessException e) {
 				throw new IllegalStateException("Failed to extract bytes from Arrow Text", e);
 			}
