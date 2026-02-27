@@ -87,6 +87,7 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 		List<IByteSlice> encoded =
 				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();
 
+		// BEWARE This will drop the trained symbols, keeping only decoded capacities
 		return FsstReadableColumn.builder().decoder(table.getDecoding()).encoded(encoded).build();
 	}
 

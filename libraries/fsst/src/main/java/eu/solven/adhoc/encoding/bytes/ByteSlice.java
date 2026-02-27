@@ -137,6 +137,9 @@ final class ByteSlice implements IByteSlice {
 
 	@Override
 	public IByteSlice sub(int off, int length) {
+		if (length > length()) {
+			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
+		}
 		// TODO assert inputs are more restrictive than current filter
 		return ByteSlice.builder().array(array).offset(this.offset + off).length(length).build();
 	}
@@ -151,7 +154,7 @@ final class ByteSlice implements IByteSlice {
 		public int length = -1;
 
 		public IByteSlice build() {
-			if (offset == -1) {
+			if (offset == 0) {
 				if (length == -1) {
 					return new ByteSliceNoOffsetNoLength(array);
 				} else {

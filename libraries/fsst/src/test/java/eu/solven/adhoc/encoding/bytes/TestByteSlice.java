@@ -64,4 +64,24 @@ public class TestByteSlice {
 		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
 		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
 	}
+
+	@Test
+	public void testSub() {
+		IByteSlice byteSlice = IByteSlice.wrap("123".getBytes(StandardCharsets.UTF_8));
+		IByteSlice sub = byteSlice.sub(1, 1);
+
+		Assertions.assertThat(sub).isInstanceOfSatisfying(ByteSlice.class, s -> {
+			Assertions.assertThat(s.asString(StandardCharsets.UTF_8)).isEqualTo("2");
+		});
+	}
+
+	@Test
+	public void testBuilder_noOffsetNoLength() {
+		IByteSlice byteSlice = ByteSlice.builder().array(new byte[] { '0', '1', '2' }).build();
+
+		Assertions.assertThat(byteSlice).isInstanceOfSatisfying(ByteSliceNoOffsetNoLength.class, s -> {
+			Assertions.assertThat(s.asString(StandardCharsets.UTF_8)).isEqualTo("012");
+		});
+	}
+
 }
