@@ -29,36 +29,29 @@ import java.util.function.Consumer;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.data.row.TabularRecordBuilder;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-
-// -------------------------------------------------------------------------
-// Spliterator over Arrow record batches
-// -------------------------------------------------------------------------
+import lombok.RequiredArgsConstructor;
 
 /**
  * A {@link Spliterator} that lazily iterates over Arrow record batches produced by an {@code ArrowReader}.
  * 
  * @author Benoit Lacelle
  */
+@RequiredArgsConstructor
 public final class ArrowBatchSpliterator implements Spliterator<ITabularRecord> {
 
 	final Object arrowReader;
 	final ITabularRecordFactory factory;
 	final QueryPod queryPod;
+	final int minSplitRows;
 
 	// Current batch state (populated by loadNextBatch)
+	Object currentRoot;
 	List<?> currentVectors;
 	int currentBatchSize;
 	int currentRowIndex;
 	boolean exhausted;
-
-	public ArrowBatchSpliterator(Object arrowReader, ITabularRecordFactory factory, QueryPod queryPod) {
-		this.arrowReader = arrowReader;
-		this.factory = factory;
-		this.queryPod = queryPod;
-	}
 
 	@Override
 	public boolean tryAdvance(Consumer<? super ITabularRecord> action) {
@@ -88,6 +81,7 @@ public final class ArrowBatchSpliterator implements Spliterator<ITabularRecord> 
 				return false;
 			}
 			Object root = ArrowReflection.GET_VECTOR_SCHEMA_ROOT.invoke(arrowReader);
+			currentRoot = root;
 			currentBatchSize = (int) ArrowReflection.GET_ROW_COUNT.invoke(root);
 			currentVectors = (List<?>) ArrowReflection.GET_FIELD_VECTORS.invoke(root);
 			currentRowIndex = 0;
@@ -100,42 +94,37 @@ public final class ArrowBatchSpliterator implements Spliterator<ITabularRecord> 
 	}
 
 	private ITabularRecord buildRecord(int rowIndex) {
-		TabularRecordBuilder builder = factory.makeTabularRecordBuilder();
-
-		List<String> aggregates = factory.getAggregates();
-		List<String> columns = factory.getColumns();
-
-		int vectorIndex = 0;
-
-		for (int i = 0; i < aggregates.size(); i++, vectorIndex++) {
-			Object raw = getVectorValue(vectorIndex, rowIndex);
-			if (raw != null) {
-				builder.appendAggregate(aggregates.get(i), ArrowReflection.convertValue(raw));
-			}
-		}
-
-		for (int i = 0; i < columns.size(); i++, vectorIndex++) {
-			Object raw = getVectorValue(vectorIndex, rowIndex);
-			builder.appendGroupBy(ArrowReflection.convertValue(raw));
-		}
-
-		return builder.build();
-	}
-
-	private Object getVectorValue(int vectorIndex, int rowIndex) {
-		try {
-			return ArrowReflection.GET_OBJECT.invoke(currentVectors.get(vectorIndex), rowIndex);
-		} catch (InvocationTargetException e) {
-			throw new IllegalStateException("Error reading Arrow vector value", e.getCause());
-		} catch (IllegalAccessException e) {
-			throw new IllegalStateException("Unexpected reflection access error", e);
-		}
+		return ArrowReflection.buildRecord(currentVectors, rowIndex, factory);
 	}
 
 	@Override
 	public Spliterator<ITabularRecord> trySplit() {
-		// No splitting: Arrow batches are read sequentially
-		return null;
+		// Ensure there is at least one loaded batch to split
+		while (currentRowIndex >= currentBatchSize) {
+			if (!loadNextBatch()) {
+				return null;
+			}
+		}
+		int remaining = currentBatchSize - currentRowIndex;
+		if (remaining < minSplitRows) {
+			return null;
+		}
+		int splitSize = remaining / 2;
+
+		// VectorSchemaRoot.slice() shares the underlying ArrowBuf objects via reference counting.
+		// When loadNextBatch() later calls vector.clear() on the original root, the ref-count drops
+		// by 1 but does not reach zero, so the sliced root's buffers remain valid.
+		// The returned ArrowFixedBatchSpliterator must close the sliced root when exhausted.
+		// See https://arrow.apache.org/docs/java/vector_schema_root.html
+		try {
+			Object slicedRoot = ArrowReflection.SLICE.invoke(currentRoot, currentRowIndex, splitSize);
+			currentRowIndex += splitSize;
+			return new ArrowFixedBatchSpliterator(slicedRoot, splitSize, factory, queryPod, minSplitRows);
+		} catch (InvocationTargetException e) {
+			throw new IllegalStateException("Error slicing Arrow VectorSchemaRoot", e.getCause());
+		} catch (IllegalAccessException e) {
+			throw new IllegalStateException("Unexpected reflection access error", e);
+		}
 	}
 
 	@Override

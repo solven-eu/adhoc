@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
@@ -317,7 +316,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				if (emptyMeasureName.equals(m.getName())) {
 					throw new IllegalArgumentException("The defaultEmptyMeasure can not be requested explicitly");
 				}
-			}).collect(Collectors.toSet());
+			}).collect(ImmutableSet.toImmutableSet());
 		}
 		return queriedMeasures;
 	}

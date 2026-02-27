@@ -24,9 +24,9 @@ package eu.solven.adhoc.measure.decomposition.many2many;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
@@ -72,7 +72,7 @@ public class ManyToMany1DInMemoryDefinition implements IManyToMany1DDefinition {
 
 	@Override
 	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
-		return streamMatchingGroups(groupMatcher).collect(Collectors.toSet());
+		return streamMatchingGroups(groupMatcher).collect(ImmutableSet.toImmutableSet());
 	}
 
 	public void putElementToGroup(Object element, Object group) {

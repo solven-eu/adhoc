@@ -20,40 +20,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.column.freezer;
+package eu.solven.adhoc.encoding.bytes;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
 
-import eu.solven.adhoc.encoding.column.IAppendableColumn;
-import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.column.IntegerArrayColumn;
-import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import lombok.Builder;
 
 /**
- * {@link IFreezingWithContext} when all values are {@link Integer}.
+ * Wraps an {@link IByteSlice} while marking it explicitly as UTF-8.
  * 
  * @author Benoit Lacelle
  */
-public final class IntegerFreezer implements IFreezingWithContext {
+@Builder
+public class Utf8ByteSlice implements IByteSlice {
+	final IByteSlice byteSlice;
+
 	@Override
-	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
-		if (column instanceof ObjectArrayColumn arrayColumn) {
-			List<?> array = arrayColumn.getAsArray();
-
-			Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
-
-			if (classes.size() == 1 && classes.contains(Integer.class)) {
-				int[] primitiveArray = array.stream().mapToInt(Integer.class::cast).toArray();
-				return Optional.of(IntegerArrayColumn.builder().asArray(primitiveArray).build());
-			} else {
-				return Optional.empty();
-			}
-		} else {
-			return Optional.empty();
-		}
+	public boolean isFastCrop() {
+		return byteSlice.isFastCrop();
 	}
 
+	@Override
+	public byte[] crop() {
+		return byteSlice.crop();
+	}
+
+	@Override
+	public byte read(int position) {
+		return byteSlice.read(position);
+	}
+
+	@Override
+	public byte[] buffer() {
+		return byteSlice.buffer();
+	}
+
+	@Override
+	public int length() {
+		return byteSlice.length();
+	}
+
+	@Override
+	public int offset() {
+		return byteSlice.offset();
+	}
+
+	@Override
+	public IByteSlice sub(int off, int length) {
+		return byteSlice.sub(off, length);
+	}
+
+	@Override
+	@JsonValue
+	public String toString() {
+		return asString(StandardCharsets.UTF_8);
+	}
+
+	public static Utf8ByteSlice fromString(String string) {
+		return Utf8ByteSlice.builder().byteSlice(IByteSlice.wrap(string.getBytes(StandardCharsets.UTF_8))).build();
+	}
 }

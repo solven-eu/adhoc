@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.bytes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -28,40 +28,48 @@ import java.util.Arrays;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
-public class TestByteSlice {
-	@Test
-	public void testEquals() {
-		EqualsVerifier.forClass(ByteSlice.class);
-	}
+public class TestByteSliceNoOffset {
 
 	@Test
 	public void testLengthOffset() {
 		String original = "hello";
 		byte[] originalBytesStrict = original.getBytes(StandardCharsets.UTF_8);
-		int offset = 2;
-		byte[] offsetBytes = new byte[offset + originalBytesStrict.length + offset];
+		int suffix = 2;
+		byte[] offsetBytes = new byte[originalBytesStrict.length + suffix];
 
 		// Make sure all inputs are non-zero, to check they are actually discarded
 		Arrays.fill(offsetBytes, (byte) 7);
 
-		System.arraycopy(originalBytesStrict, 0, offsetBytes, offset, originalBytesStrict.length);
+		// Copy the content with a suffix
+		System.arraycopy(originalBytesStrict, 0, offsetBytes, 0, originalBytesStrict.length);
 
-		IByteSlice byteSlice = new ByteSlice(offsetBytes, offset, originalBytesStrict.length);
+		IByteSlice byteSlice = new ByteSliceNoOffset(offsetBytes, originalBytesStrict.length);
 
 		Assertions.assertThat(byteSlice.asString(StandardCharsets.UTF_8)).isEqualTo(original);
 		Assertions.assertThat(byteSlice).hasToString("[104, 101, 108, 108, 111]");
 
 		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytesStrict));
 		Assertions.assertThat(byteSlice)
-				.isEqualTo(ByteSlice.builder()
-						.array(offsetBytes)
-						.offset(offset)
-						.length(originalBytesStrict.length)
-						.build());
+				.isEqualTo(ByteSlice.builder().buffer(offsetBytes).length(originalBytesStrict.length).build());
 
-		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
-		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
+		Assertions.assertThat(byteSlice.buffer()).isSameAs(offsetBytes);
+		Assertions.assertThat(byteSlice.crop()).containsExactly(originalBytesStrict);
+	}
+
+	@Test
+	public void testSub() {
+		IByteSlice byteSlice = ByteSlice.builder().buffer("hello".getBytes(StandardCharsets.UTF_8)).length(3).build();
+
+		Assertions.assertThat(byteSlice).isInstanceOf(ByteSliceNoOffset.class);
+
+		Assertions.assertThat(byteSlice.sub(1, 1).asString(StandardCharsets.UTF_8)).isEqualTo("e");
+	}
+
+	@Test
+	public void testCropped_forced() {
+		IByteSlice suboptimal = new ByteSliceNoOffset("hello".getBytes(StandardCharsets.UTF_8), 5);
+		Assertions.assertThat(suboptimal).isInstanceOf(ByteSliceNoOffset.class);
+
+		Assertions.assertThat(suboptimal.crop()).isSameAs(suboptimal.buffer());
 	}
 }

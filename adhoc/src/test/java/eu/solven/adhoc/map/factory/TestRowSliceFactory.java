@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.map.AdhocMapHelpers;
+import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.map.IAdhocMap;
 
 public class TestRowSliceFactory {
@@ -63,26 +65,26 @@ public class TestRowSliceFactory {
 
 	@Test
 	public void isNorOrdered() {
-		Assertions.assertThat(factory.isNotOrdered(Set.of("a"))).isTrue();
+		Assertions.assertThat(factory.isNotSequenced(Set.of("a"))).isTrue();
 
 		{
 			HashSet<String> hashSet = new HashSet<>();
-			Assertions.assertThat(factory.isNotOrdered(hashSet)).isFalse();
+			Assertions.assertThat(factory.isNotSequenced(hashSet)).isFalse();
 		}
 
 		// HashMap keySet is kind-of ordered, in the sense we expect to iterate in `.values` with same ordering as
 		// `.keySet`
 		{
 			HashMap<String, Object> hashMap = new HashMap<>();
-			Assertions.assertThat(factory.isNotOrdered(hashMap.keySet())).isFalse();
+			Assertions.assertThat(factory.isNotSequenced(hashMap.keySet())).isFalse();
 		}
 
 		// Empty so ordered
-		Assertions.assertThat(factory.isNotOrdered(Set.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(Set.of())).isFalse();
 		// These implementations are ordered
-		Assertions.assertThat(factory.isNotOrdered(List.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableList.of())).isFalse();
-		Assertions.assertThat(factory.isNotOrdered(ImmutableSet.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(List.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(ImmutableList.of())).isFalse();
+		Assertions.assertThat(factory.isNotSequenced(ImmutableSet.of())).isFalse();
 	}
 
 	@Test
@@ -121,11 +123,39 @@ public class TestRowSliceFactory {
 
 		Assertions.assertThat((Map) aAndBMixed).isEqualTo(bAndAMixed);
 
-		Assertions.assertThat((Map) aAndB).isNotEqualTo(aAndBMixed);
-		Assertions.assertThat((Map) aAndB).isNotEqualTo(bAndAMixed);
+		Assertions.assertThat((Map) aAndB).isNotEqualTo(aAndBMixed).isNotEqualTo(bAndAMixed);
 
-		Assertions.assertThat((Map) bAndA).isNotEqualTo(aAndBMixed);
-		Assertions.assertThat((Map) bAndA).isNotEqualTo(bAndAMixed);
-
+		Assertions.assertThat((Map) bAndA).isNotEqualTo(aAndBMixed).isNotEqualTo(bAndAMixed);
 	}
+
+	@Test
+	public void testOrdering_withNull() {
+		// null is bigger than anything
+		Assertions.assertThat(new ComparableElseClassComparatorV2().compare("a1", null)).isNegative();
+
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+		IAdhocMap aAndNull = factory.newMapBuilder(List.of("a", "b")).append("a1").append(null).build();
+
+		Assertions.assertThat((Comparable) aAndB).isLessThan(aAndNull);
+		Assertions.assertThat(AdhocMapHelpers.compareMap(aAndB, aAndNull)).isNegative();
+	}
+
+	@Test
+	public void testOrdering_compareSequencedKeys() {
+		IAdhocMap a2AndB1 = factory.newMapBuilder(List.of("a", "b")).append("a2").append("b1").build();
+		IAdhocMap a1AndB2 = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b2").build();
+
+		IAdhocMap b1AndA2 = factory.newMapBuilder(List.of("b", "a")).append("b1").append("a2").build();
+		IAdhocMap b2AndA1 = factory.newMapBuilder(List.of("b", "a")).append("b2").append("a1").build();
+
+		Assertions.assertThat((Comparable) a2AndB1)
+				.isEqualByComparingTo(b1AndA2)
+				// first key is `a` and `a1<a2`
+				.isGreaterThan(a1AndB2)
+				.isGreaterThan(b2AndA1)
+				// plain .equals
+				.isEqualTo(b1AndA2);
+		// Assertions.assertThat(AdhocMapHelpers.compareMap(aAndB, aAndNull)).isNegative();
+	}
+
 }

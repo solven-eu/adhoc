@@ -128,6 +128,10 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 */
 	protected abstract Object getSortedValueRaw(int index);
 
+	protected Object getSortedValue(int index) {
+		return NullMatcher.unwrapNull(getSortedValueRaw(index));
+	}
+
 	@Override
 	public IAdhocSlice asSlice() {
 		return SliceAsMap.fromMapUnsafe(this);
@@ -430,8 +434,8 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 			return compareKeys;
 		}
 
-		// Compare values
-		return AdhocMapComparisonHelpers.compareValues(this.size(), this::getSortedValueRaw, other::getSortedValueRaw);
+		// Compare sequenced (not sorted!) values
+		return AdhocMapComparisonHelpers.compareValues(this.size(), this::getSortedValue, other::getSortedValue);
 	}
 
 	/**

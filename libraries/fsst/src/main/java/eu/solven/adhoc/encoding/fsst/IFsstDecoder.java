@@ -24,6 +24,8 @@ package eu.solven.adhoc.encoding.fsst;
 
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
+
 /**
  * Decodes FSST scheme.
  * 

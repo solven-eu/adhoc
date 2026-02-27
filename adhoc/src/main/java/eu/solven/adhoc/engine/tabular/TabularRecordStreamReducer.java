@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.NavigableSet;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -94,15 +95,13 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		// Process the underlying stream of data to execute aggregations
 		try {
-			stream.records()
-					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-					// For any reason, `closeHandler` is not called automatically on a terminal
-					// operation
-					// .onClose(aggregatedRecordLogger.closeHandler())
-					.forEach(input -> forEachRow(sequencedKeyset, input, peekOnCoordinate, grid));
-
 			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-			aggregatedRecordLogger.closeHandler();
+			// For any reason, `closeHandler` is not called automatically on a terminal
+			// operation
+			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
+				records.forEach(input -> forEachRow(sequencedKeyset, input, peekOnCoordinate, grid));
+			}
+
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 				IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
@@ -114,6 +113,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			}
 		}
 
+		// TODO Should we compact the grid? Typically, we may have much less slices that what was initial allocated
 		return grid;
 	}
 

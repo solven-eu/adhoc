@@ -25,8 +25,8 @@ package eu.solven.adhoc.encoding.column.freezer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.fsst.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.IFsstDecoder;
 import lombok.Builder;
 import lombok.NonNull;
@@ -53,7 +53,7 @@ public class FsstReadableColumn implements IReadableColumn {
 		}
 
 		IByteSlice decodedBytes = decoder.decodeAll(encodedBytes);
-		return new String(decodedBytes.array(), decodedBytes.offset(), decodedBytes.length(), StandardCharsets.UTF_8);
+		return new String(decodedBytes.buffer(), decodedBytes.offset(), decodedBytes.length(), StandardCharsets.UTF_8);
 	}
 
 }

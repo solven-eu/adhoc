@@ -135,6 +135,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
+		// TODO PERFORMANCE Is this process duplicated for each column?!
 		// Reverse from `slice->index` to `index->slice`
 		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
 		sliceToIndex.object2IntEntrySet().forEach((e) -> indexToSlice.put(e.getIntValue(), e.getKey()));
@@ -151,5 +152,14 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 				.sliceToIndex(sliceToIndex)
 				.column(column)
 				.build();
+	}
+
+	@Override
+	public String toString() {
+		return new StringBuilder().append("#slices=")
+				.append(sliceToIndex.size())
+				.append("aggregators=")
+				.append(aggregatorToAggregates.keySet())
+				.toString();
 	}
 }

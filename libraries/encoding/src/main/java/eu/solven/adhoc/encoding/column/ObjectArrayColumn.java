@@ -25,8 +25,10 @@ package eu.solven.adhoc.encoding.column;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -60,6 +62,21 @@ public class ObjectArrayColumn implements IAppendableColumn {
 
 	public List<?> getAsArray() {
 		return Collections.unmodifiableList(asArray);
+	}
+
+	@Override
+	public String toString() {
+		int limit = AdhocUnsafe.getLimitOrdinalToString();
+		int size = asArray.size();
+		if (size <= limit) {
+			return asArray.toString();
+		} else {
+			final List<Object> forToString = asArray.stream()
+					.limit(AdhocUnsafe.getLimitOrdinalToString())
+					.collect(Collectors.toCollection(ArrayList::new));
+			forToString.add("and %s more".formatted(size - limit));
+			return forToString.toString();
+		}
 	}
 
 }

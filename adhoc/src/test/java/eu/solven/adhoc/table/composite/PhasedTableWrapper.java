@@ -142,7 +142,8 @@ public class PhasedTableWrapper implements ITableWrapper {
 
 				return Stream.<ITabularRecord>of(
 						TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(slice)).aggregates(aggregates).build())
-						.onClose(() -> this.close());
+				// .onClose(() -> this.close())
+				;
 			}
 
 			@Override

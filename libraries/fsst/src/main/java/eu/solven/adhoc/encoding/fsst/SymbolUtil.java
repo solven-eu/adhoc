@@ -24,6 +24,7 @@ package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;

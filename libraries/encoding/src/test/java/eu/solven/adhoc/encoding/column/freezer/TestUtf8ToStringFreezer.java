@@ -22,38 +22,39 @@
  */
 package eu.solven.adhoc.encoding.column.freezer;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import eu.solven.adhoc.encoding.column.IAppendableColumn;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
-import eu.solven.adhoc.encoding.column.IntegerArrayColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
 
-/**
- * {@link IFreezingWithContext} when all values are {@link Integer}.
- * 
- * @author Benoit Lacelle
- */
-public final class IntegerFreezer implements IFreezingWithContext {
-	@Override
-	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
-		if (column instanceof ObjectArrayColumn arrayColumn) {
-			List<?> array = arrayColumn.getAsArray();
+public class TestUtf8ToStringFreezer {
+	Utf8ToStringFreezer freezer = new Utf8ToStringFreezer();
 
-			Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
-
-			if (classes.size() == 1 && classes.contains(Integer.class)) {
-				int[] primitiveArray = array.stream().mapToInt(Integer.class::cast).toArray();
-				return Optional.of(IntegerArrayColumn.builder().asArray(primitiveArray).build());
-			} else {
-				return Optional.empty();
-			}
-		} else {
-			return Optional.empty();
-		}
+	@Test
+	public void testFreeze_empty() {
+		ObjectArrayColumn column = ObjectArrayColumn.builder().build();
+		Optional<IReadableColumn> optFrozen = freezer.freeze(column, new HashMap<>());
+		Assertions.assertThat(optFrozen).isEmpty();
 	}
 
+	@Test
+	public void testFreeze_mixed() {
+		ObjectArrayColumn column = ObjectArrayColumn.builder().build();
+
+		column.append(Utf8ByteSlice.fromString("foo"));
+		column.append(123L);
+		column.append(Utf8ByteSlice.fromString("bar"));
+		column.append(234L);
+
+		Optional<IReadableColumn> optFrozen = freezer.freeze(column, new HashMap<>());
+		Assertions.assertThat(optFrozen).isPresent().get().isInstanceOfSatisfying(ObjectArrayColumn.class, frozen -> {
+			Assertions.assertThat((List) frozen.getAsArray()).containsExactly("foo", 123L, "bar", 234L);
+		});
+	}
 }

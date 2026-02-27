@@ -27,6 +27,8 @@ import java.util.Comparator;
 import java.util.NavigableSet;
 import java.util.Objects;
 
+import eu.solven.adhoc.util.AdhocUnsafe;
+
 /**
  * Enables comparing {@link Comparable} of different {@link Class} in the same {@link NavigableSet}.
  *
@@ -47,7 +49,7 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object>, Seri
 	 */
 	// Duplicated from Spring Comparators
 	@SuppressWarnings("unchecked")
-	static <T> Comparator<T> nullsHigh() {
+	public static <T> Comparator<T> nullsHigh() {
 		return nullsHigh((Comparator<T>) Comparator.naturalOrder());
 	}
 
@@ -62,10 +64,12 @@ public class ComparableElseClassComparatorV2 implements Comparator<Object>, Seri
 	}
 
 	/**
-	 * By default, `null` is considered greater than anything else
+	 * By default, `null` is considered greater than anything else. Hence `NULL` is last (by default).
 	 */
+	// https://dba.stackexchange.com/questions/8504/why-are-nulls-sorted-first
+	// https://en.wikipedia.org/wiki/Null_%28SQL%29#When_two_nulls_are_equal:_grouping,_sorting,_and_some_set_operations
 	public ComparableElseClassComparatorV2() {
-		this(NULLS_HIGH);
+		this(AdhocUnsafe.getNullComparator());
 	}
 
 	public ComparableElseClassComparatorV2(Comparator<Object> nullComparator) {

@@ -24,6 +24,7 @@ package eu.solven.adhoc.encoding.fsst;
 
 import org.maplibre.mlt.converter.encodings.fsst.Fsst;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
@@ -42,8 +43,8 @@ public class FsstAdhoc implements Fsst {
 	}
 
 	public org.maplibre.mlt.converter.encodings.fsst.SymbolTable encode(byte[] data, IFsstEncoding st2) {
-		SymbolTableDecoding st = ((SymbolTable) st2).decoding;
-		IByteSlice encoded = st2.encodeAll(data);
+		SymbolTableDecoder st = ((SymbolTable) st2).decoding;
+		IByteSlice encoded = st2.encodeAll(IByteSlice.wrap(data));
 
 		ByteArrayList concatenatedSymbols = new ByteArrayList();
 		IntArrayList symbolsLength = new IntArrayList(st.decLen.length);
@@ -69,7 +70,7 @@ public class FsstAdhoc implements Fsst {
 
 		return new org.maplibre.mlt.converter.encodings.fsst.SymbolTable(concatenatedSymbols.elements(),
 				symbolsLength.elements(),
-				encoded.cropped(),
+				encoded.crop(),
 				data.length);
 	}
 

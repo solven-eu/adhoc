@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import java.sql.SQLException;
+
+import org.duckdb.DuckDBConnection;
 import org.jooq.DSLContext;
 
 import eu.solven.adhoc.ARawDagTest;
@@ -39,4 +42,14 @@ public abstract class ADuckDbJooqTest extends ARawDagTest {
 
 	protected final IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 	protected final DSLContext dsl = dslSupplier.getDSLContext();
+
+	public IDSLSupplier makeDSLSupplier() {
+		DuckDBConnection duckDbConnection = DuckDBHelper.makeFreshInMemoryDb();
+		try {
+			duckDbConnection.setAutoCommit(false);
+		} catch (SQLException e) {
+			throw new IllegalStateException("Issue while setting autoCommit=false", e);
+		}
+		return DuckDBHelper.dslSupplier(duckDbConnection);
+	}
 }

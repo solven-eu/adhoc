@@ -45,11 +45,26 @@ public class DuckDBTableWrapperParameters {
 	 */
 	private static final long DEFAULT_ARROW_BATCH_SIZE = 2048;
 
+	// DuckDB's default vector size is 2048 rows. Splitting below 1024 rows produces tasks too small
+	// to amortise thread-coordination overhead. Both spliterators use this threshold.
+	// See https://duckdb.org/docs/stable/internals/vector.html
+	private static final int MIN_SPLIT_ROWS = 1024;
+
 	@NonNull
 	JooqTableWrapperParameters base;
 
 	@Default
 	long arrowBatchSize = DEFAULT_ARROW_BATCH_SIZE;
+
+	/**
+	 * Minimum number of rows in a batch before {@link ArrowBatchSpliterator} will split it for parallel processing.
+	 * Splitting below this threshold produces tasks too small to amortise thread-coordination overhead.
+	 *
+	 * <p>
+	 * See https://duckdb.org/docs/stable/internals/vector.html
+	 */
+	@Default
+	int minSplitRows = MIN_SPLIT_ROWS;
 
 	/**
 	 * BEWARE This will not define underlying default dialect to MYSQL.

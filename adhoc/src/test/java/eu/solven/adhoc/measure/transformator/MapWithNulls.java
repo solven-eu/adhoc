@@ -24,24 +24,29 @@ package eu.solven.adhoc.measure.transformator;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import lombok.experimental.UtilityClass;
 
 /**
  * Unsafe as it accepts null values.
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
+@Deprecated(since = "Rely on eu.solven.pepper.collection.MapWithNulls with Pepper5.5")
 public class MapWithNulls {
 
-	public static Map<String, ?> of(String k, Object v) {
-		Map<String, Object> map = new LinkedHashMap<>();
+	public static <K, V> Map<K, V> of(K k, V v) {
+		Map<K, V> map = new LinkedHashMap<>();
 
 		map.put(k, v);
 
 		return map;
 	}
 
-	public static Map<String, ?> of(String k, Object v, String k2, Object v2) {
-		Map<String, Object> map = new LinkedHashMap<>();
+	public static <K, V> Map<K, V> of(K k, V v, K k2, V v2) {
+		Map<K, V> map = new LinkedHashMap<>();
 
 		map.put(k, v);
 		map.put(k2, v2);
@@ -49,13 +54,44 @@ public class MapWithNulls {
 		return map;
 	}
 
-	public static Map<String, ?> of(String k, Object v, String k2, Object v2, String k3, Object v3) {
-		Map<String, Object> map = new LinkedHashMap<>();
+	public static <K, V> Map<K, V> of(K k, V v, K k2, V v2, K k3, V v3) {
+		Map<K, V> map = new LinkedHashMap<>();
 
 		map.put(k, v);
 		map.put(k2, v2);
 		map.put(k3, v3);
 
 		return map;
+	}
+
+	public static <K, V> MapWithNullsBuilder<K, V> builder() {
+		return new MapWithNullsBuilder<K, V>();
+	}
+
+	/**
+	 * Lombok @Builder
+	 * 
+	 * @param <K>
+	 * @param <V>
+	 */
+	public static class MapWithNullsBuilder<K, V> {
+		final Map<K, V> map = new LinkedHashMap<>();
+		final AtomicBoolean built = new AtomicBoolean();
+
+		public MapWithNullsBuilder<K, V> put(K k, V v) {
+			if (built.get()) {
+				throw new IllegalStateException("built already");
+			}
+
+			map.put(k, v);
+
+			return this;
+		}
+
+		public Map<K, V> build() {
+			built.set(true);
+
+			return map;
+		}
 	}
 }

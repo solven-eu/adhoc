@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.util;
 
+import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -32,6 +33,7 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;
@@ -64,6 +66,7 @@ public class AdhocUnsafe {
 		failFast = true;
 		parallelism = defaultParallelism();
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
+		setNullComparator(DEFAULT_NULL_COMPARATOR);
 	}
 
 	public static void resetAll() {
@@ -237,4 +240,16 @@ public class AdhocUnsafe {
 			failFast = false;
 		}
 	}
+
+	public static final Comparator<Object> DEFAULT_NULL_COMPARATOR = ComparableElseClassComparatorV2.nullsHigh();
+	@Getter
+	private static Comparator<Object> nullComparator = DEFAULT_NULL_COMPARATOR;
+
+	public static void setNullComparator(Comparator<Object> nullComparator) {
+		AdhocUnsafe.nullComparator = nullComparator;
+		valueComparator = new ComparableElseClassComparatorV2(AdhocUnsafe.nullComparator);
+	}
+
+	@Getter
+	private static Comparator<Object> valueComparator = new ComparableElseClassComparatorV2(nullComparator);
 }

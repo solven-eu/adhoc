@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.util;
 
+import java.util.Comparator;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,5 +62,25 @@ public class TestAdhocUnsafe {
 		Assertions.assertThat(AdhocUnsafe.isFailFast()).isFalse();
 		AdhocUnsafe.inFailFast();
 		Assertions.assertThat(AdhocUnsafe.isFailFast()).isTrue();
+	}
+
+	@Test
+	public void testNullComparator() {
+		// By default, null is last
+		Assertions.assertThat(AdhocUnsafe.getNullComparator().compare("a", null)).isNegative();
+		Assertions.assertThat(AdhocUnsafe.getValueComparator().compare("a", null)).isNegative();
+
+		try {
+			AdhocUnsafe.setNullComparator(Comparator.nullsFirst((Comparator) Comparator.naturalOrder()));
+
+			Assertions.assertThat(AdhocUnsafe.getNullComparator().compare("a", null)).isPositive();
+			Assertions.assertThat(AdhocUnsafe.getValueComparator().compare("a", null)).isPositive();
+		} finally {
+			AdhocUnsafe.resetProperties();
+		}
+
+		// Ensure resetProperties did reset nullComparator
+		Assertions.assertThat(AdhocUnsafe.getNullComparator().compare("a", null)).isNegative();
+		Assertions.assertThat(AdhocUnsafe.getValueComparator().compare("a", null)).isNegative();
 	}
 }

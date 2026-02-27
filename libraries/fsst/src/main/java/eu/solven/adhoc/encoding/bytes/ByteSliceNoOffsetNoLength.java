@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.bytes;
 
 import java.util.Arrays;
 
@@ -29,31 +29,23 @@ import lombok.AllArgsConstructor;
 /**
  * A byte wrapper, enabling some sub-byte[] without creating a new array.
  * 
- * Like {@link ByteSlice} with offset==0.
+ * Like {@link ByteSlice} with offset==0 and length matching the input.
  * 
  * @author Benoit Lacelle
  */
 @AllArgsConstructor
-final class ByteSliceNoOffset implements IByteSlice {
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+final class ByteSliceNoOffsetNoLength implements IByteSlice {
 	final byte[] array;
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	final int length;
-
-	@Override
-	public boolean isFastAsArray() {
-		return false;
-	}
 
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] array() {
+	public byte[] buffer() {
 		return array;
 	}
 
 	@Override
 	public int length() {
-		return length;
+		return array.length;
 	}
 
 	@Override
@@ -63,7 +55,12 @@ final class ByteSliceNoOffset implements IByteSlice {
 
 	@Override
 	public String toString() {
-		return Arrays.toString(cropped());
+		return Arrays.toString(crop());
+	}
+
+	@Override
+	public boolean isFastCrop() {
+		return true;
 	}
 
 	/**
@@ -72,20 +69,28 @@ final class ByteSliceNoOffset implements IByteSlice {
 	 */
 	@SuppressWarnings("PMD.MethodReturnsInternalArray")
 	@Override
-	public byte[] cropped() {
-		if (array.length == length) {
-			return array;
+	public byte[] crop() {
+		return array;
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(array);
+	}
+
+	@Override
+	public IByteSlice sub(int off, int length) {
+		if (length > length()) {
+			throw new IllegalArgumentException("%s > %s".formatted(length, length()));
+		}
+		if (off == 0) {
+			return new ByteSliceNoOffset(array, length);
 		} else {
-			return Arrays.copyOfRange(array, 0, length);
+			return ByteSlice.builder().buffer(array).offset(off).length(length).build();
 		}
 	}
 
-	// Duplicated from jdk.internal.util.ArraysSupport.hashCode(int, byte[], int, int)
-	@Override
-	public int hashCode() {
-		return ByteSlice.hashCode(array, 0, length);
-	}
-
+	// CPD-OFF
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
@@ -104,5 +109,4 @@ final class ByteSliceNoOffset implements IByteSlice {
 	public byte read(int position) {
 		return array[position];
 	}
-
 }

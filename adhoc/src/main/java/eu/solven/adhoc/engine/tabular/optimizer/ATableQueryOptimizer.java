@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -126,7 +126,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 		boolean hasLeftoverFilteringColumns = inducerColumns.stream()
 				.map(IAdhocColumn::getName)
-				.collect(Collectors.toSet())
+				.collect(ImmutableSet.toImmutableSet())
 				.containsAll(FilterHelpers.getFilteredColumns(inducedLeftoverFilter));
 
 		if (hasLeftoverFilteringColumns) {

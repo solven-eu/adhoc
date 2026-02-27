@@ -41,6 +41,8 @@ import lombok.Value;
 @Value
 @Builder
 public class JooqTableWrapperParameters {
+	// Default JDBC fetchSize is typically 10
+	private static final int DEFAULT_FETCH_SIZE = 16 * 1024;
 
 	@NonNull
 	@Default
@@ -51,6 +53,15 @@ public class JooqTableWrapperParameters {
 
 	@NonNull
 	final TableLike<?> table;
+
+	// https://docs.aws.amazon.com/redshift/latest/dg/set-the-JDBC-fetch-size-parameter.html
+	// https://stackoverflow.com/questions/1318354/what-does-statement-setfetchsizensize-method-really-do-in-sql-server-jdbc-driv
+	// BEWARE We may have multiple concurrent SQL queries, and we may prefer to adjust this given number/type of fetched
+	// columns
+	// https://github.com/apache/metamodel/blob/master/jdbc/src/main/java/org/apache/metamodel/jdbc/FetchSizeCalculator.java
+	// If we encounter OutOfMemoryError, we should lower this parameter.
+	@Default
+	final int statementFetchSize = DEFAULT_FETCH_SIZE;
 
 	/**
 	 * Lombok @Builder

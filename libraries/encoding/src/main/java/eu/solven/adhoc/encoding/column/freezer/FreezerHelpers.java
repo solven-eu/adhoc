@@ -20,54 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.column.freezer;
 
-import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import lombok.experimental.UtilityClass;
 
 /**
- * A byte wrapper, enabling some sub-byte[] without creating a new array.
+ * Utilities for {@link IFreezingWithContext}.
  * 
  * @author Benoit Lacelle
  */
-public interface IByteSlice {
+@UtilityClass
+public class FreezerHelpers {
 
-	/**
-	 * Useful is critical section when one prefer to operate on a `byte[]`.
-	 * 
-	 * @return true if {@link #cropped()} is expected to be very fast (e.g. returning a reference).
-	 */
-	boolean isFastAsArray();
-
-	/**
-	 * May or may not be the original array
-	 * 
-	 * @return a non-defensive copy of this as a `byte[]`.
-	 */
-	byte[] cropped();
-
-	byte read(int position);
-
-	/**
-	 * The inner array
-	 * 
-	 * @return a non-defensive reference to the internal array
-	 */
-	byte[] array();
-
-	int length();
-
-	int offset();
-
-	/**
-	 * 
-	 * @param charset
-	 * @return a {@link String} build over current {@link IByteSlice}.
-	 */
-	default String asString(Charset charset) {
-		return new String(array(), offset(), length(), charset);
-	}
-
-	static IByteSlice wrap(byte[] input) {
-		return new ByteSliceNoOffsetNoLength(input);
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
+	public static Set<?> classesWithContext(Map<String, Object> freezingContext, List<?> array) {
+		return (Set<?>) freezingContext.computeIfAbsent("classes",
+				k -> array.stream().map(o -> o == null ? null : o.getClass()).collect(Collectors.toSet()));
 	}
 }

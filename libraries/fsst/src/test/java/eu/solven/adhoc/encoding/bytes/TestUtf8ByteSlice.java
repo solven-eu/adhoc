@@ -20,39 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+package eu.solven.adhoc.encoding.bytes;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestByteSliceNoOffset {
+import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+
+public class TestUtf8ByteSlice {
+	@Test
+	public void testUtf8ByteSlice() {
+		Utf8ByteSlice slice = Utf8ByteSlice.fromString("foo");
+
+		Assertions.assertThat(slice).hasToString("foo");
+	}
 
 	@Test
-	public void testLengthOffset() {
-		String original = "hello";
-		byte[] originalBytesStrict = original.getBytes(StandardCharsets.UTF_8);
-		int suffix = 2;
-		byte[] offsetBytes = new byte[originalBytesStrict.length + suffix];
+	public void testJackson() {
+		Utf8ByteSlice original = Utf8ByteSlice.fromString("foo");
+		String asString = PepperJacksonTestHelper.asString(Object.class, original);
 
-		// Make sure all inputs are non-zero, to check they are actually discarded
-		Arrays.fill(offsetBytes, (byte) 7);
-
-		// Copy the content with a suffix
-		System.arraycopy(originalBytesStrict, 0, offsetBytes, 0, originalBytesStrict.length);
-
-		IByteSlice byteSlice = new ByteSliceNoOffset(offsetBytes, originalBytesStrict.length);
-
-		Assertions.assertThat(byteSlice.asString(StandardCharsets.UTF_8)).isEqualTo(original);
-		Assertions.assertThat(byteSlice).hasToString("[104, 101, 108, 108, 111]");
-
-		Assertions.assertThat(byteSlice.hashCode()).isEqualTo(Arrays.hashCode(originalBytesStrict));
-		Assertions.assertThat(byteSlice)
-				.isEqualTo(ByteSlice.builder().array(offsetBytes).length(originalBytesStrict.length).build());
-
-		Assertions.assertThat(byteSlice.array()).isSameAs(offsetBytes);
-		Assertions.assertThat(byteSlice.cropped()).containsExactly(originalBytesStrict);
+		Assertions.assertThat(asString).isEqualTo("\"foo\"");
 	}
 }

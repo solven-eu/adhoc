@@ -23,6 +23,7 @@
 package eu.solven.adhoc.data.column;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
@@ -78,5 +79,19 @@ public interface IValueProviderTestHelpers {
 		});
 
 		return doubleRef.get();
+	}
+
+	static Object getObject(IValueProvider valueProvider) {
+		AtomicReference<Object> longRef = new AtomicReference<>();
+
+		valueProvider.acceptReceiver(new IValueReceiver() {
+
+			@Override
+			public void onObject(Object v) {
+				longRef.set(v);
+			}
+		});
+
+		return longRef.get();
 	}
 }

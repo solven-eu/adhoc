@@ -140,7 +140,7 @@ public class ColumnarSliceFactory extends ASliceFactory {
 
 	@Override
 	public IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys) {
-		assert !isNotOrdered(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
+		assert !isNotSequenced(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
 
 		return MapBuilderPreKeys.builder()
 				.factory(this)

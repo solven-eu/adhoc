@@ -253,6 +253,14 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 		IJooqTableQueryFactory queryFactory = makeQueryFactory();
 
+		// TODO This should be checked only once. Is it expensive?
+		makeDsl().connection(c -> {
+			if (c.getAutoCommit()) {
+				// Performance check-up
+				log.warn("autoCommit should not be true. connection={}", c);
+			}
+		});
+
 		IJooqTableQueryFactory.QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
 
 		if (tableQuery.isDebugOrExplain()) {
@@ -410,7 +418,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 		AtomicBoolean isSecondCancellationListenerRegistered = new AtomicBoolean();
 
-		return resultQuery.stream().onClose(() -> {
+		return resultQuery.fetchSize(this.tableParameters.getStatementFetchSize()).stream().onClose(() -> {
 			queryPod.removeCancellationListener(cancellationListener);
 			queryPod.removeCancellationListener(cancellationListenerOnceStarted);
 

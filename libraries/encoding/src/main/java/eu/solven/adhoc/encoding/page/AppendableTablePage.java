@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IAppendableColumnFactory;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
@@ -195,7 +196,15 @@ public class AppendableTablePage implements IAppendableTablePage {
 		@Override
 		public Object readValue(int columnIndex) {
 			IReadableColumn column = columnsRead.get().get(columnIndex);
-			return column.readValue(rowIndex);
+			Object value = column.readValue(rowIndex);
+			// columnsWrite is nullified when the page is fully frozen (last row written + freezer chain ran).
+			// When it is still non-null the page was never fully frozen — the freezer chain
+			// (FsstFreezingWithContext / Utf8ToStringFreezer) never ran — so raw IByteSlice values
+			// may remain. Normalise them here so callers always receive plain Java types.
+			if (columnsWrite.get() != null && value instanceof IByteSlice bs) {
+				return bs.toString();
+			}
+			return value;
 		}
 
 		@Override

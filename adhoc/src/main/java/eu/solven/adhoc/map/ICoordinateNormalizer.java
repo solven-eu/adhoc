@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.map;
 
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
+
 /**
  * Turns Objects into the equivalent normalized Object to be considered as coordinates.
  * 
@@ -39,4 +42,28 @@ public interface ICoordinateNormalizer {
 	 * @return
 	 */
 	Object normalizeCoordinate(Object rawCoordinate);
+
+	default IValueProvider normalizeCoordinate(IValueProvider raw) {
+		if (raw == null) {
+			throw new IllegalArgumentException("IValueProvider must not be null");
+		}
+		return vr -> {
+			raw.acceptReceiver(new IValueReceiver() {
+
+				@Override
+				public void onObject(Object v) {
+					Object normalized = normalizeCoordinate(v);
+
+					if (normalized instanceof Long l) {
+						vr.onLong(l);
+					} else if (normalized instanceof Double d) {
+						vr.onDouble(d);
+					} else {
+						vr.onObject(normalized);
+					}
+
+				}
+			});
+		};
+	}
 }

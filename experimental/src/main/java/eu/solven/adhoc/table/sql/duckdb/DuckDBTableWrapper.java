@@ -132,8 +132,10 @@ public class DuckDBTableWrapper extends JooqTableWrapper {
 			Object arrowReader = duckRs.arrowExportStream(allocator, duckDBParameters.getArrowBatchSize());
 			resources.add(() -> ArrowReflection.closeReader(arrowReader));
 
-			Stream<ITabularRecord> stream =
-					StreamSupport.stream(new ArrowBatchSpliterator(arrowReader, tabularRecordFactory, queryPod), false);
+			Stream<ITabularRecord> stream = StreamSupport.stream(new ArrowBatchSpliterator(arrowReader,
+					tabularRecordFactory,
+					queryPod,
+					duckDBParameters.getMinSplitRows()), false);
 
 			return stream.onClose(() -> closeAll(resources));
 		} catch (RuntimeException e) {
