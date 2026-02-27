@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
 import com.google.common.util.concurrent.Futures;
@@ -202,7 +203,8 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 		IOperatorFactory operatorFactory = IHasOperatorFactory.getOperatorsFactory(engine);
 		forest.getMeasures().forEach(measure -> {
 			try {
-				ColumnGeneratorHelpers.getColumnGenerators(operatorFactory, Set.of(measure), IValueMatcher.MATCH_ALL)
+				ColumnGeneratorHelpers
+						.getColumnGenerators(operatorFactory, ImmutableSet.of(measure), IValueMatcher.MATCH_ALL)
 						.forEach(columnGenerator -> {
 							// TODO How conflicts should be handled? `ColumnMetadata.merge`?
 							columnGenerator.getColumnTypes().forEach((columnName, type) -> {

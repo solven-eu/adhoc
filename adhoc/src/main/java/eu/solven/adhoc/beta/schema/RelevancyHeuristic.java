@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.beta.schema;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -81,7 +80,7 @@ public class RelevancyHeuristic {
 	}
 
 	public CubeRelevancy computeRelevancies(IMeasureForest forest) {
-		Set<String> leaves = new HashSet<>();
+		Set<String> leaves = new LinkedHashSet<>();
 		SetMultimap<String, String> measureToDependants =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 

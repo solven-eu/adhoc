@@ -25,12 +25,12 @@ package eu.solven.adhoc.measure.decomposition.many2many;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -136,7 +136,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		Map<String, ?> elementCoordinates = slice.getSlice().optGroupBy(elementColumns);
 		if (elementCoordinates.size() < elementColumns.size()) {
 			// We lack some coordinates
-			return List.of(IDecompositionEntry.of(Map.of(), value));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
 		Set<Object> groups = getGroups(slice, elementCoordinates);
@@ -217,7 +217,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
-		Set<IAdhocColumn> allGroupBys = new HashSet<>();
+		Set<IAdhocColumn> allGroupBys = new LinkedHashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		// The groupColumn is generally meaningless to the underlying measure
 		allGroupBys.removeIf(c -> c.getName().equals(groupColumn));
@@ -242,7 +242,8 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				// Plain filter on the group column: transform it into a filter into the input column
 				Set<Map<String, IValueMatcher>> elements = elementsMatchingGroups(columnFilter.getValueMatcher());
 
-				Set<ISliceFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
+				Set<ISliceFilter> elementsFilters =
+						elements.stream().map(AndFilter::and).collect(ImmutableSet.toImmutableSet());
 
 				ISliceFilter elementAdditionalFilter = FilterBuilder.or(elementsFilters).optimize();
 
