@@ -23,7 +23,7 @@
 package eu.solven.adhoc.measure;
 
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -93,7 +93,7 @@ public class MeasureForest implements IMeasureForest {
 	}
 
 	public static MeasureForest fromMeasures(String name, Collection<? extends IMeasure> measures) {
-		Map<String, IMeasure> nameToMeasure = new HashMap<>();
+		Map<String, IMeasure> nameToMeasure = new LinkedHashMap<>();
 
 		measures.forEach(measure -> {
 			String measureName = measure.getName();

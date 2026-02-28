@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.decomposition.many2many;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -217,7 +217,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
-		Set<IAdhocColumn> allGroupBys = new HashSet<>();
+		Set<IAdhocColumn> allGroupBys = new LinkedHashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		// The groupColumn is generally meaningless to the underlying measure
 		allGroupBys.removeIf(c -> c.getName().equals(groupColumn));

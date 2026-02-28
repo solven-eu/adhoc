@@ -23,9 +23,8 @@
 package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -324,7 +323,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	@Override
 	public List<ColumnMetadata> getColumns() {
 		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
-		Set<String> nullableColumns = new HashSet<>();
+		Set<String> nullableColumns = new LinkedHashSet<>();
 
 		rows.forEach(row -> row.forEach((k, v) -> {
 			if (v == null) {
@@ -334,7 +333,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 			}
 		}));
 
-		Map<String, Class<?>> columnToClass = new HashMap<>();
+		Map<String, Class<?>> columnToClass = new LinkedHashMap<>();
 
 		columnToClasses.asMap().forEach((column, classes) -> {
 			if (classes.size() == 1) {

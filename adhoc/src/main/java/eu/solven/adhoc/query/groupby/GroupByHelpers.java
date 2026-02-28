@@ -22,16 +22,18 @@
  */
 package eu.solven.adhoc.query.groupby;
 
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
@@ -44,10 +46,8 @@ import lombok.experimental.UtilityClass;
 public class GroupByHelpers {
 
 	public static IAdhocGroupBy union(IAdhocGroupBy left, @NonNull IAdhocGroupBy right) {
-		Set<IAdhocColumn> union = new HashSet<>();
-
-		union.addAll(left.getNameToColumn().values());
-		union.addAll(right.getNameToColumn().values());
+		ImmutableSet<IAdhocColumn> union =
+				AdhocCollectionHelpers.copyOfSets(left.getNameToColumn().values(), right.getNameToColumn().values());
 
 		if (union.isEmpty()) {
 			return GroupByColumns.GRAND_TOTAL;

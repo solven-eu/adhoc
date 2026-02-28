@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -103,7 +103,7 @@ public class Combinator implements ICombinator, IHasCombinationKey {
 	 * @return
 	 */
 	public static Map<String, ?> makeAllOptions(IHasUnderlyingMeasures hasUnderlyings, Map<String, ?> explicitOptions) {
-		Map<String, Object> allOptions = new HashMap<>();
+		Map<String, Object> allOptions = new LinkedHashMap<>();
 
 		// Default options
 		// Enable visibility to the Combinator of the name of the received values

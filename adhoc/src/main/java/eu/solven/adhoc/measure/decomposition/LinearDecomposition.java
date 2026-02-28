@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.decomposition;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -148,7 +148,7 @@ public class LinearDecomposition implements IDecomposition {
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
-		Set<IAdhocColumn> allGroupBys = new HashSet<>();
+		Set<IAdhocColumn> allGroupBys = new LinkedHashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		allGroupBys.removeIf(c -> c.getName().equals(outputColumn));
 

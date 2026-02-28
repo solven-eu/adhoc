@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -93,7 +92,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final Collection<CubeQueryStep> pending = new LinkedHashSet<>();
 
 	// Holds the querySteps which underlying steps are processed
-	final Set<CubeQueryStep> processed = new HashSet<>();
+	final Set<CubeQueryStep> processed = new LinkedHashSet<>();
 
 	// From cache
 	final Map<CubeQueryStep, ISliceToValue> stepToValue = new LinkedHashMap<>();
