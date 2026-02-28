@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -115,8 +116,8 @@ public final class InMatcher implements IValueMatcher, IColumnToString {
 		Map<Boolean, List<Object>> byValueMatcher =
 				unnested.stream().collect(Collectors.partitioningBy(operand -> operand instanceof IValueMatcher));
 
-		List<Object> unnestedNotNull = byValueMatcher.getOrDefault(Boolean.FALSE, List.of());
-		List<IValueMatcher> valueMatchers = (List) byValueMatcher.getOrDefault(Boolean.TRUE, List.of());
+		List<Object> unnestedNotNull = byValueMatcher.getOrDefault(Boolean.FALSE, ImmutableList.of());
+		List<IValueMatcher> valueMatchers = (List) byValueMatcher.getOrDefault(Boolean.TRUE, ImmutableList.of());
 
 		List<IValueMatcher> orOperands = new ArrayList<>();
 

@@ -29,8 +29,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -136,7 +136,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		Map<String, ?> elementCoordinates = slice.getSlice().optGroupBy(elementColumns);
 		if (elementCoordinates.size() < elementColumns.size()) {
 			// We lack some coordinates
-			return List.of(IDecompositionEntry.of(Map.of(), value));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
 		Set<Object> groups = getGroups(slice, elementCoordinates);
@@ -242,7 +242,8 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				// Plain filter on the group column: transform it into a filter into the input column
 				Set<Map<String, IValueMatcher>> elements = elementsMatchingGroups(columnFilter.getValueMatcher());
 
-				Set<ISliceFilter> elementsFilters = elements.stream().map(AndFilter::and).collect(Collectors.toSet());
+				Set<ISliceFilter> elementsFilters =
+						elements.stream().map(AndFilter::and).collect(ImmutableSet.toImmutableSet());
 
 				ISliceFilter elementAdditionalFilter = FilterBuilder.or(elementsFilters).optimize();
 

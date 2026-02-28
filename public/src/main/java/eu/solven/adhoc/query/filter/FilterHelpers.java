@@ -262,7 +262,7 @@ public class FilterHelpers {
 	 *         `NOT(OR(...))`
 	 */
 	public static Set<ISliceFilter> splitAnd(ISliceFilter filter) {
-		return splitAnd(Set.of(filter));
+		return splitAnd(ImmutableSet.of(filter));
 	}
 
 	public static Set<ISliceFilter> splitAnd(Collection<? extends ISliceFilter> filters) {
