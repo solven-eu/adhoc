@@ -28,7 +28,6 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +132,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		List<Field<?>> fields = getFields();
 
 		// https://duckdb.org/docs/sql/expressions/star.html
-		Map<String, ColumnMetadata> columnToType = new HashMap<>();
+		Map<String, ColumnMetadata> columnToType = new LinkedHashMap<>();
 
 		// TODO Qualify columns with table
 		// https://duckdbsnippets.com/snippets/204/label-columns-based-on-source-table

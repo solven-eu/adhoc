@@ -23,7 +23,6 @@
 package eu.solven.adhoc.query.cube;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -46,6 +45,7 @@ import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -179,11 +179,9 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		}
 
 		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
-			Set<IAdhocColumn> allGroupByColumns = new LinkedHashSet<>();
-
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
-			allGroupByColumns.addAll(this.build().getGroupBy().getNameToColumn().values());
-			groupBys.stream().forEach(allGroupByColumns::add);
+			ImmutableSet<IAdhocColumn> allGroupByColumns =
+					AdhocCollectionHelpers.copyOfSets(this.build().getGroupBy().getNameToColumn().values(), groupBys);
 
 			groupBy(GroupByColumns.of(allGroupByColumns));
 
