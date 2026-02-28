@@ -108,7 +108,7 @@ public class AdhocSchema implements IAdhocSchema {
 				ICubeWrapper cube = nameToCube.get(cubeName);
 
 				if (cube == null) {
-					return ImmutableList.<ColumnMetadata>of();
+					return ImmutableList.of();
 				} else {
 					Collection<ColumnMetadata> rawColumns = cube.getColumns();
 
