@@ -188,15 +188,17 @@ public class PivotableSocialWebFluxSecurity {
 								"/api/login/v1/csrf",
 								// if not logged in, we redirect to the login URL
 								// if logged in, we redirect to the loginSuccess URL
-								"/api/login/v1/html")
+								"/api/login/v1/html",
+								// see TestSecurity_WithOAuth2_asOAuth2User.testLogout() for the workflow
+								"/api/login/v1/logout"
+								)
 						.permitAll()
 
 						.pathMatchers(
 								// // `BASIC` should be added here only if fakeUser
 								"/api/login/v1/basic",
 								"/api/login/v1/user",
-								"/api/login/v1/oauth2/token",
-								"/api/login/v1/logout")
+								"/api/login/v1/oauth2/token")
 						.authenticated()
 
 						// The rest needs to be authenticated

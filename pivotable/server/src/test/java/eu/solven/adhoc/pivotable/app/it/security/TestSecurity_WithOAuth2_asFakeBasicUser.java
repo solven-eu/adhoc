@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpHeaders;
@@ -52,7 +51,6 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, IPivotableSpringProfiles.P_FAKEUSER })
 @Slf4j
-@Disabled("https://github.com/spring-projects/spring-security/issues/18782")
 public class TestSecurity_WithOAuth2_asFakeBasicUser extends TestSecurity_WithOAuth2_asOAuth2User {
 
 	@Override

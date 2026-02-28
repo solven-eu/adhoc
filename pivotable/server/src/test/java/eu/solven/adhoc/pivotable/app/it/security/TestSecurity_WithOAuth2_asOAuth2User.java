@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,7 +75,6 @@ import lombok.extern.slf4j.Slf4j;
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 // https://stackoverflow.com/questions/56784289/autoconfigurewebtestclienttimeout-600000-has-no-effect
 @AutoConfigureWebTestClient(timeout = "PT10M")
-@Disabled("https://github.com/spring-projects/spring-security/issues/18782")
 public class TestSecurity_WithOAuth2_asOAuth2User {
 
 	// Spring Boot will create a `WebTestClient` for you,
@@ -407,7 +405,7 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 				.exchange()
 
 				.expectStatus()
-				.isUnauthorized();
+				.isNotFound();
 	}
 
 	@Test
