@@ -23,7 +23,7 @@
 package eu.solven.adhoc.query.cube;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -179,7 +179,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		}
 
 		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
-			Set<IAdhocColumn> allGroupByColumns = new HashSet<>();
+			Set<IAdhocColumn> allGroupByColumns = new LinkedHashSet<>();
 
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
 			allGroupByColumns.addAll(this.build().getGroupBy().getNameToColumn().values());

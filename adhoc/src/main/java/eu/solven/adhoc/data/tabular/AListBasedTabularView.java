@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,7 +37,7 @@ import lombok.experimental.SuperBuilder;
 public abstract class AListBasedTabularView extends ATabularView {
 
 	public void checkIsDistinct() {
-		Set<Map<String, ?>> slices = new HashSet<>();
+		Set<Map<String, ?>> slices = new LinkedHashSet<>();
 
 		slices().forEach(slice -> {
 			Map<String, ?> coordinate = slice.getCoordinates();

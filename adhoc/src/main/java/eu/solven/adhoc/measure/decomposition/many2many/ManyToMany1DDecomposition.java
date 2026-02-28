@@ -24,12 +24,13 @@ package eu.solven.adhoc.measure.decomposition.many2many;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -107,7 +108,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		Optional<?> optInput = slice.getSlice().optGroupBy(elementColumn);
 		if (optInput.isEmpty()) {
 			// There is no expressed element
-			return List.of(IDecompositionEntry.of(Map.of(), value));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
 		Object element = optInput.get();
@@ -154,7 +155,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 					.toList();
 		} else {
 			// A single contribution for the filtered groups
-			return List.of(IDecompositionEntry.of(Map.of(), scale(groups, value)));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(), scale(groups, value)));
 		}
 	}
 
@@ -226,7 +227,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
-		Set<IAdhocColumn> allGroupBys = new HashSet<>();
+		Set<IAdhocColumn> allGroupBys = new LinkedHashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		// The groupColumn is generally meaningless to the underlying measure
 		allGroupBys.removeIf(c -> c.getName().equals(groupColumn));

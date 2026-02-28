@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.MeasurelessQuery;
@@ -76,7 +78,7 @@ public class DecompositionHelpers {
 
 		if (FilterHelpers.getFilteredColumns(step.getFilter()).contains(column)) {
 			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			ISliceFilter supressedFilter = SimpleFilterEditor.suppressColumn(step.getFilter(), Set.of(column));
+			ISliceFilter supressedFilter = SimpleFilterEditor.suppressColumn(step.getFilter(), ImmutableSet.of(column));
 
 			underlyingStep.filter(supressedFilter);
 			// BEWARE In a different design, we should ensure we query only the relevant underlying double columns.

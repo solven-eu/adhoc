@@ -24,12 +24,13 @@ package eu.solven.adhoc.measure.decomposition;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
@@ -75,7 +76,7 @@ public class LinearDecomposition implements IDecomposition {
 
 		Optional<?> optInput = slice.getSlice().optGroupBy(inputColumn);
 		if (optInput.isEmpty()) {
-			return List.of(IDecompositionEntry.of(Map.of(), IValueProvider.setValue(value)));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(), IValueProvider.setValue(value)));
 		}
 
 		Object input = optInput.get();
@@ -84,9 +85,9 @@ public class LinearDecomposition implements IDecomposition {
 
 		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 		if (min.equals(input)) {
-			return List.of(IDecompositionEntry.of(Map.of(outputColumn, min), value));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(outputColumn, min), value));
 		} else if (max.equals(input)) {
-			return List.of(IDecompositionEntry.of(Map.of(outputColumn, max), value));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(outputColumn, max), value));
 		} else {
 			List<IDecompositionEntry> output = new ArrayList<>(2);
 
@@ -148,7 +149,7 @@ public class LinearDecomposition implements IDecomposition {
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
-		Set<IAdhocColumn> allGroupBys = new HashSet<>();
+		Set<IAdhocColumn> allGroupBys = new LinkedHashSet<>();
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		allGroupBys.removeIf(c -> c.getName().equals(outputColumn));
 
