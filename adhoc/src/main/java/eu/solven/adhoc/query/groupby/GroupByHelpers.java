@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.query.groupby;
 
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,7 +44,7 @@ import lombok.experimental.UtilityClass;
 public class GroupByHelpers {
 
 	public static IAdhocGroupBy union(IAdhocGroupBy left, @NonNull IAdhocGroupBy right) {
-		Set<IAdhocColumn> union = new HashSet<>();
+		Set<IAdhocColumn> union = new LinkedHashSet<>();
 
 		union.addAll(left.getNameToColumn().values());
 		union.addAll(right.getNameToColumn().values());

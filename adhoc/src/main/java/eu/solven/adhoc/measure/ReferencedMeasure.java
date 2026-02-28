@@ -73,7 +73,7 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 	@Override
 	@JsonIgnore
 	public Set<String> getTags() {
-		return Set.of("reference");
+		return ImmutableSet.of("reference");
 	}
 
 	@Override

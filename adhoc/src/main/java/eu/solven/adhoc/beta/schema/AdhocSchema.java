@@ -24,7 +24,7 @@ package eu.solven.adhoc.beta.schema;
 
 import java.time.Duration;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -108,7 +108,7 @@ public class AdhocSchema implements IAdhocSchema {
 				ICubeWrapper cube = nameToCube.get(cubeName);
 
 				if (cube == null) {
-					return List.<ColumnMetadata>of();
+					return ImmutableList.of();
 				} else {
 					Collection<ColumnMetadata> rawColumns = cube.getColumns();
 
@@ -348,7 +348,7 @@ public class AdhocSchema implements IAdhocSchema {
 	protected ICustomTypeManagerSimple makeTypeManager(ICubeWrapper cubeWrapper) {
 		Collection<? extends ColumnMetadata> cubeColumns = cacheCubeToColumnToType.getUnchecked(cubeWrapper.getName());
 
-		Map<String, Class<?>> columnToType = new HashMap<>();
+		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
 
 		cubeColumns.forEach(column -> columnToType.put(column.getName(), column.getType()));
 

@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.model;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -60,7 +61,7 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 
 	@Override
 	public List<String> getUnderlyingNames() {
-		return List.of();
+		return ImmutableList.of();
 	}
 
 	@Override
@@ -69,7 +70,7 @@ public class EmptyMeasure implements IMeasure, IHasUnderlyingMeasures {
 
 			@Override
 			public List<CubeQueryStep> getUnderlyingSteps() {
-				return List.of();
+				return ImmutableList.of();
 			}
 
 			@Override
