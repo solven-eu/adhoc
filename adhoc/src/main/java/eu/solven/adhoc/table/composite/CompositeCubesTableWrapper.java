@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.composite;
 
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -502,11 +501,11 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 *            the forest with composite cube own measures.
 	 */
 	public IMeasureForest injectUnderlyingMeasures(IMeasureForest compositeForest) {
-		Set<String> compositeMeasures = new HashSet<>(compositeForest.getNameToMeasure().keySet());
+		Set<String> compositeMeasures = new LinkedHashSet<>(compositeForest.getNameToMeasure().keySet());
 
 		SetMultimap<String, String> measureToCubes = HashMultimap.create();
 
-		Set<IMeasure> measuresToAdd = new HashSet<>();
+		Set<IMeasure> measuresToAdd = new LinkedHashSet<>();
 
 		cubes.forEach(subCube -> {
 			subCube.getMeasures().stream().forEach(subMeasure -> {

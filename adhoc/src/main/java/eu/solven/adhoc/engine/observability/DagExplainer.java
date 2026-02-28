@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.observability;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,8 +82,8 @@ public class DagExplainer implements IDagExplainer {
 	@Value
 	@RequiredArgsConstructor
 	public static class DagExplainerState {
-		final Map<CubeQueryStep, String> stepToIndentation = new HashMap<>();
-		final Map<CubeQueryStep, Integer> stepToReference = new HashMap<>();
+		final Map<CubeQueryStep, String> stepToIndentation = new LinkedHashMap<>();
+		final Map<CubeQueryStep, Integer> stepToReference = new LinkedHashMap<>();
 
 		AdhocQueryId queryId;
 		IHasDagFromInducedToInducer dag;

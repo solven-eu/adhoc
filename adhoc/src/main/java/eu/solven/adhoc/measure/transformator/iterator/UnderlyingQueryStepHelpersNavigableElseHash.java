@@ -24,8 +24,8 @@ package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
@@ -98,7 +98,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		}
 
 		// This is expensive: collected all sorted slices, to skip them from notSorted legs
-		Set<IAdhocSlice> sortedSlicesAsSet = new HashSet<>();
+		Set<IAdhocSlice> sortedSlicesAsSet = new LinkedHashSet<>();
 
 		// BEWARE: This will fill `sortedSlicesAsSet` lazily, while iterating along sortedSlices, before processing
 		// notSorted slices. This is broken if one`.parallel` the stream.
@@ -167,7 +167,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	private static List<Stream<SliceAndMeasures>> unsortedStreams(CubeQueryStep queryStep,
 			List<? extends ISliceToValue> underlyings,
 			Set<IAdhocSlice> sortedSlicesAsSet) {
-		Set<IAdhocSlice> unsortedSlicesAsSet = new HashSet<>();
+		Set<IAdhocSlice> unsortedSlicesAsSet = new LinkedHashSet<>();
 
 		List<Stream<SliceAndMeasures>> unsortedStreams = new ArrayList<>();
 
