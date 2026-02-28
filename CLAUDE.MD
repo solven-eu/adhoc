@@ -12,7 +12,7 @@
 - **Language / runtime**: Java 21, multi-module Maven project
 - **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks)
 - **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
-- **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`
+- **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`. When reading PMD output, use the `Grep` tool to filter for `org.apache.maven.plugins.pmd.PmdViolationCheckMojo` to quickly locate violations.
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok
 
 ### Module structure (top-level Maven modules)

@@ -72,11 +72,14 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 	final FilterUtility filterHelper;
 
+	final DuckDBInducedEvaluator duckDBEvaluator;
+
 	public ATableQueryOptimizer(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		this.factories = factories;
 		this.filterOptimizer = filterOptimizer;
 
 		this.filterHelper = FilterUtility.builder().optimizer(filterOptimizer).build();
+		this.duckDBEvaluator = new DuckDBInducedEvaluator();
 	}
 
 	/**
@@ -170,6 +173,20 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		}
 
 		ISliceFilter sliceFilter = optSliceFilter.get();
+
+		// Fast path: delegate to DuckDB for vectorized aggregation when possible
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> duckDBResult = duckDBEvaluator.tryEvaluateViaDuckDB(factories,
+				filterOptimizer,
+				inducerValues,
+				inducer,
+				induced,
+				sliceFilter,
+				aggregation,
+				aggregator);
+		if (duckDBResult.isPresent()) {
+			return duckDBResult.get();
+		}
+
 		FilterMatcher filterMatcher =
 				FilterMatcher.builder().filter(sliceFilter).onMissingColumn(FilterMatcher.failOnMissing()).build();
 

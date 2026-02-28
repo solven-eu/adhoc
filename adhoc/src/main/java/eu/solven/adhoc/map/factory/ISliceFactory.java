@@ -25,6 +25,8 @@ package eu.solven.adhoc.map.factory;
 import java.util.Collection;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
@@ -44,12 +46,23 @@ import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 public interface ISliceFactory {
 
 	/**
+	 * BEWARE The input {@link Iterable} must be sequenced. Typically, `Set.of` is rejected as not sequenced.
 	 * 
 	 * @param keys
 	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
 	 */
 	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
 
+	/**
+	 * 
+	 * @param keys
+	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
+	 */
+	default IMapBuilderPreKeys newMapBuilder(String... keys) {
+		return newMapBuilder(ImmutableList.copyOf(keys));
+	}
+
+	@Deprecated(since = "not used anymore", forRemoval = true)
 	IAdhocMap buildMap(IHasEntries hasEntries);
 
 	SequencedSetLikeList internKeyset(Collection<? extends String> keys);

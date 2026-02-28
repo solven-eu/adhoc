@@ -64,7 +64,7 @@ public class TestRowSliceFactory {
 	}
 
 	@Test
-	public void isNorOrdered() {
+	public void isNotSequenced() {
 		Assertions.assertThat(factory.isNotSequenced(Set.of("a"))).isTrue();
 
 		{
