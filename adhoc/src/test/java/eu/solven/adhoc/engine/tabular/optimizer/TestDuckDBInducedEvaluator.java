@@ -62,7 +62,7 @@ public class TestDuckDBInducedEvaluator {
 
 	AdhocFactories factories = AdhocFactories.builder().build();
 	FilterOptimizer filterOptimizer = FilterOptimizer.builder().build();
-	DuckDBInducedEvaluator evaluator = new DuckDBInducedEvaluator();
+	DuckDBInducedEvaluator evaluator = new DuckDBInducedEvaluator(factories, filterOptimizer);
 	RowSliceFactory sliceFactory = RowSliceFactory.builder().build();
 
 	/**
@@ -106,14 +106,8 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				inducerValues,
-				inducer,
-				induced,
-				ISliceFilter.MATCH_ALL,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
 		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
@@ -147,14 +141,8 @@ public class TestDuckDBInducedEvaluator {
 		// Only keep rows where country = "FR"
 		ISliceFilter leftoverFilter = ColumnFilter.matchEq("country", "FR");
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				inducerValues,
-				inducer,
-				induced,
-				leftoverFilter,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(inducerValues, inducer, induced, leftoverFilter, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
 		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
@@ -179,14 +167,8 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				inducerValues,
-				inducer,
-				induced,
-				ISliceFilter.MATCH_ALL,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
 		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
@@ -214,14 +196,8 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				inducerValues,
-				inducer,
-				induced,
-				ISliceFilter.MATCH_ALL,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
 		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
@@ -249,14 +225,8 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				inducerValues,
-				inducer,
-				induced,
-				ISliceFilter.MATCH_ALL,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
 		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
@@ -285,14 +255,8 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				inducerValues,
-				inducer,
-				induced,
-				ISliceFilter.MATCH_ALL,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		// PRODUCT is not supported by DuckDB path → must fall back (return empty)
 		Assertions.assertThat(result).isEmpty();
@@ -310,14 +274,8 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result = evaluator.tryEvaluateViaDuckDB(factories,
-				filterOptimizer,
-				empty,
-				inducer,
-				induced,
-				ISliceFilter.MATCH_ALL,
-				aggregation,
-				aggregator);
+		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+				evaluator.tryEvaluate(empty, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		// Empty input → skip DuckDB path
 		Assertions.assertThat(result).isEmpty();

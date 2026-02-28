@@ -103,8 +103,7 @@ public class SpringImplicitOptions implements IImplicitOptions {
 			String prefix = e.getKey();
 			Set<? extends IQueryOption> orderedOptions = e.getValue();
 
-			Set<IQueryOption> intersection =
-					Sets.intersection(query.getOptions(), ImmutableSet.copyOf(orderedOptions));
+			Set<IQueryOption> intersection = Sets.intersection(query.getOptions(), ImmutableSet.copyOf(orderedOptions));
 			if (!intersection.isEmpty()) {
 				log.debug("Query has option {}, overriding any related option from the environment", intersection);
 				return;

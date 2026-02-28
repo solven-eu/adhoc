@@ -109,7 +109,7 @@ public class MeasureForestFromResource {
 			optRawUnderlyings.ifPresent(rawUnderlyings -> {
 				List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
 					return registerMeasuresReturningMainOne(rawUnderlying, measures);
-				}).collect(Collectors.toList());
+				}).toList();
 
 				mutableMeasureAsMap.put("underlyings", underlyingNames);
 			});
@@ -184,8 +184,7 @@ public class MeasureForestFromResource {
 	}
 
 	protected MeasureForest makeForest(String name, List<Map<String, ?>> rawMeasures) {
-		List<IMeasure> measures =
-				rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).collect(Collectors.toList());
+		List<IMeasure> measures = rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).toList();
 
 		return MeasureForest.fromMeasures(name, measures);
 	}
@@ -193,11 +192,7 @@ public class MeasureForestFromResource {
 	public String asString(String format, IMeasureForest forest) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
-		List<?> asMaps = forest.getNameToMeasure()
-				.values()
-				.stream()
-				.map(m -> asMap(objectMapper, m))
-				.collect(Collectors.toList());
+		List<?> asMaps = forest.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).toList();
 
 		try {
 			return objectMapper.writeValueAsString(asMaps);
@@ -221,11 +216,7 @@ public class MeasureForestFromResource {
 		forests.forestNames().forEach(forestName -> {
 			IMeasureForest measures = forests.getForest(forestName);
 
-			List<?> asMaps = measures.getNameToMeasure()
-					.values()
-					.stream()
-					.map(m -> asMap(objectMapper, m))
-					.collect(Collectors.toList());
+			List<?> asMaps = measures.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).toList();
 
 			nameToForest.add(ImmutableMap.of(K_NAME, forestName, "measures", asMaps));
 		});

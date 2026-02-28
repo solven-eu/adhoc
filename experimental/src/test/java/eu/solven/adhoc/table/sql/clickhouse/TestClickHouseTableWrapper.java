@@ -40,13 +40,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import com.clickhouse.client.api.ServerException;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
 // TODO Check these tests are fine in CI
 @Testcontainers(disabledWithoutDocker = true)
@@ -63,26 +61,15 @@ public class TestClickHouseTableWrapper extends ATestTableQuery_DB {
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setJdbcUrl(CLICKHOUSE.getJdbcUrl());
-		hikariConfig.setUsername(CLICKHOUSE.getUsername());
-		hikariConfig.setPassword(CLICKHOUSE.getPassword());
-
-		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-
-		return IDSLSupplier.fromDatasource(dataSource, SQLDialect.CLICKHOUSE);
+		return TestcontainersSqlHelper.dslSupplier(CLICKHOUSE, SQLDialect.CLICKHOUSE);
 	}
 
 	@Override
 	public ITableWrapper makeTable() {
 		return ClickHouseTableWrapper.clickhouse()
 				.name(tableName)
-				.clickHouseParameters(ClickHouseTableWrapperParameters.builder()
-						.base(JooqTableWrapperParameters.builder()
-								.dslSupplier(dslSupplier)
-								.tableName(tableName)
-								.build())
-						.build())
+				.clickHouseParameters(
+						ClickHouseTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build())
 				.build();
 	}
 

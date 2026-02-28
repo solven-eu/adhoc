@@ -23,8 +23,8 @@
 package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
@@ -70,7 +70,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			return underlying.stream().map(slice -> {
 				Object value = IValueProvider.getValue(slice.getValueProvider());
 
-				return SliceAndMeasures.from(slice.getSlice(), queryStep, Collections.singletonList(value));
+				return SliceAndMeasures.from(slice.getSlice(), queryStep, List.of(value));
 			});
 		}
 
@@ -88,7 +88,9 @@ public class UnderlyingQueryStepHelpersNavigable {
 			} else if (underlyings.size() == 1) {
 				notSortedAsSet = underlyings.iterator().next().slicesSet();
 			} else {
-				notSortedAsSet = underlyings.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
+				notSortedAsSet = underlyings.stream()
+						.flatMap(ISliceToValue::slices)
+						.collect(Collectors.toCollection(LinkedHashSet::new));
 			}
 
 			int size = underlyings.size();

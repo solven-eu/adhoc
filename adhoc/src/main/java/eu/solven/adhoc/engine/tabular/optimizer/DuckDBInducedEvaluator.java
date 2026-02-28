@@ -85,7 +85,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings("PMD.GodClass")
 @Slf4j
-public class DuckDBInducedEvaluator {
+public class DuckDBInducedEvaluator implements IInducedEvaluator {
 
 	// Transient table name used inside each isolated DuckDB instance
 	private static final String TABLE_NAME = "adhoc_induced_tmp";
@@ -100,6 +100,22 @@ public class DuckDBInducedEvaluator {
 	 * Set to {@code true} permanently when DuckDB is not found on the classpath, so subsequent calls skip immediately.
 	 */
 	private final AtomicBoolean duckDbUnavailable = new AtomicBoolean(false);
+
+	/**
+	 * Infrastructure dependencies injected at construction time by an {@link IInducedEvaluatorFactory}. Both are
+	 * {@code null} when the no-arg constructor is used (direct calls to {@link #tryEvaluateViaDuckDB} are still
+	 * supported in that case).
+	 */
+	private final AdhocFactories factories;
+	private final IFilterOptimizer filterOptimizer;
+
+	/**
+	 * Full constructor used by {@link IInducedEvaluatorFactory} implementations.
+	 */
+	public DuckDBInducedEvaluator(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		this.factories = factories;
+		this.filterOptimizer = filterOptimizer;
+	}
 
 	/**
 	 * Try to evaluate the induced step using an in-process DuckDB instance.
@@ -123,9 +139,8 @@ public class DuckDBInducedEvaluator {
 	 * @return {@link Optional#empty()} when the DuckDB path is not applicable or not available; otherwise the computed
 	 *         column.
 	 */
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluateViaDuckDB(AdhocFactories factories,
-			IFilterOptimizer filterOptimizer,
-			ISliceToValue inducerValues,
+	@Override
+	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ISliceToValue inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
@@ -162,14 +177,14 @@ public class DuckDBInducedEvaluator {
 		}
 	}
 
-	private static boolean isSupportedAggregation(String aggKey) {
+	protected boolean isSupportedAggregation(String aggKey) {
 		return SumAggregation.KEY.equals(aggKey) || MaxAggregation.KEY.equals(aggKey)
 				|| MinAggregation.KEY.equals(aggKey)
 				|| AvgAggregation.isAvg(aggKey)
 				|| CountAggregation.isCount(aggKey);
 	}
 
-	private Optional<IMultitypeMergeableColumn<IAdhocSlice>> evaluateViaDuckDB(AdhocFactories factories,
+	protected Optional<IMultitypeMergeableColumn<IAdhocSlice>> evaluateViaDuckDB(AdhocFactories factories,
 			ISliceToValue inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
@@ -219,7 +234,7 @@ public class DuckDBInducedEvaluator {
 
 			// ── 4. Read results into IMultitypeMergeableColumn ───────────────────────
 			IMultitypeMergeableColumn<IAdhocSlice> result =
-					collectResults(factories, records, inducedGroupByCols, aggregation, firstSlice.getFactory());
+					collectResults(records, inducedGroupByCols, aggregation, firstSlice.getFactory());
 
 			log.debug("DuckDB evaluateInduced: inducer.size={} result.size={} for inducer={} induced={}",
 					inducerValues.size(),
@@ -233,7 +248,7 @@ public class DuckDBInducedEvaluator {
 		}
 	}
 
-	private static DataType<?> probeValueDataType(SliceAndMeasure<IAdhocSlice> firstEntry) {
+	protected static DataType<?> probeValueDataType(SliceAndMeasure<IAdhocSlice> firstEntry) {
 		boolean[] valueIsLong = { false };
 		boolean[] valueIsDouble = { false };
 		firstEntry.getValueProvider().acceptReceiver(new IValueReceiver() {
@@ -261,7 +276,7 @@ public class DuckDBInducedEvaluator {
 		}
 	}
 
-	private static List<Field<?>> buildColumnDefs(NavigableSet<String> inducerGroupByCols,
+	protected static List<Field<?>> buildColumnDefs(NavigableSet<String> inducerGroupByCols,
 			IAdhocSlice firstSlice,
 			DataType<?> valueDataType) {
 		List<Field<?>> columnDefs = new ArrayList<>();
@@ -321,8 +336,7 @@ public class DuckDBInducedEvaluator {
 		}
 	}
 
-	private static IMultitypeMergeableColumn<IAdhocSlice> collectResults(AdhocFactories factories,
-			Result<Record> records,
+	protected IMultitypeMergeableColumn<IAdhocSlice> collectResults(Result<Record> records,
 			NavigableSet<String> inducedGroupByCols,
 			IAggregation aggregation,
 			ISliceFactory sliceFactory) {

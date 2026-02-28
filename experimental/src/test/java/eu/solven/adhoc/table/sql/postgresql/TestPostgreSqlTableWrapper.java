@@ -31,14 +31,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
 @Testcontainers(disabledWithoutDocker = true)
 public class TestPostgreSqlTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
@@ -53,26 +50,15 @@ public class TestPostgreSqlTableWrapper extends ATestTableQuery_DB implements IA
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setJdbcUrl(POSTGRES.getJdbcUrl());
-		hikariConfig.setUsername(POSTGRES.getUsername());
-		hikariConfig.setPassword(POSTGRES.getPassword());
-
-		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-
-		return IDSLSupplier.fromDatasource(dataSource, SQLDialect.POSTGRES);
+		return TestcontainersSqlHelper.dslSupplier(POSTGRES, SQLDialect.POSTGRES);
 	}
 
 	@Override
 	public ITableWrapper makeTable() {
 		return PostgreSqlTableWrapper.postgresql()
 				.name(tableName)
-				.postgreSqlParameters(PostgreSqlTableWrapperParameters.builder()
-						.base(JooqTableWrapperParameters.builder()
-								.dslSupplier(dslSupplier)
-								.tableName(tableName)
-								.build())
-						.build())
+				.postgreSqlParameters(
+						PostgreSqlTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build())
 				.build();
 	}
 

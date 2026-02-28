@@ -801,7 +801,8 @@ public class TableQueryEngineBootstrapped {
 
 		// Given all tableDag nodes, we should have all cubeDag roots
 		{
-			Set<CubeQueryStep> neededCubeRoots = streamMissingRoots(queryStepsDag).collect(ImmutableSet.toImmutableSet());
+			Set<CubeQueryStep> neededCubeRoots =
+					streamMissingRoots(queryStepsDag).collect(ImmutableSet.toImmutableSet());
 
 			Set<CubeQueryStep> missingCubeRoots = Sets.difference(neededCubeRoots, stepsImpliedByTableQueries);
 			if (!missingCubeRoots.isEmpty()) {

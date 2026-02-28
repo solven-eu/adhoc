@@ -29,14 +29,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
 @Testcontainers(disabledWithoutDocker = true)
 public class TestMariaDBTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
@@ -45,28 +42,15 @@ public class TestMariaDBTableWrapper extends ATestTableQuery_DB implements IAdho
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		// String tableName = "test_mariadb_%s".formatted(UUID.randomUUID().toString().replace("-", ""));
-
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setJdbcUrl(MARIADB.getJdbcUrl());
-		hikariConfig.setUsername(MARIADB.getUsername());
-		hikariConfig.setPassword(MARIADB.getPassword());
-
-		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-
-		return IDSLSupplier.fromDatasource(dataSource, SQLDialect.MARIADB);
+		return TestcontainersSqlHelper.dslSupplier(MARIADB, SQLDialect.MARIADB);
 	}
 
 	@Override
 	public ITableWrapper makeTable() {
 		return MariaDBTableWrapper.mariadb()
 				.name(tableName)
-				.mariaDbParameters(MariaDbTableWrapperParameters.builder()
-						.base(JooqTableWrapperParameters.builder()
-								.dslSupplier(dslSupplier)
-								.tableName(tableName)
-								.build())
-						.build())
+				.mariaDbParameters(
+						MariaDbTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build())
 				.build();
 	}
 

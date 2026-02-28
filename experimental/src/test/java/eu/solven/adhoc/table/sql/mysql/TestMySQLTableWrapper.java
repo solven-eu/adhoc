@@ -29,14 +29,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
 @Testcontainers(disabledWithoutDocker = true)
 public class TestMySQLTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
@@ -45,28 +42,14 @@ public class TestMySQLTableWrapper extends ATestTableQuery_DB implements IAdhocT
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		// String tableName = "test_mysql_%s".formatted(UUID.randomUUID().toString().replace("-", ""));
-
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setJdbcUrl(MYSQL.getJdbcUrl());
-		hikariConfig.setUsername(MYSQL.getUsername());
-		hikariConfig.setPassword(MYSQL.getPassword());
-
-		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-
-		return IDSLSupplier.fromDatasource(dataSource, SQLDialect.MYSQL);
+		return TestcontainersSqlHelper.dslSupplier(MYSQL, SQLDialect.MYSQL);
 	}
 
 	@Override
 	public ITableWrapper makeTable() {
 		return MySqlTableWrapper.mysql()
 				.name(tableName)
-				.mySqlParameters(MySqlTableWrapperParameters.builder()
-						.base(JooqTableWrapperParameters.builder()
-								.dslSupplier(dslSupplier)
-								.tableName(tableName)
-								.build())
-						.build())
+				.mySqlParameters(MySqlTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build())
 				.build();
 	}
 

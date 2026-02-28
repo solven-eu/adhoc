@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,31 +20,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb;
+package eu.solven.adhoc.table.sql;
 
-import org.jooq.exception.DataAccessException;
-import org.jspecify.annotations.NonNull;
+import org.jooq.SQLDialect;
+import org.testcontainers.containers.JdbcDatabaseContainer;
 
-import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
-public class TestTableQuery_DuckDb extends ATestTableQuery_DB implements IAdhocTestConstants {
-
-	@Override
-	public ITableWrapper makeTable() {
-		return new JooqTableWrapper(tableName, baseJooqTableWrapperParameters());
+public final class TestcontainersSqlHelper {
+	private TestcontainersSqlHelper() {
+		// utility class
 	}
 
-	@Override
-	public IDSLSupplier makeDSLSupplier() {
-		return DuckDBHelper.inMemoryDSLSupplier();
-	}
+	public static IDSLSupplier dslSupplier(JdbcDatabaseContainer<?> container, SQLDialect dialect) {
+		HikariConfig hikariConfig = new HikariConfig();
+		hikariConfig.setJdbcUrl(container.getJdbcUrl());
+		hikariConfig.setUsername(container.getUsername());
+		hikariConfig.setPassword(container.getPassword());
 
-	@Override
-	protected @NonNull Class<? extends Throwable> expectedExceptionClassForMissing() {
-		return DataAccessException.class;
+		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
+
+		return IDSLSupplier.fromDatasource(dataSource, dialect);
 	}
 }

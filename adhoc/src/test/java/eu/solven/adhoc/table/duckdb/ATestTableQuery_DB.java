@@ -54,6 +54,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public abstract class ATestTableQuery_DB extends AJooqTest implements IAdhocTestConstants {
 
@@ -107,6 +108,10 @@ public abstract class ATestTableQuery_DB extends AJooqTest implements IAdhocTest
 
 	protected @Nullable Class<? extends Throwable> expectedRootCauseForUnknownColumn() {
 		return SQLException.class;
+	}
+
+	protected JooqTableWrapperParameters baseJooqTableWrapperParameters() {
+		return JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build();
 	}
 
 	protected void assertSumOfK1(IDSLSupplier dslSupplier, String tableName, Supplier<ITableWrapper> tableSupplier) {

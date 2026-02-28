@@ -29,14 +29,11 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
-
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
 @Testcontainers(disabledWithoutDocker = true)
 public class TestYugabyteDBTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
@@ -46,28 +43,15 @@ public class TestYugabyteDBTableWrapper extends ATestTableQuery_DB implements IA
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		// String tableName = "test_yugabyte_%s".formatted(UUID.randomUUID().toString().replace("-", ""));
-
-		HikariConfig hikariConfig = new HikariConfig();
-		hikariConfig.setJdbcUrl(YUGABYTE.getJdbcUrl());
-		hikariConfig.setUsername(YUGABYTE.getUsername());
-		hikariConfig.setPassword(YUGABYTE.getPassword());
-
-		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-
-		return IDSLSupplier.fromDatasource(dataSource, SQLDialect.YUGABYTEDB);
+		return TestcontainersSqlHelper.dslSupplier(YUGABYTE, SQLDialect.YUGABYTEDB);
 	}
 
 	@Override
 	public ITableWrapper makeTable() {
 		return YugabyteDBTableWrapper.yugabytedb()
 				.name(tableName)
-				.yugabyteDbParameters(YugabyteDbTableWrapperParameters.builder()
-						.base(JooqTableWrapperParameters.builder()
-								.dslSupplier(dslSupplier)
-								.tableName(tableName)
-								.build())
-						.build())
+				.yugabyteDbParameters(
+						YugabyteDbTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build())
 				.build();
 	}
 

@@ -22,17 +22,11 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import org.assertj.core.api.Assertions;
-import org.jooq.impl.DSL;
-import org.jooq.impl.SQLDataType;
 import org.jspecify.annotations.NonNull;
-import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 
 public class TestTableQuery_DuckDb_Arrow extends ATestTableQuery_DB {
 
@@ -48,46 +42,25 @@ public class TestTableQuery_DuckDb_Arrow extends ATestTableQuery_DB {
 
 	@Override
 	public ITableWrapper makeTable() {
-		JooqTableWrapperParameters jooqParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build();
-		return new DuckDBTableWrapper(tableName, DuckDBTableWrapperParameters.builder().base(jooqParameters).build());
+		return new DuckDBTableWrapper(tableName,
+				DuckDBTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build());
 	}
 
-	// No DataAccessException as we do not query through Jooq
-	@Test
-	public void testTableDoesNotExists() {
-		Assertions.assertThatThrownBy(() -> table().streamSlices(qK1).toList())
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasStackTraceContaining(
-						"Caused by: java.sql.SQLException: Catalog Error: Table with name someTableName does not exist!");
+	@Override
+	protected @NonNull String expectedMessageForMissingTable() {
+		return "Caused by: java.sql.SQLException: Catalog Error: Table with name %s does not exist!"
+				.formatted(tableName);
 	}
 
-	// No DataAccessException as we do not query through Jooq
-	@Test
-	public void test_GroupByUnknown() {
-		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.DOUBLE).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values(12.34).execute();
-
-		Assertions
-				.assertThatThrownBy(() -> table()
-						.streamSlices(qK1.toBuilder().groupBy(GroupByColumns.named("unknownColumn")).build())
-						.toList())
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasStackTraceContaining("Caused by: java.sql.SQLException: "
-						+ "Binder Error: Referenced column \"unknownColumn\" not found in FROM clause!");
+	@Override
+	protected @NonNull String expectedMessageForUnknownGroupByColumn() {
+		return "Caused by: java.sql.SQLException: Binder Error: Referenced column \"%s\" not found in FROM clause!"
+				.formatted(unknownColumn);
 	}
 
-	// No DataAccessException as we do not query through Jooq
-	@Test
-	public void test_sumOverVarChar() {
-		dsl.createTableIfNotExists(tableName).column("k1", SQLDataType.VARCHAR).execute();
-		dsl.insertInto(DSL.table(tableName), DSL.field("k1")).values("someKey").execute();
-
-		Assertions.assertThatThrownBy(() -> table().streamSlices(qK1).toList())
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasStackTraceContaining("java.sql.SQLException: Binder Error:"
-						+ " No function matches the given name and argument types 'sum(VARCHAR)'."
-						+ " You might need to add explicit type casts");
+	@Override
+	protected @NonNull String expectedMessageForSumOverVarchar() {
+		return "java.sql.SQLException: Binder Error: No function matches the given name and argument types "
+				+ "'sum(VARCHAR)'. You might need to add explicit type casts";
 	}
-
 }
