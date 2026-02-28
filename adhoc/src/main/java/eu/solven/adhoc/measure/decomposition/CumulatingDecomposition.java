@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -109,7 +110,7 @@ public class CumulatingDecomposition extends DuplicatingDecomposition implements
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		ISliceFilter editedFilter = filterEditor.editFilter(step.getFilter());
-		return List.of(MeasurelessQuery.edit(step).filter(editedFilter).build());
+		return ImmutableList.of(MeasurelessQuery.edit(step).filter(editedFilter).build());
 	}
 
 	@Override
@@ -146,6 +147,6 @@ public class CumulatingDecomposition extends DuplicatingDecomposition implements
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
 		// No generated columns, as cumulated columns are pre-existing
-		return Map.of();
+		return ImmutableMap.of();
 	}
 }

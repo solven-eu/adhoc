@@ -229,7 +229,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		// Suppress duplicated columns as they are supposedly not provided by the ITableWrapper
-		return List.of(DecompositionHelpers.suppressColumn(step, getDuplicatedColumns()));
+		return ImmutableList.of(DecompositionHelpers.suppressColumn(step, getDuplicatedColumns()));
 	}
 
 }

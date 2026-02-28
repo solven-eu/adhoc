@@ -146,7 +146,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
 				.map(this::clearColumnName)
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 		{
 			Set<String> aggregateColumnsFromTable = aggregateColumns.stream()
 					.filter(s -> !s.equals(Aggregator.empty().getColumnName()))

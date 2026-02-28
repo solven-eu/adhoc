@@ -74,7 +74,7 @@ public class UnionListAggregation extends AUnionCollectionAggregation {
 
 	protected List<?> wrapAsList(Object l) {
 		if (l == null) {
-			return List.of();
+			return ImmutableList.of();
 		} else if (unnest && l instanceof List<?> list) {
 			// TODO Should this copy be an unsafe option?
 			return ImmutableList.copyOf(list);

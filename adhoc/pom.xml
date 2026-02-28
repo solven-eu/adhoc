@@ -129,7 +129,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<!-- JdbcClient for inserting arrays-->
 			<groupId>org.springframework.boot</groupId>

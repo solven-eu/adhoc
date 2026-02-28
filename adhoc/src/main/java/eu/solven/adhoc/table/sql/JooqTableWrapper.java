@@ -256,6 +256,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		makeDsl().connection(c -> {
 			if (c.getAutoCommit()) {
 				// Performance check-up
+				// BEWARE ClickHouse seems not to allow autoCommit false
 				log.warn("autoCommit should not be true. connection={}", c);
 			}
 		});

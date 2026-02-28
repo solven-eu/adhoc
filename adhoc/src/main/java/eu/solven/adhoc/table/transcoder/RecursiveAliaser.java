@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
+
 import lombok.Builder;
 import lombok.NonNull;
 
@@ -95,7 +97,7 @@ public class RecursiveAliaser implements ITableAliaser, IHasAliasedColumns {
 		if (aliaser instanceof IHasAliasedColumns hasAliasedColumns) {
 			return hasAliasedColumns.getAlias();
 		} else {
-			return Set.of();
+			return ImmutableSet.of();
 		}
 	}
 }

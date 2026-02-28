@@ -245,7 +245,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		boolean doesBreakSorting = breakSorting(inducerColumns, inducedColumns);
 
 		IMultitypeMergeableColumn<IAdhocSlice> inducedValues;
-		int capacity = CombinatorQueryStep.sumSizes(Set.of(inducerValues));
+		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
 		IColumnFactory columnFactory = factories.getColumnFactory();
 
 		if (doesBreakSorting) {

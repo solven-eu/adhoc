@@ -20,20 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.duckdb;
+package eu.solven.adhoc.table.sql.duckdb;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapper;
-import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapperParameters;
 
-public class TestTableQuery_DuckDb_Arrow extends TestTableQuery_DuckDb {
+public class TestTableQuery_DuckDb_Arrow extends ATestTableQuery_DB {
+
+	@Override
+	public IDSLSupplier makeDSLSupplier() {
+		return DuckDBHelper.inMemoryDSLSupplier();
+	}
+
+	@Override
+	protected @NonNull Class<? extends Throwable> expectedExceptionClassForMissing() {
+		return IllegalArgumentException.class;
+	}
 
 	@Override
 	public ITableWrapper makeTable() {
@@ -78,4 +89,5 @@ public class TestTableQuery_DuckDb_Arrow extends TestTableQuery_DuckDb {
 						+ " No function matches the given name and argument types 'sum(VARCHAR)'."
 						+ " You might need to add explicit type casts");
 	}
+
 }

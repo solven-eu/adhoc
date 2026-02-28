@@ -23,7 +23,6 @@
 package eu.solven.adhoc.data.column;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
@@ -76,7 +75,7 @@ public class SliceToValue implements ISliceToValue {
 
 	@Override
 	public Set<IAdhocSlice> slicesSet() {
-		return values.keyStream().collect(Collectors.toSet());
+		return values.keyStream().collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override
