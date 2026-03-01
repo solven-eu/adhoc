@@ -28,43 +28,70 @@
 
 ## Coding Conventions
 
-These are **mandatory** — follow them exactly:
-
-- **Interfaces** are prefixed with `I` (e.g. `IQueryOption`, `ICubeQuery`).
-- **Abstract classes** are prefixed with `A` (e.g. `AQueryEngine`).
-- **Enum values** are Pascal-case (e.g. `SomeValue`, not `SOME_VALUE`).
-- **Single-word concrete classes** that are not interfaces or abstract classes must be prefixed with `Adhoc` (e.g. `AdhocQuery` instead of `Query`).
-- **Default implementations** for `ISomeThing` are named `SomeThing` when rarely customised, or `StandardSomeThing` when frequently customised.
-- Prefer data structures that **maintain insertion order**: use `LinkedHashSet` instead of `HashSet`, `LinkedHashMap` instead of `HashMap`. Watch for `.collect(Collectors.toSet())` which does not maintain order.
-- Prefer **Guava immutable collections** over JDK wrappers: use `ImmutableList.of(…)` / `ImmutableSet.of(…)` instead of `List.of(…)` / `Set.of(…)`. Note: `List.of().contains(null)` throws; Guava equivalents behave consistently.
-- **SLF4J logging**: always use `{}` placeholders, never string concatenation.
-  - Correct: `log.debug("Processing {} rows", count);`
-  - Wrong:   `log.debug("Processing " + count + " rows");`
-- **Inline URL references**: When writing comments, Javadoc, or YAML workflow steps, add URLs that explain *why* the code is written the way it is. Preferred sources (in order): official documentation, GitHub issues/PRs, StackOverflow answers. Example: `// See https://github.com/foo/bar/issues/42`
+See [`CONVENTIONS.MD`](./CONVENTIONS.MD) for the full, authoritative list. All rules there are **mandatory**.
 
 ---
 
-## DO — Allowed improvements
+## Executor Jobs
 
-Limit yourself to the following categories. Do **at most 20 files** per run.
-
-1. **Add Javadoc** to `public` classes and interfaces that currently have no Javadoc comment. Keep it concise and accurate.
-2. **Replace unordered collections** — `HashSet` → `LinkedHashSet`, `HashMap` → `LinkedHashMap`.
-3. **Replace JDK collection factories** — `List.of(…)` → `ImmutableList.of(…)`, `Set.of(…)` → `ImmutableSet.of(…)` where semantically equivalent, except in unit-tests where conciseness primes.
-4. **Fix SLF4J concatenation** — convert `log.xxx("text" + var)` to `log.xxx("text {}", var)`.
-5. **Fix copy-paste errors in comments** — correcting obviously wrong class/method names referenced in a comment.
-
-After all edits, run:
+Each job below is **atomic** — run only one job per session. Do **at most 20 files** per run. After all edits, run:
 
 ```bash
 mvn spotless:apply --file pom.xml --batch-mode
 ```
 
-If there is changes in HTML/JS resources in `pivotable/js`, run:
+If there are changes in HTML/JS resources in `pivotable/js`, also run:
 
 ```bash
 cd pivotable/js && npm run format && mvn spotless:apply
 ```
+
+---
+
+### Job: Javadoc
+
+Add Javadoc to `public` classes and interfaces that currently have no Javadoc comment. Keep it concise and accurate. Skip test files.
+
+---
+
+### Job: Ordered Collections
+
+Replace unordered collection types throughout `src/main/java/**`:
+
+- `HashSet` → `LinkedHashSet`
+- `HashMap` → `LinkedHashMap`
+- `.collect(Collectors.toSet())` → `.collect(Collectors.toCollection(LinkedHashSet::new))`
+
+---
+
+### Job: Guava Immutable Collections
+
+Replace JDK collection factories with Guava equivalents in `src/main/java/**` (skip test files where conciseness primes):
+
+- `List.of(…)` → `ImmutableList.of(…)`
+- `Set.of(…)` → `ImmutableSet.of(…)`
+
+Only where semantically equivalent (no null elements, no mutation needed).
+
+---
+
+### Job: SLF4J Placeholders
+
+Fix string concatenation in log statements throughout `src/main/java/**`:
+
+- `log.xxx("text" + var)` → `log.xxx("text {}", var)`
+
+---
+
+### Job: Comment Accuracy
+
+Fix copy-paste errors in comments — correct obviously wrong class/method names referenced in a comment. Do not rewrite or expand comments, only fix clearly wrong identifiers.
+
+---
+
+### Discovering new jobs
+
+New executor jobs are proposed monthly by the Discovery Agent (see `.claude/discovery-agent.md`) and promoted into this file after human review.
 
 ---
 

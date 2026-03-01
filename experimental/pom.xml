@@ -91,7 +91,16 @@
 			<version>0.9.6</version>
 			<!-- One may need to query from ClickHouse -->
 			<optional>true</optional>
-		</dependency>
+		</dependency><dependency>
+		<!-- `Please add arrow-compression module to use CommonsCompressionFactory for LZ4_FRAME` -->
+		<!-- https://github.com/apache/arrow/issues/41457 -->
+    <groupId>org.apache.arrow</groupId>
+    <artifactId>arrow-compression</artifactId>
+    <scope>compile</scope>
+    	<!-- Might be needed by ClickHouse+Arrow or LZ4-->
+			<optional>true</optional>
+</dependency>
+
 		<dependency>
 			<groupId>com.yugabyte</groupId>
 			<artifactId>jdbc-yugabytedb</artifactId>

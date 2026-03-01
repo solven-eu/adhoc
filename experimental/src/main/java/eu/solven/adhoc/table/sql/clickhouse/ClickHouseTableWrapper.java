@@ -65,24 +65,27 @@ public class ClickHouseTableWrapper extends ArrowJooqTableWrapper {
 
 		CompletableFuture<QueryResponse> request = client.query(sql);
 
-		try (QueryResponse response = request.get()) {
-			InputStream arrowStream = response.getInputStream();
-			resources.add(arrowStream::close);
-
-			Object allocator = ArrowReflection.createAllocator();
-			resources.add(((AutoCloseable) allocator)::close);
-
-			Object arrowReader = ArrowReflection.createStreamReader(arrowStream, allocator);
-			resources.add(((AutoCloseable) arrowReader)::close);
-
-			return arrowReader;
+		QueryResponse response;
+		try {
+			response = request.get();
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IllegalStateException(e);
 		} catch (ExecutionException e) {
 			throw new RuntimeException(e);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
 		}
+
+		resources.add(response::close);
+
+		InputStream arrowStream = response.getInputStream();
+		resources.add(arrowStream::close);
+
+		Object allocator = ArrowReflection.createAllocator();
+		resources.add(((AutoCloseable) allocator)::close);
+
+		Object arrowReader = ArrowReflection.createStreamReader(arrowStream, allocator);
+		resources.add(((AutoCloseable) arrowReader)::close);
+
+		return arrowReader;
 	}
 }
