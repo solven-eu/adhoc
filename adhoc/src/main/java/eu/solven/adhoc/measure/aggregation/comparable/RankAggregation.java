@@ -32,8 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
@@ -306,7 +306,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 
 		@Override
 		public Collection<?> getTopElements() {
-			return Set.of(element);
+			return ImmutableSet.of(element);
 		}
 	}
 

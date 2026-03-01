@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -92,7 +93,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 		if (names.isEmpty()) {
 			// This measure has no explicit underlyings: We add an implicit EmptyAggregator: it will materialize
 			// the slices with no aggregate
-			return List.of(CubeQueryStep.edit(step).measure(Aggregator.empty()).build());
+			return ImmutableList.of(CubeQueryStep.edit(step).measure(Aggregator.empty()).build());
 		}
 
 		return names.stream()

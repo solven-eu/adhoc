@@ -323,7 +323,7 @@ public class TableQueryEngineBootstrapped {
 	}
 
 	protected String toPerfLog(CubeQueryStep cubeQueryStep) {
-		Set<TableQueryV2> tableQueriesV2 = TableQueryV2.fromV1(TableQuery.fromSteps(Set.of(cubeQueryStep)));
+		Set<TableQueryV2> tableQueriesV2 = TableQueryV2.fromV1(TableQuery.fromSteps(ImmutableSet.of(cubeQueryStep)));
 		return toPerfLog(Iterables.getOnlyElement(tableQueriesV2));
 	}
 

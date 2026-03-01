@@ -23,7 +23,7 @@
 package eu.solven.adhoc.calcite.csv;
 
 import java.util.AbstractList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -141,7 +141,7 @@ public class MongoRules {
 		private final JavaTypeFactory typeFactory;
 		private final List<String> inFields;
 
-		private static final Map<SqlOperator, String> MONGO_OPERATORS = new HashMap<>();
+		private static final Map<SqlOperator, String> MONGO_OPERATORS = new LinkedHashMap<>();
 
 		static {
 			// Arithmetic
