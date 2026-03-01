@@ -39,12 +39,14 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import com.clickhouse.client.api.Client;
 import com.clickhouse.client.api.ServerException;
 
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 // TODO Check these tests are fine in CI
 @Testcontainers(disabledWithoutDocker = true)
@@ -68,8 +70,15 @@ public class TestClickHouseTableWrapper extends ATestTableQuery_DB {
 	public ITableWrapper makeTable() {
 		return ClickHouseTableWrapper.clickhouse()
 				.name(tableName)
-				.clickHouseParameters(
-						ClickHouseTableWrapperParameters.builder().base(baseJooqTableWrapperParameters()).build())
+				.clickHouseParameters(ClickHouseTableWrapperParameters.builder()
+						.base(baseJooqTableWrapperParameters())
+						.client(new Client.Builder()
+								.addEndpoint("http://" + CLICKHOUSE.getHost() + ":" + CLICKHOUSE.getMappedPort(8123))
+								.setUsername(CLICKHOUSE.getUsername())
+								.setPassword(CLICKHOUSE.getPassword())
+								.setMaxConnections(AdhocUnsafe.getParallelism())
+								.build())
+						.build())
 				.build();
 	}
 

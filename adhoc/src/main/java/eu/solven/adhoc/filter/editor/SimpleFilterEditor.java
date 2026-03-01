@@ -134,10 +134,8 @@ public class SimpleFilterEditor implements IFilterEditor {
 				// OPTIMIZATION Switch from `FilterMode.alwaysShift` to to build many AND of 2 columnFilters given an
 				// input AND. Indeed, given an AND over 3 columns, we would receive 3 AND, each with 2 columnFilters,
 				// the second filter being the shift in the 3 cases.
-				List<ISliceFilter> shiftedOperands = new ArrayList<>(operands.size() + 1);
-
-				// This may skip the alwaysPresent
-				operands.forEach(f -> shiftedOperands.add(shift(f, column, value, FilterMode.shiftIfPresent)));
+				List<ISliceFilter> shiftedOperands = new ArrayList<>(
+						operands.stream().map(f -> shift(f, column, value, FilterMode.shiftIfPresent)).toList());
 
 				// Ensure we alwaysPresent
 				shiftedOperands.add(shift(ISliceFilter.MATCH_ALL, column, value, FilterMode.alwaysShift));

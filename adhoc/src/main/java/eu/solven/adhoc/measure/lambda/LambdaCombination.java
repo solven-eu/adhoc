@@ -29,7 +29,7 @@ import java.util.function.BiFunction;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
  * Enable an {@link ICombination} to be defined through a lambda. Beware this is typically not serializable.
@@ -50,7 +50,7 @@ public class LambdaCombination implements ICombination {
 	}
 
 	public LambdaCombination(Map<String, ?> options) {
-		lambda = MapPathGet.getRequiredAs(options, K_LAMBDA);
+		lambda = AdhocMapPathGet.getRequiredAs(options, K_LAMBDA);
 	}
 
 	@Override

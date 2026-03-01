@@ -2,7 +2,7 @@ name: AI Code Quality Agent
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # nightly at 02:00 UTC
+    - cron: '0 4 * * 1'  # weekly on Monday at 04:00 UTC
   workflow_dispatch:
     inputs:
       scope:

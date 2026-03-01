@@ -22,18 +22,67 @@
  */
 package eu.solven.adhoc.table.sql.clickhouse;
 
-import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import java.io.InputStream;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import org.jooq.Record;
+import org.jooq.ResultQuery;
+
+import com.clickhouse.client.api.Client;
+import com.clickhouse.client.api.query.QueryResponse;
+
+import eu.solven.adhoc.table.arrow.ArrowJooqTableWrapper;
+import eu.solven.adhoc.table.arrow.ArrowReflection;
 import lombok.Builder;
 
 /**
- * Enables querying ClickHouse through JDBC and jOOQ.
+ * Enables querying ClickHouse through JDBC and jOOQ while streaming the results via Arrow.
  *
  * @author Benoit Lacelle
  */
-public class ClickHouseTableWrapper extends JooqTableWrapper {
+public class ClickHouseTableWrapper extends ArrowJooqTableWrapper {
+
+	final ClickHouseTableWrapperParameters clickHouseParameters;
 
 	@Builder(builderMethodName = "clickhouse")
 	public ClickHouseTableWrapper(String name, ClickHouseTableWrapperParameters clickHouseParameters) {
-		super(name, clickHouseParameters.getBase());
+		super(name, clickHouseParameters.getBase(), clickHouseParameters.getMinSplitRows());
+
+		this.clickHouseParameters = clickHouseParameters;
+	}
+
+	@Override
+	protected String getSQL(ResultQuery<Record> sqlQuery) {
+		return super.getSQL(sqlQuery) + " FORMAT ArrowStream";
+	}
+
+	@Override
+	protected Object openArrowReader(String sql, List<AutoCloseable> resources) throws SQLException {
+		Client client = clickHouseParameters.getClient();
+
+		CompletableFuture<QueryResponse> request = client.query(sql);
+
+		try (QueryResponse response = request.get()) {
+			InputStream arrowStream = response.getInputStream();
+			resources.add(arrowStream::close);
+
+			Object allocator = ArrowReflection.createAllocator();
+			resources.add(((AutoCloseable) allocator)::close);
+
+			Object arrowReader = ArrowReflection.createStreamReader(arrowStream, allocator);
+			resources.add(((AutoCloseable) arrowReader)::close);
+
+			return arrowReader;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException(e);
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

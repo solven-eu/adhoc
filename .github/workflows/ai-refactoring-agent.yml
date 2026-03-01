@@ -2,7 +2,7 @@ name: AI Refactoring Agent
 
 on:
   schedule:
-    - cron: '0 4 * * *'  # nightly at 04:00 UTC
+    - cron: '0 4 * * 1'  # weekly on Monday at 04:00 UTC
   workflow_dispatch:
     inputs:
       target_module:

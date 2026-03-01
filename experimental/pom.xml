@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
@@ -79,6 +81,13 @@
 		<dependency>
 			<groupId>com.clickhouse</groupId>
 			<artifactId>clickhouse-jdbc</artifactId>
+			<version>0.9.6</version>
+			<!-- One may need to query from ClickHouse -->
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>com.clickhouse</groupId>
+			<artifactId>client-v2</artifactId>
 			<version>0.9.6</version>
 			<!-- One may need to query from ClickHouse -->
 			<optional>true</optional>
@@ -247,7 +256,8 @@
 		</dependency>
 
 		<dependency>
-			<!-- Coverage-guided in-process fuzzing for the JVM, JUnit 5 integration.
+			<!-- Coverage-guided in-process fuzzing for the JVM, JUnit 5
+			integration.
 			See https://github.com/CodeIntelligenceTesting/jazzer -->
 			<groupId>com.code-intelligence</groupId>
 			<artifactId>jazzer-junit</artifactId>

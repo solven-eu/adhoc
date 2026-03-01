@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql.duckdb;
+package eu.solven.adhoc.table.arrow;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;

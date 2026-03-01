@@ -22,8 +22,12 @@
  */
 package eu.solven.adhoc.table.sql.clickhouse;
 
+import com.clickhouse.client.api.Client;
+
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -34,7 +38,20 @@ import lombok.Value;
  */
 @Value
 @Builder
+// https://clickhouse.com/docs/integrations/language-clients/java/jdbc
 public class ClickHouseTableWrapperParameters {
 	@NonNull
 	JooqTableWrapperParameters base;
+
+	private static final int DEFAULT_MIN_SPLIT_ROWS = 1024;
+
+	@Default
+	int minSplitRows = DEFAULT_MIN_SPLIT_ROWS;
+
+	@Default
+	Client client = new Client.Builder().addEndpoint("http://localhost:8123")
+			.setUsername("default")
+			.setPassword("")
+			.setMaxConnections(AdhocUnsafe.getParallelism())
+			.build();
 }

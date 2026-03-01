@@ -24,6 +24,7 @@ package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -83,13 +84,13 @@ public class TestCubeQuery_ManyToMany_Large_Linear extends ADagTest implements I
 			} else {
 				return streamMatchingGroups(groupMatcher).flatMap(group -> {
 					return groupToElements(group).stream().mapToInt(i -> i);
-				}).boxed().collect(Collectors.toSet());
+				}).boxed().collect(Collectors.toCollection(LinkedHashSet::new));
 			}
 		}
 
 		@Override
 		public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
-			return streamMatchingGroups(groupMatcher).boxed().collect(Collectors.toSet());
+			return streamMatchingGroups(groupMatcher).boxed().collect(Collectors.toCollection(LinkedHashSet::new));
 		}
 	};
 

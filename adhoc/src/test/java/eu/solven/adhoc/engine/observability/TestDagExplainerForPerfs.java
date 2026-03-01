@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -95,7 +94,7 @@ public class TestDagExplainerForPerfs {
 
 		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().build()), dag);
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+		Assertions.assertThat(String.join("\n", messages)).isEqualTo("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
 				|      No cost info
 				\\-- #1 m=root(Combinator[SUM]) filter=matchAll groupBy=grandTotal

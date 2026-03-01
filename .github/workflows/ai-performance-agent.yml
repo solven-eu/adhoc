@@ -2,7 +2,7 @@ name: AI Performance Agent
 
 on:
   schedule:
-    - cron: '0 3 * * 0'  # weekly on Sunday at 03:00 UTC
+    - cron: '0 4 * * 1'  # weekly on Monday at 04:00 UTC
   workflow_dispatch:
     inputs:
       target_module:

@@ -29,7 +29,6 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -227,8 +226,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	// TODO This question the ordering of slice in Adhoc. IAdhocMap has an ordering based on key lexicographical order.
 	// But we may sort keys based on their expected variance, or based on the actual query.
 	protected boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
-		List<String> inducerAsList = inducer.stream().limit(induced.size()).collect(ImmutableList.toImmutableList());
-		List<String> inducedAsList = induced.stream().collect(ImmutableList.toImmutableList());
+		List<String> inducerAsList = inducer.stream().limit(induced.size()).toList();
+		List<String> inducedAsList = induced.stream().toList();
 
 		return !inducerAsList.equals(inducedAsList);
 	}

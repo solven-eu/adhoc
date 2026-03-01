@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -79,7 +78,7 @@ public class UnfiltratorQueryStep implements ITransformatorQueryStep {
 				.filter(unfilter(step.getFilter()))
 				.measure(unfiltrator.getUnderlying())
 				.build();
-		return Collections.singletonList(underlyingStep);
+		return List.of(underlyingStep);
 	}
 
 	protected ISliceFilter unfilter(ISliceFilter filter) {

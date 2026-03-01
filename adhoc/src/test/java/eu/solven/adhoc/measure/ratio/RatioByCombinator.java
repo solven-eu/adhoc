@@ -86,7 +86,7 @@ public class RatioByCombinator implements ICombinator {
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlying);
+		return List.of(underlying);
 	}
 
 	@Override

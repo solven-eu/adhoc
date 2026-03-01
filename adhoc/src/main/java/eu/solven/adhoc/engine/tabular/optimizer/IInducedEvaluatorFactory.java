@@ -31,6 +31,7 @@ package eu.solven.adhoc.engine.tabular.optimizer;
  *
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IInducedEvaluatorFactory {
 
 	/**

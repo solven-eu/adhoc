@@ -120,10 +120,6 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	/**
 	 * Try to evaluate the induced step using an in-process DuckDB instance.
 	 *
-	 * @param factories
-	 *            factory hub used to create the output column
-	 * @param filterOptimizer
-	 *            filter optimizer (unused directly, kept for API symmetry)
 	 * @param inducerValues
 	 *            the data from the inducer step
 	 * @param inducer

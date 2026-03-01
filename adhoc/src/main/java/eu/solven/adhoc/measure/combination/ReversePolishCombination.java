@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -67,16 +67,17 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		notation = parseNotation(options);
 
 		// Default is false (sum all pending operands), to follow ActiveViam convention
-		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
+		twoOperandsPerOperator =
+				AdhocMapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
 		// Default is true (no underlying -> `null`), to follow ActiveViam convention
 		nullIfNotASingleUnderlying =
-				MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
+				AdhocMapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
 
 		parseUnderlyingMeasures(notation).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
 				underlyingMeasuresToIndex.size()));
 
-		operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, K_OPERATOR_FACTORY)
+		operatorFactory = AdhocMapPathGet.<IOperatorFactory>getOptionalAs(options, K_OPERATOR_FACTORY)
 				.orElseGet(StandardOperatorFactory::new);
 	}
 
@@ -103,7 +104,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	// BEWARE This is called from the constructor
 	protected String parseNotation(Map<String, ?> options) {
 		// e.g. `aggregatedValue[someMeasureName],double[10000],*`
-		return MapPathGet.getRequiredString(options, K_NOTATION);
+		return AdhocMapPathGet.getRequiredString(options, K_NOTATION);
 	}
 
 	@Override

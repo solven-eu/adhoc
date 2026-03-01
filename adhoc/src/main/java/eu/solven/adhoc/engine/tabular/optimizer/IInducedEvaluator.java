@@ -45,6 +45,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
  *
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IInducedEvaluator {
 
 	/**

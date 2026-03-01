@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql.duckdb;
+package eu.solven.adhoc.table.arrow;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -46,6 +46,8 @@ import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.JooqTabularRecordFactory;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapperParameters;
 
 /**
  * White-box tests for {@link ArrowBatchSpliterator} and {@link ArrowFixedBatchSpliterator} splitting mechanics.
@@ -125,8 +127,8 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 
 		@Override
 		public void close() throws Exception {
-			ArrowReflection.closeReader(arrowReader);
-			ArrowReflection.closeAllocator(allocator);
+			((AutoCloseable) arrowReader).close();
+			((AutoCloseable) allocator).close();
 			rs.close();
 			stmt.close();
 			cp.release(conn);

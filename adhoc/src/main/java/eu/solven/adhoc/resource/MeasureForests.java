@@ -25,6 +25,7 @@ package eu.solven.adhoc.resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -58,6 +59,6 @@ public class MeasureForests {
 	}
 
 	public Map<String, IMeasureForest> getNameToForest() {
-		return forests.stream().collect(Collectors.toMap(IMeasureForest::getName, f -> f));
+		return forests.stream().collect(Collectors.toMap(IMeasureForest::getName, Function.identity()));
 	}
 }

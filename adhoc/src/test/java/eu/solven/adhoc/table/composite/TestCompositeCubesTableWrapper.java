@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Phaser;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -669,7 +668,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				ITabularView view = compositeCube.execute(CubeQuery.builder().measure(m).explain(true).build());
 				MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-				Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+				Assertions.assertThat(String.join("\n", messages))
 						.isEqualToNormalizingNewlines(
 								"""
 										/-- time=6ms for openingStream

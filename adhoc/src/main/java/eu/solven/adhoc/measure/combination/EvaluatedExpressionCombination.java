@@ -36,7 +36,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.ValueProviderHelpers;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -111,8 +111,9 @@ public class EvaluatedExpressionCombination implements ICombination, IHasSanityC
 	}
 
 	public static EvaluatedExpressionCombination parse(Map<String, ?> options) {
-		String expression = MapPathGet.getRequiredString(options, K_EXPRESSION);
-		List<String> underlyingIndexToName = MapPathGet.getRequiredAs(options, IHasCombinationKey.KEY_UNDERLYING_NAMES);
+		String expression = AdhocMapPathGet.getRequiredString(options, K_EXPRESSION);
+		List<String> underlyingIndexToName =
+				AdhocMapPathGet.getRequiredAs(options, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 		return new EvaluatedExpressionCombination(expression, underlyingIndexToName);
 	}
 

@@ -26,144 +26,63 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.duckdb.DuckDBResultSet;
 import org.jooq.ConnectionProvider;
-import org.jooq.Record;
-import org.jooq.ResultQuery;
-import org.jooq.conf.ParamType;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.engine.cancel.CancelledQueryException;
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
-import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.arrow.ArrowJooqTableWrapper;
+import eu.solven.adhoc.table.arrow.ArrowReflection;
 import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Enables querying DuckDB and fetching the result through Arrow.
  *
  * @author Benoit Lacelle
  */
-// https://duckdb.org/2023/08/04/adbc
-@Slf4j
-public class DuckDBTableWrapper extends JooqTableWrapper {
+public class DuckDBTableWrapper extends ArrowJooqTableWrapper {
 
 	final DuckDBTableWrapperParameters duckDBParameters;
 
 	@Builder(builderMethodName = "duckdb")
 	public DuckDBTableWrapper(String name, DuckDBTableWrapperParameters duckDBParameters) {
-		super(name, duckDBParameters.getBase());
+		super(name, duckDBParameters.getBase(), duckDBParameters.getMinSplitRows());
 
 		this.duckDBParameters = duckDBParameters;
 	}
 
-	/**
-	 * Boiler-plate to close many {@link AutoCloseable}.
-	 * 
-	 * Resources are closed in reversed order.
-	 * 
-	 * @param resources
-	 */
-	private static void closeAll(List<AutoCloseable> resources) {
-		for (int i = resources.size() - 1; i >= 0; i--) {
-			try {
-				resources.get(i).close();
-			} catch (Exception e) {
-				log.warn("Error closing resource", e);
-			}
-		}
+	@Override
+	protected Object openArrowReader(String sql, List<AutoCloseable> resources) throws SQLException {
+		ConnectionProvider connectionProvider = makeDsl().configuration().connectionProvider();
+		Connection connection = connectionProvider.acquire();
+		resources.add(() -> connectionProvider.release(connection));
+
+		PreparedStatement stmt = connection.prepareStatement(sql);
+		resources.add(stmt);
+
+		ResultSet rs = stmt.executeQuery();
+		resources.add(rs);
+
+		DuckDBResultSet duckRs = rs.unwrap(DuckDBResultSet.class);
+
+		Object allocator = ArrowReflection.createAllocator();
+		resources.add(() -> ((AutoCloseable) allocator).close());
+
+		Object arrowReader = duckRs.arrowExportStream(allocator, duckDBParameters.getArrowBatchSize());
+		resources.add(() -> ((AutoCloseable) arrowReader).close());
+
+		return arrowReader;
 	}
 
 	@Override
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
-			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
-			ITabularRecordFactory tabularRecordFactory) {
-		return sqlQuery.getQueries()
-				.stream()
-				.flatMap(oneQuery -> toArrowStream(queryPod, oneQuery, tabularRecordFactory));
-	}
-
-	/**
-	 * Executes {@code resultQuery} via DuckDB's native Arrow IPC stream and returns a lazy {@link Stream} of
-	 * {@link ITabularRecord}.
-	 *
-	 * <p>
-	 * All JDBC and Arrow resources are closed when the returned stream is closed.
-	 */
-	@SuppressWarnings("PMD.CloseResource")
-	protected Stream<ITabularRecord> toArrowStream(QueryPod queryPod,
-			ResultQuery<Record> sqlQuery,
-			ITabularRecordFactory tabularRecordFactory) {
-		if (queryPod.isCancelled()) {
-			throw new CancelledQueryException("Query is cancelled before Arrow stream open");
+	protected RuntimeException onArrowSqlException(SQLException e) {
+		String message = e.getMessage();
+		if (message != null && message.contains("Binder Error")) {
+			return new IllegalArgumentException("Issue with columns or aggregates in table=" + getName(), e);
+		} else if (message != null && message.contains("Catalog Error")) {
+			return new IllegalArgumentException("Issue with table in table=" + getName(), e);
+		} else {
+			return super.onArrowSqlException(e);
 		}
-
-		String sql = sqlQuery.getSQL(ParamType.INLINED);
-
-		// https://duckdb.org/docs/stable/clients/java#arrow-export
-
-		// Resources collected in order so they can be closed in reverse on error or stream close
-		List<AutoCloseable> resources = new ArrayList<>();
-
-		try {
-			ConnectionProvider connectionProvider = makeDsl().configuration().connectionProvider();
-			Connection connection = connectionProvider.acquire();
-			resources.add(() -> connectionProvider.release(connection));
-
-			PreparedStatement stmt = connection.prepareStatement(sql);
-			resources.add(stmt);
-
-			ResultSet rs = stmt.executeQuery();
-			resources.add(rs);
-
-			DuckDBResultSet duckRs = rs.unwrap(DuckDBResultSet.class);
-
-			Object allocator = ArrowReflection.createAllocator();
-			resources.add(() -> ArrowReflection.closeAllocator(allocator));
-
-			Object arrowReader = duckRs.arrowExportStream(allocator, duckDBParameters.getArrowBatchSize());
-			resources.add(() -> ArrowReflection.closeReader(arrowReader));
-
-			Stream<ITabularRecord> stream = StreamSupport.stream(new ArrowBatchSpliterator(arrowReader,
-					tabularRecordFactory,
-					queryPod,
-					duckDBParameters.getMinSplitRows()), false);
-
-			return stream.onClose(() -> closeAll(resources));
-		} catch (RuntimeException e) {
-			closeAll(resources);
-			throw AdhocExceptionHelpers.wrap("Failed to open Arrow stream for table=" + getName(), e);
-		} catch (SQLException e) {
-			closeAll(resources);
-
-			if (e.getMessage().contains("Binder Error")) {
-				// e.g. `java.sql.SQLException: Binder Error: Referenced column "unknownColumn" not found in FROM
-				// clause!`
-				throw new IllegalArgumentException("Issue with columns or aggregates in table=" + getName(), e);
-			} else if (e.getMessage().contains("Catalog Error")) {
-				// e.g. `java.sql.SQLException: Catalog Error: Table with name someTableName does not exist!`
-				throw new IllegalArgumentException("Issue with table in table=" + getName(), e);
-			} else {
-				throw new IllegalStateException("Failed to open Arrow stream for table=" + getName(), e);
-			}
-		} catch (Throwable e) {
-			// catch Throwable to ensure not leaking resources
-			closeAll(resources);
-			throw new IllegalArgumentException("Failed to open Arrow stream for table=" + getName(), e);
-		}
-	}
-
-	@Override
-	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
-		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
-		log.info("[DEBUG] TODO DuckDB");
 	}
 }

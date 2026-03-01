@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -76,14 +76,14 @@ public class CumulatingDecomposition extends DuplicatingDecomposition implements
 		super(options);
 		this.options = ImmutableMap.copyOf(options);
 
-		filterEditor = MapPathGet.getRequiredAs(options, K_FILTER_EDITOR);
+		filterEditor = AdhocMapPathGet.getRequiredAs(options, K_FILTER_EDITOR);
 	}
 
 	@Override
 	public IDecomposition makeWithSlices(List<? extends ISliceToValue> underlyings) {
 		// This will evaluate the relevant cumulated columns given the underlying slices
 
-		Map<String, ?> columnToCoordinates = MapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
+		Map<String, ?> columnToCoordinates = AdhocMapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
 		Set<String> columns = columnToCoordinates.keySet();
 
 		Map<String, List<Object>> columnToCoordinatesFromUnderlyings = new LinkedHashMap<>();

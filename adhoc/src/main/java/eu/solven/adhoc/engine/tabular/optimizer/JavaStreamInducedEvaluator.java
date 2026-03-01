@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ICompactable;
@@ -123,8 +122,8 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 	 * any non-prefix projection breaks it (e.g. {@code a,b} → {@code b}).
 	 */
 	protected static boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
-		List<String> inducerAsList = inducer.stream().limit(induced.size()).collect(ImmutableList.toImmutableList());
-		List<String> inducedAsList = induced.stream().collect(ImmutableList.toImmutableList());
+		List<String> inducerAsList = inducer.stream().limit(induced.size()).toList();
+		List<String> inducedAsList = induced.stream().toList();
 		return !inducerAsList.equals(inducedAsList);
 	}
 }

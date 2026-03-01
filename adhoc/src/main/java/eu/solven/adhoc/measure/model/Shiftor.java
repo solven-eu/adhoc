@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -80,7 +79,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlying);
+		return List.of(underlying);
 	}
 
 	@Override

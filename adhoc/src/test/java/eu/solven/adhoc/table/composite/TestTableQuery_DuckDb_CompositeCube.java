@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.impl.DSL;
@@ -319,7 +318,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 				.containsEntry(Map.of(), Map.of(k1PlusK2AsExpr.getName(), 0L + 123 + 234))
 				.hasSize(1);
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+		Assertions.assertThat(String.join("\n", messages))
 				.isEqualTo(
 						"""
 								/-- #0 c=composite id=00000000-0000-0000-0000-000000000000
@@ -575,7 +574,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 				.explain(true)
 				.build());
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+		Assertions.assertThat(String.join("\n", messages))
 				.isEqualToNormalizingNewlines(
 						"""
 								/-- time=6ms for openingStream
@@ -665,7 +664,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 		// .containsEntry(Map.of("a", "a2"), Map.of(mComposite, 0L + 345, mSub, 0L + 345))
 		;
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+		Assertions.assertThat(String.join("\n", messages))
 				.isEqualToNormalizingNewlines(
 						"""
 								/-- time=6ms for openingStream

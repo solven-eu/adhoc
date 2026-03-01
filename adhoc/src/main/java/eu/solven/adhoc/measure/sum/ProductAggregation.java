@@ -29,8 +29,8 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
-import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -48,7 +48,7 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	boolean useBigDecimal;
 
 	public ProductAggregation(Map<String, ?> options) {
-		useBigDecimal = MapPathGet.<Boolean>getOptionalAs(options, "useBigDecimal").orElse(false);
+		useBigDecimal = AdhocMapPathGet.<Boolean>getOptionalAs(options, "useBigDecimal").orElse(false);
 	}
 
 	public static boolean isProduct(String operator) {

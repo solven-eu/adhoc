@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -135,7 +135,7 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		final Phaser phaser;
 
 		public PhasedCombinator(Map<String, ?> options) {
-			phaser = MapPathGet.getRequiredAs(options, "phaser");
+			phaser = AdhocMapPathGet.getRequiredAs(options, "phaser");
 		}
 
 		@Override
