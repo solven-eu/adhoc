@@ -117,7 +117,16 @@ public class TestAdhocPrimitiveHelpers {
 	public void normalizeValueAsProvider() {
 		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(null)).isSameAs(IValueProvider.NULL);
 
-		// TODO Test Double is wrapped as primitive double
-		// Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(12.34D)).isEqualTo(12.34D);
+		Assertions
+				.assertThat(IValueProviderTestHelpers.getDouble(AdhocPrimitiveHelpers.normalizeValueAsProvider(12.34D)))
+				.isEqualTo(12.34D);
+
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(AdhocPrimitiveHelpers.normalizeValueAsProvider(123)))
+				.isEqualTo(123L);
+
+		Assertions
+				.assertThat(IValueProviderTestHelpers.getDouble(AdhocPrimitiveHelpers
+						.normalizeValueAsProvider(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE))))
+				.isEqualTo(9.223372036854776E18);
 	}
 }

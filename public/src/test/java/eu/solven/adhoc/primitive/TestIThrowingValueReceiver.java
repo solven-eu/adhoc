@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,36 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.groupby;
+package eu.solven.adhoc.primitive;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
-
-public class TestGroupByHelpers {
+public class TestIThrowingValueReceiver {
 	@Test
-	public void testMask() {
-		IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
-		IMultitypeColumnFastGet<IAdhocSlice> withMask = GroupByHelpers.addConstantColumns(column, Map.of("k2", "v2"));
+	public void testOnPrimitives() throws Exception {
+		List<Object> list = new ArrayList<>();
 
-		column.append(SliceAsMap.fromMap(Map.of("k", "v"))).onLong(123L);
+		IThrowingValueReceiver receiver = new IThrowingValueReceiver() {
 
-		Assertions
-				.assertThat(IValueProviderTestHelpers
-						.getLong(withMask.onValue(SliceAsMap.fromMap(Map.of("k", "v", "k2", "v2")))))
-				.isEqualTo(123L);
+			@Override
+			public void onObjectMayThrow(Object v) throws Exception {
+				list.add(v);
+			}
+		};
 
-		Assertions
-				.assertThat(IValueProvider
-						.getValue(withMask.onValue(SliceAsMap.fromMap(Map.of("k", "v", "k2", "unknownValue")))))
-				.isNull();
+		receiver.onObjectMayThrow("foo");
+		receiver.onLongMayThrow(123);
+		receiver.onDoubleMayThrow(12.34);
+
+		Assertions.assertThat(list).containsExactly("foo", 123L, 12.34D);
 	}
 }

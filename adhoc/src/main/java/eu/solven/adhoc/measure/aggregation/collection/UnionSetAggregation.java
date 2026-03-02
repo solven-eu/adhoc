@@ -53,8 +53,8 @@ public class UnionSetAggregation extends AUnionCollectionAggregation {
 		return o instanceof Set || o == null;
 	}
 
-	@Override
 	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
+	@Override
 	protected Set<?> onEmpty() {
 		return null;
 	}

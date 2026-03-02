@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.measure.aggregation.collection;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestUnionSetAggregator {
+public class TestUnionSetAggregation {
 	@Test
 	public void testUnion() {
 		UnionSetAggregation aggregation = new UnionSetAggregation();
@@ -49,6 +50,31 @@ public class TestUnionSetAggregator {
 			Set<String> input = Set.of("foo");
 			Set<?> output = aggregation.aggregate(input, null);
 			Assertions.assertThat(output).isEqualTo(Set.of("foo")).isNotSameAs(input);
+		}
+	}
+
+	@Test
+	public void testUnion_doNOTunest() {
+		UnionSetAggregation aggregation = new UnionSetAggregation(Map.of(UnionSetAggregation.K_UNNEST, false));
+
+		Assertions.assertThat(aggregation.aggregate((Object) null, null)).isNull();
+		Assertions.assertThat(aggregation.aggregate(null, 123)).isEqualTo(Set.of(123));
+
+		Assertions.assertThat(aggregation.aggregate("foo", null)).isEqualTo(Set.of("foo"));
+
+		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), null)).isEqualTo(Set.of(Set.of("foo")));
+		Assertions.assertThat(aggregation.aggregate(null, Set.of("foo"))).isEqualTo(Set.of(Set.of("foo")));
+
+		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), Set.of("bar")))
+				.isEqualTo(Set.of(Set.of("foo"), Set.of("bar")));
+
+		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), 123)).isEqualTo(Set.of(Set.of("foo"), 123));
+
+		// Check we do not re-use references
+		{
+			Set<String> input = Set.of("foo");
+			Set<?> output = aggregation.aggregate(input, null);
+			Assertions.assertThat(output).isEqualTo(Set.of(Set.of("foo"))).isNotSameAs(input);
 		}
 	}
 }

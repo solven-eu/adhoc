@@ -33,11 +33,11 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.data.column.MultitypeColumnHelpers;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.pepper.memory.PepperFootprintHelper;
 import lombok.extern.slf4j.Slf4j;
