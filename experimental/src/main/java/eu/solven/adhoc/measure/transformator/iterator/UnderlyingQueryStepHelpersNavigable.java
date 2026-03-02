@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.transformator.iterator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
@@ -32,6 +33,8 @@ import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
@@ -84,11 +87,13 @@ public class UnderlyingQueryStepHelpersNavigable {
 			// Merge all SliceAsMap in a Set
 			Set<IAdhocSlice> notSortedAsSet;
 			if (underlyings.isEmpty()) {
-				notSortedAsSet = Set.of();
+				notSortedAsSet = ImmutableSet.of();
 			} else if (underlyings.size() == 1) {
 				notSortedAsSet = underlyings.iterator().next().slicesSet();
 			} else {
-				notSortedAsSet = underlyings.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
+				notSortedAsSet = underlyings.stream()
+						.flatMap(ISliceToValue::slices)
+						.collect(Collectors.toCollection(LinkedHashSet::new));
 			}
 
 			int size = underlyings.size();

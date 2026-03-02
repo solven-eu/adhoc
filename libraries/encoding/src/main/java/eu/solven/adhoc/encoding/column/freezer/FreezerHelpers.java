@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.encoding.column.freezer;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +41,8 @@ public class FreezerHelpers {
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	public static Set<?> classesWithContext(Map<String, Object> freezingContext, List<?> array) {
 		return (Set<?>) freezingContext.computeIfAbsent("classes",
-				k -> array.stream().map(o -> o == null ? null : o.getClass()).collect(Collectors.toSet()));
+				k -> array.stream()
+						.map(o -> o == null ? null : o.getClass())
+						.collect(Collectors.toCollection(LinkedHashSet::new)));
 	}
 }

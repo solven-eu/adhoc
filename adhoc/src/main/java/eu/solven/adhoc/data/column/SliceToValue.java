@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -76,7 +77,7 @@ public class SliceToValue implements ISliceToValue {
 
 	@Override
 	public Set<IAdhocSlice> slicesSet() {
-		return values.keyStream().collect(Collectors.toSet());
+		return values.keyStream().collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	@Override

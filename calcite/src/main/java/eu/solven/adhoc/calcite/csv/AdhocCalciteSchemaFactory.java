@@ -23,6 +23,7 @@
 package eu.solven.adhoc.calcite.csv;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,7 +91,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 
 		Set<IQueryOption> queryOptions = Stream.of(StandardQueryOptions.values())
 				.filter(o -> Boolean.TRUE.equals(operand.get(o.name())))
-				.collect(Collectors.toSet());
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return new AdhocCalciteSchema(schema, queryOptions);
 	}

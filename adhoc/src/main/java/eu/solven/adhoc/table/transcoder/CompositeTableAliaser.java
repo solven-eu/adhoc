@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.transcoder;
 
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -101,7 +102,7 @@ public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns 
 			} else {
 				return Stream.of();
 			}
-		}).collect(Collectors.toSet());
+		}).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 }
