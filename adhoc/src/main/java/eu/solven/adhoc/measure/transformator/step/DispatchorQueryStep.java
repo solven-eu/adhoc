@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -87,7 +89,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		IDecomposition decomposition = makeDecomposition(List.of());
+		IDecomposition decomposition = makeDecomposition(ImmutableList.of());
 
 		List<IWhereGroupByQuery> measurelessSteps = decomposition.getUnderlyingSteps(step);
 

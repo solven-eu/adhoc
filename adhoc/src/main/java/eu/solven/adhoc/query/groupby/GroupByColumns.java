@@ -128,7 +128,7 @@ public class GroupByColumns implements IAdhocGroupBy {
 	 * @return grandTotal as there is no wildcard column.
 	 */
 	public static IAdhocGroupBy grandTotal() {
-		return named(Set.of());
+		return named(ImmutableSet.of());
 	}
 
 	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
