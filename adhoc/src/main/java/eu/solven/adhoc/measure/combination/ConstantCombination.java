@@ -27,7 +27,7 @@ import java.util.Map;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
  * A {@link ICombination} returning a constant value.
@@ -40,7 +40,7 @@ public class ConstantCombination implements ICombination {
 	final IValueProvider constantProvider;
 
 	public ConstantCombination(Map<String, ?> options) {
-		Object constant = MapPathGet.getRequiredAs(options, K_CONSTANT);
+		Object constant = AdhocMapPathGet.getRequiredAs(options, K_CONSTANT);
 		constantProvider = IValueProvider.setValue(constant);
 	}
 

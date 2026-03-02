@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
  * {@link IAggregation} which essentially concatenate {@link Collection}.
@@ -42,7 +42,7 @@ public abstract class AUnionCollectionAggregation implements IAggregation {
 	}
 
 	public AUnionCollectionAggregation(Map<String, ?> options) {
-		unnest = MapPathGet.<Boolean>getOptionalAs(options, UnionSetAggregation.K_UNNEST).orElse(true);
+		unnest = AdhocMapPathGet.<Boolean>getOptionalAs(options, UnionSetAggregation.K_UNNEST).orElse(true);
 	}
 
 	/**

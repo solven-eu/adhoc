@@ -30,8 +30,8 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
-import eu.solven.pepper.mappath.MapPathGet;
 import smile.math.MathEx;
 import smile.sort.QuickSelect;
 
@@ -56,7 +56,7 @@ public class ExampleVaRQuickSelectCombination implements ICombination {
 	public static double getQuantile(Map<String, ?> options) {
 		double quantile;
 
-		Optional<?> optRawQuantile = MapPathGet.getOptionalAs(options, P_QUANTILE);
+		Optional<?> optRawQuantile = AdhocMapPathGet.getOptionalAs(options, P_QUANTILE);
 		if (optRawQuantile.isPresent()) {
 			Object rawQuantile = optRawQuantile.get();
 			if (AdhocPrimitiveHelpers.isLongLike(rawQuantile)) {

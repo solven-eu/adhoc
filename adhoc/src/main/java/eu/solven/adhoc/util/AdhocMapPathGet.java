@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.experimental.UtilityClass;
@@ -54,7 +55,8 @@ public class AdhocMapPathGet {
 		}
 	}
 
-	public static Object getRequiredAs(Map<String, ?> map, String key) {
+	@SuppressWarnings("unchecked")
+	public static <T> T getRequiredAs(Map<String, ?> map, String key) {
 		try {
 			return MapPathGet.getRequiredAs(map, key);
 		} catch (IllegalArgumentException e) {
@@ -62,11 +64,36 @@ public class AdhocMapPathGet {
 		}
 	}
 
-	public static List<?> getRequiredList(Map<String, ?> map, String key) {
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> getRequiredList(Map<String, ?> map, String key) {
 		try {
 			return MapPathGet.getRequiredAs(map, key);
 		} catch (IllegalArgumentException e) {
 			return onIllegalGet(map, key, e);
+		}
+	}
+
+	public static Number getRequiredNumber(Map<String, ?> map, String key) {
+		try {
+			return MapPathGet.getRequiredNumber(map, key);
+		} catch (IllegalArgumentException e) {
+			return onIllegalGet(map, key, e);
+		}
+	}
+
+	public static Optional<String> getOptionalString(Map<String, ?> map, String key) {
+		try {
+			return MapPathGet.getOptionalString(map, key);
+		} catch (IllegalArgumentException e) {
+			return Optional.of(onIllegalGet(map, key, e));
+		}
+	}
+
+	public static <T> Optional<T> getOptionalAs(Map<String, ?> map, String key) {
+		try {
+			return MapPathGet.getOptionalAs(map, key);
+		} catch (IllegalArgumentException e) {
+			return Optional.of(onIllegalGet(map, key, e));
 		}
 	}
 

@@ -45,7 +45,7 @@ public class TestColumnarSliceFactory {
 		IAdhocMap onlyA = aAndB.retainAll(Set.of("a"));
 		Assertions.assertThat((Map) onlyA).isEqualTo(Map.of("a", "a1")).hasSameHashCodeAs(Map.of("a", "a1"));
 
-		IAdhocMap onlyB = aAndB.retainAll(Set.of("b"));
+		IAdhocMap onlyB = aAndB.retainAll(ImmutableSet.of("b"));
 		Assertions.assertThat((Map) onlyB).isEqualTo(Map.of("b", "b1")).hasSameHashCodeAs(Map.of("b", "b1"));
 	}
 
@@ -110,7 +110,7 @@ public class TestColumnarSliceFactory {
 
 		{
 			IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1", "b1").build();
-			IAdhocMap onlyAfromAandB = aAndB.retainAll(Set.of("a"));
+			IAdhocMap onlyAfromAandB = aAndB.retainAll(ImmutableSet.of("a"));
 
 			Assertions.assertThat((Map) onlyAfromAandB)
 					.isEqualTo(ImmutableMap.of("a", "a1"))

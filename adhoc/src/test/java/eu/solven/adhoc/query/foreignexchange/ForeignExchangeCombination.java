@@ -32,7 +32,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.sum.ProductAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -96,7 +96,7 @@ public class ForeignExchangeCombination implements ICombination {
 			if (customMarker instanceof String && customMarker.toString().matches("[A-Z]{3}")) {
 				return customMarker.toString();
 			} else if (customMarker instanceof Map<?, ?> customMarkerAsMap && customMarkerAsMap.containsKey("ccyTo")) {
-				return MapPathGet.getRequiredString(customMarkerAsMap, "ccyTo");
+				return AdhocMapPathGet.getRequiredString((Map<String, ?>) customMarkerAsMap, "ccyTo");
 			}
 		}
 

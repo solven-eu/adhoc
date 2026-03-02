@@ -37,7 +37,7 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +56,7 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 	final boolean modeCount = false;
 
 	public ExpandTenorAndMaturityDecomposition(Map<String, ?> options) {
-		modeCount = MapPathGet.<Boolean>getOptionalAs(options, "count").orElse(false);
+		modeCount = AdhocMapPathGet.<Boolean>getOptionalAs(options, "count").orElse(false);
 	}
 
 	@Override

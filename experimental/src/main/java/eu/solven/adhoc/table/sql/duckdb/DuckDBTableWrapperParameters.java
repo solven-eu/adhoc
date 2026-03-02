@@ -26,6 +26,7 @@ import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
+import eu.solven.adhoc.table.arrow.ArrowBatchSpliterator;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Builder.Default;

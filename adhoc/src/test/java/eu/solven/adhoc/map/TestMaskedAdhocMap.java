@@ -30,6 +30,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.map.MaskedAdhocMap.RetainAllKeys;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 
@@ -130,7 +132,7 @@ public class TestMaskedAdhocMap {
 		Map<String, ?> mask = Map.of("b", "b2");
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
 
-		IAdhocMap retainA = masked.retainAll(Set.of("a"));
+		IAdhocMap retainA = masked.retainAll(ImmutableSet.of("a"));
 
 		Assertions.assertThat((Map) retainA).isEqualTo(Map.of("a", "a1"));
 	}

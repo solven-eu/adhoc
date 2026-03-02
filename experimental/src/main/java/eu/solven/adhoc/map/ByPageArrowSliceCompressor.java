@@ -24,6 +24,7 @@ package eu.solven.adhoc.map;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,7 +71,7 @@ public class ByPageArrowSliceCompressor {
 					.map(s -> s.get(column))
 					.filter(v -> v != null)
 					.map(Object::getClass)
-					.collect(Collectors.toSet());
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 
 			if (classes.size() == 1 && classes.contains(String.class)) {
 				vectors.add(new ValueVectorOrObject(new VarCharVector(column, allocator), null));

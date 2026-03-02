@@ -96,7 +96,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 		if (r instanceof Throwable t) {
 			return t;
 		} else if (r instanceof Collection<?> asCollection) {
-			return asCollection.stream().filter(Objects::nonNull).collect(ImmutableList.toImmutableList());
+			return asCollection.stream().filter(Objects::nonNull).toList();
 		} else if (r instanceof CharSequence charSequence) {
 			return charSequence.toString();
 		} else {
@@ -127,7 +127,7 @@ public class SumAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	protected Collection<?> aggregateCollections(Collection<?> left, Collection<?> right) {
 		int limitSize = checkCollectionsSizes(left, right);
 
-		return Stream.concat(left.stream(), right.stream()).limit(limitSize).collect(ImmutableList.toImmutableList());
+		return Stream.concat(left.stream(), right.stream()).limit(limitSize).toList();
 	}
 
 	protected int checkCollectionsSizes(Collection<?> left, Collection<?> right) {

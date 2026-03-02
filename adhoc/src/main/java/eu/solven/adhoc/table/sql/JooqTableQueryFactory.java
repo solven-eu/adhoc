@@ -283,7 +283,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return selectedFields;
 	}
 
-	// @Override
 	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
 		return TableQuery.makeSelectedColumns(tableQuery, leftovers);
 	}

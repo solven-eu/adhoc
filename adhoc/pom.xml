@@ -129,7 +129,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<!-- JdbcClient for inserting arrays-->
 			<groupId>org.springframework.boot</groupId>
@@ -216,7 +215,15 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Source: https://mvnrepository.com/artifact/io.github.solven-eu.cleanthat/annotations -->
+		<dependency>
+			<!-- IValueProviderTestHelpers -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/io.github.solven-eu.cleanthat/annotations -->
 		<dependency>
 			<groupId>io.github.solven-eu.cleanthat</groupId>
 			<artifactId>annotations</artifactId>
@@ -233,8 +240,8 @@
 				<executions>
 					<execution>
 						<goals>
-							<!-- Provides a tests jar, enabling integration
-							tests or benchmarks-->
+							<!-- Provides a classifier=tests jar-->
+							<!-- helpful for integration tests or benchmarks-->
 							<goal>test-jar</goal>
 						</goals>
 					</execution>

@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -141,7 +140,7 @@ public class TestAggregations_Filter extends ADagTest implements IAdhocTestConst
 
 		cube().execute(CubeQuery.builder().measure(k1Sum.getName()).andFilter("a", "a1").build());
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+		Assertions.assertThat(String.join("\n", messages))
 				.isEqualTo(
 						"""
 								Executing on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])

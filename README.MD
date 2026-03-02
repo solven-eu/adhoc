@@ -35,12 +35,14 @@ This repository includes 2 products:
 - [DAX](https://learn.microsoft.com/en-us/dax/dax-overview) enables complex queries in Microsoft eco-system.
 - [SquashQL](https://www.squashql.io/) is an SQL query-engine for OLAP, with a strong emphasis on its typescript UI.
 - [Atoti PostProcessors](https://docs.activeviam.com/products/atoti/server/6.1.1/docs/cube/postprocessors/) is the standard Atoti way of building complex tree of measures on top of Atoti cubes.
+- [Atoti DirectQuery](https://docs.activeviam.com/products/atoti/server/6.1/docs/directquery/getting_started/) enables Atoti to query an external Database instead of querying in own InMemory cubes.
 
 ### Similar but not drop-in replacement projects
 
 - [Drill](https://drill.apache.org/): much stronger to be queried in SQL by BI Tools. Unclear strategy to define a large tree of measures.
 - [Cube.js](https://cube.dev/docs/guides/recipes/data-modeling/filtered-aggregates), but ability to define a large tree of complex measure may not be sustainable.
 - [DBT Metrics](https://docs.getdbt.com/docs/build/metrics-overview), but ability to define a large tree of complex measure may not be sustainable.
+- [Polars](https://pola.rs/) enables data-processing on a single machine.
 
 # Quick-start
 

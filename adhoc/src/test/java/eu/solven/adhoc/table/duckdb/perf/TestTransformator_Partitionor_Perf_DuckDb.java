@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.duckdb.perf;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
@@ -128,7 +127,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 				.hasSize(1)
 				.containsEntry(Map.of("l", "A"), Map.of(m, sum));
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 
 	@Test
@@ -147,7 +146,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 		// Fill the cache
 		messages.clear();
 		cubeWithCache.execute(CubeQuery.builder().measure(m).groupByAlso("l").explain(true).build());
-		log.info("[PREFILL] Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("[PREFILL] Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 
 		log.info("---Cache is filled---");
 
@@ -158,7 +157,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 				.hasSize(1)
 				.containsEntry(Map.of("l", "A"), Map.of(m, sum));
 
-		log.info("[FILLED] Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("[FILLED] Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 
 	// BEWARE Wrapped in a subMethod in order to clearly separate this leg in profiling stacks

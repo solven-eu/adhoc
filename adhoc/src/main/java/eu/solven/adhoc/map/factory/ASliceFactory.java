@@ -43,6 +43,7 @@ import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.IHasCache;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 
@@ -141,6 +142,8 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	}
 
 	protected List<String> copyAsList(Collection<? extends String> keys) {
+		assert !isNotSequenced(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
+
 		return ImmutableList.copyOf(keys);
 	}
 

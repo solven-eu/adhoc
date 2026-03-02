@@ -93,7 +93,7 @@ public class RelevancyHeuristic {
 		measures.forEach(m -> {
 			if (m instanceof IHasUnderlyingNames underlyings) {
 				underlyings.getUnderlyingNames()
-						.forEach(underlying -> measureToDependants.get(underlying).add(m.getName()));
+						.forEach(underlying -> measureToDependants.put(underlying, m.getName()));
 			} else {
 				leaves.add(m.getName());
 			}

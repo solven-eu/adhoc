@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.resource.AdhocJackson;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 
 public class TestReferencedMeasure {
@@ -47,7 +48,7 @@ public class TestReferencedMeasure {
 	@Disabled("Does not work as `type` is expected to be a minimal class, not a name like `ref`")
 	@Test
 	public void testJackson_rawFormat() throws JsonProcessingException {
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 

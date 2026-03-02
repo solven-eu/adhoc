@@ -29,12 +29,10 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -48,7 +46,6 @@ import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -72,11 +69,18 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 	final FilterUtility filterHelper;
 
+	final IInducedEvaluator inducedEvaluator;
+
 	public ATableQueryOptimizer(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		this.factories = factories;
 		this.filterOptimizer = filterOptimizer;
 
 		this.filterHelper = FilterUtility.builder().optimizer(filterOptimizer).build();
+		this.inducedEvaluator = StandardInducedEvaluatorFactory.builder()
+				.factories(factories)
+				.filterOptimizer(filterOptimizer)
+				.build()
+				.build();
 	}
 
 	/**
@@ -156,11 +160,6 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
 
-		// TODO We should not rely on Sorted columns in various cases. Typically, if inducer is `country, id` and
-		// induced is `id`, then inducer might be sorted but induced would not be written in sorted.
-		IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
-				prepareInducedColumn(inducer, induced, inducerValues, aggregation);
-
 		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
 		Optional<ISliceFilter> optSliceFilter =
 				makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
@@ -170,37 +169,11 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		}
 
 		ISliceFilter sliceFilter = optSliceFilter.get();
-		FilterMatcher filterMatcher =
-				FilterMatcher.builder().filter(sliceFilter).onMissingColumn(FilterMatcher.failOnMissing()).build();
 
-		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
-		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
-
-		inducerValues.stream()
-				// filter the relevant rows from inducer
-				.filter(s -> filterMatcher.match(s.getSlice()))
-				// aggregate the accepted rows
-				.forEach(inducerSlice -> {
-					// inducer have same or more columns than induced
-					IAdhocSlice inducedSlice;
-
-					if (sameColumns) {
-						// If columns are the same, we simply reuse the original slice
-						inducedSlice = inducerSlice.getSlice();
-					} else {
-						// else we retain the relevant columns (which is an expensive operation)
-						inducedSlice = inducedGroupBy(inducedColumns, inducerSlice.getSlice());
-					}
-					inducerSlice.getValueProvider().acceptReceiver(inducedValues.merge(inducedSlice));
-				});
-
-		// Given we reduced to a lower number of slices, it is relevant to compact
-		// Though, make sure AggregationHolders are kept in place
-		if (inducedValues instanceof ICompactable compactable) {
-			log.debug("Compacting {}", compactable);
-			compactable.compact();
-			log.debug("Compacted {}", compactable);
-		}
+		IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
+				inducedEvaluator.tryEvaluate(inducerValues, inducer, induced, sliceFilter, aggregation, aggregator)
+						.orElseThrow(() -> new IllegalStateException(
+								"No evaluator succeeded for inducer=%s induced=%s".formatted(inducer, induced)));
 
 		if (hasOptions.isDebugOrExplain()) {
 			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
@@ -228,7 +201,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		boolean doesBreakSorting = breakSorting(inducerColumns, inducedColumns);
 
 		IMultitypeMergeableColumn<IAdhocSlice> inducedValues;
-		int capacity = CombinatorQueryStep.sumSizes(Set.of(inducerValues));
+		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
 		IColumnFactory columnFactory = factories.getColumnFactory();
 
 		if (doesBreakSorting) {
@@ -253,8 +226,8 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	// TODO This question the ordering of slice in Adhoc. IAdhocMap has an ordering based on key lexicographical order.
 	// But we may sort keys based on their expected variance, or based on the actual query.
 	protected boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
-		List<String> inducerAsList = inducer.stream().limit(induced.size()).collect(ImmutableList.toImmutableList());
-		List<String> inducedAsList = induced.stream().collect(ImmutableList.toImmutableList());
+		List<String> inducerAsList = inducer.stream().limit(induced.size()).toList();
+		List<String> inducedAsList = induced.stream().toList();
 
 		return !inducerAsList.equals(inducedAsList);
 	}

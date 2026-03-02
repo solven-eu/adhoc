@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
  * Enable an {@link IAggregation} to be defined through a lambda. Beware this is typically not serializable.
@@ -47,7 +47,7 @@ public class LambdaAggregation implements IAggregation {
 	}
 
 	public LambdaAggregation(Map<String, ?> options) {
-		lambda = MapPathGet.getRequiredAs(options, K_LAMBDA);
+		lambda = AdhocMapPathGet.getRequiredAs(options, K_LAMBDA);
 	}
 
 	@Override

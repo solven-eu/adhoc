@@ -20,8 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql.duckdb;
+package eu.solven.adhoc.table.arrow;
 
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -47,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @UtilityClass
 @Slf4j
-final class ArrowReflection {
+public final class ArrowReflection {
 
 	// Time-unit conversion constants used for Arrow temporal vectors.
 	// See https://arrow.apache.org/docs/format/Columnar.html#date-layout
@@ -74,6 +76,7 @@ final class ArrowReflection {
 	// See https://github.com/apache/arrow/blob/main/java/vector/src/main/java/org/apache/arrow/vector/util/Text.java
 	static final Method TEXT_GET_BYTES;
 	static final Method TEXT_GET_LENGTH;
+	static final Constructor<?> ARROW_STREAM_READER_CTOR;
 
 	static {
 		try {
@@ -93,12 +96,16 @@ final class ArrowReflection {
 			Class<?> textClass = Class.forName("org.apache.arrow.vector.util.Text");
 			TEXT_GET_BYTES = textClass.getMethod("getBytes");
 			TEXT_GET_LENGTH = textClass.getMethod("getLength");
+
+			Class<?> allocatorClass = Class.forName("org.apache.arrow.memory.BufferAllocator");
+			Class<?> streamReaderClass = Class.forName("org.apache.arrow.vector.ipc.ArrowStreamReader");
+			ARROW_STREAM_READER_CTOR = streamReaderClass.getConstructor(InputStream.class, allocatorClass);
 		} catch (ClassNotFoundException | NoSuchMethodException e) {
 			throw new ExceptionInInitializerError(e);
 		}
 	}
 
-	static Object createAllocator() {
+	public static Object createAllocator() {
 		// module: arrow-memory-core
 		try {
 			Class<?> allocatorClass = Class.forName("org.apache.arrow.memory.RootAllocator");
@@ -109,19 +116,11 @@ final class ArrowReflection {
 		}
 	}
 
-	static void closeAllocator(Object allocator) {
+	public static Object createStreamReader(InputStream inputStream, Object allocator) {
 		try {
-			allocator.getClass().getMethod("close").invoke(allocator);
-		} catch (Exception e) {
-			log.warn("Error closing Arrow allocator", e);
-		}
-	}
-
-	static void closeReader(Object reader) {
-		try {
-			reader.getClass().getMethod("close").invoke(reader);
-		} catch (Exception e) {
-			log.warn("Error closing Arrow reader", e);
+			return ARROW_STREAM_READER_CTOR.newInstance(inputStream, allocator);
+		} catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+			throw new IllegalStateException("Failed to create Arrow stream reader", e);
 		}
 	}
 
