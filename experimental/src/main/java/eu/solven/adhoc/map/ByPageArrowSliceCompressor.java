@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -36,6 +35,8 @@ import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.ValueVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.table.Table;
+
+import com.google.common.collect.ImmutableSet;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +71,7 @@ public class ByPageArrowSliceCompressor {
 					.map(s -> s.get(column))
 					.filter(v -> v != null)
 					.map(Object::getClass)
-					.collect(Collectors.toSet());
+					.collect(ImmutableSet.toImmutableSet());
 
 			if (classes.size() == 1 && classes.contains(String.class)) {
 				vectors.add(new ValueVectorOrObject(new VarCharVector(column, allocator), null));

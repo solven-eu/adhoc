@@ -24,6 +24,8 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -50,7 +52,7 @@ public class PrefixAliaser implements ITableAliaser, ITableReverseAliaser {
 	public Set<String> queried(String underlying) {
 		if (underlying.startsWith(prefix)) {
 			String queried = underlying.substring(prefix.length());
-			return Set.of(queried);
+			return ImmutableSet.of(queried);
 		} else {
 			throw new IllegalArgumentException(
 					"We received a column not prefixed by %s: %s".formatted(prefix, underlying));

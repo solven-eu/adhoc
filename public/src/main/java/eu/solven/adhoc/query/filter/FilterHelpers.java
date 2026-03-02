@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -114,7 +115,7 @@ public class FilterHelpers {
 				return IValueMatcher.MATCH_ALL;
 			} else if (splitAnds.size() == 1) {
 				// We receive a plain OR
-				Set<ISliceFilter> splitOrs = splitOr(splitAnds.iterator().next());
+				Set<ISliceFilter> splitOrs = splitOr(Iterables.getOnlyElement(splitAnds));
 
 				if (splitOrs.isEmpty()) {
 					return IValueMatcher.MATCH_NONE;
@@ -129,7 +130,7 @@ public class FilterHelpers {
 
 					if (orMatchers.size() == 1) {
 						// This is a common factor to all OR operands
-						return orMatchers.iterator().next();
+						return Iterables.getOnlyElement(orMatchers);
 					} else if (throwOnOr) {
 						throw new UnsupportedOperationException("filter:%s column:%s is not managed"
 								.formatted(PepperLogHelper.getObjectAndClass(filter), column));

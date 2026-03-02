@@ -473,7 +473,7 @@ public class ColumnsManager implements IColumnsManager {
 		if (aliaser instanceof IHasAliasedColumns hasAliasedColumns) {
 			return hasAliasedColumns.getAlias();
 		} else {
-			return Set.of();
+			return ImmutableSet.of();
 		}
 	}
 

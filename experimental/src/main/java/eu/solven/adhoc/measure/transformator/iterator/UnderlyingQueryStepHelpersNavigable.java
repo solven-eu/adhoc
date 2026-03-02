@@ -29,9 +29,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.SliceToValue;
@@ -84,11 +86,12 @@ public class UnderlyingQueryStepHelpersNavigable {
 			// Merge all SliceAsMap in a Set
 			Set<IAdhocSlice> notSortedAsSet;
 			if (underlyings.isEmpty()) {
-				notSortedAsSet = Set.of();
+				notSortedAsSet = ImmutableSet.of();
 			} else if (underlyings.size() == 1) {
-				notSortedAsSet = underlyings.iterator().next().slicesSet();
+				notSortedAsSet = Iterables.getOnlyElement(underlyings).slicesSet();
 			} else {
-				notSortedAsSet = underlyings.stream().flatMap(ISliceToValue::slices).collect(Collectors.toSet());
+				notSortedAsSet =
+						underlyings.stream().flatMap(ISliceToValue::slices).collect(ImmutableSet.toImmutableSet());
 			}
 
 			int size = underlyings.size();

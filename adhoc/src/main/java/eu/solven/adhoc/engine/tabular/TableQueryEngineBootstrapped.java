@@ -801,7 +801,8 @@ public class TableQueryEngineBootstrapped {
 
 		// Given all tableDag nodes, we should have all cubeDag roots
 		{
-			Set<CubeQueryStep> neededCubeRoots = streamMissingRoots(queryStepsDag).collect(Collectors.toSet());
+			Set<CubeQueryStep> neededCubeRoots =
+					streamMissingRoots(queryStepsDag).collect(ImmutableSet.toImmutableSet());
 
 			Set<CubeQueryStep> missingCubeRoots = Sets.difference(neededCubeRoots, stepsImpliedByTableQueries);
 			if (!missingCubeRoots.isEmpty()) {
@@ -819,26 +820,26 @@ public class TableQueryEngineBootstrapped {
 				log.warn("Analyzing one missing: {}", firstMissing);
 				Set<CubeQueryStep> impliedSameMeasure = stepsImpliedByTableQueries.stream()
 						.filter(s -> s.getMeasure().getName().equals(firstMissing.getMeasure().getName()))
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 				log.warn("Missing has {} sameMeasure siblings", impliedSameMeasure.size());
 
 				Set<CubeQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
 						.filter(s -> s.getGroupBy()
 								.getGroupedByColumns()
 								.equals(firstMissing.getGroupBy().getGroupedByColumns()))
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 				log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
 
 				Set<CubeQueryStep> impliedSameMeasureSameGroupBySameFilter = impliedSameMeasureSameGroupBy.stream()
 						.filter(s -> s.getFilter().equals(firstMissing.getFilter()))
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 				log.warn("Missing has {} sameMeasureSameGroupBySameFilter siblings",
 						impliedSameMeasureSameGroupBySameFilter.size());
 
 				Set<CubeQueryStep> impliedSameMeasureSameGroupByEquivalentFilter = impliedSameMeasureSameGroupBy
 						.stream()
 						.filter(s -> FilterEquivalencyHelpers.areEquivalent(s.getFilter(), firstMissing.getFilter()))
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 				log.warn("Missing has {} sameMeasureSameGroupByEquivalentFilter siblings",
 						impliedSameMeasureSameGroupByEquivalentFilter.size());
 

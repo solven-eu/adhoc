@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.core.env.Environment;
 
@@ -104,8 +103,8 @@ public class SpringImplicitOptions implements IImplicitOptions {
 			String prefix = e.getKey();
 			Set<? extends IQueryOption> orderedOptions = e.getValue();
 
-			Set<IQueryOption> intersection =
-					Sets.intersection(query.getOptions(), orderedOptions.stream().collect(Collectors.toSet()));
+			Set<IQueryOption> intersection = Sets.intersection(query.getOptions(),
+					orderedOptions.stream().collect(ImmutableSet.toImmutableSet()));
 			if (!intersection.isEmpty()) {
 				log.debug("Query has option {}, overriding any related option from the environment", intersection);
 				return;

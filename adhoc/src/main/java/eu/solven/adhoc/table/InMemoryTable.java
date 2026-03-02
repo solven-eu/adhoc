@@ -42,6 +42,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -146,7 +147,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
 				.map(this::clearColumnName)
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 		{
 			Set<String> aggregateColumnsFromTable = aggregateColumns.stream()
 					.filter(s -> !s.equals(Aggregator.empty().getColumnName()))
@@ -337,7 +338,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 		columnToClasses.asMap().forEach((column, classes) -> {
 			if (classes.size() == 1) {
-				columnToClass.put(column, classes.iterator().next());
+				columnToClass.put(column, Iterables.getOnlyElement(classes));
 			} else if (classes.isEmpty()) {
 				throw new IllegalStateException("No class for column=%s in %s".formatted(column, columnToClasses));
 			} else {
