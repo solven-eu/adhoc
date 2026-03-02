@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -80,6 +81,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuperBuilder
 public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
+
+	// Pre-compiled pattern for recognising double-quoted column names such as `"some.column"`.
+	// See https://docs.oracle.com/en/java/docs/api/java.base/java/util/regex/Pattern.html
+	private static final Pattern QUOTED_COLUMN_PATTERN = Pattern.compile("\"[^\"]+\"");
 
 	@Default
 	@NonNull
@@ -228,7 +233,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	 * @return a clear columnName
 	 */
 	protected String clearColumnName(String column) {
-		if (column.matches("\"[^\"]+\"")) {
+		if (QUOTED_COLUMN_PATTERN.matcher(column).matches()) {
 			// columns is wrapped in double quotes, typically due to having a dot
 			// e.g. `"some.column"` is not a joined column but a base column with a `.` in its name.
 			return column.substring(1, column.length() - 1);
