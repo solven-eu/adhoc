@@ -62,11 +62,8 @@ classDiagram
     }
     class TableQueryOptimizerFactory {
     }
-    class AtotiAliaser {
-    }
-    class EmptyTableWrapper {
-    }
-    class InMemoryTable {
+    class CachingTableWrapper {
+        ITableWrapper decorated
     }
     class CompositeCubesTableWrapper {
         IColumnsManager columnsManager
@@ -89,8 +86,9 @@ classDiagram
     }
     class EmptyColumnGenerator {
     }
-    class CachingTableWrapper {
-        ITableWrapper decorated
+    class EmptyTableWrapper {
+    }
+    class InMemoryTable {
     }
     class JooqTableWrapper {
         JooqTableWrapperParameters tableParameters
@@ -100,6 +98,8 @@ classDiagram
         IDSLSupplier dslSupplier
     }
     class StandardDSLSupplier {
+    }
+    class AtotiAliaser {
     }
     class MeasureForest {
     }
@@ -118,13 +118,13 @@ classDiagram
 
     %% ─── Implements / Extends ──────────────────────────────────────
     ITableQueryEngine <|.. TableQueryEngine
-    ITableWrapper <|.. AAdhocAtotiTable
+    ITableWrapper <|.. CachingTableWrapper
+    ITableWrapper <|.. CompositeCubesTableWrapper
     ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. InMemoryTable
-    ITableWrapper <|.. CompositeCubesTableWrapper
-    ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. JooqTableWrapper
     IDSLSupplier <|.. StandardDSLSupplier
+    ITableWrapper <|.. AAdhocAtotiTable
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
 
@@ -147,7 +147,7 @@ classDiagram
     TableQueryEngine *-- AdhocFactories : factories
     TableQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
     TableQueryEngine *-- TableQueryOptimizerFactory : optimizerFactory
-    AAdhocAtotiTable *-- AtotiAliaser : transcoder
+    CachingTableWrapper *-- ITableWrapper : decorated
     CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
     ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
     ColumnsManager *-- IdentityImplicitAliaser : aliaser
@@ -155,10 +155,10 @@ classDiagram
     ColumnsManager *-- StandardCustomTypeManager : customTypeManager
     ColumnsManager *-- EmptyColumnGenerator : columnGenerator
     StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
-    CachingTableWrapper *-- ITableWrapper : decorated
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
     JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
+    AAdhocAtotiTable *-- AtotiAliaser : transcoder
     StandardQueryPreparator *-- IImplicitFilter : implicitFilter
     StandardQueryPreparator *-- IImplicitOptions : implicitOptions
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache
