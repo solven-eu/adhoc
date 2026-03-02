@@ -36,12 +36,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
+import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
 public class TestFilterHelpers {
@@ -536,6 +538,115 @@ public class TestFilterHelpers {
 		Assertions.assertThat(FilterHelpers.visit(ISliceFilter.MATCH_ALL, visitor)).isFalse();
 		Assertions.assertThat(FilterHelpers.visit(ISliceFilter.MATCH_NONE, visitor)).isFalse();
 		Assertions.assertThat(FilterHelpers.visit(ColumnFilter.notEq("a", "a1"), visitor)).isFalse();
+	}
+
+	@Test
+	public void testAsMap_notEqualsMatcher_throws() {
+		// A ColumnFilter with a non-EqualsMatcher cannot be turned into a Map
+		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(ColumnFilter.matchIn("k", "v1", "v2")))
+				.isInstanceOf(Exception.class);
+	}
+
+	@Test
+	public void testAsMap_andWithNonEqualsMatchers_throws() {
+		// AND of non-EqualsMatcher column filters cannot be turned into a Map
+		ISliceFilter filter =
+				AndFilter.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchIn("b", "b1", "b2"));
+		Assertions.assertThatThrownBy(() -> FilterHelpers.asMap(filter)).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testSplitOr_notAnd() {
+		// NOT(AND(a=a1, b=b1)) should split into OR(NOT(a=a1), NOT(b=b1))
+		ISliceFilter notAnd = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")).negate();
+		Set<ISliceFilter> splitted = FilterHelpers.splitOr(notAnd);
+		Assertions.assertThat(splitted)
+				.hasSize(2)
+				.containsExactlyInAnyOrder(ColumnFilter.notEq("a", "a1"), ColumnFilter.notEq("b", "b1"));
+	}
+
+	@Test
+	public void testSplitOr_columnWithOrMatcher() {
+		// A ColumnFilter whose value matcher is an OrMatcher should split into individual column filters
+		ISliceFilter filter = ColumnFilter.builder()
+				.column("c")
+				.valueMatcher(OrMatcher.or(EqualsMatcher.matchEq("v1"), EqualsMatcher.matchEq("v2")))
+				.build();
+		Set<ISliceFilter> splitted = FilterHelpers.splitOr(filter);
+		Assertions.assertThat(splitted)
+				.hasSize(2)
+				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c", "v1"), ColumnFilter.matchEq("c", "v2"));
+	}
+
+	@Test
+	public void testSplitAnd_columnWithAndMatcher() {
+		// A ColumnFilter whose value matcher is an AndMatcher splits into individual column filters.
+		// Use copyOf to bypass the optimizer (which would simplify eq("v1")&eq("v2") to MATCH_NONE)
+		ISliceFilter filter = ColumnFilter.builder()
+				.column("c")
+				.valueMatcher(AndMatcher.copyOf(List.of(EqualsMatcher.matchEq("v1"), EqualsMatcher.matchEq("v2"))))
+				.build();
+		Set<ISliceFilter> splitted = FilterHelpers.splitAnd(filter);
+		Assertions.assertThat(splitted)
+				.hasSize(2)
+				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c", "v1"), ColumnFilter.matchEq("c", "v2"));
+	}
+
+	@Test
+	public void testSplitAnd_columnWithNotInMatcher() {
+		// A ColumnFilter with NOT(IN(v1, v2)) splits into NOT(=v1) AND NOT(=v2)
+		ISliceFilter filter =
+				ColumnFilter.builder().column("c").valueMatcher(NotMatcher.not(InMatcher.matchIn("v1", "v2"))).build();
+		Set<ISliceFilter> splitted = FilterHelpers.splitAnd(filter);
+		Assertions.assertThat(splitted)
+				.hasSize(2)
+				.containsExactlyInAnyOrder(ColumnFilter.notEq("c", "v1"), ColumnFilter.notEq("c", "v2"));
+	}
+
+	@Test
+	public void testSplitAnd_noSplitMatchers() {
+		// When splitMatchers=false, column filters with AndMatcher are NOT split
+		ISliceFilter filter = ColumnFilter.builder()
+				.column("c")
+				.valueMatcher(AndMatcher.and(EqualsMatcher.matchEq("v1"), EqualsMatcher.matchEq("v2")))
+				.build();
+		Set<ISliceFilter> splitted = FilterHelpers.splitAnd(List.of(filter), false);
+		Assertions.assertThat(splitted).containsExactly(filter);
+	}
+
+	@Test
+	public void testGetFilteredColumns_matchAll_empty() {
+		// MATCH_ALL is an empty AND filter; its filtered columns set is empty
+		Assertions.assertThat(FilterHelpers.getFilteredColumns(ISliceFilter.MATCH_ALL)).isEmpty();
+	}
+
+	@Test
+	public void testGetFilteredColumns_column() {
+		// Single column filter has exactly that column in the filtered columns set
+		Assertions.assertThat(FilterHelpers.getFilteredColumns(ColumnFilter.matchEq("myCol", "v")))
+				.containsExactly("myCol");
+	}
+
+	@Test
+	public void testSimplifyOrGivenContribution() {
+		// contribution|output=filter → strip contribution.negate() from filter.negate()
+		ISliceFilter contribution = ColumnFilter.matchEq("a", "a1");
+		ISliceFilter filter =
+				FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b1")).combine();
+
+		ISliceFilter simplified = FilterHelpers.simplifyOrGivenContribution(contribution, filter);
+		// After removing contribution=a=a1, should be left with b=b1
+		Assertions.assertThat(FilterHelpers.isLaxerThan(simplified, ColumnFilter.matchEq("b", "b1"))).isTrue();
+	}
+
+	@Test
+	public void testCommonOr() {
+		ISliceFilter f1 = FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b1")).combine();
+		ISliceFilter f2 = FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1")).combine();
+
+		// commonOr finds what is common across both OR filters: a=a1 is common
+		ISliceFilter common = FilterHelpers.commonOr(com.google.common.collect.ImmutableSet.of(f1, f2));
+		Assertions.assertThat(FilterHelpers.isStricterThan(ColumnFilter.matchEq("a", "a1"), common)).isTrue();
 	}
 
 }
