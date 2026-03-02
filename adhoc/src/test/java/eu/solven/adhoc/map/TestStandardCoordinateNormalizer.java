@@ -25,8 +25,8 @@ package eu.solven.adhoc.map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestStandardCoordinateNormalizer {

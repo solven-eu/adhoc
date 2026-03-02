@@ -24,12 +24,12 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 
 import java.sql.Array;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -218,13 +218,13 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 
 			List<Object> merged;
 			if (element instanceof IRankAggregationCarrier otherCarrier) {
-				Iterator<?> thisElements = new LinkedList<>(topElements).iterator();
-				Iterator<?> otherElements = new LinkedList<>(otherCarrier.getTopElements()).iterator();
+				Iterator<?> thisElements = topElements.iterator();
+				Iterator<?> otherElements = otherCarrier.getTopElements().iterator();
 
 				UnmodifiableIterator<Object> mergedIterator =
 						Iterators.mergeSorted(Arrays.asList(thisElements, otherElements), this.getComparator());
 
-				merged = new LinkedList<>();
+				merged = new ArrayList<>();
 
 				// Remember previous as `Iterators.mergeSorted` does not de-duplicate
 				Object previous = null;
@@ -237,7 +237,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 					}
 				}
 			} else {
-				merged = new LinkedList<>(topElements);
+				merged = new ArrayList<>(topElements);
 
 				int insertionIndex = Collections.binarySearch((List) topElements, element, comparator);
 				if (insertionIndex >= 0) {

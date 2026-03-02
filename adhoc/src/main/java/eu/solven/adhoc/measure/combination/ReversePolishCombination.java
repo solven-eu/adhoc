@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -49,6 +49,14 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 
 	public static final String K_OPERATOR_FACTORY = "operatorFactory";
 	public static final String K_NOTATION = "notation";
+
+	// Compiled once; Pattern.compile() is expensive and these patterns are used on every formula evaluation.
+	// See https://docs.oracle.com/en/java/docs/api/java.base/java/util/regex/Pattern.html
+	private static final Pattern SUBFORMULA_PATTERN = Pattern.compile("\\(([^\\(\\)]+)\\)");
+	private static final Pattern UNDERLYING_MEASURES_PATTERN =
+			Pattern.compile(EvaluatedExpressionCombination.P_UNDERLYINGS + "\\[([^\\]]+)\\]");
+	private static final Pattern INTEGER_LITERAL_PATTERN = Pattern.compile("-?[0-9]+");
+	private static final Pattern DOUBLE_LITERAL_PATTERN = Pattern.compile("-?[0-9]+\\.[0-9]+(?:[Ee][+-]?[0-9]+)?");
 
 	final String notation;
 	// Strict ReversePolishNotation only consumes 2 operands per operator
@@ -67,16 +75,17 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		notation = parseNotation(options);
 
 		// Default is false (sum all pending operands), to follow ActiveViam convention
-		twoOperandsPerOperator = MapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
+		twoOperandsPerOperator =
+				AdhocMapPathGet.<Boolean>getOptionalAs(options, "twoOperandsPerOperator").orElse(false);
 
 		// Default is true (no underlying -> `null`), to follow ActiveViam convention
 		nullIfNotASingleUnderlying =
-				MapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
+				AdhocMapPathGet.<Boolean>getOptionalAs(options, "nullIfNotASingleUnderlying").orElse(true);
 
 		parseUnderlyingMeasures(notation).forEach(underlyingMeasure -> underlyingMeasuresToIndex.put(underlyingMeasure,
 				underlyingMeasuresToIndex.size()));
 
-		operatorFactory = MapPathGet.<IOperatorFactory>getOptionalAs(options, K_OPERATOR_FACTORY)
+		operatorFactory = AdhocMapPathGet.<IOperatorFactory>getOptionalAs(options, K_OPERATOR_FACTORY)
 				.orElseGet(StandardOperatorFactory::new);
 	}
 
@@ -85,11 +94,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	 * @return the {@link Set} of underlying measures, in their order of appearance.
 	 */
 	public static Collection<String> parseUnderlyingMeasures(String formula) {
-		return Pattern.compile(EvaluatedExpressionCombination.P_UNDERLYINGS + "\\[([^\\]]+)\\]")
-				.matcher(formula)
-				.results()
-				.map(mr -> mr.group(1))
-				.toList();
+		return UNDERLYING_MEASURES_PATTERN.matcher(formula).results().map(mr -> mr.group(1)).toList();
 	}
 
 	/**
@@ -103,7 +108,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	// BEWARE This is called from the constructor
 	protected String parseNotation(Map<String, ?> options) {
 		// e.g. `aggregatedValue[someMeasureName],double[10000],*`
-		return MapPathGet.getRequiredString(options, K_NOTATION);
+		return AdhocMapPathGet.getRequiredString(options, K_NOTATION);
 	}
 
 	@Override
@@ -114,9 +119,6 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 	// https://github.com/maximfersko/Reverse-Polish-Notation-Library/blob/main/src/main/java/com/fersko/reversePolishNotation/ReversePolishNotation.java
 	@Override
 	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-		// Regex capturing `(x)` where `x` is a ReversePolishNotation
-		Pattern subFormulaRegex = Pattern.compile("\\(([^\\(\\)]+)\\)");
-
 		// BEWARE If the formula is constant, this will remain false
 		AtomicBoolean oneUnderlyingIsNotNull = new AtomicBoolean();
 		String replacedFormula = notation;
@@ -124,7 +126,7 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		Map<String, Object> placeholders = new LinkedHashMap<>();
 
 		while (true) {
-			String nextFormula = subFormulaRegex.matcher(replacedFormula).replaceAll(mr -> {
+			String nextFormula = SUBFORMULA_PATTERN.matcher(replacedFormula).replaceAll(mr -> {
 				String subFormula = mr.group(1);
 				Object evaluatedSubFormula = evaluateReversePolish(placeholders,
 						subFormula,
@@ -199,9 +201,9 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 				operandToAppend = null;
 			} else if (s.startsWith("$")) {
 				operandToAppend = placeholders.get(s);
-			} else if (s.matches("-?[0-9]+")) {
+			} else if (INTEGER_LITERAL_PATTERN.matcher(s).matches()) {
 				operandToAppend = Long.parseLong(s);
-			} else if (s.matches("-?[0-9]+\\.[0-9]+(?:[Ee][+-]?[0-9]+)?")) {
+			} else if (DOUBLE_LITERAL_PATTERN.matcher(s).matches()) {
 				// https://stackoverflow.com/questions/10516967/regexp-for-a-double
 				operandToAppend = Double.parseDouble(s);
 			} else {

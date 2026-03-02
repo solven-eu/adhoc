@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,6 +43,7 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -80,6 +82,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuperBuilder
 public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
+
+	// Pre-compiled pattern for recognising double-quoted column names such as `"some.column"`.
+	// See https://docs.oracle.com/en/java/docs/api/java.base/java/util/regex/Pattern.html
+	private static final Pattern QUOTED_COLUMN_PATTERN = Pattern.compile("\"[^\"]+\"");
 
 	@Default
 	@NonNull
@@ -146,7 +152,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				.stream()
 				.map(a -> a.getAggregator().getColumnName())
 				.map(this::clearColumnName)
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 		{
 			Set<String> aggregateColumnsFromTable = aggregateColumns.stream()
 					.filter(s -> !s.equals(Aggregator.empty().getColumnName()))
@@ -228,7 +234,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	 * @return a clear columnName
 	 */
 	protected String clearColumnName(String column) {
-		if (column.matches("\"[^\"]+\"")) {
+		if (QUOTED_COLUMN_PATTERN.matcher(column).matches()) {
 			// columns is wrapped in double quotes, typically due to having a dot
 			// e.g. `"some.column"` is not a joined column but a base column with a `.` in its name.
 			return column.substring(1, column.length() - 1);
@@ -337,7 +343,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 		columnToClasses.asMap().forEach((column, classes) -> {
 			if (classes.size() == 1) {
-				columnToClass.put(column, classes.iterator().next());
+				columnToClass.put(column, Iterables.getOnlyElement(classes));
 			} else if (classes.isEmpty()) {
 				throw new IllegalStateException("No class for column=%s in %s".formatted(column, columnToClasses));
 			} else {

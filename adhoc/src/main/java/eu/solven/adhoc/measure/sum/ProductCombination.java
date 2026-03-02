@@ -26,7 +26,7 @@ import java.util.Map;
 
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
  * A {@link ICombination} which multiplies the underlying measures. If any measure is null, the product is null.
@@ -44,7 +44,7 @@ public class ProductCombination extends AggregationCombination {
 
 	public ProductCombination(Map<String, ?> options) {
 		super(new ProductAggregation(options),
-				MapPathGet.<Boolean>getOptionalAs(options, K_CUSTOM_IF_ANY_NULL_OPERAND).orElse(true));
+				AdhocMapPathGet.<Boolean>getOptionalAs(options, K_CUSTOM_IF_ANY_NULL_OPERAND).orElse(true));
 	}
 
 	@Override

@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,7 +112,7 @@ public class Dispatchor
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlying);
+		return List.of(underlying);
 	}
 
 	@Override

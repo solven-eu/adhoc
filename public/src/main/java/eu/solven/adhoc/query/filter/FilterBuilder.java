@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import com.google.common.collect.Iterables;
+
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
@@ -111,7 +113,7 @@ public class FilterBuilder {
 			if (filters.size() != 1) {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
-			return optimizer.not(filters.iterator().next());
+			return optimizer.not(Iterables.getOnlyElement(filters));
 		}
 	}
 
@@ -135,7 +137,7 @@ public class FilterBuilder {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
 		} else if (filters.size() == 1) {
-			ISliceFilter singleFilter = filters.iterator().next();
+			ISliceFilter singleFilter = Iterables.getOnlyElement(filters);
 			if (andElseOr == Type.NOT) {
 				return NotFilter.simpleNot(singleFilter);
 			} else {

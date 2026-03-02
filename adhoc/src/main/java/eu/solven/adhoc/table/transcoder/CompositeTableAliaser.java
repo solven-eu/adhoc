@@ -23,10 +23,10 @@
 package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -101,7 +101,7 @@ public class CompositeTableAliaser implements ITableAliaser, IHasAliasedColumns 
 			} else {
 				return Stream.of();
 			}
-		}).collect(Collectors.toSet());
+		}).collect(ImmutableSet.toImmutableSet());
 	}
 
 }

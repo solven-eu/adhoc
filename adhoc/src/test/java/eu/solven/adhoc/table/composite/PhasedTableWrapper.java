@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.composite;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Phaser;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,6 +35,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -135,10 +137,11 @@ public class PhasedTableWrapper implements ITableWrapper {
 						.getNameToColumn()
 						.keySet()
 						.stream()
-						.collect(Collectors.toMap(e -> e, e -> name));
+						.collect(Collectors.toMap(Function.identity(), e -> name));
 
-				Map<String, Object> aggregates =
-						tableQuery.getAggregators().stream().collect(Collectors.toMap(a -> a.getAlias(), a -> 1L));
+				Map<String, Object> aggregates = tableQuery.getAggregators()
+						.stream()
+						.collect(Collectors.toMap(FilteredAggregator::getAlias, a -> 1L));
 
 				return Stream.<ITabularRecord>of(
 						TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(slice)).aggregates(aggregates).build())

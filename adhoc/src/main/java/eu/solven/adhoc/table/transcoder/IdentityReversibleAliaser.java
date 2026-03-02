@@ -24,6 +24,8 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
@@ -43,7 +45,7 @@ public class IdentityReversibleAliaser implements ITableAliaser, ITableReverseAl
 
 	@Override
 	public Set<String> queried(String underlying) {
-		return Set.of(underlying);
+		return ImmutableSet.of(underlying);
 	}
 
 	@Override

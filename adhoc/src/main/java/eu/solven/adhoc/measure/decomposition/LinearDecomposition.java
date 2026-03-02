@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.decomposition;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +42,7 @@ import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
  * This is an example {@link IDecomposition}, which takes the value in the input column, and split the underlying
@@ -72,7 +71,7 @@ public class LinearDecomposition implements IDecomposition {
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
+		String inputColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.getSlice().optGroupBy(inputColumn);
 		if (optInput.isEmpty()) {
@@ -80,10 +79,10 @@ public class LinearDecomposition implements IDecomposition {
 		}
 
 		Object input = optInput.get();
-		Number min = MapPathGet.getRequiredNumber(options, "min");
-		Number max = MapPathGet.getRequiredNumber(options, "max");
+		Number min = AdhocMapPathGet.getRequiredNumber(options, "min");
+		Number max = AdhocMapPathGet.getRequiredNumber(options, "max");
 
-		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String outputColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 		if (min.equals(input)) {
 			return ImmutableList.of(IDecompositionEntry.of(Map.of(outputColumn, min), value));
 		} else if (max.equals(input)) {
@@ -142,10 +141,10 @@ public class LinearDecomposition implements IDecomposition {
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String outputColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 		if (!step.getGroupBy().getGroupedByColumns().contains(outputColumn)) {
 			// None of the requested column is an output column of this dispatchor : there is nothing to dispatch
-			return Collections.singletonList(step);
+			return List.of(step);
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -153,23 +152,23 @@ public class LinearDecomposition implements IDecomposition {
 		allGroupBys.addAll(step.getGroupBy().getNameToColumn().values());
 		allGroupBys.removeIf(c -> c.getName().equals(outputColumn));
 
-		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
+		String inputColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));
 
-		return Collections.singletonList(MeasurelessQuery.edit(step).groupBy(GroupByColumns.of(allGroupBys)).build());
+		return List.of(MeasurelessQuery.edit(step).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
 		return ImmutableMap.<String, Class<?>>builder()
-				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Number.class)
+				.put(AdhocMapPathGet.getRequiredString(options, K_OUTPUT), Number.class)
 				.build();
 	}
 
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
-		Number min = MapPathGet.getRequiredNumber(options, "min");
-		Number max = MapPathGet.getRequiredNumber(options, "max");
+		Number min = AdhocMapPathGet.getRequiredNumber(options, "min");
+		Number max = AdhocMapPathGet.getRequiredNumber(options, "max");
 
 		return CoordinatesSample.builder().estimatedCardinality(2).coordinate(min).coordinate(max).build();
 	}

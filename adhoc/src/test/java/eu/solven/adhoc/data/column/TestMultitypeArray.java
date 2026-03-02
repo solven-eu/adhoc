@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 
 public class TestMultitypeArray {
 	MultitypeArray array = MultitypeArray.builder().build();

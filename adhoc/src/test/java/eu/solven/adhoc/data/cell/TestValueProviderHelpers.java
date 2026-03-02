@@ -29,7 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.primitive.ValueProviderHelpers;
 
 public class TestValueProviderHelpers {

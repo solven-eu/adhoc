@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
@@ -44,7 +46,7 @@ public interface IMeasureForestVisitor {
 	}
 
 	default Set<IMeasure> addMeasures() {
-		return Set.of();
+		return ImmutableSet.of();
 	}
 
 	/**
@@ -54,7 +56,7 @@ public interface IMeasureForestVisitor {
 	 *         or more IMeasure.
 	 */
 	default Set<IMeasure> mapMeasure(IMeasure measure) {
-		return Set.of(measure);
+		return ImmutableSet.of(measure);
 	}
 
 }

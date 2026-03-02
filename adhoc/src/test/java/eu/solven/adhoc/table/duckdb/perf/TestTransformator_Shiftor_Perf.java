@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.duckdb.perf;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.duckdb.DuckDBAppender;
@@ -178,7 +177,7 @@ public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements I
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure(dToD).explain(true).build());
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Map.of(), Map.of(dToD, 0L));
@@ -207,7 +206,7 @@ public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements I
 						// lastDay has no previous day
 								- 0L));
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 
 	@Test
@@ -228,7 +227,7 @@ public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements I
 								0L + (maxCardinality - 1 + (nbDays) * (nbDays))
 										- (maxCardinality - 1 + (nbDays - 1) * (nbDays - 1))));
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 
 }

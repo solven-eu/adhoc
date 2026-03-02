@@ -130,7 +130,7 @@ public class TestCubeQueryBuilder {
 	public void testJackson_empty() throws JsonProcessingException {
 		CubeQuery q1 = CubeQuery.builder().build();
 
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 		String asString = objectMapper.writeValueAsString(q1);
 		CubeQuery fromString = objectMapper.readValue(asString, CubeQuery.class);
 
@@ -141,7 +141,7 @@ public class TestCubeQueryBuilder {
 	public void testJackson() throws JsonProcessingException {
 		CubeQuery q1 = CubeQuery.builder().measure("k1").andFilter("c1", "v1").groupByAlso("a").build();
 
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 		String asString = objectMapper.writeValueAsString(q1);
 		CubeQuery fromString = objectMapper.readValue(asString, CubeQuery.class);
 

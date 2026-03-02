@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.transformator.step;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Suppliers;
 
@@ -83,7 +82,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 		return getUnderlyingNames().stream().map(underlying -> {
 			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), partitionor.getGroupBy());
 			return CubeQueryStep.edit(step).groupBy(groupBy).measure(underlying).build();
-		}).collect(Collectors.toList());
+		}).toList();
 	}
 
 	@Override

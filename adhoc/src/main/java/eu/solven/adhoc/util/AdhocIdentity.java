@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.util;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -59,12 +58,12 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		return Collections.singletonList(IDecompositionEntry.of(Map.of(), value));
+		return List.of(IDecompositionEntry.of(Map.of(), value));
 	}
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		return Collections.singletonList(step);
+		return List.of(step);
 	}
 
 	@Override

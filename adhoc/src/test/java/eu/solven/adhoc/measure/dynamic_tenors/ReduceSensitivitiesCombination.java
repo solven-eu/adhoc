@@ -32,7 +32,7 @@ import java.util.function.DoubleConsumer;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class ReduceSensitivitiesCombination implements ICombination, IExamplePnL
 	final boolean modeCount = false;
 
 	public ReduceSensitivitiesCombination(Map<String, ?> options) {
-		modeCount = MapPathGet.<Boolean>getOptionalAs(options, "count").orElse(false);
+		modeCount = AdhocMapPathGet.<Boolean>getOptionalAs(options, "count").orElse(false);
 	}
 
 	@Override

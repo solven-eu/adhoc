@@ -1,29 +1,31 @@
-name: mkdocs 
+name: mkdocs
 on:
   push:
     branches:
-      - master 
+      - master
       - main
+# contents: write is required to push the generated site to the gh-pages branch.
+# See https://github.com/mkdocs/mkdocs/blob/master/docs/user-guide/deploying-your-docs.md
 permissions:
   contents: write
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Configure Git Credentials
         run: |
           git config user.name github-actions[bot]
           git config user.email adhoc-mkdocs+github-actions[bot]@users.noreply.github.com
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: 3.x
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV 
-      - uses: actions/cache@v5
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           key: mkdocs-material-${{ env.cache_id }}
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material 
+      - run: pip install mkdocs-material
       - run: mkdocs gh-deploy --force

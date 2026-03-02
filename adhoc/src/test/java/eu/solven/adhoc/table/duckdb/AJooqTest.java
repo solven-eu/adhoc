@@ -20,35 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.aggregation.collection;
+package eu.solven.adhoc.table.duckdb;
 
-import java.util.Set;
+import org.jooq.DSLContext;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.ARawDagTest;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 
-public class TestUnionSetAggregator {
-	@Test
-	public void testUnion() {
-		UnionSetAggregation aggregation = new UnionSetAggregation();
+public abstract class AJooqTest extends ARawDagTest {
 
-		Assertions.assertThat(aggregation.aggregate((Object) null, null)).isNull();
-		Assertions.assertThat(aggregation.aggregate(null, 123)).isEqualTo(Set.of(123));
+	static {
+		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
+		System.setProperty("org.jooq.no-logo", "true");
+		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
+		System.setProperty("org.jooq.no-tips", "true");
+	}
 
-		Assertions.assertThat(aggregation.aggregate("foo", null)).isEqualTo(Set.of("foo"));
+	protected final IDSLSupplier dslSupplier = makeDSLSupplier();
+	protected final DSLContext dsl = makeDSL();
 
-		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), null)).isEqualTo(Set.of("foo"));
-		Assertions.assertThat(aggregation.aggregate(null, Set.of("foo"))).isEqualTo(Set.of("foo"));
+	public abstract IDSLSupplier makeDSLSupplier();
 
-		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), Set.of("bar"))).isEqualTo(Set.of("foo", "bar"));
-
-		Assertions.assertThat(aggregation.aggregate(Set.of("foo"), 123)).isEqualTo(Set.of("foo", 123));
-
-		// Check we do not re-use references
-		{
-			Set<String> input = Set.of("foo");
-			Set<?> output = aggregation.aggregate(input, null);
-			Assertions.assertThat(output).isEqualTo(Set.of("foo")).isNotSameAs(input);
-		}
+	protected DSLContext makeDSL() {
+		return dslSupplier.getDSLContext();
 	}
 }

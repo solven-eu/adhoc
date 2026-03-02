@@ -20,15 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.column;
+package eu.solven.adhoc.primitive;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.AtomicDouble;
-
-import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.primitive.IValueReceiver;
 
 public interface IValueProviderTestHelpers {
 	// Pick a seemingly random value. Long.MAX_VALUE may be referred for some edge-cases
@@ -51,7 +48,7 @@ public interface IValueProviderTestHelpers {
 
 			@Override
 			public void onObject(Object v) {
-				throw new IllegalArgumentException("getLong requires onLong and not onObject");
+				throw new IllegalArgumentException("getLong requires onLong and not onObject (o=%s)".formatted(v));
 			}
 		});
 

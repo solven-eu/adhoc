@@ -25,7 +25,6 @@ package eu.solven.adhoc.query.table;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -42,6 +41,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
+import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -127,14 +127,11 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 				.map(FilteredAggregator::getAlias)
 				.toList();
 
-		List<String> groupByColumns = new ArrayList<>();
-		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			groupByColumns.add(column.getName());
-		});
+		List<String> groupByColumns =
+				tableQuery.getGroupBy().getNameToColumn().values().stream().map(IHasName::getName).toList();
 
-		List<String> leftoversColumns = leftovers.stream()
-				.flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream())
-				.collect(Collectors.toCollection(ArrayList::new));
+		List<String> leftoversColumns = new ArrayList<>(
+				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
 
 		// Make sure a latecolumn is not also a normal groupBy column
 		leftoversColumns.removeAll(groupByColumns);

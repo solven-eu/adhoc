@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.duckdb.perf;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,7 +133,7 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 				.containsEntry(Map.of("row_index", 0L + maxCardinality - 1),
 						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 
 	// Check that EmptyAggregation is fast
@@ -152,6 +151,6 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 				.containsEntry(Map.of("row_index", 1L), Map.of())
 				.containsEntry(Map.of("row_index", 0L + maxCardinality - 1), Map.of());
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 }

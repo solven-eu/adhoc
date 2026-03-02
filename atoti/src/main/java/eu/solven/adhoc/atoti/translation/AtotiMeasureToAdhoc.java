@@ -42,6 +42,7 @@ import com.activeviam.pivot.postprocessing.impl.ABasicPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessorV2;
 import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.qfs.agg.impl.SingleValueFunction;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
@@ -253,7 +254,7 @@ public class AtotiMeasureToAdhoc {
 
 		transferTagProperties(preAggregatedMeasure, aggregatorBuilder::tag);
 
-		return List.of(aggregatorBuilder.build());
+		return ImmutableList.of(aggregatorBuilder.build());
 	}
 
 	protected String toAdhocAggregation(String atotiAggregation) {
@@ -385,7 +386,7 @@ public class AtotiMeasureToAdhoc {
 
 		onBuilder.accept(combinatorBuilder);
 
-		return List.of(combinatorBuilder.build());
+		return ImmutableList.of(combinatorBuilder.build());
 	}
 
 	/**
@@ -413,7 +414,7 @@ public class AtotiMeasureToAdhoc {
 
 		onBuilder.accept(filtratorBuilder);
 
-		return List.of(filtratorBuilder.build());
+		return ImmutableList.of(filtratorBuilder.build());
 	}
 
 	// TODO ParentValuePostProcessor is not managed as it requires multi-level hierarchies
@@ -433,7 +434,7 @@ public class AtotiMeasureToAdhoc {
 
 		onBuilder.accept(shiftorBuilder);
 
-		return List.of(shiftorBuilder.build());
+		return ImmutableList.of(shiftorBuilder.build());
 	}
 
 	protected String getSingleUnderylingMeasure(List<String> underlyingNames) {
@@ -460,7 +461,7 @@ public class AtotiMeasureToAdhoc {
 		List<String> parentHierarchies = getPropertyList(properties, DrillupPostProcessor.PARENT_HIERARCHIES);
 		unfiltratorBuilder.columns(parentHierarchies.stream().map(this::levelToColumn).toList());
 
-		return List.of(unfiltratorBuilder.build());
+		return ImmutableList.of(unfiltratorBuilder.build());
 	}
 
 	protected ISliceFilter makeFilter(IPostProcessorDescription measure, Properties properties) {
@@ -518,7 +519,7 @@ public class AtotiMeasureToAdhoc {
 
 		onBuilder.accept(partitionorBuilder);
 
-		return List.of(partitionorBuilder.build());
+		return ImmutableList.of(partitionorBuilder.build());
 	}
 
 	protected IAdhocGroupBy makeGroupBy(List<String> leafLevels) {
@@ -600,7 +601,7 @@ public class AtotiMeasureToAdhoc {
 
 		dispatchorBuilderConsumer.accept(dispatchorBuilder);
 
-		return List.of(dispatchorBuilder.build());
+		return ImmutableList.of(dispatchorBuilder.build());
 	}
 
 	protected Map<String, Object> propertiesToOptions(Properties properties, String... excludedProperties) {

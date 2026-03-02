@@ -28,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -48,7 +49,7 @@ public class FilterUtility {
 		if (filters.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
 		} else if (filters.size() == 1) {
-			return filters.iterator().next();
+			return Iterables.getOnlyElement(filters);
 		}
 
 		Iterator<? extends ISliceFilter> iterator = filters.iterator();
