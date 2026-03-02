@@ -366,7 +366,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			// better/simpler/faster. Generally speaking, we prefer AND over OR.
 			// BEWARE We go into another batch of optimization for OR, which is safe as this is strictly simpler than
 			// current input
-			ISliceFilter orCandidate = and(List.of(where, OrFilter.copyOf(ors)), false);
+			ISliceFilter orCandidate = and(ImmutableList.of(where, OrFilter.copyOf(ors)), false);
 			long costSimplifiedOr = costFunction.cost(orCandidate);
 			long costInputAnd = costFunction.cost(andOperands);
 
@@ -391,7 +391,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
 				.filter(sf -> {
 					// TODO if `commonAnd` is matchAll, we can skip `.optimize`
-					ISliceFilter combinedOrOperand = and(List.of(commonAnd, sf), false);
+					ISliceFilter combinedOrOperand = and(ImmutableList.of(commonAnd, sf), false);
 
 					if (combinedOrOperand.isMatchNone()) {
 						// Reject this OR which is irrelevant
@@ -445,7 +445,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				.map(filterStripper::strip)
 				// Filter the combinations which are simplified into matchNone
 				.filter(orOperand -> {
-					ISliceFilter combinedOrOperand = and(List.of(where, orOperand), false);
+					ISliceFilter combinedOrOperand = and(ImmutableList.of(where, orOperand), false);
 
 					boolean matchNone = combinedOrOperand.isMatchNone();
 					if (matchNone) {
