@@ -56,8 +56,8 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
-import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,6 +72,7 @@ public class MeasureForestFromResource {
 	public static final String K_TYPE = "type";
 	private static final String K_NAME = "name";
 	private static final String K_COMBINATION_OPTIONS = "combinationOptions";
+	private static final ObjectMapper JSON_OBJECT_MAPPER = AdhocJackson.makeObjectMapper("json");
 
 	private static final List<String> SORTED_KEYS = ImmutableList.of(K_NAME,
 			K_TYPE,
@@ -104,18 +105,18 @@ public class MeasureForestFromResource {
 
 		// The following section unnest recursive measure definitions
 		{
-			Optional<List<?>> optRawUnderlyings = MapPathGet.getOptionalAs(measureAsMap, "underlyings");
+			Optional<List<?>> optRawUnderlyings = AdhocMapPathGet.getOptionalAs(measureAsMap, "underlyings");
 
 			optRawUnderlyings.ifPresent(rawUnderlyings -> {
 				List<String> underlyingNames = rawUnderlyings.stream().map(rawUnderlying -> {
 					return registerMeasuresReturningMainOne(rawUnderlying, measures);
-				}).collect(Collectors.toList());
+				}).toList();
 
 				mutableMeasureAsMap.put("underlyings", underlyingNames);
 			});
 		}
 		{
-			Optional<?> optRawUnderlying = MapPathGet.getOptionalAs(measureAsMap, "underlying");
+			Optional<?> optRawUnderlying = AdhocMapPathGet.getOptionalAs(measureAsMap, "underlying");
 
 			optRawUnderlying.ifPresent(rawUnderlying -> {
 				String underlyingName = registerMeasuresReturningMainOne(rawUnderlying, measures);
@@ -124,12 +125,12 @@ public class MeasureForestFromResource {
 			});
 		}
 
-		Optional<String> optName = MapPathGet.getOptionalString(measureAsMap, K_NAME);
+		Optional<String> optName = AdhocMapPathGet.getOptionalString(measureAsMap, K_NAME);
 		String name = optName.orElse("anonymous-" + anonymousIndex.getAndIncrement());
 
 		mutableMeasureAsMap.put(K_NAME, name);
 
-		IMeasure asMeasure = new ObjectMapper().convertValue(mutableMeasureAsMap, IMeasure.class);
+		IMeasure asMeasure = JSON_OBJECT_MAPPER.convertValue(mutableMeasureAsMap, IMeasure.class);
 
 		// The explicit measureAsMap has to be first in the output List
 		measures.addFirst(asMeasure);
@@ -173,9 +174,10 @@ public class MeasureForestFromResource {
 			MeasureForests.MeasureForestsBuilder forests = MeasureForests.builder();
 			List forestsAsList = objectMapper.readValue(inputStream, List.class);
 
-			forestsAsList.forEach(forest -> {
-				String name = MapPathGet.getRequiredString(forest, K_NAME);
-				List measures = MapPathGet.getRequiredAs(forest, "measures");
+			forestsAsList.forEach(rawForest -> {
+				Map<String, ?> forest = (Map<String, ?>) rawForest;
+				String name = AdhocMapPathGet.getRequiredString(forest, K_NAME);
+				List measures = AdhocMapPathGet.getRequiredAs(forest, "measures");
 				forests.forest(makeForest(name, measures));
 			});
 
@@ -184,8 +186,7 @@ public class MeasureForestFromResource {
 	}
 
 	protected MeasureForest makeForest(String name, List<Map<String, ?>> rawMeasures) {
-		List<IMeasure> measures =
-				rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).collect(Collectors.toList());
+		List<IMeasure> measures = rawMeasures.stream().flatMap(m -> makeMeasure(m).stream()).toList();
 
 		return MeasureForest.fromMeasures(name, measures);
 	}
@@ -193,11 +194,7 @@ public class MeasureForestFromResource {
 	public String asString(String format, IMeasureForest forest) {
 		ObjectMapper objectMapper = makeObjectMapper(format);
 
-		List<?> asMaps = forest.getNameToMeasure()
-				.values()
-				.stream()
-				.map(m -> asMap(objectMapper, m))
-				.collect(Collectors.toList());
+		List<?> asMaps = forest.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).toList();
 
 		try {
 			return objectMapper.writeValueAsString(asMaps);
@@ -221,11 +218,7 @@ public class MeasureForestFromResource {
 		forests.forestNames().forEach(forestName -> {
 			IMeasureForest measures = forests.getForest(forestName);
 
-			List<?> asMaps = measures.getNameToMeasure()
-					.values()
-					.stream()
-					.map(m -> asMap(objectMapper, m))
-					.collect(Collectors.toList());
+			List<?> asMaps = measures.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).toList();
 
 			nameToForest.add(ImmutableMap.of(K_NAME, forestName, "measures", asMaps));
 		});
@@ -282,7 +275,7 @@ public class MeasureForestFromResource {
 					c.getUnderlyingNames())) {
 				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 			}
-			if (MapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
+			if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
 				clean.remove(K_COMBINATION_OPTIONS);
 			}
 		} else if (measure instanceof Dispatchor d) {
@@ -299,7 +292,7 @@ public class MeasureForestFromResource {
 					b.getGroupBy().getGroupedByColumns())) {
 				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_GROUPBY_COLUMNS);
 			}
-			if (MapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
+			if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
 				clean.remove(K_COMBINATION_OPTIONS);
 			}
 

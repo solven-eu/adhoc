@@ -34,7 +34,6 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -46,6 +45,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQ
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;

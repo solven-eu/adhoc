@@ -56,8 +56,8 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.NotYetImplementedException;
-import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -99,7 +99,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		this.manyToManyDefinition = manyToManyDefinition;
 
 		Set<String> elementColumns = getInputColumns(options);
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		if (elementColumns.contains(groupColumn)) {
 			throw new UnsupportedOperationException("TODO This case requires specific behaviors and unitTests");
@@ -107,7 +107,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	}
 
 	protected Set<String> getInputColumns(Map<String, ?> options) {
-		Collection<String> rawInputColumns = MapPathGet.getRequiredAs(options, K_INPUTS);
+		Collection<String> rawInputColumns = AdhocMapPathGet.getRequiredAs(options, K_INPUTS);
 		return ImmutableSet.copyOf(rawInputColumns);
 	}
 
@@ -122,7 +122,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	}
 
 	protected Set<?> getQueryStepMatchingGroupsNoCache(ISliceWithStep slice) {
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		ISliceFilter filter = slice.getQueryStep().getFilter();
 
@@ -141,7 +141,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 		Set<Object> groups = getGroups(slice, elementCoordinates);
 
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		return makeDecomposition(elementCoordinates, value, groupColumn, groups);
 	}
@@ -206,14 +206,14 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		Set<String> elementColumns = getInputColumns(options);
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		ISliceFilter requestedFilter = step.getFilter();
 		ISliceFilter underlyingFilter = convertGroupsToElementsFilter(groupColumn, requestedFilter);
 
 		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
-			return Collections.singletonList(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
+			return List.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -222,12 +222,12 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		// The groupColumn is generally meaningless to the underlying measure
 		allGroupBys.removeIf(c -> c.getName().equals(groupColumn));
 
-		elementColumns.forEach(elementColumn -> allGroupBys.add(ReferencedColumn.ref(elementColumn)));
+		allGroupBys.addAll(elementColumns.stream().map(ReferencedColumn::ref).toList());
 
 		// TODO If we filter some group, we should propagate as filtering some element
 		// step.getFilter().
 
-		return Collections.singletonList(
+		return List.of(
 				MeasurelessQuery.edit(step).filter(underlyingFilter).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 
@@ -275,7 +275,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
 		return ImmutableMap.<String, Class<?>>builder()
-				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
+				.put(AdhocMapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
 				.build();
 	}
 

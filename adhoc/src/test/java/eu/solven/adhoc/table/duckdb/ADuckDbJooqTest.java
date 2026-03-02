@@ -22,34 +22,21 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.sql.SQLException;
-
-import org.duckdb.DuckDBConnection;
-import org.jooq.DSLContext;
-
-import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
-public abstract class ADuckDbJooqTest extends ARawDagTest {
+public abstract class ADuckDbJooqTest extends AJooqTest {
 
-	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
-	}
-
-	protected final IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
-	protected final DSLContext dsl = dslSupplier.getDSLContext();
-
+	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		DuckDBConnection duckDbConnection = DuckDBHelper.makeFreshInMemoryDb();
-		try {
-			duckDbConnection.setAutoCommit(false);
-		} catch (SQLException e) {
-			throw new IllegalStateException("Issue while setting autoCommit=false", e);
-		}
-		return DuckDBHelper.dslSupplier(duckDbConnection);
+		return DuckDBHelper.inMemoryDSLSupplier();
+		// DuckDBConnection duckDbConnection = DuckDBHelper.makeFreshInMemoryDb();
+		// try {
+		// duckDbConnection.setAutoCommit(false);
+		// } catch (SQLException e) {
+		// throw new IllegalStateException("Issue while setting autoCommit=false", e);
+		// }
+		// return DuckDBHelper.dslSupplier(duckDbConnection);
 	}
+
 }

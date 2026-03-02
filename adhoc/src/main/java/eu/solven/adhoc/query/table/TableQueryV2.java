@@ -153,6 +153,6 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 	}
 
 	public static TableQueryV2 fromV1(TableQuery tableQuery) {
-		return Iterables.getOnlyElement(fromV1(Set.of(tableQuery)));
+		return Iterables.getOnlyElement(fromV1(ImmutableSet.of(tableQuery)));
 	}
 }

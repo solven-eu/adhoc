@@ -179,7 +179,8 @@ public class StandardQueryPreparator implements IQueryPreparator {
 			});
 
 			measuresToAdd.clear();
-			nextMeasuresToAdd.forEach(m -> measuresToAdd.add(forest.resolveIfRef(ReferencedMeasure.ref(m))));
+			measuresToAdd.addAll(
+					nextMeasuresToAdd.stream().map(m -> forest.resolveIfRef(ReferencedMeasure.ref(m))).toList());
 		}
 	}
 

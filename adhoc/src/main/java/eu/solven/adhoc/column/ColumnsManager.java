@@ -31,6 +31,7 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.event.Level;
@@ -77,6 +78,7 @@ import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.util.AdhocBlackHole;
+import eu.solven.adhoc.util.IHasName;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -220,15 +222,17 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	protected Set<String> getFiltrableCalculatedColumns(TableQueryV2 query) {
-		Set<String> calculatedColumns = new TreeSet<>();
-		this.calculatedColumns.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
-		query.getGroupBy()
+		Set<String> calculatedColumns = this.calculatedColumns.stream()
+				.map(ICalculatedColumn::getName)
+				.collect(Collectors.toCollection(TreeSet::new));
+		calculatedColumns.addAll(query.getGroupBy()
 				.getNameToColumn()
 				.values()
 				.stream()
 				.filter(c -> c instanceof ICalculatedColumn
 						&& !(c instanceof FunctionCalculatedColumn f && f.isSkipFiltering()))
-				.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
+				.map(IHasName::getName)
+				.toList());
 		return calculatedColumns;
 	}
 

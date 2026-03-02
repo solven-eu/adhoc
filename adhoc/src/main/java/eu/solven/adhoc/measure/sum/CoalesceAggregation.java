@@ -27,8 +27,8 @@ import java.util.Objects;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
-import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -51,8 +51,8 @@ public class CoalesceAggregation implements IAggregation {
 	boolean failIfDifferent;
 
 	public CoalesceAggregation(Map<String, ?> options) {
-		matchReferences = MapPathGet.<Boolean>getOptionalAs(options, "matchReferences").orElse(false);
-		failIfDifferent = MapPathGet.<Boolean>getOptionalAs(options, "failIfDifferent").orElse(false);
+		matchReferences = AdhocMapPathGet.<Boolean>getOptionalAs(options, "matchReferences").orElse(false);
+		failIfDifferent = AdhocMapPathGet.<Boolean>getOptionalAs(options, "failIfDifferent").orElse(false);
 	}
 
 	public CoalesceAggregation() {

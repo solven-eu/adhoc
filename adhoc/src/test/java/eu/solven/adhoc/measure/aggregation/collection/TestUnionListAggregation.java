@@ -27,7 +27,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestUnionListAggregator {
+public class TestUnionListAggregation {
 	@Test
 	public void testUnion() {
 		UnionListAggregation aggregation = new UnionListAggregation();

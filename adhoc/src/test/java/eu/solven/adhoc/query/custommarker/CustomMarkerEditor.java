@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.custommarker;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -68,7 +67,7 @@ public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlying);
+		return List.of(underlying);
 	}
 
 	@Override

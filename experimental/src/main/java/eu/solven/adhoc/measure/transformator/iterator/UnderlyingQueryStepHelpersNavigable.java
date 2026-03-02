@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -72,7 +71,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			return underlying.stream().map(slice -> {
 				Object value = IValueProvider.getValue(slice.getValueProvider());
 
-				return SliceAndMeasures.from(slice.getSlice(), queryStep, Collections.singletonList(value));
+				return SliceAndMeasures.from(slice.getSlice(), queryStep, List.of(value));
 			});
 		}
 

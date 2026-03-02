@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
@@ -99,7 +98,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		String underlyingMeasure = dispatchor.getUnderlying();
 		return measurelessSteps.stream()
 				.map(subStep -> CubeQueryStep.edit(subStep).measure(underlyingMeasure).build())
-				.collect(Collectors.toList());
+				.toList();
 
 	}
 

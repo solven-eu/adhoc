@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -71,7 +73,7 @@ public class DispatchedEvents implements IDecomposition {
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		if (!(value instanceof PlayersEvents playerEvents)) {
 			// May be some sort of error value
-			return List.of(IDecompositionEntry.of(Map.of(), value));
+			return ImmutableList.of(IDecompositionEntry.of(Map.of(), value));
 		}
 
 		List<IDecompositionEntry> decompositions = new ArrayList<>();
@@ -88,7 +90,7 @@ public class DispatchedEvents implements IDecomposition {
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		return List.of(DecompositionHelpers.suppressColumn(step, getColumnTypes().keySet()));
+		return ImmutableList.of(DecompositionHelpers.suppressColumn(step, getColumnTypes().keySet()));
 	}
 
 }

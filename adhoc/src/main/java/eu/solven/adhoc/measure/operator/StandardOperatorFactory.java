@@ -53,7 +53,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.sum.SumNotNaNAggregation;
 import eu.solven.adhoc.util.AdhocIdentity;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.Builder.Default;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -105,6 +105,8 @@ public class StandardOperatorFactory implements IOperatorFactory {
 			yield RankAggregation.make(options);
 		case AvgAggregation.KEY:
 			yield new AvgAggregation();
+		case ProductAggregation.KEY:
+			yield new ProductAggregation(Map.of());
 		case CoalesceAggregation.KEY:
 			yield new CoalesceAggregation(options);
 		default:
@@ -228,7 +230,8 @@ public class StandardOperatorFactory implements IOperatorFactory {
 			yield f -> f;
 		}
 		case SimpleFilterEditor.KEY: {
-			Map<String, Object> columnToValue = MapPathGet.getRequiredMap(options, SimpleFilterEditor.P_SHIFTED);
+			Map<String, Object> columnToValue =
+					(Map<String, Object>) AdhocMapPathGet.getRequiredMap(options, SimpleFilterEditor.P_SHIFTED);
 
 			yield SimpleFilterEditor.builder().columnToValues(columnToValue).build();
 		}

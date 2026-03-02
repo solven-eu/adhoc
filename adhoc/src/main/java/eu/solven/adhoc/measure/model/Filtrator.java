@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.model;
 
-import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -71,7 +70,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlying);
+		return List.of(underlying);
 	}
 
 	@Override

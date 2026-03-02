@@ -24,7 +24,6 @@ package eu.solven.adhoc.cucumber.steps;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 
@@ -107,11 +106,10 @@ public class CubeQueryStepDefs {
 			}
 		}
 
-		List<Map<String, ?>> coordinates =
-				tabularView.slices().map(m -> m.getCoordinates()).collect(Collectors.toList());
+		List<? extends Map<String, ?>> coordinates = tabularView.slices().map(m -> m.getCoordinates()).toList();
 
 		dataTable.asMaps().forEach(expectedMap -> {
-			Assertions.assertThat(coordinates).contains(expectedMap);
+			Assertions.assertThat((List) coordinates).contains(expectedMap);
 		});
 	}
 

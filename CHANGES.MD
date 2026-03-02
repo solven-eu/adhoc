@@ -13,6 +13,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `AdhocUnsafe.getNullComparator()` for `Map` comparison. This behavior can be customized with `AdhocUnsafe.setNullComparator()`.
 - Enable customization of JDBC `fetchSize` through `JooqTableWrapperParameters.statementFetchSize`. Default is `16*1024=16_384`.
 - Add probe to warn if JDBC `autoCommit` is false.
+- Introduce DuckDB as an option to reduce induced tableResults (see `IInducedEvaluator`).
+- Introduce `ClickHouseTableWrapper` to enable Arrow connectivity.
 
 ### Changed
 - Optimize `CompositeCubesTableWrapper.transcodeSliceToComposite` by computing the missing columns mask only once, and leveraging `IAdhocSlice.addColumns(Map<String, ?>)`.
@@ -20,6 +22,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Move Checkstyle configuration so that a call to `mvn checkstyle:check` relies on the standard Adhoc configuration.
 - `DSLSupplier` is renamed `IDSLSupplier`.
 - `AdhocMapHelpers.immutableCoyOf(Map)` is moved to `ImmutableHelpers.copyOf(Map)`
+- Introduced `testcontainers` to check Adhoc against various Databases (PostgreSQL, YugaByteDB, CLickHouse, MySQL, MariaDB, )
 
 ### Fixed
 - `SequencedSetLikeList.toArray()` now returns a sequenced array. It fixes bugs around `ImmutableList.copyOf()`.

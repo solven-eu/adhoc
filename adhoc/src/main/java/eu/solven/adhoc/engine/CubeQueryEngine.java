@@ -310,7 +310,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		Set<IMeasure> queriedMeasures;
 		if (measures.isEmpty()) {
 			IMeasure defaultMeasure = defaultMeasure();
-			queriedMeasures = Set.of(defaultMeasure);
+			queriedMeasures = ImmutableSet.of(defaultMeasure);
 		} else {
 			queriedMeasures = measures.stream().peek(m -> {
 				if (emptyMeasureName.equals(m.getName())) {

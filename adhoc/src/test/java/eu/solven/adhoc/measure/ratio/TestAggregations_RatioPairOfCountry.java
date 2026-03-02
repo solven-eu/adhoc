@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -178,7 +177,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 			cube().execute(adhocQuery);
 		}
 
-		Assertions.assertThat(messages.stream().collect(Collectors.joining("\n")))
+		Assertions.assertThat(String.join("\n", messages))
 				.isEqualTo(
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000

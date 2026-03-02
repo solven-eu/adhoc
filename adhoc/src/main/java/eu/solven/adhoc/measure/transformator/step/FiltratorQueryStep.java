@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
-import java.util.Collections;
 import java.util.List;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -75,7 +74,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 		ISliceFilter combinedFilter = FilterBuilder.and(step.getFilter(), filtrator.getFilter()).optimize(optimizer);
 		CubeQueryStep underlyingStep =
 				CubeQueryStep.edit(step).filter(combinedFilter).measure(filtrator.getUnderlying()).build();
-		return Collections.singletonList(underlyingStep);
+		return List.of(underlyingStep);
 	}
 
 	@Override
