@@ -27,8 +27,6 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableSet;
-
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceToValue;
@@ -36,7 +34,6 @@ import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
 import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
@@ -62,7 +59,7 @@ public class TestDuckDBInducedEvaluator {
 
 	AdhocFactories factories = AdhocFactories.builder().build();
 	FilterOptimizer filterOptimizer = FilterOptimizer.builder().build();
-	DuckDBInducedEvaluator evaluator = new DuckDBInducedEvaluator(factories, filterOptimizer);
+	DuckDBInducedEvaluator evaluator = new DuckDBInducedEvaluator(factories);
 	RowSliceFactory sliceFactory = RowSliceFactory.builder().build();
 
 	/**
@@ -78,18 +75,10 @@ public class TestDuckDBInducedEvaluator {
 	ISliceToValue buildInducerValues() {
 		IMultitypeColumnFastGet<IAdhocSlice> col = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
-		col.append(SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country", "id")).append("FR").append(1L).build()))
-				.onLong(10L);
-		col.append(SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country", "id")).append("FR").append(2L).build()))
-				.onLong(20L);
-		col.append(SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country", "id")).append("DE").append(3L).build()))
-				.onLong(30L);
-		col.append(SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country", "id")).append("DE").append(4L).build()))
-				.onLong(40L);
+		col.append(sliceFactory.newMapBuilder("country", "id").append("FR").append(1L).build().asSlice()).onLong(10L);
+		col.append(sliceFactory.newMapBuilder("country", "id").append("FR").append(2L).build().asSlice()).onLong(20L);
+		col.append(sliceFactory.newMapBuilder("country", "id").append("DE").append(3L).build().asSlice()).onLong(30L);
+		col.append(sliceFactory.newMapBuilder("country", "id").append("DE").append(4L).build().asSlice()).onLong(40L);
 
 		return SliceToValue.builder().column("country").column("id").values(col).build();
 	}
@@ -115,13 +104,11 @@ public class TestDuckDBInducedEvaluator {
 		// Expect 2 groups: FR=30, DE=70
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
-		IAdhocSlice frSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("FR").build());
+		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		IValueProvider frValue = col.onValue(frSlice);
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(frValue)).isEqualTo(30L);
 
-		IAdhocSlice deSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("DE").build());
+		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		IValueProvider deValue = col.onValue(deSlice);
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(deValue)).isEqualTo(70L);
 	}
@@ -150,8 +137,7 @@ public class TestDuckDBInducedEvaluator {
 		// Only FR should appear (DE filtered out)
 		Assertions.assertThat(col.size()).isEqualTo(1);
 
-		IAdhocSlice frSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("FR").build());
+		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(30L);
 	}
 
@@ -175,12 +161,10 @@ public class TestDuckDBInducedEvaluator {
 
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
-		IAdhocSlice frSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("FR").build());
+		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(20L);
 
-		IAdhocSlice deSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("DE").build());
+		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(deSlice))).isEqualTo(40L);
 	}
 
@@ -204,12 +188,10 @@ public class TestDuckDBInducedEvaluator {
 
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
-		IAdhocSlice frSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("FR").build());
+		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(10L);
 
-		IAdhocSlice deSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("DE").build());
+		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(deSlice))).isEqualTo(30L);
 	}
 
@@ -234,13 +216,13 @@ public class TestDuckDBInducedEvaluator {
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
 		// Each country has 2 rows
-		IAdhocSlice frSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("FR").build());
-		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(2L);
+		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
+		Assertions.assertThat(IValueProviderTestHelpers.getObject(col.onValue(frSlice)))
+				.isEqualTo(CountAggregation.CountAggregationCarrier.builder().count(2L).build());
 
-		IAdhocSlice deSlice = SliceAsMap.fromMap(sliceFactory,
-				sliceFactory.newMapBuilder(ImmutableSet.of("country")).append("DE").build());
-		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(deSlice))).isEqualTo(2L);
+		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
+		Assertions.assertThat(IValueProviderTestHelpers.getObject(col.onValue(deSlice)))
+				.isEqualTo(CountAggregation.CountAggregationCarrier.builder().count(2L).build());
 	}
 
 	@Test

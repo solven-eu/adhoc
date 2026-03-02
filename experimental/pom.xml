@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
@@ -91,15 +89,16 @@
 			<version>0.9.6</version>
 			<!-- One may need to query from ClickHouse -->
 			<optional>true</optional>
-		</dependency><dependency>
-		<!-- `Please add arrow-compression module to use CommonsCompressionFactory for LZ4_FRAME` -->
-		<!-- https://github.com/apache/arrow/issues/41457 -->
-    <groupId>org.apache.arrow</groupId>
-    <artifactId>arrow-compression</artifactId>
-    <scope>compile</scope>
-    	<!-- Might be needed by ClickHouse+Arrow or LZ4-->
+		</dependency>
+		<dependency>
+			<!-- `Please add arrow-compression module to use CommonsCompressionFactory for LZ4_FRAME` -->
+			<!-- https://github.com/apache/arrow/issues/41457 -->
+			<groupId>org.apache.arrow</groupId>
+			<artifactId>arrow-compression</artifactId>
+			<scope>compile</scope>
+			<!-- Might be needed by ClickHouse+Arrow or LZ4-->
 			<optional>true</optional>
-</dependency>
+		</dependency>
 
 		<dependency>
 			<groupId>com.yugabyte</groupId>

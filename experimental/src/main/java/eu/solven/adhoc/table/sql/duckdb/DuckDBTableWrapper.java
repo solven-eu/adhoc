@@ -51,6 +51,7 @@ public class DuckDBTableWrapper extends ArrowJooqTableWrapper {
 		this.duckDBParameters = duckDBParameters;
 	}
 
+	@SuppressWarnings("PMD.CloseResource")
 	@Override
 	protected Object openArrowReader(String sql, List<AutoCloseable> resources) throws SQLException {
 		ConnectionProvider connectionProvider = makeDsl().configuration().connectionProvider();
@@ -66,10 +67,10 @@ public class DuckDBTableWrapper extends ArrowJooqTableWrapper {
 		DuckDBResultSet duckRs = rs.unwrap(DuckDBResultSet.class);
 
 		Object allocator = ArrowReflection.createAllocator();
-		resources.add(() -> ((AutoCloseable) allocator).close());
+		resources.add(((AutoCloseable) allocator)::close);
 
 		Object arrowReader = duckRs.arrowExportStream(allocator, duckDBParameters.getArrowBatchSize());
-		resources.add(() -> ((AutoCloseable) arrowReader).close());
+		resources.add(((AutoCloseable) arrowReader)::close);
 
 		return arrowReader;
 	}

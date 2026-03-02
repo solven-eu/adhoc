@@ -51,7 +51,7 @@ public interface IValueProviderTestHelpers {
 
 			@Override
 			public void onObject(Object v) {
-				throw new IllegalArgumentException("getLong requires onLong and not onObject");
+				throw new IllegalArgumentException("getLong requires onLong and not onObject (o=%s)".formatted(v));
 			}
 		});
 

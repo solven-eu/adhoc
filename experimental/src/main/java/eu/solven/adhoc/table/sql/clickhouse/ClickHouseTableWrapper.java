@@ -59,9 +59,14 @@ public class ClickHouseTableWrapper extends ArrowJooqTableWrapper {
 		return super.getSQL(sqlQuery) + " FORMAT ArrowStream";
 	}
 
+	protected Client getClickHouseClient() {
+		return clickHouseParameters.getClient();
+	}
+
 	@Override
+	@SuppressWarnings("PMD.CloseResource")
 	protected Object openArrowReader(String sql, List<AutoCloseable> resources) throws SQLException {
-		Client client = clickHouseParameters.getClient();
+		Client client = getClickHouseClient();
 
 		CompletableFuture<QueryResponse> request = client.query(sql);
 

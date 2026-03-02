@@ -105,6 +105,8 @@ public class StandardOperatorFactory implements IOperatorFactory {
 			yield RankAggregation.make(options);
 		case AvgAggregation.KEY:
 			yield new AvgAggregation();
+		case ProductAggregation.KEY:
+			yield new ProductAggregation(Map.of());
 		case CoalesceAggregation.KEY:
 			yield new CoalesceAggregation(options);
 		default:
@@ -228,8 +230,8 @@ public class StandardOperatorFactory implements IOperatorFactory {
 			yield f -> f;
 		}
 		case SimpleFilterEditor.KEY: {
-			Map<String, Object> columnToValue = (Map<String, Object>) AdhocMapPathGet.getRequiredMap(options,
-					SimpleFilterEditor.P_SHIFTED);
+			Map<String, Object> columnToValue =
+					(Map<String, Object>) AdhocMapPathGet.getRequiredMap(options, SimpleFilterEditor.P_SHIFTED);
 
 			yield SimpleFilterEditor.builder().columnToValues(columnToValue).build();
 		}

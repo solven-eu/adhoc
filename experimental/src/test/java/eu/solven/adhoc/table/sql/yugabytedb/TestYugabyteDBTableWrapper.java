@@ -22,8 +22,12 @@
  */
 package eu.solven.adhoc.table.sql.yugabytedb;
 
+import java.util.Locale;
+import java.util.UUID;
+
 import org.jooq.SQLDialect;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Disabled;
 import org.testcontainers.containers.YugabyteDBYSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,6 +39,7 @@ import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
+@Disabled("To be completed")
 @Testcontainers(disabledWithoutDocker = true)
 public class TestYugabyteDBTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
 	@Container
@@ -44,6 +49,11 @@ public class TestYugabyteDBTableWrapper extends ATestTableQuery_DB implements IA
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
 		return TestcontainersSqlHelper.dslSupplier(YUGABYTE, SQLDialect.YUGABYTEDB);
+	}
+
+	@Override
+	protected String tableName() {
+		return (super.tableName() + '_' + UUID.randomUUID().toString().replace('-', '_')).toLowerCase(Locale.US);
 	}
 
 	@Override

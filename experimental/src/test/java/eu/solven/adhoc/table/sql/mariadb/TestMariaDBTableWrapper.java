@@ -22,8 +22,12 @@
  */
 package eu.solven.adhoc.table.sql.mariadb;
 
+import java.util.Locale;
+import java.util.UUID;
+
 import org.jooq.SQLDialect;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Disabled;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -35,6 +39,8 @@ import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
+// https://stackoverflow.com/questions/14331032/mysql-error-1040-too-many-connection
+@Disabled("To be completed. Issues with Too many connections on full test-suite")
 @Testcontainers(disabledWithoutDocker = true)
 public class TestMariaDBTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
 	@Container
@@ -43,6 +49,11 @@ public class TestMariaDBTableWrapper extends ATestTableQuery_DB implements IAdho
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
 		return TestcontainersSqlHelper.dslSupplier(MARIADB, SQLDialect.MARIADB);
+	}
+
+	@Override
+	protected String tableName() {
+		return (super.tableName() + '_' + UUID.randomUUID().toString().replace('-', '_')).toLowerCase(Locale.US);
 	}
 
 	@Override

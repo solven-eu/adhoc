@@ -44,7 +44,7 @@ public class StandardInducedEvaluatorFactory implements IInducedEvaluatorFactory
 
 	@Override
 	public IInducedEvaluator build() {
-		return ChainedInducedEvaluator.of(new DuckDBInducedEvaluator(factories, filterOptimizer),
-				new JavaStreamInducedEvaluator(factories));
+		// TODO Work on new DuckDBInducedEvaluator(factories)
+		return ChainedInducedEvaluator.of(new JavaStreamInducedEvaluator(factories));
 	}
 }

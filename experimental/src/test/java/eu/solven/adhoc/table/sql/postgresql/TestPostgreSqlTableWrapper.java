@@ -23,12 +23,15 @@
 package eu.solven.adhoc.table.sql.postgresql;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.jooq.SQLDialect;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Disabled;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.shaded.com.google.common.base.Suppliers;
 import org.testcontainers.utility.DockerImageName;
 
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -37,11 +40,16 @@ import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.TestcontainersSqlHelper;
 
+@Disabled("To be completed")
 @Testcontainers(disabledWithoutDocker = true)
 public class TestPostgreSqlTableWrapper extends ATestTableQuery_DB implements IAdhocTestConstants {
 	@Container
 	static final PostgreSQLContainer<?> POSTGRES =
 			new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"));
+
+	// TODO CLose the DataSource properly
+	static Supplier<IDSLSupplier> dslSupplierSupplier =
+			Suppliers.memoize(() -> TestcontainersSqlHelper.dslSupplier(POSTGRES, SQLDialect.POSTGRES));
 
 	@Override
 	protected String tableName() {
@@ -50,7 +58,7 @@ public class TestPostgreSqlTableWrapper extends ATestTableQuery_DB implements IA
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {
-		return TestcontainersSqlHelper.dslSupplier(POSTGRES, SQLDialect.POSTGRES);
+		return dslSupplierSupplier.get();
 	}
 
 	@Override

@@ -85,9 +85,6 @@ public abstract class ArrowJooqTableWrapper extends JooqTableWrapper {
 		} catch (SQLException e) {
 			closeAll(resources);
 			throw onArrowSqlException(e);
-		} catch (RuntimeException e) {
-			closeAll(resources);
-			throw new IllegalArgumentException("Failed to open Arrow stream for table=" + getName(), e);
 		} catch (Throwable e) {
 			closeAll(resources);
 			throw new IllegalArgumentException("Failed to open Arrow stream for table=" + getName(), e);

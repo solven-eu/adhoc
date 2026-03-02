@@ -34,13 +34,19 @@ public final class TestcontainersSqlHelper {
 	}
 
 	public static IDSLSupplier dslSupplier(JdbcDatabaseContainer<?> container, SQLDialect dialect) {
+		HikariDataSource dataSource = makeDataSource(container);
+
+		return IDSLSupplier.fromDatasource(dataSource, dialect);
+	}
+
+	public static HikariDataSource makeDataSource(JdbcDatabaseContainer<?> container) {
 		HikariConfig hikariConfig = new HikariConfig();
 		hikariConfig.setJdbcUrl(container.getJdbcUrl());
 		hikariConfig.setUsername(container.getUsername());
 		hikariConfig.setPassword(container.getPassword());
+		hikariConfig.setMaximumPoolSize(8);
 
 		HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-
-		return IDSLSupplier.fromDatasource(dataSource, dialect);
+		return dataSource;
 	}
 }

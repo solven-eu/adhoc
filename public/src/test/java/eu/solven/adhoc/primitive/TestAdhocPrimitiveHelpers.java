@@ -106,6 +106,14 @@ public class TestAdhocPrimitiveHelpers {
 	}
 
 	@Test
+	public void normalizeValue_bigIntNotFittingLong() {
+		Assertions
+				.assertThat(
+						AdhocPrimitiveHelpers.normalizeValue(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)))
+				.isEqualTo(9.223372036854776E18);
+	}
+
+	@Test
 	public void normalizeValueAsProvider() {
 		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(null)).isSameAs(IValueProvider.NULL);
 

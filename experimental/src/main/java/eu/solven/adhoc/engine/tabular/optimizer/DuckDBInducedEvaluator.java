@@ -55,6 +55,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -62,9 +63,10 @@ import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
+import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.primitive.IThrowingValueReceiver;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.ISliceToJooqCondition;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory.ConditionWithFilter;
@@ -85,6 +87,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuppressWarnings("PMD.GodClass")
 @Slf4j
+@Deprecated(since = "adhoc.experimental")
 public class DuckDBInducedEvaluator implements IInducedEvaluator {
 
 	// Transient table name used inside each isolated DuckDB instance
@@ -92,9 +95,6 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 
 	// Column name for the measure value in the transient table
 	private static final String VALUE_COL = "v";
-
-	// Maximum bit length for a BigInteger that fits in a signed long
-	private static final int LONG_MAX_BIT_LENGTH = Long.SIZE - 1;
 
 	/**
 	 * Set to {@code true} permanently when DuckDB is not found on the classpath, so subsequent calls skip immediately.
@@ -107,14 +107,12 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 * supported in that case).
 	 */
 	private final AdhocFactories factories;
-	private final IFilterOptimizer filterOptimizer;
 
 	/**
 	 * Full constructor used by {@link IInducedEvaluatorFactory} implementations.
 	 */
-	public DuckDBInducedEvaluator(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	public DuckDBInducedEvaluator(AdhocFactories factories) {
 		this.factories = factories;
-		this.filterOptimizer = filterOptimizer;
 	}
 
 	/**
@@ -212,7 +210,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 
 			// ── 2. Bulk-insert via DuckDBAppender ────────────────────────────────────
 			// https://duckdb.org/docs/api/java.html#appender
-			bulkInsert(conn, inducerGroupByCols, inducerValues);
+			bulkInsert(conn, inducerValues);
 
 			// ── 3. Build SELECT, filter it and execute ───────────────────────────────
 			Function<String, org.jooq.Name> toName = col -> AdhocJooqHelper.name(col, dsl::parser);
@@ -272,7 +270,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 	}
 
-	protected static List<Field<?>> buildColumnDefs(NavigableSet<String> inducerGroupByCols,
+	protected List<Field<?>> buildColumnDefs(NavigableSet<String> inducerGroupByCols,
 			IAdhocSlice firstSlice,
 			DataType<?> valueDataType) {
 		List<Field<?>> columnDefs = new ArrayList<>();
@@ -284,29 +282,34 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		return columnDefs;
 	}
 
-	private static void bulkInsert(DuckDBConnection conn,
-			NavigableSet<String> inducerGroupByCols,
-			ISliceToValue inducerValues) {
+	protected void bulkInsert(DuckDBConnection conn, ISliceToValue inducerValues) {
 		// DuckDBAppender.close() flushes any buffered data
 		// https://duckdb.org/docs/api/java.html#appender
 		try (DuckDBAppender appender = conn.createAppender(TABLE_NAME)) {
-			for (SliceAndMeasure<IAdhocSlice> entry : (Iterable<SliceAndMeasure<IAdhocSlice>>) inducerValues
-					.stream()::iterator) {
-				IAdhocSlice slice = entry.getSlice();
-				appender.beginRow();
-				for (String col : inducerGroupByCols) {
-					Object val = slice.optGroupBy(col).orElse(null);
-					appendToAppender(appender, val);
+			inducerValues.forEachSlice(slice -> {
+				try {
+					appender.beginRow();
+
+					slice.forEachGroupBy((column, coordinate) -> {
+						try {
+							appendToAppender(appender, coordinate);
+						} catch (SQLException e) {
+							throw new IllegalStateException(
+									"Issue on column=%s coordinate=%s".formatted(column, coordinate),
+									e);
+						}
+					});
+					return appendValueToAppender(appender);
+				} catch (SQLException e) {
+					throw new IllegalStateException("Issue on slice=%s".formatted(slice), e);
 				}
-				appendValueToAppender(appender, entry);
-				appender.endRow();
-			}
+			});
 		} catch (SQLException e) {
 			throw new IllegalStateException("DuckDB bulk insert failed", e);
 		}
 	}
 
-	private static Result<Record> fetchRecords(DSLContext dsl,
+	protected Result<Record> fetchRecords(DSLContext dsl,
 			Function<String, org.jooq.Name> toName,
 			NavigableSet<String> inducedGroupByCols,
 			String aggKey,
@@ -355,13 +358,18 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			}
 
 			IValueReceiver receiver = result.merge(slice);
+
+			if (aggregation instanceof IAggregationCarrier.IHasCarriers hasCarriers) {
+				aggValue = hasCarriers.wrap(aggValue);
+			}
+
 			mergeValue(receiver, aggValue);
 		}
 
 		return result;
 	}
 
-	private static DataType<?> javaToSqlDataType(Object sample) {
+	protected DataType<?> javaToSqlDataType(Object sample) {
 		if (sample == null) {
 			return SQLDataType.VARCHAR;
 		} else if (sample instanceof Long || sample instanceof Integer
@@ -375,7 +383,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 	}
 
-	private static void appendToAppender(DuckDBAppender appender, Object val) throws SQLException {
+	protected void appendToAppender(DuckDBAppender appender, Object val) throws SQLException {
 		if (val == null) {
 			appender.appendNull();
 		} else if (val instanceof Long l) {
@@ -391,43 +399,35 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 	}
 
-	private static void appendValueToAppender(DuckDBAppender appender, SliceAndMeasure<IAdhocSlice> entry) {
-		entry.getValueProvider().acceptReceiver(new IValueReceiver() {
+	protected IThrowingValueReceiver appendValueToAppender(DuckDBAppender appender) {
+		return new IThrowingValueReceiver() {
+
 			@Override
-			public void onLong(long v) {
-				try {
-					appender.append(v);
-				} catch (SQLException e) {
-					throw new IllegalStateException("DuckDB append(long) failed", e);
-				}
+			public void onLongMayThrow(long value) throws SQLException {
+				appender.append(value);
+				appender.endRow();
 			}
 
 			@Override
-			public void onDouble(double v) {
-				try {
-					appender.append(v);
-				} catch (SQLException e) {
-					throw new IllegalStateException("DuckDB append(double) failed", e);
-				}
+			public void onDoubleMayThrow(double value) throws SQLException {
+				appender.append(value);
+				appender.endRow();
 			}
 
 			@Override
-			public void onObject(Object v) {
-				try {
-					if (v == null) {
-						appender.appendNull();
-					} else {
-						appender.append(v.toString());
-					}
-				} catch (SQLException e) {
-					throw new IllegalStateException("DuckDB append(object) failed", e);
+			public void onObjectMayThrow(Object value) throws SQLException {
+				if (value == null) {
+					appender.appendNull();
+				} else {
+					appender.append(value.toString());
 				}
+				appender.endRow();
 			}
-		});
+		};
 	}
 
-	@SuppressWarnings("unchecked")
-	private static AggregateFunction<?> toAggFunction(String aggKey, Field<Object> field) {
+	// see JooqTableQueryFactory.toSqlAggregatedColumn(ISliceToJooqCondition, FilteredAggregator)
+	protected AggregateFunction<?> toAggFunction(String aggKey, Field<Object> field) {
 		if (SumAggregation.KEY.equals(aggKey)) {
 			// https://duckdb.org/docs/stable/sql/functions/aggregates.html#sumarg
 			return DSL.aggregate("sum", Object.class, field);
@@ -454,32 +454,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 * @param aggValue
 	 *            the non-null value from the jOOQ {@link Record}
 	 */
-	static void mergeValue(IValueReceiver receiver, Object aggValue) {
-		if (aggValue instanceof Long l) {
-			receiver.onLong(l);
-		} else if (aggValue instanceof Integer i) {
-			receiver.onLong((long) i);
-		} else if (aggValue instanceof Double d) {
-			receiver.onDouble(d);
-		} else if (aggValue instanceof Float f) {
-			receiver.onDouble((double) f);
-		} else if (aggValue instanceof BigDecimal bd) {
-			// DuckDB SUM(BIGINT) → HUGEINT → BigDecimal via JDBC
-			// https://duckdb.org/docs/sql/data_types/numeric.html
-			try {
-				receiver.onLong(bd.longValueExact());
-			} catch (ArithmeticException e) {
-				// Has fractional digits (AVG) or exceeds long range
-				receiver.onDouble(bd.doubleValue());
-			}
-		} else if (aggValue instanceof BigInteger bi) {
-			if (bi.bitLength() <= LONG_MAX_BIT_LENGTH) {
-				receiver.onLong(bi.longValueExact());
-			} else {
-				receiver.onObject(bi);
-			}
-		} else {
-			receiver.onObject(aggValue);
-		}
+	public void mergeValue(IValueReceiver receiver, Object aggValue) {
+		AdhocPrimitiveHelpers.normalizeValueAsProvider(aggValue).acceptReceiver(receiver);
 	}
 }
