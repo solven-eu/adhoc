@@ -23,13 +23,13 @@
 package eu.solven.adhoc.engine;
 
 import eu.solven.adhoc.encoding.page.ColumnarSliceFactory;
+import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
-import eu.solven.adhoc.measure.model.ITransformatorQueryStepFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
-import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -62,14 +62,15 @@ public class AdhocFactories implements IAdhocFactories {
 
 	@NonNull
 	@Default
-	IFilterStripperFactory filterStripperFactory = AdhocUnsafe.filterStripperFactory;
-
-	@NonNull
-	@Default
-	ITransformatorQueryStepFactory transformatorFactory = ITransformatorQueryStepFactory.standard();
+	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
 
 	@NonNull
 	@Default
 	IStopwatchFactory stopwatchFactory = IStopwatchFactory.guavaStopwatchFactory();
+
+	@Override
+	public IMeasureQueryStepFactory getMeasureQueryStepFactory() {
+		return IMeasureQueryStepFactory.standard(this);
+	}
 
 }

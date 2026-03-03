@@ -32,7 +32,7 @@ import lombok.Value;
 /**
  * Used by {@link Shiftor}.
  * 
- * Similar to {@link IImplicitFilter} but this is expected to be used by a {@link ITransformatorQueryStep}.
+ * Similar to {@link IImplicitFilter} but this is expected to be used by a {@link IMeasureQueryStep}.
  *
  * @author Benoit Lacelle
  */

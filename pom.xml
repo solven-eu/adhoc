@@ -80,6 +80,7 @@
 		<guava.version>33.5.0-jre</guava.version>
 
 		<arrow.version>18.3.0</arrow.version>
+		<jgrapht.version>1.5.2</jgrapht.version>
 
 		<!-- Jacoco requirements on a per-module basis-->
 		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>

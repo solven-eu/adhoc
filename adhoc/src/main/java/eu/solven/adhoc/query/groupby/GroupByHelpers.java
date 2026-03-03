@@ -28,12 +28,12 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 

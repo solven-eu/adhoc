@@ -24,7 +24,7 @@ package eu.solven.adhoc.query.cube;
 
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 
@@ -35,7 +35,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
  * 
  * - columns along which the result is sliced as an {@link IGroupBy}
  * 
- * - measures may be {@link Aggregator} or {@link ITransformatorQueryStep}
+ * - measures may be {@link Aggregator} or {@link IMeasureQueryStep}
  * 
  * @author Benoit Lacelle
  *

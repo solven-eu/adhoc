@@ -43,7 +43,7 @@ import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
@@ -56,14 +56,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Combinator}.
+ * {@link IMeasureQueryStep} for {@link Combinator}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class CombinatorQueryStep extends ATransformatorQueryStep {
+public class CombinatorQueryStep extends AMeasureQueryStep {
 	final ICombinator combinator;
+
 	@Getter(AccessLevel.PROTECTED)
 	final IAdhocFactories factories;
 

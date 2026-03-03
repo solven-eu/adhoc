@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -42,8 +43,7 @@ public class AdhocMapHelpers {
 
 	// @Deprecated
 	public static IAdhocMap fromMap(Map<String, ?> asMap) {
-		// AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption())
-		return fromMap(null, asMap);
+		return fromMap(RowSliceFactory.builder().build(), asMap);
 	}
 
 	public static IAdhocMap fromMap(ISliceFactory factory, Map<String, ?> asMap) {
@@ -82,4 +82,5 @@ public class AdhocMapHelpers {
 			return (Map<K, V>) ImmutableMap.builder().putAll(lAsMap).putAll(rAsMap).build();
 		}
 	}
+
 }

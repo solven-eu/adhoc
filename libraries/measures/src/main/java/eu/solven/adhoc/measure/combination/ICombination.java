@@ -25,9 +25,9 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.data.row.SlicedRecordFromArray;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromArray;
 import eu.solven.adhoc.primitive.IValueProvider;
 
 /**

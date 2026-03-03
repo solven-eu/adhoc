@@ -32,7 +32,6 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
-import eu.solven.adhoc.query.table.IAliasedAggregator;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

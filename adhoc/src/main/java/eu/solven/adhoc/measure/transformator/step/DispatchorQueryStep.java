@@ -39,10 +39,10 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -52,8 +52,7 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.decomposition.IDecompositionFactory;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
-import eu.solven.adhoc.measure.transformator.AdhocDebug;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -62,6 +61,7 @@ import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.util.AdhocDebug;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -70,18 +70,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Dispatchor}.
+ * {@link IMeasureQueryStep} for {@link Dispatchor}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class DispatchorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
+public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQueryStep {
 	public static final String P_UNDERLYINGS = "underlyings";
 
 	final Dispatchor dispatchor;
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;
@@ -229,7 +229,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 				if (value != null) {
 					sliceAsMap.put(groupByColumn, value);
 				}
-				IAdhocSlice preSlice = SliceAsMap.fromMap(sliceFactory, sliceAsMap);
+				IAdhocSlice preSlice = AdhocMapHelpers.fromMap(sliceFactory, sliceAsMap).asSlice();
 				ITabularGroupByRecord groupByRecord = TabularGroupByRecordOverMap.builder().slice(preSlice).build();
 				Object calculatedCoordinate = calculatedColumn.computeCoordinate(groupByRecord);
 				value = calculatedCoordinate;

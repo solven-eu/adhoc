@@ -32,7 +32,7 @@ import com.google.common.collect.ForwardingNavigableSet;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
-import eu.solven.adhoc.encoding.page.row.ILikeList;
+import eu.solven.adhoc.collection.ILikeList;
 import eu.solven.adhoc.map.perfect_hashing.CollectionWithCustomIndexOf;
 import eu.solven.adhoc.map.perfect_hashing.IHasIndexOf;
 import lombok.AccessLevel;

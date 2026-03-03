@@ -33,13 +33,13 @@ import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -50,16 +50,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Partitionor}.
+ * {@link IMeasureQueryStep} for {@link Partitionor}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class PartitionorQueryStep extends ATransformatorQueryStep {
+public class PartitionorQueryStep extends AMeasureQueryStep {
 	final Partitionor partitionor;
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 	@Getter
 	final CubeQueryStep step;
 

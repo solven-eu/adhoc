@@ -87,7 +87,7 @@ public class RatioByCombinator implements ICombinator {
 	}
 
 	@Override
-	public String wrapNode() {
+	public String queryStepClass() {
 		return RatioByCombinatorQueryStep.class.getName();
 	}
 }

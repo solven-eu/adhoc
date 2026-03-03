@@ -39,7 +39,7 @@ import com.google.common.eventbus.EventBus;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;

@@ -34,8 +34,8 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
 /**
- * Wraps the strategy to store results from {@link ITransformatorQueryStep}, and to merge underlyings
- * {@link ITransformatorQueryStep} results.
+ * Wraps the strategy to store results from {@link IMeasureQueryStep}, and to merge underlyings
+ * {@link IMeasureQueryStep} results.
  * 
  * It refers to bottom-up as these columns are the typical output of a DAG of {@link CubeQueryStep}, where each step
  * processes multiple underlying columns to produce an output columns. The input columns has to be aligned, in the sense
@@ -51,7 +51,7 @@ public interface IDagBottomUpStrategy {
 	 * 
 	 * @param initialCapacity
 	 *            -1 if no estimation is available
-	 * @return the storage for a {@link ITransformatorQueryStep} output.
+	 * @return the storage for a {@link IMeasureQueryStep} output.
 	 */
 	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
 

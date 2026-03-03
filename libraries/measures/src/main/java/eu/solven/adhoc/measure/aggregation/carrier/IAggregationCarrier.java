@@ -91,5 +91,6 @@ public interface IAggregationCarrier extends IValueProvider {
 	 * 
 	 * @param valueReceiver
 	 */
-	// void acceptValueReceiver(IValueReceiver valueReceiver);
+	@Override
+	void acceptReceiver(IValueReceiver valueReceiver);
 }

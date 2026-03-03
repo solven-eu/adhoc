@@ -26,6 +26,8 @@ import java.util.List;
 
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.data.row.SlicedRecordFromArray;
+import eu.solven.adhoc.data.row.SlicedRecordFromSlices;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;

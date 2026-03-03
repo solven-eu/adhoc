@@ -41,10 +41,10 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
@@ -83,7 +83,7 @@ public class TestTableQueryOptimizer_Perf {
 
 		NavigableSet<String> inColumns = ImmutableSortedSet.of("c0", "c1");
 		IntStream.range(0, cardinalityIn).forEach(rowIndex -> {
-			inducerValues.append(SliceAsMap.fromMap(sliceFactory,
+			inducerValues.append(SliceHelpers.asSlice(sliceFactory,
 					factory.newMapBuilder(inColumns).append(rowIndex % cardinalityOut).append(rowIndex).build()))
 					.onLong(rowIndex);
 		});
@@ -99,13 +99,13 @@ public class TestTableQueryOptimizer_Perf {
 		long value0 = IntStream.rangeClosed(0, (cardinalityIn - 1) / cardinalityOut)
 				.mapToLong(i -> i * cardinalityOut + 0)
 				.sum();
-		Assertions.assertThat(IValueProviderTestHelpers.getLong(induced.onValue(SliceAsMap.fromMap(Map.of("c0", 0)))))
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(induced.onValue(SliceHelpers.asSlice(Map.of("c0", 0)))))
 				.isEqualTo(value0);
 
 		long value1 = IntStream.rangeClosed(0, (cardinalityIn - 2) / cardinalityOut)
 				.mapToLong(i -> i * cardinalityOut + 1)
 				.sum();
-		Assertions.assertThat(IValueProviderTestHelpers.getLong(induced.onValue(SliceAsMap.fromMap(Map.of("c0", 1)))))
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(induced.onValue(SliceHelpers.asSlice(Map.of("c0", 1)))))
 				.isEqualTo(value1);
 	}
 }

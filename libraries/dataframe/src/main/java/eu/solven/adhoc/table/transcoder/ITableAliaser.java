@@ -30,7 +30,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Holds the logic mapping from the columns names in {@link ICubeQuery} and columnNames in {@link ITableWrapper}.
  * <p>
- * This enables re-using a {@link eu.solven.adhoc.measure.MeasureForest} for different {@link ITableWrapper}.
+ * This enables re-using a {@link eu.solven.adhoc.measure.forest.MeasureForest} for different {@link ITableWrapper}.
  *
  * @see AliasingContext
  * @see ITableReverseAliaser

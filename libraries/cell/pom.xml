@@ -23,7 +23,14 @@
 			<artifactId>adhoc-encoding</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
+		<dependency>
+			<!-- ISliceFilter -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-filters</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper</artifactId>
@@ -34,7 +41,7 @@
 			<artifactId>pepper-mappath</artifactId>
 			<version>${pepper.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-suite</artifactId>
@@ -47,6 +54,31 @@
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<!-- Provides a classifier=tests jar-->
+							<!-- helpful for integration tests or benchmarks-->
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

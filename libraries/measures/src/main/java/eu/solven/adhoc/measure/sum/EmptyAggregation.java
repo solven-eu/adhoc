@@ -29,7 +29,7 @@ import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
-import eu.solven.adhoc.query.table.IAliasedAggregator;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 
 /**
  * Relates with {@link EmptyMeasure}. Useful to materialize an {@link IAggregation} to force the DAG not to be empty
@@ -92,7 +92,8 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 				aggregators.stream().map(IAliasedAggregator::getAggregator).anyMatch(EmptyAggregation::isEmpty);
 
 		if (hasEmpty && aggregators.size() >= 2) {
-			throw new IllegalArgumentException("Must not query must empty and non-empty: " + aggregators);
+			// BEWARE Is it legal if we receive multiple aggregators which are all empty?
+			throw new IllegalArgumentException("Must not query empty and non-empty: " + aggregators);
 		}
 
 		return hasEmpty;

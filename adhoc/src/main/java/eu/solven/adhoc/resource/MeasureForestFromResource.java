@@ -43,8 +43,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;

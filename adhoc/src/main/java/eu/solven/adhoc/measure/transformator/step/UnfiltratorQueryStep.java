@@ -41,13 +41,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Unfiltrator}.
+ * {@link IMeasureQueryStep} for {@link Unfiltrator}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class UnfiltratorQueryStep implements ITransformatorQueryStep {
+public class UnfiltratorQueryStep implements IMeasureQueryStep {
 	@Getter
 	final Unfiltrator unfiltrator;
 	final CubeQueryStep step;

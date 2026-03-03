@@ -34,7 +34,7 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;

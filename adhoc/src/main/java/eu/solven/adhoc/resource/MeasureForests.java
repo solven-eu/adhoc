@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;

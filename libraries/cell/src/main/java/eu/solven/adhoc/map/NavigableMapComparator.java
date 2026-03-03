@@ -26,11 +26,9 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map.Entry;
-
-import eu.solven.adhoc.util.ComparableElseClassComparatorV2;
-
 import java.util.NavigableMap;
 
+import eu.solven.adhoc.collection.ComparableElseClassComparator;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -55,7 +53,7 @@ public class NavigableMapComparator implements Comparator<NavigableMap<?, ?>>, S
 	 * By default, `null` is considered greater than anything else
 	 */
 	public NavigableMapComparator() {
-		this.nullComparator = ComparableElseClassComparatorV2.nullsHigh();
+		this.nullComparator = ComparableElseClassComparator.nullsHigh();
 	}
 
 	@Override
@@ -110,6 +108,6 @@ public class NavigableMapComparator implements Comparator<NavigableMap<?, ?>>, S
 
 	@SuppressWarnings("rawtypes")
 	protected int compareTo(Object left, Object right) {
-		return ComparableElseClassComparatorV2.doCompare(nullComparator, left, right);
+		return ComparableElseClassComparator.doCompare(nullComparator, left, right);
 	}
 }

@@ -29,10 +29,11 @@ import eu.solven.adhoc.measure.model.IMeasure;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
 
 	// AWKWARD Enables IMeasure not to know about ICuboid
-	default String wrapNode() {
+	default String queryStepClass() {
 		return "eu.solven.adhoc.measure.transformator.step.%sQueryStep".formatted(this.getClass().getSimpleName());
 	}
 }

@@ -24,7 +24,6 @@ package eu.solven.adhoc.encoding.page;
 
 import java.util.AbstractList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +34,7 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.encoding.page.row.ILikeList;
+import eu.solven.adhoc.collection.ILikeList;
 import lombok.Builder;
 
 public class TestThreadLocalAppendableTable {

@@ -41,7 +41,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -74,7 +74,7 @@ public class BenchmarkAggregatingColumns {
 		sliceToIndex = new Object2IntOpenHashMap<>(size);
 
 		for (int i = 0; i < size; i++) {
-			sliceToIndex.put(SliceAsMap.fromMap(Map.of("c", "c1", "row_index", i)), sliceToIndex.size());
+			sliceToIndex.put(SliceHelpers.asSlice(Map.of("c", "c1", "row_index", i)), sliceToIndex.size());
 		}
 	}
 

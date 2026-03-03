@@ -22,13 +22,13 @@
 			<artifactId>adhoc-cell</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper-mappath</artifactId>
 			<version>${pepper.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.ezylang</groupId>
 			<artifactId>EvalEx</artifactId>
@@ -36,7 +36,7 @@
 			<!-- Many projects may not use EvalTranformation-->
 			<optional>true</optional>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.junit.platform</groupId>
 			<artifactId>junit-platform-suite</artifactId>
@@ -49,6 +49,38 @@
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-core</artifactId>
+			<version>${jgrapht.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<!-- Provides a classifier=tests jar-->
+							<!-- helpful for integration tests or benchmarks-->
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

@@ -31,10 +31,10 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import lombok.AccessLevel;
@@ -44,10 +44,10 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
+public class RatioByCombinatorQueryStep extends AMeasureQueryStep {
 	final RatioByCombinator combinator;
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;

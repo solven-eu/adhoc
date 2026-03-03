@@ -37,6 +37,8 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ContiguousSet;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
+
 public class TestAdhocCollectionHelpers {
 	LocalDate now = LocalDate.now();
 

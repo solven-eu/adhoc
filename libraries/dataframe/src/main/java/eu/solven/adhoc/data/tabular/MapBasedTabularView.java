@@ -32,7 +32,6 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -94,8 +93,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 
 	@Override
 	public Stream<IAdhocSlice> slices() {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
-		return coordinatesToValues.keySet().stream().map(s -> SliceAsMap.fromMap(sliceFactory, s));
+		return coordinatesToValues.keySet().stream().map(s -> AdhocMapHelpers.fromMap(sliceFactory, s).asSlice());
 	}
 
 	@Override
@@ -110,18 +108,19 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 
 	@Override
 	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 		coordinatesToValues.forEach((k, v) -> {
-			rowScanner.onKey(SliceAsMap.fromMap(sliceFactory, k)).onObject(v);
+			rowScanner.onKey(AdhocMapHelpers.fromMap(sliceFactory, k).asSlice()).onObject(v);
 		});
 	}
 
 	@Override
 	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+		ISliceFactory sliceFactory =
+				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 		return coordinatesToValues.entrySet()
 				.stream()
-				.map(e -> rowScanner.prepare(SliceAsMap.fromMap(sliceFactory, e.getKey())).onMap(e.getValue()));
+				.map(e -> rowScanner.prepare(AdhocMapHelpers.fromMap(sliceFactory, e.getKey()).asSlice())
+						.onMap(e.getValue()));
 	}
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {

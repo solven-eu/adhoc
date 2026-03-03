@@ -49,6 +49,7 @@ import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -123,7 +124,7 @@ public abstract class AAdhocAtotiTable implements ITableWrapper {
 			slice.put(column, getColumnCoordinate(tableQuery, result, locationIndex, column));
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceAsMap.fromMap(slice)).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceHelpers.asSlice(slice)).build();
 	}
 
 	protected Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {

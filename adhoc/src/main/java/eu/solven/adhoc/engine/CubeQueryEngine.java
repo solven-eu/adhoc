@@ -84,7 +84,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -515,8 +515,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		List<ICuboid> underlyings = getUnderlyingColumns(queryStepToValues, underlyingSteps);
 
 		// BEWARE The need to call again `.wrapNode` looks weird
-		ITransformatorQueryStep transformatorQuerySteps =
-				factories.getTransformatorFactory().makeTransformatorQueryStep(queryStep, hasUnderlyingMeasures);
+		IMeasureQueryStep transformatorQuerySteps =
+				factories.getMeasureQueryStepFactory().makeQueryStep(queryStep, hasUnderlyingMeasures);
 
 		ICuboid coordinatesToValues;
 		try {

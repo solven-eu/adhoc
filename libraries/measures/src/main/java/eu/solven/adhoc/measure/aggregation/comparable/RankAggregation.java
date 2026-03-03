@@ -262,7 +262,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 			return RankedElementsCarrier.builder().rank(rank).comparator(comparator).topElements(merged).build();
 
 		}
-		
+
 		@Override
 		public void acceptReceiver(IValueReceiver valueReceiver) {
 			if (topElements.size() >= rank) {

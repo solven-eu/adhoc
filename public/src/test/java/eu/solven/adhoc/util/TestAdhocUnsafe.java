@@ -44,7 +44,7 @@ public class TestAdhocUnsafe {
 	}
 
 	@Test
-	public void testParse() {
+	public void testParse_integer() {
 		String someKey = "TestAdhocUnsafe.testProperty";
 
 		// The `_` syntax is not managed by `Integer.getInteger`
@@ -53,6 +53,38 @@ public class TestAdhocUnsafe {
 
 		System.setProperty(someKey, "10000000");
 		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(10_000_000);
+
+		System.setProperty(someKey, "notAnInteger");
+		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(123);
+
+		System.clearProperty(someKey);
+		Assertions.assertThat(AdhocUnsafe.safeLoadIntegerProperty(someKey, 123)).isEqualTo(123);
+	}
+
+	@Test
+	public void testParse_boolean() {
+		String someKey = "TestAdhocUnsafe.testProperty";
+
+		System.setProperty(someKey, "true");
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, true)).isEqualTo(true);
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, false)).isEqualTo(true);
+
+		System.setProperty(someKey, "True");
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, true)).isEqualTo(true);
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, false)).isEqualTo(true);
+
+		System.setProperty(someKey, "false");
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, true)).isEqualTo(false);
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, false)).isEqualTo(false);
+
+		// BEWARE Boolean.parse accepts only "true"
+		System.setProperty(someKey, "notBoolean");
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, true)).isEqualTo(false);
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, false)).isEqualTo(false);
+
+		System.clearProperty(someKey);
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, true)).isEqualTo(true);
+		Assertions.assertThat(AdhocUnsafe.safeLoadBooleanProperty(someKey, false)).isEqualTo(false);
 	}
 
 	@Test
@@ -82,5 +114,16 @@ public class TestAdhocUnsafe {
 		// Ensure resetProperties did reset nullComparator
 		Assertions.assertThat(AdhocUnsafe.getNullComparator().compare("a", null)).isNegative();
 		Assertions.assertThat(AdhocUnsafe.getValueComparator().compare("a", null)).isNegative();
+	}
+
+	@Test
+	public void testResetUUIDs() {
+		Assertions.assertThat(AdhocUnsafe.randomUUID().toString()).doesNotStartWith("00000000-0000-");
+
+		AdhocUnsafe.resetDeterministicQueryIds();
+
+		Assertions.assertThat(AdhocUnsafe.nextQueryIndex()).isEqualTo(0);
+		Assertions.assertThat(AdhocUnsafe.randomUUID()).hasToString("00000000-0000-0000-0000-000000000000");
+		Assertions.assertThat(AdhocUnsafe.randomUUID()).hasToString("00000000-0000-0000-0000-000000000001");
 	}
 }

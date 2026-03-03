@@ -22,19 +22,22 @@
  */
 package eu.solven.adhoc.data.column;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
@@ -51,6 +54,11 @@ import lombok.Value;
 @Value
 @Builder
 public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdhocSlice> {
+
+	@NonNull
+	@Default
+	ISliceFactory factory =
+			AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
 	@NonNull
 	final IMultitypeColumnFastGet<IAdhocSlice> masked;
@@ -82,13 +90,10 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdh
 		return unmaskedSlice.addColumns(masks);
 	}
 
-	protected IAdhocSlice getUnmaskedSlice(Map<String, ?> keyCoordinates) {
+	protected IAdhocSlice getUnmaskedSlice(IAdhocMap key) {
+		// TODO Should we have registered the set of masked columns at construction?
 		// BEWARE This assumes the underlying IMultitypeColumnFastGet does not express columns in the mask
-		Map<String, Object> unmaskedKey = new LinkedHashMap<>(keyCoordinates);
-		unmaskedKey.keySet().removeAll(masks.keySet());
-
-		throw new NotYetImplementedException("TODO");
-//		return SliceAsMap.fromMap(null, unmaskedKey);
+		return key.retainAll(Sets.difference(key.keySet(), masks.keySet())).asSlice();
 	}
 
 	@Override
@@ -108,13 +113,13 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdh
 
 	@Override
 	public IValueProvider onValue(IAdhocSlice key) {
-		Map<String, ?> keyCoordinates = key.getCoordinates();
-		if (!keyCoordinates.entrySet().containsAll(masks.entrySet())) {
+		IAdhocMap keyAsMap = key.asAdhocMap();
+		if (!keyAsMap.entrySet().containsAll(masks.entrySet())) {
 			// This is not a compatible key
 			return vc -> vc.onObject(null);
 		}
 
-		IAdhocSlice unmaskedSlice = getUnmaskedSlice(keyCoordinates);
+		IAdhocSlice unmaskedSlice = getUnmaskedSlice(keyAsMap);
 		return masked.onValue(unmaskedSlice);
 	}
 

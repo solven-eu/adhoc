@@ -50,11 +50,12 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -355,8 +356,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				ITransformatorQueryStep wrappedQueryStep =
-						factories.getTransformatorFactory().makeTransformatorQueryStep(queryStep, measureWithUnderlyings);
+				IMeasureQueryStep wrappedQueryStep =
+						factories.getMeasureQueryStepFactory().makeQueryStep(queryStep, measureWithUnderlyings);
 
 				List<CubeQueryStep> underlyingSteps;
 				try {

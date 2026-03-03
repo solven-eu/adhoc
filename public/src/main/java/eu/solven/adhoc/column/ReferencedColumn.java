@@ -24,8 +24,8 @@ package eu.solven.adhoc.column;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import eu.solven.adhoc.query.filter.value.IHasWrapped;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
+import eu.solven.adhoc.util.IHasWrapped;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;

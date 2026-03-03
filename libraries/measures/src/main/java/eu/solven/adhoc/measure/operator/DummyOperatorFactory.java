@@ -37,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * An {@link IOperatorFactory} which always return the same dummy. Useful for early projects with a predefined
- * {@link eu.solven.adhoc.measure.IMeasureForest}.
+ * {@link eu.solven.adhoc.measure.forest.IMeasureForest}.
  * 
  * @author Benoit Lacelle
  */

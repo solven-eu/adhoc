@@ -23,8 +23,8 @@
 package eu.solven.adhoc.data.tabular;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.query.table.IAliasedAggregator;
 
 /**
  * A tabular grid where cells can be aggregated.

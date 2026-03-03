@@ -30,11 +30,11 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
@@ -96,7 +96,7 @@ public class TestDispatchorQueryStep {
 				.build());
 		ISliceWithStep sliceWithStep = SliceAsMapWithStep.builder()
 				.queryStep(cubeStep)
-				.slice(SliceAsMap.fromMap(Map.of("underlyingC", "underlyingV")))
+				.slice(SliceHelpers.asSlice(Map.of("underlyingC", "underlyingV")))
 				.build();
 		IAdhocSlice o = step(stepFilter).queryGroupBy(groupBy, sliceWithStep, Map.of());
 

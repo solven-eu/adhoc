@@ -39,7 +39,6 @@ import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
@@ -62,16 +61,6 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
 	// Implementations is generally a AdhocMap
 	final IAdhocMap asMap;
-
-	@Deprecated(since = "Should use a ISliceFactory")
-	public static IAdhocSlice fromMap(Map<String, ?> asMap) {
-		// AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption())
-		return fromMap(null, asMap);
-	}
-
-	public static IAdhocSlice fromMap(ISliceFactory factory, Map<String, ?> asMap) {
-		return AdhocMapHelpers.fromMap(factory, asMap).asSlice();
-	}
 
 	/**
 	 * Assume the values are already normalized
@@ -198,10 +187,6 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		}
 	}
 
-	public static SliceAsMap grandTotal() {
-		return new SliceAsMap(RowSliceFactory.builder().build(), RowSliceFactory.of());
-	}
-
 	@Override
 	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
 		asMap.forEach(action);
@@ -209,7 +194,7 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 
 	@Override
 	public IAdhocSlice retainAll(NavigableSet<String> columns) {
-		return fromMap(factory, asMap.retainAll(columns));
+		return AdhocMapHelpers.fromMap(factory, asMap.retainAll(columns)).asSlice();
 	}
 
 }

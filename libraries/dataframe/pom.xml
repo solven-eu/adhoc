@@ -22,7 +22,7 @@
 			<artifactId>adhoc-public</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-encoding</artifactId>
@@ -33,11 +33,21 @@
 			<artifactId>adhoc-cell</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-measures</artifactId>
 			<version>${project.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.roaringbitmap/RoaringBitmap -->
+		<dependency>
+			<!-- Used as null-bitset in MultitypeArrayColumn -->
+			<groupId>org.roaringbitmap</groupId>
+			<artifactId>RoaringBitmap</artifactId>
+			<!-- Can not upgrade due to
+			https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
+			<version>1.6.12</version>
 		</dependency>
 
 		<dependency>
@@ -49,6 +59,20 @@
 		<dependency>
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-with-agent</artifactId>
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>

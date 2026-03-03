@@ -34,11 +34,8 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -115,8 +112,9 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 
 	@Override
 	public Stream<IAdhocSlice> slices() {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
-		return entries.stream().map(TabularEntry::getCoordinates).map(s -> SliceAsMap.fromMap(sliceFactory, s));
+		return entries.stream()
+				.map(TabularEntry::getCoordinates)
+				.map(s -> AdhocMapHelpers.fromMap(sliceFactory, s).asSlice());
 	}
 
 	@Override
@@ -132,17 +130,17 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 
 	@Override
 	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 		entries.forEach(entry -> {
-			rowScanner.onKey(SliceAsMap.fromMap(sliceFactory, entry.getCoordinates())).onObject(entry.getValues());
+			rowScanner.onKey(AdhocMapHelpers.fromMap(sliceFactory, entry.getCoordinates()).asSlice())
+					.onObject(entry.getValues());
 		});
 	}
 
 	@Override
 	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 		return entries.stream().map(entry -> {
-			return rowScanner.prepare(SliceAsMap.fromMap(sliceFactory, entry.getCoordinates())).onMap(entry.getValues());
+			return rowScanner.prepare(AdhocMapHelpers.fromMap(sliceFactory, entry.getCoordinates()).asSlice())
+					.onMap(entry.getValues());
 		});
 	}
 

@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.sum;
 import java.util.List;
 
 import eu.solven.adhoc.data.cell.MultitypeCell;
-import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.IBindableCombination;
@@ -33,6 +32,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocBlackHole;
@@ -230,13 +230,23 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 
 			@Override
 			public void onObject(Object leftValue) {
-				right.acceptReceiver(rightValue -> {
-					if (rightValue == null) {
-						valueReceiver.onObject(leftValue);
-					} else {
-						valueReceiver.onObject(substract(leftValue, rightValue));
-					}
-				});
+				if (leftValue == null) {
+					right.acceptReceiver(rightValue -> {
+						if (rightValue == null) {
+							valueReceiver.onObject(null);
+						} else {
+							valueReceiver.onObject(negate(rightValue));
+						}
+					});
+				} else {
+					right.acceptReceiver(rightValue -> {
+						if (rightValue == null) {
+							valueReceiver.onObject(leftValue);
+						} else {
+							valueReceiver.onObject(substract(leftValue, rightValue));
+						}
+					});
+				}
 			}
 		});
 	}

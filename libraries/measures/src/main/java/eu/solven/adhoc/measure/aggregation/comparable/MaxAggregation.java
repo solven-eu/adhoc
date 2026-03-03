@@ -24,11 +24,11 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 
 import java.util.Comparator;
 
+import eu.solven.adhoc.collection.ComparableElseClassComparator;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.util.ComparableElseClassComparatorV2;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -41,7 +41,7 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 
 	public static final String KEY = "MAX";
 
-	final Comparator<Object> comparator = new ComparableElseClassComparatorV2();
+	final Comparator<Object> comparator = new ComparableElseClassComparator();
 
 	@Override
 	public Object aggregate(Object l, Object r) {

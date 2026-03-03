@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.step;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableSet;
@@ -82,9 +83,9 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 	@Default
 	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
 
-	// This property is transported down to the DatabaseQuery
-	@Default
-	Object customMarker = null;
+	// This property is transported down to the DatabaseQuery, and is typically used to customize measure behaviors.
+	// It must not be an Optional
+	Object customMarker;
 
 	@NonNull
 	@Singular
@@ -104,6 +105,8 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 	public static class CubeQueryStepBuilder {
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		IMeasure measure;
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+		Object customMarker;
 
 		public CubeQueryStepBuilder measure(IMeasure measure) {
 			this.measure = measure;
@@ -113,11 +116,26 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 		public CubeQueryStepBuilder measure(String measureName) {
 			return measure(ReferencedMeasure.ref(measureName));
 		}
+
+		public CubeQueryStepBuilder customMarker(Object customMarker) {
+			if (customMarker instanceof Optional<?> optional) {
+				customMarker = optional.get();
+			}
+			this.customMarker = customMarker;
+
+			return this;
+		}
 	}
 
 	@Deprecated(since = "use .toBuilder()", forRemoval = true)
 	public static CubeQueryStepBuilder edit(CubeQueryStep step) {
-		return step.toBuilder();
+		Map<Object, Object> newCache = new ConcurrentHashMap<>();
+		if (step.getCache().containsKey(KEY_CACHE_TRANSVERSE)) {
+			Map<Object, Object> transverseCache = step.getTransverseCache();
+			newCache.put(KEY_CACHE_TRANSVERSE, transverseCache);
+		}
+
+		return step.toBuilder().cache(newCache);
 	}
 
 	public static CubeQueryStepBuilder edit(IWhereGroupByQuery step) {
@@ -130,6 +148,9 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 			builder.options(hasQueryOptions.getOptions());
 		}
 		// TODO if hasMeasure, to be compatible with CubeQueryStep
+		if (step instanceof CubeQueryStep queryStep) {
+			builder.measure(queryStep.getMeasure());
+		}
 
 		return builder;
 	}

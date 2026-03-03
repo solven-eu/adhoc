@@ -77,7 +77,7 @@ public class CustomMeasureForResource implements IMeasure, IHasUnderlyingMeasure
 	}
 
 	@Override
-	public String wrapNode() {
+	public String queryStepClass() {
 		return EmptyTransformator.class.getName();
 	}
 }

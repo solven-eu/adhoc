@@ -41,6 +41,7 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 // https://stackoverflow.com/questions/29826787/is-this-dictionary-function-thread-safe-concurrenthashmapatomicinteger
+// https://java-performance.info/large-hashmap-overview-jdk-fastutil-goldman-sachs-hppc-koloboke-trove/
 @Builder
 @ThreadSafe
 public class MapDictionarizer implements IDictionarizer {

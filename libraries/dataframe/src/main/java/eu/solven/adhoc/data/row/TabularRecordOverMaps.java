@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.map.AdhocMapHelpers;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -104,7 +105,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	public static ITabularRecord empty() {
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceAsMap.grandTotal()).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceHelpers.grandTotal()).build();
 	}
 
 	@Override
@@ -113,7 +114,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	protected ITabularRecord withSlice(ISliceFactory factory, Map<String, ?> slice) {
-		return withGroupBy(SliceAsMap.fromMap(factory, slice));
+		return withGroupBy(AdhocMapHelpers.fromMap(factory, slice).asSlice());
 	}
 
 	@Override

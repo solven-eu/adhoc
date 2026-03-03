@@ -74,7 +74,7 @@ public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public String wrapNode() {
+	public String queryStepClass() {
 		return CustomMarkerEditorQueryStep.class.getName();
 	}
 

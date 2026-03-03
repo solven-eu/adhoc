@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
@@ -37,8 +38,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.table.IAliasedAggregator;
-import eu.solven.adhoc.util.AdhocCollectionHelpers;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;

@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.data.cell;
 
-import eu.solven.adhoc.data.column.IMultitypeConstants;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
+import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Builder;

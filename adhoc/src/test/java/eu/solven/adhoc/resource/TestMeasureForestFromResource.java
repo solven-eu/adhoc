@@ -41,9 +41,9 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
-import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
+import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;

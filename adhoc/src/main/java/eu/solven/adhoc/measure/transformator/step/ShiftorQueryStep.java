@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
@@ -55,15 +55,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Shiftor}.
+ * {@link IMeasureQueryStep} for {@link Shiftor}.
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class ShiftorQueryStep implements ITransformatorQueryStep {
+public class ShiftorQueryStep implements IMeasureQueryStep {
 	final Shiftor shiftor;
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 	@Getter
 	final CubeQueryStep step;
 

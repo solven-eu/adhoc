@@ -41,7 +41,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Iterators;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.solven.adhoc.encoding.page.row.ILikeList;
+import eu.solven.adhoc.collection.ILikeList;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;

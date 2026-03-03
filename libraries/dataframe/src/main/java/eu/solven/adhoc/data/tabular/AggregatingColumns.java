@@ -35,7 +35,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.table.IAliasedAggregator;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;

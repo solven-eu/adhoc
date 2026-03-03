@@ -319,7 +319,7 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	protected ITabularRecord evaluateCalculated(AliasingContext transcodingContext, ITabularRecord row) {
-		Map<String, FunctionCalculatedColumn> columns = transcodingContext.getNameToCalculated();
+		Map<String, ICalculatedColumn> columns = transcodingContext.getNameToCalculated();
 
 		if (columns.isEmpty()) {
 			return row;

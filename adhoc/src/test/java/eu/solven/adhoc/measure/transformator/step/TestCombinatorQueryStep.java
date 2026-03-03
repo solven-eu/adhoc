@@ -26,17 +26,15 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.measure.MeasureQueryStepFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.ITransformatorQueryStepFactory;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 
 public class TestCombinatorQueryStep {
@@ -60,8 +58,7 @@ public class TestCombinatorQueryStep {
 		Assertions.assertThat(combinator.getUnderlyingNames()).containsExactly("invalidUnderlying");
 
 		CubeQueryStep queryStep = CubeQueryStep.builder().measure("someName").build();
-		ITransformatorQueryStep node =
-				ITransformatorQueryStepFactory.standard().makeTransformatorQueryStep(queryStep, combinator);
+		IMeasureQueryStep node = MeasureQueryStepFactory.builder().build().makeQueryStep(queryStep, combinator);
 
 		Assertions.assertThat(node.getUnderlyingSteps()).singleElement().satisfies(step -> {
 			Assertions.assertThat(step.getMeasure().getName()).isEqualTo("validUnderlying");
@@ -77,8 +74,7 @@ public class TestCombinatorQueryStep {
 				.build();
 
 		CubeQueryStep queryStep = CubeQueryStep.builder().measure("someName").build();
-		ITransformatorQueryStep node =
-				ITransformatorQueryStepFactory.standard().makeTransformatorQueryStep(queryStep, combinator);
+		IMeasureQueryStep node = MeasureQueryStepFactory.builder().build().makeQueryStep(queryStep, combinator);
 
 		ICuboid underlying = Mockito.mock(ICuboid.class);
 		ICuboid output = node.produceOutputColumn(Arrays.asList(underlying));

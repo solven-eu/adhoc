@@ -34,13 +34,13 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
+public class CustomMarkerEditorQueryStep implements IMeasureQueryStep {
 	final CustomMarkerEditor customMarkerEditor;
 	final CubeQueryStep step;
 
@@ -51,7 +51,7 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		CubeQueryStepBuilder stepBuilder =
-				CubeQueryStep.edit(step).customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()));
+				step.toBuilder().customMarker(customMarkerEditor.editCustomMarker(step.optCustomMarker()));
 
 		return getUnderlyingNames().stream().map(underlyingName -> {
 			return stepBuilder.measure(underlyingName).build();

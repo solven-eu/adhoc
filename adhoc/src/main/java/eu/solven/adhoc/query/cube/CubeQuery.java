@@ -27,14 +27,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
@@ -45,7 +47,6 @@ import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.util.AdhocCollectionHelpers;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -198,6 +199,8 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 			return this;
 		}
 
+		// Leads to Jackson issues
+		@JsonIgnore
 		public CubeQueryBuilder groupByAlso(IGroupBy groupBy) {
 			groupByAlso(groupBy.getNameToColumn().values());
 

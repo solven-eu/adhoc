@@ -31,13 +31,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
-import eu.solven.adhoc.engine.IMeasureResolver;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureResolver;
+import eu.solven.adhoc.measure.forest.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.options.IQueryOption;

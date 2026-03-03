@@ -70,7 +70,8 @@ public class TestCustomMarkerEnforcer extends ADagTest implements IAdhocTestCons
 		return super.makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build();
 	}
 
-	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
+	@NonNull
+	IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
 		return new StandardOperatorFactory() {
 			@Override

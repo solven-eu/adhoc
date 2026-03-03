@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.aggregation;
 
 import java.util.List;
 
+import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -42,64 +43,84 @@ public interface IAggregation {
 	// `.clearKey` while preparing the write, which may lead to a valueProvider not to get access to some data.
 	// By returning an IValueProvider, we delay the initialization of the receiver
 	default IValueProvider aggregate(IValueProvider l, IValueProvider r) {
-		return new IValueProvider() {
+		if (l == null) {
+			return r;
+		} else if (r == null) {
+			return l;
+		} else if (l instanceof IAggregationCarrier || r instanceof IAggregationCarrier) {
+			return IValueProvider.setValue(aggregate((Object) l, (Object) r));
+		}
 
-			@Override
-			public void acceptReceiver(IValueReceiver valueReceiver) {
-				l.acceptReceiver(new IValueReceiver() {
+		IAggregation agg = this;
 
-					@Override
-					public void onLong(long vL) {
-						r.acceptReceiver(new IValueReceiver() {
+		return valueReceiver -> {
+			l.acceptReceiver(new IValueReceiver() {
 
-							@Override
-							public void onLong(long vR) {
-								if (this instanceof ILongAggregation longAggregation) {
-									valueReceiver.onLong(longAggregation.aggregateLongs(vL, vR));
-								} else {
-									valueReceiver.onObject(aggregate(vL, vR));
-								}
-							}
+				@Override
+				public void onLong(long vL) {
+					r.acceptReceiver(new IValueReceiver() {
 
-							@Override
-							public void onObject(Object vR) {
+						@Override
+						public void onLong(long vR) {
+							if (agg instanceof ILongAggregation longAggregation) {
+								valueReceiver.onLong(longAggregation.aggregateLongs(vL, vR));
+							} else {
 								valueReceiver.onObject(aggregate(vL, vR));
 							}
-						});
-					}
+						}
 
-					@Override
-					public void onDouble(double vL) {
-						r.acceptReceiver(new IValueReceiver() {
-
-							@Override
-							public void onDouble(double vR) {
-								if (this instanceof IDoubleAggregation doubleAggregation) {
-									valueReceiver.onDouble(doubleAggregation.aggregateDoubles(vL, vR));
-								} else {
-									valueReceiver.onObject(aggregate(vL, vR));
-								}
-							}
-
-							@Override
-							public void onObject(Object vR) {
+						@Override
+						public void onDouble(double vR) {
+							if (agg instanceof IDoubleAggregation doubleAggregation) {
+								valueReceiver.onDouble(doubleAggregation.aggregateDoubles(vL, vR));
+							} else {
 								valueReceiver.onObject(aggregate(vL, vR));
 							}
-						});
-					}
+						}
 
-					@Override
-					public void onObject(Object vL) {
-						r.acceptReceiver(new IValueReceiver() {
+						@Override
+						public void onObject(Object vR) {
+							valueReceiver.onObject(aggregate(vL, vR));
+						}
+					});
+				}
 
-							@Override
-							public void onObject(Object vR) {
+				@Override
+				public void onDouble(double vL) {
+					r.acceptReceiver(new IValueReceiver() {
+
+						@Override
+						public void onLong(long vR) {
+							this.onDouble(vR);
+						}
+
+						@Override
+						public void onDouble(double vR) {
+							if (agg instanceof IDoubleAggregation doubleAggregation) {
+								valueReceiver.onDouble(doubleAggregation.aggregateDoubles(vL, vR));
+							} else {
 								valueReceiver.onObject(aggregate(vL, vR));
 							}
-						});
-					}
-				});
-			}
+						}
+
+						@Override
+						public void onObject(Object vR) {
+							valueReceiver.onObject(aggregate(vL, vR));
+						}
+					});
+				}
+
+				@Override
+				public void onObject(Object vL) {
+					r.acceptReceiver(new IValueReceiver() {
+
+						@Override
+						public void onObject(Object vR) {
+							valueReceiver.onObject(aggregate(vL, vR));
+						}
+					});
+				}
+			});
 		};
 	}
 

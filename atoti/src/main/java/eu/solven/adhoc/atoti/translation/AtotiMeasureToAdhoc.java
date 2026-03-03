@@ -63,12 +63,11 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.atoti.table.AtotiAliaser;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -137,7 +136,7 @@ public class AtotiMeasureToAdhoc {
 	SourceMode sourceMode;
 
 	public IMeasureForest asForest(String pivotId, IActivePivotDescription desc) {
-		MeasureForestBuilder measureForest = MeasureForest.builder().name(pivotId);
+		MeasureForest.MeasureForestBuilder measureForest = MeasureForest.builder().name(pivotId);
 
 		// Add natives measures (i.e. ActivePivot measures with a specific aggregation logic)
 		desc.getMeasuresDescription().getNativeMeasures().forEach(nativeMeasure -> {

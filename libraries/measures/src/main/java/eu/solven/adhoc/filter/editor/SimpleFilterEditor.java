@@ -42,7 +42,7 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Singular;
@@ -206,7 +206,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 	}
 
 	public static ISliceFilter suppressColumn(ISliceFilter filter, Set<String> suppressedColumns) {
-		return suppressColumn(filter, suppressedColumns, Optional.of(AdhocUnsafe.filterOptimizer));
+		return suppressColumn(filter, suppressedColumns, Optional.of(AdhocFilterUnsafe.filterOptimizer));
 	}
 
 	/**
