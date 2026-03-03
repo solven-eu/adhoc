@@ -20,7 +20,7 @@
 		<dependency>
 			<!-- IValueMatcher-->
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc-public</artifactId>
+			<artifactId>adhoc-filters</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
