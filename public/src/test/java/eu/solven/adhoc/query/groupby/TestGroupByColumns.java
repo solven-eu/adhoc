@@ -61,4 +61,12 @@ public class TestGroupByColumns {
 		IGroupBy groupBy = GroupByColumns.named("a", "b", "a");
 		Assertions.assertThat(groupBy).isEqualTo(GroupByColumns.named("a", "b"));
 	}
+
+	@Test
+	public void testToString() {
+		Assertions.assertThat(GroupByColumns.grandTotal()).hasToString("grandTotal");
+		
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
+		Assertions.assertThat(groupBy).hasToString("(a, b)");
+	}
 }
