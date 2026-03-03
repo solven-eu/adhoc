@@ -24,10 +24,10 @@ package eu.solven.adhoc.query.custommarker;
 
 import java.util.List;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -59,14 +59,14 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyingNames.size() != 1 (was %s)".formatted(underlyings.size()));
 		}
 
 		IMultitypeColumnFastGet<IAdhocSlice> values = makeStorage();
 
-		ISliceToValue singleUnderlying = underlyings.getFirst();
+		ICuboid singleUnderlying = underlyings.getFirst();
 
 		singleUnderlying.forEachSlice(rawSlice -> {
 			SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(rawSlice).queryStep(step).build();
@@ -74,7 +74,7 @@ public class CustomMarkerEditorQueryStep implements ITransformatorQueryStep {
 			return v -> onSlice(slice, v, values::append);
 		});
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
 	private boolean isDebug() {

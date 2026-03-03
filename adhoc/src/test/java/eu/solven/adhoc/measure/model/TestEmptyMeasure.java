@@ -29,9 +29,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
@@ -48,16 +47,17 @@ public class TestEmptyMeasure {
 	public void testUnderlyings() {
 		EmptyMeasure base = EmptyMeasure.builder().build();
 
+		CubeQueryStep step = CubeQueryStep.builder().measure("m").build();
 		ITransformatorQueryStep transformerStep =
-				base.wrapNode(AdhocFactories.builder().build(), CubeQueryStep.builder().measure("m").build());
+				ITransformatorQueryStepFactory.standard().makeTransformatorQueryStep(step, base);
 
 		// Fine on empty List
 		{
-			ISliceToValue onEmpty = transformerStep.produceOutputColumn(List.of());
+			ICuboid onEmpty = transformerStep.produceOutputColumn(List.of());
 			Assertions.assertThat(onEmpty.isEmpty());
 		}
 
-		Assertions.assertThatThrownBy(() -> transformerStep.produceOutputColumn(List.of(SliceToValue.empty())))
+		Assertions.assertThatThrownBy(() -> transformerStep.produceOutputColumn(List.of(Cuboid.empty())))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Received 1");
 	}

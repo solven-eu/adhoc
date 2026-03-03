@@ -34,7 +34,7 @@ import org.mockito.Mockito;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -82,7 +82,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
-			Map<CubeQueryStep, ISliceToValue> views = engine.executeTableQueries((queryStep, SizeAndDuration) -> {
+			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, SizeAndDuration) -> {
 			},
 					ImmutableSet.of(
 							TableQueryV2.builder()

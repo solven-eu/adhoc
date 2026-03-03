@@ -24,9 +24,9 @@ package eu.solven.adhoc.query.filter.value;
 
 import java.util.Comparator;
 
-import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.util.ComparableElseClassComparatorV2;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

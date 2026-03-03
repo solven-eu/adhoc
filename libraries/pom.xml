@@ -16,5 +16,8 @@
 	<modules>
 		<module>fsst</module>
 		<module>encoding</module>
+		<module>dataframe</module>
+		<module>measures</module>
+		<module>cell</module>
 	</modules>
 </project>

@@ -27,8 +27,8 @@ import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -54,7 +54,7 @@ public class ChainedInducedEvaluator implements IInducedEvaluator {
 	final List<IInducedEvaluator> evaluators;
 
 	@Override
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ISliceToValue inducerValues,
+	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,

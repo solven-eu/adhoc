@@ -53,6 +53,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -264,8 +265,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompatibleMeasures compatibleMeasures =
 				composite.computeSubMeasures(compositeQuery, subCube, Set.of()::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
-				.contains(IMeasure.alias("min", k1Sum.getName()))
-				.contains(IMeasure.alias("max", k1Sum.getName()))
+				.contains(MeasureHelpers.alias("min", k1Sum.getName()))
+				.contains(MeasureHelpers.alias("max", k1Sum.getName()))
 				.hasSize(2);
 		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
 	}
@@ -630,7 +631,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		}
 
 		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
-		withoutUnderlyings.addMeasure(IMeasure.sum("compositeSum", "composite_power2", "composite_power3"));
+		withoutUnderlyings.addMeasure(MeasureHelpers.sum("compositeSum", "composite_power2", "composite_power3"));
 		withoutUnderlyings.addMeasure(Combinator.builder()
 				.name("composite_power2")
 				.underlying("table1_k_minus2")

@@ -30,7 +30,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -42,17 +42,17 @@ public class TestGroupByColumns {
 
 	@Test
 	public void testDifferentOrders() {
-		IAdhocGroupBy groupByAsc = GroupByColumns.named("a", "b");
-		IAdhocGroupBy groupByDesc = GroupByColumns.named("b", "a");
+		IGroupBy groupByAsc = GroupByColumns.named("a", "b");
+		IGroupBy groupByDesc = GroupByColumns.named("b", "a");
 
 		Assertions.assertThat(groupByAsc).isEqualTo(groupByDesc);
 	}
 
 	@Test
 	public void testJackson() throws JsonProcessingException {
-		IAdhocGroupBy groupByAsc = GroupByColumns.named("a", "b");
+		IGroupBy groupByAsc = GroupByColumns.named("a", "b");
 
-		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocGroupBy.class, groupByAsc);
+		String asString = PepperJacksonTestHelper.verifyJackson(IGroupBy.class, groupByAsc);
 		Assertions.assertThat(asString).isEqualTo("""
 				{
 				  "columns" : [ "a", "b" ]
@@ -61,7 +61,7 @@ public class TestGroupByColumns {
 
 	@Test
 	public void testOf_multipleSameRef() {
-		IAdhocGroupBy groupBy = GroupByColumns.named("a", "b", "a");
+		IGroupBy groupBy = GroupByColumns.named("a", "b", "a");
 		Assertions.assertThat(groupBy).isEqualTo(GroupByColumns.named("a", "b"));
 	}
 

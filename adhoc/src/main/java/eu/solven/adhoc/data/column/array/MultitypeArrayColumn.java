@@ -35,9 +35,9 @@ import eu.solven.adhoc.data.column.IColumnValueConverter;
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeConstants;
+import eu.solven.adhoc.data.column.SliceAndMeasure;
 import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -356,7 +356,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 			Object value = measureToAggregateO.get(key);
 
 			if (value instanceof IAggregationCarrier aggregationCarrier) {
-				aggregationCarrier.acceptValueReceiver(new IValueReceiver() {
+				aggregationCarrier.acceptReceiver(new IValueReceiver() {
 
 					@Override
 					public void onLong(long value) {

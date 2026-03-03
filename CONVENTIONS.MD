@@ -25,6 +25,19 @@
 - **Default implementations** for `ISomeThing` are named:
   - `SomeThing` — when the implementation is generally not customised (e.g. `CubeQueryEngine`).
   - `StandardSomeThing` — when it is expected to be frequently customised (e.g. `StandardCustomTypeManager`).
+- **Fields and local variables**: when no specific functional meaning exists, name the identifier after its type, stripping the `I`/`A` prefix and lower-casing the first letter. This is a strong preference, not a strict rule.
+  - `ISliceFilter filter` (not `sliceFilter` or `myFilter`)
+  - `ITableQueryEngine tableQueryEngine`
+  - `IMeasure measure`
+- **Map variables**: use the `keyTo` + `Value` pattern to express the key→value relationship.
+  - `Map<CubeQueryStep, ICuboid> queryStepToValues`
+  - `Map<String, ITableWrapper> nameToTable`
+- **Optional variables**: prefix with `opt`. Applies to local variables and method parameters; fields should not be typed as `Optional<>` (following JDK guidance that `Optional` is meant only as a return type).
+  - `Optional<ICuboid> optSliceToValue`
+  - `Optional<CubeQueryStep> optParent`
+- **Builder factory from existing instance**: use a static `edit(ExistingType)` method (not `from()`, `copy()`, or `of()`) to return a pre-populated Lombok builder.
+  - `CubeQuery.edit(existingQuery)`
+  - `Aggregator.edit(existingAggregator)`
 
 ---
 

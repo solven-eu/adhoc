@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.engine.MapQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -150,7 +150,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 		forest.addMeasure(k1PlusK2AsExpr);
 
 		MapQueryStepCache queryStepCache = new MapQueryStepCache();
-		queryStepCache.pushValues(Map.of(CubeQueryStep.builder().measure(k1Sum).build(), SliceToValue.empty()));
+		queryStepCache.pushValues(Map.of(CubeQueryStep.builder().measure(k1Sum).build(), Cuboid.empty()));
 
 		QueryPod queryPod = QueryPod.builder()
 				.query(CubeQuery.builder().measure(k1PlusK2AsExpr).build())

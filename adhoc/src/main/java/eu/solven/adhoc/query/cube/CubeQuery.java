@@ -69,7 +69,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 	@NonNull
 	@Default
-	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
 	// Not @Singular as we added manually the relevant @Builder methods
 	ImmutableSet<IMeasure> measures;
 
@@ -198,6 +198,12 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 			return this;
 		}
 
+		public CubeQueryBuilder groupByAlso(IGroupBy groupBy) {
+			groupByAlso(groupBy.getNameToColumn().values());
+
+			return this;
+		}
+
 		public CubeQueryBuilder customMarker(Object custom) {
 			if (custom instanceof Optional<?> optional) {
 				// Custom variable is either a not-Optional or a null
@@ -238,6 +244,10 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 	 * @return
 	 */
 	public static CubeQueryBuilder edit(IWhereGroupByQuery query) {
+		if (query instanceof CubeQuery cubeQuery) {
+			return cubeQuery.toBuilder();
+		}
+
 		CubeQueryBuilder builder = CubeQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
 
 		if (query instanceof IHasMeasures hasMeasures) {

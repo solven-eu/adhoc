@@ -46,15 +46,16 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
@@ -81,7 +82,7 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterEquivalencyHelpers;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -120,7 +121,7 @@ public class TableQueryEngineBootstrapped {
 	@NonNull
 	@Default
 	@Getter(AccessLevel.PRIVATE)
-	final AdhocFactories factories = AdhocFactories.builder().build();
+	final IAdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
@@ -142,7 +143,7 @@ public class TableQueryEngineBootstrapped {
 		}
 	});
 
-	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryStepsDag queryStepsDag) {
+	public Map<CubeQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag) {
 		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures
 		Set<CubeQueryStep> tableQuerySteps = prepareForTable(queryStepsDag);
 
@@ -156,7 +157,7 @@ public class TableQueryEngineBootstrapped {
 		sanityChecks(queryStepsDag, inducerAndInduced, tableQueriesV2);
 
 		// Execute the actual tableQueries
-		Map<CubeQueryStep, ISliceToValue> stepToValues = executeTableQueries(inducerAndInduced, tableQueriesV2);
+		Map<CubeQueryStep, ICuboid> stepToValues = executeTableQueries(inducerAndInduced, tableQueriesV2);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
@@ -205,7 +206,7 @@ public class TableQueryEngineBootstrapped {
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
-	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
+	protected Map<CubeQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
 			Set<TableQueryV2> tableQueries) {
 		try {
 			return queryPod.getExecutorService().submit(() -> {
@@ -214,19 +215,19 @@ public class TableQueryEngineBootstrapped {
 				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
 					tableQueriesStream = tableQueriesStream.parallel();
 				}
-				Map<CubeQueryStep, ISliceToValue> queryStepToValuesInner = new ConcurrentHashMap<>();
+				Map<CubeQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
 					eventBus.post(TableStepIsEvaluating.builder().tableQuery(tableQuery).source(this).build());
 
 					IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
-					Map<CubeQueryStep, ISliceToValue> queryStepToValues =
+					Map<CubeQueryStep, ICuboid> queryStepToValues =
 							processOneTableQuery(sinkExecutionFeedback, tableQuery);
 
 					Duration elapsed = stopWatch.elapsed();
 					eventBus.post(TableStepIsCompleted.builder()
 							.tableQuery(tableQuery)
-							.nbCells(queryStepToValues.values().stream().mapToLong(ISliceToValue::size).sum())
+							.nbCells(queryStepToValues.values().stream().mapToLong(ICuboid::size).sum())
 							.source(this)
 							.duration(elapsed)
 							.build());
@@ -262,7 +263,7 @@ public class TableQueryEngineBootstrapped {
 		return template.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), toPerfLog(tableQuery));
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> processOneTableQuery(ISinkExecutionFeedback sinkExecutionFeedback,
+	protected Map<CubeQueryStep, ICuboid> processOneTableQuery(ISinkExecutionFeedback sinkExecutionFeedback,
 			TableQueryV2 tableQuery) {
 		TableQueryV2 suppressedQuery = suppressGeneratedColumns(tableQuery);
 
@@ -275,7 +276,7 @@ public class TableQueryEngineBootstrapped {
 
 		IStopwatch stopWatchSinking;
 
-		Map<CubeQueryStep, ISliceToValue> stepToValues;
+		Map<CubeQueryStep, ICuboid> stepToValues;
 
 		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
 		// Open the stream: the table may or may not return after the actual execution
@@ -339,7 +340,7 @@ public class TableQueryEngineBootstrapped {
 	protected void reportOnTableQuery(TableQueryV2 tableQuery,
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			Duration elapsed,
-			Map<CubeQueryStep, ISliceToValue> oneQueryStepToValues) {
+			Map<CubeQueryStep, ICuboid> oneQueryStepToValues) {
 		boolean isExplain = queryPod.isDebugOrExplain();
 
 		if (isExplain) {
@@ -465,8 +466,8 @@ public class TableQueryEngineBootstrapped {
 		Set<String> generatedColumnToSuppressFromGroupBy = Sets.intersection(groupedByCubeColumns, generatedColumns);
 		if (!generatedColumnToSuppressFromGroupBy.isEmpty()) {
 			// All columns has been validated as being generated
-			IAdhocGroupBy originalGroupby = tableQuery.getGroupBy();
-			IAdhocGroupBy suppressedGroupby =
+			IGroupBy originalGroupby = tableQuery.getGroupBy();
+			IGroupBy suppressedGroupby =
 					GroupByHelpers.suppressColumns(originalGroupby, generatedColumnToSuppressFromGroupBy);
 			if (queryPod.isDebugOrExplain()) {
 				eventBus.post(AdhocLogEvent.builder()
@@ -520,7 +521,7 @@ public class TableQueryEngineBootstrapped {
 		return queryPod.getColumnsManager().openTableStream(queryPod, tableQuery);
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> aggregateStreamToAggregates(
+	protected Map<CubeQueryStep, ICuboid> aggregateStreamToAggregates(
 			TableQueryToSuppressedTableQuery queryAndSuppressed,
 			ITabularRecordStream stream) {
 
@@ -529,20 +530,19 @@ public class TableQueryEngineBootstrapped {
 		return splitTableGridToColumns(queryAndSuppressed, sliceToAggregates);
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> splitTableGridToColumns(
-			TableQueryToSuppressedTableQuery queryAndSuppressed,
+	protected Map<CubeQueryStep, ICuboid> splitTableGridToColumns(TableQueryToSuppressedTableQuery queryAndSuppressed,
 			IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates) {
 		IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
 
-		Map<CubeQueryStep, ISliceToValue> immutableChunks = toSortedColumns(queryAndSuppressed, sliceToAggregates);
+		Map<CubeQueryStep, ICuboid> immutableChunks = toSortedColumns(queryAndSuppressed, sliceToAggregates);
 
 		// BEWARE This timing is independent of the table
 		Duration elapsed = singToAggregatedStarted.elapsed();
 		if (queryPod.isDebugOrExplain()) {
-			long[] sizes = immutableChunks.values().stream().mapToLong(ISliceToValue::size).toArray();
+			long[] sizes = immutableChunks.values().stream().mapToLong(ICuboid::size).toArray();
 
 			if (queryPod.isDebug()) {
-				long totalSize = immutableChunks.values().stream().mapToLong(ISliceToValue::size).sum();
+				long totalSize = immutableChunks.values().stream().mapToLong(ICuboid::size).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
@@ -629,9 +629,9 @@ public class TableQueryEngineBootstrapped {
 	 * @param coordinatesToAggregates
 	 * @return a {@link Map} from each {@link Aggregator} to the column of values
 	 */
-	protected Map<CubeQueryStep, ISliceToValue> toSortedColumns(TableQueryToSuppressedTableQuery query,
+	protected Map<CubeQueryStep, ICuboid> toSortedColumns(TableQueryToSuppressedTableQuery query,
 			IMultitypeMergeableGrid<IAdhocSlice> coordinatesToAggregates) {
-		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new LinkedHashMap<>();
+		Map<CubeQueryStep, ICuboid> queryStepToValues = new LinkedHashMap<>();
 		TableQueryV2 dagTableQuery = query.getDagQuery();
 
 		Set<String> suppressedGroupBys = query.getSuppressedGroupBy();
@@ -651,7 +651,7 @@ public class TableQueryEngineBootstrapped {
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
-			queryStepToValues.put(queryStep, SliceToValue.forGroupBy(queryStep).values(valuesWithSuppressed).build());
+			queryStepToValues.put(queryStep, Cuboid.forGroupBy(queryStep).values(valuesWithSuppressed).build());
 		});
 		return queryStepToValues;
 	}
@@ -877,8 +877,7 @@ public class TableQueryEngineBootstrapped {
 	 *            a mutable {@link Map}. May need to be thread-safe.
 	 * @param inducerAndInduced
 	 */
-	protected void walkUpInducedDag(Map<CubeQueryStep, ISliceToValue> stepToValues,
-			SplitTableQueries inducerAndInduced) {
+	protected void walkUpInducedDag(Map<CubeQueryStep, ICuboid> stepToValues, SplitTableQueries inducerAndInduced) {
 		Consumer<? super CubeQueryStep> queryStepConsumer = induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);
@@ -890,7 +889,7 @@ public class TableQueryEngineBootstrapped {
 		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, queryStepConsumer);
 	}
 
-	protected void evaluateInduced(Map<CubeQueryStep, ISliceToValue> stepToValues,
+	protected void evaluateInduced(Map<CubeQueryStep, ICuboid> stepToValues,
 			SplitTableQueries inducerAndInduced,
 			CubeQueryStep induced) {
 		if (stepToValues.containsKey(induced)) {
@@ -926,8 +925,8 @@ public class TableQueryEngineBootstrapped {
 					.duration(elapsed)
 					.build());
 
-			ISliceToValue alreadyPresent =
-					stepToValues.putIfAbsent(induced, SliceToValue.forGroupBy(induced).values(inducedValues).build());
+			ICuboid alreadyPresent =
+					stepToValues.putIfAbsent(induced, Cuboid.forGroupBy(induced).values(inducedValues).build());
 			if (alreadyPresent != null) {
 				// This may happen on CONCURRENT queries, as we might request the same underlying multiple times.
 				log.warn("Already present: induced={} (from {} to {}). Should not happen since 0.0.14",

@@ -38,8 +38,8 @@ public class TestISliceToValue {
 		IAdhocSlice slice = SliceAsMap.fromMap(Map.of("a", "a1", "b", "b1"));
 		values.append(slice).onLong(123);
 
-		ISliceToValue sliceToValue = SliceToValue.builder().column("a").column("b").values(values).build();
+		ICuboid sliceToValue = Cuboid.builder().column("a").column("b").values(values).build();
 
-		Assertions.assertThat(ISliceToValue.getValue(sliceToValue, slice)).isEqualTo(123L);
+		Assertions.assertThat(ICuboid.getValue(sliceToValue, slice)).isEqualTo(123L);
 	}
 }

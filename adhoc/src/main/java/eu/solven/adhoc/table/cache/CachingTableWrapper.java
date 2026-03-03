@@ -138,7 +138,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return CacheBuilder.newBuilder()
 				.recordStats()
 				// https://github.com/google/guava/issues/3202
-				.<CachingKey, CachingValue>weigher(CachingTableWrapper::sliceToValueSize)
+				.<CachingKey, CachingValue>weigher(CachingTableWrapper::cachingValueSize)
 				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
 				// .maximumWeight(1024 * 1024)
 				.removalListener(notification -> log.debug("RemovalNotification key={} cause={} size={}",
@@ -150,7 +150,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	// TODO Adjust with the weight of the aggregate
-	private static int sliceToValueSize(CachingKey key, CachingValue value) {
+	private static int cachingValueSize(CachingKey key, CachingValue value) {
 		int nbRecords = value.getRecords().size();
 		int recordWidth = key.getTableQuery().getGroupBy().getGroupedByColumns().size()
 				+ key.getTableQuery().getAggregators().size();

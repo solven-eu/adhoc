@@ -35,10 +35,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSortedSet;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
@@ -59,7 +59,7 @@ public class TestTableQueryOptimizer_Perf {
 	TableQueryOptimizer optimizer =
 			new TableQueryOptimizer(AdhocFactories.builder().build(), FilterOptimizer.builder().build());
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
-	Map<CubeQueryStep, ISliceToValue> inducers = new LinkedHashMap<>();
+	Map<CubeQueryStep, ICuboid> inducers = new LinkedHashMap<>();
 
 	RowSliceFactory factory = RowSliceFactory.builder().build();
 
@@ -88,7 +88,7 @@ public class TestTableQueryOptimizer_Perf {
 					.onLong(rowIndex);
 		});
 
-		ISliceToValue inducerValues2 = SliceToValue.builder().columns(Set.of("c0", "c1")).values(inducerValues).build();
+		ICuboid inducerValues2 = Cuboid.builder().columns(Set.of("c0", "c1")).values(inducerValues).build();
 		inducers.put(inducerStep, inducerValues2);
 
 		IMultitypeMergeableColumn<IAdhocSlice> induced =

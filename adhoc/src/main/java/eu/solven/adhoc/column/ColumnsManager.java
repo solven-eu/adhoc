@@ -59,7 +59,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -166,7 +166,7 @@ public class ColumnsManager implements IColumnsManager {
 			});
 		}
 
-		IAdhocGroupBy groupByIncludingPostFilterColumns;
+		IGroupBy groupByIncludingPostFilterColumns;
 
 		{
 			Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
@@ -373,7 +373,7 @@ public class ColumnsManager implements IColumnsManager {
 		return MoreFilterHelpers.transcodeFilter(customTypeManager, tableTranscoder, filter);
 	}
 
-	protected IAdhocGroupBy transcodeGroupBy(AliasingContext aliasingContext, IAdhocGroupBy groupBy) {
+	protected IGroupBy transcodeGroupBy(AliasingContext aliasingContext, IGroupBy groupBy) {
 		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();
 
 		List<IAdhocColumn> transcoded = nameToColumn.values()
@@ -428,7 +428,7 @@ public class ColumnsManager implements IColumnsManager {
 			Set<FilteredAggregator> aggregators) {
 		return aggregators.stream().map(filteredAggregator -> {
 			Aggregator aggregator = filteredAggregator.getAggregator();
-			Aggregator transcodedAggregator = Aggregator.edit(aggregator)
+			Aggregator transcodedAggregator = aggregator.toBuilder()
 					.columnName(transcodingContext.underlying(aggregator.getColumnName()))
 					.build();
 			return filteredAggregator.toBuilder()

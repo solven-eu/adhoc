@@ -32,10 +32,10 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -135,10 +135,8 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	}
 
 	// @Override
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
-			ISliceWithStep slice,
-			ISliceAndValueConsumer output) {
-		ISliceToValue whereToReadShifted = underlyings.getFirst();
+	protected void onSlice(List<? extends ICuboid> underlyings, ISliceWithStep slice, ISliceAndValueConsumer output) {
+		ICuboid whereToReadShifted = underlyings.getFirst();
 
 		IAdhocSlice shiftedSlice = shiftSlice(slice);
 
@@ -157,13 +155,13 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 		}
 	}
 
-	protected void forEachDistinctSlice1(List<? extends ISliceToValue> underlyings, ISliceAndValueConsumer output) {
+	protected void forEachDistinctSlice1(List<? extends ICuboid> underlyings, ISliceAndValueConsumer output) {
 		forEachDistinctSlice2(underlyings, slice -> onSlice(underlyings, slice, output));
 	}
 
-	protected void forEachDistinctSlice2(List<? extends ISliceToValue> underlyings,
+	protected void forEachDistinctSlice2(List<? extends ICuboid> underlyings,
 			Consumer<SliceAsMapWithStep> sliceConsumer) {
-		ISliceToValue whereToReadForWrite = underlyings.getLast();
+		ICuboid whereToReadForWrite = underlyings.getLast();
 
 		AtomicInteger slicesDone = new AtomicInteger();
 		whereToReadForWrite.forEachSlice(rawSlice -> {
@@ -189,7 +187,7 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.size() == 1) {
 			log.debug("Happens when whereToRead matches whereToWrite");
 		} else if (underlyings.size() != 2) {
@@ -200,10 +198,10 @@ public class ShiftorQueryStep implements ITransformatorQueryStep {
 
 		forEachDistinctSlice1(underlyings, values::append);
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeColumnFastGet<IAdhocSlice> makeColumn(List<? extends ISliceToValue> underlyings) {
+	protected IMultitypeColumnFastGet<IAdhocSlice> makeColumn(List<? extends ICuboid> underlyings) {
 		return factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

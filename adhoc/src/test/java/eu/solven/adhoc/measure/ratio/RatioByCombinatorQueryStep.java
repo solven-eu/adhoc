@@ -25,10 +25,10 @@ package eu.solven.adhoc.measure.ratio;
 import java.util.Arrays;
 import java.util.List;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -76,7 +76,7 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.size() != 2) {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
@@ -87,7 +87,7 @@ public class RatioByCombinatorQueryStep extends ATransformatorQueryStep {
 
 		forEachDistinctSlice(underlyings, transformation, values::append);
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
 	@Override

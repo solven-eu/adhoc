@@ -33,7 +33,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
  * 
  * - a filtering condition as an {@link ISliceFilter}
  * 
- * - columns along which the result is sliced as an {@link IAdhocGroupBy}
+ * - columns along which the result is sliced as an {@link IGroupBy}
  * 
  * - measures may be {@link Aggregator} or {@link ITransformatorQueryStep}
  * 

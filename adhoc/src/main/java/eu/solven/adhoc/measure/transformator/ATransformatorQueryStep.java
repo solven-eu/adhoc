@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -49,7 +49,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 
 	protected abstract CubeQueryStep getStep();
 
-	protected abstract AdhocFactories getFactories();
+	protected abstract IAdhocFactories getFactories();
 
 	protected IMeasure getMeasure() {
 		return getStep().getMeasure();
@@ -59,7 +59,7 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 		return getStep().isDebug();
 	}
 
-	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
+	protected void forEachDistinctSlice(List<? extends ICuboid> underlyings,
 			ICombination combination,
 			ISliceAndValueConsumer output) {
 		// ICombinationBinding binded = combination.bind(underlyings);
@@ -72,9 +72,8 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 						output));
 	}
 
-	protected void forEachDistinctSlice(List<? extends ISliceToValue> underlyings,
-			Consumer<SliceAndMeasures> sliceConsumer) {
-		Stream<SliceAndMeasures> sliceAndMeasures = distinctSlices(underlyings);
+	protected void forEachDistinctSlice(List<? extends ICuboid> underlyings, Consumer<SliceAndMeasures> sliceConsumer) {
+		Stream<SliceAndMeasures> sliceAndMeasures = joinCuboids(underlyings);
 
 		AtomicInteger slicesDone = new AtomicInteger();
 		sliceAndMeasures.forEach(slice -> {
@@ -95,8 +94,15 @@ public abstract class ATransformatorQueryStep implements ITransformatorQueryStep
 		});
 	}
 
-	protected Stream<SliceAndMeasures> distinctSlices(List<? extends ISliceToValue> underlyings) {
-		return getFactories().getColumnFactory().distinctSlices(getStep(), underlyings);
+	/**
+	 * This is similar to an SQL JOIN over cuboids: we want to align each individual cuboid on a per-slice basis,
+	 * mapping to the list of measures.
+	 * 
+	 * @param underlyings
+	 * @return
+	 */
+	protected Stream<SliceAndMeasures> joinCuboids(List<? extends ICuboid> underlyings) {
+		return getFactories().getColumnFactory().joinCuboids(getStep(), underlyings);
 	}
 
 	protected abstract void onSlice(

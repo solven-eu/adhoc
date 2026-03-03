@@ -64,7 +64,7 @@ public class TestAggregatingColumns {
 
 		IMultitypeColumnFastGet<String> closed = aggregatingColumns.closeColumn(Aggregator.sum("k"));
 		Assertions.assertThat(closed).isInstanceOfSatisfying(MultitypeHashColumn.class, closed2 -> {
-			Field field = ReflectionUtils.findField(MultitypeHashColumn.class, "sliceToValueL");
+			Field field = ReflectionUtils.findField(MultitypeHashColumn.class, "sliceToL");
 			field.setAccessible(true);
 			Object2LongMap<?> sliceToValueL = (Object2LongMap<?>) ReflectionUtils.getField(field, closed2);
 			Assertions.assertThat(sliceToValueL.getClass().getName())

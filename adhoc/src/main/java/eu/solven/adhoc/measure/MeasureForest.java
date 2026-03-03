@@ -55,7 +55,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-@Builder
+@Builder(toBuilder = true)
 @ToString(exclude = "cachedNameToMeasure")
 public class MeasureForest implements IMeasureForest {
 	@Getter

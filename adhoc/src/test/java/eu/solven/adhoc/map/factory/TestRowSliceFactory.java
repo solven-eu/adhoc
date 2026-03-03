@@ -35,8 +35,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.AdhocMapHelpers;
-import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.util.ComparableElseClassComparatorV2;
 
 public class TestRowSliceFactory {
 	RowSliceFactory factory = RowSliceFactory.builder().build();

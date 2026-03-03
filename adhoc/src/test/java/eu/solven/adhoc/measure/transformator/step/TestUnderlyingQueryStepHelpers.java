@@ -29,9 +29,9 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -45,14 +45,14 @@ public class TestUnderlyingQueryStepHelpers {
 	@Test
 	public void testDistinctSlices_oneHash() {
 		CubeQueryStep queryStep = CubeQueryStep.builder().measure(Aggregator.countAsterisk()).build();
-		List<ISliceToValue> underlyings = new ArrayList<>();
+		List<ICuboid> underlyings = new ArrayList<>();
 
 		{
 			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(234);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 
 		List<SliceAndMeasures> slices =
@@ -70,21 +70,21 @@ public class TestUnderlyingQueryStepHelpers {
 	@Test
 	public void testDistinctSlices_twoHash() {
 		CubeQueryStep queryStep = CubeQueryStep.builder().measure(Aggregator.countAsterisk()).build();
-		List<ISliceToValue> underlyings = new ArrayList<>();
+		List<ICuboid> underlyings = new ArrayList<>();
 
 		{
 			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(234);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 		{
 			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(123);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c5"))).onLong(345);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(234);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 
 		List<SliceAndMeasures> slices =
@@ -106,7 +106,7 @@ public class TestUnderlyingQueryStepHelpers {
 	@Test
 	public void testDistinctSlices_twoNavigable_twoHash() {
 		CubeQueryStep queryStep = CubeQueryStep.builder().measure(Aggregator.countAsterisk()).build();
-		List<ISliceToValue> underlyings = new ArrayList<>();
+		List<ICuboid> underlyings = new ArrayList<>();
 
 		// unordered
 		{
@@ -114,7 +114,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(12);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(23);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(34);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 		// ordered
 		{
@@ -122,7 +122,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c1"))).onLong(78);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(89);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(90);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 		// unordered
 		{
@@ -130,7 +130,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(45);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c5"))).onLong(56);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(67);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 		// ordered
 		{
@@ -138,7 +138,7 @@ public class TestUnderlyingQueryStepHelpers {
 			column.append(SliceAsMap.fromMap(Map.of("c", "c2"))).onLong(21);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c3"))).onLong(32);
 			column.append(SliceAsMap.fromMap(Map.of("c", "c4"))).onLong(43);
-			underlyings.add(SliceToValue.builder().values(column).column("c").build());
+			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 
 		List<SliceAndMeasures> slices =

@@ -27,14 +27,14 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.sum.SumCombination;
 
 public class TestIMeasure {
 	@Test
 	public void testSum() {
-		Assertions.assertThat(IMeasure.sum("sum", "a")).isEqualTo(IMeasure.alias("sum", "a"));
-		Assertions.assertThat(IMeasure.sum("sum", "a", "b")).isInstanceOfSatisfying(Combinator.class, m -> {
+		Assertions.assertThat(MeasureHelpers.sum("sum", "a")).isEqualTo(MeasureHelpers.alias("sum", "a"));
+		Assertions.assertThat(MeasureHelpers.sum("sum", "a", "b")).isInstanceOfSatisfying(Combinator.class, m -> {
 			Assertions.assertThat(m.getName()).isEqualTo("sum");
 			Assertions.assertThat(m.getCombinationKey()).isEqualTo(SumCombination.KEY);
 			Assertions.assertThat(m.getUnderlyingNames()).containsExactly("a", "b");
@@ -43,9 +43,9 @@ public class TestIMeasure {
 
 	@Test
 	public void testAlias() {
-		Assertions.assertThat(IMeasure.alias("someMeasure", "someMeasure"))
+		Assertions.assertThat(MeasureHelpers.alias("someMeasure", "someMeasure"))
 				.isEqualTo(ReferencedMeasure.ref("someMeasure"));
-		Assertions.assertThat(IMeasure.alias("someMeasure", "otherMeasure"))
+		Assertions.assertThat(MeasureHelpers.alias("someMeasure", "otherMeasure"))
 				.isInstanceOfSatisfying(Combinator.class, m -> {
 					Assertions.assertThat(m.getName()).isEqualTo("someMeasure");
 					Assertions.assertThat(m.getCombinationKey()).isEqualTo(CoalesceCombination.KEY);

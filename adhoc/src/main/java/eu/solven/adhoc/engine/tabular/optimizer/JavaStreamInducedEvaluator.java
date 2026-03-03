@@ -29,10 +29,10 @@ import java.util.Optional;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ICompactable;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -51,14 +51,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 
-	private final AdhocFactories factories;
+	private final IAdhocFactories factories;
 
-	public JavaStreamInducedEvaluator(AdhocFactories factories) {
+	public JavaStreamInducedEvaluator(IAdhocFactories factories) {
 		this.factories = factories;
 	}
 
 	@Override
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ISliceToValue inducerValues,
+	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
@@ -95,7 +95,7 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 
 	protected IMultitypeMergeableColumn<IAdhocSlice> prepareInducedColumn(CubeQueryStep inducer,
 			CubeQueryStep induced,
-			ISliceToValue inducerValues,
+			ICuboid inducerValues,
 			IAggregation aggregation) {
 		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();

@@ -28,6 +28,8 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.util.ComparableElseClassComparatorV2;
+
 public class TestComparableElseClassComparatorV2 {
 	Comparator<Object> comparator = new ComparableElseClassComparatorV2();
 

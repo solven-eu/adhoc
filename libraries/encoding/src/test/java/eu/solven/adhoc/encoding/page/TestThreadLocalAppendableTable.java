@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.page;
 
+import java.util.AbstractList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,14 +35,43 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.encoding.page.row.ILikeList;
+import lombok.Builder;
 
 public class TestThreadLocalAppendableTable {
+
+	@Builder
+	public static class ListLikeList<T> extends AbstractList<T> implements ILikeList<T> {
+		final List<T> list;
+
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public T getKey(int i) {
+			return get(i);
+		}
+
+		@Override
+		public List<T> asList() {
+			return this;
+		}
+
+		@Override
+		public T get(int index) {
+			return list.get(index);
+		}
+
+	}
+
 	@Test
 	public void testSequential() {
 		IAppendableTable table = ThreadLocalAppendableTable.builder().capacity(1).build();
 
-		SequencedSetLikeList columns = SequencedSetLikeList.fromSet(Set.of("a"));
+		ListLikeList<String> columns = ListLikeList.<String>builder().list(List.of("a")).build();
 
 		{
 			ITableRowWrite row = table.nextRow(columns);
@@ -75,7 +106,7 @@ public class TestThreadLocalAppendableTable {
 	private void concurrentWrites(int capacity) throws InterruptedException {
 		IAppendableTable table = ThreadLocalAppendableTable.builder().capacity(capacity).build();
 
-		SequencedSetLikeList columns = SequencedSetLikeList.fromSet(Set.of("a"));
+		ListLikeList<String> columns = ListLikeList.<String>builder().list(List.of("a")).build();
 
 		int concurrency = 8;
 		ExecutorService es = Executors.newFixedThreadPool(concurrency);

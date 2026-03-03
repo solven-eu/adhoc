@@ -47,10 +47,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
+import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.IColumnScanner;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
@@ -86,6 +86,7 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
@@ -120,7 +121,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
 	@SuppressWarnings("PMD.UnusedAssignment")
-	final AdhocFactories factories = AdhocFactories.builder().build();
+	final IAdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
@@ -134,7 +135,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@Getter
 	ITableQueryEngine tableQueryEngine;
 
-	protected CubeQueryEngine(AdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
+	protected CubeQueryEngine(IAdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
 		if (tableQueryEngine == null) {
 			tableQueryEngine = TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
 		}
@@ -340,7 +341,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("bootstrap").source(this).build());
 
 		// Execute the leaf aggregations, by tableWrappers
-		Map<CubeQueryStep, ISliceToValue> queryStepToValues = new ConcurrentHashMap<>();
+		Map<CubeQueryStep, ICuboid> queryStepToValues = new ConcurrentHashMap<>();
 
 		// Add values from cache
 		queryStepToValues.putAll(queryStepsDag.getStepToValues());
@@ -367,7 +368,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	protected void registerResultsToCache(IQueryStepCache queryStepCache,
 			QueryStepsDag queryStepsDag,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+			Map<CubeQueryStep, ICuboid> queryStepToValues) {
 		// TODO Improve policy to detect which node should be put in cache
 		// Typically, we may prefer high-level measure not to go through large chunk of steps. We may also keep in cache
 		// steps which were slow to be computed.
@@ -379,7 +380,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				// Else it may force keeping the entry
 			} else {
 				SizeAndDuration cost = queryStepsDag.getStepToCost().get(step);
-				ISliceToValue value = queryStepToValues.get(step);
+				ICuboid value = queryStepToValues.get(step);
 				if (value == null) {
 					log.debug("This happens in {}", StandardQueryOptions.DRILLTHROUGH);
 				} else {
@@ -389,7 +390,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		});
 	}
 
-	protected Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+	protected Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// queryPod.with
 		// AdhocSubQuery.builder().subQuery(qu).parentQueryId(queryPod.getQueryId()).build();
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
@@ -424,7 +425,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	protected void walkUpDag(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+			Map<CubeQueryStep, ICuboid> queryStepToValues) {
 		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
 			// In case of drillthrough, we do not process any measure
 			return;
@@ -443,7 +444,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	protected void onQueryStep(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+			Map<CubeQueryStep, ICuboid> queryStepToValues,
 			CubeQueryStep queryStep) {
 		if (queryStepToValues.containsKey(queryStep)) {
 			// This typically happens on aggregator measures, as they are fed in a previous
@@ -458,8 +459,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		IMeasure measure = queryPod.resolveIfRef(queryStep.getMeasure());
 
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
-		Optional<ISliceToValue> optFromCache = Optional.ofNullable(queryStepsDag.getStepToValues().get(queryStep));
-		ISliceToValue outputColumn = optFromCache.orElseGet(() -> {
+		Optional<ICuboid> optFromCache = Optional.ofNullable(queryStepsDag.getStepToValues().get(queryStep));
+		ICuboid outputColumn = optFromCache.orElseGet(() -> {
 			List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
 			try {
 				return processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
@@ -478,7 +479,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		queryStepsDag.registerExecutionFeedback(queryStep,
 				SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
 
-		ISliceToValue alreadyIn = queryStepToValues.putIfAbsent(queryStep, outputColumn);
+		ICuboid alreadyIn = queryStepToValues.putIfAbsent(queryStep, outputColumn);
 		if (null != alreadyIn) {
 			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
 			// dependents.
@@ -492,14 +493,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				&& factories.getOperatorFactory().makeAggregation(agg) instanceof IAggregationCarrier.IHasCarriers;
 	}
 
-	protected ISliceToValue processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+	protected ICuboid processDagStep(Map<CubeQueryStep, ICuboid> queryStepToValues,
 			CubeQueryStep queryStep,
 			List<CubeQueryStep> underlyingSteps,
 			IMeasure measure) {
 		if (underlyingSteps.isEmpty()) {
 			// This may happen on a Columnator which is missing a required column
 			// TODO This prevent an IMeasure to generate slices from an empty list of underlyings
-			return SliceToValue.empty();
+			return Cuboid.empty();
 		} else if (measure instanceof IHasUnderlyingMeasures hasUnderlyingMeasures) {
 			return processDagStep(queryStepToValues, queryStep, underlyingSteps, hasUnderlyingMeasures);
 		} else {
@@ -507,16 +508,17 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}
 	}
 
-	protected ISliceToValue processDagStep(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+	protected ICuboid processDagStep(Map<CubeQueryStep, ICuboid> queryStepToValues,
 			CubeQueryStep queryStep,
 			List<CubeQueryStep> underlyingSteps,
 			IHasUnderlyingMeasures hasUnderlyingMeasures) {
-		List<ISliceToValue> underlyings = getUnderlyingColumns(queryStepToValues, underlyingSteps);
+		List<ICuboid> underlyings = getUnderlyingColumns(queryStepToValues, underlyingSteps);
 
 		// BEWARE The need to call again `.wrapNode` looks weird
-		ITransformatorQueryStep transformatorQuerySteps = hasUnderlyingMeasures.wrapNode(factories, queryStep);
+		ITransformatorQueryStep transformatorQuerySteps =
+				factories.getTransformatorFactory().makeTransformatorQueryStep(queryStep, hasUnderlyingMeasures);
 
-		ISliceToValue coordinatesToValues;
+		ICuboid coordinatesToValues;
 		try {
 			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
@@ -525,13 +527,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 				IAdhocSlice errorSlice = makeErrorSlice(queryStep, e);
 				column.append(errorSlice).onObject(e);
-				coordinatesToValues = SliceToValue.forGroupBy(queryStep).values(column).build();
+				coordinatesToValues = Cuboid.forGroupBy(queryStep).values(column).build();
 			} else {
 				throw AdhocExceptionHelpers.wrap("Issue processing queryStep=%s".formatted(queryStep), e);
 			}
 		}
 
-		// It feels a bit weird to compact after hand: ISliceToValue may be compacted by construction. But it is
+		// It feels a bit weird to compact after hand: ICuboid may be compacted by construction. But it is
 		// unclear how to achieve that while guaranteed all ITransformatorQueryStep implements it effectively.
 		coordinatesToValues.compact();
 
@@ -568,14 +570,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		return errorSliceAsMapBuilder.build().asSlice();
 	}
 
-	protected List<ISliceToValue> getUnderlyingColumns(Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+	protected List<ICuboid> getUnderlyingColumns(Map<CubeQueryStep, ICuboid> queryStepToValues,
 			List<CubeQueryStep> underlyingSteps) {
 		return underlyingSteps.stream().map(underlyingStep -> {
-			ISliceToValue underlyingValues = queryStepToValues.get(underlyingStep);
+			ICuboid underlyingValues = queryStepToValues.get(underlyingStep);
 
 			if (underlyingValues == null) {
 				if (underlyingStep.getMeasure() instanceof EmptyMeasure) {
-					return SliceToValue.empty();
+					return Cuboid.empty();
 				} else {
 					throw new IllegalStateException("missing underlyingStep=%s".formatted(underlyingStep));
 				}
@@ -647,23 +649,22 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	 */
 	protected ITabularView toTabularView(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+			Map<CubeQueryStep, ICuboid> queryStepToValues) {
 		if (queryStepToValues.isEmpty()) {
 			return MapBasedTabularView.empty();
 		}
 
 		// BEWARE some queriedStep may be in the middle of the DAG if it is also the underlying of another step
 		Iterator<CubeQueryStep> stepsToReturn = queryStepsDag.getExplicits().iterator();
-		long expectedOutputCardinality =
-				queryStepToValues.values().stream().mapToLong(ISliceToValue::size).max().getAsLong();
+		long expectedOutputCardinality = queryStepToValues.values().stream().mapToLong(ICuboid::size).max().getAsLong();
 
-		ITabularView mapBasedTabularView = makeTabularView(queryPod, expectedOutputCardinality);
+		ITabularView view = makeTabularView(queryPod, expectedOutputCardinality);
 
 		stepsToReturn.forEachRemaining(step -> {
-			ISliceToValue coordinatesToValues = queryStepToValues.get(step);
+			ICuboid coordinatesToValues = queryStepToValues.get(step);
 			if (coordinatesToValues == null) {
 				// Happens on a Columnator missing a required column
-				log.debug("No sliceToValue for step={}", step);
+				log.debug("No cuboid for step={}", step);
 			} else {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg && EmptyAggregation.isEmpty(agg);
 
@@ -671,14 +672,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
 
 				IColumnScanner<IAdhocSlice> baseRowScanner =
-						slice -> mapBasedTabularView.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
+						slice -> view.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
 
 				IColumnScanner<IAdhocSlice> rowScanner =
 						scannerForTabularView(isEmptyMeasure, doClearCarriers, baseRowScanner);
 				coordinatesToValues.forEachSlice(rowScanner);
 			}
 		});
-		return mapBasedTabularView;
+		return view;
 	}
 
 	private ITabularView makeTabularView(QueryPod queryPod, long expectedOutputCardinality) {
@@ -744,9 +745,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 					@Override
 					public void onObject(Object v) {
-						if (v instanceof IAggregationCarrier aggregationCarrier) {
+						if (v instanceof IValueProvider valueProvider) {
 							// Transfer the carried value
-							aggregationCarrier.acceptValueReceiver(sliceFeeder);
+							valueProvider.acceptReceiver(sliceFeeder);
 						} else {
 							sliceFeeder.onObject(v);
 						}

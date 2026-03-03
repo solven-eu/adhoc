@@ -33,7 +33,6 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;

@@ -42,7 +42,7 @@ public class TestRankAggregation {
 
 		{
 			Assertions.assertThat(carrier3).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(null);
 				});
 			});
@@ -57,7 +57,7 @@ public class TestRankAggregation {
 			Object carrier1234 = aggregation.aggregate(carrier13, carrier24);
 
 			Assertions.assertThat(carrier1234).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(3);
 				});
 			});
@@ -68,7 +68,7 @@ public class TestRankAggregation {
 			Object carrier124 = aggregation.aggregate(1, carrier24);
 
 			Assertions.assertThat(carrier124).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -79,7 +79,7 @@ public class TestRankAggregation {
 			Object carrier241 = aggregation.aggregate(carrier24, 1);
 
 			Assertions.assertThat(carrier241).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -95,7 +95,7 @@ public class TestRankAggregation {
 
 		{
 			Assertions.assertThat(carrier3).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(null);
 				});
 			});
@@ -110,7 +110,7 @@ public class TestRankAggregation {
 			Object carrier1234 = aggregation.aggregate(carrier13, carrier24);
 
 			Assertions.assertThat(carrier1234).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -121,7 +121,7 @@ public class TestRankAggregation {
 			Object carrier124 = aggregation.aggregate(1, carrier24);
 
 			Assertions.assertThat(carrier124).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -132,7 +132,7 @@ public class TestRankAggregation {
 			Object carrier241 = aggregation.aggregate(carrier24, 1);
 
 			Assertions.assertThat(carrier241).isInstanceOfSatisfying(IAggregationCarrier.class, carrier -> {
-				carrier.acceptValueReceiver(vc -> {
+				carrier.acceptReceiver(vc -> {
 					Assertions.assertThat(vc).isEqualTo(2);
 				});
 			});
@@ -142,22 +142,22 @@ public class TestRankAggregation {
 	@Test
 	public void testWrap_thenAdd() {
 		RankAggregation agg = RankAggregation.fromMax(2);
-		Object o = IValueProvider.getValue(vr -> agg.wrap(123).add(234).acceptValueReceiver(vr));
+		Object o = IValueProvider.getValue(vr -> agg.wrap(123).add(234).acceptReceiver(vr));
 		Assertions.assertThat(o).isEqualTo(123);
 	}
 
 	@Test
 	public void testAggregate_thenAddCarrier() {
 		RankAggregation agg = RankAggregation.fromMax(2);
-		Object o = IValueProvider
-				.getValue(vr -> agg.aggregate(123, 234).add(agg.aggregate(345, 567)).acceptValueReceiver(vr));
+		Object o =
+				IValueProvider.getValue(vr -> agg.aggregate(123, 234).add(agg.aggregate(345, 567)).acceptReceiver(vr));
 		Assertions.assertThat(o).isEqualTo(345);
 	}
 
 	@Test
 	public void testAggregate_thenAddWrapped() {
 		RankAggregation agg = RankAggregation.fromMax(2);
-		Object o = IValueProvider.getValue(vr -> agg.aggregate(123, 234).add(agg.wrap(345)).acceptValueReceiver(vr));
+		Object o = IValueProvider.getValue(vr -> agg.aggregate(123, 234).add(agg.wrap(345)).acceptReceiver(vr));
 		Assertions.assertThat(o).isEqualTo(234);
 	}
 
@@ -174,32 +174,28 @@ public class TestRankAggregation {
 		// Rank1
 		{
 			RankAggregation agg1 = RankAggregation.fromMax(1);
-			Object o =
-					IValueProvider.getValue(vr -> agg1.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Object o = IValueProvider.getValue(vr -> agg1.aggregate(arrayFromSql1, arrayFromSql2).acceptReceiver(vr));
 			Assertions.assertThat(o).isEqualTo(345);
 		}
 
 		// Rank2
 		{
 			RankAggregation agg2 = RankAggregation.fromMax(2);
-			Object o =
-					IValueProvider.getValue(vr -> agg2.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Object o = IValueProvider.getValue(vr -> agg2.aggregate(arrayFromSql1, arrayFromSql2).acceptReceiver(vr));
 			Assertions.assertThat(o).isEqualTo(234);
 		}
 
 		// Rank3
 		{
 			RankAggregation agg3 = RankAggregation.fromMax(3);
-			Object o =
-					IValueProvider.getValue(vr -> agg3.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Object o = IValueProvider.getValue(vr -> agg3.aggregate(arrayFromSql1, arrayFromSql2).acceptReceiver(vr));
 			Assertions.assertThat(o).isEqualTo(123);
 		}
 
 		// Rank4
 		{
 			RankAggregation agg4 = RankAggregation.fromMax(4);
-			Object o =
-					IValueProvider.getValue(vr -> agg4.aggregate(arrayFromSql1, arrayFromSql2).acceptValueReceiver(vr));
+			Object o = IValueProvider.getValue(vr -> agg4.aggregate(arrayFromSql1, arrayFromSql2).acceptReceiver(vr));
 			Assertions.assertThat(o).isEqualTo(null);
 		}
 	}
@@ -210,9 +206,9 @@ public class TestRankAggregation {
 		RankAggregation agg2 = RankAggregation.fromMax(2);
 
 		// Given a single element, we know the rank1
-		Assertions.assertThat(IValueProvider.getValue(agg1.wrap(123)::acceptValueReceiver)).isEqualTo(123);
+		Assertions.assertThat(IValueProvider.getValue(agg1.wrap(123)::acceptReceiver)).isEqualTo(123);
 
 		// Given a single element, we do not know the rankN
-		Assertions.assertThat(IValueProvider.getValue(agg2.wrap(123)::acceptValueReceiver)).isNull();
+		Assertions.assertThat(IValueProvider.getValue(agg2.wrap(123)::acceptReceiver)).isNull();
 	}
 }
