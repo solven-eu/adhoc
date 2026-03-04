@@ -33,7 +33,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
@@ -80,7 +80,7 @@ public class CumulatingDecomposition extends DuplicatingDecomposition implements
 	}
 
 	@Override
-	public IDecomposition makeWithSlices(List<? extends ISliceToValue> underlyings) {
+	public IDecomposition makeWithSlices(List<? extends ICuboid> underlyings) {
 		// This will evaluate the relevant cumulated columns given the underlying slices
 
 		Map<String, ?> columnToCoordinates = AdhocMapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
@@ -89,10 +89,10 @@ public class CumulatingDecomposition extends DuplicatingDecomposition implements
 		Map<String, List<Object>> columnToCoordinatesFromUnderlyings = new LinkedHashMap<>();
 		columns.forEach(column -> columnToCoordinatesFromUnderlyings.put(column, new ArrayList<>()));
 
-		underlyings.forEach(sliceToValue -> {
-			Set<String> relevantColumns = ImmutableSet.copyOf(Sets.intersection(columns, sliceToValue.getColumns()));
+		underlyings.forEach(cuboid -> {
+			Set<String> relevantColumns = ImmutableSet.copyOf(Sets.intersection(columns, cuboid.getColumns()));
 
-			sliceToValue.slices().forEach(slice -> {
+			cuboid.slices().forEach(slice -> {
 				relevantColumns.forEach(column -> {
 					columnToCoordinatesFromUnderlyings.computeIfAbsent(column, k -> new ArrayList<>())
 							.add(slice.getGroupBy(column));

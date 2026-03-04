@@ -29,7 +29,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
@@ -42,21 +42,21 @@ import lombok.NonNull;
 @Builder
 public class GuavaQueryStepCache implements IQueryStepCache {
 	@NonNull
-	Cache<CubeQueryStep, ISliceToValue> queryStepToValues;
+	Cache<CubeQueryStep, ICuboid> queryStepToValues;
 
-	static Cache<CubeQueryStep, ISliceToValue> makeCache(long size) {
+	static Cache<CubeQueryStep, ICuboid> makeCache(long size) {
 		return CacheBuilder.newBuilder()
 				.maximumWeight(size)
 				// TODO We'd like to keep in priority columns which were slow to compute (by table or by transformator)
-				.<CubeQueryStep, ISliceToValue>weigher((queryStep, sliceToValue) -> {
-					return Ints.checkedCast(sliceToValue.size());
+				.<CubeQueryStep, ICuboid>weigher((queryStep, cuboid) -> {
+					return Ints.checkedCast(cuboid.size());
 				})
 				.recordStats()
 				.build();
 	}
 
 	@Override
-	public Optional<ISliceToValue> getValue(CubeQueryStep step) {
+	public Optional<ICuboid> getValue(CubeQueryStep step) {
 		return Optional.ofNullable(queryStepToValues.getIfPresent(step));
 	}
 
@@ -65,7 +65,7 @@ public class GuavaQueryStepCache implements IQueryStepCache {
 	}
 
 	@Override
-	public void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+	public void pushValues(Map<CubeQueryStep, ICuboid> queryStepToValues) {
 		this.queryStepToValues.putAll(queryStepToValues);
 	}
 }

@@ -31,19 +31,20 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
@@ -51,15 +52,17 @@ import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.measure.decomposition.IDecompositionFactory;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
-import eu.solven.adhoc.measure.transformator.AdhocDebug;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.util.AdhocDebug;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -67,18 +70,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Dispatchor}.
+ * {@link IMeasureQueryStep} for {@link Dispatchor}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class DispatchorQueryStep extends ATransformatorQueryStep implements ITransformatorQueryStep {
+public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQueryStep {
 	public static final String P_UNDERLYINGS = "underlyings";
 
 	final Dispatchor dispatchor;
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;
@@ -104,7 +107,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 	}
 
-	protected IDecomposition makeDecomposition(List<? extends ISliceToValue> underlyings) {
+	protected IDecomposition makeDecomposition(List<? extends ICuboid> underlyings) {
 		Map<String, Object> options = new LinkedHashMap<>();
 
 		options.putAll(dispatchor.getDecompositionOptions());
@@ -128,9 +131,9 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.isEmpty()) {
-			return SliceToValue.empty();
+			return Cuboid.empty();
 		} else if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("A dispatchor expects a single underlying");
 		}
@@ -143,7 +146,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 
 		forEachDistinctSlice(underlyings, slice -> onSlice(underlyings, slice, decomposition, values));
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
 	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg) {
@@ -152,7 +155,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		return MultitypeHashMergeableColumn.<IAdhocSlice>builder().aggregation(agg).build();
 	}
 
-	protected void onSlice(List<? extends ISliceToValue> underlyings,
+	protected void onSlice(List<? extends ICuboid> underlyings,
 			SliceAndMeasures slice,
 			IDecomposition decomposition,
 			IMultitypeMergeableColumn<IAdhocSlice> aggregatingView) {
@@ -206,12 +209,14 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 		});
 	}
 
-	protected IAdhocSlice queryGroupBy(@NonNull IAdhocGroupBy groupBy,
+	protected IAdhocSlice queryGroupBy(@NonNull IGroupBy groupBy,
 			ISliceWithStep slice,
 			Map<String, ?> fragmentCoordinate) {
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
+		ISliceFactory sliceFactory =
+				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
@@ -224,7 +229,7 @@ public class DispatchorQueryStep extends ATransformatorQueryStep implements ITra
 				if (value != null) {
 					sliceAsMap.put(groupByColumn, value);
 				}
-				IAdhocSlice preSlice = SliceAsMap.fromMap(sliceAsMap);
+				IAdhocSlice preSlice = AdhocMapHelpers.fromMap(sliceFactory, sliceAsMap).asSlice();
 				ITabularGroupByRecord groupByRecord = TabularGroupByRecordOverMap.builder().slice(preSlice).build();
 				Object calculatedCoordinate = calculatedColumn.computeCoordinate(groupByRecord);
 				value = calculatedCoordinate;

@@ -34,7 +34,7 @@ classDiagram
         IQueryPreparator queryPreparator
     }
     class CubeQueryEngine {
-        AdhocFactories factories
+        IAdhocFactories factories
         IAdhocEventBus eventBus
         ITableQueryEngine tableQueryEngine
     }
@@ -51,12 +51,12 @@ classDiagram
     }
     class DagBottomUpStrategyNavigableElseHash {
     }
-    class AdhocUnsafe {
+    class AdhocFilterUnsafe {
     }
     class UnsafeAdhocEventBusHelpers {
     }
     class TableQueryEngine {
-        AdhocFactories factories
+        IAdhocFactories factories
         IAdhocEventBus eventBus
         ITableQueryOptimizerFactory optimizerFactory
     }
@@ -141,7 +141,7 @@ classDiagram
     AdhocFactories *-- StandardColumnFactory : columnFactory
     AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
     AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
-    AdhocFactories *-- AdhocUnsafe : filterStripperFactory
+    AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory
     AdhocFactories *-- IStopwatchFactory : stopwatchFactory
     StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
     TableQueryEngine *-- AdhocFactories : factories

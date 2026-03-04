@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
@@ -36,15 +36,15 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
  * @author Benoit Lacelle
  */
 public class MapQueryStepCache implements IQueryStepCache {
-	final Map<CubeQueryStep, ISliceToValue> map = new ConcurrentHashMap<>();
+	final Map<CubeQueryStep, ICuboid> map = new ConcurrentHashMap<>();
 
 	@Override
-	public Optional<ISliceToValue> getValue(CubeQueryStep step) {
+	public Optional<ICuboid> getValue(CubeQueryStep step) {
 		return Optional.ofNullable(map.get(step));
 	}
 
 	@Override
-	public void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+	public void pushValues(Map<CubeQueryStep, ICuboid> queryStepToValues) {
 		map.putAll(queryStepToValues);
 	}
 

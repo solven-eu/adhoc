@@ -57,7 +57,7 @@ import eu.solven.adhoc.engine.context.IImplicitOptions;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.SpringImplicitOptions;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
-import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;

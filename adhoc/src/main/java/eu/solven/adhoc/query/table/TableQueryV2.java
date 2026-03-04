@@ -35,7 +35,7 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -67,7 +67,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	@Default
-	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
 
 	// We query only simple aggregations to external databases
 	@Singular

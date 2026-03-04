@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.StandardColumnFactory;
@@ -103,8 +104,8 @@ public class AdhocAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(AdhocFactories.class)
-	public AdhocFactories adhocFactories(IOperatorFactory operatorFactory,
+	@ConditionalOnMissingBean(IAdhocFactories.class)
+	public IAdhocFactories adhocFactories(IOperatorFactory operatorFactory,
 			IColumnFactory columnsFactory,
 			ISliceFactoryFactory sliceFactoryFactory,
 			IStopwatchFactory stopwatchFactory) {
@@ -118,7 +119,7 @@ public class AdhocAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(ICubeQueryEngine.class)
-	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus, AdhocFactories adhocFactories) {
+	public ICubeQueryEngine adhocQueryEngine(IAdhocEventBus eventBus, IAdhocFactories adhocFactories) {
 		return CubeQueryEngine.builder().eventBus(eventBus).factories(adhocFactories).build();
 	}
 }

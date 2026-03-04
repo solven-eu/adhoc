@@ -33,10 +33,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHasFilterOptimizer {
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@Getter
 	final IFilterOptimizer filterOptimizer;
@@ -71,7 +71,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 	final IInducedEvaluator inducedEvaluator;
 
-	public ATableQueryOptimizer(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	public ATableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		this.factories = factories;
 		this.filterOptimizer = filterOptimizer;
 
@@ -93,7 +93,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	protected CubeQueryStep contextOnly(CubeQueryStep inducer) {
 		return CubeQueryStep.edit(inducer)
 				.measure("noMeasure")
-				.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+				.groupBy(IGroupBy.GRAND_TOTAL)
 				.filter(ISliceFilter.MATCH_ALL)
 				.build();
 	}
@@ -144,7 +144,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	@Override
 	public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
-			Map<CubeQueryStep, ISliceToValue> stepToValues,
+			Map<CubeQueryStep, ICuboid> stepToValues,
 			CubeQueryStep induced) {
 		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking
 		// the one with the less rows)
@@ -155,7 +155,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		}
 
 		CubeQueryStep inducer = inducers.getFirst();
-		ISliceToValue inducerValues = stepToValues.get(inducer);
+		ICuboid inducerValues = stepToValues.get(inducer);
 
 		Aggregator aggregator = (Aggregator) inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
@@ -194,7 +194,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 	protected IMultitypeMergeableColumn<IAdhocSlice> prepareInducedColumn(CubeQueryStep inducer,
 			CubeQueryStep induced,
-			ISliceToValue inducerValues,
+			ICuboid inducerValues,
 			IAggregation aggregation) {
 		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();

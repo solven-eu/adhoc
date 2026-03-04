@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.IQueryStepsDagBuilder;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;

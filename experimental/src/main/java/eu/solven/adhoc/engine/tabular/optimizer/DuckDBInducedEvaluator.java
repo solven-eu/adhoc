@@ -47,10 +47,12 @@ import org.jooq.True;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.SliceAndMeasure;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -62,7 +64,6 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasure;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IThrowingValueReceiver;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -106,7 +107,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 * {@code null} when the no-arg constructor is used (direct calls to {@link #tryEvaluateViaDuckDB} are still
 	 * supported in that case).
 	 */
-	private final AdhocFactories factories;
+	private final IAdhocFactories factories;
 
 	/**
 	 * Full constructor used by {@link IInducedEvaluatorFactory} implementations.
@@ -134,7 +135,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 *         column.
 	 */
 	@Override
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ISliceToValue inducerValues,
+	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
@@ -178,8 +179,8 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 				|| CountAggregation.isCount(aggKey);
 	}
 
-	protected Optional<IMultitypeMergeableColumn<IAdhocSlice>> evaluateViaDuckDB(AdhocFactories factories,
-			ISliceToValue inducerValues,
+	protected Optional<IMultitypeMergeableColumn<IAdhocSlice>> evaluateViaDuckDB(IAdhocFactories factories,
+			ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
@@ -282,7 +283,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		return columnDefs;
 	}
 
-	protected void bulkInsert(DuckDBConnection conn, ISliceToValue inducerValues) {
+	protected void bulkInsert(DuckDBConnection conn, ICuboid inducerValues) {
 		// DuckDBAppender.close() flushes any buffered data
 		// https://duckdb.org/docs/api/java.html#appender
 		try (DuckDBAppender appender = conn.createAppender(TABLE_NAME)) {

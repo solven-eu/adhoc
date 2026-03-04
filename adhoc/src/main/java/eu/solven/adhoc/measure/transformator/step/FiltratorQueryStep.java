@@ -24,18 +24,18 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TransverseCacheHelper;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -46,17 +46,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Filtrator}
+ * {@link IMeasureQueryStep} for {@link Filtrator}
  *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class FiltratorQueryStep extends ATransformatorQueryStep {
+public class FiltratorQueryStep extends AMeasureQueryStep {
 
 	final Filtrator filtrator;
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;
@@ -78,9 +78,9 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.isEmpty()) {
-			return SliceToValue.empty();
+			return Cuboid.empty();
 		} else if (underlyings.size() != 1) {
 			throw new IllegalArgumentException(
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
@@ -91,7 +91,7 @@ public class FiltratorQueryStep extends ATransformatorQueryStep {
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
 	@Override

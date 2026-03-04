@@ -27,10 +27,10 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -72,7 +72,7 @@ public class TestDuckDBInducedEvaluator {
 	 * country=DE id=4 -> 40
 	 * </pre>
 	 */
-	ISliceToValue buildInducerValues() {
+	ICuboid buildInducerValues() {
 		IMultitypeColumnFastGet<IAdhocSlice> col = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 		col.append(sliceFactory.newMapBuilder("country", "id").append("FR").append(1L).build().asSlice()).onLong(10L);
@@ -80,12 +80,12 @@ public class TestDuckDBInducedEvaluator {
 		col.append(sliceFactory.newMapBuilder("country", "id").append("DE").append(3L).build().asSlice()).onLong(30L);
 		col.append(sliceFactory.newMapBuilder("country", "id").append("DE").append(4L).build().asSlice()).onLong(40L);
 
-		return SliceToValue.builder().column("country").column("id").values(col).build();
+		return Cuboid.builder().column("country").column("id").values(col).build();
 	}
 
 	@Test
 	public void testSum_reduceGroupBy() {
-		ISliceToValue inducerValues = buildInducerValues();
+		ICuboid inducerValues = buildInducerValues();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 		IAggregation aggregation = new SumAggregation();
@@ -115,7 +115,7 @@ public class TestDuckDBInducedEvaluator {
 
 	@Test
 	public void testSum_withFilter() {
-		ISliceToValue inducerValues = buildInducerValues();
+		ICuboid inducerValues = buildInducerValues();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 		IAggregation aggregation = new SumAggregation();
@@ -143,7 +143,7 @@ public class TestDuckDBInducedEvaluator {
 
 	@Test
 	public void testMax_reduceGroupBy() {
-		ISliceToValue inducerValues = buildInducerValues();
+		ICuboid inducerValues = buildInducerValues();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build();
 		IAggregation aggregation = MaxAggregation.builder().build();
@@ -170,7 +170,7 @@ public class TestDuckDBInducedEvaluator {
 
 	@Test
 	public void testMin_reduceGroupBy() {
-		ISliceToValue inducerValues = buildInducerValues();
+		ICuboid inducerValues = buildInducerValues();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(MinAggregation.KEY).build();
 		IAggregation aggregation = MinAggregation.builder().build();
@@ -197,7 +197,7 @@ public class TestDuckDBInducedEvaluator {
 
 	@Test
 	public void testCount_reduceGroupBy() {
-		ISliceToValue inducerValues = buildInducerValues();
+		ICuboid inducerValues = buildInducerValues();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(CountAggregation.KEY).build();
 		IAggregation aggregation = new CountAggregation();
@@ -227,7 +227,7 @@ public class TestDuckDBInducedEvaluator {
 
 	@Test
 	public void testUnsupportedAggregation_returnsEmpty() {
-		ISliceToValue inducerValues = buildInducerValues();
+		ICuboid inducerValues = buildInducerValues();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey("PRODUCT").build();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
@@ -246,7 +246,7 @@ public class TestDuckDBInducedEvaluator {
 
 	@Test
 	public void testEmptyInput_returnsEmpty() {
-		ISliceToValue empty = SliceToValue.empty();
+		ICuboid empty = Cuboid.empty();
 
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 		IAggregation aggregation = new SumAggregation();

@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-import eu.solven.adhoc.query.filter.value.IHasWrapped;
+import eu.solven.adhoc.util.IHasWrapped;
 
 /**
  * This is used to print a complex `(a -> ref(a), b -> ref(b)` into a simpler `[a, b]`

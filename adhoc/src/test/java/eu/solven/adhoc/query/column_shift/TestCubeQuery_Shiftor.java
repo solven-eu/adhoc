@@ -36,7 +36,7 @@ import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.IMeasureForestVisitor;
+import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;

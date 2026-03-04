@@ -27,7 +27,7 @@ import com.qfs.chunk.buffer.allocator.impl.HeapBufferChunkAllocator;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
 import com.quartetfs.biz.pivot.definitions.IActivePivotManagerDescription;
 
-import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.resource.MeasureForests;
 import lombok.Builder;
 import lombok.NonNull;

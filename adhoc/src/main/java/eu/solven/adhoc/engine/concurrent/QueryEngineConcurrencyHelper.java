@@ -36,7 +36,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -68,7 +68,7 @@ public class QueryEngineConcurrencyHelper {
 	 */
 	public static void walkUpDag(QueryPod queryPod,
 			IHasDagFromInducedToInducer queryStepsDag,
-			Map<CubeQueryStep, ISliceToValue> queryStepToValues,
+			Map<CubeQueryStep, ICuboid> queryStepToValues,
 			Consumer<? super CubeQueryStep> queryStepConsumer) {
 		Consumer<? super CubeQueryStep> cancellableStepConsumer = step -> {
 			if (queryPod.isCancelled()) {

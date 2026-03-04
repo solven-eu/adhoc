@@ -33,10 +33,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Strings;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -44,7 +44,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQ
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Value;
@@ -70,7 +70,7 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
-		Map<CubeQueryStep, ISliceToValue> stepToValues = new LinkedHashMap<>();
+		Map<CubeQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 
 		CubeQueryStep inducedGrandTotal = CubeQueryStep.builder().measure(Aggregator.sum("v")).build();
 		CubeQueryStep inducedByA =
@@ -81,7 +81,7 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("b")).build();
 
 		public void setup() {
-			IAdhocGroupBy groupByABC = GroupByColumns.named("a", "b", "c");
+			IGroupBy groupByABC = GroupByColumns.named("a", "b", "c");
 			CubeQueryStep inducerABC = CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(groupByABC).build();
 
 			dag.addVertex(inducerABC);
@@ -126,7 +126,7 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 				}
 			}
 
-			ISliceToValue inducerValues = SliceToValue.forGroupBy(() -> groupByABC).values(inducerColumn).build();
+			ICuboid inducerValues = Cuboid.forGroupBy(() -> groupByABC).values(inducerColumn).build();
 			stepToValues.put(inducerABC, inducerValues);
 
 			log.info("inducerABC has {} slices", inducerColumn.size());

@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
@@ -31,8 +31,8 @@ import lombok.Value;
 import lombok.With;
 
 /**
- * We start evaluating a queryStep, given underlying measures {@link SliceToValue}. Once done, we'll have computed a
- * {@link SliceToValue} for current {@link CubeQueryStep}.
+ * We start evaluating a queryStep, given underlying measures {@link Cuboid}. Once done, we'll have computed a
+ * {@link Cuboid} for current {@link CubeQueryStep}.
  * 
  * @author Benoit Lacelle
  *

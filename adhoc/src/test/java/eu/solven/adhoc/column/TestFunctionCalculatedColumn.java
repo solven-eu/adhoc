@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -47,5 +48,16 @@ public class TestFunctionCalculatedColumn {
 								.build()))
 				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
 				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
+	}
+
+	@Test
+	public void testOf_multiplename_differentType() {
+		ICalculatedColumn calculatedColumn =
+				FunctionCalculatedColumn.builder().name("a").recordToCoordinate(r -> r.getGroupBy("a_")).build();
+
+		Assertions
+				.assertThatThrownBy(
+						() -> GroupByColumns.of(ReferencedColumn.ref("a"), ReferencedColumn.ref("b"), calculatedColumn))
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

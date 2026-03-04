@@ -29,13 +29,13 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.AggregatingColumns;
 import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -153,7 +153,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	 */
 	protected IAdhocSlice makeCoordinate(SequencedSetLikeList groupBy, ITabularRecord tableRecord) {
 		if (groupBy.isEmpty()) {
-			return SliceAsMap.grandTotal();
+			return SliceHelpers.grandTotal();
 		}
 
 		// BEWARE This order may differ from tableSlice due to calculatedColumns

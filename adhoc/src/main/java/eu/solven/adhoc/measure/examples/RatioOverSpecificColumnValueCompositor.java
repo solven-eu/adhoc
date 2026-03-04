@@ -27,7 +27,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.measure.IMeasureForestVisitor;
+import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
