@@ -52,7 +52,7 @@ import eu.solven.adhoc.calcite.csv.AdhocCalciteSchemaFactory;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.pepper.spring.PepperResourceHelper;

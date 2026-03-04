@@ -26,7 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.ReferencedColumn;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
@@ -41,7 +41,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 public class HelloGroupBy {
 	@Test
 	public void helloGroupBy() {
-		IAdhocGroupBy groupBy = GroupByColumns.named("color", "ccy");
+		IGroupBy groupBy = GroupByColumns.named("color", "ccy");
 
 		Assertions.assertThat(groupBy.getGroupedByColumns()).containsExactly("ccy", "color");
 		Assertions.assertThat(groupBy.getNameToColumn().get("color")).isEqualTo(ReferencedColumn.ref("color"));

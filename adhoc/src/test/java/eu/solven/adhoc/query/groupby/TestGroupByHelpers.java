@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 
@@ -40,16 +40,16 @@ public class TestGroupByHelpers {
 		IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 		IMultitypeColumnFastGet<IAdhocSlice> withMask = GroupByHelpers.addConstantColumns(column, Map.of("k2", "v2"));
 
-		column.append(SliceAsMap.fromMap(Map.of("k", "v"))).onLong(123L);
+		column.append(SliceHelpers.asSlice(Map.of("k", "v"))).onLong(123L);
 
 		Assertions
 				.assertThat(IValueProviderTestHelpers
-						.getLong(withMask.onValue(SliceAsMap.fromMap(Map.of("k", "v", "k2", "v2")))))
+						.getLong(withMask.onValue(SliceHelpers.asSlice(Map.of("k", "v", "k2", "v2")))))
 				.isEqualTo(123L);
 
 		Assertions
 				.assertThat(IValueProvider
-						.getValue(withMask.onValue(SliceAsMap.fromMap(Map.of("k", "v", "k2", "unknownValue")))))
+						.getValue(withMask.onValue(SliceHelpers.asSlice(Map.of("k", "v", "k2", "unknownValue")))))
 				.isNull();
 	}
 }

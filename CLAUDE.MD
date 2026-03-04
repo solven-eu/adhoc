@@ -54,35 +54,6 @@ Add Javadoc to `public` classes and interfaces that currently have no Javadoc co
 
 ---
 
-### Job: Ordered Collections
-
-Replace unordered collection types throughout `src/main/java/**`:
-
-- `HashSet` → `LinkedHashSet`
-- `HashMap` → `LinkedHashMap`
-- `.collect(Collectors.toSet())` → `.collect(Collectors.toCollection(LinkedHashSet::new))`
-
----
-
-### Job: Guava Immutable Collections
-
-Replace JDK collection factories with Guava equivalents in `src/main/java/**` (skip test files where conciseness primes):
-
-- `List.of(…)` → `ImmutableList.of(…)`
-- `Set.of(…)` → `ImmutableSet.of(…)`
-
-Only where semantically equivalent (no null elements, no mutation needed).
-
----
-
-### Job: SLF4J Placeholders
-
-Fix string concatenation in log statements throughout `src/main/java/**`:
-
-- `log.xxx("text" + var)` → `log.xxx("text {}", var)`
-
----
-
 ### Job: Comment Accuracy
 
 Fix copy-paste errors in comments — correct obviously wrong class/method names referenced in a comment. Do not rewrite or expand comments, only fix clearly wrong identifiers.

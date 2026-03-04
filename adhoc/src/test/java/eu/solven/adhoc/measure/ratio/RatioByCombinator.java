@@ -29,11 +29,8 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
@@ -90,7 +87,7 @@ public class RatioByCombinator implements ICombinator {
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep step) {
-		return new RatioByCombinatorQueryStep(this, factories, step);
+	public String queryStepClass() {
+		return RatioByCombinatorQueryStep.class.getName();
 	}
 }

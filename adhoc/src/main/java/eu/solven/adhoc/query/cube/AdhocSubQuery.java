@@ -51,7 +51,7 @@ public final class AdhocSubQuery implements ICubeQuery, IHasParentQueryId {
 	}
 
 	@Override
-	public IAdhocGroupBy getGroupBy() {
+	public IGroupBy getGroupBy() {
 		return subQuery.getGroupBy();
 	}
 

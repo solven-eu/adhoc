@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -36,6 +37,9 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Predicates;
 import com.google.common.collect.ContiguousSet;
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 
 public class TestAdhocCollectionHelpers {
 	LocalDate now = LocalDate.now();
@@ -100,6 +104,30 @@ public class TestAdhocCollectionHelpers {
 				.collect(Collectors.toCollection(ArrayList::new));
 		Assertions.assertThat(AdhocCollectionHelpers.cartesianProductSize(size1024))
 				.hasToString("11790184577738583171520872861412518665678211592275841109096961");
+	}
+
+	@Test
+	public void testCopyOfSets() {
+		Assertions.assertThat(AdhocCollectionHelpers.copyOfSets(Set.of(), Set.of("foo"))).containsExactly("foo");
+		Assertions.assertThat(AdhocCollectionHelpers.copyOfSets(Set.of("foo"), Set.of())).containsExactly("foo");
+		Assertions.assertThat(AdhocCollectionHelpers.copyOfSets(Set.of("foo"), Set.of("bar")))
+				.containsExactly("foo", "bar");
+	}
+
+	@Test
+	public void testTrimToSize() {
+		AdhocCollectionHelpers.trimToSize(List.of("foo"));
+		AdhocCollectionHelpers.trimToSize(new ArrayList<>(List.of("foo")));
+		AdhocCollectionHelpers.trimToSize(ImmutableList.of("foo"));
+	}
+
+	@Test
+	public void testGetFirst() {
+		AdhocCollectionHelpers.getFirst(List.of("foo"));
+		AdhocCollectionHelpers.getFirst(Set.of("foo"));
+
+		Assertions.assertThatThrownBy(() -> AdhocCollectionHelpers.getFirst(Set.of()))
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test

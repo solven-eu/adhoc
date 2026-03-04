@@ -30,20 +30,20 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.ICombinator;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingNames;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
@@ -56,16 +56,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Combinator}.
+ * {@link IMeasureQueryStep} for {@link Combinator}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class CombinatorQueryStep extends ATransformatorQueryStep {
+public class CombinatorQueryStep extends AMeasureQueryStep {
 	final ICombinator combinator;
+
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@Getter
 	final CubeQueryStep step;
@@ -102,21 +103,21 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 				.toList();
 	}
 
-	public static int sumSizes(Collection<? extends ISliceToValue> underlyings) {
-		return Ints.saturatedCast(underlyings.stream().mapToLong(ISliceToValue::size).sum());
+	public static int sumSizes(Collection<? extends ICuboid> underlyings) {
+		return Ints.saturatedCast(underlyings.stream().mapToLong(ICuboid::size).sum());
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (getUnderlyingNames().isEmpty() && underlyings.size() == 1) {
 			// The provided column is probably computed for `EmptyAggregation`
-			log.trace("Received EmptyAggregation sliceToValue");
+			log.trace("Received EmptyAggregation cuboid");
 		} else if (underlyings.size() != getUnderlyingNames().size()) {
 			throw new IllegalArgumentException("underlyingNames.size() != underlyings.size() (%s, %s)"
 					.formatted(getUnderlyingNames(), underlyings.size()));
 		} else if (underlyings.isEmpty()) {
 			// BEWARE This prevents a Combinator to return slices independently of underlyings
-			return SliceToValue.empty();
+			return Cuboid.empty();
 		}
 
 		ICombination combination = combinationSupplier.get();
@@ -129,7 +130,7 @@ public class CombinatorQueryStep extends ATransformatorQueryStep {
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
 	@Override

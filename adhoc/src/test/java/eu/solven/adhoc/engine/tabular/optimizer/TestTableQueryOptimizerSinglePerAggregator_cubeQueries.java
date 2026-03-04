@@ -37,6 +37,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -89,7 +90,7 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
 			@Override
-			protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
+			protected ITableQueryOptimizer makeOptimizer(IAdhocFactories factories) {
 				IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
 				return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
 			}
@@ -145,7 +146,7 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
 			@Override
-			protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
+			protected ITableQueryOptimizer makeOptimizer(IAdhocFactories factories) {
 				IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
 				return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
 			}

@@ -45,7 +45,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import com.google.common.base.Predicates;
 
-import eu.solven.adhoc.util.AdhocCollectionHelpers;
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 
 /**
  * Benchmarks different implementations unnesting a {@link Collection} into a {@link List}.

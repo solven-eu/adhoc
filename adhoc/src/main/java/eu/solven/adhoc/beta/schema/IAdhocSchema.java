@@ -28,7 +28,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;

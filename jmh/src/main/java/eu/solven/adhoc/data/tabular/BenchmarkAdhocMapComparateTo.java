@@ -42,12 +42,12 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 /**
- * Benchmarks related with {@link SliceAsMap#compareTo(SliceAsMap)}
+ * Benchmarks related with {@link IAdhocMap#compareTo(Object)}
  *
  * @author Benoit Lacelle
  */
@@ -78,19 +78,19 @@ public class BenchmarkAdhocMapComparateTo {
 	public void setup() {
 		// some Map
 		mapA = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append(c1).build();
-		sliceMapA = SliceAsMap.fromMap(mapA);
+		sliceMapA = SliceHelpers.asSlice(mapA);
 
 		// equals to mapA
 		mapB = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append(c1).build();
-		sliceMapB = SliceAsMap.fromMap(mapB);
+		sliceMapB = SliceHelpers.asSlice(mapB);
 
 		// Differ with last value from mapA
 		mapC = factory.newMapBuilder(Set.of("a", "b", "c")).append("a1").append("b1").append(c2).build();
-		sliceMapC = SliceAsMap.fromMap(mapC);
+		sliceMapC = SliceHelpers.asSlice(mapC);
 
 		// Differ with all/first value from mapA
 		mapD = factory.newMapBuilder(Set.of("a", "b", "c")).append("a2").append("b2").append(c2).build();
-		sliceMapD = SliceAsMap.fromMap(mapD);
+		sliceMapD = SliceHelpers.asSlice(mapD);
 	}
 
 	// Run this method to run benchmarks

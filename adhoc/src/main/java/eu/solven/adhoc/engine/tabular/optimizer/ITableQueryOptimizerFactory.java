@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Set;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -40,5 +40,5 @@ import eu.solven.adhoc.query.table.TableQuery;
  */
 @FunctionalInterface
 public interface ITableQueryOptimizerFactory {
-	ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions);
+	ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions);
 }

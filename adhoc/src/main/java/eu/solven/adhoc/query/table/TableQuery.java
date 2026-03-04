@@ -33,7 +33,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
@@ -62,7 +62,7 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	@Default
-	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
 
 	// We query only simple aggregations to external databases
 	@Singular
@@ -92,8 +92,9 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 		return aggregators;
 	}
 
+	@Deprecated(since = "use .toBuilder()", forRemoval = true)
 	public static TableQueryBuilder edit(TableQuery tableQuery) {
-		return edit((IWhereGroupByQuery) tableQuery).aggregators(tableQuery.getAggregators());
+		return tableQuery.toBuilder();
 	}
 
 	public static TableQueryBuilder edit(IWhereGroupByQuery query) {

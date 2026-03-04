@@ -33,7 +33,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.resource.AdhocJackson;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
@@ -82,12 +82,12 @@ public class TestReferencedColumn {
 	public void testJackson_asMap_wrappedInGroupByColumns() throws JsonProcessingException {
 		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
-		IAdhocGroupBy initial = GroupByColumns.of(ReferencedColumn.ref("someColumn"));
+		IGroupBy initial = GroupByColumns.of(ReferencedColumn.ref("someColumn"));
 		Map asMap = om.convertValue(initial, Map.class);
 
 		Assertions.assertThat(asMap).hasSize(1).containsEntry("columns", Arrays.asList("someColumn"));
 
-		IAdhocGroupBy fromMap = om.convertValue(asMap, IAdhocGroupBy.class);
+		IGroupBy fromMap = om.convertValue(asMap, IGroupBy.class);
 
 		Assertions.assertThat(fromMap).isEqualTo(initial);
 	}

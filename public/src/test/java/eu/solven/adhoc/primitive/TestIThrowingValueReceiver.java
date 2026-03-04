@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 public class TestIThrowingValueReceiver {
 	@Test
-	public void testOnPrimitives() throws Exception {
+	public void testOnPrimitives_mayThrow() throws Exception {
 		List<Object> list = new ArrayList<>();
 
 		IThrowingValueReceiver receiver = new IThrowingValueReceiver() {
@@ -44,6 +44,25 @@ public class TestIThrowingValueReceiver {
 		receiver.onObjectMayThrow("foo");
 		receiver.onLongMayThrow(123);
 		receiver.onDoubleMayThrow(12.34);
+
+		Assertions.assertThat(list).containsExactly("foo", 123L, 12.34D);
+	}
+
+	@Test
+	public void testOnPrimitives_standard() throws Exception {
+		List<Object> list = new ArrayList<>();
+
+		IThrowingValueReceiver receiver = new IThrowingValueReceiver() {
+
+			@Override
+			public void onObjectMayThrow(Object v) throws Exception {
+				list.add(v);
+			}
+		};
+
+		receiver.onObject("foo");
+		receiver.onLong(123);
+		receiver.onDouble(12.34);
 
 		Assertions.assertThat(list).containsExactly("foo", 123L, 12.34D);
 	}

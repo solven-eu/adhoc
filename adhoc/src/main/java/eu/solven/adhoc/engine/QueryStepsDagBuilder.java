@@ -44,20 +44,21 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.ITableMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -73,7 +74,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 	final String table;
 	final ICubeQuery query;
 	final IQueryStepCache queryStepCache;
@@ -95,7 +96,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final Set<CubeQueryStep> processed = new LinkedHashSet<>();
 
 	// From cache
-	final Map<CubeQueryStep, ISliceToValue> stepToValue = new LinkedHashMap<>();
+	final Map<CubeQueryStep, ICuboid> stepToValue = new LinkedHashMap<>();
 
 	// Used to store transient information, like slow-to-evaluate information
 	// Should be a threadSafe implementation
@@ -105,7 +106,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 	final IMeasureResolver measureResolver;
 
-	public QueryStepsDagBuilder(AdhocFactories factories,
+	public QueryStepsDagBuilder(IAdhocFactories factories,
 			String cube,
 			IMeasureResolver canResolveMeasures,
 			ICubeQuery query,
@@ -184,7 +185,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		});
 
 		return Lists.cartesianProduct(indexToGroupBys).stream().map(columns -> {
-			IAdhocGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
+			IGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
 			ISliceFilter andFilter = FilterBuilder.and(columns.stream().map(Map.Entry::getValue).toList()).optimize();
 			return MeasurelessQuery.edit(query)
 					.groupBy(groupBy)
@@ -205,9 +206,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		if (stepToValue.containsKey(step)) {
 			hasCache = true;
 		} else {
-			Optional<ISliceToValue> optSliceToValue = queryStepCache.getValue(step);
-			if (optSliceToValue.isPresent()) {
-				stepToValue.put(step, optSliceToValue.get());
+			Optional<ICuboid> optCuboid = queryStepCache.getValue(step);
+			if (optCuboid.isPresent()) {
+				stepToValue.put(step, optCuboid.get());
 
 				if (step.isDebugOrExplain()) {
 					log.info("[EXPLAIN] step from cache: {}", step);
@@ -355,7 +356,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			if (measure instanceof Aggregator aggregator) {
 				log.debug("Aggregators (here {}) do not have any underlying measure", aggregator);
 			} else if (measure instanceof IHasUnderlyingMeasures measureWithUnderlyings) {
-				ITransformatorQueryStep wrappedQueryStep = measureWithUnderlyings.wrapNode(factories, queryStep);
+				IMeasureQueryStep wrappedQueryStep =
+						factories.getMeasureQueryStepFactory().makeQueryStep(queryStep, measureWithUnderlyings);
 
 				List<CubeQueryStep> underlyingSteps;
 				try {
@@ -395,7 +397,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		return resolved;
 	}
 
-	public static IQueryStepsDagBuilder make(AdhocFactories factories, QueryPod queryPod) {
+	public static IQueryStepsDagBuilder make(IAdhocFactories factories, QueryPod queryPod) {
 		return new QueryStepsDagBuilder(factories,
 				queryPod.getTable().getName(),
 				queryPod::resolveIfRef,

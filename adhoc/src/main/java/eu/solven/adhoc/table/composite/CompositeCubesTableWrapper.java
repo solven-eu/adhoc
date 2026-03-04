@@ -60,10 +60,11 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
@@ -72,8 +73,8 @@ import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -200,7 +201,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 		checkColumns(compositeQuery);
 
-		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
+		IGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
 		Map<String, ICubeQuery> cubeToQuery = new LinkedHashMap<>();
 
@@ -261,8 +262,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 	}
 
-	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
-			final Map<String, ITabularView> cubeToView) {
+	protected Stream<ITabularRecord> openStream(IGroupBy compositeGroupBy, final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		return cubeToView.entrySet().stream().flatMap(e -> {
@@ -312,7 +312,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				.map(fa -> {
 					ISliceFilter compositeFilter = fa.getFilter();
 					if (compositeFilter.isMatchAll()) {
-						return IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName());
+						return MeasureHelpers.alias(fa.getAlias(), fa.getAggregator().getColumnName());
 					} else {
 						ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, isSubColumn);
 
@@ -359,7 +359,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 	protected ICubeQuery makeSubQuery(QueryPod queryPod,
 			TableQueryV2 compositeQuery,
-			IAdhocGroupBy compositeGroupBy,
+			IGroupBy compositeGroupBy,
 			ICubeWrapper subCube) {
 		Predicate<String> subCubeKnownMeasure = makeSubColumnPredicate(subCube);
 

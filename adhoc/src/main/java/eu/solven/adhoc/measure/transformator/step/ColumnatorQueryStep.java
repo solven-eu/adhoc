@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
@@ -38,7 +38,7 @@ import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Columnator}.
+ * {@link IMeasureQueryStep} for {@link Columnator}.
  * 
  * @author Benoit Lacelle
  */
@@ -46,7 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ColumnatorQueryStep extends CombinatorQueryStep {
 	final Columnator columnator;
 
-	public ColumnatorQueryStep(Columnator columnator, AdhocFactories factories, CubeQueryStep step) {
+	public ColumnatorQueryStep(Columnator columnator, IAdhocFactories factories, CubeQueryStep step) {
 		super(columnator, factories, step);
 
 		this.columnator = columnator;

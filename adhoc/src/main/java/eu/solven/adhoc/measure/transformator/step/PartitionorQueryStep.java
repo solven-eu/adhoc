@@ -28,21 +28,21 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
-import eu.solven.adhoc.measure.transformator.ATransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -50,16 +50,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Partitionor}.
+ * {@link IMeasureQueryStep} for {@link Partitionor}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class PartitionorQueryStep extends ATransformatorQueryStep {
+public class PartitionorQueryStep extends AMeasureQueryStep {
 	final Partitionor partitionor;
 	@Getter(AccessLevel.PROTECTED)
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 	@Getter
 	final CubeQueryStep step;
 
@@ -80,15 +80,15 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		return getUnderlyingNames().stream().map(underlying -> {
-			IAdhocGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), partitionor.getGroupBy());
-			return CubeQueryStep.edit(step).groupBy(groupBy).measure(underlying).build();
+			IGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), partitionor.getGroupBy());
+			return step.toBuilder().groupBy(groupBy).measure(underlying).build();
 		}).toList();
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.isEmpty()) {
-			return SliceToValue.empty();
+			return Cuboid.empty();
 		}
 
 		IAggregation agg = getMakeAggregation();
@@ -99,11 +99,10 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 
 		forEachDistinctSlice(underlyings, combinator, values::merge);
 
-		return SliceToValue.forGroupBy(step).values(values).build();
+		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg,
-			List<? extends ISliceToValue> underlyings) {
+	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg, List<? extends ICuboid> underlyings) {
 		// BEWARE The output capacity is at most the sum of input capacity. But it is
 		// generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
@@ -145,7 +144,7 @@ public class PartitionorQueryStep extends ATransformatorQueryStep {
 		}
 	}
 
-	protected IAdhocSlice queriedSlice(IAdhocGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
+	protected IAdhocSlice queriedSlice(IGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
 		return bucketedSlice.getSlice().retainAll(groupedByColumns);

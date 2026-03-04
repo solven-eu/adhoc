@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
+import eu.solven.pepper.core.PepperLogHelper;
+
 public interface IValueProviderTestHelpers {
 	// Pick a seemingly random value. Long.MAX_VALUE may be referred for some edge-cases
 	long LONG_NOT_SUPPORTED = Long.MAX_VALUE / 7;
@@ -48,7 +50,8 @@ public interface IValueProviderTestHelpers {
 
 			@Override
 			public void onObject(Object v) {
-				throw new IllegalArgumentException("getLong requires onLong and not onObject (o=%s)".formatted(v));
+				throw new IllegalArgumentException("getLong requires onLong and not onObject (v=%s)"
+						.formatted(PepperLogHelper.getObjectAndClass(v)));
 			}
 		});
 
@@ -71,7 +74,8 @@ public interface IValueProviderTestHelpers {
 
 			@Override
 			public void onObject(Object v) {
-				throw new IllegalArgumentException("getDouble requires onLong and not onObject");
+				throw new IllegalArgumentException("getDouble requires onDouble and not onObject (v=%s)"
+						.formatted(PepperLogHelper.getObjectAndClass(v)));
 			}
 		});
 

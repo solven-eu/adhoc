@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
@@ -41,13 +41,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITransformatorQueryStep} for {@link Unfiltrator}.
+ * {@link IMeasureQueryStep} for {@link Unfiltrator}.
  * 
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 @Slf4j
-public class UnfiltratorQueryStep implements ITransformatorQueryStep {
+public class UnfiltratorQueryStep implements IMeasureQueryStep {
 	@Getter
 	final Unfiltrator unfiltrator;
 	final CubeQueryStep step;
@@ -86,7 +86,7 @@ public class UnfiltratorQueryStep implements ITransformatorQueryStep {
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
 		if (underlyings.size() != 1) {
 			throw new IllegalArgumentException("underlyings.size() != 1");
 		}

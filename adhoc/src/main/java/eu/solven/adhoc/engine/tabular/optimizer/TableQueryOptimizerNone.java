@@ -27,7 +27,7 @@ import java.util.Set;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 
-	public TableQueryOptimizerNone(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	public TableQueryOptimizerNone(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		super(factories, filterOptimizer);
 	}
 

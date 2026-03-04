@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.Builder;
 import lombok.NonNull;
@@ -37,7 +37,7 @@ import lombok.NonNull;
 public class StandardInducedEvaluatorFactory implements IInducedEvaluatorFactory {
 
 	@NonNull
-	final AdhocFactories factories;
+	final IAdhocFactories factories;
 
 	@NonNull
 	final IFilterOptimizer filterOptimizer;
