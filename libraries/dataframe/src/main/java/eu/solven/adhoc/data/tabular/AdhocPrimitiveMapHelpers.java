@@ -36,6 +36,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  * 
  */
+// TODO Move to eu.solven.adhoc.data.tabular.primitives
 @UtilityClass
 public class AdhocPrimitiveMapHelpers {
 

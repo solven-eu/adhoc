@@ -52,6 +52,7 @@ import lombok.extern.slf4j.Slf4j;
  * @param <T>
  * @author Benoit Lacelle
  */
+// TODO Move to eu.solven.adhoc.data.aggregating
 @SuperBuilder
 @Slf4j
 public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
