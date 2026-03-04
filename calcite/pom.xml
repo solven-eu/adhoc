@@ -21,6 +21,7 @@
 		<spotbugs.skip>true</spotbugs.skip>
 		<checkstyle.skip>true</checkstyle.skip>
 		<pmd.skip>true</pmd.skip>
+		<automatic.module.name>eu.solven.adhoc.calcite</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -70,5 +71,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
 </project>

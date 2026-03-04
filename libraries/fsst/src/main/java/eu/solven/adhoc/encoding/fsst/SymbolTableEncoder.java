@@ -24,7 +24,7 @@ package eu.solven.adhoc.encoding.fsst;
 
 import java.util.Arrays;
 
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;

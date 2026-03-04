@@ -16,7 +16,7 @@
 	<packaging>pom</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
-	<description>InMemory Transformation Pipeline</description>
+	<description>Formulas for OLAP</description>
 	<url>https://github.com/solven-eu/adhoc</url>
 
 	<licenses>
@@ -115,9 +115,12 @@
 
 		<!-- https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
 		<customArgLine />
-		<!-- \-\-add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED is for arrow -->
-		<!-- https://arrow.apache.org/java/current/install.html -->
-		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED ${customArgLine}</argLine>
+
+		<automatic.module.name />
+
+		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError ${customArgLine}</argLine>
+		<!-- Set to 'package' to skip trigger the tests jar (e.g. not to skip deployment) -->
+		<testJarPhase>none</testJarPhase>
 	</properties>
 
 	<dependencies>
@@ -138,6 +141,18 @@
 
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<configuration>
+						<archive>
+							<manifestEntries>
+								<Automatic-Module-Name>${automatic.module.name}</Automatic-Module-Name>
+							</manifestEntries>
+						</archive>
+					</configuration>
+				</plugin>
+
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
@@ -671,6 +686,24 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<!-- Provides a classifier=tests jar, helpful for integration tests or benchmarks-->
+							<goal>test-jar</goal>
+						</goals>
+						<!-- Set -DtestJarPhase=none to skip building and deploying the tests jar -->
+						<phase>${testJarPhase}</phase>
+						<configuration>
+							<!-- Skip modules without test sources (e.g. the aggregator POM) -->
+							<skipIfEmpty>true</skipIfEmpty>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<!-- mvn spotless:apply -->

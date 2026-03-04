@@ -11,6 +11,11 @@
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 
+	<properties>
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc.cell</automatic.module.name>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.google.guava</groupId>
@@ -63,22 +68,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a classifier=tests jar-->
-							<!-- helpful for integration tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 </project>

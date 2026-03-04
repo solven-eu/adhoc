@@ -12,21 +12,10 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>Manage access_token and refresh_token</description>
 
-	<!--    <build>-->
-	<!--        <plugins>-->
-	<!--            <plugin>-->
-	<!--                <groupId>org.springframework.boot</groupId>-->
-	<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
-	<!--                <configuration>-->
-	<!--                    <classifier>exec</classifier>-->
-	<!--                </configuration>-->
-	<!--            </plugin>-->
-	<!--        </plugins>-->
-	<!--    </build>-->
-
 	<properties>
 		<jacoco.branch.ratio>0.43</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.43</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.pivotable.authorization</automatic.module.name>
 	</properties>
 
 	<dependencies>

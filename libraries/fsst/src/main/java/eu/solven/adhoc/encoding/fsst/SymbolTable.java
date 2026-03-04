@@ -24,7 +24,7 @@ package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
 
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import lombok.Getter;

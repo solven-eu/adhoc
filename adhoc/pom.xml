@@ -16,6 +16,9 @@
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
+
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -242,22 +245,4 @@
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a classifier=tests jar-->
-							<!-- helpful for integration tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 </project>
