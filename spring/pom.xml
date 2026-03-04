@@ -13,6 +13,7 @@
 
 	<properties>
 		<cucumber.version>7.14.0</cucumber.version>
+		<automatic.module.name>eu.solven.adhoc.spring</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -49,5 +50,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
 </project>

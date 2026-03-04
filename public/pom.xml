@@ -11,6 +11,10 @@
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 
+	<properties>
+		<automatic.module.name>eu.solven.adhoc.api</automatic.module.name>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>

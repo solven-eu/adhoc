@@ -114,6 +114,7 @@
 
 		<!-- https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
 		<customArgLine />
+		<automatic.module.name />
 		<!-- \-\-add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED is for arrow -->
 		<!-- https://arrow.apache.org/java/current/install.html -->
 		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError --add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED ${customArgLine}</argLine>
@@ -139,7 +140,19 @@
 			<plugins>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-compiler-plugin</artifactId>
+					<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Automatic-Module-Name>${automatic.module.name}</Automatic-Module-Name>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
 					<configuration>
 						<annotationProcessorPaths>
 							<!-- https://projectlombok.org/setup/maven -->

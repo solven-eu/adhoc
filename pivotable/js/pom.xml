@@ -15,6 +15,7 @@
 	<properties>
 		<!-- Workaround `groups/excludedGroups require TestNG, JUnit48+ or JUnit 5 (a specific engine required on classpath) on project test classpath` -->
 		<maven.test.skip>true</maven.test.skip>
+		<automatic.module.name>eu.solven.adhoc.pivotable.js</automatic.module.name>
 	</properties>
 
 	<build>

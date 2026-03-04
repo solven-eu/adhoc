@@ -17,6 +17,7 @@
 
 		<jacoco.branch.ratio>0.60</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.60</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.atoti</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -67,5 +68,4 @@
 		</dependency>
 
 	</dependencies>
-
 </project>
