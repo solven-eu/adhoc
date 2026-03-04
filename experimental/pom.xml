@@ -15,6 +15,10 @@
 		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.17</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.experimental</automatic.module.name>
+
+		<!-- \-\-add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED is for arrow -->
+		<!-- https://arrow.apache.org/java/current/install.html -->
+		<customArgLine>--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED</customArgLine>
 	</properties>
 
 	<dependencyManagement>

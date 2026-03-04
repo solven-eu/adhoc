@@ -11,6 +11,10 @@
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
 
+	<properties>
+		<automatic.module.name>eu.solven.adhoc.dataframe</automatic.module.name>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.google.guava</groupId>

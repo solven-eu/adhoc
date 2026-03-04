@@ -239,13 +239,14 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		});
 
 		Stream<ICubeWrapper> cubeStream = cubes.stream();
-		
+
 		// `.getColumnsAsMap` can be slow, so we consider concurrency
 		if (StandardQueryOptions.CONCURRENT.isActive(compositeQuery.getOptions())) {
 			cubeStream = cubeStream.parallel();
 		}
-		
-		// Due to concurrency, we can not stop early as soon as we confirmed all columns as known by at least one subCube
+
+		// Due to concurrency, we can not stop early as soon as we confirmed all columns as known by at least one
+		// subCube
 		cubeStream.forEach(cube -> {
 			Set<String> cubeColumns = cube.getColumnsAsMap().keySet();
 			groupedByColumns.removeAll(cubeColumns);

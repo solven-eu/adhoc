@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,7 +37,7 @@ import lombok.RequiredArgsConstructor;
  * @author Benoit Lacelle
  */
 // Not thread-safe due to shared encBuf
-@NotThreadSafe
+// @NotThreadSafe
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 final class SymbolTableTraining implements IFsstConstants {

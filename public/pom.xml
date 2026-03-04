@@ -12,7 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<automatic.module.name>eu.solven.adhoc.api</automatic.module.name>
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc.meta</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -42,22 +43,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a classifier=tests jar-->
-							<!-- helpful for integration tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 </project>
