@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.fsst.IFsstConstants;
@@ -70,7 +71,7 @@ public class SimplePerfectHash<T> implements IHasIndexOf<T>, IImmutable {
 		}
 
 		if (n == 0) {
-			return SimplePerfectHash.<T>builder().table(List.of()).mask(0).remapped(new int[] { 0 }).build();
+			return SimplePerfectHash.<T>builder().table(ImmutableList.of()).mask(0).remapped(new int[] { 0 }).build();
 		}
 
 		List<T> keyList = new ArrayList<>(keys);

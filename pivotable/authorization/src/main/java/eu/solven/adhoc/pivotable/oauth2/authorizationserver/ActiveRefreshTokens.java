@@ -28,6 +28,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * Keep track of active tokens.
  * 
@@ -41,6 +43,6 @@ public class ActiveRefreshTokens {
 	}
 
 	public Set<UUID> getActiveTokens(UUID accountId) {
-		return accountIdToJti.getOrDefault(accountId, Set.of());
+		return accountIdToJti.getOrDefault(accountId, ImmutableSet.of());
 	}
 }

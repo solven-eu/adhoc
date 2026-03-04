@@ -43,13 +43,19 @@
 
 ## Collections & Data Structures
 
-- **Maintain insertion order**: prefer `LinkedHashSet` over `HashSet`, `LinkedHashMap` over `HashMap`.
-  - Watch for `.collect(Collectors.toSet())` which does not maintain order; use `.collect(Collectors.toCollection(LinkedHashSet::new))` instead.
-- **Prefer Guava immutable collections** over JDK factories:
-  - `ImmutableList.of(…)` instead of `List.of(…)`
-  - `ImmutableSet.of(…)` instead of `Set.of(…)`
+- **Immutability first**: when the resulting collection is not modified after construction, prefer Guava immutable collections over mutable ones.
+  - `ImmutableSet.of(…)` instead of `new LinkedHashSet<>(…)` or `Set.of(…)`
+  - `ImmutableList.of(…)` instead of `new ArrayList<>(…)` or `List.of(…)`
+  - `.collect(ImmutableSet.toImmutableSet())` instead of `.collect(Collectors.toSet())` or `.collect(Collectors.toCollection(LinkedHashSet::new))`
   - Note: `List.of().contains(null)` throws; Guava equivalents behave consistently.
   - Exception: unit tests may use JDK factories for conciseness.
+- **Ordered mutability when mutation is needed**: when a collection must be mutated after construction, prefer insertion-ordered types over unordered ones.
+  - `LinkedHashSet` over `HashSet`
+  - `LinkedHashMap` over `HashMap`
+  - `.collect(Collectors.toCollection(LinkedHashSet::new))` over `.collect(Collectors.toSet())`
+- **Prefer Guava immutable collections** over JDK factories (applies even for literal constructions):
+  - `ImmutableList.of(…)` instead of `List.of(…)`
+  - `ImmutableSet.of(…)` instead of `Set.of(…)`
 
 ---
 

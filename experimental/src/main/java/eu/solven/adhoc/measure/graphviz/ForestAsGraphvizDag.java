@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -56,9 +58,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ForestAsGraphvizDag {
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOSHAPE =
-			List.of(Map.entry(Partitionor.class, "star"));
+			ImmutableList.of(Map.entry(Partitionor.class, "star"));
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOCOLOR =
-			List.of(Map.entry(Partitionor.class, "yellow"),
+			ImmutableList.of(Map.entry(Partitionor.class, "yellow"),
 					Map.entry(Filtrator.class, "grey"),
 					Map.entry(Combinator.class, "cyan"));
 
