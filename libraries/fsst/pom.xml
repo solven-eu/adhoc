@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.17</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.77</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.86</jacoco.instruction.ratio>
 
 		<testJarPhase>package</testJarPhase>
 		<automatic.module.name>eu.solven.adhoc.fsst</automatic.module.name>

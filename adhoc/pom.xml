@@ -14,8 +14,8 @@
 	<properties>
 		<cucumber.version>7.23.0</cucumber.version>
 
-		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.78</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.85</jacoco.instruction.ratio>
 
 		<testJarPhase>package</testJarPhase>
 		<automatic.module.name>eu.solven.adhoc</automatic.module.name>
