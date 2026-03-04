@@ -23,7 +23,7 @@
 		<spotbugs.skip>true</spotbugs.skip>
 
 		<!-- TODO modularization leads to `ERROR: Unable to find the resource: /META-INF/BenchmarkList` -->
-		<!--		<automatic.module.name>eu.solven.adhoc.jmh</automatic.module.name>-->
+		<automatic.module.name>eu.solven.adhoc.jmh</automatic.module.name>
 	</properties>
 
 	<dependencies>
