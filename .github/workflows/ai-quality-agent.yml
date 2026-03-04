@@ -2,7 +2,7 @@ name: AI Code Quality Agent
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # nightly at 02:00 UTC
+    - cron: '0 4 * * 1'  # weekly on Monday at 04:00 UTC
   workflow_dispatch:
     inputs:
       scope:
@@ -33,27 +33,27 @@ jobs:
       changed: ${{ steps.detect-changes.outputs.changed }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: master
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: '21'
           distribution: temurin
       # Workflow-scoped cache avoids cross-workflow cache pollution.
       # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
       - name: Cache Maven local repository
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: ~/.m2/repository
           key: maven-ai-quality-format-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             maven-ai-quality-format-${{ runner.os }}-
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: lts/*
 
@@ -100,7 +100,7 @@ jobs:
       changed: ${{ steps.detect-changes.outputs.changed }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: master
           fetch-depth: 0
@@ -116,21 +116,21 @@ jobs:
           fi
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           java-version: '21'
           distribution: temurin
       # Workflow-scoped cache avoids cross-workflow cache pollution.
       # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
       - name: Cache Maven local repository
-        uses: actions/cache@v5
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: ~/.m2/repository
           key: maven-ai-quality-review-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             maven-ai-quality-review-${{ runner.os }}-
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: lts/*
 
@@ -157,8 +157,33 @@ jobs:
           fi
 
           cat > /tmp/claude-prompt.txt << EOF
-          Apply the code quality improvements described in CLAUDE.md to at most 20 Java source
-          files under ${SCOPE} (non-test files only). Do NOT commit.
+          Apply the code quality improvements described in CLAUDE.md to Java source files
+          under ${SCOPE} (non-test files only). Do NOT commit.
+
+          DISCOVERY STRATEGY:
+          1. Read CLAUDE.md to understand every improvement category.
+          2. From those categories, derive Grep patterns and run them in as few passes as
+             possible across ${SCOPE}. A few examples to seed your thinking (not exhaustive):
+               "Set\.of\("  ->  ImmutableSet.of
+               "new HashMap\b"  ->  LinkedHashMap
+             Score each file by total match count and prefer files with the most hits.
+          3. Also run: git log --diff-filter=M --name-only -50 -- ${SCOPE}
+             Recently-touched files are higher priority than untouched ones.
+          4. Merge both signals, then open and edit the highest-impact files.
+             Do NOT read a file before it is selected as a candidate.
+          5. While editing, stay alert for recurring anti-patterns not yet in CLAUDE.md.
+
+          DISCOVERIES FILE:
+          After finishing all edits, write (or overwrite) .github/ai-quality-discoveries.md
+          with every pattern you encountered during this run — whether it was already in
+          CLAUDE.md or newly discovered. For each entry record:
+            - Pattern name / short description
+            - Example: one representative file + line
+            - Occurrences found (approximate count)
+            - Status: "applied" | "known (already in CLAUDE.md)" | "skipped — needs human review"
+            - For "skipped" entries: a one-line rationale explaining why you did not auto-apply it
+          This file is committed with the PR so a human reviewer can promote confirmed patterns
+          to CLAUDE.md or discard false positives.
           EOF
 
       - name: Run Claude AI review
@@ -193,7 +218,7 @@ jobs:
     if: ${{ !failure() && !cancelled() && (needs.auto-format.outputs.changed == 'true' || needs.ai-review.outputs.changed == 'true') }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: master
 
@@ -228,6 +253,7 @@ jobs:
           - [ ] CI passes (Build, Spotless, Static Analysis)
           - [ ] No unintended logic changes
           - [ ] Javadoc is accurate and meaningful
+          - [ ] Review \`.github/ai-quality-discoveries.md\` — promote confirmed new patterns to \`CLAUDE.md\`, discard false positives
           " \
             --base master \
             --head "$BRANCH" \

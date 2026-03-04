@@ -43,7 +43,7 @@ import eu.solven.adhoc.engine.AdhocTestHelper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;

@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-libraries</artifactId>
@@ -16,5 +16,11 @@
 	<modules>
 		<module>fsst</module>
 		<module>encoding</module>
+
+		<module>measures</module>
+		<module>filters</module>
+
+		<module>dataframe</module>
+		<module>cell</module>
 	</modules>
 </project>

@@ -23,7 +23,7 @@
 package eu.solven.adhoc;
 
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.table.InMemoryTable;
 
 /**

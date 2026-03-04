@@ -60,7 +60,7 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 		PlayersEvents t;
 
 		@Override
-		public void acceptValueReceiver(IValueReceiver valueReceiver) {
+		public void acceptReceiver(IValueReceiver valueReceiver) {
 			valueReceiver.onObject(t);
 		}
 	}

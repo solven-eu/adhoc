@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-public</artifactId>
@@ -20,7 +20,7 @@
 		<dependency>
 			<!-- IValueMatcher-->
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc-public</artifactId>
+			<artifactId>adhoc-filters</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

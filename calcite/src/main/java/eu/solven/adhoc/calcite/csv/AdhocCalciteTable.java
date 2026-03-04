@@ -176,9 +176,9 @@ public class AdhocCalciteTable extends AbstractQueryableTable implements Transla
 			public Enumerator<Object> enumerator() {
 				final Iterator<? extends ITabularRecord> resultIterator;
 				try {
-					ITabularView result = cube.execute(CubeQuery.edit(query).options(queryOptions).build());
+					ITabularView view = cube.execute(CubeQuery.edit(query).options(queryOptions).build());
 
-					resultIterator = result.stream(slice -> {
+					resultIterator = view.stream(slice -> {
 						return v -> TabularRecordOverMaps.builder().slice(slice).aggregates((Map<String, ?>) v).build();
 					}).iterator();
 				} catch (Exception e) {

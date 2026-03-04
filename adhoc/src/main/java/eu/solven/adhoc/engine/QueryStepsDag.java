@@ -35,7 +35,7 @@ import org.jgrapht.graph.DirectedMultigraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
@@ -81,7 +81,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 
 	@NonNull
 	@Singular
-	ImmutableMap<CubeQueryStep, ISliceToValue> stepToValues;
+	ImmutableMap<CubeQueryStep, ICuboid> stepToValues;
 
 	public List<CubeQueryStep> underlyingSteps(CubeQueryStep queryStep) {
 		if (queryStep.getMeasure() instanceof ReferencedMeasure refMeasure) {

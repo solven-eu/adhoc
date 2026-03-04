@@ -38,10 +38,10 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
+import eu.solven.adhoc.collection.ComparableElseClassComparator;
 
 /**
- * Benchmarks related with {@link ComparableElseClassComparatorV2}.
+ * Benchmarks related with {@link ComparableElseClassComparator}.
  * 
  * @author Benoit Lacelle
  */
@@ -54,7 +54,7 @@ import eu.solven.adhoc.map.ComparableElseClassComparatorV2;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkComparableElseClassComparatorV2 {
 
-	private ComparableElseClassComparatorV2 comparator = new ComparableElseClassComparatorV2();
+	private ComparableElseClassComparator comparator = new ComparableElseClassComparator();
 
 	private String c1 = "c1";
 	private String c2 = "c2";

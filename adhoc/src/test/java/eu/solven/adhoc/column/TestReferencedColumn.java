@@ -33,8 +33,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.resource.AdhocJackson;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
 import lombok.Builder;
 import lombok.Value;
@@ -52,7 +53,7 @@ public class TestReferencedColumn {
 
 	@Test
 	public void testJackson_rawFormat() throws JsonProcessingException {
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
 		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
 		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
@@ -66,7 +67,7 @@ public class TestReferencedColumn {
 	@Disabled("Irrelevant as the type is converted by default into a String, which is not convertible into a Map")
 	@Test
 	public void testJackson_asMap() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		ReferencedColumn initial = ReferencedColumn.ref("someColumn");
 		Map asMap = om.convertValue(initial, Map.class);
@@ -79,14 +80,14 @@ public class TestReferencedColumn {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	@Test
 	public void testJackson_asMap_wrappedInGroupByColumns() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
-		IAdhocGroupBy initial = GroupByColumns.of(ReferencedColumn.ref("someColumn"));
+		IGroupBy initial = GroupByColumns.of(ReferencedColumn.ref("someColumn"));
 		Map asMap = om.convertValue(initial, Map.class);
 
 		Assertions.assertThat(asMap).hasSize(1).containsEntry("columns", Arrays.asList("someColumn"));
 
-		IAdhocGroupBy fromMap = om.convertValue(asMap, IAdhocGroupBy.class);
+		IGroupBy fromMap = om.convertValue(asMap, IGroupBy.class);
 
 		Assertions.assertThat(fromMap).isEqualTo(initial);
 	}
@@ -101,7 +102,7 @@ public class TestReferencedColumn {
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	@Test
 	public void testJackson_asMap_wrappedInPojo() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		HasColumn initial = HasColumn.builder().c(ReferencedColumn.ref("someColumn")).build();
 		Map asMap = om.convertValue(initial, Map.class);
@@ -116,7 +117,7 @@ public class TestReferencedColumn {
 	@Disabled("Irrelevant as Map does not hint the embedded type")
 	@Test
 	public void testJackson_asMap_wrappedInMap() throws JsonProcessingException {
-		ObjectMapper om = new ObjectMapper();
+		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> initial = Map.of("k", Arrays.asList(ReferencedColumn.ref("someColumn")));
 		Map asMap = om.convertValue(initial, Map.class);

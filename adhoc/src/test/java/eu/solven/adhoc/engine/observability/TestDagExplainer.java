@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine.observability;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -38,7 +37,7 @@ import eu.solven.adhoc.engine.IQueryStepsDagBuilder;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -99,7 +98,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
-		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
 				\\-- #1 m=k(SUM) filter=matchAll groupBy=grandTotal""");
 	}
@@ -124,7 +123,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
-		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
 				\\-- #1 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
@@ -151,7 +150,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
-		Assertions.assertThat(messagesExplain.stream().collect(Collectors.joining("\n"))).isEqualTo("""
+		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
 				|\\- #1 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
 				|   |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal

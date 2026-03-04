@@ -76,9 +76,9 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
-import eu.solven.pepper.mappath.MapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -230,7 +230,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 		String tableName;
 		if (options.containsKey("tableName")) {
-			tableName = MapPathGet.getRequiredString(options, "tableName");
+			tableName = AdhocMapPathGet.getRequiredString(options, "tableName");
 			parametersBuilder.tableName(tableName);
 		} else {
 			tableName = "someTableName";
@@ -256,6 +256,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		makeDsl().connection(c -> {
 			if (c.getAutoCommit()) {
 				// Performance check-up
+				// BEWARE ClickHouse seems not to allow autoCommit false
 				log.warn("autoCommit should not be true. connection={}", c);
 			}
 		});

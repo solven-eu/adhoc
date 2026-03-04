@@ -25,6 +25,8 @@ package eu.solven.adhoc.table;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
@@ -56,6 +58,6 @@ public class EmptyTableWrapper implements ITableWrapper {
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
-		return List.of();
+		return ImmutableList.of();
 	}
 }

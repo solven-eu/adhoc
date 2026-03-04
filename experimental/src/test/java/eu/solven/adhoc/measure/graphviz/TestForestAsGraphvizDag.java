@@ -25,11 +25,10 @@ package eu.solven.adhoc.measure.graphviz;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
-import eu.solven.adhoc.measure.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.examples.RatioOverCurrentColumnValueCompositor;
 import eu.solven.adhoc.measure.examples.RatioOverSpecificColumnValueCompositor;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -77,7 +76,7 @@ public class TestForestAsGraphvizDag {
 	public void testDeepCombinator() {
 		ForestAsGraphvizDag graphviz = ForestAsGraphvizDag.builder().build();
 
-		MeasureForestBuilder measureForestBuilder =
+		MeasureForest.MeasureForestBuilder measureForestBuilder =
 				MeasureForest.builder().name(this.getClass().getSimpleName()).measure(Aggregator.countAsterisk());
 
 		String baseName = Aggregator.countAsterisk().getName();
@@ -118,7 +117,8 @@ public class TestForestAsGraphvizDag {
 	public void testRatioOverSpecificColumnValueCompositor() {
 		ForestAsGraphvizDag graphviz = ForestAsGraphvizDag.builder().build();
 
-		MeasureForestBuilder measureForestBuilder = MeasureForest.builder().name(this.getClass().getSimpleName());
+		MeasureForest.MeasureForestBuilder measureForestBuilder =
+				MeasureForest.builder().name(this.getClass().getSimpleName());
 
 		measureForestBuilder.measure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
 
@@ -146,7 +146,8 @@ public class TestForestAsGraphvizDag {
 	public void testRatioOverCurrentColumnValueCompositor() {
 		ForestAsGraphvizDag graphviz = ForestAsGraphvizDag.builder().build();
 
-		MeasureForestBuilder measureForestBuilder = MeasureForest.builder().name(this.getClass().getSimpleName());
+		MeasureForest.MeasureForestBuilder measureForestBuilder =
+				MeasureForest.builder().name(this.getClass().getSimpleName());
 
 		measureForestBuilder.measure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
 

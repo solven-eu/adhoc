@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -36,13 +36,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 
-	protected IFilterOptimizer makeFilterOptimizer(AdhocFactories factories) {
+	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
 		// WithCache as this optimizer will be used for a single query
 		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 	}
 
 	@Override
-	public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
+	public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
 		if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER)) {
 			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 			return new TableQueryOptimizerNone(factories, filterOptimizer);
@@ -57,7 +57,7 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 		}
 	}
 
-	protected ITableQueryOptimizer makeOptimizer(AdhocFactories factories) {
+	protected ITableQueryOptimizer makeOptimizer(IAdhocFactories factories) {
 		// WithCache as this optimize will be used for a single query
 		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 		return new TableQueryOptimizer(factories, filterOptimizer);

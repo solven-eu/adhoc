@@ -35,12 +35,14 @@ This repository includes 2 products:
 - [DAX](https://learn.microsoft.com/en-us/dax/dax-overview) enables complex queries in Microsoft eco-system.
 - [SquashQL](https://www.squashql.io/) is an SQL query-engine for OLAP, with a strong emphasis on its typescript UI.
 - [Atoti PostProcessors](https://docs.activeviam.com/products/atoti/server/6.1.1/docs/cube/postprocessors/) is the standard Atoti way of building complex tree of measures on top of Atoti cubes.
+- [Atoti DirectQuery](https://docs.activeviam.com/products/atoti/server/6.1/docs/directquery/getting_started/) enables Atoti to query an external Database instead of querying in own InMemory cubes.
 
 ### Similar but not drop-in replacement projects
 
 - [Drill](https://drill.apache.org/): much stronger to be queried in SQL by BI Tools. Unclear strategy to define a large tree of measures.
 - [Cube.js](https://cube.dev/docs/guides/recipes/data-modeling/filtered-aggregates), but ability to define a large tree of complex measure may not be sustainable.
 - [DBT Metrics](https://docs.getdbt.com/docs/build/metrics-overview), but ability to define a large tree of complex measure may not be sustainable.
+- [Polars](https://pola.rs/) enables data-processing on a single machine.
 
 # Quick-start
 
@@ -58,8 +60,8 @@ CPU: any JVM can run Adhoc. If multiple cores are available, Adhoc will takes ad
 Assuming your data is queryable with JooQ:
 
 ```
-myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-        .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+myTableWrapper = new JooqTableWrapper(JooqTableWrapperParameters.builder()
+        .dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
         .table(yourJooqTableLike)
         .build());
 ```
@@ -67,8 +69,8 @@ myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.build
 For local `.parquet` files, it can be done with:
 
 ```
-myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-        .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+myTableWrapper = new JooqTableWrapper(JooqTableWrapperParameters.builder()
+        .dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
         .table(DSL.table(DSL.unquotedName("read_parquet('myRootFolder/2025-*-BaseFacts_*.parquet', union_by_name=True)")))
         .build());
 ```
@@ -106,7 +108,7 @@ CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.even
 ITabularView view = engine.execute(CubeQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
 MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+Assertions.assertThat(mapBased.keySet().map(SliceAsMap::getCoordinates).toList())
         .containsExactly(Map.of());
 Assertions.assertThat(mapBased.getCoordinatesToValues())
         .containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
@@ -178,8 +180,8 @@ Adhoc is not a database, it is a query engine. It knows how to execute complex K
 
 Typical tables are:
 
-- CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlTable](JooqSqlTable).
-- Any SQL table: you should rely on [JooqSqlTable](JooqSqlTable), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
+- CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqTableWrapper](JooqTableWrapper).
+- Any SQL table: you should rely on [JooqTableWrapper](JooqTableWrapper), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
 - ActivePivot/Atoti
 - Your own Database implementing `ITableWrapper`
 
@@ -208,7 +210,7 @@ In case of a table with `JOIN`s, one would often encounter ambiguities when quer
 
 In such a case, one can resolve ambiguities by resolving them in a `ITableWrapper`. For instance:
 ```java
-MapTableTranscoder.builder()
+MapTableAliaser.builder()
     .queriedToUnderlying("someColumn", "someTable.someColumn")
     .build()
 ```
@@ -234,7 +236,7 @@ Measures are evaluated for a slice, defined by the `groupBy` and the `filter` of
 
 - Combinator neither change the `groupBy` nor the `filter`.
 - Filtrator adds a `filter`, AND-ed with node own `filter`.
-- Bucketor adds a `groupBy`, UNION-ed with node own `groupBy`.
+- Partitionor adds a `groupBy`, UNION-ed with node own `groupBy`.
 
 ### Aggregation Functions
 
@@ -262,7 +264,7 @@ On top of aggregated-measures, one can define transformators.
 
 - Combinator: the simplest transformation evaluate a formula over underlying measures. (e.g. `sumMeasure=a+b`).
 - Filtrator: evaluate underlying measure with a coordinate when the filter is enforced. The node `filter` is AND-ed with the `measure` filter. Hence, if the query filters `country=France` and the filtrator filters `country=Germany`, then the result is empty.
-- Bucketor: evaluates the underlying measures with an additional groupBy, then aggregates up to the node granularity.
+- Partitionor: evaluates the underlying measures with an additional groupBy, then aggregates up to the node granularity.
 - Dispatchor: given an cell, it will contribute into multiple cells. Useful for `many-to-many` or `rebucketing`.
 
 # Many-to-many
@@ -464,7 +466,7 @@ A `IValueMatcher` applies to any `Object`. The variety of `IValueMatcher` is qui
 
 ## Implementing custom operators
 
-Adhoc provides a `StandardOperatorsFactory` including generic operators (e.g. `SUM`). 
+Adhoc provides a `StandardOperatorFactory` including generic operators (e.g. `SUM`).
 
 - It can refer to custom operators by referring them by their `Class.getName()` as key.
 - Your custom `IAggregation`/`ICombination`/`IDecomposition`/`IFilterEditor` should then have:
@@ -474,8 +476,8 @@ Adhoc provides a `StandardOperatorsFactory` including generic operators (e.g. `S
 One may also define a custom `IOperatorsFactory`:
 
 - by extending it
-- by creating your own `IOperatorsFactory` and combining with `CompositeOperatorsFactory`
-- by adding a fallback strategy with `DummyOperatorsFactory`
+- by creating your own `IOperatorsFactory` and combining with `CompositeOperatorFactory`
+- by adding a fallback strategy with `DummyOperatorFactory`
 
 ## About performance
 

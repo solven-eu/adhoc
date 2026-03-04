@@ -31,11 +31,11 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -230,7 +230,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		}
 
 		// Simulate the registration of a value in the cache
-		ISliceToValue sliceToValue = SliceToValue.empty();
+		ICuboid sliceToValue = Cuboid.empty();
 		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getExplicits()), sliceToValue));
 		Assertions.assertThat(queryStepCache.map).hasSize(1);
 
@@ -278,7 +278,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		}
 
 		// Simulate the registration of a value in the cache
-		ISliceToValue sliceToValue = SliceToValue.empty();
+		ICuboid sliceToValue = Cuboid.empty();
 		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getExplicits()), sliceToValue));
 		Assertions.assertThat(queryStepCache.map).hasSize(1);
 
@@ -330,7 +330,7 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 		}
 
 		// Simulate the registration of a value in the cache
-		ISliceToValue sliceToValue = SliceToValue.empty();
+		ICuboid sliceToValue = Cuboid.empty();
 		queryStepCache.pushValues(Map.of(Iterables.getOnlyElement(dagPre.getExplicits()), sliceToValue));
 		Assertions.assertThat(queryStepCache.map).hasSize(1);
 

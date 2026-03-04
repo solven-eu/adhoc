@@ -34,8 +34,8 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
@@ -93,7 +93,7 @@ public class RelevancyHeuristic {
 		measures.forEach(m -> {
 			if (m instanceof IHasUnderlyingNames underlyings) {
 				underlyings.getUnderlyingNames()
-						.forEach(underlying -> measureToDependants.get(underlying).add(m.getName()));
+						.forEach(underlying -> measureToDependants.put(underlying, m.getName()));
 			} else {
 				leaves.add(m.getName());
 			}

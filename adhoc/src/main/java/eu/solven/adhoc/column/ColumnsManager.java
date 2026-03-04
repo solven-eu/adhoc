@@ -31,6 +31,7 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.event.Level;
@@ -58,7 +59,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -77,6 +78,7 @@ import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
 import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 import eu.solven.adhoc.util.AdhocBlackHole;
+import eu.solven.adhoc.util.IHasName;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -164,7 +166,7 @@ public class ColumnsManager implements IColumnsManager {
 			});
 		}
 
-		IAdhocGroupBy groupByIncludingPostFilterColumns;
+		IGroupBy groupByIncludingPostFilterColumns;
 
 		{
 			Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
@@ -220,15 +222,17 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	protected Set<String> getFiltrableCalculatedColumns(TableQueryV2 query) {
-		Set<String> calculatedColumns = new TreeSet<>();
-		this.calculatedColumns.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
-		query.getGroupBy()
+		Set<String> calculatedColumns = this.calculatedColumns.stream()
+				.map(ICalculatedColumn::getName)
+				.collect(Collectors.toCollection(TreeSet::new));
+		calculatedColumns.addAll(query.getGroupBy()
 				.getNameToColumn()
 				.values()
 				.stream()
 				.filter(c -> c instanceof ICalculatedColumn
 						&& !(c instanceof FunctionCalculatedColumn f && f.isSkipFiltering()))
-				.forEach(calculatedColumn -> calculatedColumns.add(calculatedColumn.getName()));
+				.map(IHasName::getName)
+				.toList());
 		return calculatedColumns;
 	}
 
@@ -315,7 +319,7 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	protected ITabularRecord evaluateCalculated(AliasingContext transcodingContext, ITabularRecord row) {
-		Map<String, FunctionCalculatedColumn> columns = transcodingContext.getNameToCalculated();
+		Map<String, ICalculatedColumn> columns = transcodingContext.getNameToCalculated();
 
 		if (columns.isEmpty()) {
 			return row;
@@ -369,7 +373,7 @@ public class ColumnsManager implements IColumnsManager {
 		return MoreFilterHelpers.transcodeFilter(customTypeManager, tableTranscoder, filter);
 	}
 
-	protected IAdhocGroupBy transcodeGroupBy(AliasingContext aliasingContext, IAdhocGroupBy groupBy) {
+	protected IGroupBy transcodeGroupBy(AliasingContext aliasingContext, IGroupBy groupBy) {
 		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();
 
 		List<IAdhocColumn> transcoded = nameToColumn.values()
@@ -424,7 +428,7 @@ public class ColumnsManager implements IColumnsManager {
 			Set<FilteredAggregator> aggregators) {
 		return aggregators.stream().map(filteredAggregator -> {
 			Aggregator aggregator = filteredAggregator.getAggregator();
-			Aggregator transcodedAggregator = Aggregator.edit(aggregator)
+			Aggregator transcodedAggregator = aggregator.toBuilder()
 					.columnName(transcodingContext.underlying(aggregator.getColumnName()))
 					.build();
 			return filteredAggregator.toBuilder()
@@ -473,7 +477,7 @@ public class ColumnsManager implements IColumnsManager {
 		if (aliaser instanceof IHasAliasedColumns hasAliasedColumns) {
 			return hasAliasedColumns.getAlias();
 		} else {
-			return Set.of();
+			return ImmutableSet.of();
 		}
 	}
 

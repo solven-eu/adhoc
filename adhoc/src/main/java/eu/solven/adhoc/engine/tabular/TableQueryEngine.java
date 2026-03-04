@@ -24,8 +24,9 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -61,7 +62,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	@NonNull
 	@Default
 	@Getter
-	final AdhocFactories factories = AdhocFactories.builder().build();
+	final IAdhocFactories factories = AdhocFactories.builder().build();
 
 	@NonNull
 	@Default
@@ -72,7 +73,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	final ITableQueryOptimizerFactory optimizerFactory = new TableQueryOptimizerFactory();
 
 	@Override
-	public Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+	public Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
 	}
 

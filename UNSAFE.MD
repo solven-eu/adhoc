@@ -9,6 +9,12 @@ Various inner parameters can be customized through static variables.
 Enables:
 - Clearing cross-queries caches related to `.retainAll`
 
+## AdhocFilterUnsafe
+
+Enables:
+- Custom default `IFilterOptimizer`
+- Custom default `IFilterStripperFactory`
+
 ## AdhocFactoriesUnsafe
 
 Enables:

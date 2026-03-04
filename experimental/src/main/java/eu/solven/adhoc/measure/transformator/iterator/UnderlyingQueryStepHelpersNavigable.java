@@ -23,21 +23,20 @@
 package eu.solven.adhoc.measure.transformator.iterator;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.data.column.SliceAndMeasure;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -64,16 +63,16 @@ public class UnderlyingQueryStepHelpersNavigable {
 	 * @return the union-Set of slices
 	 */
 	public static Stream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
-			List<? extends ISliceToValue> underlyings) {
+			List<? extends ICuboid> underlyings) {
 		boolean debug = queryStep.isDebug();
 
 		if (!debug && underlyings.size() == 1) {
 			// Fast track
-			ISliceToValue underlying = underlyings.getFirst();
+			ICuboid underlying = underlyings.getFirst();
 			return underlying.stream().map(slice -> {
 				Object value = IValueProvider.getValue(slice.getValueProvider());
 
-				return SliceAndMeasures.from(slice.getSlice(), queryStep, Collections.singletonList(value));
+				return SliceAndMeasures.from(slice.getSlice(), queryStep, List.of(value));
 			});
 		}
 
@@ -89,18 +88,16 @@ public class UnderlyingQueryStepHelpersNavigable {
 			if (underlyings.isEmpty()) {
 				notSortedAsSet = ImmutableSet.of();
 			} else if (underlyings.size() == 1) {
-				notSortedAsSet = underlyings.iterator().next().slicesSet();
+				notSortedAsSet = Iterables.getOnlyElement(underlyings).slicesSet();
 			} else {
-				notSortedAsSet = underlyings.stream()
-						.flatMap(ISliceToValue::slices)
-						.collect(Collectors.toCollection(LinkedHashSet::new));
+				notSortedAsSet = underlyings.stream().flatMap(ICuboid::slices).collect(ImmutableSet.toImmutableSet());
 			}
 
 			int size = underlyings.size();
 			return notSortedAsSet.stream().map(sliceAsMap -> {
 				List<Object> underlyingVs = new ArrayList<>(size);
 				for (int i = 0; i < size; i++) {
-					underlyingVs.add(ISliceToValue.getValue(underlyings.get(i), sliceAsMap));
+					underlyingVs.add(ICuboid.getValue(underlyings.get(i), sliceAsMap));
 				}
 
 				return SliceAndMeasures.from(sliceAsMap, queryStep, underlyingVs);
@@ -108,11 +105,11 @@ public class UnderlyingQueryStepHelpersNavigable {
 
 		} else {
 			// All underlyings are sorted (typically from MultitypeColumnNavigable)
-			List<ISliceToValue> sorted = new ArrayList<>();
+			List<ICuboid> sorted = new ArrayList<>();
 
-			for (ISliceToValue slices : underlyings) {
+			for (ICuboid slices : underlyings) {
 				if (slices.isEmpty()) {
-					sorted.add(SliceToValue.empty());
+					sorted.add(Cuboid.empty());
 				} else {
 					sorted.add(slices);
 				}
@@ -126,11 +123,11 @@ public class UnderlyingQueryStepHelpersNavigable {
 	 * 
 	 * @param queryStep
 	 * @param sorted
-	 *            {@link ISliceToValue} required to be sorted.
-	 * @return a merged {@link Stream}, based on the input sorted ISliceToValue
+	 *            {@link ICuboid} required to be sorted.
+	 * @return a merged {@link Stream}, based on the input sorted ICuboid
 	 */
 	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
-			List<? extends ISliceToValue> sorted) {
+			List<? extends ICuboid> sorted) {
 		List<Iterator<SliceAndMeasure<IAdhocSlice>>> sortedIterators = sorted.stream().peek(s -> {
 			if (!s.isSorted()) {
 				throw new IllegalArgumentException(

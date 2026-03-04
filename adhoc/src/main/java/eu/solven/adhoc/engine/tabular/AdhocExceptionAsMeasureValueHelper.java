@@ -32,7 +32,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.experimental.UtilityClass;
@@ -52,7 +52,7 @@ public class AdhocExceptionAsMeasureValueHelper {
 	}
 
 	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
-		return SliceAsMap.fromMap(asMap(columns));
+		return SliceHelpers.asSlice(asMap(columns));
 	}
 
 	public static ITabularRecordStream makeErrorStream(TableQueryV2 transcodedQuery, Throwable e) {
@@ -63,9 +63,8 @@ public class AdhocExceptionAsMeasureValueHelper {
 				TabularRecordOverMapsBuilder errorRecordBuilder = TabularRecordOverMaps.builder();
 
 				NavigableSet<String> groupedByColumns = transcodedQuery.getGroupBy().getGroupedByColumns();
-				Map<String, ?> errorSlice = asMap(groupedByColumns);
 
-				errorRecordBuilder.slice(SliceAsMap.fromMap(errorSlice));
+				errorRecordBuilder.slice(asSlice(groupedByColumns));
 				transcodedQuery.getAggregators().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));
 
 				ITabularRecord errorRecord = errorRecordBuilder.build();

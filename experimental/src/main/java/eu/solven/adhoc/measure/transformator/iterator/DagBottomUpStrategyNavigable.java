@@ -27,9 +27,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.column.MultitypeArray;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
@@ -37,7 +37,6 @@ import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 
 /**
  * Relies on {@link MultitypeNavigableColumn} by default, and {@link UnderlyingQueryStepHelpersNavigable} to merge
@@ -75,7 +74,7 @@ public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 	}
 
 	@Override
-	public Stream<SliceAndMeasures> distinctSlices(CubeQueryStep step, List<? extends ISliceToValue> underlyings) {
+	public Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
 		return UnderlyingQueryStepHelpersNavigable.distinctSlices(step, underlyings);
 	}
 

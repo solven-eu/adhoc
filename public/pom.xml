@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-public</artifactId>
@@ -39,4 +39,21 @@
 		</dependency>
 	</dependencies>
 
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<!-- Provides a classifier=tests jar-->
+							<!-- helpful for integration tests or benchmarks-->
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

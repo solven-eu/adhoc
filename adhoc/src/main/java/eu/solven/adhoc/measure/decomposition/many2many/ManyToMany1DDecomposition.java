@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.decomposition.many2many;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +52,8 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.NotYetImplementedException;
-import eu.solven.pepper.mappath.MapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -93,8 +92,8 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		this.options = options;
 		this.manyToManyDefinition = manyToManyDefinition;
 
-		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String elementColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		if (elementColumn.equals(groupColumn)) {
 			throw new UnsupportedOperationException("TODO This case requires specific behaviors and unitTests");
@@ -103,7 +102,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
+		String elementColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
 
 		Optional<?> optInput = slice.getSlice().optGroupBy(elementColumn);
 		if (optInput.isEmpty()) {
@@ -119,7 +118,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 		Set<Object> groups = getGroups(slice, element);
 
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		return makeDecomposition(element,
 				value,
@@ -188,7 +187,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	}
 
 	protected Set<?> getQueryMatchingGroupsNoCache(ISliceWithStep slice) {
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		ISliceFilter filter = slice.getQueryStep().getFilter();
 
@@ -215,15 +214,15 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		String elementColumn = MapPathGet.getRequiredString(options, K_INPUT);
-		String groupColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
+		String elementColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
+		String groupColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 
 		ISliceFilter requestedFilter = step.getFilter();
 		ISliceFilter underlyingFilter = convertGroupsToElementsFilter(groupColumn, elementColumn, requestedFilter);
 
 		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
-			return Collections.singletonList(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
+			return List.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -232,13 +231,13 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		// The groupColumn is generally meaningless to the underlying measure
 		allGroupBys.removeIf(c -> c.getName().equals(groupColumn));
 
-		String inputColumn = MapPathGet.getRequiredString(options, K_INPUT);
+		String inputColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));
 
 		// TODO If we filter some group, we should propagate as filtering some element
 		// step.getFilter().
 
-		return Collections.singletonList(
+		return List.of(
 				MeasurelessQuery.edit(step).filter(underlyingFilter).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 
@@ -288,7 +287,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
 		return ImmutableMap.<String, Class<?>>builder()
-				.put(MapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
+				.put(AdhocMapPathGet.getRequiredString(options, K_OUTPUT), Object.class)
 				.build();
 	}
 

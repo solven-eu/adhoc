@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>adhoc-libraries</artifactId>
+		<version>0.0.17-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>adhoc-cell</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
+		</dependency>
+		<dependency>
+			<!-- IHasIndexOf -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-encoding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- ISliceFilter -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-filters</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-mappath</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<!-- Provides a classifier=tests jar-->
+							<!-- helpful for integration tests or benchmarks-->
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

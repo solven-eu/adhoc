@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.encoding.page;
 
-import eu.solven.adhoc.encoding.page.row.ILikeList;
+import eu.solven.adhoc.collection.ILikeList;
 
 /**
  * Represents a table.

@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.Partitionor;

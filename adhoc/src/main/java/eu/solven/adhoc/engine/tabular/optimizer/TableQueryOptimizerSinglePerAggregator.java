@@ -41,10 +41,10 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterUtility;
@@ -62,7 +62,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The main strategy of this {@link ITableQueryOptimizer} is to evaluate the minimal number of {@link TableQuery} needed
  * to compute all {@link TableQuery}, allowing to compute irrelevant aggregates. Typically, it will evaluate the union
- * of {@link IAdhocGroupBy} and an {@link OrFilter} amongst all {@link ISliceFilter}.
+ * of {@link IGroupBy} and an {@link OrFilter} amongst all {@link ISliceFilter}.
  * 
  * In short, it enables doing a single query per measure to the {@link ITableWrapper}.
  * 
@@ -73,7 +73,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 
 	// Rely on an filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
-	public TableQueryOptimizerSinglePerAggregator(AdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	public TableQueryOptimizerSinglePerAggregator(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		super(factories, filterOptimizer);
 	}
 

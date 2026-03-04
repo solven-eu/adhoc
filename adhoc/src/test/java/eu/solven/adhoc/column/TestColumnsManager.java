@@ -27,7 +27,7 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
@@ -42,9 +42,8 @@ public class TestColumnsManager {
 
 		AliasingContext context = columnsManager.openTranscodingContext();
 
-		IAdhocGroupBy groupBy =
-				GroupByColumns.of(TableExpressionColumn.builder().name("underlying").sql("someSql").build());
-		IAdhocGroupBy transcoded = columnsManager.transcodeGroupBy(context, groupBy);
+		IGroupBy groupBy = GroupByColumns.of(TableExpressionColumn.builder().name("underlying").sql("someSql").build());
+		IGroupBy transcoded = columnsManager.transcodeGroupBy(context, groupBy);
 
 		Assertions.assertThat(transcoded)
 				.isEqualTo(
