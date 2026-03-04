@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -227,26 +228,30 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @param compositeQuery
 	 */
 	protected void checkColumns(TableQueryV2 compositeQuery) {
-		NavigableSet<String> groupedByColumns = new TreeSet<>(compositeQuery.getGroupBy().getNameToColumn().keySet());
-		Set<String> filteredColumns = new TreeSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
+		NavigableSet<String> groupedByColumns =
+				new ConcurrentSkipListSet<>(compositeQuery.getGroupBy().getNameToColumn().keySet());
+		Set<String> filteredColumns =
+				new ConcurrentSkipListSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
 
 		optCubeSlicer.ifPresent(cubeSlicer -> {
 			groupedByColumns.remove(cubeSlicer);
 			filteredColumns.remove(cubeSlicer);
 		});
 
-		// TODO Should we handle cubes concurrently? It may help given `.getColumnsAsMap` can be slow, but it would make
-		// it more difficult to stop once all columns are considered known.
-		for (ICubeWrapper cube : cubes) {
+		Stream<ICubeWrapper> cubeStream = cubes.stream();
+
+		// `.getColumnsAsMap` can be slow, so we consider concurrency
+		if (StandardQueryOptions.CONCURRENT.isActive(compositeQuery.getOptions())) {
+			cubeStream = cubeStream.parallel();
+		}
+
+		// Due to concurrency, we can not stop early as soon as we confirmed all columns as known by at least one
+		// subCube
+		cubeStream.forEach(cube -> {
 			Set<String> cubeColumns = cube.getColumnsAsMap().keySet();
 			groupedByColumns.removeAll(cubeColumns);
 			filteredColumns.removeAll(cubeColumns);
-
-			if (groupedByColumns.isEmpty() && filteredColumns.isEmpty()) {
-				// leave early as the columns looks legitimate, and `.getColumnsAsMap` can be a slow operation
-				break;
-			}
-		}
+		});
 
 		if (!groupedByColumns.isEmpty()) {
 			throw new IllegalArgumentException(

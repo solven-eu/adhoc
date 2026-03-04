@@ -14,6 +14,9 @@
 	<properties>
 		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.17</jacoco.instruction.ratio>
+
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc.fsst</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -37,6 +40,14 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+
+		<!-- Source: https://mvnrepository.com/artifact/com.google.errorprone/error_prone_annotations -->
+		<dependency>
+			<groupId>com.google.errorprone</groupId>
+			<artifactId>error_prone_annotations</artifactId>
+			<version>2.48.0</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -72,23 +83,17 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.spotbugs</groupId>
+			<artifactId>spotbugs-annotations</artifactId>
+			<exclusions>
+				<exclusion>
+					<!-- may help module-info -->
+					<!-- https://github.com/apache/arrow-java/issues/67#issuecomment-2501731242 -->
+					<groupId>com.google.code.findbugs</groupId>
+					<artifactId>jsr305</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a tests jar, enabling integration
-							tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 </project>

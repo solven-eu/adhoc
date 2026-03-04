@@ -14,6 +14,7 @@
 	<properties>
 		<jacoco.branch.ratio>0.04</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.13</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.pivotable.server.core</automatic.module.name>
 	</properties>
 
 	<dependencies>

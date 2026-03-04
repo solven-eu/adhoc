@@ -13,6 +13,7 @@
 
 	<properties>
 		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.pivotable.meta</automatic.module.name>
 	</properties>
 
 	<dependencies>
