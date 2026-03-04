@@ -21,7 +21,9 @@
 		<pmd.skip>true</pmd.skip>
 		<cpd.skip>true</cpd.skip>
 		<spotbugs.skip>true</spotbugs.skip>
-		<automatic.module.name>eu.solven.adhoc.jmh</automatic.module.name>
+
+		<!-- TODO modularization leads to `ERROR: Unable to find the resource: /META-INF/BenchmarkList` -->
+		<!--		<automatic.module.name>eu.solven.adhoc.jmh</automatic.module.name>-->
 	</properties>
 
 	<dependencies>
@@ -84,30 +86,46 @@
 		<!--
 		https://stackoverflow.com/questions/38056899/jmh-unable-to-find-the-resource-meta-inf-benchmarklist -->
 		<plugins>
+			<!--			<plugin>-->
+			<!--				<groupId>org.codehaus.mojo</groupId>-->
+			<!--				<artifactId>exec-maven-plugin</artifactId>-->
+			<!--				<version>3.6.3</version>-->
+			<!--				<executions>-->
+			<!--					<execution>-->
+			<!--						<id>run-benchmarks</id>-->
+			<!--						<goals>-->
+			<!--							<goal>exec</goal>-->
+			<!--						</goals>-->
+			<!--						<phase>benchmarks</phase>-->
+			<!--						<configuration>-->
+			<!--							<classpathScope>test</classpathScope>-->
+			<!--							<executable>java</executable>-->
+			<!--							<arguments>-->
+			<!--								<argument>-classpath</argument>-->
+			<!--								<classpath />-->
+			<!--								<argument>org.openjdk.jmh.Main</argument>-->
+			<!--								<argument>.*</argument>-->
+			<!--							</arguments>-->
+			<!--						</configuration>-->
+			<!--					</execution>-->
+			<!--				</executions>-->
+			<!--			</plugin>-->
+
 			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>3.6.3</version>
-				<executions>
-					<execution>
-						<id>run-benchmarks</id>
-						<goals>
-							<goal>exec</goal>
-						</goals>
-						<phase>benchmarks</phase>
-						<configuration>
-							<classpathScope>test</classpathScope>
-							<executable>java</executable>
-							<arguments>
-								<argument>-classpath</argument>
-								<classpath />
-								<argument>org.openjdk.jmh.Main</argument>
-								<argument>.*</argument>
-							</arguments>
-						</configuration>
-					</execution>
-				</executions>
+				<!-- https://stackoverflow.com/questions/53927874/jmh-doesnt-run-inside-a-java-module-unable-to-find-the-resource-meta-inf-ben -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.openjdk.jmh</groupId>
+							<artifactId>jmh-generator-annprocess</artifactId>
+							<version>${jmh.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
 			</plugin>
 		</plugins>
+
 	</build>
 </project>
