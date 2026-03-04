@@ -36,6 +36,7 @@ import java.util.function.ToIntFunction;
 
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import lombok.experimental.UtilityClass;
 
@@ -134,6 +135,9 @@ public class AdhocCollectionHelpers {
 	}
 
 	/**
+	 * Relates with {@link Iterables#getFirst(Iterable, Object)} and {@link Iterables#get(Iterable, int)}.
+	 * 
+	 * It prevent an {@link Iterator} creation when possible.
 	 * 
 	 * @param c
 	 * @return the first item of input {@link Collection}

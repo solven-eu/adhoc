@@ -26,9 +26,14 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.MoreObjects;
 
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import lombok.Builder;
+import lombok.Getter;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestGroupByColumns {
@@ -65,8 +70,26 @@ public class TestGroupByColumns {
 	@Test
 	public void testToString() {
 		Assertions.assertThat(GroupByColumns.grandTotal()).hasToString("grandTotal");
-		
+
 		IGroupBy groupBy = GroupByColumns.named("a", "b");
 		Assertions.assertThat(groupBy).hasToString("(a, b)");
+	}
+
+	@Builder
+	@Getter
+	public static class CustomTestColumn implements IAdhocColumn {
+		String name;
+
+		@Override
+		public String toString() {
+			return MoreObjects.toStringHelper(this).add("name", name).toString();
+		}
+	}
+
+	@Test
+	public void testToString_customColumn() {
+		IGroupBy groupBy = GroupByColumns.of(ReferencedColumn.ref("a"), CustomTestColumn.builder().name("b").build());
+		Assertions.assertThat(groupBy)
+				.hasToString("GroupByColumns{size=2, #0=a=ReferencedColumn(name=a), #1=b=CustomTestColumn{name=b}}");
 	}
 }
