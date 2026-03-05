@@ -26,11 +26,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
+import eu.solven.adhoc.query.filter.FilterMatcher.FilterMatcherBuilder;
 import eu.solven.adhoc.query.filter.value.AndMatcher;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
@@ -55,6 +57,8 @@ import lombok.extern.slf4j.Slf4j;
 @UtilityClass
 @Slf4j
 public class MoreFilterHelpers {
+	// Ensure the slices for `.match` are transient
+	private static final ISliceFactory SLICE_FACTORY = RowSliceFactory.builder().build();
 
 	public static IValueMatcher transcodeType(ICustomTypeManagerSimple customTypeManager,
 			String column,
@@ -132,6 +136,11 @@ public class MoreFilterHelpers {
 		}
 	}
 
+	static FilterMatcherBuilder prepareMatcher() {
+		// BEWARE Rely on a sliceFactory not leaking (e.g. ColumnRowFactory would be bad)
+		return FilterMatcher.builder().sliceFactory(SLICE_FACTORY);
+	}
+
 	/**
 	 *
 	 * @param filter
@@ -139,19 +148,19 @@ public class MoreFilterHelpers {
 	 * @return true if the input matches the filter
 	 */
 	public static boolean match(ISliceFilter filter, Map<String, ?> input) {
-		return FilterMatcher.builder().filter(filter).build().match(input);
+		return prepareMatcher().filter(filter).build().match(input);
 	}
 
 	public static boolean match(ISliceFilter filter, String column, Object value) {
-		return FilterMatcher.builder().filter(filter).build().match(Collections.singletonMap(column, value));
+		return prepareMatcher().filter(filter).build().match(Collections.singletonMap(column, value));
 	}
 
 	public static boolean match(ITableAliaser transcoder, ISliceFilter filter, Map<String, ?> input) {
-		return FilterMatcher.builder().transcoder(transcoder).filter(filter).build().match(input);
+		return prepareMatcher().transcoder(transcoder).filter(filter).build().match(input);
 	}
 
 	public static boolean match(ISliceFilter filter, ITabularRecord input) {
-		return FilterMatcher.builder().filter(filter).build().match(input);
+		return prepareMatcher().filter(filter).build().match(input);
 	}
 
 	/**

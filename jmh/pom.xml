@@ -115,6 +115,8 @@
 				<!-- https://stackoverflow.com/questions/53927874/jmh-doesnt-run-inside-a-java-module-unable-to-find-the-resource-meta-inf-ben -->
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<!-- prevents modularization-->
+				<inherited>false</inherited>
 				<configuration>
 					<annotationProcessorPaths>
 						<path>
