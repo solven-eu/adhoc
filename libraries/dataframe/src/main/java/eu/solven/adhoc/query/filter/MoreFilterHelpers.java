@@ -58,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MoreFilterHelpers {
 	// Ensure the slices for `.match` are transient
-	private static final ISliceFactory SLICE_FACTORY = RowSliceFactory.builder().build();
+	static final ISliceFactory SLICE_FACTORY = RowSliceFactory.builder().build();
 
 	public static IValueMatcher transcodeType(ICustomTypeManagerSimple customTypeManager,
 			String column,

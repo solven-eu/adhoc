@@ -26,17 +26,13 @@
 		<!-- each dependency has to be added explicitely -->
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
+			<artifactId>adhoc-fsst</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-cell</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc-dataframe</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
@@ -49,6 +45,22 @@
 			<artifactId>adhoc-measures</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-dataframe</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-experimental</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>pivotable-server</artifactId>
@@ -71,10 +83,6 @@
 						</goals>
 
 						<phase>verify</phase>
-
-						<configuration>
-							<dataFileIncludes>**/target/coverage.exec</dataFileIncludes>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>

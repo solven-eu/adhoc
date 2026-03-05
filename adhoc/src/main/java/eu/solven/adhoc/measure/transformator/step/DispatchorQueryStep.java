@@ -26,7 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -84,6 +86,12 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 
 	@Getter
 	final CubeQueryStep step;
+
+	final Supplier<FilterMatcher> filterMatcherSupplier = Suppliers.memoize(() -> FilterMatcher.builder()
+			.sliceFactory(getFactories().getSliceFactory())
+			.filter(getStep().getFilter())
+			.onMissingColumn(DecompositionHelpers.onMissingColumn())
+			.build());
 
 	public List<String> getUnderlyingNames() {
 		return dispatchor.getUnderlyingNames();
@@ -259,11 +267,6 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 	 * @return
 	 */
 	protected boolean isRelevant(Map<String, ?> decomposedSlice) {
-		return FilterMatcher.builder()
-				.sliceFactory(factories.getSliceFactory())
-				.filter(step.getFilter())
-				.onMissingColumn(DecompositionHelpers.onMissingColumn())
-				.build()
-				.match(decomposedSlice);
+		return filterMatcherSupplier.get().match(decomposedSlice);
 	}
 }

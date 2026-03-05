@@ -73,7 +73,7 @@ public class FilterMatcher {
 
 	@Default
 	@NonNull
-	ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
+	ISliceFactory sliceFactory = MoreFilterHelpers.SLICE_FACTORY;
 
 	public boolean match(Map<String, ?> map) {
 		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, SliceHelpers.asSlice(sliceFactory, map));

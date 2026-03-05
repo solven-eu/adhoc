@@ -22,12 +22,18 @@
  */
 package eu.solven.adhoc.engine;
 
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
+
 import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
@@ -72,5 +78,12 @@ public class AdhocFactories implements IAdhocFactories {
 	public IMeasureQueryStepFactory getMeasureQueryStepFactory() {
 		return IMeasureQueryStepFactory.standard(this);
 	}
+	
+	// Memorize the noOption sliceFactory, to prevent making too many ColumnSliceFactory, as each would allocate a page for potentially a single row
+	protected Supplier<ISliceFactory> sliceFactorySupplier = Suppliers.memoize(() -> getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()));
 
+	@Override
+	public ISliceFactory getSliceFactory() {
+		return sliceFactorySupplier.get();
+	}
 }
