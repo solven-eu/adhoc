@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
@@ -51,6 +50,8 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
+import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +71,10 @@ public class InjectSimpleExampleCubesConfig {
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
-	public Void initSimpleCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {
+	public Void initSimpleCubes(PivotableAdhocSchemaRegistry schemaRegistry) {
+		// @Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
+		AdhocSchema schema = schemaRegistry.getSchema(PivotableAdhocEndpointMetadata.localhost().getId());
+
 		log.info("Registering the {} dataset", IPivotableSpringProfiles.P_SIMPLE_DATASETS);
 
 		registerSimple(schema);

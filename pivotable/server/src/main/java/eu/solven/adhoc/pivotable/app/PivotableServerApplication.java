@@ -78,7 +78,7 @@ public class PivotableServerApplication {
 		SpringApplication springApp = new SpringApplicationBuilder(PivotableServerApplication.class)
 				// A real-project should set this in its application.yml
 				// Pivotable does not provide an application.yml to prevent conflicts
-				.properties(IPivotableSpringProfiles.P_CONFIG_IMPORT)
+				.properties(IPivotableSpringProfiles.P_CONFIG_IMPORT, "spring.devtools.restart.enabled:false")
 				.bannerMode(Mode.OFF)
 				// https://docs.spring.io/spring-boot/reference/actuator/process-monitoring.html
 				.listeners(new ApplicationPidFileWriter())
