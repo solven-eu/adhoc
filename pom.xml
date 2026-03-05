@@ -509,6 +509,9 @@
 						</pom>
 
 						<markdown>
+							<excludes>
+								<exclude>**/node_modules/**</exclude>
+							</excludes>
 							<endWithNewline />
 							<indent>
 								<tabs>true</tabs>
@@ -600,6 +603,9 @@
 								<!-- https://biomejs.dev/internals/language-support/#html-super-languages-support -->
 								<include>src/**/*.js</include>
 							</includes>
+							<excludes>
+								<exclude>**/node_modules/**</exclude>
+							</excludes>
 
 							<!-- https://biomejs.dev/ -->
 							<biome>
