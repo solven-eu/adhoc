@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.observability;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,8 +44,8 @@ import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.measure.transformator.IHasDecompositionKey;
 import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +68,7 @@ public class DagExplainer implements IDagExplainer {
 	static final CubeQueryStep FAKE_ROOT = CubeQueryStep.builder()
 			.measure(ReferencedMeasure.ref(FAKE_ROOT_MEASURE))
 			.filter(ISliceFilter.MATCH_ALL)
-			.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+			.groupBy(IGroupBy.GRAND_TOTAL)
 			.build();
 
 	@NonNull
@@ -82,8 +82,8 @@ public class DagExplainer implements IDagExplainer {
 	@Value
 	@RequiredArgsConstructor
 	public static class DagExplainerState {
-		final Map<CubeQueryStep, String> stepToIndentation = new HashMap<>();
-		final Map<CubeQueryStep, Integer> stepToReference = new HashMap<>();
+		final Map<CubeQueryStep, String> stepToIndentation = new LinkedHashMap<>();
+		final Map<CubeQueryStep, Integer> stepToReference = new LinkedHashMap<>();
 
 		AdhocQueryId queryId;
 		IHasDagFromInducedToInducer dag;

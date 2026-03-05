@@ -73,4 +73,22 @@ public class TestObjectArrayColumn {
 		Assertions.assertThat(c.readValue(1)).isEqualTo(1L);
 	}
 
+	@Test
+	public void testToString_size32() {
+		List<Object> list = IntStream.range(0, 32).<Object>mapToObj(i -> (long) i).toList();
+
+		IReadableColumn c = ObjectArrayColumn.builder().asArray(list).build();
+
+		Assertions.assertThat(c).hasToString("[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, and 16 more]");
+	}
+
+	@Test
+	public void testToString_size8() {
+		List<Object> list = IntStream.range(0, 8).<Object>mapToObj(i -> (long) i).toList();
+
+		IReadableColumn c = ObjectArrayColumn.builder().asArray(list).build();
+
+		Assertions.assertThat(c).hasToString("[0, 1, 2, 3, 4, 5, 6, 7]");
+	}
+
 }

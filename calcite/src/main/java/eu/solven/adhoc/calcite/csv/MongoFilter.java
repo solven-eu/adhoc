@@ -58,10 +58,10 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in MongoDB.
  */
-public class MongoFilter extends Filter implements AdhocCalciteRel {
+public class MongoFilter extends Filter implements IAdhocCalciteRel {
 	public MongoFilter(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RexNode condition) {
 		super(cluster, traitSet, child, condition);
-		assert getConvention() == AdhocCalciteRel.CONVENTION;
+		assert getConvention() == IAdhocCalciteRel.CONVENTION;
 		assert getConvention() == child.getConvention();
 	}
 

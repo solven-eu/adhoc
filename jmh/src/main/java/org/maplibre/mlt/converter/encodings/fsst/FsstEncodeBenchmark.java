@@ -38,8 +38,8 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.springframework.util.Assert;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.FsstAdhoc;
-import eu.solven.adhoc.encoding.fsst.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.IFsstEncoding;
 
 /**
@@ -110,7 +110,7 @@ public class FsstEncodeBenchmark {
 	public IByteSlice encodeSmallAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 26;
-		return TRAINED_SMALL.encodeAll(SMALL);
+		return TRAINED_SMALL.encodeAll(IByteSlice.wrap(SMALL));
 	}
 
 	@Benchmark
@@ -118,7 +118,7 @@ public class FsstEncodeBenchmark {
 	public IByteSlice encodeMediumAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 664;
-		return TRAINED_MEDIUM.encodeAll(MEDIUM);
+		return TRAINED_MEDIUM.encodeAll(IByteSlice.wrap(MEDIUM));
 	}
 
 	@Benchmark
@@ -126,7 +126,7 @@ public class FsstEncodeBenchmark {
 	public IByteSlice encodeLargeAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 23_038;
-		return TRAINED_LARGE.encodeAll(LARGE);
+		return TRAINED_LARGE.encodeAll(IByteSlice.wrap(LARGE));
 	}
 
 	@Benchmark
@@ -134,7 +134,7 @@ public class FsstEncodeBenchmark {
 	public IByteSlice encodeExtraLargeAdhoc(EntryCounters ec, ByteCounters bc) {
 		ec.entry++;
 		bc.bytes += 230_380;
-		return TRAINED_XLLARGE.encodeAll(XLARGE);
+		return TRAINED_XLLARGE.encodeAll(IByteSlice.wrap(XLARGE));
 	}
 
 }

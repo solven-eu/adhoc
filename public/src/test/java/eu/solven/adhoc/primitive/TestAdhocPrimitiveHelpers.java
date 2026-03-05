@@ -106,10 +106,78 @@ public class TestAdhocPrimitiveHelpers {
 	}
 
 	@Test
+	public void normalizeValue_bigIntNotFittingLong() {
+		Assertions
+				.assertThat(
+						AdhocPrimitiveHelpers.normalizeValue(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE)))
+				.isEqualTo(9.223372036854776E18);
+	}
+
+	@Test
 	public void normalizeValueAsProvider() {
 		Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(null)).isSameAs(IValueProvider.NULL);
 
-		// TODO Test Double is wrapped as primitive double
-		// Assertions.assertThat(AdhocPrimitiveHelpers.normalizeValueAsProvider(12.34D)).isEqualTo(12.34D);
+		Assertions
+				.assertThat(IValueProviderTestHelpers.getDouble(AdhocPrimitiveHelpers.normalizeValueAsProvider(12.34D)))
+				.isEqualTo(12.34D);
+
+		Assertions.assertThat(IValueProviderTestHelpers.getLong(AdhocPrimitiveHelpers.normalizeValueAsProvider(123)))
+				.isEqualTo(123L);
+
+		Assertions
+				.assertThat(IValueProviderTestHelpers.getDouble(AdhocPrimitiveHelpers
+						.normalizeValueAsProvider(BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE))))
+				.isEqualTo(9.223372036854776E18);
+	}
+
+	@Test
+	public void normalizeValueAsProvider_integer() {
+		Object result = IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider(42));
+		Assertions.assertThat(result).isEqualTo(42L);
+	}
+
+	@Test
+	public void normalizeValueAsProvider_long() {
+		Object result = IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider(Long.MAX_VALUE));
+		Assertions.assertThat(result).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	public void normalizeValueAsProvider_bigInteger() {
+		Object result = IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider(BigInteger.valueOf(99)));
+		Assertions.assertThat(result).isEqualTo(99L);
+	}
+
+	@Test
+	public void normalizeValueAsProvider_float() {
+		Object result = IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider(1.5F));
+		Assertions.assertThat(result).isEqualTo((double) 1.5F);
+	}
+
+	@Test
+	public void normalizeValueAsProvider_double() {
+		Object result = IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider(3.14D));
+		Assertions.assertThat(result).isEqualTo(3.14D);
+	}
+
+	@Test
+	public void normalizeValueAsProvider_bigDecimal() {
+		Object result =
+				IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider(BigDecimal.valueOf(2.71)));
+		Assertions.assertThat(result).isEqualTo(BigDecimal.valueOf(2.71).doubleValue());
+	}
+
+	@Test
+	public void normalizeValueAsProvider_string() {
+		Object result = IValueProvider.getValue(AdhocPrimitiveHelpers.normalizeValueAsProvider("hello"));
+		Assertions.assertThat(result).isEqualTo("hello");
+	}
+
+	@Test
+	public void normalizeValues_mixed() {
+		com.google.common.collect.ImmutableSet<?> result =
+				AdhocPrimitiveHelpers.normalizeValues(java.util.List.of(1, 2L, BigInteger.valueOf(3)));
+		// All integers normalise to Long; use isEqualTo to bypass wildcard-varargs restrictions
+		Assertions.assertThat(result).isEqualTo(com.google.common.collect.ImmutableSet.of(1L, 2L, 3L));
 	}
 }

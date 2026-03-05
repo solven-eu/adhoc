@@ -50,10 +50,7 @@ public class TestColumnWithCalculatedCoordinates {
 				  "calculatedCoordinates" : [ {
 				    "type" : ".CalculatedCoordinate",
 				    "coordinate" : "*",
-				    "filter" : {
-				      "type" : "and",
-				      "filters" : [ ]
-				    }
+				    "filter" : "matchAll"
 				  } ]
 				}""");
 	}

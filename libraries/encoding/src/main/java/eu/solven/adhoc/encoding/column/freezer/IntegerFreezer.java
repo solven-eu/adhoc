@@ -43,7 +43,7 @@ public final class IntegerFreezer implements IFreezingWithContext {
 		if (column instanceof ObjectArrayColumn arrayColumn) {
 			List<?> array = arrayColumn.getAsArray();
 
-			Set<?> classes = LongFreezer.classesWithContext(freezingContext, array);
+			Set<?> classes = FreezerHelpers.classesWithContext(freezingContext, array);
 
 			if (classes.size() == 1 && classes.contains(Integer.class)) {
 				int[] primitiveArray = array.stream().mapToInt(Integer.class::cast).toArray();

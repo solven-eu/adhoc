@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>adhoc-libraries</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-fsst</artifactId>
@@ -14,6 +14,9 @@
 	<properties>
 		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.17</jacoco.instruction.ratio>
+
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc.fsst</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -32,6 +35,19 @@
 			<groupId>it.unimi.dsi</groupId>
 			<artifactId>fastutil</artifactId>
 			<version>8.5.18</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+		</dependency>
+
+		<!-- Source: https://mvnrepository.com/artifact/com.google.errorprone/error_prone_annotations -->
+		<dependency>
+			<groupId>com.google.errorprone</groupId>
+			<artifactId>error_prone_annotations</artifactId>
+			<version>2.48.0</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -60,23 +76,25 @@
 			<version>${pepper.version}</version>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a tests jar, enabling integration
-							tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.spotbugs</groupId>
+			<artifactId>spotbugs-annotations</artifactId>
+			<version>4.9.8</version>
+			<exclusions>
+				<exclusion>
+					<!-- may help module-info -->
+					<!-- https://github.com/apache/arrow-java/issues/67#issuecomment-2501731242 -->
+					<groupId>com.google.code.findbugs</groupId>
+					<artifactId>jsr305</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
 </project>

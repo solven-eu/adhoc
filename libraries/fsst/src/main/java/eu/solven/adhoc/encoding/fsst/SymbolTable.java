@@ -23,11 +23,10 @@
 package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.errorprone.annotations.ThreadSafe;
 
-import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -38,116 +37,22 @@ import lombok.RequiredArgsConstructor;
  */
 @ThreadSafe
 @RequiredArgsConstructor
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 class SymbolTable implements IFsstConstants, IFsstEncoding {
-	// Used for encoding
-	final SymbolTableTraining symbols;
+	final SymbolTableEncoder encoder;
 
 	@Getter
-	final SymbolTableDecoding decoding;
+	final SymbolTableDecoder decoding;
 
 	// Encode compresses input, reusing buf if provided.
 	// Returns compressed data (may be a different slice than buf).
 	@Override
-	public IByteSlice encode(byte[] buf, byte[] input) {
-		if (buf == null || buf.length < 2 * input.length + fsstOutputPadding) {
-			buf = new byte[2 * input.length + fsstOutputPadding];
-		}
-		int outPos = 0;
-		int pos = 0;
-		int inputLen = input.length;
-
-		int tailLen = inputLen % 8;
-
-		// Process with safe unaligned loads while >=8 bytes remain
-		while (pos + 8 <= inputLen) {
-			int chunkEnd = Math.min(pos + fsstChunkSize, inputLen - tailLen);
-			outPos = encodeChunk(buf, outPos, input, pos, chunkEnd);
-			pos = chunkEnd;
-		}
-
-		// Handle tail with padded buffer
-		if (pos < inputLen) {
-			// makes a new buffer with padded 0
-			// it enables fsstUnalignedLoad assuming the input always have expected size
-			byte[] encBuf = Arrays.copyOfRange(input, pos, pos + 8);
-			outPos = encodeChunk(buf, outPos, encBuf, 0, tailLen);
-		}
-		return new ByteSliceNoOffset(buf, outPos);
-	}
-
-	@Override
-	public IByteSlice encodeAll(byte[] input) {
-		return encode(null, input);
-	}
-
-	/**
-	 * 
-	 * @param dst
-	 *            the encoded output
-	 * @param dstPos
-	 *            the initial position at which to write encoded bytes
-	 * @param input
-	 *            the decoded input
-	 * @param pos
-	 *            the start position for eading input
-	 * @param end
-	 *            may be shorter than input (e.g. if we restrict to a chunk, or if we padded with 0)
-	 * @return
-	 */
-	// encodeChunk compresses buf[0:end] to dst starting at dstPos.
-	// buf must have >=8 bytes padding after end for safe unaligned loads.
-	@SuppressWarnings("PMD.AssignmentInOperand")
-	private int encodeChunk(byte[] dst, int dstPos, byte[] input, int pos, int end) {
-		int suffixLimit = decoding.suffixLim;
-
-		while (pos < end) {
-			long word = SymbolUtil.fsstUnalignedLoad(input, pos);
-
-			// Try 2-byte fast path (unique prefix)
-			int code = symbols.shortCodes[(int) (word & fsstMask16)];
-			if ((code & 0xFF) < suffixLimit && pos + 2 <= end) {
-				dst[dstPos++] = (byte) code;
-
-				pos += 2;
-				continue;
-			}
-
-			// Try 3-8 byte hash table match
-			int idx = (int) (SymbolUtil.fsstHash(word & fsstMask24) & (fsstHashTabSize - 1));
-			Symbol entry = symbols.hashTab[idx];
-
-			// Relates with SymbolTableTraining.findLongestSymbol
-			if (entry.icl < fsstICLFree) {
-				long mask = ~0L >>> entry.ignoredBits();
-				int symLen = entry.length();
-				// hash matched: let's check for equality
-				if ((entry.val & mask) == (word & mask) && pos + symLen <= end) {
-					dst[dstPos++] = (byte) entry.code();
-					pos += symLen;
-					continue;
-				}
-			}
-
-			// Fall back to 2-byte (if valid)
-			int advance = code >> fsstLenBits;
-			if (pos + advance > end) {
-				// or 1-byte/escape (if input too short)
-				code = symbols.byteCodes[input[pos] & 0xFF];
-				advance = 1;
-			}
-
-			dst[dstPos++] = (byte) (code & fsstMask8);
-			if ((code & fsstCodeBase) != 0) {
-				dst[dstPos++] = input[pos];
-			}
-			pos += advance;
-		}
-		return dstPos;
+	public IByteSlice encode(byte[] buf, IByteSlice input) {
+		return encoder.encode(buf, input);
 	}
 
 	public IByteSlice encodeAll(String string) {
-		return encodeAll(string.getBytes(StandardCharsets.UTF_8));
+		return encodeAll(IByteSlice.wrap(string.getBytes(StandardCharsets.UTF_8)));
 	}
 
 	@Override

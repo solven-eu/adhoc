@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-public</artifactId>
@@ -13,6 +13,7 @@
 
 	<properties>
 		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.pivotable.meta</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -20,7 +21,7 @@
 		<dependency>
 			<!-- IValueMatcher-->
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc-public</artifactId>
+			<artifactId>adhoc-filters</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

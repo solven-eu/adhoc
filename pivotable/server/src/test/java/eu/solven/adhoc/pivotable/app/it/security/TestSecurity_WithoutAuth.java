@@ -247,13 +247,12 @@ public class TestSecurity_WithoutAuth {
 				.exchange()
 
 				.expectStatus()
-				// .isOk()
-				// .expectBody(Map.class)
-				// .value(bodyAsMap -> {
-				// // Ensure the csrfToken is not in the body, as it would make it easier to leak
-				// Assertions.assertThat(bodyAsMap).containsEntry("Location", "/html/login?logout").hasSize(1);
-				// })
-				.isUnauthorized();
+				.isOk()
+				.expectBody(Map.class)
+				.value(bodyAsMap -> {
+					// Ensure the csrfToken is not in the body, as it would make it easier to leak
+					Assertions.assertThat(bodyAsMap).containsEntry("Location", "/html/login?logout").hasSize(1);
+				});
 	}
 
 	@Test

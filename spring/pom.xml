@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-spring</artifactId>
@@ -13,6 +13,7 @@
 
 	<properties>
 		<cucumber.version>7.14.0</cucumber.version>
+		<automatic.module.name>eu.solven.adhoc.spring</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -49,5 +50,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
 </project>

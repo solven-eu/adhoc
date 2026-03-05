@@ -47,7 +47,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.encoding.dictionary.ColumnarSliceFactory;
+import eu.solven.adhoc.encoding.page.ColumnarSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 
 /**

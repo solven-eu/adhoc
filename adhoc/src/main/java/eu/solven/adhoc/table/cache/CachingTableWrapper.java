@@ -53,6 +53,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -71,7 +72,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 @Deprecated(since = "May need time to stabilize")
-public class CachingTableWrapper implements ITableWrapper {
+public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	// ~1GB
 	private static final int DEFAULT_MAX_WEIGHT = 1024 * 1024 * 1024;
 
@@ -137,7 +138,7 @@ public class CachingTableWrapper implements ITableWrapper {
 		return CacheBuilder.newBuilder()
 				.recordStats()
 				// https://github.com/google/guava/issues/3202
-				.<CachingKey, CachingValue>weigher(CachingTableWrapper::sliceToValueSize)
+				.<CachingKey, CachingValue>weigher(CachingTableWrapper::cachingValueSize)
 				// Do not set a maximum weight else it can not be customized (as per Guava constrain)
 				// .maximumWeight(1024 * 1024)
 				.removalListener(notification -> log.debug("RemovalNotification key={} cause={} size={}",
@@ -149,13 +150,14 @@ public class CachingTableWrapper implements ITableWrapper {
 	}
 
 	// TODO Adjust with the weight of the aggregate
-	private static int sliceToValueSize(CachingKey key, CachingValue value) {
+	private static int cachingValueSize(CachingKey key, CachingValue value) {
 		int nbRecords = value.getRecords().size();
 		int recordWidth = key.getTableQuery().getGroupBy().getGroupedByColumns().size()
 				+ key.getTableQuery().getAggregators().size();
 		return nbRecords * recordWidth;
 	}
 
+	@Override
 	public void invalidateAll() {
 		cache.invalidateAll();
 	}

@@ -49,7 +49,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
  * <p>
  * Additional operations might be applied, using the "find" or "aggregate" methods.
  */
-public class AdhocCalciteTableScan extends TableScan implements AdhocCalciteRel {
+public class AdhocCalciteTableScan extends TableScan implements IAdhocCalciteRel {
 	final AdhocCalciteTable adhocTable;
 	final @Nullable RelDataType projectRowType;
 
@@ -67,7 +67,7 @@ public class AdhocCalciteTableScan extends TableScan implements AdhocCalciteRel 
 		super(cluster, traitSet, ImmutableList.of(), table);
 		this.adhocTable = requireNonNull(mongoTable, "adhocTable");
 		this.projectRowType = projectRowType;
-		checkArgument(getConvention() == AdhocCalciteRel.CONVENTION);
+		checkArgument(getConvention() == IAdhocCalciteRel.CONVENTION);
 	}
 
 	@Override

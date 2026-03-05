@@ -1,0 +1,37 @@
+
+# Feature Candidates
+
+- [CodeGen] BDD: Automated generation of Scenario given an `ICubeQuery`
+- [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
+- [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN` from a composite-cube to its subQueries.
+- [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
+- [Resiliency] On querySteps errors: a failing measure should not break the whole query.
+- [Resiliency] Work on query cancellations/queryTimeouts
+- [SECURITY] Ability to hide some measures/columns from some Users
+- [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
+- [Composite] `getCoordinates` should be executed once per underlying cube
+- [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
+- [Feature] Enable a measure chain to be automatically injected in the measures DAG.
+- [Feature] Break rowspan on right columns
+- [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
+- [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
+- [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
+- [Pivotable] Fetch all column details in a single query
+- [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
+- [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
+- [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`. [DuckDB](https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html)
+- [Feature] Record statistics about used measures in storage, for easier re-use.
+- [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
+- [Feature] `EXPLAIN`, when detailing durations, should print in order of execution (e.g. from `Aggregator` to queried measure).
+- [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
+- [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
+- [Pivotable] Enable browser-back to restore previous query.
+- [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
+- [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
+- [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
+- [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
+- [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
+- [Feature] If a query generates a too large column, add investigation information (like the output of `COUNT(GROUP BY)` from table).
+- [Feature] Columns ordering should be evaluated dynamically, to increase order inference in Shiftor and table-columns inference..
+- [Performance] Table queries should be automatically partitioned table-side on some access. Typically, if one know the underlying data is partitioned by `c`, we should be able to query from `WHERE c % 8 = 0` to `WHERE c % 8 = 7`
+- [Performance] Investigate [scala-polars](https://github.com/chitralverma/scala-polars) (JVM bindings for the Polars DataFrame library) as a backend for `ITabularRecordStream` reduction. Polars operates natively on Arrow record batches, so the Arrow IPC stream from DuckDB could be piped directly into a Polars `DataFrame` for GROUP BY / aggregation, avoiding the row-by-row Java accumulation loop in `TabularRecordStreamReducer`.

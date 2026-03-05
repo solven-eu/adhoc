@@ -28,7 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
@@ -63,12 +63,12 @@ public class TestEvaluatedExpressionColumn {
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
 		// not null
 		Assertions.assertThat(column.computeCoordinate(
-				TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(Map.of("a", "a1", "b", "b1"))).build()))
+				TabularRecordOverMaps.builder().slice(SliceHelpers.asSlice(Map.of("a", "a1", "b", "b1"))).build()))
 				.isEqualTo("a1-b1");
 
 		// one is null
 		Assertions.assertThat(column.computeCoordinate(TabularRecordOverMaps.builder()
-				.slice(SliceAsMap.fromMap(MapWithNulls.of("a", "a1", "b", null)))
+				.slice(SliceHelpers.asSlice(MapWithNulls.of("a", "a1", "b", null)))
 				.build())).isEqualTo("a1-null");
 	}
 
@@ -79,7 +79,7 @@ public class TestEvaluatedExpressionColumn {
 
 		Assertions
 				.assertThatThrownBy(() -> column.computeCoordinate(
-						TabularRecordOverMaps.builder().slice(SliceAsMap.fromMap(Map.of("a", "a1"))).build()))
+						TabularRecordOverMaps.builder().slice(SliceHelpers.asSlice(Map.of("a", "a1"))).build()))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

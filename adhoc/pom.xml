@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc</artifactId>
@@ -16,6 +16,9 @@
 
 		<jacoco.branch.ratio>0.72</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.77</jacoco.instruction.ratio>
+
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -31,14 +34,10 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.roaringbitmap/RoaringBitmap -->
 		<dependency>
-			<!-- Used as bitset in MultitypeArrayColumn -->
-			<groupId>org.roaringbitmap</groupId>
-			<artifactId>RoaringBitmap</artifactId>
-			<!-- Can not upgrade due to
-			https://github.com/RoaringBitmap/RoaringBitmap/issues/749 -->
-			<version>1.6.10</version>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-dataframe</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>
@@ -64,7 +63,7 @@
 			<!-- Used for QuerySteps DAG -->
 			<groupId>org.jgrapht</groupId>
 			<artifactId>jgrapht-core</artifactId>
-			<version>1.5.2</version>
+			<version>${jgrapht.version}</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.jooq/jooq -->
@@ -74,12 +73,12 @@
 			<version>${jooq.version}</version>
 		</dependency>
 
-		<dependency>
-			<!-- Typically used by MultiTypeStorage -->
-			<groupId>it.unimi.dsi</groupId>
-			<artifactId>fastutil</artifactId>
-			<version>8.5.18</version>
-		</dependency>
+		<!--		<dependency>-->
+		<!--			 Typically used by MultiTypeStorage -->
+		<!--			<groupId>it.unimi.dsi</groupId>-->
+		<!--			<artifactId>fastutil</artifactId>-->
+		<!--			<version>8.5.18</version>-->
+		<!--		</dependency>-->
 
 		<!--		<dependency>-->
 		<!-- Enable faster internalization of keySet in StandardSliceFactory-->
@@ -95,6 +94,7 @@
 		<!--		</dependency>-->
 
 		<dependency>
+			<!-- EvaluatedExpressionColumn -->
 			<groupId>com.ezylang</groupId>
 			<artifactId>EvalEx</artifactId>
 			<version>${evalex.ezylang.version}</version>
@@ -129,7 +129,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<!-- JdbcClient for inserting arrays-->
 			<groupId>org.springframework.boot</groupId>
@@ -216,7 +215,29 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Source: https://mvnrepository.com/artifact/io.github.solven-eu.cleanthat/annotations -->
+		<dependency>
+			<!-- IValueProviderTestHelpers -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-public</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
+			<!-- MapWithNulls -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-cell</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
+			<!-- IAdhocTestConstants -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-measures</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/io.github.solven-eu.cleanthat/annotations -->
 		<dependency>
 			<groupId>io.github.solven-eu.cleanthat</groupId>
 			<artifactId>annotations</artifactId>
@@ -224,22 +245,4 @@
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a tests jar, enabling integration
-							tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 </project>

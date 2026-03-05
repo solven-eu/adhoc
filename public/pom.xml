@@ -4,12 +4,17 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-public</artifactId>
 	<!-- `name` is required by Sonatype-->
 	<name>${project.groupId}:${project.artifactId}</name>
+
+	<properties>
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc.meta</automatic.module.name>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -49,5 +54,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
 </project>

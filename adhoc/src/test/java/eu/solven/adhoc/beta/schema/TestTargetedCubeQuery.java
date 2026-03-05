@@ -62,10 +62,7 @@ public class TestTargetedCubeQuery {
 				  "endpointId" : "12345678-1234-1234-1234-12345678abcd",
 				  "cube" : "someCube",
 				  "query" : {
-				    "filter" : {
-				      "type" : "and",
-				      "filters" : [ ]
-				    },
+				    "filter" : "matchAll",
 				    "groupBy" : {
 				      "columns" : [ "someColumn" ]
 				    },

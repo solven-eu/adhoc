@@ -25,6 +25,7 @@ package eu.solven.adhoc.column;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import tools.jackson.databind.exc.InvalidDefinitionException;
@@ -45,5 +46,16 @@ public class TestFunctionCalculatedColumn {
 								.build()))
 				.isInstanceOf(InvalidDefinitionException.class)
 				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
+	}
+
+	@Test
+	public void testOf_multiplename_differentType() {
+		ICalculatedColumn calculatedColumn =
+				FunctionCalculatedColumn.builder().name("a").recordToCoordinate(r -> r.getGroupBy("a_")).build();
+
+		Assertions
+				.assertThatThrownBy(
+						() -> GroupByColumns.of(ReferencedColumn.ref("a"), ReferencedColumn.ref("b"), calculatedColumn))
+				.isInstanceOf(IllegalArgumentException.class);
 	}
 }

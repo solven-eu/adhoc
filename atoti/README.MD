@@ -83,7 +83,7 @@ Adhoc `IMeasure` is equivalent to ActivePivot measures.
 
 ## Tree of measures
 
-One can translate existing ActivePivot measure trees with `ActivePivotMeasuresToAdhoc`.
+One can translate existing ActivePivot measure trees with `AtotiMeasureToAdhoc`.
 
 It requires to be run by Adhoc, hence in a JDK21 JVM. Though, ActivePivot5.X requires a JDK11 for most of its actions. Luckily, loading an `IActivePivotDescription` does not required a JDK11.
 
@@ -115,7 +115,7 @@ ActivePivot `AggregatedMeasure` can be translated into Adhoc `IAggregator`.
 
 ## ADynamicAggregationPostProcessorV2
 
-`ADynamicAggregationPostProcessorV2` can generally be implemented through `Bucketor`
+`ADynamicAggregationPostProcessorV2` can generally be implemented through `Partitionor`
 
 ## AFilteringPostProcessorV2
 
@@ -123,4 +123,4 @@ ActivePivot `AggregatedMeasure` can be translated into Adhoc `IAggregator`.
 
 ## AAdvancedPostProcessorV2
 
-`AAdvancedPostProcessorV2` can generally be implemented through `ITransformator`
+`AAdvancedPostProcessorV2` can generally be implemented through `Dispatchor`

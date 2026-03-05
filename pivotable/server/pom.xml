@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-server</artifactId>
@@ -12,13 +12,11 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<!-- Coverage lowered since OAuth2 security tests are disabled-->
-		<!--		<jacoco.branch.ratio>0.46</jacoco.branch.ratio>-->
-		<!--		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>-->
-		<jacoco.branch.ratio>0.41</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.75</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.46</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
 
 		<springdoc-openapi.version>3.0.1</springdoc-openapi.version>
+		<automatic.module.name>eu.solven.adhoc.pivotable.server</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -124,7 +122,7 @@
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue</artifactId>
-			<version>3.5.28</version>
+			<version>3.5.29</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
 		<dependency>
@@ -151,8 +149,10 @@
 		</dependency>
 
 		<dependency>
+			<!-- https://github.com/spring-projects/spring-security/issues/18782#issuecomment-4001120294 -->
+			<!-- @WithMockUser -->
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -162,21 +162,10 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-webtestclient</artifactId>
-		</dependency>
-
-		<dependency>
-			<!-- @WithMockUser -->
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 

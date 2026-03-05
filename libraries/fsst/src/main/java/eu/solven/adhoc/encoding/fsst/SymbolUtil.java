@@ -24,6 +24,7 @@ package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.UtilityClass;
@@ -37,7 +38,7 @@ import lombok.experimental.UtilityClass;
  * @author Benoit Lacelle
  */
 // https://github.com/axiomhq/fsst/blob/main/symbol.go
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 @UtilityClass
 final class SymbolUtil implements IFsstConstants {
 

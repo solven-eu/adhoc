@@ -24,17 +24,18 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.NavigableSet;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.AggregatingColumns;
 import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -94,15 +95,13 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		// Process the underlying stream of data to execute aggregations
 		try {
-			stream.records()
-					// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-					// For any reason, `closeHandler` is not called automatically on a terminal
-					// operation
-					// .onClose(aggregatedRecordLogger.closeHandler())
-					.forEach(input -> forEachRow(sequencedKeyset, input, peekOnCoordinate, grid));
-
 			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-			aggregatedRecordLogger.closeHandler();
+			// For any reason, `closeHandler` is not called automatically on a terminal
+			// operation
+			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
+				records.forEach(input -> forEachRow(sequencedKeyset, input, peekOnCoordinate, grid));
+			}
+
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 				IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
@@ -110,10 +109,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 			} else {
 				String msgE = "Issue processing stream from %s".formatted(stream);
-				throw AdhocExceptionHelpers.wrap(e, msgE);
+				throw AdhocExceptionHelpers.wrap(msgE, e);
 			}
 		}
 
+		// TODO Should we compact the grid? Typically, we may have much less slices that what was initial allocated
 		return grid;
 	}
 
@@ -153,7 +153,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	 */
 	protected IAdhocSlice makeCoordinate(SequencedSetLikeList groupBy, ITabularRecord tableRecord) {
 		if (groupBy.isEmpty()) {
-			return SliceAsMap.grandTotal();
+			return SliceHelpers.grandTotal();
 		}
 
 		// BEWARE This order may differ from tableSlice due to calculatedColumns

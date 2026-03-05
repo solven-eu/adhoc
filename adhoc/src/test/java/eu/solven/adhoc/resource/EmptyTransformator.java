@@ -24,22 +24,22 @@ package eu.solven.adhoc.resource;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.SliceToValue;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 
 /**
  * Useful for unitTests
  */
-public class EmptyTransformator implements ITransformatorQueryStep {
+public class EmptyTransformator implements IMeasureQueryStep {
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		return List.of();
 	}
 
 	@Override
-	public ISliceToValue produceOutputColumn(List<? extends ISliceToValue> underlyings) {
-		return SliceToValue.empty();
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
+		return Cuboid.empty();
 	}
 }

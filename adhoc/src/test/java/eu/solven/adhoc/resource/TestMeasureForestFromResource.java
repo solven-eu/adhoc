@@ -40,9 +40,9 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
-import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.UnsafeMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
+import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
@@ -500,7 +500,7 @@ public class TestMeasureForestFromResource {
 	@Test
 	public void testRemoveUselessProperties_Aggregator_differentColumnName() throws IOException {
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
-		Aggregator measure = Aggregator.edit(IAdhocTestConstants.k1Sum).columnName("legacyColumnName").build();
+		Aggregator measure = IAdhocTestConstants.k1Sum.toBuilder().columnName("legacyColumnName").build();
 
 		Map<String, ?> rawMap = objectMapper.convertValue(measure, Map.class);
 		Map<String, ?> cleaned = fromResource.simplifyProperties(measure, rawMap);

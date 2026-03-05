@@ -29,17 +29,17 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.example.worldcup.EventsScoreCombination;
+import eu.solven.adhoc.map.SliceHelpers;
 
 public class TestEventScoreCombination {
 	EventsScoreCombination combination = new EventsScoreCombination();
 
 	SliceAsMapWithStep slice = SliceAsMapWithStep.builder()
 			.queryStep(Mockito.mock(CubeQueryStep.class))
-			.slice(SliceAsMap.fromMap(Map.of()))
+			.slice(SliceHelpers.asSlice(Map.of()))
 			.build();
 
 	@Test

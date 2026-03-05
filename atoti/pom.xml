@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-atoti</artifactId>
@@ -17,6 +17,7 @@
 
 		<jacoco.branch.ratio>0.60</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.60</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.atoti</automatic.module.name>
 	</properties>
 
 	<dependencies>
@@ -27,9 +28,37 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.activeviam.tech</groupId>
+			<artifactId>datastore</artifactId>
+			<version>${activepivot.server.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.activeviam.activepivot</groupId>
+			<artifactId>activepivot-impl</artifactId>
+			<version>${activepivot.server.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.activeviam.activepivot</groupId>
+			<artifactId>activepivot-ext</artifactId>
+			<version>${activepivot.server.version}</version>
+		</dependency>
+		<dependency>
+			<!-- DrillUpPostProcessor -->
+			<!-- LevelFilteringPostProcessor -->
+			<!-- CopperRegistrations.setupRegistryForTests() -->
+			<groupId>com.activeviam.activepivot</groupId>
+			<artifactId>activepivot-copper2-impl</artifactId>
+			<version>${activepivot.server.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- StartBuilding -->
 			<groupId>com.activeviam.activepivot</groupId>
 			<artifactId>activepivot-server-spring</artifactId>
 			<version>${activepivot.server.version}</version>
+			<!-- activepivot-server-spring is a one-size-fits-all which brings too many secondary dependencies -->
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -37,6 +66,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
 
+	</dependencies>
 </project>

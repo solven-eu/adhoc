@@ -41,6 +41,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AdhocPrimitiveHelpers {
 
+	// Maximum bit length for a BigInteger that fits in a signed long
+	private static final int LONG_MAX_BIT_LENGTH = Long.SIZE - 1;
+
 	public static boolean isLongLike(Object o) {
 		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
 			return true;
@@ -86,7 +89,11 @@ public class AdhocPrimitiveHelpers {
 		case Long l:
 			return l;
 		case BigInteger bigI:
-			return bigI.longValueExact();
+			if (bigI.bitLength() <= LONG_MAX_BIT_LENGTH) {
+				return bigI.longValueExact();
+			} else {
+				return bigI.doubleValue();
+			}
 		case Float f:
 			return f.doubleValue();
 		case Double d:
@@ -108,7 +115,11 @@ public class AdhocPrimitiveHelpers {
 		case Long l:
 			return IValueProvider.setValue(l.longValue());
 		case BigInteger bigI:
-			return IValueProvider.setValue(bigI.longValueExact());
+			if (bigI.bitLength() <= LONG_MAX_BIT_LENGTH) {
+				return IValueProvider.setValue(bigI.longValueExact());
+			} else {
+				return IValueProvider.setValue(bigI.doubleValue());
+			}
 		case Float f:
 			return IValueProvider.setValue(f.doubleValue());
 		case Double d:

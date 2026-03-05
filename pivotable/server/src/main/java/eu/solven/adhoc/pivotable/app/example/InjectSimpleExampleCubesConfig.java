@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 
@@ -38,14 +37,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -143,7 +143,7 @@ public class InjectSimpleExampleCubesConfig {
 				EqualsMatcher.matchEq("simple"),
 				CustomMarkerMetadataGenerator.builder()
 						.path(ReferenceCcyShallowCombination.PATH_SHALLOW_CCY)
-						.possibleValues(() -> Set.of(ReferenceCcyShallowCombination.CCY_DEFAULT, "USD", "JPY"))
+						.possibleValues(() -> ImmutableSet.of(ReferenceCcyShallowCombination.CCY_DEFAULT, "USD", "JPY"))
 						.defaultValue(() -> Optional.of(ReferenceCcyShallowCombination.CCY_DEFAULT))
 						.build());
 
@@ -151,12 +151,12 @@ public class InjectSimpleExampleCubesConfig {
 				EqualsMatcher.matchEq("simple"),
 				CustomMarkerMetadataGenerator.builder()
 						.path(ReferenceCcyDeepCombination.PATH_DEEP_CCY)
-						.possibleValues(() -> Set.of(ReferenceCcyDeepCombination.CCY_DEFAULT, "USD", "JPY"))
+						.possibleValues(() -> ImmutableSet.of(ReferenceCcyDeepCombination.CCY_DEFAULT, "USD", "JPY"))
 						.defaultValue(() -> Optional.of(ReferenceCcyDeepCombination.CCY_DEFAULT))
 						.build());
 
 		schema.tagColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("simple").column("ccy").build(),
-				Set.of("core"));
+				ImmutableSet.of("core"));
 	}
 
 	protected InMemoryTable prefillInmemoryTable() {

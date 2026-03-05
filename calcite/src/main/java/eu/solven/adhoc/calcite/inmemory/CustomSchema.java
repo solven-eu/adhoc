@@ -23,7 +23,7 @@
 package eu.solven.adhoc.calcite.inmemory;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.calcite.schema.Table;
@@ -36,7 +36,7 @@ public class CustomSchema extends AbstractSchema {
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 
-	private static final Map<Object, ObjectNode> employees = new HashMap<>();
+	private static final Map<Object, ObjectNode> employees = new LinkedHashMap<>();
 
 	static {
 		employees.put(1L, mapper.createObjectNode().put("name", "john").put("age", 30));

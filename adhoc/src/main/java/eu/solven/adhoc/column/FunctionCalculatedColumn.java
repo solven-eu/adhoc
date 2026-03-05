@@ -23,7 +23,7 @@
 package eu.solven.adhoc.column;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -86,7 +86,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 	private static final class RecordingRecord implements ITabularRecord {
 		@Getter
-		final Set<String> usedColumn = new HashSet<>();
+		final Set<String> usedColumn = new LinkedHashSet<>();
 
 		@Override
 		public Set<String> aggregateKeySet() {

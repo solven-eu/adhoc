@@ -34,7 +34,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AdhocExceptionHelpers {
 
-	public static RuntimeException wrap(RuntimeException e, String eMsg) {
+	public static RuntimeException wrap(String eMsg, RuntimeException e) {
 		if (e instanceof IllegalStateException illegalStateE) {
 			// We want to keep bubbling an IllegalStateException
 			return new IllegalStateException(eMsg, illegalStateE);

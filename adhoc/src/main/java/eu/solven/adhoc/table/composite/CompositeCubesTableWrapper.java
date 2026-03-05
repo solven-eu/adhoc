@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.composite;
 
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -57,14 +57,14 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
@@ -73,8 +73,8 @@ import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -201,7 +201,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 		checkColumns(compositeQuery);
 
-		IAdhocGroupBy compositeGroupBy = compositeQuery.getGroupBy();
+		IGroupBy compositeGroupBy = compositeQuery.getGroupBy();
 
 		Map<String, ICubeQuery> cubeToQuery = new LinkedHashMap<>();
 
@@ -228,26 +228,30 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @param compositeQuery
 	 */
 	protected void checkColumns(TableQueryV2 compositeQuery) {
-		NavigableSet<String> groupedByColumns = new TreeSet<>(compositeQuery.getGroupBy().getNameToColumn().keySet());
-		Set<String> filteredColumns = new TreeSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
+		NavigableSet<String> groupedByColumns =
+				new ConcurrentSkipListSet<>(compositeQuery.getGroupBy().getNameToColumn().keySet());
+		Set<String> filteredColumns =
+				new ConcurrentSkipListSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
 
 		optCubeSlicer.ifPresent(cubeSlicer -> {
 			groupedByColumns.remove(cubeSlicer);
 			filteredColumns.remove(cubeSlicer);
 		});
 
-		// TODO Should we handle cubes concurrently? It may help given `.getColumnsAsMap` can be slow, but it would make
-		// it more difficult to stop once all columns are considered known.
-		for (ICubeWrapper cube : cubes) {
+		Stream<ICubeWrapper> cubeStream = cubes.stream();
+
+		// `.getColumnsAsMap` can be slow, so we consider concurrency
+		if (StandardQueryOptions.CONCURRENT.isActive(compositeQuery.getOptions())) {
+			cubeStream = cubeStream.parallel();
+		}
+
+		// Due to concurrency, we can not stop early as soon as we confirmed all columns as known by at least one
+		// subCube
+		cubeStream.forEach(cube -> {
 			Set<String> cubeColumns = cube.getColumnsAsMap().keySet();
 			groupedByColumns.removeAll(cubeColumns);
 			filteredColumns.removeAll(cubeColumns);
-
-			if (groupedByColumns.isEmpty() && filteredColumns.isEmpty()) {
-				// leave early as the columns looks legitimate, and `.getColumnsAsMap` can be a slow operation
-				break;
-			}
-		}
+		});
 
 		if (!groupedByColumns.isEmpty()) {
 			throw new IllegalArgumentException(
@@ -259,8 +263,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 	}
 
-	protected Stream<ITabularRecord> openStream(IAdhocGroupBy compositeGroupBy,
-			final Map<String, ITabularView> cubeToView) {
+	protected Stream<ITabularRecord> openStream(IGroupBy compositeGroupBy, final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		return cubeToView.entrySet().stream().flatMap(e -> {
@@ -272,10 +275,19 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			NavigableSet<String> subMissingColumns =
 					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), subColumns));
 
+			Map<String, Object> missingColumnsAsmask;
+
+			if (subMissingColumns.isEmpty()) {
+				missingColumnsAsmask = Map.of();
+			} else {
+				missingColumnsAsmask = LinkedHashMap.newLinkedHashMap(subMissingColumns.size());
+				subMissingColumns.forEach(column -> missingColumnsAsmask.put(column, missingColumn(subCube, column)));
+			}
+
 			ITabularView subView = e.getValue();
 			return subView.stream((slice) -> {
 				return oAsMap -> {
-					return transcodeSliceToComposite(subCube, slice, oAsMap, subMissingColumns);
+					return transcodeSliceToComposite(subCube, slice, oAsMap, missingColumnsAsmask);
 				};
 			});
 		});
@@ -301,7 +313,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				.map(fa -> {
 					ISliceFilter compositeFilter = fa.getFilter();
 					if (compositeFilter.isMatchAll()) {
-						return IMeasure.alias(fa.getAlias(), fa.getAggregator().getColumnName());
+						return MeasureHelpers.alias(fa.getAlias(), fa.getAggregator().getColumnName());
 					} else {
 						ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, isSubColumn);
 
@@ -348,7 +360,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 	protected ICubeQuery makeSubQuery(QueryPod queryPod,
 			TableQueryV2 compositeQuery,
-			IAdhocGroupBy compositeGroupBy,
+			IGroupBy compositeGroupBy,
 			ICubeWrapper subCube) {
 		Predicate<String> subCubeKnownMeasure = makeSubColumnPredicate(subCube);
 
@@ -439,27 +451,22 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @param slice
 	 *            a slice from the underlying cube
 	 * @param measures
-	 * @param missingColumns
+	 * @param missingColumnsMask
 	 *            the columns in the compositeQuery groupBy, missing in the underlying cube
 	 * @return
 	 */
 	protected ITabularRecord transcodeSliceToComposite(ICubeWrapper cube,
 			IAdhocSlice slice,
 			Map<String, ?> measures,
-			NavigableSet<String> missingColumns) {
-		Map<String, Object> aggregates = new LinkedHashMap<>(measures);
-
-		// TODO ensureCapacity given missingColumns
+			Map<String, ?> missingColumnsMask) {
 		IAdhocSlice groupBys;
-		if (missingColumns.isEmpty()) {
+		if (missingColumnsMask.isEmpty()) {
 			groupBys = slice;
 		} else {
-			Map<String, Object> groupBysTmp = new LinkedHashMap<>(slice.getCoordinates());
-			missingColumns.forEach(column -> groupBysTmp.put(column, missingColumn(cube, column)));
-			groupBys = SliceAsMap.fromMap(groupBysTmp);
+			groupBys = slice.addColumns(missingColumnsMask);
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupBys).build();
+		return TabularRecordOverMaps.builder().aggregates(measures).slice(groupBys).build();
 	}
 
 	protected Object missingColumn(ICubeWrapper cube, String column) {
@@ -499,11 +506,11 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 *            the forest with composite cube own measures.
 	 */
 	public IMeasureForest injectUnderlyingMeasures(IMeasureForest compositeForest) {
-		Set<String> compositeMeasures = new HashSet<>(compositeForest.getNameToMeasure().keySet());
+		Set<String> compositeMeasures = new LinkedHashSet<>(compositeForest.getNameToMeasure().keySet());
 
 		SetMultimap<String, String> measureToCubes = HashMultimap.create();
 
-		Set<IMeasure> measuresToAdd = new HashSet<>();
+		Set<IMeasure> measuresToAdd = new LinkedHashSet<>();
 
 		cubes.forEach(subCube -> {
 			subCube.getMeasures().stream().forEach(subMeasure -> {

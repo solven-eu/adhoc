@@ -1,0 +1,141 @@
+name: AI Renovate Fixer
+
+# Triggered on every Renovate PR event. If the PR contains only Renovate commits and the
+# static-analysis step fails, Claude Code is invoked to fix the violations and push a fix
+# commit onto the same PR branch — unblocking the update without human intervention.
+#
+# Safety guards:
+#   1. Only runs when github.actor is renovate[bot].
+#   2. Skips if any non-Renovate commit is already present in the PR (human is already involved).
+#   3. Claude is given the full Maven build log so it repairs the exact violations introduced
+#      by the dependency bump, nothing more.
+#   4. A second Maven run verifies that the fixes actually pass before committing.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [master]
+
+permissions:
+  contents: write      # needed to push fix commits onto the PR branch
+  pull-requests: read  # needed to query commit list via gh pr view
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    # Fast-exit: only activate for PRs opened by Renovate.
+    if: github.actor == 'renovate[bot]'
+
+    steps:
+      # ── 1 ── Confirm every commit in the PR comes from Renovate ────────────
+      - name: Verify all commits are from Renovate
+        id: check-commits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Allow commits from renovate[bot] AND github-actions[bot] (previous fixer runs).
+          # Only bail out when a human has pushed to the branch.
+          NON_RENOVATE=$(gh pr view "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --json commits \
+            --jq '[.commits[].authors[].login] | map(select(test("renovate|github-actions"; "i") | not)) | length')
+          echo "non_renovate_count=${NON_RENOVATE}"
+          if [ "${NON_RENOVATE}" -eq 0 ]; then
+            echo "only_renovate=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "only_renovate=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: PR contains ${NON_RENOVATE} non-Renovate commit(s)."
+          fi
+
+      # ── 2 ── Checkout the Renovate PR branch ───────────────────────────────
+      - name: Checkout PR branch
+        if: steps.check-commits.outputs.only_renovate == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        if: steps.check-commits.outputs.only_renovate == 'true'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '21'
+          distribution: temurin
+      # Workflow-scoped cache avoids cross-workflow cache pollution.
+      # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
+      - name: Cache Maven local repository
+        if: steps.check-commits.outputs.only_renovate == 'true'
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.m2/repository
+          key: maven-renovate-fixer-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-renovate-fixer-${{ runner.os }}-
+
+      # ── 3 ── Run static analysis and capture the output ────────────────────
+      - name: Run static analysis and capture output
+        if: steps.check-commits.outputs.only_renovate == 'true'
+        id: static-analysis
+        continue-on-error: true
+        shell: bash
+        run: |
+          # pipefail ensures a non-zero Maven exit code propagates through the tee pipe,
+          # so `continue-on-error` correctly marks this step as failed when PMD/checkstyle/SpotBugs
+          # finds violations. See https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin
+          set -o pipefail
+          mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode \
+            2>&1 | tee /tmp/build-output.txt
+
+      # ── 4 ── Ask Claude to fix the violations (only when analysis failed) ──
+      - name: Install Claude Code CLI
+        if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure Git
+        if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run Claude AI to fix violations
+        if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          cat > /tmp/renovate-fix-prompt.txt << 'EOF'
+          A Renovate dependency-update PR has introduced new static-analysis violations.
+          The full Maven build log (including PMD / Checkstyle / SpotBugs errors) is in
+          /tmp/build-output.txt. Read it to identify every violation, then fix each one
+          in the relevant production source file.
+
+          Constraints (same as CLAUDE.md):
+          - Do NOT modify test files (src/test/java/**).
+          - Do NOT modify pom.xml files.
+          - Do NOT alter business logic or method signatures.
+          - Follow all naming and coding conventions from CLAUDE.md.
+          - Do NOT commit.
+          EOF
+
+          claude --dangerously-skip-permissions -p "$(cat /tmp/renovate-fix-prompt.txt)"
+
+      # ── 5 ── Re-apply Spotless so formatting stays consistent ──────────────
+      - name: Re-apply Spotless
+        if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
+        run: mvn spotless:apply --file pom.xml --batch-mode
+
+      # ── 6 ── Gate: verify the build actually passes now ────────────────────
+      - name: Verify build passes after AI fixes
+        if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
+        run: mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode
+
+      # ── 7 ── Push the fix commit onto the Renovate PR branch ───────────────
+      - name: Commit and push fixes
+        if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
+        run: |
+          if git diff --quiet; then
+            echo "No changes produced — violations may require manual attention."
+          else
+            git add -A
+            git commit -m "fix: resolve static-analysis violations introduced by Renovate update [skip ci]"
+            git push
+          fi

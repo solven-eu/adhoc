@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.query.custommarker;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,11 +29,8 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
-import eu.solven.adhoc.measure.transformator.step.ITransformatorQueryStep;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -68,7 +64,7 @@ public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return Collections.singletonList(underlying);
+		return List.of(underlying);
 	}
 
 	@Override
@@ -78,8 +74,8 @@ public class CustomMarkerEditor implements IMeasure, IHasUnderlyingMeasures {
 	}
 
 	@Override
-	public ITransformatorQueryStep wrapNode(AdhocFactories factories, CubeQueryStep step) {
-		return new CustomMarkerEditorQueryStep(this, step);
+	public String queryStepClass() {
+		return CustomMarkerEditorQueryStep.class.getName();
 	}
 
 	/**

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.util;
 
+import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -32,10 +33,7 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerIntraCache;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.filter.stripper.FilterStripperFactory;
-import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
+import eu.solven.adhoc.collection.ComparableElseClassComparator;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;
@@ -64,13 +62,11 @@ public class AdhocUnsafe {
 		failFast = true;
 		parallelism = defaultParallelism();
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
+		setNullComparator(DEFAULT_NULL_COMPARATOR);
 	}
 
 	public static void resetAll() {
 		resetProperties();
-
-		// TODO Should we also reset adhocCommonPool?
-		filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 	}
 
 	public static void reloadProperties() {
@@ -201,21 +197,6 @@ public class AdhocUnsafe {
 	public static int cartesianProductLimit = 16 * 1024;
 	private static final int DEFAULT_CARTESIAN_PRODUCT_LIMIT = 16 * 1024;
 
-	/**
-	 * Default {@link IFilterOptimizer}, used by static methods. As this one is maintained in the long-run, it should
-	 * have no persistent cache, or with a proper expiring policy.
-	 */
-	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
-	public static IFilterOptimizer filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
-
-	/**
-	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it
-	 * should have no persistent cache, or with a proper expiring policy.
-	 */
-	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY =
-			FilterStripperFactory.builder().build();
-	public static IFilterStripperFactory filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
-
 	// A pool dedicated to maintenance operations.
 	// Typically used in `CacheBuilder.refreshAfterWrite(_)` scenarios
 	public static Executor maintenancePool = Executors.newCachedThreadPool(Thread.ofPlatform()
@@ -237,4 +218,16 @@ public class AdhocUnsafe {
 			failFast = false;
 		}
 	}
+
+	public static final Comparator<Object> DEFAULT_NULL_COMPARATOR = ComparableElseClassComparator.nullsHigh();
+	@Getter
+	private static Comparator<Object> nullComparator = DEFAULT_NULL_COMPARATOR;
+
+	public static void setNullComparator(Comparator<Object> nullComparator) {
+		AdhocUnsafe.nullComparator = nullComparator;
+		valueComparator = new ComparableElseClassComparator(AdhocUnsafe.nullComparator);
+	}
+
+	@Getter
+	private static Comparator<Object> valueComparator = new ComparableElseClassComparator(nullComparator);
 }

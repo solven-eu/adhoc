@@ -23,6 +23,7 @@
 package eu.solven.adhoc.query.table;
 
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -62,7 +63,7 @@ public class FilteredAggregator implements IAliasedAggregator {
 	}
 
 	public static Aggregator toAggregator(FilteredAggregator fa) {
-		return Aggregator.edit(fa.aggregator).name(fa.getAlias()).build();
+		return fa.aggregator.toBuilder().name(fa.getAlias()).build();
 	}
 
 }

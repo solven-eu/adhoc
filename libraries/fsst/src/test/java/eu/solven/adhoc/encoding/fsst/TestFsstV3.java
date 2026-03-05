@@ -30,6 +30,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.io.PepperSerializationHelper;
@@ -52,28 +53,28 @@ public class TestFsstV3 {
 	// If optimal, we should have a single symbol
 	@Test
 	public void testTrain_8chars() {
-		SymbolTable table = trainer.train(List.of("01234567"));
+		SymbolTable table = trainer.trainOverStrings(List.of("01234567"));
 
 		IByteSlice encoded = table.encodeAll("01234567");
 
 		Assertions.assertThat(encoded.length()).isEqualTo(16);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("01234567");
 	}
 
 	@Test
 	public void testTrain_helloWorld() {
-		SymbolTable table = trainer.train(List.of("hello hello hello"));
+		SymbolTable table = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		IByteSlice encoded = table.encodeAll("Hello World");
 
 		Assertions.assertThat(encoded.length()).isEqualTo(22);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello World");
 	}
@@ -82,14 +83,14 @@ public class TestFsstV3 {
 	// TODO Could we improve this? Should be feasible given the low number of different symbols.
 	@Test
 	public void testTrain_hello() {
-		SymbolTable table = trainer.train(List.of("hello hello hello"));
+		SymbolTable table = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		IByteSlice encoded = table.encodeAll("Hello");
 
 		Assertions.assertThat(encoded.length()).isEqualTo(10);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
@@ -97,7 +98,7 @@ public class TestFsstV3 {
 	@Test
 	public void testTrain_2codes() {
 		// 1x 2x 3x 4x
-		SymbolTable table = trainer.train(List.of("az_azaz_azazaz_azazazaz"));
+		SymbolTable table = trainer.trainOverStrings(List.of("az_azaz_azazaz_azazazaz"));
 
 		// 2x
 		IByteSlice encoded = table.encodeAll("azaz");
@@ -105,7 +106,7 @@ public class TestFsstV3 {
 		Assertions.assertThat(encoded.length()).isEqualTo(2);
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("azaz");
 	}
@@ -132,19 +133,19 @@ public class TestFsstV3 {
 		SymbolTable table = trainer.train(new byte[][] { input });
 
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
-		IByteSlice encoded = table.encodeAll(original);
+		IByteSlice encoded = table.encodeAll(IByteSlice.wrap(original));
 
 		Assertions.assertThat(encoded.length()).isEqualTo(4);
 
 		IByteSlice decoded = table.decodeAll(encoded);
 
 		Assertions.assertThat(decoded.length()).isEqualTo(original.length);
-		Assertions.assertThat(decoded.array()).contains(original);
+		Assertions.assertThat(decoded.buffer()).contains(original);
 	}
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		SymbolTable tableOriginal = trainer.train(List.of("hello hello hello"));
+		SymbolTable tableOriginal = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
 		SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
@@ -152,7 +153,7 @@ public class TestFsstV3 {
 		IByteSlice encoded = table.encodeAll("Hello");
 
 		IByteSlice decoded = table.decodeAll(encoded);
-		String decodedString = new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+		String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 		Assertions.assertThat(decodedString).isEqualTo("Hello");
 	}
@@ -175,8 +176,7 @@ public class TestFsstV3 {
 			IByteSlice encoded = table.encodeAll(input);
 
 			IByteSlice decoded = table.decodeAll(encoded);
-			String decodedString =
-					new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+			String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 			Assertions.assertThat(decodedString).isEqualTo(input);
 
@@ -195,7 +195,7 @@ public class TestFsstV3 {
 			List<String> inputs = List.of(input.split("[\r\n]+"));
 
 			for (int iRetry = 0; iRetry < nbRetryForBenchmark; iRetry++) {
-				SymbolTable table = trainer.train(inputs);
+				SymbolTable table = trainer.trainOverStrings(inputs);
 
 				long sizeEncoded = 0;
 
@@ -206,8 +206,7 @@ public class TestFsstV3 {
 					sizeEncoded += encoded.length();
 
 					IByteSlice decoded = table.decodeAll(encoded);
-					String decodedString =
-							new String(decoded.array(), decoded.offset(), decoded.length(), StandardCharsets.UTF_8);
+					String decodedString = decoded.asString(StandardCharsets.UTF_8);
 
 					Assertions.assertThat(decodedString).isEqualTo(entry);
 				}
@@ -224,6 +223,22 @@ public class TestFsstV3 {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void testEncode_ByteSliceWithOffset() {
+		SymbolTable table = trainer.trainOverStrings(List.of("01234567"));
+
+		IByteSlice full = IByteSlice.wrap("01234567".getBytes(StandardCharsets.UTF_8));
+		IByteSlice sub = full.sub(1, full.length() - 2);
+		IByteSlice encoded = table.encodeAll(sub);
+
+		Assertions.assertThat(encoded.length()).isEqualTo(12);
+
+		IByteSlice decoded = table.decodeAll(encoded);
+		String decodedString = decoded.asString(StandardCharsets.UTF_8);
+
+		Assertions.assertThat(decodedString).isEqualTo("123456");
 	}
 
 	private long byteLength(SymbolTable table) {

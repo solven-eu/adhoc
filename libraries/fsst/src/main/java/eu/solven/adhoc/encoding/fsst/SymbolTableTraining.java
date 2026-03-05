@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,9 +37,9 @@ import lombok.RequiredArgsConstructor;
  * @author Benoit Lacelle
  */
 // Not thread-safe due to shared encBuf
-@NotThreadSafe
+// @NotThreadSafe
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@SuppressWarnings("checkstyle:MagicNumber")
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
 final class SymbolTableTraining implements IFsstConstants {
 
 	final int[] shortCodes;
@@ -229,8 +227,8 @@ final class SymbolTableTraining implements IFsstConstants {
 		buildIndices();
 
 		// rebuildIndices(newCode);
-		SymbolTableDecoding decoding = buildDecoderTables(suffixLim);
-		return new SymbolTable(this, decoding);
+		SymbolTableDecoder decoding = buildDecoderTables(suffixLim);
+		return new SymbolTable(new SymbolTableEncoder(this, suffixLim), decoding);
 	}
 
 	@SuppressWarnings({ "PMD.UseVarargs", "PMD.AssignmentInOperand" })
@@ -356,7 +354,7 @@ final class SymbolTableTraining implements IFsstConstants {
 		}
 	}
 
-	SymbolTableDecoding buildDecoderTables(int suffixLim) {
+	SymbolTableDecoder buildDecoderTables(int suffixLim) {
 		// Decoder tables
 		byte[] decLen = new byte[255]; // code -> symbol length
 		long[] decSymbol = new long[255]; // code -> symbol value
@@ -367,6 +365,6 @@ final class SymbolTableTraining implements IFsstConstants {
 			decSymbol[code] = sym.val;
 		}
 
-		return new SymbolTableDecoding(decLen, decSymbol, suffixLim);
+		return new SymbolTableDecoder(decLen, decSymbol, suffixLim);
 	}
 }

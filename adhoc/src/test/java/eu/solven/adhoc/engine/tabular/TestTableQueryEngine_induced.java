@@ -32,22 +32,22 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.ISliceToValue;
-import eu.solven.adhoc.data.column.IValueProviderTestHelpers;
-import eu.solven.adhoc.data.column.SliceToValue;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
@@ -91,11 +91,11 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 		{
 			IMultitypeColumnFastGet<IAdhocSlice> columnFromTable = MultitypeHashColumn.<IAdhocSlice>builder().build();
-			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR"))).onLong(123);
-			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "USD"))).onLong(234);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR"))).onLong(123);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD"))).onLong(234);
 
-			ISliceToValue valuesFromTable = SliceToValue.builder().values(columnFromTable).column("ccy").build();
-			Map<CubeQueryStep, ISliceToValue> fromTable = new ConcurrentHashMap<>();
+			ICuboid valuesFromTable = Cuboid.builder().values(columnFromTable).column("ccy").build();
+			Map<CubeQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
 					valuesFromTable);
 			bootstrapped.walkUpInducedDag(fromTable, split);
@@ -107,12 +107,12 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 							valuesFromTable)
 					// induced
 					.hasEntrySatisfying(
-							CubeQueryStep.edit(cubeQuery).groupBy(IAdhocGroupBy.GRAND_TOTAL).measure(k1Sum).build(),
+							CubeQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).measure(k1Sum).build(),
 							t -> {
 								Assertions.assertThat(t.size()).isEqualTo(1);
 								Assertions
-										.assertThat(IValueProviderTestHelpers
-												.getLong(t.onValue(SliceAsMap.fromMap(Map.of()))))
+										.assertThat(
+												IValueProviderTestHelpers.getLong(t.onValue(SliceHelpers.grandTotal())))
 										.isEqualTo(0L + 123 + 234);
 							})
 					.hasSize(2);
@@ -161,13 +161,13 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 		{
 			IMultitypeColumnFastGet<IAdhocSlice> columnFromTable = MultitypeHashColumn.<IAdhocSlice>builder().build();
-			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR", "country", "France"))).onLong(123);
-			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "EUR", "country", "Germany"))).onLong(234);
-			columnFromTable.append(SliceAsMap.fromMap(Map.of("ccy", "USD", "country", "USA"))).onLong(345);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR", "country", "France"))).onLong(123);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR", "country", "Germany"))).onLong(234);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD", "country", "USA"))).onLong(345);
 
-			ISliceToValue valuesFromTable =
-					SliceToValue.builder().values(columnFromTable).columns(Set.of("ccy", "country")).build();
-			Map<CubeQueryStep, ISliceToValue> fromTable = new ConcurrentHashMap<>();
+			ICuboid valuesFromTable =
+					Cuboid.builder().values(columnFromTable).columns(Set.of("ccy", "country")).build();
+			Map<CubeQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(CubeQueryStep.edit(cubeQuery)
 					.groupBy(GroupByColumns.named("ccy", "country"))
 					.measure(k1Sum)
@@ -189,21 +189,21 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 								Assertions.assertThat(t.size()).isEqualTo(2);
 								Assertions
 										.assertThat(IValueProviderTestHelpers
-												.getLong(t.onValue(SliceAsMap.fromMap(Map.of("ccy", "EUR")))))
+												.getLong(t.onValue(SliceHelpers.asSlice(Map.of("ccy", "EUR")))))
 										.isEqualTo(0L + 123 + 234);
 								Assertions
 										.assertThat(IValueProviderTestHelpers
-												.getLong(t.onValue(SliceAsMap.fromMap(Map.of("ccy", "USD")))))
+												.getLong(t.onValue(SliceHelpers.asSlice(Map.of("ccy", "USD")))))
 										.isEqualTo(0L + 345);
 							})
 					// induced grandTotal
 					.hasEntrySatisfying(
-							CubeQueryStep.edit(cubeQuery).groupBy(IAdhocGroupBy.GRAND_TOTAL).measure(k1Sum).build(),
+							CubeQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).measure(k1Sum).build(),
 							t -> {
 								Assertions.assertThat(t.size()).isEqualTo(1);
 								Assertions
-										.assertThat(IValueProviderTestHelpers
-												.getLong(t.onValue(SliceAsMap.fromMap(Map.of()))))
+										.assertThat(
+												IValueProviderTestHelpers.getLong(t.onValue(SliceHelpers.grandTotal())))
 										.isEqualTo(0L + 123 + 234 + 345);
 							})
 					.hasSize(3);

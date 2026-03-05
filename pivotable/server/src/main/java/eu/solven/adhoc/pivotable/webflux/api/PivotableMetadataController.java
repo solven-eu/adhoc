@@ -26,13 +26,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
@@ -103,7 +103,7 @@ public class PivotableMetadataController {
 					queryOptions.add(ImmutableMap.<String, Object>builder()
 							.put(K_NAME, option.toString())
 							.put(K_DESC, "Missing description for " + option.toString())
-							.put("tags", Set.of("internal"))
+							.put("tags", ImmutableSet.of("internal"))
 							.build());
 				}
 			}

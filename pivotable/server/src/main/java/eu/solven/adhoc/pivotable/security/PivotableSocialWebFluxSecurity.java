@@ -190,8 +190,7 @@ public class PivotableSocialWebFluxSecurity {
 								// if logged in, we redirect to the loginSuccess URL
 								"/api/login/v1/html",
 								// see TestSecurity_WithOAuth2_asOAuth2User.testLogout() for the workflow
-								"/api/login/v1/logout"
-								)
+								"/api/login/v1/logout")
 						.permitAll()
 
 						.pathMatchers(

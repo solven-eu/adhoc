@@ -31,7 +31,7 @@ import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
-import eu.solven.adhoc.measure.IMeasureForest;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.extern.slf4j.Slf4j;
 

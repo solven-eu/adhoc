@@ -71,7 +71,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 		AtomicLongMap<Object> map;
 
 		@Override
-		public void acceptValueReceiver(IValueReceiver valueReceiver) {
+		public void acceptReceiver(IValueReceiver valueReceiver) {
 			valueReceiver.onObject(map);
 		}
 	}

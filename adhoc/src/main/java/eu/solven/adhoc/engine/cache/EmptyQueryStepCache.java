@@ -25,7 +25,7 @@ package eu.solven.adhoc.engine.cache;
 import java.util.Map;
 import java.util.Optional;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,12 +38,12 @@ import lombok.extern.slf4j.Slf4j;
 public class EmptyQueryStepCache implements IQueryStepCache {
 
 	@Override
-	public Optional<ISliceToValue> getValue(CubeQueryStep step) {
+	public Optional<ICuboid> getValue(CubeQueryStep step) {
 		return Optional.empty();
 	}
 
 	@Override
-	public void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues) {
+	public void pushValues(Map<CubeQueryStep, ICuboid> queryStepToValues) {
 		log.debug("Nothing to register");
 
 	}

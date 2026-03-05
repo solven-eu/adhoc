@@ -31,8 +31,8 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceToValue;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
@@ -128,7 +128,7 @@ public interface ITableQueryOptimizer {
 	 */
 	IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
-			Map<CubeQueryStep, ISliceToValue> stepToValues,
+			Map<CubeQueryStep, ICuboid> stepToValues,
 			CubeQueryStep induced);
 
 }

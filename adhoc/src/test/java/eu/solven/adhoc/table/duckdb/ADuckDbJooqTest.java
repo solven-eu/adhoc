@@ -22,19 +22,21 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import org.jooq.DSLContext;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
-import eu.solven.adhoc.ARawDagTest;
-import eu.solven.adhoc.table.sql.AdhocJooqHelper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+public abstract class ADuckDbJooqTest extends AJooqTest {
 
-public abstract class ADuckDbJooqTest extends ARawDagTest {
-
-	static {
-		AdhocJooqHelper.disableBanners();
+	@Override
+	public IDSLSupplier makeDSLSupplier() {
+		return DuckDBHelper.inMemoryDSLSupplier();
+		// DuckDBConnection duckDbConnection = DuckDBHelper.makeFreshInMemoryDb();
+		// try {
+		// duckDbConnection.setAutoCommit(false);
+		// } catch (SQLException e) {
+		// throw new IllegalStateException("Issue while setting autoCommit=false", e);
+		// }
+		// return DuckDBHelper.dslSupplier(duckDbConnection);
 	}
 
-	protected final DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
-	protected final DSLContext dsl = dslSupplier.getDSLContext();
 }

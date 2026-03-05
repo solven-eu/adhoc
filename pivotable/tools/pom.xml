@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.16-SNAPSHOT</version>
+		<version>0.0.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-tools</artifactId>
@@ -15,6 +15,7 @@
 	<properties>
 		<jacoco.branch.ratio>0.00</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.09</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.pivotable.tools</automatic.module.name>
 	</properties>
 
 	<dependencies>

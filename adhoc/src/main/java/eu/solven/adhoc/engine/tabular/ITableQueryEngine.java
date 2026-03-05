@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -39,6 +39,6 @@ import eu.solven.adhoc.query.table.TableQuery;
 @FunctionalInterface
 public interface ITableQueryEngine {
 
-	Map<CubeQueryStep, ISliceToValue> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
+	Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
 
 }

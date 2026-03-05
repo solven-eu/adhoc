@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.IAdhocGroupBy;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -171,7 +171,7 @@ public class TestTableQueryV2 {
 		Assertions.assertThat(v2)
 				.hasSize(1)
 				.contains(TableQueryV2.builder()
-						.groupBy(IAdhocGroupBy.GRAND_TOTAL)
+						.groupBy(IGroupBy.GRAND_TOTAL)
 						.filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")))
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(Aggregator.empty())

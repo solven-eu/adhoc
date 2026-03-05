@@ -45,8 +45,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
-import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapper;
-import eu.solven.adhoc.table.google.bigquery.AdhocBigQueryTableWrapperParameters;
+import eu.solven.adhoc.table.google.bigquery.BigQueryTableWrapper;
+import eu.solven.adhoc.table.google.bigquery.BigQueryTableWrapperParameters;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -104,12 +104,12 @@ public class TestTableGoogleBigQuery {
 				.setRetrySettings(RetrySettings.newBuilder().setMaxAttempts(3).build())
 				.build();
 
-		AdhocBigQueryTableWrapperParameters dbParameters = AdhocBigQueryTableWrapperParameters
-				.builder(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
-				.bigQueryOptions(bigQueryOptions)
-				.build();
-		AdhocBigQueryTableWrapper bgDbWrapper =
-				AdhocBigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
+		BigQueryTableWrapperParameters dbParameters =
+				BigQueryTableWrapperParameters.builder(DSL.name("bigquery-public-data.stackoverflow.posts_questions"))
+						.bigQueryOptions(bigQueryOptions)
+						.build();
+		BigQueryTableWrapper bgDbWrapper =
+				BigQueryTableWrapper.bigquery().name("BigQuery").bigQueryParameters(dbParameters).build();
 
 		List<Map<String, ?>> rows = bgDbWrapper.streamSlices(TableQuery.builder()
 				.aggregator(Aggregator.sum("view_count"))

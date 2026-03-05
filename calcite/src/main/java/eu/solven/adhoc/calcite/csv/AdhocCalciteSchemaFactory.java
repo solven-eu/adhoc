@@ -26,7 +26,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.calcite.schema.Schema;
@@ -34,12 +33,13 @@ import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.springframework.core.env.StandardEnvironment;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -90,7 +90,7 @@ public class AdhocCalciteSchemaFactory implements SchemaFactory {
 
 		Set<IQueryOption> queryOptions = Stream.of(StandardQueryOptions.values())
 				.filter(o -> Boolean.TRUE.equals(operand.get(o.name())))
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 
 		return new AdhocCalciteSchema(schema, queryOptions);
 	}

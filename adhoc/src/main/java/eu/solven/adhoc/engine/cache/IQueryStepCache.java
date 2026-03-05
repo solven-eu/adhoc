@@ -25,7 +25,7 @@ package eu.solven.adhoc.engine.cache;
 import java.util.Map;
 import java.util.Optional;
 
-import eu.solven.adhoc.data.column.ISliceToValue;
+import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
@@ -45,14 +45,14 @@ public interface IQueryStepCache {
 	/**
 	 * 
 	 * @param step
-	 * @return a {@link Optional} {@link ISliceToValue} for given {@link CubeQueryStep}.
+	 * @return a {@link Optional} {@link ICuboid} for given {@link CubeQueryStep}.
 	 */
-	Optional<ISliceToValue> getValue(CubeQueryStep step);
+	Optional<ICuboid> getValue(CubeQueryStep step);
 
-	default void pushValue(CubeQueryStep step, ISliceToValue value, SizeAndDuration sizeAndDuration) {
+	default void pushValue(CubeQueryStep step, ICuboid value, SizeAndDuration sizeAndDuration) {
 		pushValues(Map.of(step, value));
 	}
 
-	void pushValues(Map<CubeQueryStep, ISliceToValue> queryStepToValues);
+	void pushValues(Map<CubeQueryStep, ICuboid> queryStepToValues);
 
 }

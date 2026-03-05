@@ -6,6 +6,7 @@
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=bugs)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![codecov](https://codecov.io/gh/solven-eu/adhoc/graph/badge.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/solven-eu/adhoc/badge)](https://securityscorecards.dev/viewer/?uri=github.com/solven-eu/adhoc)
 
 ## Motivation
 
@@ -34,12 +35,14 @@ This repository includes 2 products:
 - [DAX](https://learn.microsoft.com/en-us/dax/dax-overview) enables complex queries in Microsoft eco-system.
 - [SquashQL](https://www.squashql.io/) is an SQL query-engine for OLAP, with a strong emphasis on its typescript UI.
 - [Atoti PostProcessors](https://docs.activeviam.com/products/atoti/server/6.1.1/docs/cube/postprocessors/) is the standard Atoti way of building complex tree of measures on top of Atoti cubes.
+- [Atoti DirectQuery](https://docs.activeviam.com/products/atoti/server/6.1/docs/directquery/getting_started/) enables Atoti to query an external Database instead of querying in own InMemory cubes.
 
 ### Similar but not drop-in replacement projects
 
 - [Drill](https://drill.apache.org/): much stronger to be queried in SQL by BI Tools. Unclear strategy to define a large tree of measures.
 - [Cube.js](https://cube.dev/docs/guides/recipes/data-modeling/filtered-aggregates), but ability to define a large tree of complex measure may not be sustainable.
 - [DBT Metrics](https://docs.getdbt.com/docs/build/metrics-overview), but ability to define a large tree of complex measure may not be sustainable.
+- [Polars](https://pola.rs/) enables data-processing on a single machine.
 
 # Quick-start
 
@@ -57,8 +60,8 @@ CPU: any JVM can run Adhoc. If multiple cores are available, Adhoc will takes ad
 Assuming your data is queryable with JooQ:
 
 ```
-myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-        .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+myTableWrapper = new JooqTableWrapper(JooqTableWrapperParameters.builder()
+        .dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
         .table(yourJooqTableLike)
         .build());
 ```
@@ -66,8 +69,8 @@ myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.build
 For local `.parquet` files, it can be done with:
 
 ```
-myTableWrapper = new AdhocJooqTableWrapper(AdhocJooqTableWrapperParameters.builder()
-        .dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+myTableWrapper = new JooqTableWrapper(JooqTableWrapperParameters.builder()
+        .dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
         .table(DSL.table(DSL.unquotedName("read_parquet('myRootFolder/2025-*-BaseFacts_*.parquet', union_by_name=True)")))
         .build());
 ```
@@ -105,7 +108,7 @@ CubeQueryEngine engine = CubeQueryEngine.builder().eventBus(AdhocTestHelper.even
 ITabularView view = engine.execute(CubeQuery.builder().measure(k1SumSquared.getName()).debug(true).build(), jooqDb);
 MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 
-Assertions.assertThat(mapBased.keySet().map(AdhocSliceAsMap::getCoordinates).toList())
+Assertions.assertThat(mapBased.keySet().map(SliceAsMap::getCoordinates).toList())
         .containsExactly(Map.of());
 Assertions.assertThat(mapBased.getCoordinatesToValues())
         .containsEntry(Map.of(), Map.of(k1SumSquared.getName(), (long) Math.pow(123 + 234, 2)));
@@ -135,6 +138,8 @@ flowchart TD
     ITableWrapper --> RedShift
     ITableWrapper --> BigQuery
 ```
+
+[Class graph](ARCHITECTURE.MMD)
 
 ## General Query Flow
 
@@ -175,8 +180,8 @@ Adhoc is not a database, it is a query engine. It knows how to execute complex K
 
 Typical tables are:
 
-- CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqSqlTable](JooqSqlTable).
-- Any SQL table: you should rely on [JooqSqlTable](JooqSqlTable), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
+- CSV or Parquet files: Adhoc recommends querying local/remote CSV/Parquet files through [DuckDb](https://duckdb.org/), with the [JooqTableWrapper](JooqTableWrapper).
+- Any SQL table: you should rely on [JooqTableWrapper](JooqTableWrapper), possibly requiring a [Professional or Enterprise JooQ license](https://www.jooq.org/download/#databases).
 - ActivePivot/Atoti
 - Your own Database implementing `ITableWrapper`
 
@@ -205,7 +210,7 @@ In case of a table with `JOIN`s, one would often encounter ambiguities when quer
 
 In such a case, one can resolve ambiguities by resolving them in a `ITableWrapper`. For instance:
 ```java
-MapTableTranscoder.builder()
+MapTableAliaser.builder()
     .queriedToUnderlying("someColumn", "someTable.someColumn")
     .build()
 ```
@@ -231,7 +236,7 @@ Measures are evaluated for a slice, defined by the `groupBy` and the `filter` of
 
 - Combinator neither change the `groupBy` nor the `filter`.
 - Filtrator adds a `filter`, AND-ed with node own `filter`.
-- Bucketor adds a `groupBy`, UNION-ed with node own `groupBy`.
+- Partitionor adds a `groupBy`, UNION-ed with node own `groupBy`.
 
 ### Aggregation Functions
 
@@ -259,7 +264,7 @@ On top of aggregated-measures, one can define transformators.
 
 - Combinator: the simplest transformation evaluate a formula over underlying measures. (e.g. `sumMeasure=a+b`).
 - Filtrator: evaluate underlying measure with a coordinate when the filter is enforced. The node `filter` is AND-ed with the `measure` filter. Hence, if the query filters `country=France` and the filtrator filters `country=Germany`, then the result is empty.
-- Bucketor: evaluates the underlying measures with an additional groupBy, then aggregates up to the node granularity.
+- Partitionor: evaluates the underlying measures with an additional groupBy, then aggregates up to the node granularity.
 - Dispatchor: given an cell, it will contribute into multiple cells. Useful for `many-to-many` or `rebucketing`.
 
 # Many-to-many
@@ -461,7 +466,7 @@ A `IValueMatcher` applies to any `Object`. The variety of `IValueMatcher` is qui
 
 ## Implementing custom operators
 
-Adhoc provides a `StandardOperatorsFactory` including generic operators (e.g. `SUM`). 
+Adhoc provides a `StandardOperatorFactory` including generic operators (e.g. `SUM`).
 
 - It can refer to custom operators by referring them by their `Class.getName()` as key.
 - Your custom `IAggregation`/`ICombination`/`IDecomposition`/`IFilterEditor` should then have:
@@ -471,12 +476,12 @@ Adhoc provides a `StandardOperatorsFactory` including generic operators (e.g. `S
 One may also define a custom `IOperatorsFactory`:
 
 - by extending it
-- by creating your own `IOperatorsFactory` and combining with `CompositeOperatorsFactory`
-- by adding a fallback strategy with `DummyOperatorsFactory`
+- by creating your own `IOperatorsFactory` and combining with `CompositeOperatorFactory`
+- by adding a fallback strategy with `DummyOperatorFactory`
 
 ## About performance
 
-Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table.
+Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. Very large queries can be performed with limited resources (e.g. a JVM with a few GB of RAM) and may take seconds/minutes.
 
 The limiting factor in term of performance is generally the under table, which executes aggregations at the granularity requested by Adhoc, induced by the User `GROUP BY`, and those implied by some formulas (e.g. a `Partitionor` by Currency). 
 
@@ -488,7 +493,7 @@ Adhoc performances can be improved by:
 
 ### Concurrency
 
-As of `0.0.5`, concurrency is not enabled by default, but it can be enabled through `StandardQueryOptions.CONCURRENT`.
+Concurrency is enabled by default (`StandardQueryOptions.CONCURRENT`), but it can be disabled through `StandardQueryOptions.SEQUENTIAL`.
 
 Non-concurrent queries are executed in the calling-thread (e.g. `MoreExecutors.newDirectExecutorService()`).
 
@@ -503,99 +508,6 @@ Concurrent sections are:
 If you encounter a case which performance would be much improved by multi-threading, please report its specificities through a new issue. A benchmark / unitTest demonstrating the case would be very helpful.
 
 `parallelism` can be configured in `AdhocUnsafe.parallelism` or through `-Dadhoc.parallelism=16`.
-
-### Caching
-
-Adhoc enables caching in multiple places. These caches have to be activated manually (e.g. by decorating your `ITableWrapper` with a `CachingTableWrapper`).
-
-Caching as a whole can be disabled with `StandardQueryOptions.NO_CACHE`. It is useful for end-to-end benchmarks, or investigating caching issues.
-
-#### Caching `CubeQuerySteps`
-
-One can add a cache over the results associated to an `CubeQueryStep`. This cache may keep entries associated to any step in a `CubeQueryStep` DAG. Given FIFO principle, if one execute twice the same query, the highest entries from the first query should remain in cache (while lowest entries may be discarded due to cache maximum size) ; hence, second query would be answered right-away, without re-executing the rest of the `CubeQueryStep`.
-
-```
-CubeWrapper.builder()
-.table(tableWrapper)
-.queryPreparator(StandardQueryPreparator.builder().queryStepCache(GuavaQueryStepCache.withSize(1024)).build())
-.build();
-```
-
-#### Caching `ITableWrapper`
-
-One can add a cache over the `ITableWrapper`. It will keep in cache the output from previous `TableQueries`. This may not lead to expected performances as reading from the cache leads to additional effort (e.g. merging a `ISliceToValue` from the table for one measure, and another from the cache for another measure requires some JOIN operation (e.g. aligning the slices from the 2 distinct `ISliceToValue`), which may not happen if both measures was queried in the same `tableQuery`).
-
-```
-ITableWrapper directTableWrapper = ...;
-ITableWrapper cachingTableWrapper = CachingTableWrapper.builder().decorated(directTableWrapper).builder();
-```
-
-`CachingTableWrapper` can be customized given its `cache` field, which is a plain Guava cache.
-
-# Query Optimizations
-
-Adhoc, as a query engine, has various optimizations regarding its own execution, and how it interacts with `ITableWrapper`.
-
-## `ISliceFilter` optimizations
-
-Given some `ISliceFilter`, these may be automatically optimized into a simpler expression. Typically:
-- `a==a1|a:like:a%` is automatically turned into `a:like:a%`
-
-Most of these optimizations are done by `FilterOptimizerHelpers`.
-
-Beware, it is currently difficult to tweak these optimization (neither to add a feature, nor to fix a bug).
-
-`FilterOptimizerHelpers.andNotOptimized` is based on a cost function, to decide when to prefer `!a&!b&!c` over `!(a|b|c)`.
-
-Beware, these optimizations are sensitive as they are used through the engines for various optimizations (e.g. detecting a common `AND` clause between different filters). It is
-crucial that such a recombination (e.g. from a common `WHERE` and individual `FILTER`) to produce the exact same (i.e. regarding `hashode/equals`) filter, in order
-to get back into the original filter, hence the original `CubeQueryStep`.
-
-## `IValueMatcher` optimizations
-
-Given some `optimizations`, these may be automatically optimized into a simpler expression. Typically:
-- `==a1|like:a%` is automatically turned into `like:a%`
-
-Beware, it is currently difficult to tweak these optimization (neither to add a feature, nor to fix a bug).
-
-## `ITableQuery` optimizations
-
-Given a set of `CubeQueryStep` referring an `Aggregator`, these may be grouped together to minimize the number of queries submitted to `ITableWrapper`.
-
-For instance:
-- `SUM(a) WHERE f1 AND f2` and `SUM(B) WHERE f1` may be grouped into `SUM(a) FILTER f2, SUM(b) WHERE f1`
-
-It is also possible to change the way queries are grouped together (typically on a per-`GROUP BY` basis) in order to execute less queries (though these queries would query irrelevant information):
-
-```java
-CubeWrapper cube = CubeWrapper.builder()
-    .name(table.getName())
-    .table(table)
-    .forest(forest)
-    .engine(CubeQueryEngine.builder()
-            .tableQueryEngine(TableQueryEngine.builder().optimizerFactory(new ITableQueryOptimizerFactory() {
-
-                @Override
-                public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
-                    if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
-                        return new TableQueryOptimizerNone(factories);
-                    } else {
-                        return new TableQueryOptimizerSinglePerAggregator(factories);
-                    }
-                }
-            }).build())
-            .build())
-    .build();
-```
-
-`TableQueryOptimizerSinglePerAggregator` will merge all `GROUP BY` in a union of columns, and filters into a `OR`. Hence, in a single query, 
-it will be able to fetch al lthe necessary information.
-
-For instance:
-- Given `SUM(a1) GROUP BY b1 WHERE c1`
-- and `SUM(a2) GROUP BY b2 WHERE c2`
-- it will query `SUM(a1), SUM(a2) GROUP BY b1, b2 WHERE c1 OR c2`
-- If `GROUP BY b1, b2` is dense, and returns `p * q` cells where `p` is `GROUP BY b1` cardinality and `q` is `GROUP BY b2` cardinality, it leads to a query sensibly more complex than the 2 simpler ones.
 
 # ETL (Extract-Transform-Load) emulation
 
@@ -658,55 +570,13 @@ The column `customColumn` or `"customTable"."customColumn"` can now be reference
 
 `ICalculatedColumn` enables
 
-# Optimization
+# Optimizations
 
-## By caching in static caches
-
-In some cases, it seemed simpler to optimize the CPU performance by caching some intermediate results in static variables.
-
-A specific case is `.retainAll`:
-- When inducing an `ISliceToValue` by removing some columns in the `GROUP BY`
-- we can infer the induced sliced from the inducer slice with a `.retainAll(inducedColumns)`
-- which is called once per inducer slice.
-
-This step essentially relies on an operations similar to `Map.ketSet().retainAll(inducedColumns)` which is expensive as called once per slice, and exactly the same for each slice of the same `inducer+induced`.
-
-To improve this scenario, we introduce:
-- a ThreadLocal cache in `MaskedAdhocMap`, which operates as a Map from `inducedColumns+inducerColumns` to `maskedRetains+decoratedRetained`
-- we know ThreadLocal can be quite slow, but we observes this design enables great improvements at low design cost
-- typically, it does not require evolving the API by transporting the cached-result through the stack down to the deeper structure doing `.retainAll`
-
-# Compression
-
-Adhoc relies on various compression techniques to reduces the RAM consumption. It relies on multiple principles:
-- Most algorithm are mono-threaded, enabling a higher-level concurrency. For instance, dictionarization is mono-threaded per-block, concurrency applying through blocks.
-- While we may rely on caches, these are generally applicable on a per-query basis: dictionarization should not occur through queries.
-- Slices/columns/coordinates/members are compressed by expecting a lot of redundancy through (e.g. see `DistinctFreezer`).
-- Values/aggregates are compressed by expecting a lot of variability: they are generally compressed but not necessarily compressed (e.g. see `MultitypeHashColumn`).
-
+See [OPTIMISATIONS.MD](https://github.com/solven-eu/adhoc/blob/master/OPTIMISATIONS.MD) for details about optimizations involved in Adhoc.
 
 # Adhoc Unsafe
 
-Various inner parameters can be customized through static variables.
-
-## AdhocUnsafe
-
-## AdhocUnsafeMap
-
-Enables:
-- Clearing cross-queries caches related to `.retainAll`
-
-## AdhocFactoriesUnsafe
-
-Enables:
-- Custom factories as used by `AdhocFactories`
-
-## AdhocFreezingUnsafe
-
-Enables:
-- Custom freezers. Normal customization goes with `IFreezingStrategy`.
-- `AdhocFreezingUnsafe.setCheckPostCompression(true);` can be used to investigate data-corruption in compression algorithms.
-
+See [UNSAFE.MD](https://github.com/solven-eu/adhoc/blob/master/UNSAFE.MD) for details about how to perform advanced tweaks in Adhoc.
 
 # Roadmap / Limitations to lift soon
 
@@ -714,46 +584,11 @@ Enables:
 
 [m2-central](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 Changes: [CHANGES.MD](https://github.com/solven-eu/adhoc/blob/master/CHANGES.MD)
+Roadmap: [ROADMAP.MD](https://github.com/solven-eu/adhoc/blob/master/ROADMAP.MD)
 
 ## Limitations
 
 Known limitations would generally trigger a [`NotYetImplementedException`](https://github.com/search?q=repo%3Asolven-eu%2Fadhoc%20NotYetImplementedException&type=code): please open a ticket to report your actual use-case for given scenario.
-
-## Feature Candidates
-
-- [CodeGen] BDD: Automated generation of Scenario given an `ICubeQuery`
-- [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
-- [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN` from a composite-cube to its subQueries.
-- [EXPLAIN] Provide metric about memory usage (e.g. footprint from table, footprint for each queryStep)
-- [Resiliency] On querySteps errors: a failing measure should not break the whole query.
-- [Resiliency] Work on query cancellations/queryTimeouts
-- [SECURITY] Ability to hide some measures/columns from some Users
-- [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
-- [Composite] `getCoordinates` should be executed once per underlying cube
-- [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
-- [Feature] Enable a measure chain to be automatically injected in the measures DAG.
-- [Feature] Break rowspan on right columns
-- [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
-- [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.
-- [Feature] [Drillthrough](https://datascientest.com/drillthrough-power-bi)
-- [Pivotable] Fetch all column details in a single query
-- [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
-- [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
-- [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`. [DuckDB](https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html)
-- [Feature] Record statistics about used measures in storage, for easier re-use.
-- [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).
-- [Feature] `EXPLAIN`, when detailing durations, should print in order of execution (e.g. from `Aggregator` to queried measure).
-- [Feature] `EXPLAIN`, when detailing durations, should print the delay since the start of the query.
-- [Pivotable] Ordering of columns (e.g. a tenor column `3M < 1Y`).
-- [Pivotable] Enable browser-back to restore previous query.
-- [Feature] `CubeQuery` could enable `filter` and `customValue` per-measure. (Not easy as we may need to alias measures. May add an anonymous `Shiftor`/`Filtrator`).
-- [Metrics] Enable coverage on JS given PlayWright tests (https://playwright.dev/docs/api/class-coverage).
-- [Performance] Enable `QueryStepCache` to have a policy depending on the time to compute the result. One may want to cache only results which are slow to compute.
-- [Feature] Pivotable should cancel previous query (if still running) when editing the wizard.
-- [Feature] Ability to edit an input query. For instance, if as `AsOf` is not defined, we may have a logic (with DB round-trip) to fetch the relevant default `asOf`.
-- [Feature] If a query generates a too large column, add investigation information (like the output of `COUNT(GROUP BY)` from table).
-- [Feature] Columns ordering should be evaluated dynamically, to increase order inference in Shiftor and table-columns inference..
-- [Performance] Table queries should be automatically partitioned table-side on some access. Typically, if one know the underlying data is partitioned by `c`, we should be able to query from `WHERE c % 8 = 0` to `WHERE c % 8 = 7`
 
 # Sponsors
 

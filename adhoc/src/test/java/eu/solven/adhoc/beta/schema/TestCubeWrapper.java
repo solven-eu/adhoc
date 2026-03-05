@@ -33,7 +33,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.tabular.optimizer.CubeWrapperEditor;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 

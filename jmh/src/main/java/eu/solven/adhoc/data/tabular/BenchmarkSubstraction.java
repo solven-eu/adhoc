@@ -41,9 +41,9 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.data.row.ISlicedRecord;
+import eu.solven.adhoc.data.row.SlicedRecordFromSlices;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
 import eu.solven.adhoc.measure.transformator.ICombinationBinding;
-import eu.solven.adhoc.measure.transformator.iterator.SlicedRecordFromSlices;
 import eu.solven.adhoc.primitive.IValueProvider;
 
 /**

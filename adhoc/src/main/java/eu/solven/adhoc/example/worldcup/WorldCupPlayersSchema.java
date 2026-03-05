@@ -48,11 +48,11 @@ import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.measure.IMeasureForest;
-import eu.solven.adhoc.measure.MeasureForest;
 import eu.solven.adhoc.measure.combination.ConstantCombination;
 import eu.solven.adhoc.measure.decomposition.CumulatingDecomposition;
 import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -64,13 +64,13 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.DSLSupplier;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -205,7 +205,7 @@ public class WorldCupPlayersSchema {
 	}
 
 	public ITableWrapper getTable(String tableName) {
-		DSLSupplier dslSupplier = DuckDbHelper.inMemoryDSLSupplier();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
 

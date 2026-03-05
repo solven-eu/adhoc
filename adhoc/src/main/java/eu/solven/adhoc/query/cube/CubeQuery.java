@@ -23,19 +23,20 @@
 package eu.solven.adhoc.query.cube;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.measure.IHasMeasures;
-import eu.solven.adhoc.measure.IMeasureForest;
 import eu.solven.adhoc.measure.ReferencedMeasure;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
@@ -60,7 +61,7 @@ import lombok.extern.jackson.Jacksonized;
  * @author Benoit Lacelle
  */
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Jacksonized
 public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions {
 
@@ -69,7 +70,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 	@NonNull
 	@Default
-	IAdhocGroupBy groupBy = IAdhocGroupBy.GRAND_TOTAL;
+	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
 	// Not @Singular as we added manually the relevant @Builder methods
 	ImmutableSet<IMeasure> measures;
 
@@ -179,11 +180,9 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		}
 
 		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
-			Set<IAdhocColumn> allGroupByColumns = new HashSet<>();
-
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
-			allGroupByColumns.addAll(this.build().getGroupBy().getNameToColumn().values());
-			groupBys.stream().forEach(allGroupByColumns::add);
+			ImmutableSet<IAdhocColumn> allGroupByColumns =
+					AdhocCollectionHelpers.copyOfSets(this.build().getGroupBy().getNameToColumn().values(), groupBys);
 
 			groupBy(GroupByColumns.of(allGroupByColumns));
 
@@ -196,6 +195,14 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 
 		public CubeQueryBuilder groupByAlso(String firstGroupBy, String... moreGroupBys) {
 			groupByAlso(Lists.asList(firstGroupBy, moreGroupBys).stream().map(ReferencedColumn::ref).toList());
+
+			return this;
+		}
+
+		// Leads to Jackson issues
+		@JsonIgnore
+		public CubeQueryBuilder groupByAlso(IGroupBy groupBy) {
+			groupByAlso(groupBy.getNameToColumn().values());
 
 			return this;
 		}
@@ -240,6 +247,10 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 	 * @return
 	 */
 	public static CubeQueryBuilder edit(IWhereGroupByQuery query) {
+		if (query instanceof CubeQuery cubeQuery) {
+			return cubeQuery.toBuilder();
+		}
+
 		CubeQueryBuilder builder = CubeQuery.builder().filter(query.getFilter()).groupBy(query.getGroupBy());
 
 		if (query instanceof IHasMeasures hasMeasures) {

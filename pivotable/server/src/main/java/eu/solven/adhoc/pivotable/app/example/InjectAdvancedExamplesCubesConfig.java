@@ -35,12 +35,12 @@ import org.springframework.context.annotation.Profile;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.DuckDbHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -73,7 +73,7 @@ public class InjectAdvancedExamplesCubesConfig {
 		}
 		JooqTableWrapper table = new JooqTableWrapper("ban",
 				JooqTableWrapperParameters.builder()
-						.dslSupplier(DuckDbHelper.inMemoryDSLSupplier())
+						.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
 						.table(DSL.table("'%s'".formatted(pathToParquet)))
 						.build());
 

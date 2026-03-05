@@ -42,7 +42,7 @@ import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.pepper.mappath.MapPathGet;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -79,7 +79,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	});
 
 	public DuplicatingDecomposition(Map<String, ?> options) {
-		columnToCoordinates = MapPathGet.getRequiredMap(options, K_COLUMN_TO_COORDINATES);
+		columnToCoordinates = AdhocMapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
 	}
 
 	protected Set<String> getDuplicatedColumns() {
@@ -215,9 +215,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 			// Filter coordinates according to filters
 			// BEWARE This is a 1D filtering: some combinations may be filtered (e.g. with an OR).
 			IValueMatcher valueMatcher = getValueMatcher(slice, relevantColumn);
-			indexToGroupedByCoordinates.add(unfilteredCoordinates.stream()
-					.filter(valueMatcher::match)
-					.collect(ImmutableList.toImmutableList()));
+			indexToGroupedByCoordinates.add(unfilteredCoordinates.stream().filter(valueMatcher::match).toList());
 		}
 		return indexToGroupedByCoordinates;
 	}
@@ -229,7 +227,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		// Suppress duplicated columns as they are supposedly not provided by the ITableWrapper
-		return List.of(DecompositionHelpers.suppressColumn(step, getDuplicatedColumns()));
+		return ImmutableList.of(DecompositionHelpers.suppressColumn(step, getDuplicatedColumns()));
 	}
 
 }

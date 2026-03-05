@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.resource;
 
-import eu.solven.adhoc.query.filter.value.IHasWrapped;
+import eu.solven.adhoc.util.IHasWrapped;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.jsontype.TypeSerializer;

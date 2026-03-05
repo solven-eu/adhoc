@@ -53,6 +53,9 @@ public class AdhocFreezingUnsafe {
 			.add(new LongFreezer())
 			.add(new IntegerFreezer())
 			.add(new FsstFreezingWithContext())
+			// Fallback: normalise any remaining AdhocUtf8 values to String when FSST did not fire
+			// (e.g. mixed-type columns where FSST only handles pure-text columns)
+			.add(new Utf8ToStringFreezer())
 			.build();
 
 	@Getter

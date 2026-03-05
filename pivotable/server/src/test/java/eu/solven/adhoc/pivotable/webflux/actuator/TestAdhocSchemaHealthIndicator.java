@@ -30,10 +30,9 @@ import org.springframework.mock.env.MockEnvironment;
 
 import com.google.common.collect.ImmutableMap;
 
-import ch.qos.logback.core.status.Status;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.measure.MeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 

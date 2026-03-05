@@ -37,11 +37,11 @@ import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
 public class TestAdhocMapHelpers {
+	ISliceFactory sliceFactory =
+			AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+
 	@Test
 	public void testFromMapIdentity() {
-		ISliceFactory sliceFactory =
-				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
-
 		IAdhocMap original = sliceFactory.newMapBuilder(List.of("c")).append("v").build();
 		ITabularRecord originalRecord =
 				TabularRecordOverMaps.builder().groupBy(original.asSlice()).aggregate("a", 123L).build();
@@ -61,5 +61,18 @@ public class TestAdhocMapHelpers {
 
 		Assertions.assertThat(transcoded).isNotSameAs(originalRecord).isEqualTo(originalRecord);
 		Assertions.assertThat((Map) transcoded.getGroupBys().asAdhocMap()).isSameAs(original);
+	}
+
+	@Test
+	public void testFromMap_misordered() {
+		IAdhocMap original = sliceFactory.newMapBuilder(List.of("c", "a", "b")).append("c1", "a1", "b1").build();
+
+		IAdhocMap fromMap = AdhocMapHelpers.fromMap(sliceFactory, original.asSlice().getCoordinates());
+
+		Assertions.assertThat((Map) fromMap)
+				.isEqualTo(original)
+				.hasSameHashCodeAs(original)
+				.hasToString(original.toString());
+
 	}
 }

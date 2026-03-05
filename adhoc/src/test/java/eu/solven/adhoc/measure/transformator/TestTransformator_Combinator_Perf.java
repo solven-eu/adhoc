@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -120,7 +119,7 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 				.containsEntry(Map.of("row_index", maxCardinality - 1L),
 						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 
 	@Test
@@ -139,6 +138,6 @@ public class TestTransformator_Combinator_Perf extends ADagTest implements IAdho
 				.containsEntry(Map.of("row_index", maxCardinality - 1L),
 						Map.of(timesN, 0L + (maxCardinality - 1) * (1L << height)));
 
-		log.info("Performance report:{}{}", "\r\n", messages.stream().collect(Collectors.joining("\r\n")));
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
 	}
 }

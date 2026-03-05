@@ -41,7 +41,7 @@ import lombok.NoArgsConstructor;
  * 
  */
 // empty constructor for Externalizable
-@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MissingSerialVersionUID" })
+@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MissingSerialVersionUID", "PMD.PublicMemberInNonPublicType" })
 @NoArgsConstructor
 final class SymbolTableExternalizable implements IFsstConstants, Externalizable {
 	// not final for readExternal
@@ -58,7 +58,7 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 	@Override
 	public void writeExternal(ObjectOutput w) throws IOException {
 		long ver = (FSST_VERSION << 32) | ((long) symbolTable.decoding.suffixLim << 16)
-				| ((long) symbolTable.symbols.nSymbols << 8)
+				| ((long) symbolTable.encoder.symbols.nSymbols << 8)
 				| 1;
 		byte[] buf8 = new byte[8];
 		ByteBuffer.wrap(buf8).order(ByteOrder.LITTLE_ENDIAN).putLong(ver);
@@ -67,8 +67,8 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 		// lenHisto
 		byte[] lh = new byte[8];
 		int[] hist = new int[8];
-		for (int i = 0; i < symbolTable.symbols.nSymbols; i++) {
-			int len = symbolTable.symbols.symbols[i].length();
+		for (int i = 0; i < symbolTable.encoder.symbols.nSymbols; i++) {
+			int len = symbolTable.encoder.symbols.symbols[i].length();
 			if (len >= 1 && len <= 8) {
 				hist[len - 1]++;
 			}
@@ -79,8 +79,8 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 		w.write(lh);
 
 		// symbol bytes
-		for (int i = 0; i < symbolTable.symbols.nSymbols; i++) {
-			Symbol sym = symbolTable.symbols.symbols[i];
+		for (int i = 0; i < symbolTable.encoder.symbols.nSymbols; i++) {
+			Symbol sym = symbolTable.encoder.symbols.symbols[i];
 			int len = sym.length();
 			Arrays.fill(buf8, (byte) 0);
 			for (int b = 0; b < len; b++) {
@@ -142,11 +142,11 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 		}
 
 		t.buildIndices();
-		SymbolTableDecoding decoded = t.buildDecoderTables(suffixLim);
+		SymbolTableDecoder decoded = t.buildDecoderTables(suffixLim);
 
-		this.symbolTable = new SymbolTable(t, decoded);
-		SymbolTableDecoding fDecoding = decoded;
-		SymbolTableDecoding tDecoding = this.symbolTable.decoding;
+		this.symbolTable = new SymbolTable(new SymbolTableEncoder(t, suffixLim), decoded);
+		SymbolTableDecoder fDecoding = decoded;
+		SymbolTableDecoder tDecoding = this.symbolTable.decoding;
 		System.arraycopy(fDecoding.decLen, 0, tDecoding.decLen, 0, tDecoding.decLen.length);
 		System.arraycopy(fDecoding.decSymbol, 0, tDecoding.decSymbol, 0, tDecoding.decSymbol.length);
 	}

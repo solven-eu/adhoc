@@ -23,7 +23,7 @@
 package eu.solven.adhoc.calcite.csv;
 
 import java.util.AbstractList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +57,7 @@ import org.apache.calcite.util.trace.CalciteTrace;
 import org.slf4j.Logger;
 
 /**
- * Rules and relational operators for {@link AdhocCalciteRel#CONVENTION MONGO} calling convention.
+ * Rules and relational operators for {@link IAdhocCalciteRel#CONVENTION MONGO} calling convention.
  */
 public class MongoRules {
 	private MongoRules() {
@@ -141,7 +141,7 @@ public class MongoRules {
 		private final JavaTypeFactory typeFactory;
 		private final List<String> inFields;
 
-		private static final Map<SqlOperator, String> MONGO_OPERATORS = new HashMap<>();
+		private static final Map<SqlOperator, String> MONGO_OPERATORS = new LinkedHashMap<>();
 
 		static {
 			// Arithmetic
@@ -266,10 +266,10 @@ public class MongoRules {
 	 * Rule to convert a {@link org.apache.calcite.rel.core.Sort} to a {@link MongoSort}.
 	 */
 	private static class MongoSortRule extends MongoConverterRule {
-		static final MongoSortRule INSTANCE =
-				Config.INSTANCE.withConversion(Sort.class, Convention.NONE, AdhocCalciteRel.CONVENTION, "MongoSortRule")
-						.withRuleFactory(MongoSortRule::new)
-						.toRule(MongoSortRule.class);
+		static final MongoSortRule INSTANCE = Config.INSTANCE
+				.withConversion(Sort.class, Convention.NONE, IAdhocCalciteRel.CONVENTION, "MongoSortRule")
+				.withRuleFactory(MongoSortRule::new)
+				.toRule(MongoSortRule.class);
 
 		MongoSortRule(Config config) {
 			super(config);
@@ -293,7 +293,7 @@ public class MongoRules {
 	 */
 	private static class MongoFilterRule extends MongoConverterRule {
 		static final MongoFilterRule INSTANCE = Config.INSTANCE
-				.withConversion(LogicalFilter.class, Convention.NONE, AdhocCalciteRel.CONVENTION, "MongoFilterRule")
+				.withConversion(LogicalFilter.class, Convention.NONE, IAdhocCalciteRel.CONVENTION, "MongoFilterRule")
 				.withRuleFactory(MongoFilterRule::new)
 				.toRule(MongoFilterRule.class);
 
@@ -314,7 +314,7 @@ public class MongoRules {
 	 */
 	private static class MongoProjectRule extends MongoConverterRule {
 		static final MongoProjectRule INSTANCE = Config.INSTANCE
-				.withConversion(LogicalProject.class, Convention.NONE, AdhocCalciteRel.CONVENTION, "MongoProjectRule")
+				.withConversion(LogicalProject.class, Convention.NONE, IAdhocCalciteRel.CONVENTION, "MongoProjectRule")
 				.withRuleFactory(MongoProjectRule::new)
 				.toRule(MongoProjectRule.class);
 
@@ -411,7 +411,7 @@ public class MongoRules {
 				Config.INSTANCE
 						.withConversion(LogicalAggregate.class,
 								Convention.NONE,
-								AdhocCalciteRel.CONVENTION,
+								IAdhocCalciteRel.CONVENTION,
 								"MongoAggregateRule")
 						.withRuleFactory(MongoAggregateRule::new)
 						.toRule(MongoAggregateRule.class);

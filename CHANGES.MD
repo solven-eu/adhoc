@@ -2,6 +2,16 @@ This document is intended for Adhoc developers and users.
 
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
+
+## [0.0.17]
+
+### Added
+
+### Changed
+- `ISliceToValue` is renamed `ICuboid`.
+- Introduce `adhoc-dataframe`, `adhoc-measures`, `adhoc-cell` maven modules.
+
+
 ## [0.0.16]
 
 ### Added
@@ -9,6 +19,24 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduce `Aggregator.AggregatorBuilder.lambda(ILambdaAggregation)` which enables defining an `IAggregation` through a lambda.
 - Introduce `adhoc-encoding` module, to remove core algorithms from Adhoc Query Engine.
 - Prepare partitioning of table queries (e.g. `IQueryPartitionor`), to help concurrency in table own engine, and in Adhoc by received partitioned results.
+- `DuckDBTableWrapper` enables Arrow-support for fetching query results.
+- `AdhocUnsafe.getNullComparator()` for `Map` comparison. This behavior can be customized with `AdhocUnsafe.setNullComparator()`.
+- Enable customization of JDBC `fetchSize` through `JooqTableWrapperParameters.statementFetchSize`. Default is `16*1024=16_384`.
+- Add probe to warn if JDBC `autoCommit` is false.
+- Introduce DuckDB as an option to reduce induced tableResults (see `IInducedEvaluator`).
+- Introduce `ClickHouseTableWrapper` to enable Arrow connectivity.
+
+### Changed
+- Optimize `CompositeCubesTableWrapper.transcodeSliceToComposite` by computing the missing columns mask only once, and leveraging `IAdhocSlice.addColumns(Map<String, ?>)`.
+- `adhoc-atoti` dependencies over ActivePivot/Atoti are not minimal (e.g. no more `activepivot-server-spring`).
+- Move Checkstyle configuration so that a call to `mvn checkstyle:check` relies on the standard Adhoc configuration.
+- `DSLSupplier` is renamed `IDSLSupplier`.
+- `AdhocMapHelpers.immutableCoyOf(Map)` is moved to `ImmutableHelpers.copyOf(Map)`
+- Introduced `testcontainers` to check Adhoc against various Databases (PostgreSQL, YugaByteDB, CLickHouse, MySQL, MariaDB, )
+
+### Fixed
+- `SequencedSetLikeList.toArray()` now returns a sequenced array. It fixes bugs around `ImmutableList.copyOf()`.
+- `AbstractAdhocMap.compareTo` was not managing `NULL_HOLDER` properly.
 
 ## [0.0.15]
 
@@ -25,7 +53,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Pivotable spring profiles has been reworked. There is more a default `application.yml`, but one should import `pivotable-config.yml`.
 
 ### Removed
-
 - `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
 - `IMultitypeColumnFastGet.set(T)` is removed. You can rely on `.append(T)` which has a clearer semantic.
 

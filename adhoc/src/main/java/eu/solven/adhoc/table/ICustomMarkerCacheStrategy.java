@@ -23,7 +23,6 @@
 package eu.solven.adhoc.table;
 
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.table.cache.CachingTableWrapper;
 
 /**
  * Helps managing how a customMarker would impact the cache.
