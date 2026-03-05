@@ -29,7 +29,6 @@ import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

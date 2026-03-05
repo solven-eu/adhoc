@@ -29,7 +29,7 @@
 			<artifactId>adhoc-fsst</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-cell</artifactId>
@@ -60,7 +60,7 @@
 			<artifactId>adhoc-experimental</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>pivotable-server</artifactId>

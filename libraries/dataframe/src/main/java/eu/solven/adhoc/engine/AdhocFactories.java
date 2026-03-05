@@ -50,6 +50,12 @@ import lombok.Value;
 @Value
 @Builder(toBuilder = true)
 public class AdhocFactories implements IAdhocFactories {
+
+	// Memorize the noOption sliceFactory, to prevent making too many ColumnSliceFactory, as each would allocate a page
+	// for potentially a single row
+	protected Supplier<ISliceFactory> sliceFactorySupplier =
+			Suppliers.memoize(() -> getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()));
+
 	@NonNull
 	@Default
 	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
@@ -78,9 +84,6 @@ public class AdhocFactories implements IAdhocFactories {
 	public IMeasureQueryStepFactory getMeasureQueryStepFactory() {
 		return IMeasureQueryStepFactory.standard(this);
 	}
-	
-	// Memorize the noOption sliceFactory, to prevent making too many ColumnSliceFactory, as each would allocate a page for potentially a single row
-	protected Supplier<ISliceFactory> sliceFactorySupplier = Suppliers.memoize(() -> getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()));
 
 	@Override
 	public ISliceFactory getSliceFactory() {
