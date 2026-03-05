@@ -693,12 +693,17 @@ public class TableQueryEngineBootstrapped {
 			IMultitypeColumnFastGet<IAdhocSlice> column) {
 		Map<String, ?> constantValues = valuesForSuppressedColumns(suppressedColumns, queryStep);
 
-		boolean match = FilterMatcher.builder().filter(queryStep.getFilter()).onMissingColumn(cf -> {
-			// We test only suppressedColumns for now
-			// TODO We should actually test each slice individually. It would lead to issues on complex filters (e.g.
-			// with OR), and fails around `eu.solven.adhoc.engine.step.SliceAsMapWithStep.asFilter()`.
-			return true;
-		}).build().match(constantValues);
+		boolean match = FilterMatcher.builder()
+				.sliceFactory(factories.getSliceFactory())
+				.filter(queryStep.getFilter())
+				.onMissingColumn(cf -> {
+					// We test only suppressedColumns for now
+					// TODO We should actually test each slice individually. It would lead to issues on complex filters
+					// (e.g. with OR), and fails around `eu.solven.adhoc.engine.step.SliceAsMapWithStep.asFilter()`.
+					return true;
+				})
+				.build()
+				.match(constantValues);
 
 		if (match) {
 			return GroupByHelpers.addConstantColumns(column, constantValues);

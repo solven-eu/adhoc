@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine;
 
-import eu.solven.adhoc.encoding.page.ColumnarSliceFactory;
+import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
@@ -54,7 +54,7 @@ public class AdhocFactories implements IAdhocFactories {
 
 	@NonNull
 	@Default
-	ISliceFactoryFactory sliceFactoryFactory = options -> ColumnarSliceFactory.builder().options(options).build();
+	ISliceFactoryFactory sliceFactoryFactory = options -> ColumnSliceFactory.builder().options(options).build();
 
 	@NonNull
 	@Default

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,16 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.map;
 
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 
-public class TestAdhocBlackHole {
-	@Test
-	public void testNominal() {
-		AdhocBlackHole.getInstance().onLong(123);
-		AdhocBlackHole.getInstance().onDouble(12.34);
-		AdhocBlackHole.getInstance().onObject("foo");
-		AdhocBlackHole.getInstance().post("foo");
+public class TestAdhocMap_ColumnarSliceFactory extends TestAdhocMap_RowSliceFactory {
+
+	@Override
+	protected ISliceFactory factory() {
+		return ColumnSliceFactory.builder().build();
 	}
+
 }

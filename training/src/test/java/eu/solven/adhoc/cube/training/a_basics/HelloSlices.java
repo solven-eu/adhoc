@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.encoding.page.ColumnarSliceFactory;
+import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
@@ -77,7 +77,7 @@ public class HelloSlices {
 	@Test
 	public void helloColumnar() {
 		// A typical optimization is to rely on columnar storage, given we create many slices with the same keySet
-		ISliceFactory factory = ColumnarSliceFactory.builder().build();
+		ISliceFactory factory = ColumnSliceFactory.builder().build();
 
 		IAdhocMap slice = factory.newMapBuilder(List.of("color", "ccy")).append("blue", "EUR").build();
 

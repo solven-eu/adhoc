@@ -50,6 +50,8 @@
 		<module>pivotable</module>
 
 		<module>training</module>
+
+		<module>aggregate</module>
 	</modules>
 
 	<scm>

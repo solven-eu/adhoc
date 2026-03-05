@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.filter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -149,15 +150,20 @@ public class MoreFilterHelpers {
 		return FilterMatcher.builder().transcoder(transcoder).filter(filter).build().match(input);
 	}
 
+	public static boolean match(ISliceFilter filter, ITabularRecord input) {
+		return FilterMatcher.builder().filter(filter).build().match(input);
+	}
+
 	/**
 	 *
 	 * @return true if the input matches the filter, where each column in input is transcoded.
 	 */
-	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterMatcher`")
+	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterMatcher`", forRemoval = true)
 	public static boolean match(ITableAliaser transcoder,
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
-			Map<String, ?> input) {
+			ITabularGroupByRecord input) {
+
 		// Fast-track, to skip opening Stream on empty Collection
 		if (ISliceFilter.MATCH_ALL.equals(filter)) {
 			return true;
@@ -165,78 +171,25 @@ public class MoreFilterHelpers {
 			return false;
 		}
 
-		return FilterHelpers.visit(filter, new IFilterVisitor() {
-
-			@Override
-			public boolean testAndOperands(Set<? extends ISliceFilter> operands) {
-				return operands.stream().allMatch(f -> match(transcoder, f, onMissingColumn, input));
-			}
-
-			@Override
-			public boolean testOrOperands(Set<? extends ISliceFilter> operands) {
-				return operands.stream().anyMatch(f -> match(transcoder, f, onMissingColumn, input));
-			}
-
-			@Override
-			public boolean testColumnOperand(IColumnFilter columnFilter) {
-				String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
-				Object value = input.get(underlyingColumn);
-
-				if (value == null) {
-					if (input.containsKey(underlyingColumn)) {
-						log.trace("Key to null-ref");
-					} else {
-						log.trace("Missing key");
-						return onMissingColumn.test(columnFilter);
-					}
-				}
-
-				return columnFilter.getValueMatcher().match(value);
-			}
-
-			@Override
-			public boolean testNegatedOperand(ISliceFilter negated) {
-				return !match(transcoder, negated, onMissingColumn, input);
-			}
-
-		});
-	}
-
-	public static boolean match(ISliceFilter filter, ITabularRecord input) {
-		return FilterMatcher.builder().filter(filter).build().match(input);
-	}
-
-	public static boolean match(ITableAliaser transcoder,
-			ISliceFilter filter,
-			Predicate<IColumnFilter> onMissingColumn,
-			ITabularGroupByRecord input) {
-		if (filter.isMatchAll()) {
-			return true;
-		} else if (filter.isMatchNone()) {
-			return false;
-		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
 			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, onMissingColumn, input));
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
 			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, onMissingColumn, input));
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
-			Object value = input.getGroupBy(underlyingColumn);
 
-			if (value == null) {
+			Optional<?> optValue = input.getGroupBys().optGroupBy(underlyingColumn);
+
+			if (optValue.isEmpty()) {
 				if (input.columnsKeySet().contains(underlyingColumn)) {
 					log.trace("Key to null-ref");
 				} else {
 					log.trace("Missing key");
-					if (columnFilter.isNullIfAbsent()) {
-						log.trace("Treat absent as null");
-					} else {
-						log.trace("Do not treat absent as null, but as missing hence not acceptable");
-						return false;
-					}
+					return onMissingColumn.test(columnFilter);
 				}
 			}
 
-			return columnFilter.getValueMatcher().match(value);
+			return columnFilter.getValueMatcher().match(optValue.orElse(null));
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
 			return !match(transcoder, notFilter.getNegated(), onMissingColumn, input);
 		} else {

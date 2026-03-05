@@ -36,7 +36,7 @@ import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.AdhocMapUnsafe;
 
 public class TestColumnarSliceFactory {
-	ColumnarSliceFactory factory = ColumnarSliceFactory.builder().build();
+	ColumnSliceFactory factory = ColumnSliceFactory.builder().build();
 
 	@Test
 	public void testRetainAll() {

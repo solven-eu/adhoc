@@ -20,16 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.engine.step;
 
+import java.util.Map;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TestAdhocBlackHole {
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
+
+public class TestSliceReader {
 	@Test
-	public void testNominal() {
-		AdhocBlackHole.getInstance().onLong(123);
-		AdhocBlackHole.getInstance().onDouble(12.34);
-		AdhocBlackHole.getInstance().onObject("foo");
-		AdhocBlackHole.getInstance().post("foo");
+	public void testRead() {
+		SliceReader reader = SliceReader.builder()
+				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
+				.stepFilter(AndFilter.and(Map.of("b", "b2")))
+				.build();
+
+		Assertions.assertThat(reader.getValueMatcher("a")).isEqualTo(EqualsMatcher.matchEq("a1"));
+		Assertions.assertThat(reader.getValueMatcher("b")).isEqualTo(EqualsMatcher.matchEq("b2"));
+	}
+
+	@Test
+	public void testIncompatible() {
+		SliceReader reader = SliceReader.builder()
+				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
+				.stepFilter(AndFilter.and(Map.of("a", "a2")))
+				.build();
+
+		Assertions.assertThat(reader.getValueMatcher("unknown")).isEqualTo(IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(reader.getValueMatcher("a")).isEqualTo(EqualsMatcher.matchEq("a1"));
+
+		Assertions.assertThatThrownBy(() -> reader.asFilter()).isInstanceOf(IllegalStateException.class);
 	}
 }

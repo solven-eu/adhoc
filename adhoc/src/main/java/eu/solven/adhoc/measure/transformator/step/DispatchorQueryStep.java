@@ -54,7 +54,6 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionFactory;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -215,8 +214,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
-		ISliceFactory sliceFactory =
-				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
@@ -262,6 +260,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 	 */
 	protected boolean isRelevant(Map<String, ?> decomposedSlice) {
 		return FilterMatcher.builder()
+				.sliceFactory(factories.getSliceFactory())
 				.filter(step.getFilter())
 				.onMissingColumn(DecompositionHelpers.onMissingColumn())
 				.build()
