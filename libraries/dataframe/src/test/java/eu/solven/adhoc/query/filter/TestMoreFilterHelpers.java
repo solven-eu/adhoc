@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder;
+package eu.solven.adhoc.query.filter;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,15 +33,11 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.MoreFilterHelpers;
-import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.PrefixAliaser;
 
 public class TestMoreFilterHelpers {
 
@@ -225,6 +221,19 @@ public class TestMoreFilterHelpers {
 		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("a", "a1"))).isTrue();
 		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("b", 123))).isFalse();
 		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("b", 122))).isTrue();
+	}
+
+	@Test
+	public void testPresentIfMissing() {
+		FilterMatcher matcher = FilterMatcher.builder()
+				.filter(ColumnFilter.matchEq("a", "a1"))
+				.onMissingColumn(DecompositionHelpers.onMissingColumn())
+				.build();
+
+		Assertions.assertThat(matcher.match(Map.of("a", "a1"))).isTrue();
+		Assertions.assertThat(matcher.match(Map.of("b", "b1"))).isTrue();
+
+		Assertions.assertThat(matcher.match(Map.of("a", "a2"))).isFalse();
 	}
 
 }

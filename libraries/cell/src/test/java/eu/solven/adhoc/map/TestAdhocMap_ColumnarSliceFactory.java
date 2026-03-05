@@ -20,24 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.map;
 
-import java.util.List;
-import java.util.Map;
-
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 
-public class TestAdhocFactories {
-	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactory();
+public class TestAdhocMap_ColumnarSliceFactory extends TestAdhocMap_RowSliceFactory {
 
-		IAdhocMap slice = sliceFactory.newMapBuilder(List.of("k")).append(null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+	@Override
+	protected ISliceFactory factory() {
+		return ColumnSliceFactory.builder().build();
 	}
+
 }

@@ -119,7 +119,7 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 
 		public CubeQueryStepBuilder customMarker(Object customMarker) {
 			if (customMarker instanceof Optional<?> optional) {
-				customMarker = optional.get();
+				customMarker = optional.orElse(null);
 			}
 			this.customMarker = customMarker;
 

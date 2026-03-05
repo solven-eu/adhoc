@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.util;
 
-import java.util.List;
-import java.util.Map;
-
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
-
-public class TestAdhocFactories {
+public class TestAdhocBlackHole {
 	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactory();
-
-		IAdhocMap slice = sliceFactory.newMapBuilder(List.of("k")).append(null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+	public void testNominal() {
+		AdhocBlackHole.getInstance().onLong(123);
+		AdhocBlackHole.getInstance().onDouble(12.34);
+		AdhocBlackHole.getInstance().onObject("foo");
+		AdhocBlackHole.getInstance().post("foo");
 	}
 }

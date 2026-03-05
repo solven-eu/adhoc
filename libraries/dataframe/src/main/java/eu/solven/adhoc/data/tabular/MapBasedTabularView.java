@@ -35,7 +35,6 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder.Default;
@@ -115,8 +114,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 
 	@Override
 	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
-		ISliceFactory sliceFactory =
-				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 		return coordinatesToValues.entrySet()
 				.stream()
 				.map(e -> rowScanner.prepare(AdhocMapHelpers.fromMap(sliceFactory, e.getKey()).asSlice())

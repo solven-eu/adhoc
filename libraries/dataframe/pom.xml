@@ -12,6 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
+		<jacoco.branch.ratio>0.68</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.71</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.dataframe</automatic.module.name>
 	</properties>
 

@@ -13,6 +13,8 @@
 
 	<properties>
 		<testJarPhase>package</testJarPhase>
+		<jacoco.branch.ratio>0.73</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.73</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.cell</automatic.module.name>
 	</properties>
 

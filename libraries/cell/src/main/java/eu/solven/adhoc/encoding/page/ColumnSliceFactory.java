@@ -52,7 +52,7 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class ColumnarSliceFactory extends ASliceFactory {
+public class ColumnSliceFactory extends ASliceFactory {
 
 	@Default
 	@NonNull

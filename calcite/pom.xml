@@ -15,7 +15,7 @@
 		<calcite.version>1.41.0</calcite.version>
 
 		<jacoco.branch.ratio>0.25</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.40</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.41</jacoco.instruction.ratio>
 
 		<!-- TODO Activate Static checks-->
 		<spotbugs.skip>true</spotbugs.skip>

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
-
-import java.util.List;
-import java.util.Map;
+package eu.solven.adhoc.query.filter.value;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
-
-public class TestAdhocFactories {
+public class TestRegexMatcher {
 	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactory();
+	public void testNominal() {
+		IValueMatcher matcher = RegexMatcher.matching("a\\d+");
 
-		IAdhocMap slice = sliceFactory.newMapBuilder(List.of("k")).append(null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+		Assertions.assertThat(matcher.match("a")).isFalse();
+		Assertions.assertThat(matcher.match("a123")).isTrue();
 	}
 }

@@ -26,7 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -54,7 +56,6 @@ import eu.solven.adhoc.measure.decomposition.IDecompositionFactory;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
@@ -85,6 +86,12 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 
 	@Getter
 	final CubeQueryStep step;
+
+	final Supplier<FilterMatcher> filterMatcherSupplier = Suppliers.memoize(() -> FilterMatcher.builder()
+			.sliceFactory(getFactories().getSliceFactory())
+			.filter(getStep().getFilter())
+			.onMissingColumn(DecompositionHelpers.onMissingColumn())
+			.build());
 
 	public List<String> getUnderlyingNames() {
 		return dispatchor.getUnderlyingNames();
@@ -215,8 +222,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
-		ISliceFactory sliceFactory =
-				AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
@@ -261,10 +267,6 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 	 * @return
 	 */
 	protected boolean isRelevant(Map<String, ?> decomposedSlice) {
-		return FilterMatcher.builder()
-				.filter(step.getFilter())
-				.onMissingColumn(DecompositionHelpers.onMissingColumn())
-				.build()
-				.match(decomposedSlice);
+		return filterMatcherSupplier.get().match(decomposedSlice);
 	}
 }

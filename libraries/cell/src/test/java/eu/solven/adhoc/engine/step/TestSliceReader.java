@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,24 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.engine.step;
 
-import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
-public class TestAdhocFactories {
+public class TestSliceReader {
 	@Test
-	public void testNormalizeNull() {
-		AdhocFactories factories = AdhocFactories.builder().build();
-		ISliceFactory sliceFactory = factories.getSliceFactory();
+	public void testRead() {
+		SliceReader reader = SliceReader.builder()
+				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
+				.stepFilter(AndFilter.and(Map.of("b", "b2")))
+				.build();
 
-		IAdhocMap slice = sliceFactory.newMapBuilder(List.of("k")).append(null).build();
-		Assertions.assertThat((Map) slice).containsKey("k").containsEntry("k", null);
+		Assertions.assertThat(reader.getValueMatcher("a")).isEqualTo(EqualsMatcher.matchEq("a1"));
+		Assertions.assertThat(reader.getValueMatcher("b")).isEqualTo(EqualsMatcher.matchEq("b2"));
+	}
+
+	@Test
+	public void testIncompatible() {
+		SliceReader reader = SliceReader.builder()
+				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
+				.stepFilter(AndFilter.and(Map.of("a", "a2")))
+				.build();
+
+		Assertions.assertThat(reader.getValueMatcher("unknown")).isEqualTo(IValueMatcher.MATCH_ALL);
+		Assertions.assertThat(reader.getValueMatcher("a")).isEqualTo(EqualsMatcher.matchEq("a1"));
+
+		Assertions.assertThatThrownBy(() -> reader.asFilter()).isInstanceOf(IllegalStateException.class);
 	}
 }
