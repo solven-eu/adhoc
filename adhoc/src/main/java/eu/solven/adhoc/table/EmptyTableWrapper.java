@@ -31,7 +31,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -50,7 +50,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
 		return new SuppliedTabularRecordStream("empty", true
 		// , "NULL-" + this.getClass().getName()
 				, Stream::empty);

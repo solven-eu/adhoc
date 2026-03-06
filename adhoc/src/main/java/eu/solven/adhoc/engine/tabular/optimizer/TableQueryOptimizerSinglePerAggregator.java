@@ -71,7 +71,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer {
 
-	// Rely on an filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
+	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
 	public TableQueryOptimizerSinglePerAggregator(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		super(factories, filterOptimizer);
@@ -195,7 +195,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 
 			List<CubeQueryStep> strippedWithCommon = stepsWithMostPresentPart.stream().map(step -> {
 				ISliceFilter strippedFromWhere = commonStripper.strip(step.getFilter());
-				return CubeQueryStep.edit(step).filter(strippedFromWhere).build();
+				return step.toBuilder().filter(strippedFromWhere).build();
 			}).toList();
 
 			// `a&b|a&b|a&c`
@@ -250,7 +250,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		// OR between each inducer own filter induced will fetch the union of rows for all induced
 		ISliceFilter combinedOr = FilterBuilder.or(eachInducedFilters).optimize(filterOptimizer);
 
-		CubeQueryStep inducer = CubeQueryStep.edit(contextualAggregate)
+		CubeQueryStep inducer = contextualAggregate.toBuilder()
 				.filter(combinedOr)
 				.groupBy(GroupByColumns.named(inducerColumns))
 				.build();
@@ -264,7 +264,7 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 
 	protected CubeQueryStep filter(ISliceFilter commonFilter, CubeQueryStep step) {
 		ISliceFilter combinedFilter = FilterBuilder.and(commonFilter, step.getFilter()).optimize(filterOptimizer);
-		return CubeQueryStep.edit(step).filter(combinedFilter).build();
+		return step.toBuilder().filter(combinedFilter).build();
 	}
 
 	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,

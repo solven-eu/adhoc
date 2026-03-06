@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +42,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -60,9 +62,9 @@ import lombok.Value;
 public interface ITableQueryOptimizer {
 
 	/**
-	 * Inducers {@link TableQuery} are evaluated by a {@link ITableWrapper}.
+	 * Inducers {@link CubeQueryStep} are evaluated by a {@link ITableWrapper}.
 	 * 
-	 * Induced {@link TableQuery} are evaluated given the results associated to the inducers.
+	 * Induced {@link CubeQueryStep} are evaluated given the results associated to the inducers.
 	 * 
 	 * @author Benoit Lacelle
 	 * @see QueryStepsDag
@@ -78,6 +80,13 @@ public interface ITableQueryOptimizer {
 		@NonNull
 		@Singular
 		ImmutableSet<CubeQueryStep> explicits;
+
+		// Record the tableQuery leading to given aggregator CubeQueryStep
+		// Without this, if we try to infer the tableQuery given the cubeQueryStep, we may lose the information about
+		// which measure being specifically filtered
+		// IS THIS TRUE?
+		@NonNull
+		Map<CubeQueryStep, TableQueryV2> stepToTable = new LinkedHashMap<>();
 
 		@NonNull
 		@Default
@@ -116,7 +125,16 @@ public interface ITableQueryOptimizer {
 		return splitInduced(hasOptions, steps);
 	}
 
-	Set<TableQueryV2> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableQueries);
+	/**
+	 * Turn a set of {@link CubeQueryStep} into a set of {@link TableQueryV2}. {@link CubeQueryStep} are grouped by
+	 * `GROUP BY`. For each `GROUP BY`, we determine a common `WHERE CLAUSE`. Each aggregator is then associated with a
+	 * `FILTER` clause.
+	 * 
+	 * @param tableWrapper
+	 * @param tableQueries
+	 * @return
+	 */
+	Set<TableQueryV3> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableQueries);
 
 	/**
 	 * 

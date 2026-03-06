@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,44 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.options;
+package eu.solven.adhoc.query.cube;
 
-import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableSet;
+import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
- * {@link eu.solven.adhoc.engine.step.CubeQueryStep}.
- *
- * For instance, in ActivePivot/Atoti, this could be an IContextValue.
+ * For object with a single well-defined measure.
  * 
  * @author Benoit Lacelle
- *
  */
 @FunctionalInterface
-public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
-	Set<IQueryOption> getOptions();
-
-	@Override
-	@JsonIgnore
-	default boolean isExplain() {
-		return StandardQueryOptions.EXPLAIN.isActive(getOptions());
-	}
-
-	@Override
-	@JsonIgnore
-	default boolean isDebug() {
-		return StandardQueryOptions.DEBUG.isActive(getOptions());
-	}
-
-	@JsonIgnore
-	default boolean isDebugOrExplain() {
-		return isDebug() || isExplain();
-	}
-
-	static IHasQueryOptions noOption() {
-		return ImmutableSet::of;
-	}
+public interface IHasMeasure {
+	IMeasure getMeasure();
 }

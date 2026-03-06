@@ -23,12 +23,12 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
@@ -63,19 +63,19 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 
 	/**
 	 * 
-	 * @param tablequerySteps
+	 * @param tableQuerySteps
 	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
 	 */
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tablequerySteps) {
-		if (tablequerySteps.isEmpty()) {
+	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQuerySteps) {
+		if (tableQuerySteps.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
-				splitInducedAsDag(hasOptions, tablequerySteps);
+				splitInducedAsDag(hasOptions, tableQuerySteps);
 
-		return SplitTableQueries.builder().explicits(tablequerySteps).inducedToInducer(inducedToInducer).build();
+		return SplitTableQueries.builder().explicits(tableQuerySteps).inducedToInducer(inducedToInducer).build();
 	}
 
 	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
@@ -85,6 +85,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
+		// for each aggregator
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
 			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> aInducedToInducer =
 					new DirectedAcyclicGraph<>(DefaultEdge.class);
@@ -105,6 +106,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 						a.getMeasure().getName());
 			}
 
+			// accumulate into the output graph
 			Graphs.addGraph(inducedToInducer, aInducedToInducer);
 		});
 
@@ -139,6 +141,20 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		return contextualAggregateToQueries;
 	}
 
+	/**
+	 * Given an input set of steps, callback on edge of an inducing DAG. The returned DAG looks for the edge which are
+	 * the simplest one (e.g. given `a`, `a,b` and `a,b,c`, while `a` can induce both `a,b` and `a,b,c`, we prefer to
+	 * have `a,b` as inducer of `a,b,c`).
+	 * 
+	 * This minimizing strategy helps minimizing the actual computations when reducing (e.g. it is easier to infer `a`
+	 * given `a,b` than given `a,b,c`).
+	 * 
+	 * TODO it may not be possible/optimal to evaluate before the best inducingEdge. Typically, we may have `a,b,d` with
+	 * only one row and `a,b,c` with 3 rows: `a,b,d` is a better candidate to infer `a`).
+	 * 
+	 * @param steps
+	 * @param onInducedToInducer
+	 */
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected void splitInducedDag(Collection<CubeQueryStep> steps,
 			BiConsumer<CubeQueryStep, CubeQueryStep> onInducedToInducer) {
@@ -147,15 +163,12 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		}
 
 		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
-		int maxGroupBy = steps.stream().mapToInt(tb -> tb.getGroupBy().getGroupedByColumns().size()).max().getAsInt();
-		List<Set<CubeQueryStep>> nbGroupByToQueries =
-				IntStream.rangeClosed(0, maxGroupBy).<Set<CubeQueryStep>>mapToObj(i -> new LinkedHashSet<>()).toList();
-
 		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
 		// not be inferred by a tableQUery with less groupBys.
-		steps.forEach(step -> {
-			nbGroupByToQueries.get(step.getGroupBy().getGroupedByColumns().size()).add(step);
-		});
+		Map<Integer, List<CubeQueryStep>> cardinalityToSteps =
+				steps.stream().collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size()));
+
+		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
 
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		// We observed up to 1k steps.
@@ -163,11 +176,11 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			// inducer must have more groupBys than induced
 			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
 			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
-				Optional<CubeQueryStep> optInducer = nbGroupByToQueries.get(inducerGroupBy)
+				Optional<CubeQueryStep> optInducer = cardinalityToSteps.get(inducerGroupBy)
 						.stream()
 						// No edge to itself
 						.filter(inducer -> inducer != induced)
-						// Same context (i.e. same filter, customMarker, options)
+						// Compatible context (i.e. laxer filter, customMarker, options)
 						.filter(inducer -> canInduce(inducer, induced))
 						// as soon as left is induced, we do not need to search for alternative inducer
 						// BEWARE As we find first, we'll spot the inducer with a minimal additional groupBy, hence

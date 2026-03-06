@@ -22,16 +22,19 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
+import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -46,7 +49,7 @@ import lombok.ToString;
 // BEWARE What is the point of this given IMultitypeColumnFastGet? It forces the generic with SliceAsMap. And hides some
 // methods/processes like `.purgeAggregationCarriers()`. This is also immutable (by interface).
 @ToString
-@Builder
+@Builder(toBuilder = true)
 public class Cuboid implements ICuboid {
 	@NonNull
 	// Getter for testing
@@ -129,6 +132,18 @@ public class Cuboid implements ICuboid {
 
 	public static CuboidBuilder forGroupBy(IHasGroupBy hasGroupBy) {
 		return Cuboid.builder().columns(hasGroupBy.getGroupBy().getGroupedByColumns());
+	}
+
+	@Override
+	public ICuboid mask(Map<String, ?> mask) {
+		if (mask.isEmpty()) {
+			return this;
+		} else if (!Sets.intersection(columns, mask.keySet()).isEmpty()) {
+			throw new IllegalArgumentException("Intersection between %s and %s".formatted(columns, mask.keySet()));
+		}
+
+		IMultitypeColumnFastGet<IAdhocSlice> maskedColumn = GroupByHelpers.addConstantColumns(values, mask);
+		return toBuilder().values(maskedColumn).build();
 	}
 
 }

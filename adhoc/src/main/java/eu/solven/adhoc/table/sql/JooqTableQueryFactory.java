@@ -70,9 +70,11 @@ import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.util.IHasName;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -160,8 +162,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		ISliceFilter leftover = ISliceFilter.MATCH_ALL;
 	}
 
-	@Override
+	@Deprecated
 	public QueryWithLeftover prepareQuery(TableQueryV2 tableQuery) {
+		return prepareQuery(TableQueryV3.edit(tableQuery).build());
+	}
+
+	@Override
+	public QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
 		ISliceToJooqCondition toCondition = makeToCondition();
 
 		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);
@@ -230,7 +237,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return queryPartitionor.partition(resultQuery);
 	}
 
-	protected ConditionWithFilter toConditions(ISliceToJooqCondition toCondition, TableQueryV2 tableQuery) {
+	protected ConditionWithFilter toConditions(ISliceToJooqCondition toCondition, TableQueryV3 tableQuery) {
 		Collection<Condition> conditions = new ArrayList<>();
 		Collection<ISliceFilter> leftoverFilters = new ArrayList<>();
 
@@ -248,7 +255,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected List<SelectFieldOrAsterisk> makeSelectedFields(ISliceToJooqCondition toCondition,
-			TableQueryV2 tableQuery,
+			TableQueryV3 tableQuery,
 			AggregatedRecordFields fields) {
 		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
 		tableQuery.getAggregators().stream().distinct().map(a -> {
@@ -262,7 +269,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.filter(Objects::nonNull)
 				.forEach(selectedFields::add);
 
-		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+		tableQuery.getGroupBys().stream().flatMap(gb -> gb.getNameToColumn().values().stream()).forEach(column -> {
 			Field<Object> field = columnAsField(column);
 			selectedFields.add(field);
 		});
@@ -283,7 +290,41 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return selectedFields;
 	}
 
-	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
+	/**
+	 * @param tableQuery
+	 *            the initial tableQuery
+	 * @param leftovers
+	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
+	 *            not be transcoded for given table). As a set as there may be a leftover on the common `WHERE` clause,
+	 *            and on each `FILTER` clause.
+	 * @return the {@link List} of the columns to be output by the tableQuery
+	 */
+	// BEWARE Is this a JooQ specific logic?
+	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
+		List<String> aggregatorNames = tableQuery.getAggregators()
+				.stream()
+				.distinct()
+				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregator().getAggregationKey()))
+				.map(FilteredAggregator::getAlias)
+				.toList();
+
+		List<String> groupByColumns =
+				tableQuery.getGroupBy().getNameToColumn().values().stream().map(IHasName::getName).toList();
+
+		List<String> leftoversColumns = new ArrayList<>(
+				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
+
+		// Make sure a latecolumn is not also a normal groupBy column
+		leftoversColumns.removeAll(groupByColumns);
+
+		return AggregatedRecordFields.builder()
+				.aggregates(aggregatorNames)
+				.columns(groupByColumns)
+				.leftovers(leftoversColumns)
+				.build();
+	}
+
+	protected AggregatedRecordFields makeSelectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
 		return TableQuery.makeSelectedColumns(tableQuery, leftovers);
 	}
 
@@ -332,7 +373,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 *            the filter which has not been able to be transcoded into a {@link Condition}
 	 * @return
 	 */
-	protected Collection<GroupField> makeGroupingFields(TableQueryV2 tableQuery, ISliceFilter leftoverFilter) {
+	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter leftoverFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
 		if (canGroupByAll()) {
 			// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
@@ -340,7 +381,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_clause.html
 			groupedFields.add(DSL.field(DSL.unquotedName("ALL")));
 		} else {
-			tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
+			tableQuery.getColumns().values().forEach(column -> {
 				Field<Object> field = columnAsField(column);
 				groupedFields.add(field);
 			});
@@ -362,7 +403,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return capabilities.isAbleToFilterAggregates();
 	}
 
-	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
+	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV3 tableQuery) {
 		AdhocTopClause topClause = tableQuery.getTopClause();
 		return topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);
@@ -396,7 +437,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				unaliasedField = DSL.field(DSL.sql(columnName));
 
 				if (!filteredAggregator.getFilter().isMatchAll()) {
-					// BEWARE It is unclear how this could be managed: how to help TableQueryV2 producing valid FILTERs?
+					// BEWARE It is unclear how this could be managed: how to help TableQueryV3 producing valid FILTERs?
 					throw new NotYetImplementedException(
 							"FILTER with `ExpressionAggregation` is not managed. filteredAggregator="
 									+ filteredAggregator);

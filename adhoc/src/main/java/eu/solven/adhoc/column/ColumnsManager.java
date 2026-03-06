@@ -67,7 +67,8 @@ import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV3.TableQueryV3Builder;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.IHasAliasedColumns;
@@ -125,7 +126,7 @@ public class ColumnsManager implements IColumnsManager {
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
-	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 query) {
+	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV3 query) {
 		AliasingContext transcodingContext = openTranscodingContext();
 
 		ISliceFilter transcodedFilter;
@@ -138,7 +139,7 @@ public class ColumnsManager implements IColumnsManager {
 			Set<String> calculatedColumns = getFiltrableCalculatedColumns(query);
 
 			// Exclude the calculatedColumns as they can not be evaluated by the ITableWrapper
-			// BEWARE Optimization is skipped as we expect low amount of optimizations, and it may be coslty to
+			// BEWARE Optimization is skipped as we expect low amount of optimizations, and it may be costly to
 			// re-optimize in case of large `OR` (e.g. TableQueryOptimizeSingleAggregator)
 			ISliceFilter preFilter =
 					SimpleFilterEditor.suppressColumn(notTranscodedFilter, calculatedColumns, Optional.empty());
@@ -166,28 +167,36 @@ public class ColumnsManager implements IColumnsManager {
 			});
 		}
 
-		IGroupBy groupByIncludingPostFilterColumns;
+		TableQueryV3 transcodedQuery;
 
 		{
-			Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
+			TableQueryV3Builder transcodedQueryBuilder = query.toBuilder()
+					.filter(transcodedFilter)
+					.clearAggregators()
+					.aggregators(transcodeAggregators(transcodingContext, query.getAggregators()));
 
-			columnToDetails.putAll(query.getGroupBy().getNameToColumn());
+			transcodedQueryBuilder.clearGroupBys();
+			query.getGroupBys().forEach(groupBy -> {
+				IGroupBy groupByIncludingPostFilterColumns;
 
-			for (String postFilterColumn : postFilterColumns) {
-				if (!columnToDetails.containsKey(postFilterColumn)) {
-					columnToDetails.put(postFilterColumn, ReferencedColumn.ref(postFilterColumn));
+				{
+					Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
+
+					columnToDetails.putAll(groupBy.getNameToColumn());
+
+					for (String postFilterColumn : postFilterColumns) {
+						if (!columnToDetails.containsKey(postFilterColumn)) {
+							columnToDetails.put(postFilterColumn, ReferencedColumn.ref(postFilterColumn));
+						}
+					}
+
+					groupByIncludingPostFilterColumns = GroupByColumns.of(columnToDetails.values());
 				}
-			}
+				transcodedQueryBuilder.groupBy(transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns));
+			});
 
-			groupByIncludingPostFilterColumns = GroupByColumns.of(columnToDetails.values());
+			transcodedQuery = transcodedQueryBuilder.build();
 		}
-
-		TableQueryV2 transcodedQuery = query.toBuilder()
-				.filter(transcodedFilter)
-				.groupBy(transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns))
-				.clearAggregators()
-				.aggregators(transcodeAggregators(transcodingContext, query.getAggregators()))
-				.build();
 
 		if (queryPod.isDebug()) {
 			eventBus.post(AdhocLogEvent.builder()
@@ -210,7 +219,7 @@ public class ColumnsManager implements IColumnsManager {
 		try {
 			tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
 		} catch (RuntimeException e) {
-			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryPod.getOptions())) {
 				tabularRecordStream = AdhocExceptionAsMeasureValueHelper.makeErrorStream(transcodedQuery, e);
 			} else {
 				String msgE = "Issue opening stream from %s for query=%s".formatted(table, transcodedQuery);
@@ -221,18 +230,17 @@ public class ColumnsManager implements IColumnsManager {
 		return transcodeRows(transcodingContext, tabularRecordStream, postFilter);
 	}
 
-	protected Set<String> getFiltrableCalculatedColumns(TableQueryV2 query) {
+	protected Set<String> getFiltrableCalculatedColumns(TableQueryV3 query) {
 		Set<String> calculatedColumns = this.calculatedColumns.stream()
 				.map(ICalculatedColumn::getName)
 				.collect(Collectors.toCollection(TreeSet::new));
-		calculatedColumns.addAll(query.getGroupBy()
-				.getNameToColumn()
-				.values()
+		query.getGroupBys()
 				.stream()
+				.flatMap(gb -> gb.getNameToColumn().values().stream())
 				.filter(c -> c instanceof ICalculatedColumn
 						&& !(c instanceof FunctionCalculatedColumn f && f.isSkipFiltering()))
 				.map(IHasName::getName)
-				.toList());
+				.forEach(calculatedColumns::add);
 		return calculatedColumns;
 	}
 

@@ -142,7 +142,7 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 
 			valueProvider.acceptReceiver(outputSlice);
 		} catch (RuntimeException e) {
-			if (step.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(step.getOptions())) {
 				outputSlice.onObject(e);
 			} else {
 				throw new IllegalArgumentException(

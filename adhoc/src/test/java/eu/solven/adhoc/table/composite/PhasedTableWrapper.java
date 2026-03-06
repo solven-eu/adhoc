@@ -24,6 +24,7 @@ package eu.solven.adhoc.table.composite;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Phaser;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -115,7 +116,7 @@ public class PhasedTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
 		log.info("opening arriveAndAwaitAdvance() {} {}", name, phasers.opening);
 		int phase = phasers.opening.arriveAndAwaitAdvance();
 		log.info("opening advance {} phase={}", name, phase);
@@ -133,11 +134,10 @@ public class PhasedTableWrapper implements ITableWrapper {
 				int phase = phasers.streaming.arriveAndAwaitAdvance();
 				log.info("streaming advance {} phase={}", name, phase);
 
-				Map<String, Object> slice = tableQuery.getGroupBy()
-						.getNameToColumn()
-						.keySet()
-						.stream()
-						.collect(Collectors.toMap(Function.identity(), e -> name));
+				Set<String> allColumns = tableQuery.getGroupedByColumns();
+
+				Map<String, Object> slice =
+						allColumns.stream().collect(Collectors.toMap(Function.identity(), e -> name));
 
 				Map<String, Object> aggregates = tableQuery.getAggregators()
 						.stream()
