@@ -91,7 +91,7 @@ jobs:
       # ── 4 ── Ask Claude to fix the violations (only when analysis failed) ──
       - name: Install Claude Code CLI
         if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.70
 
       - name: Configure Git
         if: steps.check-commits.outputs.only_renovate == 'true' && steps.static-analysis.outcome == 'failure'

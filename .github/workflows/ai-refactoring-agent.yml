@@ -36,7 +36,7 @@ jobs:
           cache: maven
 
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.70
 
       - name: Configure Git
         run: |
