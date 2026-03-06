@@ -1,0 +1,69 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  # Run weekly so the security score stays fresh even without code changes
+  schedule:
+    - cron: '30 1 * * 6'
+
+permissions: read-all
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to upload SARIF results to GitHub Code Scanning
+      security-events: write
+      # Required to fetch workflow run info when triggered by a pull_request from a fork
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ java-kotlin, javascript-typescript ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@c793b717bc78562f491db7b0e93a3a178b099162 # v4.32.5
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended adds experimental security queries on top of the default suite
+          # https://docs.github.com/en/code-security/reference/code-scanning/workflow-configuration-options
+          queries: security-extended
+
+      # Java is a compiled language: CodeQL must trace the build to extract facts.
+      # We reuse the same Maven invocation used in the main CI workflow.
+      - name: Set up JDK 21
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven local repository
+        if: matrix.language == 'java-kotlin'
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: ~/.m2/repository
+          key: maven-codeql-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-codeql-${{ runner.os }}-
+
+      - name: Build Java code for CodeQL
+        if: matrix.language == 'java-kotlin'
+        run: mvn package -Pfast --file pom.xml --batch-mode
+
+      # JavaScript/TypeScript is interpreted: CodeQL analyses the source directly,
+      # no build step required.
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@c793b717bc78562f491db7b0e93a3a178b099162 # v4.32.5
+        with:
+          category: "/language:${{ matrix.language }}"

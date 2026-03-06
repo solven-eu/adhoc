@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
+
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.ICompactable;
@@ -157,10 +160,10 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("#slices=")
-				.append(indexToSlice.size())
-				.append(" aggregators=")
-				.append(aggregatorToAggregates.keySet());
+		ToStringHelper sh = MoreObjects.toStringHelper(this);
+
+		sh.add("#slices", indexToSlice.size());
+		sh.add("aggregators", getAggregators().size());
 
 		IntStream.range(0, indexToSlice.size()).limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(sliceIndex -> {
 			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
@@ -168,9 +171,9 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 					.collect(Collectors.toMap(e -> e,
 							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
 
-			sb.append(' ').append(indexToSlice.get(sliceIndex)).append('=').append(aggregates);
+			sh.add(String.valueOf(indexToSlice.get(sliceIndex)), aggregates);
 		});
 
-		return sb.toString();
+		return sh.toString();
 	}
 }

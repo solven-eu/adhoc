@@ -18,16 +18,16 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write  # required by gh label create
+permissions: read-all
 
 jobs:
 
   # ── Job 1 ── Apply deterministic formatters (Spotless + Prettier) ──────────
   auto-format:
+    name: Auto-format (Spotless + Prettier)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push the agent branch
     if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.scope != 'ai-only' }}
     outputs:
       changed: ${{ steps.detect-changes.outputs.changed }}
@@ -93,8 +93,11 @@ jobs:
 
   # ── Job 2 ── AI-powered improvements via Claude Code CLI ───────────────────
   ai-review:
+    name: AI code quality improvements
     needs: auto-format
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push commits onto the agent branch
     if: ${{ !failure() && !cancelled() && (github.event_name != 'workflow_dispatch' || github.event.inputs.scope != 'format-only') }}
     outputs:
       changed: ${{ steps.detect-changes.outputs.changed }}
@@ -135,7 +138,7 @@ jobs:
           node-version: lts/*
 
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.70
 
       - name: Configure Git
         run: |
@@ -213,8 +216,12 @@ jobs:
 
   # ── Job 3 ── Open a PR if either job produced changes ──────────────────────
   open-pr:
+    name: Open PR
     needs: [auto-format, ai-review]
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write  # required by gh label create
     if: ${{ !failure() && !cancelled() && (needs.auto-format.outputs.changed == 'true' || needs.ai-review.outputs.changed == 'true') }}
 
     steps:
