@@ -65,8 +65,10 @@ import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.MoreFilterHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
@@ -116,6 +118,16 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	protected Stream<Map<String, ?>> stream() {
 		return rows.stream();
+	}
+
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+		if (tableQuery.getGroupBys().size() != 1) {
+			throw new NotYetImplementedException("GROUPING SET");
+		}
+
+		TableQueryV2 queryV2 = tableQuery.streamV2().findFirst().get();
+		return streamSlices(queryPod, queryV2);
 	}
 
 	@Override

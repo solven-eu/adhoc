@@ -48,25 +48,32 @@ public enum InternalQueryOptions implements IQueryOption {
 	/**
 	 * Given the {@link Set} of {@link TableQuery}, {@link TableQueryEngine} generally prefers querying the
 	 * {@link ITableWrapper} a minimal set of {@link CubeQueryStep}, and computing within Adhoc induced results.
-	 * 
-	 * This option disables this behavior.
 	 */
 	ONE_TABLE_QUERY_PER_INDUCER,
 
 	/**
+	 * Given a {@link Set} of {@link CubeQueryStep}, we find the sub-set which can induce all the others.
+	 */
+	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
+	ONE_TABLE_QUERY_PER_ROOT_INDUCER,
+
+	/**
 	 * Enable the use of {@link TableQueryOptimizerSinglePerAggregator}, which will do one {@link TableQuery} per
 	 * {@link Aggregator}, hence potentially reducing the number of queries to the database, but querying some
-	 * information potentially useless (e.g. by querying some groupBy which is irrelevant for a part of the filter)
+	 * information potentially useless (e.g. by querying some groupBy which is irrelevant for a part of the filter).
+	 * 
+	 * Similar to {@link #ONE_TABLE_QUERY_PER_ROOT_INDUCER}, but forcing to have one {@link TableQuery} per
+	 * {@link Aggregator}.
 	 */
 	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
 	ONE_TABLE_QUERY_PER_AGGREGATOR,
 
 	/**
-	 * This is the default behavior. Given a {@link Set} of {@link CubeQueryStep}, we find the sub-set which can induce
-	 * all the others. This option is useful if the default behavior has been customized.
+	 * A single {@link TableQuery} is generated to cover all {@link CubeQueryStep}. Similar to
+	 * {@link #ONE_TABLE_QUERY_PER_AGGREGATOR}, but covering all aggregators.
 	 */
 	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_ROOT_INDUCER,
+	ONE_TABLE_QUERY_PER_TABLE,
 
 	;
 

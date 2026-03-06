@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -96,5 +97,7 @@ public interface ICuboid extends ICompactable {
 	 * @return another {@link ICuboid} which has been purged from {@link IAggregationCarrier}.
 	 */
 	ICuboid purgeCarriers();
+
+	ICuboid mask(Map<String, ?> mask);
 
 }

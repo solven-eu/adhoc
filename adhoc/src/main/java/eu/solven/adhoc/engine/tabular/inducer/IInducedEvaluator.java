@@ -20,12 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.inducer;
 
-import java.util.List;
 import java.util.Optional;
-
-import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
@@ -34,50 +31,44 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import lombok.Builder;
-import lombok.Singular;
 
 /**
- * An {@link IInducedEvaluator} that delegates to a prioritised list of evaluators and returns the result of the first
- * one that succeeds (i.e. returns a non-empty {@link Optional}).
+ * Defines the contract for evaluating an induced {@link CubeQueryStep} into an aggregated result column.
  *
  * <p>
- * Typical usage puts fast, specialised evaluators (e.g. {@link DuckDBInducedEvaluator}) first, with a universal
- * fallback (e.g. {@link JavaStreamInducedEvaluator}) last.
+ * Infrastructure dependencies (e.g. column factories, filter optimizers) are injected at construction time via an
+ * {@link IInducedEvaluatorFactory}, keeping per-call parameters focused on the query context.
+ *
+ * <p>
+ * An implementation is free to return {@link Optional#empty()} to signal it cannot handle a particular request,
+ * allowing the caller to try the next strategy in a chain (see {@link ChainedInducedEvaluator}).
  *
  * @author Benoit Lacelle
  */
-@Builder
-public class ChainedInducedEvaluator implements IInducedEvaluator {
+@FunctionalInterface
+public interface IInducedEvaluator {
 
-	@Singular
-	final List<IInducedEvaluator> evaluators;
-
-	@Override
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
+	/**
+	 * Try to evaluate the induced step.
+	 *
+	 * @param inducerValues
+	 *            the data from the inducer step
+	 * @param inducer
+	 *            the inducer {@link CubeQueryStep}
+	 * @param induced
+	 *            the induced {@link CubeQueryStep}
+	 * @param leftoverFilter
+	 *            the additional filter to apply on top of the inducer data
+	 * @param aggregation
+	 *            the {@link IAggregation} for the output column
+	 * @param aggregator
+	 *            the {@link Aggregator} describing the aggregation key
+	 * @return {@link Optional#empty()} when this strategy cannot handle the request; otherwise the computed column.
+	 */
+	Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
 			IAggregation aggregation,
-			Aggregator aggregator) {
-		for (IInducedEvaluator evaluator : evaluators) {
-			Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
-					evaluator.tryEvaluate(inducerValues, inducer, induced, leftoverFilter, aggregation, aggregator);
-			if (result.isPresent()) {
-				return result;
-			}
-		}
-		return Optional.empty();
-	}
-
-	/**
-	 * Convenience factory that builds a chain from an ordered list of evaluators.
-	 *
-	 * @param evaluators
-	 *            ordered list; earlier entries have higher priority
-	 * @return a new {@link ChainedInducedEvaluator}
-	 */
-	public static ChainedInducedEvaluator of(IInducedEvaluator... evaluators) {
-		return ChainedInducedEvaluator.builder().evaluators(ImmutableList.copyOf(evaluators)).build();
-	}
+			Aggregator aggregator);
 }

@@ -20,24 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.groupingset;
+
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 
 /**
- * Creates a fully configured {@link IInducedEvaluator} chain.
- *
- * <p>
- * Infrastructure dependencies (e.g. column factories, filter optimizers) are held as properties of the factory
- * implementation rather than being passed on every {@link IInducedEvaluator#tryEvaluate} call.
- *
+ * Helps identifying the groupingSet of a {@link ITabularRecord}.
+ * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IInducedEvaluatorFactory {
+public interface IGroupingSetAnalyzer {
 
-	/**
-	 * Builds and returns a ready-to-use {@link IInducedEvaluator}.
-	 *
-	 * @return a configured {@link IInducedEvaluator}
-	 */
-	IInducedEvaluator build();
+	SequencedSetLikeList getGroupingSet(ITabularRecord input);
+
 }

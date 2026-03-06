@@ -142,11 +142,11 @@ public class AdhocCollectionHelpers {
 	 * @param c
 	 * @return the first item of input {@link Collection}
 	 */
-	public static Object getFirst(Collection<?> c) {
+	public static <T> T getFirst(Collection<T> c) {
 		if (c.isEmpty()) {
 			throw new IllegalArgumentException("Can not .getFirst due to emptyness");
 		}
-		if (c instanceof List<?> list) {
+		if (c instanceof List<T> list) {
 			return list.getFirst();
 		} else {
 			return c.iterator().next();

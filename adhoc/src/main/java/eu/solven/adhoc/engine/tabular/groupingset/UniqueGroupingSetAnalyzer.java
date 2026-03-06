@@ -20,31 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.groupingset;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
-import lombok.NonNull;
 
 /**
- * Default {@link IInducedEvaluatorFactory} that produces a {@link ChainedInducedEvaluator} which tries
- * {@link DuckDBInducedEvaluator} first and falls back to {@link JavaStreamInducedEvaluator}.
- *
+ * A {@link IGroupingSetAnalyzer} when it is guaranteed to be always the same. Useful for queries with no `GROUPING
+ * SET`, as the `GROUP BY` as then the unique groupBy.
+ * 
  * @author Benoit Lacelle
  */
 @Builder
-public class StandardInducedEvaluatorFactory implements IInducedEvaluatorFactory {
-
-	@NonNull
-	final IAdhocFactories factories;
-
-	@NonNull
-	final IFilterOptimizer filterOptimizer;
+public class UniqueGroupingSetAnalyzer implements IGroupingSetAnalyzer {
+	final SequencedSetLikeList sequencedKeyset;
 
 	@Override
-	public IInducedEvaluator build() {
-		// TODO Work on new DuckDBInducedEvaluator(factories)
-		return ChainedInducedEvaluator.of(new JavaStreamInducedEvaluator(factories));
+	public SequencedSetLikeList getGroupingSet(ITabularRecord input) {
+		return sequencedKeyset;
 	}
 }

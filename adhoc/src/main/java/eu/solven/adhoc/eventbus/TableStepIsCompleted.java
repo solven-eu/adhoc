@@ -24,7 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import java.time.Duration;
 
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -39,7 +39,7 @@ import lombok.With;
 @Builder
 public class TableStepIsCompleted implements IAdhocEvent {
 	@NonNull
-	TableQueryV2 tableQuery;
+	TableQueryV3 tableQuery;
 
 	long nbCells;
 

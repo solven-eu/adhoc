@@ -75,7 +75,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 		CubeQuery cubeQuery = CubeQuery.builder().measure("byCcy", k1Sum.getName()).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(2);
 
@@ -141,7 +142,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				CubeQuery.builder().measure("byCcyCountry", "byCcy", k1Sum.getName()).explain(true).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(3);
 

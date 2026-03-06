@@ -24,15 +24,15 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 
 /**
@@ -46,14 +46,11 @@ import lombok.Value;
 @Builder
 public class TableQueryToSuppressedTableQuery {
 	// The TableQuery as queried by the DAG: it may still refer generated columns
-	TableQueryV2 dagQuery;
+	Set<TableQueryV3> tableQueries;
 	// The TableQuery after having suppressed generated columns
-	TableQueryV2 suppressedQuery;
+	// TableQueryV2 suppressedQuery;
 
-	public Set<String> getSuppressedGroupBy() {
-		Set<String> queriedColumns = dagQuery.getGroupBy().getNameToColumn().keySet();
-		Set<String> withoutSuppressedColumns = suppressedQuery.getGroupBy().getNameToColumn().keySet();
-		Set<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
-		return ImmutableSet.copyOf(suppressedView);
-	}
+	// maps from the CubeQueryStep from the cube DAG to the equivalent step where calculated columns are suppressed
+	@Singular
+	ImmutableMap<CubeQueryStep, CubeQueryStep> calculatedToSuppresseds;
 }

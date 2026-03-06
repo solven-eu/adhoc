@@ -92,10 +92,12 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 		TableQuery tq1 = TableQuery.edit(step)
 				.filter(ColumnFilter.matchEq("a", "a1"))
 				.groupBy(GroupByColumns.named("b"))
+				.clearAggregators()
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
 				.filter(ColumnFilter.matchEq("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
+				.clearAggregators()
 				.build();
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
