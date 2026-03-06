@@ -29,9 +29,9 @@ import java.util.function.BiConsumer;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +61,7 @@ public class TabularRecordLogger {
 		};
 	}
 
-	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(TableQueryV2 tableQuery) {
+	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(IHasQueryOptions tableQuery) {
 		return (input, optCoordinates) -> {
 			int currentIn = nbIn.incrementAndGet();
 			if (logAboutRow(tableQuery, currentIn)) {
@@ -71,7 +71,7 @@ public class TabularRecordLogger {
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected boolean logAboutRow(TableQueryV2 tableQuery, int currentOut) {
+	protected boolean logAboutRow(IHasQueryOptions tableQuery, int currentOut) {
 		return tableQuery.isDebug() && (currentOut <= 16 || Integer.bitCount(currentOut) == 1);
 	}
 

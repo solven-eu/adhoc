@@ -59,7 +59,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 
 		TableQueryEngineBootstrapped bootstrapped =
-				engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
+				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
 		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
@@ -79,7 +79,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 		TableQueryEngineBootstrapped bootstrapped =
-				engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
+				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
 		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
@@ -98,7 +98,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 		TableQueryEngineBootstrapped bootstrapped =
-				engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
+				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
 		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);

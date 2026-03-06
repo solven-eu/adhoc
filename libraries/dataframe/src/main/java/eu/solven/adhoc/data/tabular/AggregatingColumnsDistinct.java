@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
@@ -39,6 +42,8 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -146,11 +151,26 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
+	public Set<String> getAggregators() {
+		return aggregatorToAggregates.keySet();
+	}
+
+	@Override
 	public String toString() {
-		return new StringBuilder().append("#slices=")
+		StringBuilder sb = new StringBuilder().append("#slices=")
 				.append(indexToSlice.size())
-				.append("aggregators=")
-				.append(aggregatorToAggregates.keySet())
-				.toString();
+				.append(" aggregators=")
+				.append(aggregatorToAggregates.keySet());
+
+		IntStream.range(0, indexToSlice.size()).limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(sliceIndex -> {
+			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
+					.stream()
+					.collect(Collectors.toMap(e -> e,
+							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
+
+			sb.append(' ').append(indexToSlice.get(sliceIndex)).append('=').append(aggregates);
+		});
+
+		return sb.toString();
 	}
 }

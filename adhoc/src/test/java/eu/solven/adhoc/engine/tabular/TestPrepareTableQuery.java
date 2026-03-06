@@ -68,7 +68,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
@@ -95,7 +96,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
@@ -127,7 +129,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
@@ -158,7 +161,8 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.table(table())
 				.queryStepCache(queryStepCache)
 				.build();
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {

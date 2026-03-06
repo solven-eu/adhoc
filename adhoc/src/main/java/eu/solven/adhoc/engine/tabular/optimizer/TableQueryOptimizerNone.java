@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
-// TODO Should this also drop the optimizations in `groupByEnablingFilterPerMeasure`?
+// TODO Should this also drop the optimizations in `packStepsIntoTableQueries`?
 @Slf4j
 public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 

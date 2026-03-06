@@ -33,6 +33,7 @@ import com.google.common.collect.Iterables;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.cleanthat.SuppressCleanthat;
 import lombok.Builder;
 import lombok.Singular;
@@ -76,6 +77,6 @@ public interface IJooqTableQueryFactory {
 		}
 	}
 
-	QueryWithLeftover prepareQuery(TableQueryV2 tableQuery);
+	QueryWithLeftover prepareQuery(TableQueryV3 tableQuery);
 
 }

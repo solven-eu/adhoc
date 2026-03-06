@@ -51,9 +51,11 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasCache;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -171,6 +173,16 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	public String getName() {
 		// Do not prefix/edit the name, as we typically want this ITableWrapper to work in name of the underlying table
 		return decorated.getName();
+	}
+
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+		if (tableQuery.getGroupBys().size() != 1) {
+			throw new NotYetImplementedException("GROUPING SET");
+		}
+
+		TableQueryV2 queryV2 = tableQuery.streamV2().findFirst().get();
+		return streamSlices(queryPod, queryV2);
 	}
 
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })

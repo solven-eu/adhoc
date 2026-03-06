@@ -77,7 +77,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
 	}
 
-	protected TableQueryEngineBootstrapped bootstrap(QueryPod queryPod) {
+	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod) {
 		ITableQueryOptimizer optimizer = optimizerFactory.makeOptimizer(factories, queryPod);
 
 		if (queryPod.isDebugOrExplain()) {
@@ -87,7 +87,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return bootstrap(queryPod, optimizer);
 	}
 
-	protected TableQueryEngineBootstrapped bootstrap(QueryPod queryPod, ITableQueryOptimizer optimizer) {
+	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod, ITableQueryOptimizer optimizer) {
 		return new TableQueryEngineBootstrapped(factories, eventBus, queryPod, optimizer);
 	}
 

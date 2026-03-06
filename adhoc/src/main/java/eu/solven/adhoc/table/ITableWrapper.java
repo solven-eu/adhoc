@@ -33,6 +33,7 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 
@@ -53,7 +54,12 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery);
+	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery);
+
+	@Deprecated(since = "Used for tests, or edge-cases")
+	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+		return streamSlices(queryPod, tableQuery.toV3());
+	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV2 tableQuery) {

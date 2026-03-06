@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.data.tabular;
 
+import java.util.Set;
+
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -33,6 +35,8 @@ import eu.solven.adhoc.primitive.IValueReceiver;
  * @author Benoit Lacelle
  */
 public interface IMultitypeMergeableGrid<T> {
+
+	Set<String> getAggregators();
 
 	/**
 	 * Typically used to prepare the slice only once, before contributing multiple aggregates.

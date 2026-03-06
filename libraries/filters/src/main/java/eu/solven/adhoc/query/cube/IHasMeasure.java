@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.query.cube;
 
-import eu.solven.adhoc.data.column.Cuboid;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.table.TableQueryV3;
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.With;
+import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * We start evaluating a queryStep, given underlying measures {@link Cuboid}. Once done, we'll have computed a
- * {@link Cuboid} for current {@link CubeQueryStep}.
+ * For object with a single well-defined measure.
  * 
  * @author Benoit Lacelle
- *
  */
-@Value
-@Builder
-public class TableStepIsEvaluating implements IAdhocEvent {
-	@NonNull
-	TableQueryV3 tableQuery;
-
-	@NonNull
-	Object source;
-
-	@With
-	String fqdn;
+@FunctionalInterface
+public interface IHasMeasure {
+	IMeasure getMeasure();
 }

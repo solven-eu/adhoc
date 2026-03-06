@@ -23,14 +23,12 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
@@ -164,19 +162,13 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return;
 		}
 
+		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
+		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
+		// not be inferred by a tableQUery with less groupBys.
 		Map<Integer, List<CubeQueryStep>> cardinalityToSteps =
 				steps.stream().collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size()));
 
-		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
-		int maxGroupBy = steps.stream().mapToInt(tb -> tb.getGroupBy().getGroupedByColumns().size()).max().getAsInt();
-		List<Set<CubeQueryStep>> nbGroupByToQueries =
-				IntStream.rangeClosed(0, maxGroupBy).<Set<CubeQueryStep>>mapToObj(i -> new LinkedHashSet<>()).toList();
-
-		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
-		// not be inferred by a tableQUery with less groupBys.
-		steps.forEach(step -> {
-			nbGroupByToQueries.get(step.getGroupBy().getGroupedByColumns().size()).add(step);
-		});
+		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
 
 		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
 		// We observed up to 1k steps.
@@ -184,7 +176,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			// inducer must have more groupBys than induced
 			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
 			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
-				Optional<CubeQueryStep> optInducer = nbGroupByToQueries.get(inducerGroupBy)
+				Optional<CubeQueryStep> optInducer = cardinalityToSteps.get(inducerGroupBy)
 						.stream()
 						// No edge to itself
 						.filter(inducer -> inducer != induced)

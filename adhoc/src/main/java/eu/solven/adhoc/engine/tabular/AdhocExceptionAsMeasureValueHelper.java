@@ -34,7 +34,7 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps.TabularRecordOverMapsBuild
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -55,20 +55,22 @@ public class AdhocExceptionAsMeasureValueHelper {
 		return SliceHelpers.asSlice(asMap(columns));
 	}
 
-	public static ITabularRecordStream makeErrorStream(TableQueryV2 transcodedQuery, Throwable e) {
+	public static ITabularRecordStream makeErrorStream(TableQueryV3 transcodedQuery, Throwable e) {
 		return new ITabularRecordStream() {
 
 			@Override
 			public Stream<ITabularRecord> records() {
 				TabularRecordOverMapsBuilder errorRecordBuilder = TabularRecordOverMaps.builder();
 
-				NavigableSet<String> groupedByColumns = transcodedQuery.getGroupBy().getGroupedByColumns();
+				return transcodedQuery.getGroupBys().stream().map(groupBy -> {
+					NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-				errorRecordBuilder.slice(asSlice(groupedByColumns));
-				transcodedQuery.getAggregators().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));
+					errorRecordBuilder.slice(asSlice(groupedByColumns));
+					transcodedQuery.getAggregators().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));
 
-				ITabularRecord errorRecord = errorRecordBuilder.build();
-				return Stream.of(errorRecord);
+					return errorRecordBuilder.build();
+				});
+
 			}
 
 			@Override

@@ -53,6 +53,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -101,9 +102,12 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	}
 
 	@Override
-	public Set<TableQueryV2> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableSteps) {
+	public Set<TableQueryV3> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableSteps) {
 		// TODO Add option to skip FILTER optimizations
-		return TableQueryV2.fromV1(TableQuery.fromSteps(tableSteps));
+		return TableQueryV2.fromV1(TableQuery.fromSteps(tableSteps))
+				.stream()
+				.map(v2 -> TableQueryV3.edit(v2).build())
+				.collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**

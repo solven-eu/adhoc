@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
@@ -78,17 +78,17 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 			cdl.await();
 
 			return ITabularRecordStream.empty();
-		}).when(tableWrapper).streamSlices(Mockito.eq(queryPod), Mockito.any(TableQueryV2.class));
+		}).when(tableWrapper).streamSlices(Mockito.eq(queryPod), Mockito.any(TableQueryV3.class));
 
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
-			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, SizeAndDuration) -> {
+			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, sizeAndDuration) -> {
 			},
 					ImmutableSet.of(
-							TableQueryV2.builder()
+							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build())
 									.build(),
-							TableQueryV2.builder()
+							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build())
 									.build()));
 

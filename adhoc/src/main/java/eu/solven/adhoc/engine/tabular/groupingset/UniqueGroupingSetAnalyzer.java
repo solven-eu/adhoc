@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,32 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.eventbus;
+package eu.solven.adhoc.engine.tabular.groupingset;
 
-import eu.solven.adhoc.data.column.Cuboid;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
-import lombok.With;
 
 /**
- * We start evaluating a queryStep, given underlying measures {@link Cuboid}. Once done, we'll have computed a
- * {@link Cuboid} for current {@link CubeQueryStep}.
+ * A {@link IGroupingSetAnalyzer} when it is guaranteed to be always the same. Useful for queries with no `GROUPING
+ * SET`, as the `GROUP BY` as then the unique groupBy.
  * 
  * @author Benoit Lacelle
- *
  */
-@Value
 @Builder
-public class TableStepIsEvaluating implements IAdhocEvent {
-	@NonNull
-	TableQueryV3 tableQuery;
+public class UniqueGroupingSetAnalyzer implements IGroupingSetAnalyzer {
+	final SequencedSetLikeList sequencedKeyset;
 
-	@NonNull
-	Object source;
-
-	@With
-	String fqdn;
+	@Override
+	public SequencedSetLikeList getGroupingSet(ITabularRecord input) {
+		return sequencedKeyset;
+	}
 }

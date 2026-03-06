@@ -63,7 +63,7 @@ import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
@@ -252,7 +252,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		// Request the min and the max of the same measure cross cubes
-		TableQueryV2 compositeQuery = TableQueryV2.builder()
+		TableQueryV3 compositeQuery = TableQueryV3.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("min").aggregationKey(MinAggregation.KEY).build())
 						.build())
@@ -282,7 +282,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Set<String> subColumns = Set.of("c1");
 
 		// Request the min and the max of the same measure cross cubes
-		TableQueryV2 compositeQuery = TableQueryV2.builder()
+		TableQueryV3 compositeQuery = TableQueryV3.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("max_c1").aggregationKey(MaxAggregation.KEY).build())
 						.filter(ColumnFilter.matchLike("c1", "a%"))
