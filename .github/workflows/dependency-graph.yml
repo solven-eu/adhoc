@@ -14,11 +14,14 @@ on:
 
 # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token
 # https://stackoverflow.com/questions/70435286/resource-not-accessible-by-integration-on-github-post-repos-owner-repo-ac
-permissions: write-all
+permissions: read-all
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      # Required to submit the dependency graph to GitHub
+      contents: write
 
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

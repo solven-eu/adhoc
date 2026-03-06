@@ -16,13 +16,14 @@ on:
     types: [opened, synchronize, reopened]
     branches: [master]
 
-permissions:
-  contents: write      # needed to push fix commits onto the PR branch
-  pull-requests: read  # needed to query commit list via gh pr view
+permissions: read-all
 
 jobs:
   fix:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # needed to push fix commits onto the PR branch
+      pull-requests: read  # needed to query commit list via gh pr view
     # Fast-exit: only activate for PRs opened by Renovate.
     if: github.actor == 'renovate[bot]'
 

@@ -10,16 +10,15 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write  # required by gh label create
+permissions: read-all
 
 jobs:
 
   # ── Job 1 ── AI-powered refactoring towards existing helpers and dependency utilities ───────
   ai-review:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push the agent branch
     outputs:
       changed: ${{ steps.detect-changes.outputs.changed }}
 
@@ -103,6 +102,9 @@ jobs:
     needs: ai-review
     runs-on: ubuntu-latest
     if: ${{ !failure() && !cancelled() && needs.ai-review.outputs.changed == 'true' }}
+    permissions:
+      pull-requests: write
+      issues: write  # required by gh label create
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
