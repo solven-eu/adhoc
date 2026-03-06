@@ -26,7 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.data.column.IAdhocCapacityConstants;
 import eu.solven.adhoc.data.column.ICompactable;
@@ -40,7 +42,6 @@ import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarri
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -160,7 +161,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 				.column(column)
 				.build();
 	}
-	
+
 	@Override
 	public Set<String> getAggregators() {
 		return aggregatorToAggregates.keySet();
@@ -168,10 +169,10 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("#slices=")
-				.append(sliceToIndex.size())
-				.append(" aggregators=")
-				.append(aggregatorToAggregates.keySet());
+		ToStringHelper sh = MoreObjects.toStringHelper(this);
+
+		sh.add("#slices", sliceToIndex.size());
+		sh.add("aggregators", getAggregators().size());
 
 		sliceToIndex.object2IntEntrySet().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(entry -> {
 			int sliceIndex = entry.getIntValue();
@@ -180,9 +181,9 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 					.collect(Collectors.toMap(e -> e,
 							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
 
-			sb.append(' ').append(entry.getKey()).append('=').append(aggregates);
+			sh.add(String.valueOf(entry.getKey()), aggregates);
 		});
 
-		return sb.toString();
+		return sh.toString();
 	}
 }
