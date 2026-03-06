@@ -84,4 +84,12 @@ public class TestStandardQueryOptions {
 		Assertions.assertThat(options.isDebug()).isFalse();
 		Assertions.assertThat(options.isDebugOrExplain()).isTrue();
 	}
+
+	@Test
+	public void testIsExplain_DEBUG() {
+		IHasQueryOptions options = () -> Set.of(StandardQueryOptions.DEBUG);
+		Assertions.assertThat(options.isExplain()).isTrue();
+		Assertions.assertThat(options.isDebug()).isTrue();
+		Assertions.assertThat(options.isDebugOrExplain()).isTrue();
+	}
 }

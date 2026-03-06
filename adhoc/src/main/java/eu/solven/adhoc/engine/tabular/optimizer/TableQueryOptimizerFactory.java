@@ -52,6 +52,9 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR)) {
 			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 			return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_TABLE)) {
+			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
+			return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
 		} else {
 			return makeOptimizer(factories);
 		}

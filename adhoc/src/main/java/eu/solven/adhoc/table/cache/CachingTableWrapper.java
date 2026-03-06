@@ -176,7 +176,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
-		if (queryPod.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
+		if (StandardQueryOptions.NO_CACHE.isActive(queryPod.getOptions())) {
 			return streamDecorated(queryPod, tableQuery);
 		}
 

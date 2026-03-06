@@ -22,14 +22,18 @@
  */
 package eu.solven.adhoc.engine.tabular;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import lombok.Builder;
+import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,11 +48,16 @@ public class TabularRecordLogger {
 
 	final String table;
 
-	// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-	@Deprecated(since = "Not called automatically")
+	@Singular
+	final Set<IQueryOption> options;
+
 	public Runnable closeHandler() {
 		return () -> {
-			log.info("Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			if (StandardQueryOptions.EXPLAIN.isActive(options)) {
+				log.info("[EXPLAIN] Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			} else {
+				log.debug("[DEBUG] Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			}
 		};
 	}
 

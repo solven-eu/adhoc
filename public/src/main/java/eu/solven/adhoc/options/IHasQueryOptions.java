@@ -43,13 +43,13 @@ public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
 	@Override
 	@JsonIgnore
 	default boolean isExplain() {
-		return getOptions().contains(StandardQueryOptions.EXPLAIN);
+		return StandardQueryOptions.EXPLAIN.isActive(getOptions());
 	}
 
 	@Override
 	@JsonIgnore
 	default boolean isDebug() {
-		return getOptions().contains(StandardQueryOptions.DEBUG);
+		return StandardQueryOptions.DEBUG.isActive(getOptions());
 	}
 
 	@JsonIgnore

@@ -120,7 +120,11 @@ public enum StandardQueryOptions implements IQueryOption {
 		if (this == CONCURRENT) {
 			// SEQUENTIAL will force disabling of CONCURRENT
 			return options.contains(CONCURRENT) && !options.contains(SEQUENTIAL);
+		} else if (this == EXPLAIN) {
+			// DEBUG should trigger EXPLAIN messages
+			return options.contains(EXPLAIN) || options.contains(DEBUG);
+		} else {
+			return options.contains(this);
 		}
-		return options.contains(this);
 	}
 }

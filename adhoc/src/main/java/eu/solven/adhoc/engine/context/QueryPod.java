@@ -124,7 +124,7 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 			throw new IllegalArgumentException("Null input");
 		}
 
-		if (query.getOptions().contains(StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY)) {
+		if (StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.isActive(query.getOptions())) {
 			return this.forest.resolveIfRefOpt(measure)
 					.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
 		} else {

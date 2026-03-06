@@ -60,9 +60,9 @@ import lombok.Value;
 public interface ITableQueryOptimizer {
 
 	/**
-	 * Inducers {@link TableQuery} are evaluated by a {@link ITableWrapper}.
+	 * Inducers {@link CubeQueryStep} are evaluated by a {@link ITableWrapper}.
 	 * 
-	 * Induced {@link TableQuery} are evaluated given the results associated to the inducers.
+	 * Induced {@link CubeQueryStep} are evaluated given the results associated to the inducers.
 	 * 
 	 * @author Benoit Lacelle
 	 * @see QueryStepsDag
@@ -116,6 +116,15 @@ public interface ITableQueryOptimizer {
 		return splitInduced(hasOptions, steps);
 	}
 
+	/**
+	 * Turn a set of {@link CubeQueryStep} into a set of {@link TableQueryV2}. {@link CubeQueryStep} are grouped by
+	 * `GROUP BY`. For each `GROUP BY`, we determine a common `WHERE CLAUSE`. Each aggregator is then associated with a
+	 * `FILTER` clause.
+	 * 
+	 * @param tableWrapper
+	 * @param tableQueries
+	 * @return
+	 */
 	Set<TableQueryV2> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableQueries);
 
 	/**

@@ -20,24 +20,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.inducer;
+
+import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import lombok.Builder;
+import lombok.NonNull;
 
 /**
- * Creates a fully configured {@link IInducedEvaluator} chain.
- *
- * <p>
- * Infrastructure dependencies (e.g. column factories, filter optimizers) are held as properties of the factory
- * implementation rather than being passed on every {@link IInducedEvaluator#tryEvaluate} call.
+ * Default {@link IInducedEvaluatorFactory} that produces a {@link ChainedInducedEvaluator} which tries
+ * {@link DuckDBInducedEvaluator} first and falls back to {@link JavaStreamInducedEvaluator}.
  *
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface IInducedEvaluatorFactory {
+@Builder
+public class StandardInducedEvaluatorFactory implements IInducedEvaluatorFactory {
 
-	/**
-	 * Builds and returns a ready-to-use {@link IInducedEvaluator}.
-	 *
-	 * @return a configured {@link IInducedEvaluator}
-	 */
-	IInducedEvaluator build();
+	@NonNull
+	final IAdhocFactories factories;
+
+	@NonNull
+	final IFilterOptimizer filterOptimizer;
+
+	@Override
+	public IInducedEvaluator build() {
+		// TODO Work on new DuckDBInducedEvaluator(factories)
+		return ChainedInducedEvaluator.of(new JavaStreamInducedEvaluator(factories));
+	}
 }

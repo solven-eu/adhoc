@@ -39,6 +39,8 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluator;
+import eu.solven.adhoc.engine.tabular.inducer.StandardInducedEvaluatorFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
@@ -91,7 +93,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 	 * @return a CubeQueryStep which has been fleshed-out of what's not the query context.
 	 */
 	protected CubeQueryStep contextOnly(CubeQueryStep inducer) {
-		return CubeQueryStep.edit(inducer)
+		return inducer.toBuilder()
 				.measure("noMeasure")
 				.groupBy(IGroupBy.GRAND_TOTAL)
 				.filter(ISliceFilter.MATCH_ALL)

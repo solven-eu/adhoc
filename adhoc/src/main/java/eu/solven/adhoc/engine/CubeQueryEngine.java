@@ -426,7 +426,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected void walkUpDag(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ICuboid> queryStepToValues) {
-		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
+		if (StandardQueryOptions.DRILLTHROUGH.isActive(queryPod.getOptions())) {
 			// In case of drillthrough, we do not process any measure
 			return;
 		}
@@ -522,7 +522,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		try {
 			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
-			if (queryStep.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryStep.getOptions())) {
 				IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 				IAdhocSlice errorSlice = makeErrorSlice(queryStep, e);
@@ -669,7 +669,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg && EmptyAggregation.isEmpty(agg);
 
 				boolean doClearCarriers = mayHoldCarriers(step)
-						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
+						&& !StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED.isActive(queryPod.getOptions());
 
 				IColumnScanner<IAdhocSlice> baseRowScanner =
 						slice -> view.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);

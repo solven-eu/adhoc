@@ -83,7 +83,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
 
 		TabularRecordLogger aggregatedRecordLogger =
-				TabularRecordLogger.builder().table(queryPod.getTable().getName()).build();
+				TabularRecordLogger.builder().table(queryPod.getTable().getName()).options(queryPod.getOptions()).build();
 
 		// TODO We'd like to log on the last row, to have the number of row actually
 		// streamed

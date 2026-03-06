@@ -29,7 +29,6 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries.SplitTableQueriesBuilder;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.extern.slf4j.Slf4j;
@@ -61,14 +60,12 @@ public class TableQueryOptimizerNone extends ATableQueryOptimizer {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
-		SplitTableQueriesBuilder split = SplitTableQueries.builder();
-
 		// Register all tableQueries as a vertex
 		tableQueries.forEach(step -> {
 			inducedToInducer.addVertex(step);
 		});
 
-		return split.inducedToInducer(inducedToInducer).build();
+		return SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
 	}
 
 }

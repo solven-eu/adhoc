@@ -210,7 +210,7 @@ public class ColumnsManager implements IColumnsManager {
 		try {
 			tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
 		} catch (RuntimeException e) {
-			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryPod.getOptions())) {
 				tabularRecordStream = AdhocExceptionAsMeasureValueHelper.makeErrorStream(transcodedQuery, e);
 			} else {
 				String msgE = "Issue opening stream from %s for query=%s".formatted(table, transcodedQuery);
