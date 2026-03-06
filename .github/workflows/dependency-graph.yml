@@ -18,6 +18,7 @@ permissions: read-all
 
 jobs:
   build:
+    name: Update dependency graph
     runs-on: ubuntu-latest
     permissions:
       # Required to submit the dependency graph to GitHub

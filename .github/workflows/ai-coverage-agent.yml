@@ -16,6 +16,7 @@ jobs:
 
   # ── Job 1 ── AI-powered coverage improvements via Claude Code CLI ──────────
   ai-coverage:
+    name: AI coverage improvements
     runs-on: ubuntu-latest
     permissions:
       contents: write  # required to push the agent branch
@@ -112,6 +113,7 @@ jobs:
 
   # ── Job 2 ── Open a PR if the AI job produced changes ────────────────────────
   open-pr:
+    name: Open PR
     needs: ai-coverage
     runs-on: ubuntu-latest
     if: ${{ !failure() && !cancelled() && needs.ai-coverage.outputs.changed == 'true' }}

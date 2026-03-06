@@ -19,6 +19,7 @@ permissions: read-all
 
 jobs:
   build:
+    name: Static Analysis
     runs-on: ubuntu-latest
 
     steps:

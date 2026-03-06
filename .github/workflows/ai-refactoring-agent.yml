@@ -16,6 +16,7 @@ jobs:
 
   # ── Job 1 ── AI-powered refactoring towards existing helpers and dependency utilities ───────
   ai-review:
+    name: AI refactoring improvements
     runs-on: ubuntu-latest
     permissions:
       contents: write  # required to push the agent branch
@@ -99,6 +100,7 @@ jobs:
 
   # ── Job 2 ── Open a PR if the AI job produced changes ────────────────────────
   open-pr:
+    name: Open PR
     needs: ai-review
     runs-on: ubuntu-latest
     if: ${{ !failure() && !cancelled() && needs.ai-review.outputs.changed == 'true' }}

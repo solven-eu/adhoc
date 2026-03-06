@@ -16,6 +16,7 @@ jobs:
 
   # ── Job 1 ── AI-powered performance improvements via Claude Code CLI ──────────
   ai-review:
+    name: AI performance improvements
     runs-on: ubuntu-latest
     permissions:
       contents: write  # required to push the agent branch
@@ -105,6 +106,7 @@ jobs:
 
   # ── Job 2 ── Open a PR if the AI job produced changes ────────────────────────
   open-pr:
+    name: Open PR
     needs: ai-review
     runs-on: ubuntu-latest
     if: ${{ !failure() && !cancelled() && needs.ai-review.outputs.changed == 'true' }}
