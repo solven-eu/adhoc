@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -81,9 +82,9 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		if (rank == 0) {
 			throw new IllegalArgumentException("rank is 1-based. Can not be `0`");
 		} else if (rank > 0) {
-			return make(Map.of(P_RANK, rank, P_ORDER, "DESC"));
+			return make(ImmutableMap.of(P_RANK, rank, P_ORDER, "DESC"));
 		} else {
-			return make(Map.of(P_RANK, -rank, P_ORDER, "ASC"));
+			return make(ImmutableMap.of(P_RANK, -rank, P_ORDER, "ASC"));
 		}
 	}
 

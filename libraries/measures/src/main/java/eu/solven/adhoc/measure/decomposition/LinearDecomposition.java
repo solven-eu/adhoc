@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.decomposition;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +75,7 @@ public class LinearDecomposition implements IDecomposition {
 
 		Optional<?> optInput = slice.getSlice().optGroupBy(inputColumn);
 		if (optInput.isEmpty()) {
-			return ImmutableList.of(IDecompositionEntry.of(Map.of(), IValueProvider.setValue(value)));
+			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(), IValueProvider.setValue(value)));
 		}
 
 		Object input = optInput.get();
@@ -85,16 +84,14 @@ public class LinearDecomposition implements IDecomposition {
 
 		String outputColumn = AdhocMapPathGet.getRequiredString(options, K_OUTPUT);
 		if (min.equals(input)) {
-			return ImmutableList.of(IDecompositionEntry.of(Map.of(outputColumn, min), value));
+			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(outputColumn, min), value));
 		} else if (max.equals(input)) {
-			return ImmutableList.of(IDecompositionEntry.of(Map.of(outputColumn, max), value));
+			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(outputColumn, max), value));
 		} else {
-			List<IDecompositionEntry> output = new ArrayList<>(2);
-
-			output.add(IDecompositionEntry.of(Map.of(outputColumn, min), scale(min, max, input, value)));
-			output.add(IDecompositionEntry.of(Map.of(outputColumn, max), scaleComplement(min, max, input, value)));
-
-			return output;
+			return ImmutableList.of(
+					IDecompositionEntry.of(ImmutableMap.of(outputColumn, min), scale(min, max, input, value)),
+					IDecompositionEntry.of(ImmutableMap.of(outputColumn, max),
+							scaleComplement(min, max, input, value)));
 		}
 	}
 
@@ -145,7 +142,7 @@ public class LinearDecomposition implements IDecomposition {
 		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
 		if (!step.getGroupBy().getGroupedByColumns().contains(outputColumn)) {
 			// None of the requested column is an output column of this dispatchor : there is nothing to dispatch
-			return List.of(step);
+			return ImmutableList.of(step);
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -156,7 +153,7 @@ public class LinearDecomposition implements IDecomposition {
 		String inputColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
 		allGroupBys.add(ReferencedColumn.ref(inputColumn));
 
-		return List.of(MeasurelessQuery.edit(step).groupBy(GroupByColumns.of(allGroupBys)).build());
+		return ImmutableList.of(MeasurelessQuery.edit(step).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 
 	@Override

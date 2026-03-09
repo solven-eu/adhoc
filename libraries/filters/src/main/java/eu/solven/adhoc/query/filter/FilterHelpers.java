@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -153,11 +154,11 @@ public class FilterHelpers {
 
 	public static Map<String, Object> asMap(ISliceFilter slice) {
 		if (slice.isMatchAll()) {
-			return Map.of();
+			return ImmutableMap.of();
 		} else if (slice.isColumnFilter() && slice instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
 			if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
-				return Map.of(columnFilter.getColumn(), equalsMatcher.getWrapped());
+				return ImmutableMap.of(columnFilter.getColumn(), equalsMatcher.getWrapped());
 			} else {
 				throw new NotYetImplementedException("filter=%s".formatted(slice));
 			}

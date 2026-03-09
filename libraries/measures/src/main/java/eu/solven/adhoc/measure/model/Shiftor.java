@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -70,12 +72,12 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 
 	@NonNull
 	@Builder.Default
-	Map<String, ?> editorOptions = Map.of();
+	Map<String, ?> editorOptions = ImmutableMap.of();
 
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return List.of(underlying);
+		return ImmutableList.of(underlying);
 	}
 
 }
