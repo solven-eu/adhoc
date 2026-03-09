@@ -52,6 +52,11 @@ public class SuppliedTabularRecordStream implements ITabularRecordStream {
 	}
 
 	@Override
+	public Object getTableQuery() {
+		return source;
+	}
+
+	@Override
 	public Stream<ITabularRecord> records() {
 		return streamSupplier.get();
 	}

@@ -111,6 +111,7 @@ public class TestCubeQuery_DuckDb_WithCalculatedCoordinate extends ADuckDbJooqTe
 				.hasSize(3);
 	}
 
+	// Adds calculated coordinates on 2 different columns: it leads to a cartesian product
 	@Test
 	public void test_GroupByDateAndColor() {
 		ITabularView result = cube().execute(CubeQuery.builder()

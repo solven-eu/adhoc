@@ -23,16 +23,25 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.tabular.splitter.ITableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Standard implementation for {@link ITableQueryOptimizerFactory}.
  * 
  * @author Benoit Lacelle
  */
+@Slf4j
 @RequiredArgsConstructor
 public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 
@@ -43,27 +52,34 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 
 	@Override
 	public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
-		if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER)) {
-			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
-			return new TableQueryOptimizerNone(factories, filterOptimizer);
-		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)) {
-			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
-			return new TableQueryOptimizer(factories, filterOptimizer);
-		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR)) {
-			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
-			return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
-		} else if (hasOptions.getOptions().contains(InternalQueryOptions.ONE_TABLE_QUERY_PER_TABLE)) {
-			IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
-			return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
+		ITableStepsSplitter splitter;
+		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
+			splitter = new InduceByAdhoc();
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_TABLE)) {
+			splitter = new InduceByGroupingSets();
 		} else {
-			return makeOptimizer(factories);
+			// BEWARE We're unclear about the right defaults
+			splitter = new InduceByGroupingSets();
+			log.debug("Default {} led to {}", ITableStepsSplitter.class.getName(), splitter.getClass().getName());
 		}
-	}
 
-	protected ITableQueryOptimizer makeOptimizer(IAdhocFactories factories) {
+		ITableStepsGrouper grouper;
+		if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)) {
+			grouper = new TableStepsGrouper();
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR)) {
+			grouper = new TableStepsGrouperByAggregator();
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_STEPS)) {
+			grouper = new TableStepsGrouperNoGroup();
+		} else {
+			// BEWARE We're unclear about the right defaults
+			grouper = new TableStepsGrouper();
+			log.debug("Default {} led to {}", ITableStepsGrouper.class.getName(), grouper.getClass().getName());
+		}
+
 		// WithCache as this optimize will be used for a single query
 		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
-		return new TableQueryOptimizer(factories, filterOptimizer);
+
+		return new TableQueryOptimizer(factories, filterOptimizer, splitter, grouper);
 	}
 
 }

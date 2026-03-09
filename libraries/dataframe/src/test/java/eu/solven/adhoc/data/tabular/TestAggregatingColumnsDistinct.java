@@ -26,6 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 
@@ -38,7 +39,8 @@ public class TestAggregatingColumnsDistinct {
 	public void testUnknownKey() {
 		aggregatingColumns.contribute("k", a).onLong(123);
 
-		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a);
+		IMultitypeColumnFastGet<String> closedColumn =
+				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure("m").build(), a);
 
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();

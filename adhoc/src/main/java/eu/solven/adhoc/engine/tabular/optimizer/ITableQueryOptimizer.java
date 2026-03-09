@@ -22,10 +22,11 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
@@ -40,8 +41,8 @@ import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -49,6 +50,7 @@ import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link ITableQueryOptimizer} will turn an input {@link Set} of {@link TableQuery} into a {@link SplitTableQueries},
@@ -70,23 +72,24 @@ public interface ITableQueryOptimizer {
 	 * @see QueryStepsDag
 	 */
 	@Value
-	@Builder
-	class SplitTableQueries implements IHasDagFromInducedToInducer, ISinkExecutionFeedback {
-		// From induced to inducer
+	@Builder(toBuilder = true)
+	@Slf4j
+	class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTableQueryForSteps, ISinkExecutionFeedback {
+		// From induced to inducer. Given the steps produced by the table, we may infer more steps.
 		@NonNull
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
 
-		// The nodes which are explicitly requested. Typically roots of DAG, but may also be some shared inner nodes.
+		// The nodes which are explicitly requested. Typically roots of DAG, but may also be some shared intermediate
+		// nodes (if some root is an inducer of another root).
 		@NonNull
 		@Singular
 		ImmutableSet<CubeQueryStep> explicits;
 
-		// Record the tableQuery leading to given aggregator CubeQueryStep
-		// Without this, if we try to infer the tableQuery given the cubeQueryStep, we may lose the information about
-		// which measure being specifically filtered
-		// IS THIS TRUE?
+		// BEWARE The tableQuery may have lost some customMarker (e.g. as most customMarkers has no impact in
+		// tableWrapper and should be ignored)
 		@NonNull
-		Map<CubeQueryStep, TableQueryV2> stepToTable = new LinkedHashMap<>();
+		@Singular
+		Map<CubeQueryStep, TableQueryV3> stepToTables;
 
 		@NonNull
 		@Default
@@ -105,16 +108,46 @@ public interface ITableQueryOptimizer {
 		public long edgeCount() {
 			return inducedToInducer.iterables().edgeCount();
 		}
+
+		@Override
+		public Set<TableQueryV3> getTableQueries() {
+			return ImmutableSet.copyOf(stepToTables.values());
+		}
+
+		@Override
+		public boolean containsStep(CubeQueryStep queryStep) {
+			return stepToTables.containsKey(queryStep);
+		}
+
+		@Override
+		public Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query,
+				IFilterOptimizer filterOptimizer) {
+			return query.getAggregators().stream().flatMap(filteredAggregator -> {
+				return query.streamGroupBy().map(groupBy -> {
+					CubeQueryStep step = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
+
+					if (containsStep(step)) {
+						return new StepAndFilteredAggregator(filteredAggregator, step);
+					} else {
+						// TODO Should we clear some data consuming RAM?
+						log.debug("Skip step as produce by table but irrelevant for cube. step={}", step);
+						return null;
+					}
+				}).filter(Objects::nonNull);
+			});
+		}
 	}
 
 	/**
+	 * This will returns a {@link Set} of {@link TableQueryV3} to be execute by a {@link ITableWrapper}, and a DAG of
+	 * {@link CubeQueryStep}. All leaves of the DAG should be evaluated by at least one {@link TableQueryV3}.
 	 * 
-	 * @param tableQuerySteps
+	 * @param querySteps
 	 *            the {@link CubeQueryStep} needed to be evaluated by the {@link ITableWrapper}
 	 * @return an {@link SplitTableQueries} defining a {@link Set} of {@link TableQuery} from which all necessary
 	 *         {@link TableQuery} can not be induced.
 	 */
-	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQuerySteps);
+	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> querySteps);
 
 	@Deprecated(since = ".splitInduced", forRemoval = true)
 	default SplitTableQueries splitInducedLegacy(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
@@ -124,17 +157,6 @@ public interface ITableQueryOptimizer {
 
 		return splitInduced(hasOptions, steps);
 	}
-
-	/**
-	 * Turn a set of {@link CubeQueryStep} into a set of {@link TableQueryV2}. {@link CubeQueryStep} are grouped by
-	 * `GROUP BY`. For each `GROUP BY`, we determine a common `WHERE CLAUSE`. Each aggregator is then associated with a
-	 * `FILTER` clause.
-	 * 
-	 * @param tableWrapper
-	 * @param tableQueries
-	 * @return
-	 */
-	Set<TableQueryV3> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableQueries);
 
 	/**
 	 * 

@@ -258,6 +258,11 @@ public class ColumnsManager implements IColumnsManager {
 		return new ITabularRecordStream() {
 
 			@Override
+			public Object getTableQuery() {
+				return tabularRecordStream.getTableQuery();
+			}
+
+			@Override
 			public boolean isDistinctSlices() {
 				// TODO Study how this flag could be impacted by transcoding
 				if (transcodingContext.getNameToCalculated().isEmpty()) {
@@ -332,8 +337,6 @@ public class ColumnsManager implements IColumnsManager {
 		if (columns.isEmpty()) {
 			return row;
 		}
-
-		// Map<String, Object> enrichedGroupBy = new LinkedHashMap<>(row.getGroupBys().getCoordinates());
 
 		Map<String, Object> computed = new LinkedHashMap<>();
 

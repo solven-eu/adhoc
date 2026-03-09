@@ -28,7 +28,12 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -41,20 +46,18 @@ import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluator;
 import eu.solven.adhoc.engine.tabular.inducer.StandardInducedEvaluatorFactory;
+import eu.solven.adhoc.engine.tabular.splitter.InducerHelpers;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV3;
-import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,77 +77,70 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 	final IInducedEvaluator inducedEvaluator;
 
+	protected Supplier<FilterUtility> filterUtility =
+			Suppliers.memoize(() -> FilterUtility.builder().optimizer(getFilterOptimizer()).build());
+
+	@Deprecated(since = "For unit-tests, else you should probably re-use a filterOptimizer")
+	public ATableQueryOptimizer(IAdhocFactories factories) {
+		this(factories, factories.getFilterOptimizerFactory().makeOptimizer());
+	}
+
 	public ATableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		this.factories = factories;
-		this.filterOptimizer = filterOptimizer;
+		if (filterOptimizer == null) {
+			this.filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
+		} else {
+			this.filterOptimizer = filterOptimizer;
+		}
 
-		this.filterHelper = FilterUtility.builder().optimizer(filterOptimizer).build();
+		this.filterHelper = FilterUtility.builder().optimizer(this.filterOptimizer).build();
 		this.inducedEvaluator = StandardInducedEvaluatorFactory.builder()
 				.factories(factories)
-				.filterOptimizer(filterOptimizer)
+				.filterOptimizer(this.filterOptimizer)
 				.build()
 				.build();
 	}
 
-	/**
-	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the
-	 * customMarker.
-	 * 
-	 * @param inducer
-	 * @return a CubeQueryStep which has been fleshed-out of what's not the query context.
-	 */
-	protected CubeQueryStep contextOnly(CubeQueryStep inducer) {
-		return inducer.toBuilder()
-				.measure("noMeasure")
-				.groupBy(IGroupBy.GRAND_TOTAL)
-				.filter(ISliceFilter.MATCH_ALL)
+	protected TableQueryV3 makeTableQuery(CubeQueryStep context, Collection<CubeQueryStep> steps) {
+		Set<IGroupBy> groupBys = steps.stream().map(CubeQueryStep::getGroupBy).collect(ImmutableSet.toImmutableSet());
+
+		// This is the filter applicable to all aggregators: it will be applied in WHERE
+		Set<ISliceFilter> filters = steps.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+		ISliceFilter commonFilter = filterUtility.get().commonAnd(filters);
+		IFilterStripper stripper = factories.getFilterStripperFactory().makeFilterStripper(commonFilter);
+
+		// Strip the WHERE from each individual FILTER
+		Set<FilteredAggregator> strippedAggregators = steps.stream().map(step -> {
+			ISliceFilter strippedFromWhere = stripper.strip(step.getFilter());
+
+			return FilteredAggregator.builder()
+					.aggregator((Aggregator) step.getMeasure())
+					// transfer the stripped filter as `FILTER`
+					.filter(strippedFromWhere)
+					.build();
+		}).collect(ImmutableSet.toImmutableSet());
+
+		Map<String, List<FilteredAggregator>> aliasToAggregators =
+				strippedAggregators.stream().collect(Collectors.groupingBy(FilteredAggregator::getAlias));
+
+		// Ensure each aggregator has a different name even if they rely on the same column
+		List<FilteredAggregator> aliasedAggregators = aliasToAggregators.entrySet().stream().flatMap(e -> {
+			List<FilteredAggregator> aggregators = e.getValue();
+
+			if (aggregators.size() == 1) {
+				// no conflict
+				return Stream.of(aggregators.getFirst());
+			} else {
+				AtomicInteger aliasIndex = new AtomicInteger();
+				return aggregators.stream().map(a -> a.toBuilder().index(aliasIndex.getAndIncrement()).build());
+			}
+		}).toList();
+
+		return TableQueryV3.edit(context)
+				.groupBys(groupBys)
+				.aggregators(aliasedAggregators)
+				.filter(commonFilter)
 				.build();
-	}
-
-	@Override
-	public Set<TableQueryV3> packStepsIntoTableQueries(ITableWrapper tableWrapper, Set<CubeQueryStep> tableSteps) {
-		// TODO Add option to skip FILTER optimizations
-		return TableQueryV2.fromV1(TableQuery.fromSteps(tableSteps))
-				.stream()
-				.map(v2 -> TableQueryV3.edit(v2).build())
-				.collect(ImmutableSet.toImmutableSet());
-	}
-
-	/**
-	 * 
-	 * @param inducerColumns
-	 * @param inducerFilter
-	 * @param inducedFilter
-	 *            it has to be laxer than inducer (i.e. this is not checked but assumed in this method).
-	 * @return an {@link Optional} {@link ISliceFilter} expressing the rows to keep from `inducer` to find all and only
-	 *         rows from `induced`.
-	 */
-	protected Optional<ISliceFilter> makeLeftoverFilter(Collection<IAdhocColumn> inducerColumns,
-			ISliceFilter inducerFilter,
-			ISliceFilter inducedFilter) {
-		// This assert can be quite slow
-		// assert FilterHelpers.isLaxerThan(inducerFilter, inducedFilter);
-
-		// BEWARE There is NOT two different ways to filters rows from inducer for induced:
-		// Either we reject the rows which are in inducer but not expected by induced,
-		// Or we keep-only the rows in inducer given additional constraints in induced.
-		// Indeed, we see no actual case where we could only look at inducer columns to infer irrelevant rows, without
-		// actually check the induced filter.
-
-		// This match the row which has to be kept from inducer for induced
-		ISliceFilter inducedLeftoverFilter = FilterHelpers.stripWhereFromFilter(inducerFilter, inducedFilter);
-
-		boolean hasLeftoverFilteringColumns = inducerColumns.stream()
-				.map(IAdhocColumn::getName)
-				.collect(ImmutableSet.toImmutableSet())
-				.containsAll(FilterHelpers.getFilteredColumns(inducedLeftoverFilter));
-
-		if (hasLeftoverFilteringColumns) {
-			// Given inducer, one can filter a subset of rows based on a filter given its rows are available
-			return Optional.of(inducedLeftoverFilter);
-		}
-
-		return Optional.empty();
 	}
 
 	@Override
@@ -168,7 +164,7 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 
 		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
 		Optional<ISliceFilter> optSliceFilter =
-				makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
+				InducerHelpers.makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
 		if (optSliceFilter.isEmpty()) {
 			throw new IllegalStateException(
 					"Can not make a leftover filter given inducer=%s and induced=%s".formatted(inducer, induced));

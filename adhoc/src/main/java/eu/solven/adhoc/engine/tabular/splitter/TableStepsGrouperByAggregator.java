@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.engine.tabular.splitter;
 
-public class TestTableQueryV2 {
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 
+/**
+ * This {@link ITableStepsGrouper} will make one {@link TableQueryV3} per considered {@link Aggregator}.
+ * 
+ * This strategy will generate a limited number of {@link TableQueryV3} per {@link CubeQuery}: one per requested
+ * aggregation (i.e. column+aggregationKey).
+ * 
+ * @author Benoit Lacelle
+ */
+public class TableStepsGrouperByAggregator extends TableStepsGrouper {
+
+	/**
+	 * We want a single tableQuery per measure. May be useful to improve table performance, concurrency and readability
+	 * (by having 1 SQL per aggregated measure).
+	 * 
+	 * @param inducer
+	 * @return
+	 */
+	@Override
+	public CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer) {
+		return contextOnly(inducer).toBuilder().measure(inducer.getMeasure()).build();
+	}
 }

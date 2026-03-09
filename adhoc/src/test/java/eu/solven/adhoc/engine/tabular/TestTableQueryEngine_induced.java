@@ -44,8 +44,8 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQ
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -53,8 +53,8 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
 
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
-	ITableQueryOptimizer optimizer =
-			engine.optimizerFactory.makeOptimizer(engine().getFactories(), IHasQueryOptions.noOption());
+	ITableQueryOptimizer optimizer = engine.optimizerFactory.makeOptimizer(engine().getFactories(),
+			() -> Set.of(InternalQueryOptions.INDUCE_BY_ADHOC));
 
 	@Override
 	public void feedTable() {

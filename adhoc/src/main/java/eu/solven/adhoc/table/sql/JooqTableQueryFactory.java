@@ -558,7 +558,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Deprecated(since = "TODO Migrate unitTests")
 	public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
-		return prepareQuery(TableQueryV2.fromV1(tableQuery));
+		return prepareQuery(TableQueryV3.edit(tableQuery).build());
 	}
 
 }

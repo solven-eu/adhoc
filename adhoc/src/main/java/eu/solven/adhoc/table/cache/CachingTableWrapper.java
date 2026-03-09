@@ -228,6 +228,11 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 			return new ITabularRecordStream() {
 
 				@Override
+				public Object getTableQuery() {
+					return TableQueryV3.edit(tableQuery).build();
+				}
+
+				@Override
 				public boolean isDistinctSlices() {
 					// TODO `mergeAggregate` does not distinct slices
 					return false;
@@ -258,6 +263,11 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 			}
 
 			return new ITabularRecordStream() {
+
+				@Override
+				public Object getTableQuery() {
+					return tableQuery;
+				}
 
 				@Override
 				public boolean isDistinctSlices() {

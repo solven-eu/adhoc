@@ -23,224 +23,164 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.engine.tabular.splitter.ITableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.FilterHelpers;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Standard {@link ITableQueryOptimizer}. It works on a per-Aggregator basis, evaluating which one can be skipped given
- * a minimal number of {@link CubeQueryStep}.
+ * The main strategy of this {@link ITableQueryOptimizer} is to evaluate the minimal number of {@link TableQuery} needed
+ * to compute all {@link CubeQueryStep} allowing to compute irrelevant aggregates. Typically, it will evaluate the union
+ * of {@link IGroupBy} and an {@link OrFilter} amongst all {@link ISliceFilter}.
+ * 
+ * In short, it enables doing a single query per measure to the {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
 public class TableQueryOptimizer extends ATableQueryOptimizer {
 
-	public TableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	protected final ITableStepsSplitter splitter;
+	protected final ITableStepsGrouper grouper;
+
+	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
+	// a single query, leading to a very large OR.
+	@Builder
+	public TableQueryOptimizer(IAdhocFactories factories,
+			IFilterOptimizer filterOptimizer,
+			ITableStepsSplitter splitter,
+			ITableStepsGrouper grouper) {
 		super(factories, filterOptimizer);
+
+		this.splitter = splitter;
+		this.grouper = grouper;
 	}
 
-	/**
-	 * 
-	 * @param tableQuerySteps
-	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
-	 */
+	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
+	// a single query, leading to a very large OR.
+	public TableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		this(factories, filterOptimizer, new InduceByAdhoc(), new TableStepsGrouper());
+	}
+
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQuerySteps) {
-		if (tableQuerySteps.isEmpty()) {
-			return SplitTableQueries.empty();
+	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableSteps) {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+				splitter.splitInducedAsDag(hasOptions, tableSteps);
+
+		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
+
+		return SplitTableQueries.builder()
+				.explicits(tableSteps)
+				.inducedToInducer(inducedToInducer)
+				.stepToTables(stepToTableQuery)
+				.build();
+	}
+
+	protected Map<CubeQueryStep, TableQueryV3> makeStepToTableQuery(Set<CubeQueryStep> tableSteps,
+			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer) {
+		Set<CubeQueryStep> leaves = SplitTableQueries.builder()
+				.explicits(tableSteps)
+				.inducedToInducer(inducedToInducer)
+				.build()
+				.getInducers();
+
+		Map<CubeQueryStep, List<CubeQueryStep>> contextToSteps =
+				leaves.stream().collect(Collectors.groupingBy(grouper::tableQueryGroupBy));
+
+		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
+
+		contextToSteps.forEach((context, steps) -> stepToTableQuery.putAll(processRelatedSteps(context, steps)));
+
+		return stepToTableQuery;
+	}
+
+	protected Map<CubeQueryStep, TableQueryV3> processRelatedSteps(CubeQueryStep context, List<CubeQueryStep> steps) {
+		// BEWARE There is difficulties around GROUPING SET and calculated columns
+		// (e.g. confusion between a reference to column `c`, and a calculated column based on `c` which will actually
+		// do a grandTotal (e.g. the `*` coordinate)).
+		Map<Boolean, List<CubeQueryStep>> partitioningByCalculated = steps.stream()
+				.collect(Collectors.partitioningBy(s -> s.getGroupBy()
+						.getNameToColumn()
+						.values()
+						.stream()
+						.anyMatch(c -> !(c instanceof ReferencedColumn))));
+
+		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
+
+		// Add one tableQuery without any calculated columns
+		stepToTableQuery.putAll(processSteps(context, partitioningByCalculated.get(false)));
+
+		// Add one tableQuery per step with at least one calculated column
+		// BEWARE Should work on this necessity as it looks not legitimate and very sub-optimal
+		partitioningByCalculated.get(true).forEach(notOnlyRef -> {
+			stepToTableQuery.putAll(processSteps(context, ImmutableSet.of(notOnlyRef)));
+		});
+
+		return stepToTableQuery;
+	}
+
+	protected Map<CubeQueryStep, TableQueryV3> processSteps(CubeQueryStep context, Collection<CubeQueryStep> steps) {
+		if (steps.isEmpty()) {
+			return Map.of();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
-				splitInducedAsDag(hasOptions, tableQuerySteps);
+		TableQueryV3 query = makeTableQuery(context, steps);
 
-		return SplitTableQueries.builder().explicits(tableQuerySteps).inducedToInducer(inducedToInducer).build();
-	}
-
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<CubeQueryStep> tableQueries) {
-		ListMultimap<CubeQueryStep, CubeQueryStep> aggregatorToQueries = packByAggregator(tableQueries);
-
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
-				new DirectedAcyclicGraph<>(DefaultEdge.class);
-
-		// for each aggregator
-		aggregatorToQueries.asMap().forEach((a, steps) -> {
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> aInducedToInducer =
-					new DirectedAcyclicGraph<>(DefaultEdge.class);
-
-			// BEWARE step.filter must be optimized as it is inserted in a hashStructure
-			steps.forEach(aInducedToInducer::addVertex);
-			splitInducedDag(steps, aInducedToInducer::addEdge);
-
-			if (hasOptions.isDebugOrExplain()) {
-				SplitTableQueries aTableQueries =
-						SplitTableQueries.builder().inducedToInducer(aInducedToInducer).build();
-
-				// TODO This log lacks options and customMarkers if any
-				log.info("[EXPLAIN] inducers={} induceds={} roots={} for agg={}",
-						aTableQueries.getInducers().size(),
-						aTableQueries.getInduceds().size(),
-						aTableQueries.getRoots().size(),
-						a.getMeasure().getName());
-			}
-
-			// accumulate into the output graph
-			Graphs.addGraph(inducedToInducer, aInducedToInducer);
-		});
-
-		return inducedToInducer;
-	}
-
-	protected ListMultimap<CubeQueryStep, CubeQueryStep> packByAggregator(Set<CubeQueryStep> rootInducers) {
-		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
-				MultimapBuilder.linkedHashKeys().arrayListValues().build();
-
-		rootInducers.forEach(tq -> {
-			IMeasure measure = tq.getMeasure();
-
-			if (!(measure instanceof Aggregator agg)) {
-				throw new IllegalArgumentException("TableQueryOptimizer require steps to be on Aggregator. Was " + tq);
-			}
-
-			// Typically holds options and customMarkers
-			CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
-
-			// consider a single context per measure
-			CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
-
-			CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
-					.measure(agg)
-					.groupBy(tq.getGroupBy())
-					.filter(tq.getFilter())
-					.build();
-
-			contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
-		});
-		return contextualAggregateToQueries;
+		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
+		steps.forEach(step -> stepToTableQuery.put(step, query));
+		return stepToTableQuery;
 	}
 
 	/**
-	 * Given an input set of steps, callback on edge of an inducing DAG. The returned DAG looks for the edge which are
-	 * the simplest one (e.g. given `a`, `a,b` and `a,b,c`, while `a` can induce both `a,b` and `a,b,c`, we prefer to
-	 * have `a,b` as inducer of `a,b,c`).
-	 * 
-	 * This minimizing strategy helps minimizing the actual computations when reducing (e.g. it is easier to infer `a`
-	 * given `a,b` than given `a,b,c`).
-	 * 
-	 * TODO it may not be possible/optimal to evaluate before the best inducingEdge. Typically, we may have `a,b,d` with
-	 * only one row and `a,b,c` with 3 rows: `a,b,d` is a better candidate to infer `a`).
-	 * 
-	 * @param steps
-	 * @param onInducedToInducer
+	 * Lombok @Builder
 	 */
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected void splitInducedDag(Collection<CubeQueryStep> steps,
-			BiConsumer<CubeQueryStep, CubeQueryStep> onInducedToInducer) {
-		if (steps.isEmpty()) {
-			return;
+	public static class TableQueryOptimizerBuilder {
+		public TableQueryOptimizerBuilder splitForAdhocInference() {
+			return this.splitter(new InduceByAdhoc());
 		}
 
-		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
-		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
-		// not be inferred by a tableQUery with less groupBys.
-		Map<Integer, List<CubeQueryStep>> cardinalityToSteps =
-				steps.stream().collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size()));
+		public TableQueryOptimizerBuilder splitForTableGroupingSets() {
+			return this.splitter(new InduceByGroupingSets());
+		}
 
-		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
+		public TableQueryOptimizerBuilder groupByAggregator() {
+			return this.grouper(new TableStepsGrouperByAggregator());
+		}
 
-		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
-		// We observed up to 1k steps.
-		steps.forEach(induced -> {
-			// inducer must have more groupBys than induced
-			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
-			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
-				Optional<CubeQueryStep> optInducer = cardinalityToSteps.get(inducerGroupBy)
-						.stream()
-						// No edge to itself
-						.filter(inducer -> inducer != induced)
-						// Compatible context (i.e. laxer filter, customMarker, options)
-						.filter(inducer -> canInduce(inducer, induced))
-						// as soon as left is induced, we do not need to search for alternative inducer
-						// BEWARE As we find first, we'll spot the inducer with a minimal additional groupBy, hence
-						// probably a smaller induced, hence probably a better inducer
-						.findFirst();
+		public TableQueryOptimizerBuilder singleTableQuery() {
+			return this.grouper(new TableStepsGrouper());
+		}
 
-				if (optInducer.isPresent()) {
-					CubeQueryStep inducer = optInducer.get();
-					// right can be used to compute left
-					onInducedToInducer.accept(induced, inducer);
-					log.trace("Induced -> Inducer ({} -> {})", induced, inducer);
+		public TableQueryOptimizerBuilder oneTableQueryperStep() {
+			return this.grouper(new TableStepsGrouperNoGroup());
+		}
 
-					break;
-				} else {
-					log.trace("Scan along candidates with more groupBys");
-				}
-			}
-
-			log.trace("No inducer (as it is a root inducer) for {}", induced);
-		});
 	}
-
-	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`
-	// BEWARE This design prevents having an induced inferred by multiple inducers
-	// (e.g. `WHERE A` and `WHERE B` can induce `WHERE A OR B`)
-	protected boolean canInduce(CubeQueryStep inducer, CubeQueryStep induced) {
-		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
-			// Different measures: can not induce
-			return false;
-		} else if (!contextOnly(inducer).equals(contextOnly(induced))) {
-			// Different options/customMarker: can not induce
-			return false;
-		}
-
-		// BEWARE a given name may refer to a ReferencedColumn, or to a StaticCoordinateColumn (or anything else)
-		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
-		Collection<IAdhocColumn> inducedColumns = induced.getGroupBy().getNameToColumn().values();
-		if (!inducerColumns.containsAll(inducedColumns)) {
-			// Not expressing all needed columns: can not induce
-			// If right has all groupBy of left, it means right has same or more groupBy than left,
-			// hence right can be used to compute left
-			return false;
-		}
-
-		ISliceFilter inducerFilter = inducer.getFilter();
-		ISliceFilter inducedFilter = induced.getFilter();
-
-		if (!FilterHelpers.isStricterThan(inducedFilter, inducerFilter)) {
-			// Induced is not covered by inducer: it can not infer it
-			return false;
-		}
-
-		Optional<ISliceFilter> leftoverFilter = makeLeftoverFilter(inducerColumns, inducerFilter, inducedFilter);
-
-		if (leftoverFilter.isEmpty()) {
-			// Inducer is missing columns to reject rows not expected by induced
-			return false;
-		}
-
-		return true;
-	}
-
 }

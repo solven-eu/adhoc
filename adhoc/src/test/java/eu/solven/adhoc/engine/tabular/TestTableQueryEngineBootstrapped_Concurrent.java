@@ -31,7 +31,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 
 import eu.solven.adhoc.data.column.ICuboid;
@@ -39,6 +38,7 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizer;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -82,15 +82,19 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
-			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, sizeAndDuration) -> {
-			},
-					ImmutableSet.of(
+			SplitTableQueries split = SplitTableQueries.builder()
+					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("a")).build(),
 							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build())
-									.build(),
+									.build())
+					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("b")).build(),
 							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build())
-									.build()));
+									.build())
+					.build();
+
+			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, sizeAndDuration) -> {
+			}, split);
 
 			try {
 				if (!cdl.await(1, TimeUnit.SECONDS)) {

@@ -38,17 +38,17 @@ import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
@@ -56,9 +56,11 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  */
 public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADagTest {
 
-	TableQueryOptimizerSinglePerAggregator optimizer =
-			new TableQueryOptimizerSinglePerAggregator(AdhocFactories.builder().build(),
-					FilterOptimizer.builder().build());
+	TableQueryOptimizer optimizer = TableQueryOptimizer.builder()
+			.factories(AdhocFactories.builder().build())
+			.splitter(new InduceByAdhoc())
+			.groupByAggregator()
+			.build();
 
 	@BeforeEach
 	@Override
@@ -87,12 +89,10 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 	// Given 2 measures doing a groupBy on different columns, we do a single tableQuery with both groupBy
 	@Test
 	public void testCanInduce_groupByDifferentColumns() {
-
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
 			@Override
-			protected ITableQueryOptimizer makeOptimizer(IAdhocFactories factories) {
-				IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
-				return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
+			public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+				return optimizer;
 			}
 		}).build();
 
@@ -146,9 +146,8 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
 			@Override
-			protected ITableQueryOptimizer makeOptimizer(IAdhocFactories factories) {
-				IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
-				return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
+			public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+				return optimizer;
 			}
 		}).build();
 
@@ -177,12 +176,15 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 
 		// This ensures we made a single tableQuery with both groupBy
 		Assertions.assertThat(tableEvaluating).hasSize(1).anySatisfy(e -> {
-			Assertions.assertThat(e.getTableQuery().getAggregators()).hasSize(1).anySatisfy(fa -> {
+			Assertions.assertThat(e.getTableQuery().getAggregators()).hasSize(2).anySatisfy(fa -> {
 				Assertions.assertThat(fa.getAggregator().getName()).isEqualTo("k1");
-				Assertions.assertThat(fa.getFilter()).isEqualTo(ISliceFilter.MATCH_ALL);
+				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and(Map.of("a", "a1")));
+			}).anySatisfy(fa -> {
+				Assertions.assertThat(fa.getAggregator().getName()).isEqualTo("k1");
+				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and(Map.of("b", "b1")));
 			});
 			Assertions.assertThat(e.getTableQuery().getColumns().keySet()).containsExactly("a", "b");
-			Assertions.assertThat(e.getTableQuery().getFilter()).isEqualTo(OrFilter.or(Map.of("a", "a1", "b", "b1")));
+			Assertions.assertThat(e.getTableQuery().getFilter()).isEqualTo(ISliceFilter.MATCH_ALL);
 		});
 	}
 }

@@ -20,8 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-public class TestTableQueryV2 {
+import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Force a single SQL per {@link CubeQueryStep}. May be useful for very simple DAG, or for debug purposes.
+ * 
+ * @author Benoit Lacelle
+ */
+@Slf4j
+public class TableQueryOptimizerSinglePerCubeStep extends TableQueryOptimizer {
+
+	public TableQueryOptimizerSinglePerCubeStep(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		super(factories, filterOptimizer, new InduceByGroupingSets(), new TableStepsGrouperNoGroup());
+	}
 
 }

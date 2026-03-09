@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.NavigableSet;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
@@ -35,6 +36,7 @@ import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.tabular.groupingset.GroupingSetMergeableGrid;
 import eu.solven.adhoc.engine.tabular.groupingset.IGroupingSetAnalyzer;
 import eu.solven.adhoc.engine.tabular.groupingset.UniqueGroupingSetAnalyzer;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
@@ -49,7 +51,6 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV3;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -64,6 +65,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
+
 	@NonNull
 	IOperatorFactory operatorFactory;
 
@@ -76,10 +78,20 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	TableQueryV3 tableQuery;
 
 	protected IMultitypeMergeableGrid<IAdhocSlice> makeAggregatingMeasures(ITabularRecordStream stream) {
+
+		Supplier<IMultitypeMergeableGrid<IAdhocSlice>> gridFactory;
+
 		if (stream.isDistinctSlices()) {
-			return AggregatingColumnsDistinct.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory =
+					() -> AggregatingColumnsDistinct.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
 		} else {
-			return AggregatingColumns.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory = () -> AggregatingColumns.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+		}
+
+		if (tableQuery.singleGroupBy().isPresent()) {
+			return gridFactory.get();
+		} else {
+			return GroupingSetMergeableGrid.builder().gridFactory(gridFactory).build();
 		}
 	}
 
@@ -90,7 +102,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} else if (tableQuery.getGroupBys().size() == 1) {
 			singleGroupBy = AdhocCollectionHelpers.getFirst(tableQuery.getGroupBys());
 		} else {
-			throw new NotYetImplementedException("GROUPING SET are not supported yet");
+			NavigableSet<String> groupedByColumns = tableQuery.getGroupBys().iterator().next().getGroupedByColumns();
+			SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
+			return r -> {
+				return sequencedKeyset;
+			};
 		}
 		NavigableSet<String> groupedByColumns = singleGroupBy.getGroupedByColumns();
 		SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
@@ -99,6 +115,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	@Override
 	public IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream) {
+
+		// IGroupByToGrid groupByToGrid = null;
 		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
 
 		// Useful to log on the last row, to have the number of row actually streamed
@@ -114,9 +132,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		// Process the underlying stream of data to execute aggregations
 		try {
-			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-			// For any reason, `closeHandler` is not called automatically on a terminal
-			// operation
+			// TODO This will consider all measures and all groupBys, while maybe only a subset relates to a relevant
+			// CubeQueryStep. This is due to the fact it may be faster to do a single SQL doing a bit too many
+			// operations than doing multiple SQLs will seemingly less irrelevant computations, as the multiple SQLs
+			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
+			// reasonable to prefer doing as many computations in a single pass).
 			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
 				records.forEach(input -> {
 					SequencedSetLikeList sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);

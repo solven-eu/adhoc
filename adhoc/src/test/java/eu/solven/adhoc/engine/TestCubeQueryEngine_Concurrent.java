@@ -41,6 +41,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -108,8 +109,12 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		// We expect 1 query: one for grandTotal, and one filtered on A1, both in same SQL given FILTER
 		phasedTable.getPhasers().bulkRegister(1);
 
-		ITabularView view = cube().execute(
-				CubeQuery.builder().measure(k1Sum, filterK1onA1).option(StandardQueryOptions.CONCURRENT).build());
+		ITabularView view = cube().execute(CubeQuery.builder()
+				.measure(k1Sum, filterK1onA1)
+				.option(StandardQueryOptions.CONCURRENT)
+				.option(InternalQueryOptions.INDUCE_BY_ADHOC)
+				.option(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

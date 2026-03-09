@@ -34,6 +34,8 @@ import java.util.stream.Stream;
 public interface ITabularRecordStream extends AutoCloseable {
 	// Object getNullPlaceholder();
 
+	Object getTableQuery();
+
 	/**
 	 * BEWARE We do not rely on Stream caracteristics as a {@link Stream} may be distinct (with `.distinct()`) due to
 	 * Aggregates but having equals slices.
@@ -64,6 +66,11 @@ public interface ITabularRecordStream extends AutoCloseable {
 
 	static ITabularRecordStream empty() {
 		return new ITabularRecordStream() {
+
+			@Override
+			public Object getTableQuery() {
+				throw new UnsupportedOperationException();
+			}
 
 			@Override
 			public Stream<ITabularRecord> records() {

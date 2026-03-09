@@ -66,7 +66,8 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 
 	@Value
 	public static class BenchmarkTableQueryOptimizerState {
-		ITableQueryOptimizer optimizer = new TableQueryOptimizerFactory().makeOptimizer(AdhocFactoriesUnsafe.factories);
+		ITableQueryOptimizer optimizer = new TableQueryOptimizerFactory().makeOptimizer(AdhocFactoriesUnsafe.factories,
+				IHasQueryOptions.noOption());
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();

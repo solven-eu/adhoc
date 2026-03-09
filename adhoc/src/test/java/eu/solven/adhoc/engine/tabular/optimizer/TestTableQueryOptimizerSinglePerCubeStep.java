@@ -36,15 +36,16 @@ import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
-public class TestTableQueryOptimizerNone {
+public class TestTableQueryOptimizerSinglePerCubeStep {
 	CubeQueryStep step = CubeQueryStep.builder()
 			.measure("m1")
 			.groupBy(GroupByColumns.named("g", "h"))
 			.filter(ColumnFilter.matchEq("c", "c1"))
 			.build();
 
-	TableQueryOptimizerNone optimizer =
-			new TableQueryOptimizerNone(AdhocFactories.builder().build(), FilterOptimizer.builder().build());
+	TableQueryOptimizerSinglePerCubeStep optimizer =
+			new TableQueryOptimizerSinglePerCubeStep(AdhocFactories.builder().build(),
+					FilterOptimizer.builder().build());
 
 	@Test
 	public void testCanInduce() {

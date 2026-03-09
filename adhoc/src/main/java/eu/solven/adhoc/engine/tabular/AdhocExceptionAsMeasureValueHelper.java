@@ -83,6 +83,11 @@ public class AdhocExceptionAsMeasureValueHelper {
 			public void close() {
 				// nothing to close
 			}
+
+			@Override
+			public Object getTableQuery() {
+				return transcodedQuery;
+			}
 		};
 	}
 }

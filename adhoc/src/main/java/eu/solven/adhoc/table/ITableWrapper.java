@@ -56,9 +56,20 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 */
 	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery);
 
-	@Deprecated(since = "Used for tests, or edge-cases")
+	/**
+	 * Could be useful for {@link ITableWrapper} not supporting `GROUPING SET`.
+	 * 
+	 * @param queryPod
+	 * @param tableQuery
+	 * @return
+	 */
 	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV3());
+	}
+
+	@Deprecated(since = "Used for tests, or edge-cases")
+	default ITabularRecordStream streamSlices(TableQueryV3 tableQuery) {
+		return streamSlices(QueryPod.forTable(this), tableQuery);
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
@@ -68,13 +79,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		TableQueryV2 queryV2 = TableQueryV2.fromV1(tableQuery);
-
-		if (queryV2.getAggregators().stream().anyMatch(fa -> !fa.getAlias().equals(fa.getAggregator().getName()))) {
-			// We throw else we would return result for aliases which does not match the requested measureNames
-			throw new IllegalArgumentException(
-					"You must a tableQueryV2 manually due to ambiguity in measure names and aliases");
-		}
+		TableQueryV3 queryV2 = TableQueryV3.edit(tableQuery).build();
 
 		return streamSlices(queryV2);
 	}

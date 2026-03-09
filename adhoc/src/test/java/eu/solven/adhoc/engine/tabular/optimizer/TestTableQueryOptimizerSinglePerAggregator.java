@@ -36,12 +36,12 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -49,9 +49,11 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 
 	CubeQueryStep step = CubeQueryStep.builder().measure(k1Sum).build();
 
-	TableQueryOptimizerSinglePerAggregator optimizer =
-			new TableQueryOptimizerSinglePerAggregator(AdhocFactories.builder().build(),
-					FilterOptimizer.builder().build());
+	TableQueryOptimizer optimizer = TableQueryOptimizer.builder()
+			.factories(AdhocFactories.builder().build())
+			.splitter(new InduceByAdhoc())
+			.groupByAggregator()
+			.build();
 
 	@Test
 	public void testCanInduce_OrDifferentColumns() {

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-public class TestTableQueryV2 {
+import java.util.Set;
+import java.util.stream.Stream;
+
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV3;
+
+/**
+ * Enables executing {@link TableQueryV3} inferring {@link CubeQueryStep}.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IHasTableQueryForSteps {
+
+	Set<TableQueryV3> getTableQueries();
+
+	@Deprecated(since = "Useful?")
+	boolean containsStep(CubeQueryStep queryStep);
+
+	record StepAndFilteredAggregator(FilteredAggregator aggregator, CubeQueryStep step) {
+
+	};
+
+	Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query,
+			IFilterOptimizer filterOptimizer);
 
 }

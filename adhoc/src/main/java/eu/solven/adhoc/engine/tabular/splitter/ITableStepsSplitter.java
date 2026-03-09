@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.table;
+package eu.solven.adhoc.engine.tabular.splitter;
 
-public class TestTableQueryV2 {
+import java.util.Set;
+
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
+
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.table.ITableWrapper;
+
+/**
+ * Given a set of {@link CubeQueryStep}, defines a DAG of steps induced by Adhoc. The leaves of this DAG has to be
+ * evaluated by the {@link ITableWrapper}.
+ * 
+ * Typically, ITableWrapper supporting `FILTER` and/or `GROUPING SET` may cover more leaves at lower cost, reducing the
+ * work left to Adhoc.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface ITableStepsSplitter {
+
+	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<CubeQueryStep> tableSteps);
 
 }

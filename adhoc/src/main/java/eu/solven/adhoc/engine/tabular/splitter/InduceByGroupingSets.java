@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,52 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ITableQueryOptimizer} which does no optimization. It typically does one SQL per CubeQueryStep.
+ * No {@link CubeQueryStep} is induced, leading to each of them needed to be computed by the {@link TableQueryV3}, hence
+ * a large usage of `GROUPING SET`.
  * 
  * @author Benoit Lacelle
  */
-// TODO Should this also drop the optimizations in `packStepsIntoTableQueries`?
 @Slf4j
-public class TableQueryOptimizerNone extends ATableQueryOptimizer {
+public class InduceByGroupingSets implements ITableStepsSplitter {
 
-	public TableQueryOptimizerNone(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		super(factories, filterOptimizer);
-	}
-
-	/**
-	 * 
-	 * @param tableQueries
-	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
-	 */
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQueries) {
-		if (tableQueries.isEmpty()) {
-			return SplitTableQueries.empty();
-		}
-
+	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<CubeQueryStep> tableSteps) {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
-		// Register all tableQueries as a vertex
-		tableQueries.forEach(step -> {
-			inducedToInducer.addVertex(step);
-		});
+		tableSteps.forEach(inducedToInducer::addVertex);
 
-		return SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
+		return inducedToInducer;
 	}
 
 }

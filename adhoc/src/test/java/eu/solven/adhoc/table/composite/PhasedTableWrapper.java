@@ -124,6 +124,11 @@ public class PhasedTableWrapper implements ITableWrapper {
 		return new ITabularRecordStream() {
 
 			@Override
+			public Object getTableQuery() {
+				return tableQuery;
+			}
+
+			@Override
 			public boolean isDistinctSlices() {
 				return false;
 			}
