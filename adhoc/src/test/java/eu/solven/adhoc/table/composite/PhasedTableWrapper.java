@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,6 +63,9 @@ public class PhasedTableWrapper implements ITableWrapper {
 	@Default
 	@Getter
 	TableWrapperPhasers phasers = TableWrapperPhasers.parties(0);
+
+	@Default
+	int timeoutSeconds = 1;
 
 	@Value
 	@Builder
@@ -118,10 +123,24 @@ public class PhasedTableWrapper implements ITableWrapper {
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
 		log.info("opening arriveAndAwaitAdvance() {} {}", name, phasers.opening);
-		int phase = phasers.opening.arriveAndAwaitAdvance();
+		int phase;
+		try {
+			phase = phasers.opening
+					.awaitAdvanceInterruptibly(phasers.opening.arrive(), timeoutSeconds, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException(e);
+		} catch (TimeoutException e) {
+			throw new IllegalStateException(e);
+		}
 		log.info("opening advance {} phase={}", name, phase);
 
 		return new ITabularRecordStream() {
+
+			@Override
+			public Object getTableQuery() {
+				return tableQuery;
+			}
 
 			@Override
 			public boolean isDistinctSlices() {

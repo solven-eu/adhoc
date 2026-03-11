@@ -31,7 +31,7 @@ import java.util.List;
 import org.duckdb.DuckDBResultSet;
 import org.jooq.ConnectionProvider;
 
-import eu.solven.adhoc.table.arrow.ArrowJooqTableWrapper;
+import eu.solven.adhoc.table.arrow.AArrowJooqTableWrapper;
 import eu.solven.adhoc.table.arrow.ArrowReflection;
 import lombok.Builder;
 
@@ -40,7 +40,7 @@ import lombok.Builder;
  *
  * @author Benoit Lacelle
  */
-public class DuckDBTableWrapper extends ArrowJooqTableWrapper {
+public class DuckDBTableWrapper extends AArrowJooqTableWrapper {
 
 	final DuckDBTableWrapperParameters duckDBParameters;
 

@@ -99,7 +99,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		asMap.putAll(aggregates);
-		asMap.putAll(groupBy.getGroupBys().getCoordinates());
+		asMap.putAll(groupBy.getGroupBys().asAdhocMap());
 
 		return asMap;
 	}

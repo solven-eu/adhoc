@@ -40,7 +40,7 @@ public abstract class AListBasedTabularView extends ATabularView {
 		Set<Map<String, ?>> slices = new LinkedHashSet<>();
 
 		slices().forEach(slice -> {
-			Map<String, ?> coordinate = slice.getCoordinates();
+			Map<String, ?> coordinate = slice.asAdhocMap();
 			if (!slices.add(coordinate)) {
 				throw new IllegalStateException("Multiple slices with c=%s. It is illegal in %s".formatted(coordinate,
 						this.getClass().getName()));

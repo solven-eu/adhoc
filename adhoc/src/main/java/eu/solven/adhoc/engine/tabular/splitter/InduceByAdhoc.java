@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Collection;
 import java.util.List;
@@ -38,49 +38,29 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Standard {@link ITableQueryOptimizer}. It works on a per-Aggregator basis, evaluating which one can be skipped given
- * a minimal number of {@link CubeQueryStep}.
+ * Given a set of {@link CubeQueryStep}, we determine a minimal set of {@link CubeQueryStep} which can infer (by Adhoc)
+ * all the others.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TableQueryOptimizer extends ATableQueryOptimizer {
+public class InduceByAdhoc implements ITableStepsSplitter {
 
-	public TableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		super(factories, filterOptimizer);
-	}
-
-	/**
-	 * 
-	 * @param tableQuerySteps
-	 * @return an Object partitioning TableQuery which can not be induced from those which can be induced.
-	 */
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableQuerySteps) {
-		if (tableQuerySteps.isEmpty()) {
-			return SplitTableQueries.empty();
-		}
-
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
-				splitInducedAsDag(hasOptions, tableQuerySteps);
-
-		return SplitTableQueries.builder().explicits(tableQuerySteps).inducedToInducer(inducedToInducer).build();
-	}
-
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<CubeQueryStep> tableQueries) {
-		ListMultimap<CubeQueryStep, CubeQueryStep> aggregatorToQueries = packByAggregator(tableQueries);
+	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<CubeQueryStep> tableSteps) {
+		ListMultimap<CubeQueryStep, CubeQueryStep> aggregatorToQueries = packByAggregator(tableSteps);
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
@@ -111,6 +91,14 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 		});
 
 		return inducedToInducer;
+	}
+
+	protected CubeQueryStep contextOnly(CubeQueryStep inducer) {
+		return inducer.toBuilder()
+				.measure("noMeasure")
+				.groupBy(IGroupBy.GRAND_TOTAL)
+				.filter(ISliceFilter.MATCH_ALL)
+				.build();
 	}
 
 	protected ListMultimap<CubeQueryStep, CubeQueryStep> packByAggregator(Set<CubeQueryStep> rootInducers) {
@@ -233,7 +221,8 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 			return false;
 		}
 
-		Optional<ISliceFilter> leftoverFilter = makeLeftoverFilter(inducerColumns, inducerFilter, inducedFilter);
+		Optional<ISliceFilter> leftoverFilter =
+				InducerHelpers.makeLeftoverFilter(inducerColumns, inducerFilter, inducedFilter);
 
 		if (leftoverFilter.isEmpty()) {
 			// Inducer is missing columns to reject rows not expected by induced

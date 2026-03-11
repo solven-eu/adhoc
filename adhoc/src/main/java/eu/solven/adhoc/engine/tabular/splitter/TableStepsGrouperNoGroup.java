@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.splitter;
 
-import java.util.Set;
-
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**
- * {@link ITableQueryOptimizerFactory} will turn an input {@link Set} of {@link TableQuery} into a
- * {@link SplitTableQueries}, telling which {@link TableQuery} will be executed and how to evaluate the other
- * {@link TableQuery} from the results of the later.
+ * This {@link ITableStepsGrouper} does not do any grouping: a single {@link TableQueryV3} will be executed per
+ * {@link CubeQueryStep}.
  * 
- * The inducer may or may not be amongst the provided input {@link TableQuery}.
+ * This strategy will maximize the number of {@link TableQueryV3} per {@link CubeQuery}.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ITableQueryOptimizerFactory {
-	ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions);
+public class TableStepsGrouperNoGroup implements ITableStepsGrouper {
+
+	@Override
+	public CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer) {
+		return inducer;
+	}
+
 }

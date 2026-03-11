@@ -29,7 +29,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -74,6 +75,43 @@ public enum InternalQueryOptions implements IQueryOption {
 	 */
 	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
 	ONE_TABLE_QUERY_PER_TABLE,
+
+	/**
+	 * Rely on `GROUPING SET` so that {@link ITableWrapper} evaluate itself various `GROUP BY`.
+	 * 
+	 * It leads to more work in the database, and less work into Adhoc.
+	 * 
+	 * @see InduceByGroupingSets
+	 */
+	INDUCE_BY_TABLE,
+
+	/**
+	 * Do not rely on `GROUPING SET` and request the finest granularity to {@link ITableWrapper}. Adhoc will induce the
+	 * less granular steps.
+	 * 
+	 * It leads to less work in the database, and more work into Adhoc.
+	 * 
+	 * @see InduceByAdhoc
+	 */
+	INDUCE_BY_ADHOC,
+
+	/**
+	 * 
+	 * @see TableQueryGrouperNoCustomMarker
+	 */
+	TABLEQUERY_PER_OPTIONS,
+
+	/**
+	 * 
+	 * @see TableQueryGrouperByAggregatorNoCustomMarker
+	 */
+	TABLEQUERY_PER_AGGREGATOR,
+
+	/**
+	 * 
+	 * @see TableQueryGrouperNoGroupBy
+	 */
+	TABLEQUERY_PER_STEPS,
 
 	;
 

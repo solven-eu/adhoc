@@ -29,22 +29,24 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
-public class TestTableQueryOptimizerNone {
+public class TestTableQueryOptimizerSinglePerCubeStep {
 	CubeQueryStep step = CubeQueryStep.builder()
 			.measure("m1")
 			.groupBy(GroupByColumns.named("g", "h"))
 			.filter(ColumnFilter.matchEq("c", "c1"))
 			.build();
 
-	TableQueryOptimizerNone optimizer =
-			new TableQueryOptimizerNone(AdhocFactories.builder().build(), FilterOptimizer.builder().build());
+	TableQueryFactory optimizer = TableQueryFactory.builder()
+			.factories(AdhocFactories.builder().build())
+			.grouper(new TableStepsGrouperNoGroup())
+			.splitForAdhocInference()
+			.build();
 
 	@Test
 	public void testCanInduce() {

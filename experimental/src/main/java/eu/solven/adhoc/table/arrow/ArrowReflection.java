@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.primitives.Ints;
 
@@ -158,7 +159,7 @@ public final class ArrowReflection {
 		TabularRecordBuilder builder = factory.makeTabularRecordBuilder();
 
 		List<String> aggregates = factory.getAggregates();
-		List<String> columns = factory.getColumns();
+		Set<String> columns = factory.getColumns();
 
 		int vectorIndex = 0;
 

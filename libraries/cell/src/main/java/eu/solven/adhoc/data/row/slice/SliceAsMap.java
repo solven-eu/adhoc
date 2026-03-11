@@ -148,7 +148,7 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		if (obj instanceof IHasAdhocMap otherSlice) {
 			return Objects.equals(this.asAdhocMap(), otherSlice.asAdhocMap());
 		} else if (obj instanceof IAdhocSlice otherSlice) {
-			return Objects.equals(this.getCoordinates(), otherSlice.getCoordinates());
+			return Objects.equals(this.getCoordinates(), otherSlice.asAdhocMap());
 		} else {
 			return false;
 		}
@@ -160,8 +160,9 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 			throw new IllegalArgumentException("null");
 		} else if (o instanceof IHasAdhocMap otherSlice) {
 			return this.asAdhocMap().compareTo(otherSlice.asAdhocMap());
+		} else {
+			return MapComparators.mapComparator().compare(this.asAdhocMap(), o.asAdhocMap());
 		}
-		return MapComparators.mapComparator().compare(this.getCoordinates(), o.getCoordinates());
 	}
 
 	@Override

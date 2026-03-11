@@ -41,6 +41,7 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -123,7 +124,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator) {
+	public IMultitypeColumnFastGet<T> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator);
 
 		if (notFinalColumn == null) {

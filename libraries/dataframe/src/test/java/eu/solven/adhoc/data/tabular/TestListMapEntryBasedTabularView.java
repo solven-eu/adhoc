@@ -77,7 +77,7 @@ public class TestListMapEntryBasedTabularView {
 		Assertions.assertThat(loadedAsList).isEqualTo(loadedAsList2);
 
 		Assertions.assertThat(loadedAsList.slices().toList()).hasSize(1).anySatisfy(slice -> {
-			Assertions.assertThat((Map) slice.getCoordinates()).containsEntry("c", "c1").hasSize(1);
+			Assertions.assertThat((Map) slice.asAdhocMap()).containsEntry("c", "c1").hasSize(1);
 		});
 
 		// Should not fail on a valid set of slices

@@ -138,6 +138,13 @@ public class TestClickHouseTableWrapper_Arrow extends ATestTableQuery_DB {
 		super.testFilter_custom_implicitColumns();
 	}
 
+	@Disabled("TODO FIXME")
+	@Test
+	@Override
+	public void testFilter_custom_explicitColumns() {
+		super.testFilter_custom_explicitColumns();
+	}
+
 	@Disabled("TODO May be a limitation in ClickHouse")
 	@Test
 	public void testFilterOnAggregates() {

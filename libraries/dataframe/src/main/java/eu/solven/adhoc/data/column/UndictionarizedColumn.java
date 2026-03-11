@@ -24,10 +24,12 @@ package eu.solven.adhoc.data.column;
 
 import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
 
@@ -101,6 +103,8 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public String toString() {
-		return "column=" + column;
+		return stream().limit(AdhocUnsafe.getLimitOrdinalToString())
+				.map(sm -> sm.getSlice() + "=" + IValueProvider.getValue(sm.getValueProvider()))
+				.collect(Collectors.joining(" "));
 	}
 }

@@ -96,7 +96,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 		}
 
 		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
-			Map<String, ?> coordinatesAsMap = coordinates.getCoordinates();
+			Map<String, ?> coordinatesAsMap = coordinates.asAdhocMap();
 
 			return o -> {
 				Map<String, ?> oAsMap = (Map<String, ?>) o;
@@ -149,12 +149,12 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 	}
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
-		entries.add(TabularEntry.builder().coordinates(slice.getCoordinates()).values(mToValues).build());
+		entries.add(TabularEntry.builder().coordinates(slice.asAdhocMap()).values(mToValues).build());
 	}
 
 	@Override
 	public IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull) {
-		Map<String, ?> coordinates = slice.getCoordinates();
+		Map<String, ?> coordinates = slice.asAdhocMap();
 		int index = getIndexForSlice(coordinates);
 
 		return o -> {

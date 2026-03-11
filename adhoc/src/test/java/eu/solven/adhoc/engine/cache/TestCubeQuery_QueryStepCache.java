@@ -194,8 +194,8 @@ public class TestCubeQuery_QueryStepCache extends ADagTest implements IAdhocTest
 								\\-- #1 m=k1PlusK2AsExpr(Combinator[EXPRESSION]) filter=matchAll groupBy=grandTotal
 								    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 								    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal
-								/-- 1 inducers from SELECT k2:SUM(k2) GROUP BY ()
-								\\-- step SELECT k2:SUM(k2) GROUP BY ()
+								/-- 1 inducers from SELECT k2:SUM(k2) GROUP BY grandTotal
+								\\-- step SELECT k2:SUM(k2) GROUP BY grandTotal
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								\\-- #1 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
 

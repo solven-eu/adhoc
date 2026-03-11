@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -53,7 +54,9 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -73,7 +76,6 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.util.AdhocMapPathGet;
@@ -261,7 +263,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			}
 		});
 
-		IJooqTableQueryFactory.QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
+		QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
 
 		if (tableQuery.isDebugOrExplain()) {
 			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}",
@@ -317,7 +319,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		return makeQueryFactory(dslContext);
 	}
 
-	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
+	protected void debugResultQuery(QueryWithLeftover resultQuery) {
 		DSLContext dslContext = makeDsl();
 
 		try {
@@ -342,10 +344,8 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.build();
 	}
 
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery);
-
-		Stream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, sqlQuery, tabularRecordFactory);
+	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, QueryWithLeftover sqlQuery) {
+		Stream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, sqlQuery);
 		return tabularRecords
 				// leftover in WHERE
 				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
@@ -353,21 +353,19 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.map(row -> applyAggregatorLeftovers(sqlQuery, row));
 	}
 
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
-			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
-			ITabularRecordFactory tabularRecordFactory) {
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod, QueryWithLeftover sqlQuery) {
 		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
 
-		return resultQuery.stream()
-				.flatMap(oneQuery -> toStream(queryPod, oneQuery))
-				.map(r -> intoTabularRecord(tabularRecordFactory, r));
+		return resultQuery.stream().flatMap(oneQuery -> {
+			ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery, oneQuery);
+			return toStream(queryPod, oneQuery).map(r -> intoTabularRecord(tabularRecordFactory, r));
+		});
 	}
 
 	/**
 	 * Applies any aggregator-level leftover filters that could not be pushed into the SQL FILTER clause.
 	 */
-	protected ITabularRecord applyAggregatorLeftovers(IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
-			ITabularRecord row) {
+	protected ITabularRecord applyAggregatorLeftovers(QueryWithLeftover sqlQuery, ITabularRecord row) {
 		Map<String, ISliceFilter> aggregatorToLeftovers = sqlQuery.getAggregatorToLeftovers();
 		if (aggregatorToLeftovers.isEmpty()) {
 			return row;
@@ -391,8 +389,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	protected ITabularRecordFactory makeTabularRecordFactory(QueryPod queryPod,
-			IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
-		return new JooqTabularRecordFactory(sqlQuery.getFields(), queryPod.getSliceFactory());
+			QueryWithLeftover sqlQuery,
+			ResultQuery<Record> oneQuery) {
+		return JooqTabularRecordFactory.builder()
+				.fields(sqlQuery.getFields())
+				.sliceFactory(queryPod.getSliceFactory())
+				.optionalColumns(sqlQuery.getFields().getGroupingColumns())
+				.build();
 	}
 
 	protected Stream<Record> toStream(QueryPod queryPod, ResultQuery<Record> resultQuery) {
@@ -439,7 +442,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	// Take original `queriedColumns` as the record may not clearly express aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
 	protected ITabularRecord intoTabularRecord(ITabularRecordFactory tabularRecordFactory, Record r) {
-		TabularRecordBuilder recordBuilder = tabularRecordFactory.makeTabularRecordBuilder();
+		Set<String> absentColumns = tabularRecordFactory.getOptionalColumns().stream().filter(c -> {
+			Field<?> groupingField = r.field(JooqTableQueryFactory.groupingAlias(c));
+
+			return !Integer.valueOf(0).equals(groupingField.getValue(r));
+		}).collect(ImmutableSet.toImmutableSet());
+
+		TabularRecordBuilder recordBuilder = tabularRecordFactory.makeTabularRecordBuilder(absentColumns);
 
 		int columnShift = 0;
 
@@ -463,10 +472,24 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		}
 
 		{
-			int size = tabularRecordFactory.getColumns().size();
+			// Rercord fields may not match exactly the columns, especially on qualified fields
+			ImmutableList<String> columns = tabularRecordFactory.getColumns().asList();
+			int size = columns.size();
 
-			for (int i = 0; i < size; i++) {
-				recordBuilder.appendGroupBy(r.get(columnShift + i));
+			int nbToAppend = size - absentColumns.size();
+			int nbAppend = 0;
+
+			if (absentColumns.size() != size) {
+				for (int i = 0; i < size && nbAppend < nbToAppend; i++) {
+					String currentKey = columns.get(i);
+					if (absentColumns.contains(currentKey)) {
+						log.debug("Skip NULL as {} not in current GROUPING SET", currentKey);
+						continue;
+					}
+
+					recordBuilder.appendGroupBy(r.get(columnShift + i));
+					nbAppend++;
+				}
 			}
 		}
 

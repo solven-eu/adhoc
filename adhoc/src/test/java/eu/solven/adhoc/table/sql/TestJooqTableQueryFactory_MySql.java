@@ -143,7 +143,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testGrandTotal() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+		QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -153,7 +153,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testMeasureNameWithDot() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(
+		QueryWithLeftover condition = queryFactory.prepareQuery(
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -163,7 +163,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testMeasureNameWithDot_quoted() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k.USD").columnName("\"t.k\"").build())
 				.build());
 
@@ -174,7 +174,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testColumnWithAt() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("a@b@c"))
 				.build());
@@ -186,7 +186,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testColumnWithSpace() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("pre post"))
 				.build());
@@ -198,7 +198,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testCountAsterisk() {
-		IJooqTableQueryFactory.QueryWithLeftover condition =
+		QueryWithLeftover condition =
 				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -208,7 +208,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testEmptyAggregation() {
-		IJooqTableQueryFactory.QueryWithLeftover condition =
+		QueryWithLeftover condition =
 				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -220,7 +220,7 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testFilter_custom() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+		QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
@@ -233,7 +233,7 @@ public class TestJooqTableQueryFactory_MySql {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+		QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
@@ -246,7 +246,7 @@ public class TestJooqTableQueryFactory_MySql {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter notFilter = customFilter.negate();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+		QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(notFilter));
@@ -259,7 +259,7 @@ public class TestJooqTableQueryFactory_MySql {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter notFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine().negate();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory
+		QueryWithLeftover condition = queryFactory
 				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
 		// custom part is handled as leftover
@@ -274,7 +274,7 @@ public class TestJooqTableQueryFactory_MySql {
 	@Test
 	public void testFilteredAggregator() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -286,7 +286,7 @@ public class TestJooqTableQueryFactory_MySql {
 	@Test
 	public void testFilteredAggregator_rank() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.builder()
 								.name("rankM")
@@ -306,7 +306,7 @@ public class TestJooqTableQueryFactory_MySql {
 	@Test
 	public void testFilteredAggregator_countStar() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.countAsterisk())
 						.filter(customFilter)
@@ -320,7 +320,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testMinMax() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("kMin").aggregationKey(MinAggregation.KEY).build())
 				.aggregator(Aggregator.builder().name("kMax").aggregationKey(MaxAggregation.KEY).build())
 				.build());
@@ -332,7 +332,7 @@ public class TestJooqTableQueryFactory_MySql {
 
 	@Test
 	public void testRank() {
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder()
 						.name("kRank")
 						.aggregationKey(RankAggregation.KEY)
@@ -349,7 +349,7 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testFilter_StringMatcher() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").matching(StringMatcher.hasToString("c1")).build();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -364,7 +364,7 @@ public class TestJooqTableQueryFactory_MySql {
 				.column("c")
 				.matching(OrMatcher.or(StringMatcher.hasToString("c1"), StringMatcher.hasToString("c2")))
 				.build();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -377,7 +377,7 @@ public class TestJooqTableQueryFactory_MySql {
 	public void testFilter_NotStringMatcher() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(StringMatcher.hasToString("c1"))).build();
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 

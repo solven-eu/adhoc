@@ -40,7 +40,8 @@ import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -51,7 +52,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Benchmarks related with {@link TableQueryOptimizer}.
+ * Benchmarks related with {@link TableQueryFactory}.
  *
  * @author Benoit Lacelle
  */
@@ -66,7 +67,10 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 
 	@Value
 	public static class BenchmarkTableQueryOptimizerState {
-		ITableQueryOptimizer optimizer = new TableQueryOptimizerFactory().makeOptimizer(AdhocFactoriesUnsafe.factories);
+		// ITableQueryOptimizer optimizer = new
+		// TableQueryOptimizerFactory().makeOptimizer(AdhocFactoriesUnsafe.factories,
+		// IHasQueryOptions.noOption());
+		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.factories);
 
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
@@ -133,7 +137,7 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 		}
 
 		public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(CubeQueryStep induced) {
-			return optimizer.evaluateInduced(IHasQueryOptions.noOption(), inducerAndInduced, stepToValues, induced);
+			return inducer.evaluateInduced(IHasQueryOptions.noOption(), inducerAndInduced, stepToValues, induced);
 		}
 
 	}

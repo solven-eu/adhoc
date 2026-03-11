@@ -45,10 +45,10 @@ import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -92,7 +92,7 @@ public class TestDuckDBHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		IJooqTableQueryFactory.QueryWithLeftover condition = queryFactory.prepareQuery(tableQueryBuilder.build());
+		QueryWithLeftover condition = queryFactory.prepareQuery(tableQueryBuilder.build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
@@ -116,8 +116,7 @@ public class TestDuckDBHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover =
-				queryFactory.prepareQuery(tableQueryBuilder.build());
+		QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
 
 		Assertions.assertThat(queryWithLeftover.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -138,8 +137,7 @@ public class TestDuckDBHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		IJooqTableQueryFactory.QueryWithLeftover queryWithLeftover =
-				queryFactory.prepareQuery(tableQueryBuilder.build());
+		QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
 
 		Assertions.assertThat(queryWithLeftover.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());

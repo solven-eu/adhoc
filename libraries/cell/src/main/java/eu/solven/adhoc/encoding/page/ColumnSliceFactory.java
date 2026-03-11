@@ -94,13 +94,35 @@ public class ColumnSliceFactory extends ASliceFactory {
 			return keysLikeList;
 		}
 
+		protected String peekNextKey() {
+			int currentSize;
+			if (row == null) {
+				currentSize = 0;
+			} else {
+				currentSize = row.size();
+			}
+
+			if (currentSize >= keysLikeList.size()) {
+				// We're full
+				return null;
+			}
+
+			return keysLikeList.getKey(currentSize);
+		}
+
 		@Override
 		public MapBuilderPreKeys append(Object value) {
 			if (row == null) {
 				row = pageFactory.nextRow(keysLikeList);
 			}
+
+			int currentSize = row.size();
+			if (currentSize >= keysLikeList.size()) {
+				throw new IllegalStateException("Can not append v=%s as already filled size=%s keys=%s"
+						.formatted(value, currentSize, keysLikeList));
+			}
 			Object normalizedValue = factory.normalizeCoordinate(value);
-			row.add(keysLikeList.getKey(row.size()), normalizedValue);
+			row.add(peekNextKey(), normalizedValue);
 
 			return this;
 		}

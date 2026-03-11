@@ -23,35 +23,34 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
-import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 	TableQueryEngine engine = TableQueryEngine.builder().build();
 
-	ITableQueryOptimizer tableQueryOptimizer =
+	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
+	ITableQueryFactory optimizer =
 			engine.optimizerFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
 
 	@Test
 	public void testDistinct() {
 		InMemoryTable tableWrapper = InMemoryTable.builder().distinctSlices(true).build();
-		Set<TableQuery> tableQueryV1 = Set.of(TableQuery.builder().aggregator(k1Sum).aggregator(k2Sum).build());
-		TableQueryV2 tableQuery = Iterables.getOnlyElement(TableQueryV2.fromV1(tableQueryV1));
+		TableQueryV3 tableQuery =
+				TableQueryV3.edit(TableQuery.builder().aggregator(k1Sum).aggregator(k2Sum).build()).build();
 
 		// InMemoryTable will produce a single row with both aggregates
 		tableWrapper.add(Map.of("k1", 123, "k2", 123));
@@ -59,7 +58,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 
 		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
+				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
 		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
@@ -71,15 +70,15 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 	@Test
 	public void testDistinct_lateFilter() {
 		InMemoryTable tableWrapper = InMemoryTable.builder().distinctSlices(true).build();
-		Set<TableQuery> tableQueryV1 = Set.of(TableQuery.builder().aggregator(k1Sum).aggregator(k2Sum).build());
-		TableQueryV2 tableQuery = Iterables.getOnlyElement(TableQueryV2.fromV1(tableQueryV1));
+		TableQueryV3 tableQuery =
+				TableQueryV3.edit(TableQuery.builder().aggregator(k1Sum).aggregator(k2Sum).build()).build();
 
 		// InMemoryTable will produce a single row with both aggregates
 		tableWrapper.add(Map.of("k1", 123, "k2", 123));
 
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
+				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
 		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
@@ -89,8 +88,8 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 	@Test
 	public void testNotDistinct() {
 		InMemoryTable tableWrapper = InMemoryTable.builder().distinctSlices(false).build();
-		Set<TableQuery> tableQueryV1 = Set.of(TableQuery.builder().aggregator(k1Sum).aggregator(k2Sum).build());
-		TableQueryV2 tableQuery = Iterables.getOnlyElement(TableQueryV2.fromV1(tableQueryV1));
+		TableQueryV3 tableQuery =
+				TableQueryV3.edit(TableQuery.builder().aggregator(k1Sum).aggregator(k2Sum).build()).build();
 
 		// InMemoryTable will produce two rows, each with one aggregate
 		tableWrapper.add(Map.of("k1", 123));
@@ -98,7 +97,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), tableQueryOptimizer);
+				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
 		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);

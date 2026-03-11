@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -43,47 +43,45 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.optimizer.IHasFilterStripperFactory;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.ITableWrapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The main strategy of this {@link ITableQueryOptimizer} is to evaluate the minimal number of {@link TableQuery} needed
- * to compute all {@link TableQuery}, allowing to compute irrelevant aggregates. Typically, it will evaluate the union
- * of {@link IGroupBy} and an {@link OrFilter} amongst all {@link ISliceFilter}.
- * 
- * In short, it enables doing a single query per measure to the {@link ITableWrapper}.
+ * Seems not relevant as it is less efficient than `GROUPING SET`.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer {
+@Deprecated(since = "sub-optimal")
+@RequiredArgsConstructor
+public class InduceByAdhocMergingIntoSingle extends InduceByAdhoc {
 
-	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
-	// a single query, leading to a very large OR.
-	public TableQueryOptimizerSinglePerAggregator(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		super(factories, filterOptimizer);
+	protected final IAdhocFactories factories;
+	protected final IFilterOptimizer filterOptimizer;
+
+	@Deprecated(since = "Unit-tests")
+	public InduceByAdhocMergingIntoSingle(IAdhocFactories factories) {
+		this(factories, factories.getFilterOptimizerFactory().makeOptimizerWithCache());
 	}
 
 	@Override
-	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<CubeQueryStep> tableQueries) {
+	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<CubeQueryStep> tableSteps) {
 		// This dag optimized `induced->inducer` by minimizing the number of inducers, considering only inducers from
 		// the initial TableQueries
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
-				super.splitInducedAsDag(hasOptions, tableQueries);
+				super.splitInducedAsDag(hasOptions, tableSteps);
 
 		// rootInducers can imply all other steps
 		Set<CubeQueryStep> rootInducers =
@@ -105,6 +103,16 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		Graphs.addGraph(inducedToInducer, moreInducedToInducer);
 
 		return inducedToInducer;
+	}
+
+	protected IFilterStripper makeFilterStripper() {
+		IFilterStripperFactory filterStripperFactory;
+		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
+			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
+		} else {
+			filterStripperFactory = factories.getFilterStripperFactory();
+		}
+		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
 	}
 
 	/**
@@ -136,6 +144,24 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		});
 
 		return inducedToInducer;
+	}
+
+	protected CubeQueryStep filter(ISliceFilter commonFilter, CubeQueryStep step) {
+		ISliceFilter combinedFilter = FilterBuilder.and(commonFilter, step.getFilter()).optimize(filterOptimizer);
+		return step.toBuilder().filter(combinedFilter).build();
+	}
+
+	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,
+			CubeQueryStep inducer,
+			CubeQueryStep induced) {
+		if (inducer.equals(induced)) {
+			// e.g. `GROUP BY a,b WHERE b` and `GROUP BY a WHERE b`
+			log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
+		} else {
+			inducedToInducer.addVertex(inducer);
+			inducedToInducer.addVertex(induced);
+			inducedToInducer.addEdge(induced, inducer);
+		}
 	}
 
 	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> makeAggregatorDag(IFilterStripper stripper,
@@ -260,34 +286,6 @@ public class TableQueryOptimizerSinglePerAggregator extends TableQueryOptimizer 
 		});
 
 		return inducedToInducer;
-	}
-
-	protected CubeQueryStep filter(ISliceFilter commonFilter, CubeQueryStep step) {
-		ISliceFilter combinedFilter = FilterBuilder.and(commonFilter, step.getFilter()).optimize(filterOptimizer);
-		return step.toBuilder().filter(combinedFilter).build();
-	}
-
-	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,
-			CubeQueryStep inducer,
-			CubeQueryStep induced) {
-		if (inducer.equals(induced)) {
-			// e.g. `GROUP BY a,b WHERE b` and `GROUP BY a WHERE b`
-			log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
-		} else {
-			inducedToInducer.addVertex(inducer);
-			inducedToInducer.addVertex(induced);
-			inducedToInducer.addEdge(induced, inducer);
-		}
-	}
-
-	protected IFilterStripper makeFilterStripper() {
-		IFilterStripperFactory filterStripperFactory;
-		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
-			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
-		} else {
-			filterStripperFactory = factories.getFilterStripperFactory();
-		}
-		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
 	}
 
 }

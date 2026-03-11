@@ -36,9 +36,9 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordFactory;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory.QueryWithLeftover;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -47,21 +47,20 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public abstract class ArrowJooqTableWrapper extends JooqTableWrapper {
+public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	private final int minSplitRows;
 
-	protected ArrowJooqTableWrapper(String name, JooqTableWrapperParameters tableParameters, int minSplitRows) {
+	protected AArrowJooqTableWrapper(String name, JooqTableWrapperParameters tableParameters, int minSplitRows) {
 		super(name, tableParameters);
 		this.minSplitRows = minSplitRows;
 	}
 
 	@Override
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
-			QueryWithLeftover sqlQuery,
-			ITabularRecordFactory tabularRecordFactory) {
-		return sqlQuery.getQueries()
-				.stream()
-				.flatMap(oneQuery -> toArrowStream(queryPod, oneQuery, tabularRecordFactory));
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod, QueryWithLeftover sqlQuery) {
+		return sqlQuery.getQueries().stream().flatMap(oneQuery -> {
+			ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery, oneQuery);
+			return toArrowStream(queryPod, oneQuery, tabularRecordFactory);
+		});
 	}
 
 	protected Stream<ITabularRecord> toArrowStream(QueryPod queryPod,

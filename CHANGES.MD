@@ -6,10 +6,16 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ## [0.0.17]
 
 ### Added
+- `TableQueryV3` enables `GROUPING SET` queries.
+- `ITableQueryStepsSplitter` enables to inject a splitting policy into an `ITableQueryOptimizer`.
+- `ITableStepsGrouper` is introduce to facilitate the customization of `TableQueryV3` granularity. It is the opportunity to have dedicate `TableQueryV3` on specific columns (e.g. very high cardinality ones).
+- `ITableStepsSplitter` is introduce to facilitate the customization of `CubeQueryStep` which should be induced by Adhoc. It is the opportunity to have dedicate `TableQueryV3` on specific columns (e.g. very high cardinality ones).
 
 ### Changed
 - `ISliceToValue` is renamed `ICuboid`.
 - Introduce `adhoc-dataframe`, `adhoc-measures`, `adhoc-cell` maven modules.
+- `ITableQueryOptimizer` implementations has been fully reworked given `TableQueryV3`
+- `TableQueryOptimizer` is renamed `TableQueryFactory` as it has no more any optimizing logic.
 
 
 ## [0.0.16]

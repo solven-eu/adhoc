@@ -95,6 +95,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
+	public static final String PREFIX_GROUPING = "adhoc_grouping_";
+
 	@NonNull
 	@Builder.Default
 	final IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
@@ -222,10 +224,12 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		return QueryWithLeftover.builder()
+				// TODO We may like to break `GROUPING SET` around here
 				.queries(partitionQuery(resultQuery))
 				.leftover(conditionAndLeftover.getLeftover())
 				.aggregatorToLeftovers(aggregateToLeftover)
 				.fields(fields)
+				// .groupingColumns(groupingColumns)
 				.build();
 	}
 
@@ -269,18 +273,33 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.filter(Objects::nonNull)
 				.forEach(selectedFields::add);
 
-		tableQuery.getGroupBys().stream().flatMap(gb -> gb.getNameToColumn().values().stream()).forEach(column -> {
-			Field<Object> field = columnAsField(column);
-			selectedFields.add(field);
-		});
+		tableQuery.getGroupBys()
+				.stream()
+				.flatMap(gb -> gb.getNameToColumn().values().stream())
+				// Distinct as `GROUPING SET` typically leads to a column to appear multiple times
+				.distinct()
+				.forEach(column -> {
+					Field<Object> field = columnAsField(column);
+					selectedFields.add(field);
+				});
 
+		// TODO Should the leftover be also added in `.makeGroupingFields`?
 		fields.getLeftovers().forEach(leftover -> {
 			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
 			selectedFields.add(field);
 		});
 
+		// https://learn.microsoft.com/en-us/sql/t-sql/functions/grouping-transact-sql?view=sql-server-ver17
+		// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_aggregation-extensions.html#r_GROUP_BY_aggregation-extentions-grouping
+		// https://neon.com/postgresql/postgresql-tutorial/postgresql-grouping-sets#grouping-function
+		fields.getGroupingColumns()
+				.stream()
+				// alias else jooq would name `grouping` leading to ambiguities
+				.map(column -> DSL.grouping(columnAsField(ReferencedColumn.ref(column))).as(groupingAlias(column)))
+				.forEach(selectedFields::add);
+
 		if (selectedFields.isEmpty()) {
-			// Typically happens on EmptyAggregation
+			// Typically happens on EmptyAggregation on grandTotal
 			// We force one field to prevent JooQ querying automatically for `*`
 			// BEWARE Rely on `count(1)` and not `1`, else DuckDB considers all fields are requested, and the groupBy
 			// lists all rows.
@@ -325,7 +344,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected AggregatedRecordFields makeSelectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
-		return TableQuery.makeSelectedColumns(tableQuery, leftovers);
+		return QueryWithLeftover.makeSelectedColumns(tableQuery, leftovers);
 	}
 
 	/**
@@ -347,7 +366,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			Field<Object> unaliasedField = DSL.field(name(columnName));
 
 			// GroupBy: refer to the underlying column, to prevent ambiguities
-			// If we were to have some aliasing around here, aliases should probably not be appled on groupBy
+			// If we were to have some aliasing around here, aliases should probably not be applied on groupBy
 			// https://github.com/duckdb/duckdb/issues/16097
 			// https://github.com/jOOQ/jOOQ/issues/17980
 			field = unaliasedField;
@@ -375,21 +394,33 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 */
 	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter leftoverFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
-		if (canGroupByAll()) {
-			// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
-			// https://duckdb.org/docs/stable/sql/query_syntax/groupby.html#group-by-all
-			// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_clause.html
-			groupedFields.add(DSL.field(DSL.unquotedName("ALL")));
-		} else {
-			tableQuery.getColumns().values().forEach(column -> {
-				Field<Object> field = columnAsField(column);
-				groupedFields.add(field);
-			});
+		if (tableQuery.singleGroupBy().isPresent()) {
+			if (canGroupByAll()) {
+				// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
+				// https://duckdb.org/docs/stable/sql/query_syntax/groupby.html#group-by-all
+				// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_clause.html
+				groupedFields.add(DSL.field(DSL.unquotedName("ALL")));
+			} else {
+				tableQuery.getColumns().values().forEach(column -> {
+					Field<Object> field = columnAsField(column);
+					groupedFields.add(field);
+				});
 
-			FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
-				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
-				groupedFields.add(field);
-			});
+				FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+					Field<Object> field = columnAsField(ReferencedColumn.ref(column));
+					groupedFields.add(field);
+				});
+			}
+		} else {
+			// At least 2 groupingSets
+
+			List<? extends List<? extends Field<?>>> fields2 = tableQuery.streamGroupBy().map(gb -> {
+				return gb.getNameToColumn().values().stream().map(this::columnAsField).toList();
+			}).toList();
+
+			Collection<? extends Field<?>>[] fieldSets = fields2.toArray(List[]::new);
+
+			groupedFields.add(DSL.groupingSets(fieldSets));
 		}
 
 		return groupedFields;
@@ -558,7 +589,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Deprecated(since = "TODO Migrate unitTests")
 	public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
-		return prepareQuery(TableQueryV2.fromV1(tableQuery));
+		return prepareQuery(TableQueryV3.edit(tableQuery).build());
+	}
+
+	public static String groupingAlias(String c) {
+		return "grouping_" + c.replaceAll("[\".]", "") + "_";
 	}
 
 }
