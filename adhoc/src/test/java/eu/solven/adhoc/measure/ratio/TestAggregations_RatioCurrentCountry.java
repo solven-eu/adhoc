@@ -203,7 +203,7 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 								        |   \\-- #5 m=d(SUM) filter=country==US groupBy=(country)
 								        \\-- #6 m=d_country=current_whole(Unfiltrator) filter=country==US groupBy=grandTotal
 								            \\-- !4
-								/-- 2 inducers from SELECT d:SUM(d) WHERE country==US GOUPING SETS (grandTotal,(country))
+								/-- 2 inducers from SELECT d:SUM(d) WHERE country==US GROUPING SETS (grandTotal,(country))
 								|\\- step SELECT d:SUM(d) WHERE country==US GROUP BY grandTotal
 								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY (country)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)

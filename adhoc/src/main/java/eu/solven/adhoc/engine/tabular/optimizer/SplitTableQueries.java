@@ -110,6 +110,9 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 			return query.streamGroupBy().map(groupBy -> {
 				CubeQueryStep step = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
 
+				// TODO If we were to restore customMarker into steps (e.g. if suppressed by TableQueryV3), if would
+				// probably happen around here
+
 				if (containsStep(step)) {
 					return new StepAndFilteredAggregator(filteredAggregator, step);
 				} else {

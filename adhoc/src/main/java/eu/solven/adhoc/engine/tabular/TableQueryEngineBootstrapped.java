@@ -213,12 +213,10 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return stepToValues;
 	}
 
-	protected Map<CubeQueryStep, ICuboid> executeTableQueries(Set<CubeQueryStep> suppressedQuerySteps,
+	protected Map<CubeQueryStep, ICuboid> executeTableQueries(Set<CubeQueryStep> steps,
 			ISinkExecutionFeedback executionFeedfack) {
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
-		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, suppressedQuerySteps);
-
-		sanityChecks(suppressedQuerySteps, inducerAndInduced);
+		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, steps);
 
 		// Execute the actual tableQueries
 		Map<CubeQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
@@ -789,122 +787,6 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
 		return suppressedColumns.stream()
 				.collect(Collectors.toMap(Function.identity(), c -> IColumnGenerator.COORDINATE_GENERATED));
-	}
-
-	/**
-	 * Checks the tableQueries are actually valid: do they cover the required steps?
-	 * 
-	 * @param missingSuppressedRoots
-	 * @param inducerAndInduced
-	 */
-	protected void sanityChecks(Set<CubeQueryStep> missingSuppressedRoots, SplitTableQueries inducerAndInduced) {
-		Set<TableQueryV3> tableQueries = inducerAndInduced.getTableQueries();
-
-		// Holds the querySteps evaluated from the ITableWrapper
-		Set<CubeQueryStep> queryStepsFromTableQueries = tableQueries.stream()
-				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterOptimizerSupplier.get()))
-				.map(StepAndFilteredAggregator::step)
-				.collect(ImmutableSet.toImmutableSet());
-
-		// tableDag will evaluate from table querySteps to cubeDag root querySteps
-		{
-			Set<CubeQueryStep> tableRoots = inducerAndInduced.getInducers();
-
-			Set<CubeQueryStep> missingRootsFromTableQueries = Sets.difference(tableRoots, queryStepsFromTableQueries);
-			if (!missingRootsFromTableQueries.isEmpty()) {
-				int nbMissing = missingRootsFromTableQueries.size();
-				log.warn("Missing {} steps from tableQueries to fill table DAG roots", nbMissing);
-
-				int indexMissing = 0;
-				for (CubeQueryStep missingStep : missingRootsFromTableQueries) {
-					indexMissing++;
-					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
-
-					queryStepsFromTableQueries.stream()
-							// This issue is probably due to a faulty filter representation: we search for steps
-							// differing only by filter
-							.filter(s -> suppressFilter(s).equals(suppressFilter(missingStep)))
-							.forEach(queryDifferingByFilter -> {
-								log.warn("\\-- Relates with {}", queryDifferingByFilter);
-							});
-
-				}
-
-				// This typically happens due to inconsistency in equality if ISliceFiler (e.g. `a` and
-				// `Not(Not(a))`)
-				throw new IllegalStateException(
-						"Missing %s steps from tableQueries to fill table DAG roots".formatted(nbMissing));
-			}
-		}
-
-		Set<CubeQueryStep> stepsImpliedByTableQueries = inducerAndInduced.getInducedToInducer().vertexSet();
-
-		// Given all tableDag nodes, we should have all cubeDag roots
-		{
-			Set<CubeQueryStep> neededCubeRoots = missingSuppressedRoots;
-
-			Set<CubeQueryStep> missingCubeRoots = Sets.difference(neededCubeRoots, stepsImpliedByTableQueries);
-			if (!missingCubeRoots.isEmpty()) {
-				int nbMissing = missingCubeRoots.size();
-				log.warn("Missing {} steps from tableQueries to fill cube DAG roots", nbMissing);
-				int indexMissing = 0;
-				for (CubeQueryStep missingStep : missingCubeRoots) {
-					indexMissing++;
-					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
-				}
-
-				// Take the shorter/simpler problematic entry
-				CubeQueryStep firstMissing =
-						missingCubeRoots.stream().min(Comparator.comparing(s -> s.toString().length())).get();
-				log.warn("Analyzing one missing: {}", firstMissing);
-				Set<CubeQueryStep> impliedSameMeasure = stepsImpliedByTableQueries.stream()
-						.filter(s -> s.getMeasure().getName().equals(firstMissing.getMeasure().getName()))
-						.collect(ImmutableSet.toImmutableSet());
-				log.warn("Missing has {} sameMeasure siblings", impliedSameMeasure.size());
-
-				Set<CubeQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
-						.filter(s -> s.getGroupBy()
-								.getGroupedByColumns()
-								.equals(firstMissing.getGroupBy().getGroupedByColumns()))
-						.collect(ImmutableSet.toImmutableSet());
-				log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
-
-				Set<CubeQueryStep> impliedSameMeasureSameGroupBySameFilter = impliedSameMeasureSameGroupBy.stream()
-						.filter(s -> s.getFilter().equals(firstMissing.getFilter()))
-						.collect(ImmutableSet.toImmutableSet());
-				log.warn("Missing has {} sameMeasureSameGroupBySameFilter siblings",
-						impliedSameMeasureSameGroupBySameFilter.size());
-
-				Set<CubeQueryStep> impliedSameMeasureSameGroupByEquivalentFilter = impliedSameMeasureSameGroupBy
-						.stream()
-						.filter(s -> FilterEquivalencyHelpers.areEquivalent(s.getFilter(), firstMissing.getFilter()))
-						.collect(ImmutableSet.toImmutableSet());
-				log.warn("Missing has {} sameMeasureSameGroupByEquivalentFilter siblings",
-						impliedSameMeasureSameGroupByEquivalentFilter.size());
-
-				// This typically happens due to inconsistency in equality if ISliceFiler (e.g. `a` and
-				// `Not(Not(a))`)
-				throw new IllegalStateException(
-						"Missing %s steps from tableQueries to fill cube DAG roots".formatted(nbMissing));
-			}
-		}
-
-		// Set<CubeQueryStep> irrelevantComputations = Sets.difference(queryStepsFromTableQueries, missingTableRoots);
-		//
-		// if (!irrelevantComputations.isEmpty()) {
-		// // Typically happens with TableQueryOptimizerSinglePerAggregator
-		// int nbIrrelevant = irrelevantComputations.size();
-		// log.info("Irrelevant {} steps from tableQueries to fill DAG roots", nbIrrelevant);
-		// int indexIrrelevant = 0;
-		// for (CubeQueryStep irrelevantStep : irrelevantComputations) {
-		// indexIrrelevant++;
-		// log.warn("Irrelevant {}/{}: {}", indexIrrelevant, nbIrrelevant, irrelevantStep);
-		// }
-		// }
-	}
-
-	protected CubeQueryStep suppressFilter(CubeQueryStep s) {
-		return CubeQueryStep.edit(s).filter(ISliceFilter.MATCH_ALL).build();
 	}
 
 	/**
