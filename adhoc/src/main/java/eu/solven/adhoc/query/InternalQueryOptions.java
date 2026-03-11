@@ -23,17 +23,10 @@
 package eu.solven.adhoc.query;
 
 import java.util.Locale;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.TableQueryEngine;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
@@ -52,7 +45,7 @@ public enum InternalQueryOptions implements IQueryOption {
 	 * 
 	 * It leads to more work in the database, and less work into Adhoc.
 	 * 
-	 * @see InduceByGroupingSets
+	 * @see eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets
 	 */
 	INDUCE_BY_TABLE,
 
@@ -62,7 +55,7 @@ public enum InternalQueryOptions implements IQueryOption {
 	 * 
 	 * It leads to less work in the database, and more work into Adhoc.
 	 * 
-	 * @see InduceByAdhoc
+	 * @see eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc
 	 */
 	INDUCE_BY_ADHOC,
 
