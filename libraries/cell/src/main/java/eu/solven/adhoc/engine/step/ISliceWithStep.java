@@ -28,7 +28,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
 /**
- * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more contact to
+ * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more context to
  * {@link eu.solven.adhoc.measure.model.IMeasure}.
  * 
  * @author Benoit Lacelle

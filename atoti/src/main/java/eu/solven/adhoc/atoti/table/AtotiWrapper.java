@@ -27,10 +27,7 @@ import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
 import com.quartetfs.fwk.query.IQueryable;
 
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Getter;
 import lombok.NonNull;

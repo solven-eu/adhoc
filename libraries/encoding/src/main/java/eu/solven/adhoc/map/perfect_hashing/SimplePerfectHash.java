@@ -41,7 +41,8 @@ import lombok.extern.slf4j.Slf4j;
  * A simple perfect-hashing strategy.
  * 
  * Instead of relying on modulo arithmetic, we will consider only powerOfTwo mask, for faster `hash->index`, as masking
- * is faster than a modulo operation. This is a requirement to remain same order of performance than {@link HashMap}.
+ * is faster than a modulo operation. This is a requirement to maintain the same order of performance as
+ * {@link HashMap}.
  * 
  * @author Benoit Lacelle
  */

@@ -41,7 +41,7 @@ public enum StandardQueryOptions implements IQueryOption {
 	 * Request for an unknown measure will treat it as if it returned only empty values.
 	 *
 	 * It is useful when a {@link eu.solven.adhoc.measure.IAdhocMeasureBag} refers a
-	 * {@link eu.solven.adhoc.measure.IMeasure} which is be missing for any reason.
+	 * {@link eu.solven.adhoc.measure.IMeasure} which may be missing for any reason.
 	 */
 	UNKNOWN_MEASURES_ARE_EMPTY,
 

@@ -33,7 +33,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * A {@link ICuboid} is an immutable data-structure, expressing the mapping from slices to values, typically computed by
- * a {@link ITransformatorQueryStep}.
+ * a {@link IMeasureQueryStep}.
  * 
  * This is very similar to a Dataframe. But an cuboid has additional constrains like guaranteeing each slice to be
  * unique amongst the cuboid, and each slice is mapping to a measure value.

@@ -53,6 +53,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Getter;
 import lombok.NonNull;
@@ -74,8 +75,7 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		// TODO Follow InMemoryTable for composite RecordsStream based on v2
-		return streamSlices(queryPod, tableQuery.streamV2().findFirst().get());
+		return InMemoryTable.compositeOnV2(queryPod, tableQuery, this::streamSlices);
 	}
 
 	@Override

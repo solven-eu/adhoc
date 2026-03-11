@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.Map;
 
 /**
- * Anything which may require a configured {@link Decomposition}
+ * Anything which may require a configured {@link IDecomposition}
  * 
  * @author Benoit Lacelle
  */

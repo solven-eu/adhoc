@@ -29,7 +29,7 @@ import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.IAdhocEvent;
 
 /**
- * Like {@link AdhocEventsFromGuavaEventBusToSfl4j} but subsribed on events from a Greenrobot {@link EventBus}
+ * Like {@link AdhocEventsFromGuavaEventBusToSfl4j} but subscribed on events from a Greenrobot {@link EventBus}
  * 
  * @author Benoit Lacelle
  */

@@ -23,7 +23,7 @@
 package eu.solven.adhoc.map.factory;
 
 /**
- * Interface for Map builder instanced created by for {@link ISliceFactory}.
+ * Interface for Map builder instances created by {@link ISliceFactory}.
  * 
  * @author Benoit Lacelle
  */

@@ -59,7 +59,7 @@ public enum InternalQueryOptions implements IQueryOption {
 	ONE_TABLE_QUERY_PER_ROOT_INDUCER,
 
 	/**
-	 * Enable the use of {@link TableQueryOptimizerSinglePerAggregator}, which will do one {@link TableQuery} per
+	 * Enable the use of TableQueryOptimizerSinglePerAggregator, which will do one {@link TableQuery} per
 	 * {@link Aggregator}, hence potentially reducing the number of queries to the database, but querying some
 	 * information potentially useless (e.g. by querying some groupBy which is irrelevant for a part of the filter).
 	 * 

@@ -333,7 +333,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		List<String> leftoversColumns = new ArrayList<>(
 				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
 
-		// Make sure a latecolumn is not also a normal groupBy column
+		// Make sure a late column is not also a normal groupBy column
 		leftoversColumns.removeAll(groupByColumns);
 
 		return AggregatedRecordFields.builder()

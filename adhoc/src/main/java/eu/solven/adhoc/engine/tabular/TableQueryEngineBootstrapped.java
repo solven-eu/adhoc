@@ -388,7 +388,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 					.stream()
 					.map(IGroupBy::toString)
 					.collect(Collectors.joining(",", "(", ")"));
-			sb.append(" GOUPING SETS ").append(groupByClause);
+			sb.append(" GROUPING SETS ").append(groupByClause);
 		}
 
 		return sb.toString();

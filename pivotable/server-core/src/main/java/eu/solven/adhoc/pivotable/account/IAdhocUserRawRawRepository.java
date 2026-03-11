@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * This is kind-of a {@link Map} from accountId to {@link KumiteUserRawRaw}.
+ * This is kind-of a {@link Map} from accountId to {@link PivotableUserRawRaw}.
  * 
  * @author Benoit Lacelle
  *

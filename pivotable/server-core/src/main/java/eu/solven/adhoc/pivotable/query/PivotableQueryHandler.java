@@ -178,7 +178,7 @@ public class PivotableQueryHandler {
 			long nbPoll = queryIdPolls.getAndIncrement(queryId);
 
 			// This factor must not be too large, else we may have a large delay between when the result is available,
-			// and wehen it is polled
+			// and when it is polled
 			double backoffFactor = 1.1;
 
 			// https://en.wikipedia.org/wiki/Exponential_backoff

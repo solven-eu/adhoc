@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -121,7 +122,14 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		List<ITabularRecordStream> underlyings = tableQuery.streamV2().map(v2 -> streamSlices(queryPod, v2)).toList();
+		return compositeOnV2(queryPod, tableQuery, this::streamSlices);
+	}
+
+	public static ITabularRecordStream compositeOnV2(QueryPod queryPod,
+			TableQueryV3 tableQuery,
+			BiFunction<QueryPod, TableQueryV2, ITabularRecordStream> biConsumer) {
+		List<ITabularRecordStream> underlyings =
+				tableQuery.streamV2().map(v2 -> biConsumer.apply(queryPod, v2)).toList();
 
 		return new ITabularRecordStream() {
 
@@ -285,7 +293,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	 * @param tableColumns
 	 *            all columns known by this table, given rows
 	 * @param queriedColumns
-	 *            columns requested the the {@link TableQueryV2}
+	 *            columns requested by the {@link TableQueryV2}
 	 * @param columnUse
 	 *            some type to be referred in logs
 	 */

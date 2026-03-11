@@ -49,7 +49,7 @@ import software.amazon.awssdk.services.redshiftdata.model.GetStatementResultRequ
 import software.amazon.awssdk.services.redshiftdata.model.RedshiftDataException;
 
 /**
- * Enables querying Google BigQuery.
+ * Enables querying Amazon Redshift.
  *
  * @author Benoit Lacelle
  */

@@ -49,7 +49,7 @@ public interface ITabularRecord extends ITabularGroupByRecord {
 
 	/**
 	 * 
-	 * @return a merged {@link Map}. Ambiguities will pops if a name if both an aggregate and a groupBy.
+	 * @return a merged {@link Map}. Ambiguities will pop if a name is both an aggregate and a groupBy.
 	 */
 	@Deprecated(since = "Prefer processing aggregates then values")
 	Map<String, ?> asMap();

@@ -36,7 +36,7 @@ import lombok.Singular;
 import lombok.Value;
 
 /**
- * A {@link List} of {@link IMeasureForest}, ensuring each forest to have a unique nam.
+ * A {@link List} of {@link IMeasureForest}, ensuring each forest to have a unique name.
  * 
  * @author Benoit Lacelle
  */

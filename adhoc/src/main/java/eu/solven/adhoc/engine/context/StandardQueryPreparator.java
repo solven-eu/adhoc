@@ -109,7 +109,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				.sliceFactory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(preparedQuery))
 				.build();
 
-		// Filtering the forest is useful for edge-cades like:
+		// Filtering the forest is useful for edge-cases like:
 		// - columnGenerator: we should consider only measures in the queryPlan
 		IMeasureForest relevantForest =
 				filterForest(fullQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();

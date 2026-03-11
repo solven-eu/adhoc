@@ -137,7 +137,7 @@ public class AdhocCollectionHelpers {
 	/**
 	 * Relates with {@link Iterables#getFirst(Iterable, Object)} and {@link Iterables#get(Iterable, int)}.
 	 * 
-	 * It prevent an {@link Iterator} creation when possible.
+	 * It prevents an {@link Iterator} creation when possible.
 	 * 
 	 * @param c
 	 * @return the first item of input {@link Collection}
