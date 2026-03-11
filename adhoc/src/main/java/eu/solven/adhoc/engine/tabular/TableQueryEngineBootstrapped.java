@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
@@ -613,7 +614,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			long[] sizes = immutableChunks.values().stream().mapToLong(ICuboid::size).toArray();
 
 			if (queryPod.isDebug()) {
-				long totalSize = immutableChunks.values().stream().mapToLong(ICuboid::size).sum();
+				long totalSize = LongStream.of(sizes).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
@@ -709,7 +710,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected Map<CubeQueryStep, ICuboid> toCuboids(IHasTableQueryForSteps tableQueries,
 			TableQueryV3 query,
 			IMultitypeMergeableGrid<IAdhocSlice> coordinatesToAggregates) {
-		Map<CubeQueryStep, ICuboid> queryStepToValues = new LinkedHashMap<>();
+		Map<CubeQueryStep, ICuboid> stepToCuboid = new LinkedHashMap<>();
 
 		Stream<StepAndFilteredAggregator> stepStream =
 				tableQueries.forEachCubeQuerySteps(query, filterOptimizerSupplier.get());
@@ -736,9 +737,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
-			queryStepToValues.put(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
+			stepToCuboid.put(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
 		});
-		return queryStepToValues;
+		return stepToCuboid;
 	}
 
 	/**

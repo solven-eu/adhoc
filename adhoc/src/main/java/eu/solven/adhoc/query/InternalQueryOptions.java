@@ -46,35 +46,6 @@ import eu.solven.adhoc.table.ITableWrapper;
  */
 // @JsonSerialize(using = SimpleEnumSerializer.class)
 public enum InternalQueryOptions implements IQueryOption {
-	/**
-	 * Given the {@link Set} of {@link TableQuery}, {@link TableQueryEngine} generally prefers querying the
-	 * {@link ITableWrapper} a minimal set of {@link CubeQueryStep}, and computing within Adhoc induced results.
-	 */
-	ONE_TABLE_QUERY_PER_INDUCER,
-
-	/**
-	 * Given a {@link Set} of {@link CubeQueryStep}, we find the sub-set which can induce all the others.
-	 */
-	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_ROOT_INDUCER,
-
-	/**
-	 * Enable the use of TableQueryOptimizerSinglePerAggregator, which will do one {@link TableQuery} per
-	 * {@link Aggregator}, hence potentially reducing the number of queries to the database, but querying some
-	 * information potentially useless (e.g. by querying some groupBy which is irrelevant for a part of the filter).
-	 * 
-	 * Similar to {@link #ONE_TABLE_QUERY_PER_ROOT_INDUCER}, but forcing to have one {@link TableQuery} per
-	 * {@link Aggregator}.
-	 */
-	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_AGGREGATOR,
-
-	/**
-	 * A single {@link TableQuery} is generated to cover all {@link CubeQueryStep}. Similar to
-	 * {@link #ONE_TABLE_QUERY_PER_AGGREGATOR}, but covering all aggregators.
-	 */
-	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_TABLE,
 
 	/**
 	 * Rely on `GROUPING SET` so that {@link ITableWrapper} evaluate itself various `GROUP BY`.
@@ -97,19 +68,19 @@ public enum InternalQueryOptions implements IQueryOption {
 
 	/**
 	 * 
-	 * @see TableQueryGrouperNoCustomMarker
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper
 	 */
 	TABLEQUERY_PER_OPTIONS,
 
 	/**
 	 * 
-	 * @see TableQueryGrouperByAggregatorNoCustomMarker
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator
 	 */
 	TABLEQUERY_PER_AGGREGATOR,
 
 	/**
 	 * 
-	 * @see TableQueryGrouperNoGroupBy
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup
 	 */
 	TABLEQUERY_PER_STEPS,
 

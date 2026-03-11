@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.context;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -137,5 +138,21 @@ public class TestSpringImplicitOptions {
 			Assertions.assertThat(implicitOptions)
 					.containsExactly(StandardQueryOptions.CONCURRENT, StandardQueryOptions.EXPLAIN);
 		}
+	}
+
+	@Test
+	public void testEnv_eachInternalIsKnown() {
+		implicit = SpringImplicitOptions.builder().env(env).build();
+
+		Stream.of(InternalQueryOptions.values()).forEach(option -> {
+			env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_AGGREGATORCONCURRENT), true);
+			env.setProperty(implicit.optionKey(StandardQueryOptions.EXPLAIN), true);
+			{
+				Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+				Assertions.assertThat(implicitOptions)
+						.containsExactly(StandardQueryOptions.CONCURRENT, StandardQueryOptions.EXPLAIN);
+			}
+		});
+
 	}
 }
