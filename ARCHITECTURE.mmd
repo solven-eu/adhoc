@@ -58,9 +58,12 @@ classDiagram
     class TableQueryEngine {
         IAdhocFactories factories
         IAdhocEventBus eventBus
-        ITableQueryOptimizerFactory optimizerFactory
+        ITableQueryFactoryFactory optimizerFactory
+        ITableQueryInducerFactory inducerFactory
     }
-    class TableQueryOptimizerFactory {
+    class TableQueryFactoryFactory {
+    }
+    class TableQueryInducerFactory {
     }
     class CachingTableWrapper {
         ITableWrapper decorated
@@ -146,7 +149,8 @@ classDiagram
     StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
     TableQueryEngine *-- AdhocFactories : factories
     TableQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
-    TableQueryEngine *-- TableQueryOptimizerFactory : optimizerFactory
+    TableQueryEngine *-- TableQueryFactoryFactory : optimizerFactory
+    TableQueryEngine *-- TableQueryInducerFactory : inducerFactory
     CachingTableWrapper *-- ITableWrapper : decorated
     CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
     ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
