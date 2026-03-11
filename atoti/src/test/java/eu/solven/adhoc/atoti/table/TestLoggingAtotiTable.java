@@ -41,7 +41,7 @@ public class TestLoggingAtotiTable {
 	// Will generate many WARNs due to improper use of javassist in TransferCompiler.compile
 	@Test
 	public void testNew() {
-		LoggingAtotiTable table = LoggingAtotiTable.builder().pivotId("someCubeName").build();
+		LoggingAtotiWrapper table = LoggingAtotiWrapper.builder().pivotId("someCubeName").build();
 
 		table.streamSlices(QueryPod.forTable(table),
 				TableQueryV2.builder()
