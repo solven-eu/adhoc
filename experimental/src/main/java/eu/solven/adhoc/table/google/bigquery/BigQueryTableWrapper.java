@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.google.bigquery;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.jooq.Record;
@@ -49,8 +50,8 @@ import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,12 +73,11 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
-			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
-			ITabularRecordFactory tabularRecordFactory) {
-		return sqlQuery.getQueries()
-				.stream()
-				.flatMap(oneQuery -> toBigQueryStream(queryPod, oneQuery, tabularRecordFactory));
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod, QueryWithLeftover sqlQuery) {
+		return sqlQuery.getQueries().stream().flatMap(oneQuery -> {
+			ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery, oneQuery);
+			return toBigQueryStream(queryPod, oneQuery, tabularRecordFactory);
+		});
 	}
 
 	protected Stream<ITabularRecord> toBigQueryStream(QueryPod queryPod,
@@ -157,15 +157,15 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		List<String> aggregateGroupBys = tabularRecordFactory.getColumns();
-		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(aggregateGroupBys);
+		Set<String> groupedByColumns = tabularRecordFactory.getColumns();
+		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(groupedByColumns);
 
 		{
-			for (int i = 0; i < aggregateGroupBys.size(); i++) {
-				Field field = schema.getFields().get(aggregateGroupBys.size() + i);
+			for (int i = 0; i < groupedByColumns.size(); i++) {
+				Field field = schema.getFields().get(groupedByColumns.size() + i);
 
 				Object value;
-				FieldValue fieldValue = row.get(aggregateGroupBys.size() + i);
+				FieldValue fieldValue = row.get(groupedByColumns.size() + i);
 				if (LegacySQLTypeName.INTEGER.equals(field.getType())) {
 					value = fieldValue.getLongValue();
 				} else {
@@ -180,7 +180,7 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
+	protected void debugResultQuery(QueryWithLeftover resultQuery) {
 		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
 		log.info("[DEBUG] TODO Google BigQuery");
 	}

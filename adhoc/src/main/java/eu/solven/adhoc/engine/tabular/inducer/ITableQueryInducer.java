@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,25 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.tabular.inducer;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
+import java.util.Map;
+
+import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
+import eu.solven.adhoc.options.IHasQueryOptions;
 
 /**
- * Force a single SQL per {@link CubeQueryStep}. May be useful for very simple DAG, or for debug purposes.
+ * Can infer {@link CubeQueryStep} {@link ICuboid}.
  * 
  * @author Benoit Lacelle
  */
-@Slf4j
-public class TableQueryOptimizerSinglePerCubeStep extends TableQueryOptimizer {
+@FunctionalInterface
+public interface ITableQueryInducer {
 
-	public TableQueryOptimizerSinglePerCubeStep(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		super(factories, filterOptimizer, new InduceByGroupingSets(), new TableStepsGrouperNoGroup());
-	}
-
+	/**
+	 * 
+	 * @param hasOptions
+	 * @param inducerAndInduced
+	 * @param stepToValues
+	 * @param induced
+	 * @return a {@link IMultitypeMergeableColumn} holding the result for given induced step
+	 */
+	IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
+			SplitTableQueries inducerAndInduced,
+			Map<CubeQueryStep, ICuboid> stepToValues,
+			CubeQueryStep induced);
 }

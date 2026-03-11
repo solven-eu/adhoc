@@ -15,6 +15,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `ISliceToValue` is renamed `ICuboid`.
 - Introduce `adhoc-dataframe`, `adhoc-measures`, `adhoc-cell` maven modules.
 - `ITableQueryOptimizer` implementations has been fully reworked given `TableQueryV3`
+- `TableQueryOptimizer` is renamed `TableQueryFactory` as it has no more any optimizing logic.
 
 
 ## [0.0.16]

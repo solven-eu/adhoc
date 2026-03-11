@@ -123,11 +123,11 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
 		log.debug("slice={} measures={}", slice, mToValues);
-		coordinatesToValues.merge(slice.getCoordinates(), mToValues, AdhocMapHelpers::aggregateMaps);
+		coordinatesToValues.merge(slice.asAdhocMap(), mToValues, AdhocMapHelpers::aggregateMaps);
 	}
 
 	public void appendSlice(IAdhocSlice slice, String measure, Object value) {
-		coordinatesToValues.merge(slice.getCoordinates(), Map.of(measure, value), AdhocMapHelpers::aggregateMaps);
+		coordinatesToValues.merge(slice.asAdhocMap(), Map.of(measure, value), AdhocMapHelpers::aggregateMaps);
 	}
 
 	@Override

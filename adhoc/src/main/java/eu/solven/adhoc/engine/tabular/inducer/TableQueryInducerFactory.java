@@ -20,25 +20,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
-
-import java.util.Set;
+package eu.solven.adhoc.engine.tabular.inducer;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 
 /**
- * {@link ITableQueryOptimizerFactory} will turn an input {@link Set} of {@link TableQuery} into a
- * {@link SplitTableQueries}, telling which {@link TableQuery} will be executed and how to evaluate the other
- * {@link TableQuery} from the results of the later.
- * 
- * The inducer may or may not be amongst the provided input {@link TableQuery}.
+ * Factory for {@link ITableQueryInducer}.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ITableQueryOptimizerFactory {
-	ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions);
+public class TableQueryInducerFactory implements ITableQueryInducerFactory {
+	@Override
+	public ITableQueryInducer makeInducer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
+		return new TableQueryInducer(factories, filterOptimizer);
+	}
 }

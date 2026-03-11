@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -38,8 +40,8 @@ import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -64,7 +66,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 		TableQueryEngineBootstrapped engine = TableQueryEngineBootstrapped.builder()
 				.queryPod(queryPod)
-				.optimizer(new TableQueryOptimizer(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
+				.optimizer(new TableQueryFactory(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
 				.build();
 
 		CountDownLatch cdl = new CountDownLatch(2);
@@ -83,6 +85,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
 			SplitTableQueries split = SplitTableQueries.builder()
+					.inducedToInducer(new DirectedAcyclicGraph<CubeQueryStep, DefaultEdge>(DefaultEdge.class))
 					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("a")).build(),
 							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build())

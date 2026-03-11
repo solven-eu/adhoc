@@ -56,7 +56,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  */
 public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADagTest {
 
-	TableQueryOptimizer optimizer = TableQueryOptimizer.builder()
+	TableQueryFactory optimizer = TableQueryFactory.builder()
 			.factories(AdhocFactories.builder().build())
 			.splitter(new InduceByAdhoc())
 			.groupByAggregator()
@@ -89,9 +89,9 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 	// Given 2 measures doing a groupBy on different columns, we do a single tableQuery with both groupBy
 	@Test
 	public void testCanInduce_groupByDifferentColumns() {
-		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryFactoryFactory() {
 			@Override
-			public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+			public ITableQueryFactory makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
 				return optimizer;
 			}
 		}).build();
@@ -144,9 +144,9 @@ public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADag
 				.filter(ColumnFilter.matchEq("a", "a1"))
 				.build());
 
-		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryOptimizerFactory() {
+		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryFactoryFactory() {
 			@Override
-			public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+			public ITableQueryFactory makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
 				return optimizer;
 			}
 		}).build();

@@ -56,7 +56,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The main strategy of this {@link ITableQueryOptimizer} is to evaluate the minimal number of {@link TableQuery} needed
+ * The main strategy of this {@link ITableQueryFactory} is to evaluate the minimal number of {@link TableQuery} needed
  * to compute all {@link CubeQueryStep} allowing to compute irrelevant aggregates. Typically, it will evaluate the union
  * of {@link IGroupBy} and an {@link OrFilter} amongst all {@link ISliceFilter}.
  * 
@@ -65,7 +65,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TableQueryOptimizer extends ATableQueryOptimizer {
+public class TableQueryFactory extends ATableQueryFactory {
 
 	protected final ITableStepsSplitter splitter;
 	protected final ITableStepsGrouper grouper;
@@ -73,7 +73,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
 	@Builder
-	public TableQueryOptimizer(IAdhocFactories factories,
+	public TableQueryFactory(IAdhocFactories factories,
 			IFilterOptimizer filterOptimizer,
 			ITableStepsSplitter splitter,
 			ITableStepsGrouper grouper) {
@@ -85,7 +85,7 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
-	public TableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	public TableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		this(factories, filterOptimizer, new InduceByAdhoc(), new TableStepsGrouper());
 	}
 
@@ -161,24 +161,24 @@ public class TableQueryOptimizer extends ATableQueryOptimizer {
 	/**
 	 * Lombok @Builder
 	 */
-	public static class TableQueryOptimizerBuilder {
-		public TableQueryOptimizerBuilder splitForAdhocInference() {
+	public static class TableQueryFactoryBuilder {
+		public TableQueryFactoryBuilder splitForAdhocInference() {
 			return this.splitter(new InduceByAdhoc());
 		}
 
-		public TableQueryOptimizerBuilder splitForTableGroupingSets() {
+		public TableQueryFactoryBuilder splitForTableGroupingSets() {
 			return this.splitter(new InduceByGroupingSets());
 		}
 
-		public TableQueryOptimizerBuilder groupByAggregator() {
+		public TableQueryFactoryBuilder groupByAggregator() {
 			return this.grouper(new TableStepsGrouperByAggregator());
 		}
 
-		public TableQueryOptimizerBuilder singleTableQuery() {
+		public TableQueryFactoryBuilder singleTableQuery() {
 			return this.grouper(new TableStepsGrouper());
 		}
 
-		public TableQueryOptimizerBuilder oneTableQueryperStep() {
+		public TableQueryFactoryBuilder oneTableQueryperStep() {
 			return this.grouper(new TableStepsGrouperNoGroup());
 		}
 

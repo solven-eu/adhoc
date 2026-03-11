@@ -230,7 +230,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 			IAdhocColumn column = groupBy.getNameToColumn().get(groupByColumn);
 			if (column instanceof ICalculatedColumn calculatedColumn) {
 				Map<String, Object> sliceAsMap = new LinkedHashMap<>();
-				sliceAsMap.putAll(slice.getSlice().getCoordinates());
+				sliceAsMap.putAll(slice.getSlice().asAdhocMap());
 
 				if (value != null) {
 					sliceAsMap.put(groupByColumn, value);

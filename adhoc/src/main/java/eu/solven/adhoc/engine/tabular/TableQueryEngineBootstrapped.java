@@ -65,12 +65,13 @@ import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
@@ -109,7 +110,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Holds the execution logic related with an {@link ITableQueryEngine}, given a {@link ITableQueryOptimizer} in the
+ * Holds the execution logic related with an {@link ITableQueryEngine}, given a {@link ITableQueryFactory} in the
  * context of a single {@link TableQuery}.
  * 
  * @author Benoit Lacelle
@@ -117,7 +118,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 // https://math.stackexchange.com/questions/2966359/how-to-calculate-cost-in-discrete-markov-transitions
 public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapped {
 
@@ -135,7 +136,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 	@NonNull
 	@Getter(AccessLevel.PRIVATE)
-	final ITableQueryOptimizer optimizer;
+	final ITableQueryFactory optimizer;
+
+	final ITableQueryInducer inducer;
 
 	final Supplier<IFilterOptimizer> filterOptimizerSupplier = Suppliers.memoize(() -> {
 		if (getOptimizer() instanceof IHasFilterOptimizer hasFilterOptimizer) {
@@ -217,7 +220,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		sanityChecks(suppressedQuerySteps, inducerAndInduced);
 
 		// Execute the actual tableQueries
-		Map<CubeQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(executionFeedfack, inducerAndInduced);
+		Map<CubeQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
@@ -379,16 +382,11 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		} else if (tableQuery.getGroupBys().size() == 1) {
 			groupBy = AdhocCollectionHelpers.getFirst(tableQuery.getGroupBys());
 
-			String groupByClause = groupBy.getGroupedByColumns().stream().collect(Collectors.joining(",", "(", ")"));
-			sb.append(" GROUP BY ").append(groupByClause);
+			sb.append(" GROUP BY ").append(groupBy);
 		} else {
 			String groupByClause = tableQuery.getGroupBys()
 					.stream()
-					.map(gb -> gb.getNameToColumn()
-							.entrySet()
-							.stream()
-							.map(e -> e.getValue().toString())
-							.collect(Collectors.joining(",", "(", ")")))
+					.map(IGroupBy::toString)
 					.collect(Collectors.joining(",", "(", ")"));
 			sb.append(" GOUPING SETS ").append(groupByClause);
 		}
@@ -801,12 +799,10 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected void sanityChecks(Set<CubeQueryStep> missingSuppressedRoots, SplitTableQueries inducerAndInduced) {
 		Set<TableQueryV3> tableQueries = inducerAndInduced.getTableQueries();
 
-		// inducerAndInduced.getStepToTables()
-
 		// Holds the querySteps evaluated from the ITableWrapper
 		Set<CubeQueryStep> queryStepsFromTableQueries = tableQueries.stream()
 				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterOptimizerSupplier.get()))
-				.map(r -> r.step())
+				.map(StepAndFilteredAggregator::step)
 				.collect(ImmutableSet.toImmutableSet());
 
 		// tableDag will evaluate from table querySteps to cubeDag root querySteps
@@ -955,7 +951,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
 			IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
-					optimizer.evaluateInduced(queryPod, inducerAndInduced, stepToValues, induced);
+					inducer.evaluateInduced(queryPod, inducerAndInduced, stepToValues, induced);
 
 			Duration elapsed = stopWatch.elapsed();
 			eventBus.post(QueryStepIsCompleted.builder()

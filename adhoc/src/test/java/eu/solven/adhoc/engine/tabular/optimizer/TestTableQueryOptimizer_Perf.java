@@ -43,12 +43,13 @@ import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTableQueryOptimizer_Perf {
@@ -56,8 +57,7 @@ public class TestTableQueryOptimizer_Perf {
 	int cardinalityIn = 1_000_000;
 	int cardinalityOut = 1000;
 
-	TableQueryOptimizer optimizer =
-			new TableQueryOptimizer(AdhocFactories.builder().build(), FilterOptimizer.builder().build());
+	ITableQueryInducer inducer = new TableQueryInducer(AdhocFactories.builder().build());
 	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
 	Map<CubeQueryStep, ICuboid> inducers = new LinkedHashMap<>();
 
@@ -92,7 +92,7 @@ public class TestTableQueryOptimizer_Perf {
 		inducers.put(inducerStep, inducerValues2);
 
 		IMultitypeMergeableColumn<IAdhocSlice> induced =
-				optimizer.evaluateInduced(() -> Set.of(), split, inducers, inducedStep);
+				inducer.evaluateInduced(IHasQueryOptions.noOption(), split, inducers, inducedStep);
 
 		Assertions.assertThat(induced.size()).isEqualTo(cardinalityOut);
 

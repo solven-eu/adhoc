@@ -42,11 +42,13 @@ public interface IHasTableQueryForSteps {
 	@Deprecated(since = "Useful?")
 	boolean containsStep(CubeQueryStep queryStep);
 
+	/**
+	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV3} and the original {@link CubeQueryStep}.
+	 */
 	record StepAndFilteredAggregator(FilteredAggregator aggregator, CubeQueryStep step) {
 
-	};
+	}
 
-	Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query,
-			IFilterOptimizer filterOptimizer);
+	Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query, IFilterOptimizer filterOptimizer);
 
 }

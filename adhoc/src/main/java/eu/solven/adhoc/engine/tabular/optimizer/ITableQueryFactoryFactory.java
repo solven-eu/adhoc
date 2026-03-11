@@ -20,41 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import java.util.List;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
+import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.query.table.TableQuery;
 
 /**
- * Helps creating a stream of {@link ITabularRecord}.
+ * {@link ITableQueryFactoryFactory} will turn an input {@link Set} of {@link TableQuery} into a
+ * {@link SplitTableQueries}, telling which {@link TableQuery} will be executed and how to evaluate the other
+ * {@link TableQuery} from the results of the later.
+ * 
+ * The inducer may or may not be amongst the provided input {@link TableQuery}.
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularRecordFactory {
+@FunctionalInterface
+public interface ITableQueryFactoryFactory {
+	ITableQueryFactory makeOptimizer(IAdhocFactories factories,
+			IFilterOptimizer filterOptimizer,
+			IHasQueryOptions hasOptions);
 
-	List<String> getAggregates();
+	@Deprecated
+	default ITableQueryFactory makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+		// WithCache as this optimizer will be used for a single query
+		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 
-	ImmutableSet<String> getColumns();
-
-	/**
-	 * With `GROUPING SET`, some column may be missing from each record.
-	 * 
-	 * @return
-	 */
-	List<String> getOptionalColumns();
-
-	default TabularRecordBuilder makeTabularRecordBuilder() {
-		return makeTabularRecordBuilder(ImmutableSet.of());
+		return makeOptimizer(factories, filterOptimizer, hasOptions);
 	}
-
-	/**
-	 * 
-	 * @param absentColumns
-	 *            the columns which are not present, as we're considering a `GROUPING SET`
-	 * @return
-	 */
-	TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns);
-
 }

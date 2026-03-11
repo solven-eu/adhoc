@@ -78,8 +78,11 @@ public class TestCubeQueryEngine_Concurrent extends ARawDagTest implements IAdho
 		// We expect 2 queries: one for grandTotal, and one groupedBy:A
 		phasedTable.getPhasers().bulkRegister(2);
 
-		ITabularView view = cube()
-				.execute(CubeQuery.builder().measure(k1Sum, maxK2_ByA).option(StandardQueryOptions.CONCURRENT).build());
+		ITabularView view = cube().execute(CubeQuery.builder()
+				.measure(k1Sum, maxK2_ByA)
+				.option(StandardQueryOptions.CONCURRENT)
+				.option(InternalQueryOptions.TABLEQUERY_PER_STEPS)
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

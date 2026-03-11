@@ -34,7 +34,6 @@ import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -53,7 +52,7 @@ public class TestTableQueryOptimizer {
 
 	InduceByAdhoc splitter = new InduceByAdhoc();
 	TableStepsGrouper grouper = new TableStepsGrouper();
-	TableQueryOptimizer optimizer = new TableQueryOptimizer(AdhocFactories.builder().build(),
+	TableQueryFactory optimizer = new TableQueryFactory(AdhocFactories.builder().build(),
 			FilterOptimizer.builder().build(),
 			splitter,
 			grouper);

@@ -23,11 +23,12 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.util.NavigableSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -96,21 +97,17 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	}
 
 	protected IGroupingSetAnalyzer makeGroupingSetAnalyzer() {
-		IGroupBy singleGroupBy;
-		if (tableQuery.getGroupBys().isEmpty()) {
-			singleGroupBy = IGroupBy.GRAND_TOTAL;
-		} else if (tableQuery.getGroupBys().size() == 1) {
-			singleGroupBy = AdhocCollectionHelpers.getFirst(tableQuery.getGroupBys());
-		} else {
-			NavigableSet<String> groupedByColumns = tableQuery.getGroupBys().iterator().next().getGroupedByColumns();
+		Optional<IGroupBy> singleGroupBy = tableQuery.singleGroupBy();
+		if (singleGroupBy.isPresent()) {
+			NavigableSet<String> groupedByColumns = singleGroupBy.get().getGroupedByColumns();
 			SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
+			return UniqueGroupingSetAnalyzer.builder().sequencedKeyset(sequencedKeyset).build();
+		} else {
 			return r -> {
-				return sequencedKeyset;
+				Set<String> groupedByColumns = r.getGroupBys().columnsKeySet();
+				return queryPod.getSliceFactory().internKeyset(groupedByColumns);
 			};
 		}
-		NavigableSet<String> groupedByColumns = singleGroupBy.getGroupedByColumns();
-		SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
-		return UniqueGroupingSetAnalyzer.builder().sequencedKeyset(sequencedKeyset).build();
 	}
 
 	@Override

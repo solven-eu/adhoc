@@ -37,21 +37,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Standard implementation for {@link ITableQueryOptimizerFactory}.
+ * Standard implementation for {@link ITableQueryFactoryFactory}.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
 @RequiredArgsConstructor
-public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
-
-	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
-		// WithCache as this optimizer will be used for a single query
-		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
-	}
+public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 
 	@Override
-	public ITableQueryOptimizer makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+	public ITableQueryFactory makeOptimizer(IAdhocFactories factories,
+			IFilterOptimizer filterOptimizer,
+			IHasQueryOptions hasOptions) {
 		ITableStepsSplitter splitter;
 		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
 			splitter = new InduceByAdhoc();
@@ -76,10 +73,7 @@ public class TableQueryOptimizerFactory implements ITableQueryOptimizerFactory {
 			log.debug("Default {} led to {}", ITableStepsGrouper.class.getName(), grouper.getClass().getName());
 		}
 
-		// WithCache as this optimize will be used for a single query
-		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
-
-		return new TableQueryOptimizer(factories, filterOptimizer, splitter, grouper);
+		return new TableQueryFactory(factories, filterOptimizer, splitter, grouper);
 	}
 
 }

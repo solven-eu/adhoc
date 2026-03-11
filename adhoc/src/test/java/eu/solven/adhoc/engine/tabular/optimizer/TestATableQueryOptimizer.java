@@ -88,7 +88,7 @@ public class TestATableQueryOptimizer {
 	Aggregator sumK2 = Aggregator.sum("k2");
 	CubeQueryStep groupByA_K2 = CubeQueryStep.builder().groupBy(GroupByColumns.named("a")).measure(sumK2).build();
 
-	ATableQueryOptimizer optimizer = new ATableQueryOptimizer(AdhocFactoriesUnsafe.factories) {
+	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories) {
 
 		@Override
 		public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> querySteps) {

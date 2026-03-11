@@ -44,8 +44,8 @@ import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
@@ -187,9 +187,10 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.
 	@Test
 	public void testCustomTableQueryOptimizer() {
-		ITableQueryOptimizerFactory optimizerFactory = (factories, hasOptions) -> {
-			return TableQueryOptimizer.builder()
+		ITableQueryFactoryFactory optimizerFactory = (factories, filterOptimizer, hasOptions) -> {
+			return TableQueryFactory.builder()
 					.factories(AdhocFactories.builder().build())
+					.filterOptimizer(filterOptimizer)
 					.splitter(new InduceByAdhoc())
 					.groupByAggregator()
 					.build();

@@ -35,8 +35,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocMergingIntoSingle;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
@@ -49,9 +48,9 @@ public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestCon
 
 	CubeQueryStep step = CubeQueryStep.builder().measure(k1Sum).build();
 
-	TableQueryOptimizer optimizer = TableQueryOptimizer.builder()
+	TableQueryFactory optimizer = TableQueryFactory.builder()
 			.factories(AdhocFactories.builder().build())
-			.splitter(new InduceByAdhoc())
+			.splitter(new InduceByAdhocMergingIntoSingle(AdhocFactories.builder().build()))
 			.groupByAggregator()
 			.build();
 

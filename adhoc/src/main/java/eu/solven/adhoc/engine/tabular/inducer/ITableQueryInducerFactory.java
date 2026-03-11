@@ -20,41 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.row;
+package eu.solven.adhoc.engine.tabular.inducer;
 
-import java.util.List;
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
+import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 
 /**
- * Helps creating a stream of {@link ITabularRecord}.
+ * Factory for {@link ITableQueryInducer}.
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularRecordFactory {
+@FunctionalInterface
+public interface ITableQueryInducerFactory {
+	ITableQueryInducer makeInducer(IAdhocFactories factories, IFilterOptimizer filterOptimizer);
 
-	List<String> getAggregates();
+	@Deprecated
+	default ITableQueryInducer makeInducer(IAdhocFactories factories) {
+		// WithCache as this optimizer will be used for a single query
+		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 
-	ImmutableSet<String> getColumns();
-
-	/**
-	 * With `GROUPING SET`, some column may be missing from each record.
-	 * 
-	 * @return
-	 */
-	List<String> getOptionalColumns();
-
-	default TabularRecordBuilder makeTabularRecordBuilder() {
-		return makeTabularRecordBuilder(ImmutableSet.of());
+		return makeInducer(factories, filterOptimizer);
 	}
-
-	/**
-	 * 
-	 * @param absentColumns
-	 *            the columns which are not present, as we're considering a `GROUPING SET`
-	 * @return
-	 */
-	TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns);
-
 }

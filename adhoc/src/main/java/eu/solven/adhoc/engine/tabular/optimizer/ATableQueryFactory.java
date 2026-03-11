@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -35,22 +34,16 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluator;
-import eu.solven.adhoc.engine.tabular.inducer.StandardInducedEvaluatorFactory;
-import eu.solven.adhoc.engine.tabular.splitter.InducerHelpers;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterUtility;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -62,30 +55,28 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Behavior shared by most {@link ITableQueryOptimizer}
+ * Behavior shared by most {@link ITableQueryFactory}
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHasFilterOptimizer {
-	final IAdhocFactories factories;
+public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilterOptimizer {
+	protected final IAdhocFactories factories;
 
 	@Getter
-	final IFilterOptimizer filterOptimizer;
+	protected final IFilterOptimizer filterOptimizer;
 
-	final FilterUtility filterHelper;
-
-	final IInducedEvaluator inducedEvaluator;
+	protected final FilterUtility filterHelper;
 
 	protected Supplier<FilterUtility> filterUtility =
 			Suppliers.memoize(() -> FilterUtility.builder().optimizer(getFilterOptimizer()).build());
 
 	@Deprecated(since = "For unit-tests, else you should probably re-use a filterOptimizer")
-	public ATableQueryOptimizer(IAdhocFactories factories) {
+	public ATableQueryFactory(IAdhocFactories factories) {
 		this(factories, factories.getFilterOptimizerFactory().makeOptimizer());
 	}
 
-	public ATableQueryOptimizer(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
+	public ATableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
 		this.factories = factories;
 		if (filterOptimizer == null) {
 			this.filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
@@ -94,11 +85,6 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 		}
 
 		this.filterHelper = FilterUtility.builder().optimizer(this.filterOptimizer).build();
-		this.inducedEvaluator = StandardInducedEvaluatorFactory.builder()
-				.factories(factories)
-				.filterOptimizer(this.filterOptimizer)
-				.build()
-				.build();
 	}
 
 	protected TableQueryV3 makeTableQuery(CubeQueryStep context, Collection<CubeQueryStep> steps) {
@@ -141,57 +127,6 @@ public abstract class ATableQueryOptimizer implements ITableQueryOptimizer, IHas
 				.aggregators(aliasedAggregators)
 				.filter(commonFilter)
 				.build();
-	}
-
-	@Override
-	public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
-			SplitTableQueries inducerAndInduced,
-			Map<CubeQueryStep, ICuboid> stepToValues,
-			CubeQueryStep induced) {
-		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking
-		// the one with the less rows)
-		List<CubeQueryStep> inducers = inducerAndInduced.getInducers(induced);
-		if (inducers.size() != 1) {
-			throw new IllegalStateException(
-					"Induced should have a single inducer. induced=%s inducers=%s".formatted(induced, inducers));
-		}
-
-		CubeQueryStep inducer = inducers.getFirst();
-		ICuboid inducerValues = stepToValues.get(inducer);
-
-		Aggregator aggregator = (Aggregator) inducer.getMeasure();
-		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
-
-		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
-		Optional<ISliceFilter> optSliceFilter =
-				InducerHelpers.makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
-		if (optSliceFilter.isEmpty()) {
-			throw new IllegalStateException(
-					"Can not make a leftover filter given inducer=%s and induced=%s".formatted(inducer, induced));
-		}
-
-		ISliceFilter sliceFilter = optSliceFilter.get();
-
-		IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
-				inducedEvaluator.tryEvaluate(inducerValues, inducer, induced, sliceFilter, aggregation, aggregator)
-						.orElseThrow(() -> new IllegalStateException(
-								"No evaluator succeeded for inducer=%s induced=%s".formatted(inducer, induced)));
-
-		if (hasOptions.isDebugOrExplain()) {
-			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
-					induced.getGroupBy().getGroupedByColumns());
-			log.info(
-					"[EXPLAIN] size={} induced size={} on agg={} by filtering f={} and reducing groupBy={} ({} induced {})",
-					inducerValues.size(),
-					inducedValues.size(),
-					aggregator.getName(),
-					sliceFilter,
-					removedGroupBys,
-					inducer,
-					induced);
-		}
-
-		return inducedValues;
 	}
 
 	protected IMultitypeMergeableColumn<IAdhocSlice> prepareInducedColumn(CubeQueryStep inducer,
