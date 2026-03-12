@@ -28,12 +28,15 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import com.google.errorprone.annotations.ThreadSafe;
+
 /**
  * Helps managing case-insentivity.
  * 
  * @author Benoit Lacelle
  */
 // https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers
+@ThreadSafe
 public class CaseInsensitiveContext {
 	final NavigableMap<String, String> caseToLower = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 	final Map<String, String> lowerToCase = new HashMap<>();
@@ -62,15 +65,17 @@ public class CaseInsensitiveContext {
 	 * @return the canonical (first-registered) casing for this column, or the input unchanged if unknown
 	 */
 	public String normalize(String column) {
-		String lower = caseToLower.get(column);
-		if (lower == null) {
-			return column;
-		}
-		String canonical = lowerToCase.get(lower);
-		if (canonical != null) {
-			return canonical;
-		} else {
-			return column;
+		synchronized (this) {
+			String lower = caseToLower.get(column);
+			if (lower == null) {
+				return column;
+			}
+			String canonical = lowerToCase.get(lower);
+			if (canonical != null) {
+				return canonical;
+			} else {
+				return column;
+			}
 		}
 	}
 }

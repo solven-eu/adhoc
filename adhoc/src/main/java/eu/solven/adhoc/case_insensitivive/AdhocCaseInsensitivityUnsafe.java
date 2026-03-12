@@ -33,7 +33,7 @@ import lombok.Setter;
  * 
  * @author Benoit Lacelle
  */
-public class AdhocCaseInsensitivity {
+public class AdhocCaseInsensitivityUnsafe {
 
 	// Adhoc is currently case-sensitive b ydefault
 	// But many Database (DuckDB, PostgreSQL, RedShift) are caseInsensitive

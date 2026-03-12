@@ -39,7 +39,7 @@ import org.jooq.tools.StopWatchListener;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.case_insensitivive.AdhocCaseInsensitivity;
+import eu.solven.adhoc.case_insensitivive.AdhocCaseInsensitivityUnsafe;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
@@ -59,12 +59,12 @@ public class StandardDSLSupplier implements IDSLSupplier {
 	}
 
 	public static StandardDSLSupplierBuilder builder() {
-		return builder(AdhocCaseInsensitivity.isCaseInsensitive());
+		return builder(AdhocCaseInsensitivityUnsafe.isCaseInsensitive());
 	}
 
 	public static StandardDSLSupplierBuilder builder(boolean caseInsensitive) {
 		Configuration configuration =
-				new DefaultConfiguration().set(AdhocCaseInsensitivity.jooqSettings(caseInsensitive));
+				new DefaultConfiguration().set(AdhocCaseInsensitivityUnsafe.jooqSettings(caseInsensitive));
 		return new StandardDSLSupplierBuilder().configuration(configuration);
 	}
 
