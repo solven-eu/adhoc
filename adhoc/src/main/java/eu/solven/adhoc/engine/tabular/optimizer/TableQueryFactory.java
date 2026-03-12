@@ -137,8 +137,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 				.build()
 				.getInducers();
 
-		Map<CubeQueryStep, List<CubeQueryStep>> contextToSteps =
-				leaves.stream().collect(Collectors.groupingBy(grouper::tableQueryGroupBy));
+		Map<CubeQueryStep, List<CubeQueryStep>> contextToSteps = leaves.stream()
+				.collect(Collectors.groupingBy(grouper::tableQueryGroupBy, LinkedHashMap::new, Collectors.toList()));
 
 		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
 
