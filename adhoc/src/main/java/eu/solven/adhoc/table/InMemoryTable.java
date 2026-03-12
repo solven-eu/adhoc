@@ -41,10 +41,10 @@ import org.springframework.util.ClassUtils;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -214,7 +214,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
 			});
 
-			SetMultimap<String, FilteredAggregator> columnToAggregators = HashMultimap.create();
+			SetMultimap<String, FilteredAggregator> columnToAggregators = LinkedHashMultimap.create();
 			aggregateColumns.forEach(aggregatedColumn -> {
 				tableQuery.getAggregators()
 						.stream()
@@ -366,7 +366,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
-		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
+		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		Set<String> nullableColumns = new LinkedHashSet<>();
 
 		rows.forEach(row -> row.forEach((k, v) -> {

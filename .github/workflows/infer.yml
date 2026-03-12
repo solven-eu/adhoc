@@ -67,7 +67,7 @@ jobs:
       # --racerd-only disables all checkers and enables only RacerD (generated flag pattern: --<checker-id>-only).
       # Add --fail-on-issue once the baseline is clean.
       run: |
-        infer run --racerd-only -- \
+        infer run --racerd-only --java-version 21 -- \
           mvn compile -Pfast --file pom.xml --batch-mode
 
     - name: Print Infer report

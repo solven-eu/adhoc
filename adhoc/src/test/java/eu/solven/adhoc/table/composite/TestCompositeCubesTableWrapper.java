@@ -704,7 +704,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										/-- time=150ms for openingStream
 										|/- time=19ms for mergingAggregates
 										|/- time=20ms sizes=[1, 1] for sortingColumns
-										\\------ time=209ms for tableQuery on SELECT table2_k_minus3:SUM(table2_k_minus3), table1_k_minus2:SUM(table1_k_minus2) GROUP BY grandTotal
+										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2), table2_k_minus3:SUM(table2_k_minus3) GROUP BY grandTotal
 										/-- #0 t=composite id=00000000-0000-0000-0000-000000000005 (parentId=00000000-0000-0000-0000-000000000000)
 										|      No cost info
 										|\\- #1 m=table1_k_minus2(SUM) filter=matchAll groupBy=grandTotal
