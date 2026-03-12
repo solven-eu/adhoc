@@ -329,8 +329,8 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								|\\- #1 m=k1(SUM) filter=b==b1 groupBy=grandTotal
 								\\-- #2 m=k2(SUM) filter=b==b1 groupBy=grandTotal
 								/-- 2 inducers from SELECT k1:SUM(k1), k2:SUM(k2) WHERE b==b1 GROUP BY grandTotal
-								|\\- step SELECT k2:SUM(k2) WHERE b==b1 GROUP BY grandTotal
-								\\-- step SELECT k1:SUM(k1) WHERE b==b1 GROUP BY grandTotal
+								|\\- step SELECT k1:SUM(k1) WHERE b==b1 GROUP BY grandTotal
+								\\-- step SELECT k2:SUM(k2) WHERE b==b1 GROUP BY grandTotal
 								/-- #0 t=someTableName1 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000001)
 								|\\- #1 m=k1(SUM) filter=b==b1 groupBy=grandTotal
 								\\-- #2 m=k2(SUM) filter=b==b1 groupBy=grandTotal

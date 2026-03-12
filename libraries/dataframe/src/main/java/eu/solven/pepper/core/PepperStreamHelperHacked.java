@@ -30,6 +30,8 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * Various helpers for Java8 {@link Stream}
  *
@@ -37,7 +39,8 @@ import java.util.stream.Stream;
  *
  */
 // Remove with Pepper 5.5
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressWarnings("PMD.HideUtilityClassConstructor")
+@UtilityClass
 public class PepperStreamHelperHacked {
 
 	public static <T> BinaryOperator<T> throwingMerger() {
@@ -53,7 +56,6 @@ public class PepperStreamHelperHacked {
 	 *
 	 * @param keyMapper
 	 * @param valueMapper
-	 * @param mapSupplier
 	 * @return
 	 */
 	public static <T, K, U> Collector<T, ?, Map<K, U>> toLinkedMap(Function<? super T, ? extends K> keyMapper,
