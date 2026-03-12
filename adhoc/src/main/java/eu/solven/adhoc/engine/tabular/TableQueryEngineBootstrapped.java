@@ -706,8 +706,6 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected Map<CubeQueryStep, ICuboid> toCuboids(IHasTableQueryForSteps tableQueries,
 			TableQueryV3 query,
 			IMultitypeMergeableGrid<IAdhocSlice> coordinatesToAggregates) {
-		Map<CubeQueryStep, ICuboid> stepToCuboid = new LinkedHashMap<>();
-
 		Stream<StepAndFilteredAggregator> stepStream =
 				tableQueries.forEachCubeQuerySteps(query, filterOptimizerSupplier.get());
 
@@ -716,15 +714,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			stepStream = stepStream.parallel();
 		}
 
-		stepStream.forEach(r -> {
+		return stepStream.map(r -> {
 			FilteredAggregator filteredAggregator = r.aggregator();
 			CubeQueryStep queryStep = r.step();
-
-			if (!tableQueries.containsStep(queryStep)) {
-				// TODO Should we clear some data consuming RAM?
-				log.debug("Skip step as produce by table but irrelevant for cube. step={}", queryStep);
-				return;
-			}
 
 			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
 			// TODO do close only if the queryStep is actually relevant for the rest of the DAG.
@@ -733,9 +725,8 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
-			stepToCuboid.put(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
-		});
-		return stepToCuboid;
+			return Map.entry(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
+		}).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**

@@ -37,6 +37,10 @@ This is a library designed for extensibility. Unless there is a specific reason 
 - **Methods and fields should be `protected`**, not `private` or package-private, so subclasses can override or access them.
 - If a method or field is intentionally `private` or package-private, add a short inline comment explaining why (e.g. `// private: implementation detail not safe to override`, `// package-private: accessed only by sibling test class`).
 
+### Method ordering — Stepdown Rule
+
+See `CONVENTIONS.MD`. Entry points appear first; each method is placed below its first caller. Visibility does not drive ordering.
+
 ---
 
 ## Executor Jobs

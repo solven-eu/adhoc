@@ -47,7 +47,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
 	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
 	ITableQueryFactory optimizer =
-			engine.optimizerFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
+			engine.queryFactoryFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
 
 	@Override
 	public void feedTable() {

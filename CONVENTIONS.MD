@@ -59,6 +59,45 @@
 
 ---
 
+## Method Ordering — Stepdown Rule
+
+Methods within a class are ordered so that the file reads **top-to-bottom like an outline**: a method always appears **before** the methods it calls. This is the Stepdown Rule (Clean Code, Robert C. Martin).
+
+### Rules
+
+1. **Entry points first.** The most important public method (e.g. `execute()`) appears near the top of the class, right after fields and constructors.
+2. **Callee below caller.** Every method appears as close as possible to — and always below — its first caller. If a method is called from multiple places, place it below its first (topmost) caller.
+3. **Visibility is secondary.** A `private` helper that is only called from one `public` method sits directly below that `public` method, not at the bottom of the file. Access modifiers do not drive ordering.
+4. **Group by topic, not by modifier.** Methods that collaborate on the same concern are kept adjacent, regardless of whether they are `public`, `protected`, or `private`.
+
+### Example
+
+```java
+// ✓ Stepdown order
+public ITabularView execute(QueryPod queryPod) {        // entry point
+    QueryStepsDag dag = makeQueryStepsDag(queryPod);   // calls (1)
+    return executeDag(queryPod, dag);                  // calls (2)
+}
+
+protected QueryStepsDag makeQueryStepsDag(...) { ... } // (1) — below its caller
+
+protected ITabularView executeDag(...) {               // (2) — below its caller
+    walkUpDag(...);                                    // calls (3)
+    return toTabularView(...);                         // calls (4)
+}
+
+protected void walkUpDag(...) { ... }                  // (3)
+protected ITabularView toTabularView(...) { ... }      // (4)
+```
+
+### Notes
+
+- Static constants and fields precede all methods, as usual.
+- Constructors follow fields and precede instance methods.
+- This rule applies to **new or substantially refactored classes**. Existing classes are migrated incrementally — do not reorder a whole file just to satisfy this rule unless that is the explicit goal of the current task.
+
+---
+
 ## Logging
 
 - **SLF4J**: always use `{}` placeholders, never string concatenation.

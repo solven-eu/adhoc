@@ -44,7 +44,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 
 	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
 	ITableQueryFactory optimizer =
-			engine.optimizerFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
+			engine.queryFactoryFactory.makeOptimizer(engine.getFactories(), IHasQueryOptions.noOption());
 
 	@Test
 	public void testDistinct() {

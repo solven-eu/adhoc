@@ -74,7 +74,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
 	@Default
-	final ITableQueryFactoryFactory optimizerFactory = new TableQueryFactoryFactory();
+	final ITableQueryFactoryFactory queryFactoryFactory = new TableQueryFactoryFactory();
 
 	@NonNull
 	@Default
@@ -94,7 +94,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// WithCache as this optimize will be used for a single query
 		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 
-		ITableQueryFactory optimizer = optimizerFactory.makeOptimizer(factories, filterOptimizer, queryPod);
+		ITableQueryFactory optimizer = queryFactoryFactory.makeOptimizer(factories, filterOptimizer, queryPod);
 		if (queryPod.isDebugOrExplain()) {
 			log.info("[EXPLAIN] Using optimizer={} for query={}", optimizer, queryPod.getQueryId());
 		}
