@@ -1,0 +1,82 @@
+# Infer RacerD — race-condition static analysis
+# https://fbinfer.com/docs/next/checker-racerd
+#
+# Infer intercepts the Java compiler and checks for unprotected concurrent
+# field accesses. Only the RacerD checker is enabled to keep the signal focused.
+#
+# The step is currently informational (no --fail-on-issue) to allow the team
+# to triage the initial set of findings. Add --fail-on-issue to the infer run
+# command once the baseline is clean.
+
+name: Infer RacerD
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+# See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token
+permissions: read-all
+
+env:
+  INFER_VERSION: "1.2.0"
+
+jobs:
+  infer:
+    name: Infer RacerD
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Cache Maven local repository
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      with:
+        path: ~/.m2/repository
+        key: maven-infer-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-infer-${{ runner.os }}-
+
+    - name: Cache Infer binary
+      id: cache-infer
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      with:
+        path: /opt/infer
+        key: infer-${{ env.INFER_VERSION }}-${{ runner.os }}
+
+    - name: Install Infer
+      if: steps.cache-infer.outputs.cache-hit != 'true'
+      run: |
+        # https://github.com/facebook/infer/releases
+        curl -sSL \
+          "https://github.com/facebook/infer/releases/download/v${INFER_VERSION}/infer-linux-x86_64-v${INFER_VERSION}.tar.xz" \
+          | sudo tar -C /opt -xJ
+        sudo mv /opt/infer-linux-x86_64-v${INFER_VERSION} /opt/infer
+
+    - name: Add Infer to PATH
+      run: echo "/opt/infer/bin" >> $GITHUB_PATH
+
+    - name: Run Infer RacerD
+      # Remove --no-fail-on-issue and add --fail-on-issue once the baseline is clean
+      run: |
+        infer run --racerdonly -- \
+          mvn compile -Pfast --file pom.xml --batch-mode
+
+    - name: Print Infer report
+      if: always()
+      run: infer report
+
+    - name: Upload Infer results
+      if: always()
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: infer-report
+        path: infer-out/
+        retention-days: 14

@@ -106,6 +106,45 @@ protected ITabularView toTabularView(...) { ... }      // (4)
 
 ---
 
+## Infer / RacerD — Race-Condition Analysis
+
+[Infer](https://fbinfer.com/) with the [RacerD](https://fbinfer.com/docs/next/checker-racerd) checker detects unprotected concurrent field accesses (e.g. a `LinkedHashMap` written from multiple threads).
+
+### Local setup
+
+```bash
+# macOS and Linux — download the pre-built binary
+# https://github.com/facebook/infer/releases
+VERSION="1.2.0"
+OS=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/osx/')
+ARCH=$(uname -m)   # arm64 or x86_64
+curl -sSL "https://github.com/facebook/infer/releases/download/v${VERSION}/infer-${OS}-${ARCH}-v${VERSION}.tar.xz" \
+  | sudo tar -C /opt -xJ
+sudo mv /opt/infer-${OS}-${ARCH}-v${VERSION} /opt/infer
+echo 'export PATH="/opt/infer/bin:$PATH"' >> ~/.zshrc   # or ~/.bashrc
+source ~/.zshrc
+```
+
+Note: Homebrew no longer ships an `infer` formula.
+
+### Running locally
+
+```bash
+# Whole project
+./scripts/infer-racerd.sh
+
+# Single module
+./scripts/infer-racerd.sh -pl adhoc
+```
+
+Results are written to `infer-out/`. The human-readable summary is printed at the end.
+
+### CI
+
+A dedicated workflow (`.github/workflows/infer.yml`) runs on every push/PR to `master`. It is currently **informational only** (no build failure on findings). Once the baseline is clean, add `--fail-on-issue` to the `infer run` command in that workflow to enforce it as a gate.
+
+---
+
 ## Comments & Documentation
 
 - **Inline URL references**: when writing comments, Javadoc, or YAML workflow steps, add URLs that explain *why* the code is written the way it is.

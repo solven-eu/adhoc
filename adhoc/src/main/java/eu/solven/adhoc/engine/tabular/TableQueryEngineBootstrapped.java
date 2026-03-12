@@ -117,7 +117,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
+@SuppressWarnings("PMD.GodClass")
 // https://math.stackexchange.com/questions/2966359/how-to-calculate-cost-in-discrete-markov-transitions
 public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapped {
 

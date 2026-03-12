@@ -48,6 +48,7 @@ public class CaseInsensitiveContext {
 	 *            Aa, AA from t` will register `aA` as column matching any equivalent case column).
 	 * @return
 	 */
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	public void registerColumn(String column) {
 		// ROOT is the most neutral locale
 		String caseInsensitive = column.toLowerCase(Locale.ROOT);
@@ -64,6 +65,7 @@ public class CaseInsensitiveContext {
 	 *            a column name with any casing
 	 * @return the canonical (first-registered) casing for this column, or the input unchanged if unknown
 	 */
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	public String normalize(String column) {
 		synchronized (this) {
 			String lower = caseToLower.get(column);

@@ -27,12 +27,14 @@ import org.jooq.conf.Settings;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.UtilityClass;
 
 /**
  * Helps switching Adhoc into Case-Sensitive or Case-Insensitive.
  * 
  * @author Benoit Lacelle
  */
+@UtilityClass
 public class AdhocCaseInsensitivityUnsafe {
 
 	// Adhoc is currently case-sensitive b ydefault

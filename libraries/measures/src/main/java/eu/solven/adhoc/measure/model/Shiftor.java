@@ -73,7 +73,7 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 
 	@NonNull
 	@Singular
-	Map<String, ?> editorOptions ;
+	Map<String, ?> editorOptions;
 
 	@JsonIgnore
 	@Override

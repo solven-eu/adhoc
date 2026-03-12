@@ -45,14 +45,14 @@ public class LambdaEditor implements IFilterEditor {
 	 * Minimal contract of a lambda to define an {@link IAggregation}
 	 */
 	@FunctionalInterface
-	public interface ILambdaFilterEditor extends Function<ISliceFilter,ISliceFilter> {
+	public interface ILambdaFilterEditor extends Function<ISliceFilter, ISliceFilter> {
 
 	}
 
 	public LambdaEditor(Map<String, ?> options) {
 		lambda = AdhocMapPathGet.getRequiredAs(options, K_LAMBDA);
 	}
-	
+
 	@Override
 	public ISliceFilter editFilter(ISliceFilter filter) {
 		return lambda.apply(filter);
