@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -43,7 +45,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
-public class TestTableQueryOptimizer {
+public class TestTableQueryFactory {
 	CubeQueryStep step = CubeQueryStep.builder()
 			.measure("m1")
 			.groupBy(GroupByColumns.named("g", "h"))
@@ -127,4 +129,26 @@ public class TestTableQueryOptimizer {
 		Assertions.assertThat(output).hasSize(1);
 		Assertions.assertThat(output.values().stream().collect(Collectors.toSet())).hasSize(1);
 	}
+
+	@Test
+	public void testSanityChecks() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("a", "a1"))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(Aggregator.sum("m1"))
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("c", "c1"))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(Aggregator.sum("m1"))
+				.build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThatThrownBy(() -> optimizer.sanityChecks(ImmutableSet.<CubeQueryStep>builder()
+				.addAll(split.getInducers())
+				// Add a unrelated expected but missing step
+				.add(CubeQueryStep.builder().measure("m").build())
+				.build(), split)).isInstanceOf(IllegalStateException.class);
+	}
+
 }

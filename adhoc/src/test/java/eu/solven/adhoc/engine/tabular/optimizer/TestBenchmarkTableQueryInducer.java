@@ -57,8 +57,8 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
-	BenchmarkTableQueryOptimizerState state = new BenchmarkTableQueryOptimizerState();
+public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
+	BenchmarkTableQueryInducerState state = new BenchmarkTableQueryInducerState();
 
 	@Override
 	public int nbIterations() {
@@ -66,7 +66,7 @@ public class TestBenchmarkTableQueryOptimizer extends ABenchmarkable {
 	}
 
 	@Value
-	public static class BenchmarkTableQueryOptimizerState {
+	public static class BenchmarkTableQueryInducerState {
 		// ITableQueryOptimizer optimizer = new
 		// TableQueryOptimizerFactory().makeOptimizer(AdhocFactoriesUnsafe.factories,
 		// IHasQueryOptions.noOption());

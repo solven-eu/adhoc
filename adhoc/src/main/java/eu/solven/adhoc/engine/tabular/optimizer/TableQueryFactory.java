@@ -187,10 +187,10 @@ public class TableQueryFactory extends ATableQueryFactory {
 	/**
 	 * Checks the tableQueries are actually valid: do they cover the required steps?
 	 * 
-	 * @param missingSuppressedRoots
+	 * @param tableSteps
 	 * @param inducerAndInduced
 	 */
-	protected void sanityChecks(Set<CubeQueryStep> missingSuppressedRoots, SplitTableQueries inducerAndInduced) {
+	protected void sanityChecks(Set<CubeQueryStep> tableSteps, SplitTableQueries inducerAndInduced) {
 		Set<TableQueryV3> tableQueries = inducerAndInduced.getTableQueries();
 
 		// Holds the querySteps evaluated from the ITableWrapper
@@ -234,21 +234,19 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 		// Given all tableDag nodes, we should have all cubeDag roots
 		{
-			Set<CubeQueryStep> neededCubeRoots = missingSuppressedRoots;
-
-			Set<CubeQueryStep> missingCubeRoots = Sets.difference(neededCubeRoots, stepsImpliedByTableQueries);
-			if (!missingCubeRoots.isEmpty()) {
-				int nbMissing = missingCubeRoots.size();
+			Set<CubeQueryStep> missingFromTable = Sets.difference(tableSteps, stepsImpliedByTableQueries);
+			if (!missingFromTable.isEmpty()) {
+				int nbMissing = missingFromTable.size();
 				log.warn("Missing {} steps from tableQueries to fill cube DAG roots", nbMissing);
 				int indexMissing = 0;
-				for (CubeQueryStep missingStep : missingCubeRoots) {
+				for (CubeQueryStep missingStep : missingFromTable) {
 					indexMissing++;
 					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
 				}
 
 				// Take the shorter/simpler problematic entry
 				CubeQueryStep firstMissing =
-						missingCubeRoots.stream().min(Comparator.comparing(s -> s.toString().length())).get();
+						missingFromTable.stream().min(Comparator.comparing(s -> s.toString().length())).get();
 				log.warn("Analyzing one missing: {}", firstMissing);
 				Set<CubeQueryStep> impliedSameMeasure = stepsImpliedByTableQueries.stream()
 						.filter(s -> s.getMeasure().getName().equals(firstMissing.getMeasure().getName()))
