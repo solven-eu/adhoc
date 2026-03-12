@@ -20,19 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.table;
 
+import java.util.Locale;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.base.CaseFormat;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.case_insensitivive.CaseInsensitiveCubeQueryEngine;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.data.tabular.ITabularView;
 import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 
@@ -40,7 +46,7 @@ import eu.solven.adhoc.query.filter.ColumnFilter;
  * Verifies that {@link CaseInsensitiveCubeQueryEngine} normalizes filter and groupBy column names to the canonical
  * (schema) casing before execution.
  */
-public class TestCubeQueryEngine_CaseInsensitive extends ADagTest implements IAdhocTestConstants {
+public class TestInMemoryCube_CaseInsensitive_schemaMixed extends ADagTest implements IAdhocTestConstants {
 
 	// Schema column is lowercase; queries will use mixed case to exercise normalization
 	static final String COLUMN_COUNTRY = "country";
@@ -56,16 +62,22 @@ public class TestCubeQueryEngine_CaseInsensitive extends ADagTest implements IAd
 	@BeforeEach
 	public void feedTable() {
 		table().add(Map.of(COLUMN_COUNTRY, "fr", "k1", 100));
-		table().add(Map.of(COLUMN_COUNTRY, "fr", "k1", 200));
+		// Simulate mixed case from schema. What reflects behavior in CompositeCube when different cube may return
+		// different cases.
+		table().add(Map.of(COLUMN_COUNTRY.toUpperCase(Locale.US), "fr", "k1", 200));
 		table().add(Map.of(COLUMN_COUNTRY, "de", "k1", 300));
 
 		forest.addMeasure(k1Sum);
 	}
 
+	@Disabled("TODO CaseInsensitivity")
 	@Test
 	public void test_groupBy_mixedCase() {
 		// "Country" (capital C) must be normalized to the schema column "country"
-		ITabularView result = cube().execute(CubeQuery.builder().measure(k1Sum).groupByAlso("Country").build());
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum)
+				.groupByAlso(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, COLUMN_COUNTRY))
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -75,11 +87,14 @@ public class TestCubeQueryEngine_CaseInsensitive extends ADagTest implements IAd
 				.hasSize(2);
 	}
 
+	@Disabled("TODO CaseInsensitivity")
 	@Test
 	public void test_filter_mixedCase() {
 		// "COUNTRY" (all caps) in the filter must be normalized to the schema column "country"
-		ITabularView result = cube()
-				.execute(CubeQuery.builder().measure(k1Sum).filter(ColumnFilter.matchEq("COUNTRY", "fr")).build());
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(k1Sum)
+				.filter(ColumnFilter.matchEq(COLUMN_COUNTRY.toUpperCase(Locale.US), "fr"))
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 

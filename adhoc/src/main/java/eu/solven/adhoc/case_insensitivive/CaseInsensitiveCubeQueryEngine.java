@@ -20,9 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine;
+package eu.solven.adhoc.case_insensitivive;
 
 import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -50,6 +51,8 @@ import lombok.RequiredArgsConstructor;
  */
 @Builder
 @RequiredArgsConstructor
+@Deprecated(
+		since = "Not-Ready. Does not handle ITableWrapper with mixed case. Does not handle measure with groupBy/filter with mixed case")
 public class CaseInsensitiveCubeQueryEngine implements ICubeQueryEngine {
 
 	// Value transcoding is not part of case-insensitivity: column names are renamed, values are left untouched

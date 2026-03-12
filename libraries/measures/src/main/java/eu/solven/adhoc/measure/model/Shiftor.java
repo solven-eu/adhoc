@@ -28,6 +28,9 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.measure.lambda.LambdaCombination;
+import eu.solven.adhoc.measure.lambda.LambdaEditor;
+import eu.solven.adhoc.measure.lambda.LambdaEditor.ILambdaFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocIdentity;
@@ -69,8 +72,8 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	String editorKey = AdhocIdentity.KEY;
 
 	@NonNull
-	@Builder.Default
-	Map<String, ?> editorOptions = Map.of();
+	@Singular
+	Map<String, ?> editorOptions ;
 
 	@JsonIgnore
 	@Override
@@ -78,4 +81,12 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 		return List.of(underlying);
 	}
 
+	/**
+	 * Lombok @Builder
+	 */
+	public static class ShiftorBuilder {
+		public ShiftorBuilder lambda(ILambdaFilterEditor lambda) {
+			return editorKey(LambdaEditor.class.getName()).editorOption(LambdaCombination.K_LAMBDA, lambda);
+		}
+	}
 }

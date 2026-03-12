@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.measure.lambda;
 
-import org.jooq.conf.ParseNameCase;
-import org.jooq.conf.Settings;
+import java.util.Map;
+import java.util.function.Function;
 
-import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.Value;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.combination.ICombination;
+import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**
- * Helps switching Adhoc into Case-Sensitive or Case-Insensitive.
+ * Enable an {@link ICombination} to be defined through a lambda. Beware this is typically not serializable.
  * 
  * @author Benoit Lacelle
  */
-@Value
-@Builder
-public class AdhocCaseSensitivity {
+public class LambdaEditor implements IFilterEditor {
+	public static final String K_LAMBDA = "lambda";
 
-	// Adhoc is currently case-sensitive
-	// But many Database (DuckDB, PostgreSQL, RedShift) are caseInsensitive
-	// https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html#case-sensitivity-of-identifiers
-	// Some of them can be turned caseSensitive (RedShift)
-	// https://docs.aws.amazon.com/redshift/latest/dg/r_enable_case_sensitive_identifier.html
-	private static final boolean D_CASESENSITIVE = true;
+	final ILambdaFilterEditor lambda;
 
-	@Default
-	boolean caseSensitive = D_CASESENSITIVE;
+	/**
+	 * Minimal contract of a lambda to define an {@link IAggregation}
+	 */
+	@FunctionalInterface
+	public interface ILambdaFilterEditor extends Function<ISliceFilter,ISliceFilter> {
 
-	public static Settings jooqSettings() {
-		Settings settings = new Settings();
-
-		// Adhoc being caseSensitive by default, we prefer to keep the case of encountered identifiers
-		settings.setParseNameCase(ParseNameCase.AS_IS);
-
-		return settings;
 	}
 
+	public LambdaEditor(Map<String, ?> options) {
+		lambda = AdhocMapPathGet.getRequiredAs(options, K_LAMBDA);
+	}
+	
+	@Override
+	public ISliceFilter editFilter(ISliceFilter filter) {
+		return lambda.apply(filter);
+	}
 }
