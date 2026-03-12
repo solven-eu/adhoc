@@ -39,7 +39,6 @@ import lombok.experimental.UtilityClass;
  *
  */
 // Remove with Pepper 5.5
-@SuppressWarnings("PMD.HideUtilityClassConstructor")
 @UtilityClass
 public class PepperStreamHelperHacked {
 
