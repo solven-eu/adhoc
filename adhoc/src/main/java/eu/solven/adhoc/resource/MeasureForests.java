@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.pepper.core.PepperStreamHelperHacked;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -59,6 +59,7 @@ public class MeasureForests {
 	}
 
 	public Map<String, IMeasureForest> getNameToForest() {
-		return forests.stream().collect(Collectors.toMap(IMeasureForest::getName, Function.identity()));
+		return forests.stream()
+				.collect(PepperStreamHelperHacked.toLinkedMap(IMeasureForest::getName, Function.identity()));
 	}
 }

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2014-2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,47 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.pepper.core;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
-
-import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import java.util.stream.Stream;
 
 /**
- * Helps describing the column of some data-structure.
- * 
+ * Various helpers for Java8 {@link Stream}
+ *
  * @author Benoit Lacelle
+ *
  */
-@FunctionalInterface
-public interface IHasColumns extends IHasColumnsKeySet, IHasColumnTypes {
+// Remove with Pepper 5.5
+@SuppressWarnings("PMD.CouplingBetweenObjects")
+public class PepperStreamHelperHacked {
+
+	public static <T> BinaryOperator<T> throwingMerger() {
+		return (u, v) -> {
+			throw new IllegalStateException("Duplicate key over values %s and %s"
+					.formatted(PepperLogHelper.getObjectAndClass(u), PepperLogHelper.getObjectAndClass(v)));
+		};
+	}
 
 	/**
-	 * Must be distinct per name.
-	 * 
-	 * @return the columns available for groupBy operations
+	 *
+	 * http://stackoverflow.com/questions/31004899/java-8-collectors-tomap-sortedmap
+	 *
+	 * @param keyMapper
+	 * @param valueMapper
+	 * @param mapSupplier
+	 * @return
 	 */
-	Collection<ColumnMetadata> getColumns();
-
-	default Map<String, ColumnMetadata> getColumnsAsMap() {
-		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, Function.identity(), (a, b) -> {
-			throw new IllegalStateException("Duplicate key");
-		}, LinkedHashMap::new));
-	}
-
-	@Override
-	default Map<String, Class<?>> getColumnTypes() {
-		return getColumns().stream()
-				.collect(PepperStreamHelperHacked.toLinkedMap(ColumnMetadata::getName, ColumnMetadata::getType));
-	}
-
-	@Override
-	default Set<String> columnsKeySet() {
-		return getColumnsAsMap().keySet();
+	public static <T, K, U> Collector<T, ?, Map<K, U>> toLinkedMap(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends U> valueMapper) {
+		return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new);
 	}
 }

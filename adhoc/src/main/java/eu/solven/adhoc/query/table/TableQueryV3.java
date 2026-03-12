@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.table;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -98,7 +99,7 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 						throw new IllegalArgumentException("%s!=%s".formatted(p, q));
 					}
 					return p;
-				}));
+				}, LinkedHashMap::new));
 	}
 
 	public static TableQueryV3.TableQueryV3Builder edit(TableQuery tableQuery) {

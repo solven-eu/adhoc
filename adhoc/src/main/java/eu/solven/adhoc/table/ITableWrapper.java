@@ -24,7 +24,6 @@ package eu.solven.adhoc.table;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
@@ -36,6 +35,7 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
+import eu.solven.pepper.core.PepperStreamHelperHacked;
 
 /**
  * Wraps a database (actually storing data for {@link ICubeQuery}) to be queried by {@link ICubeQuery}.
@@ -106,6 +106,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	default Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		return columnToValueMatcher.entrySet()
 				.stream()
-				.collect(Collectors.toMap(Entry::getKey, e -> getCoordinates(e.getKey(), e.getValue(), limit)));
+				.collect(PepperStreamHelperHacked.toLinkedMap(Entry::getKey,
+						e -> getCoordinates(e.getKey(), e.getValue(), limit)));
 	}
 }

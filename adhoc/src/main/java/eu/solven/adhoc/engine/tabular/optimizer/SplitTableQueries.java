@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
@@ -73,7 +74,7 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 	// tableWrapper and should be ignored)
 	@NonNull
 	@Singular
-	Map<CubeQueryStep, TableQueryV3> stepToTables;
+	ImmutableMap<CubeQueryStep, TableQueryV3> stepToTables;
 
 	@NonNull
 	@Default

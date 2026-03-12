@@ -25,7 +25,7 @@ package eu.solven.adhoc.data.tabular;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -44,6 +44,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.pepper.core.PepperStreamHelperHacked;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -179,7 +180,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			int sliceIndex = entry.getIntValue();
 			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
 					.stream()
-					.collect(Collectors.toMap(e -> e,
+					.collect(PepperStreamHelperHacked.toLinkedMap(Function.identity(),
 							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
 
 			sh.add(String.valueOf(entry.getKey()), aggregates);
