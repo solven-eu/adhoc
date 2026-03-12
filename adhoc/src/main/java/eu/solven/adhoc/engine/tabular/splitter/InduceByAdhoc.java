@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -153,8 +154,10 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
 		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
 		// not be inferred by a tableQUery with less groupBys.
-		Map<Integer, List<CubeQueryStep>> cardinalityToSteps =
-				steps.stream().collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size()));
+		Map<Integer, List<CubeQueryStep>> cardinalityToSteps = steps.stream()
+				.collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size(),
+						LinkedHashMap::new,
+						Collectors.toList()));
 
 		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
 

@@ -57,7 +57,8 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("checkstyle:MagicNumber")
 @Slf4j
 public class BenchmarkTableQueryOptimizer {
-	TestBenchmarkTableQueryInducer.BenchmarkTableQueryInducerState state = new TestBenchmarkTableQueryInducer.BenchmarkTableQueryInducerState();
+	TestBenchmarkTableQueryInducer.BenchmarkTableQueryInducerState state =
+			new TestBenchmarkTableQueryInducer.BenchmarkTableQueryInducerState();
 
 	@Setup
 	public void setup() {

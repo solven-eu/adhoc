@@ -53,6 +53,7 @@
   - `LinkedHashSet` over `HashSet`
   - `LinkedHashMap` over `HashMap`
   - `.collect(Collectors.toCollection(LinkedHashSet::new))` over `.collect(Collectors.toSet())`
+  - `Collectors.groupingBy(keyFn, LinkedHashMap::new, downstream)` over `Collectors.groupingBy(keyFn, downstream)` — the 2-arg overload produces a `HashMap` whose iteration order is non-deterministic across JVM runs, causing subtly unstable query results.
 - **Prefer Guava immutable collections** over JDK factories (applies even for literal constructions):
   - `ImmutableList.of(…)` instead of `List.of(…)`
   - `ImmutableSet.of(…)` instead of `Set.of(…)`
