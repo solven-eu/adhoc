@@ -41,11 +41,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.engine.tabular.optimizer.TestBenchmarkTableQueryOptimizer.BenchmarkTableQueryOptimizerState;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Benchmarks related with {@link TableQueryOptimizer}.
+ * Benchmarks related with {@link TableQueryFactory}.
  *
  * @author Benoit Lacelle
  */
@@ -58,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("checkstyle:MagicNumber")
 @Slf4j
 public class BenchmarkTableQueryOptimizer {
-	BenchmarkTableQueryOptimizerState state = new TestBenchmarkTableQueryOptimizer.BenchmarkTableQueryOptimizerState();
+	TestBenchmarkTableQueryInducer.BenchmarkTableQueryInducerState state = new TestBenchmarkTableQueryInducer.BenchmarkTableQueryInducerState();
 
 	@Setup
 	public void setup() {

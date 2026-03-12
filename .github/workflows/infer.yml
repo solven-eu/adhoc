@@ -64,9 +64,10 @@ jobs:
       run: echo "/opt/infer/bin" >> $GITHUB_PATH
 
     - name: Run Infer RacerD
-      # Remove --no-fail-on-issue and add --fail-on-issue once the baseline is clean
+      # --no-default-checkers disables all built-in checkers; --enable-checker racerd re-enables only RacerD.
+      # Add --fail-on-issue once the baseline is clean.
       run: |
-        infer run --racerdonly -- \
+        infer run --no-default-checkers --enable-checker racerd -- \
           mvn compile -Pfast --file pom.xml --batch-mode
 
     - name: Print Infer report
