@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -108,7 +109,7 @@ public class Dispatchor
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return List.of(underlying);
+		return ImmutableList.of(underlying);
 	}
 
 	@Override

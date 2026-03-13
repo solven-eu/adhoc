@@ -41,6 +41,8 @@ import org.jooq.impl.DSL;
 import org.springframework.core.io.ClassPathResource;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -128,14 +130,14 @@ public class WorldCupPlayersSchema {
 				.name("player_score")
 				.combinationKey(EventsScoreCombination.class.getName())
 				.groupBy(GroupByColumns.named("Player name"))
-				.underlyings(List.of("goal_count", "redcard_count", "match_count"))
+				.underlyings(ImmutableList.of("goal_count", "redcard_count", "match_count"))
 				.aggregationKey(AvgAggregation.KEY)
 				.build());
 		measures.add(Partitionor.builder()
 				.name("coach_score")
 				.combinationKey(EventsScoreCombination.class.getName())
 				.groupBy(GroupByColumns.named("Coach name"))
-				.underlyings(List.of("goal_count", "redcard_count", "match_count"))
+				.underlyings(ImmutableList.of("goal_count", "redcard_count", "match_count"))
 				.aggregationKey(AvgAggregation.KEY)
 				.build());
 
@@ -143,7 +145,8 @@ public class WorldCupPlayersSchema {
 			measures.add(Shiftor.builder()
 					.name(measure + ".previousWorldCup")
 					.editorKey(SimpleFilterEditor.KEY)
-					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("year", shitYearFunction())))
+					.editorOptions(
+							ImmutableMap.of(SimpleFilterEditor.P_SHIFTED, ImmutableMap.of("year", shitYearFunction())))
 					.underlying(measure)
 					.build());
 		});
@@ -152,19 +155,21 @@ public class WorldCupPlayersSchema {
 			measures.add(Shiftor.builder()
 					.name(measure + ".sinceInception")
 					.editorKey(SimpleFilterEditor.KEY)
-					.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("year", upToFunction())))
+					.editorOptions(
+							ImmutableMap.of(SimpleFilterEditor.P_SHIFTED, ImmutableMap.of("year", upToFunction())))
 					.underlying(measure)
 					.build());
 		});
 
 		// TODO Such an hardcoded list should not be necessary
-		List<Object> years = List.of(1990L, 1994L, 1998L, 2002L);
+		List<Object> years = ImmutableList.of(1990L, 1994L, 1998L, 2002L);
 
 		Stream.of("match_count", "player_score", "coach_score").forEach(measure -> {
 			measures.add(Dispatchor.builder()
 					.name(measure + ".sinceInception2")
 					.decompositionKey(CumulatingDecomposition.class.getName())
-					.decompositionOption(DuplicatingDecomposition.K_COLUMN_TO_COORDINATES, Map.of("year", years))
+					.decompositionOption(DuplicatingDecomposition.K_COLUMN_TO_COORDINATES,
+							ImmutableMap.of("year", years))
 					.decompositionOption(CumulatingDecomposition.K_FILTER_EDITOR, upToEditor())
 					.underlying(measure)
 					.build());
@@ -241,7 +246,7 @@ public class WorldCupPlayersSchema {
 				.build()
 				.leftJoin(DSL.table("WorldCupMatches"),
 						"WorldCupMatches",
-						List.of(Map.entry("MatchId", "MatchID"), Map.entry("RoundId", "RoundID")));
+						ImmutableList.of(Map.entry("MatchId", "MatchID"), Map.entry("RoundId", "RoundID")));
 	}
 
 	// `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` as we can not use PreparedStatement on FROM clause.

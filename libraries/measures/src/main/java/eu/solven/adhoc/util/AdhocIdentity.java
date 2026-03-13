@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -58,12 +60,12 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		return List.of(IDecompositionEntry.of(Map.of(), value));
+		return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(), value));
 	}
 
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
-		return List.of(step);
+		return ImmutableList.of(step);
 	}
 
 	@Override
@@ -73,7 +75,7 @@ public class AdhocIdentity implements IDecomposition, IFilterEditor {
 
 	@Override
 	public Map<String, Class<?>> getColumnTypes() {
-		return Map.of();
+		return ImmutableMap.of();
 	}
 
 	@Override
