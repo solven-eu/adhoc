@@ -6,7 +6,7 @@
 #   - Correct: log.debug("Processing {} rows", count);
 #
 # Usage:  perl scripts/check-convention-logging.pl [file|dir ...]
-#         Directories are searched recursively for *.java (test paths skipped).
+#         Directories are searched recursively for *.java.
 # Exit:   0 = clean, 1 = violations found.
 
 use strict;
@@ -17,7 +17,7 @@ my @files = @ARGV ? @ARGV : ('.');
 my @java;
 for my $arg (@files) {
     if (-f $arg) { push @java, $arg }
-    else { find(sub { push @java, $File::Find::name if /\.java$/ && !/\/test\// }, $arg) }
+    else { find(sub { push @java, $File::Find::name if /\.java$/ }, $arg) }
 }
 
 my $total = 0;

@@ -61,7 +61,6 @@ All checkers are informational — they never block the build.
   - `ImmutableList.of(…)` instead of `new ArrayList<>(…)` or `List.of(…)`
   - `.collect(ImmutableSet.toImmutableSet())` instead of `.collect(Collectors.toSet())` or `.collect(Collectors.toCollection(LinkedHashSet::new))`
   - Note: `List.of().contains(null)` throws; Guava equivalents behave consistently.
-  - Exception: unit tests may use JDK factories for conciseness.
 - **Ordered mutability when mutation is needed**: when a collection must be mutated after construction, prefer insertion-ordered types over unordered ones.
   - `LinkedHashSet` over `HashSet`
   - `LinkedHashMap` over `HashMap`
@@ -73,6 +72,10 @@ All checkers are informational — they never block the build.
   - `ImmutableList.of(…)` instead of `List.of(…)`
   - `ImmutableSet.of(…)` instead of `Set.of(…)`
   - **Quick scan**: `perl scripts/check-convention-guava.pl` — detects `Set.of`, `List.of`, `Map.of`, `Collectors.toSet()`, `Collectors.toList()`.
+- **Map literals with 2+ entries**: `Map.of(` and `ImmutableMap.of(` are permitted only for 0 or 1 entry. For 2 or more entries, use `ImmutableMap.builder().put(…).put(…).build()` for readability.
+  - `ImmutableMap.of("k", v)` — OK (1 entry)
+  - `ImmutableMap.builder().put("k1", v1).put("k2", v2).build()` — required for 2+ entries
+  - **Quick scan**: `perl scripts/check-convention-map-builder.pl` — detects multi-entry `Map.of`/`ImmutableMap.of` calls.
 
 ---
 

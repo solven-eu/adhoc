@@ -18,6 +18,7 @@ import { useRouter } from "vue-router";
 
 import AdhocMeasuresDag from "./adhoc-measures-dag.js";
 import AdhocQueryWizardColumnFilterModalSingleton from "./adhoc-query-wizard-column-filter-modal-singleton.js";
+import AdhocQueryChatbot from "./adhoc-query-chatbot.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
@@ -30,6 +31,7 @@ export default {
 
 		AdhocMeasuresDag,
 		AdhocQueryWizardColumnFilterModalSingleton,
+		AdhocQueryChatbot,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -163,6 +165,7 @@ export default {
 
             <AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
             <AdhocQueryWizardColumnFilterModalSingleton :columnFilterModel="columnFilterModel" />
+            <AdhocQueryChatbot :endpointId="endpointId" :cubeId="cubeId" />
         </div>
     `,
 };
