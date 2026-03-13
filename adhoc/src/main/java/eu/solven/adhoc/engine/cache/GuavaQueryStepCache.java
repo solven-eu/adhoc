@@ -36,13 +36,22 @@ import lombok.NonNull;
 
 /**
  * A {@link IQueryStepCache} based on Guava {@link Cache}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder
 public class GuavaQueryStepCache implements IQueryStepCache {
 	@NonNull
 	Cache<CubeQueryStep, ICuboid> queryStepToValues;
+
+	@Override
+	public Optional<ICuboid> getValue(CubeQueryStep step) {
+		return Optional.ofNullable(queryStepToValues.getIfPresent(step));
+	}
+
+	public static GuavaQueryStepCache withSize(long cacheSize) {
+		return GuavaQueryStepCache.builder().queryStepToValues(makeCache(cacheSize)).build();
+	}
 
 	static Cache<CubeQueryStep, ICuboid> makeCache(long size) {
 		return CacheBuilder.newBuilder()
@@ -53,15 +62,6 @@ public class GuavaQueryStepCache implements IQueryStepCache {
 				})
 				.recordStats()
 				.build();
-	}
-
-	@Override
-	public Optional<ICuboid> getValue(CubeQueryStep step) {
-		return Optional.ofNullable(queryStepToValues.getIfPresent(step));
-	}
-
-	public static GuavaQueryStepCache withSize(long cacheSize) {
-		return GuavaQueryStepCache.builder().queryStepToValues(makeCache(cacheSize)).build();
 	}
 
 	@Override

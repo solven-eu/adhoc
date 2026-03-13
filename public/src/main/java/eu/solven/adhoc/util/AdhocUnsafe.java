@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Some various unsafe constants, one should edit if he knows what he's doing.
- * 
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
@@ -50,6 +50,10 @@ import lombok.extern.slf4j.Slf4j;
 public class AdhocUnsafe {
 	static {
 		reloadProperties();
+	}
+
+	public static void resetAll() {
+		resetProperties();
 	}
 
 	public static void resetProperties() {
@@ -63,10 +67,6 @@ public class AdhocUnsafe {
 		parallelism = defaultParallelism();
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
-	}
-
-	public static void resetAll() {
-		resetProperties();
 	}
 
 	public static void reloadProperties() {
@@ -152,7 +152,7 @@ public class AdhocUnsafe {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return a long identifying in current ClassLoader the next query
 	 */
 	public static long nextQueryIndex() {
@@ -160,7 +160,7 @@ public class AdhocUnsafe {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return a long identifying in current ClassLoader the next query step
 	 */
 	public static long nextQueryStepIndex() {
@@ -173,23 +173,23 @@ public class AdhocUnsafe {
 		return Runtime.getRuntime().availableProcessors() * 2;
 	}
 
-	/**
-	 * @return the default parallelism when calling Executors#newWorkStealingPool
-	 */
-	public static int getParallelism() {
-		return parallelism;
-	}
-
 	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
 	public static ListeningExecutorService adhocCommonPool = MoreExecutors.listeningDecorator(newWorkStealingPool());
 
 	/**
 	 * Similar with java.util.concurrent.Executors.newWorkStealingPool(int), but with a custom name.
-	 * 
+	 *
 	 * @return
 	 */
 	private static ForkJoinPool newWorkStealingPool() {
 		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
+	}
+
+	/**
+	 * @return the default parallelism when calling Executors#newWorkStealingPool
+	 */
+	public static int getParallelism() {
+		return parallelism;
 	}
 
 	// Typically used as limit to prevent iterating over large cartesian products

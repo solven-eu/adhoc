@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * This is useful to refer to an existing {@link IMeasure} in the {@link MeasureForest}, hence preventing to need to
  * provide its definition.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -56,6 +56,11 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 	@NonNull
 	String ref;
 
+	@Override
+	public Object getWrapped() {
+		return getName();
+	}
+
 	/**
 	 * The name is the same as the ref, so a measure and its reference would conflict.
 	 */
@@ -63,11 +68,6 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 	@JsonIgnore
 	public String getName() {
 		return ref;
-	}
-
-	@Override
-	public Object getWrapped() {
-		return getName();
 	}
 
 	@Override
@@ -88,7 +88,7 @@ public class ReferencedMeasure implements IMeasure, IReferencedMeasure, IHasWrap
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	public static class ReferencedMeasureBuilder {

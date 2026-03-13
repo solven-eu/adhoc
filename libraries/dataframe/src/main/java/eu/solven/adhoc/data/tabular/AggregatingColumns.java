@@ -88,11 +88,6 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// Also, even if we hit a single aggregate, it should not be returned as-is, but returns as aggregated with null
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
-	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
-		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return factories.getColumnFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
-	}
-
 	@Override
 	protected IMultitypeMergeableColumn<Integer> getColumn(IAliasedAggregator aggregator) {
 		return aggregatorToAggregates.get(aggregator.getAlias());
@@ -115,6 +110,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 				return column.append(keyIndex);
 			}
 		};
+	}
+
+	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
+		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
+		return factories.getColumnFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override

@@ -39,21 +39,11 @@ import lombok.experimental.UtilityClass;
 
 /**
  * Helps implementing {@link StandardQueryOptions#EXCEPTIONS_AS_MEASURE_VALUE}
- * 
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
 public class AdhocExceptionAsMeasureValueHelper {
-
-	public static Map<String, ?> asMap(NavigableSet<String> columns) {
-		Map<String, Object> errorSliceAsMap = new TreeMap<>();
-		columns.forEach(c -> errorSliceAsMap.put(c, "error"));
-		return errorSliceAsMap;
-	}
-
-	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
-		return SliceHelpers.asSlice(asMap(columns));
-	}
 
 	public static ITabularRecordStream makeErrorStream(TableQueryV3 transcodedQuery, Throwable e) {
 		return new ITabularRecordStream() {
@@ -89,5 +79,15 @@ public class AdhocExceptionAsMeasureValueHelper {
 				return transcodedQuery;
 			}
 		};
+	}
+
+	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
+		return SliceHelpers.asSlice(asMap(columns));
+	}
+
+	public static Map<String, ?> asMap(NavigableSet<String> columns) {
+		Map<String, Object> errorSliceAsMap = new TreeMap<>();
+		columns.forEach(c -> errorSliceAsMap.put(c, "error"));
+		return errorSliceAsMap;
 	}
 }

@@ -59,7 +59,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Seems not relevant as it is less efficient than `GROUPING SET`.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Slf4j
@@ -105,16 +105,6 @@ public class InduceByAdhocMergingIntoSingle extends InduceByAdhoc {
 		return inducedToInducer;
 	}
 
-	protected IFilterStripper makeFilterStripper() {
-		IFilterStripperFactory filterStripperFactory;
-		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
-			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
-		} else {
-			filterStripperFactory = factories.getFilterStripperFactory();
-		}
-		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
-	}
-
 	/**
 	 * The splitting strategy is based on:
 	 * <ul>
@@ -122,7 +112,7 @@ public class InduceByAdhocMergingIntoSingle extends InduceByAdhoc {
 	 * <li>For an aggregator, do a query able to induce all steps (typically by querying the union of groupBy and
 	 * filters)</li>
 	 * </ul>
-	 * 
+	 *
 	 * From an implementation perspective, this re-use the standard optimization process, then compute a single
 	 * CubeQueryStep by Aggregator given the root inducers.
 	 */
@@ -144,24 +134,6 @@ public class InduceByAdhocMergingIntoSingle extends InduceByAdhoc {
 		});
 
 		return inducedToInducer;
-	}
-
-	protected CubeQueryStep filter(ISliceFilter commonFilter, CubeQueryStep step) {
-		ISliceFilter combinedFilter = FilterBuilder.and(commonFilter, step.getFilter()).optimize(filterOptimizer);
-		return step.toBuilder().filter(combinedFilter).build();
-	}
-
-	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,
-			CubeQueryStep inducer,
-			CubeQueryStep induced) {
-		if (inducer.equals(induced)) {
-			// e.g. `GROUP BY a,b WHERE b` and `GROUP BY a WHERE b`
-			log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
-		} else {
-			inducedToInducer.addVertex(inducer);
-			inducedToInducer.addVertex(induced);
-			inducedToInducer.addEdge(induced, inducer);
-		}
 	}
 
 	protected DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> makeAggregatorDag(IFilterStripper stripper,
@@ -286,6 +258,34 @@ public class InduceByAdhocMergingIntoSingle extends InduceByAdhoc {
 		});
 
 		return inducedToInducer;
+	}
+
+	protected CubeQueryStep filter(ISliceFilter commonFilter, CubeQueryStep step) {
+		ISliceFilter combinedFilter = FilterBuilder.and(commonFilter, step.getFilter()).optimize(filterOptimizer);
+		return step.toBuilder().filter(combinedFilter).build();
+	}
+
+	protected void addInducerToInduced(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer,
+			CubeQueryStep inducer,
+			CubeQueryStep induced) {
+		if (inducer.equals(induced)) {
+			// e.g. `GROUP BY a,b WHERE b` and `GROUP BY a WHERE b`
+			log.trace("Happens typically if we query a granular and an induced groupBy with same filter");
+		} else {
+			inducedToInducer.addVertex(inducer);
+			inducedToInducer.addVertex(induced);
+			inducedToInducer.addEdge(induced, inducer);
+		}
+	}
+
+	protected IFilterStripper makeFilterStripper() {
+		IFilterStripperFactory filterStripperFactory;
+		if (filterOptimizer instanceof IHasFilterStripperFactory hasFilterStripperFactory) {
+			filterStripperFactory = hasFilterStripperFactory.getFilterStripperFactory();
+		} else {
+			filterStripperFactory = factories.getFilterStripperFactory();
+		}
+		return filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
 	}
 
 }

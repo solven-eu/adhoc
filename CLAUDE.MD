@@ -45,7 +45,7 @@ See `CONVENTIONS.MD`. Entry points appear first; each method is placed below its
 
 ## Executor Jobs
 
-Each job below is **atomic** — run only one job per session. Do **at most 20 files** per run. After all edits, run:
+Each job below is **atomic** — run only one job per session. Cover the whole codebase in a single pass (no file limit). After all edits, run:
 
 ```bash
 mvn spotless:apply --file pom.xml --batch-mode

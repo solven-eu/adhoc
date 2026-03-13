@@ -41,7 +41,7 @@ import lombok.extern.jackson.Jacksonized;
 /**
  * A {@link EvaluatedExpressionColumn} is a column which is calculated given an expression, by Adhoc engine, not by the
  * {@link ITableWrapper}.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -59,16 +59,6 @@ public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColum
 
 	@NonNull
 	String expression;
-
-	/**
-	 * BEWARE This must not be cached as {@link Expression} is a stateful object
-	 * (https://github.com/ezylang/EvalEx/issues/83).
-	 * 
-	 * @return an Expression object
-	 */
-	protected Expression makeExpression() {
-		return new Expression(expression);
-	}
 
 	@Override
 	public Object computeCoordinate(ITabularGroupByRecord record) {
@@ -93,6 +83,16 @@ public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColum
 	@Override
 	public Class<?> getType() {
 		return type;
+	}
+
+	/**
+	 * BEWARE This must not be cached as {@link Expression} is a stateful object
+	 * (https://github.com/ezylang/EvalEx/issues/83).
+	 *
+	 * @return an Expression object
+	 */
+	protected Expression makeExpression() {
+		return new Expression(expression);
 	}
 
 }

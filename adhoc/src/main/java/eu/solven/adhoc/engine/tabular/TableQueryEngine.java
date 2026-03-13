@@ -48,15 +48,15 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Default {@link ITableQueryEngine}.
- * 
+ *
  * It implements optimizations of the queryPlans projected to the underlying table. Typically:
- * 
+ *
  * <ul>
  * <li>Request for `m over c=c1&d=d1` and `m over c=c1&d=d2` should request `m(FILTER d=d1) and m(FILTER d=d2) over
  * c=c1`</li>
  * <li>Request for `m groupBy c` and `m groupBy c&d` should request `m groupBy c,c&d`</li>
  * </ul>
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder(toBuilder = true)
@@ -85,11 +85,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
 	}
 
-	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
-		// WithCache as this optimizer will be used for a single query
-		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
-	}
-
 	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod) {
 		// WithCache as this optimize will be used for a single query
 		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
@@ -108,6 +103,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 			ITableQueryFactory optimizer,
 			ITableQueryInducer inducer) {
 		return new TableQueryEngineBootstrapped(factories, eventBus, queryPod, optimizer, inducer);
+	}
+
+	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
+		// WithCache as this optimizer will be used for a single query
+		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 	}
 
 }
