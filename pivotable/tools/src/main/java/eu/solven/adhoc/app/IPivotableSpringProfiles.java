@@ -75,4 +75,7 @@ public interface IPivotableSpringProfiles {
 	String P_INMEMORY = "pivotable-inmemory";
 	// Redis will use some Redis persistence storage
 	String P_REDIS = "pivotable-redis";
+
+	// Activates the MCP server endpoint (requires pivotable-mcp module on classpath)
+	String P_MCP = "pivotable-mcp";
 }

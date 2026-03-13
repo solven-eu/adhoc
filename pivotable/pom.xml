@@ -19,6 +19,7 @@
 		<module>public</module>
 		<module>server-core</module>
 		<module>js</module>
+		<module>mcp</module>
 
 		<!-- Following modules are bootable-->
 		<module>server</module>
