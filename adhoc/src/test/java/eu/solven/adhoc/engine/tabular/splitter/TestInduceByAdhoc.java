@@ -25,10 +25,15 @@ package eu.solven.adhoc.engine.tabular.splitter;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
@@ -282,5 +287,44 @@ public class TestInduceByAdhoc {
 								.build()))
 				// true because filter is inducable (given G is groupedBy, we can ensure to get ride of C rows)
 				.isTrue();
+	}
+
+	@Test
+	public void testSplitAsDag_2groupByWithNonEmptyIntersection() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
+				ImmutableSet.<CubeQueryStep>builder()
+						.add(CubeQueryStep.builder()
+								.measure(Aggregator.sum("m"))
+								.groupBy(GroupByColumns.named("a", "b"))
+								.build())
+						.add(CubeQueryStep.builder()
+								.measure(Aggregator.sum("m"))
+								.groupBy(GroupByColumns.named("b", "c"))
+								.build())
+						.build());
+
+		Assertions.assertThat(split.edgeSet()).isEmpty();
+	}
+
+	@Test
+	public void testSplitAsDag_2groupByWithNonEmptyIntersection_andIntersection() {
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
+				ImmutableSet.<CubeQueryStep>builder()
+						.add(CubeQueryStep.builder()
+								.measure(Aggregator.sum("m"))
+								.groupBy(GroupByColumns.named("a", "b"))
+								.build())
+						.add(CubeQueryStep.builder()
+								.measure(Aggregator.sum("m"))
+								.groupBy(GroupByColumns.named("b", "c"))
+								.build())
+						.add(CubeQueryStep.builder()
+								.measure(Aggregator.sum("m"))
+								.groupBy(GroupByColumns.named("b"))
+								.build())
+						.build());
+
+		// TODO We should keep the 2 edges, so we decide later which one is optimal (e.g. based on induced actual sizes)
+		Assertions.assertThat(split.edgeSet()).hasSize(1);
 	}
 }

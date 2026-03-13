@@ -110,15 +110,12 @@ public class MultitypeArray implements IMultitypeArray {
 
 	@Override
 	public int size() {
-		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
-			return 0;
-		} else if (valuesType == IMultitypeConstants.MASK_LONG) {
-			return valuesL.size();
-		} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
-			return valuesD.size();
-		} else {
-			return valuesO.size();
-		}
+		return switch (valuesType) {
+		case IMultitypeConstants.MASK_EMPTY -> 0;
+		case IMultitypeConstants.MASK_LONG -> valuesL.size();
+		case IMultitypeConstants.MASK_DOUBLE -> valuesD.size();
+		default -> valuesO.size();
+		};
 	}
 
 	@Override

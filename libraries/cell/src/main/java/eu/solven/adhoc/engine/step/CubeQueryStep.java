@@ -131,6 +131,7 @@ public final class CubeQueryStep
 
 	@Deprecated(since = "use .toBuilder()", forRemoval = true)
 	public static CubeQueryStepBuilder edit(CubeQueryStep step) {
+		// TODO Clearing the cache (but the transverseCache) is not preserved in `.toBuilder()`
 		Map<Object, Object> newCache = new ConcurrentHashMap<>();
 		if (step.getCache().containsKey(KEY_CACHE_TRANSVERSE)) {
 			Map<Object, Object> transverseCache = step.getTransverseCache();

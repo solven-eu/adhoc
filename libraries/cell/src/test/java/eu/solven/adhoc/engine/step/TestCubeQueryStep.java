@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -73,6 +74,9 @@ public class TestCubeQueryStep {
 		// transverseCache is still valid after an `invalidateAll`
 		step.invalidateAll();
 		Assertions.assertThat(step.getTransverseCache()).isSameAs(transverseCache);
+		
+		CubeQueryStep copy = step.toBuilder().build();
+		Assertions.assertThat(copy.getTransverseCache()).isSameAs(transverseCache);
 	}
 
 	@Test
