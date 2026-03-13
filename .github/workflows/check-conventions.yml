@@ -1,0 +1,60 @@
+# Convention checkers — reports violations of coding rules from CONVENTIONS.MD.
+# Informational only: jobs never fail the build (exit codes are always 0).
+# Scripts: scripts/check-convention-*.pl
+#
+# All jobs discover src/main/java trees dynamically so new modules are covered automatically.
+
+name: Coding Conventions
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions: read-all
+
+jobs:
+  stepdown:
+    name: Stepdown Rule
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run Stepdown checker
+        # Methods must appear below their first caller — see CONVENTIONS.MD
+        run: |
+          readarray -t dirs < <(find . -type d -path '*/src/main/java' | sort)
+          perl scripts/check-convention-stepdown.pl "${dirs[@]}" || true
+
+  linked:
+    name: Linked-collections convention
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run Linked-collections checker
+        # HashMap/HashSet/Collectors.toMap without LinkedHashMap — see CONVENTIONS.MD
+        run: |
+          readarray -t dirs < <(find . -type d -path '*/src/main/java' | sort)
+          perl scripts/check-convention-linked.pl "${dirs[@]}" || true
+
+  guava:
+    name: Guava-collections convention
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run Guava-collections checker
+        # Set.of/List.of/Collectors.toSet instead of Guava equivalents — see CONVENTIONS.MD
+        run: |
+          readarray -t dirs < <(find . -type d -path '*/src/main/java' | sort)
+          perl scripts/check-convention-guava.pl "${dirs[@]}" || true
+
+  logging:
+    name: Logging convention
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Run Logging checker
+        # String concatenation in log calls — see CONVENTIONS.MD
+        run: |
+          readarray -t dirs < <(find . -type d -path '*/src/main/java' | sort)
+          perl scripts/check-convention-logging.pl "${dirs[@]}" || true

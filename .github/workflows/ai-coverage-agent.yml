@@ -148,7 +148,7 @@ jobs:
           Automated PR from the [AI Coverage Agent](https://github.com/solven-eu/adhoc/actions/runs/${{ github.run_id }}) (run `${{ github.run_id }}`).
 
           ### Changes may include
-          - New `*Test.java` classes for production classes with low JaCoCo branch or instruction coverage
+          - New `Test*.java` classes for production classes with low JaCoCo branch or instruction coverage
           - Additional test methods in existing test classes targeting uncovered branches
           - Tests written with JUnit 5 (`@Test`, `@ParameterizedTest`) and AssertJ assertions
 

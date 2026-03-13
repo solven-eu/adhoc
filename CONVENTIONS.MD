@@ -5,6 +5,19 @@
 
 ---
 
+## Running Convention Checks
+
+To scan the whole codebase in one shot:
+
+```bash
+./scripts/check-conventions.sh
+```
+
+Individual checkers can also be run directly (see **Quick scan** notes in each section below).
+All checkers are informational — they never block the build.
+
+---
+
 ## General Principles
 
 - Code should be easy to read and understand.
@@ -55,9 +68,11 @@
   - `.collect(Collectors.toCollection(LinkedHashSet::new))` over `.collect(Collectors.toSet())`
   - `Collectors.groupingBy(keyFn, LinkedHashMap::new, downstream)` over `Collectors.groupingBy(keyFn, downstream)` — the 2-arg overload produces a `HashMap` whose iteration order is non-deterministic across JVM runs, causing subtly unstable query results.
   - `PepperStreamHelperHacked.toLinkedMap(kFn, vFn)` over `Collectors.toMap(kFn, vFn)` — prefer the helper which enforces `LinkedHashMap` and a throwing merge function. Use the 4-arg `Collectors.toMap(..., LinkedHashMap::new)` only when `PepperStreamHelperHacked` is not on the classpath (e.g. `libraries/dataframe`).
+  - **Quick scan**: `perl scripts/check-convention-linked.pl` — detects `new HashMap`, `new HashSet`, and bare `Collectors.toMap`.
 - **Prefer Guava immutable collections** over JDK factories (applies even for literal constructions):
   - `ImmutableList.of(…)` instead of `List.of(…)`
   - `ImmutableSet.of(…)` instead of `Set.of(…)`
+  - **Quick scan**: `perl scripts/check-convention-guava.pl` — detects `Set.of`, `List.of`, `Map.of`, `Collectors.toSet()`, `Collectors.toList()`.
 
 ---
 
@@ -97,6 +112,7 @@ protected ITabularView toTabularView(...) { ... }      // (4)
 - Static constants and fields precede all methods, as usual.
 - Constructors follow fields and precede instance methods.
 - This rule applies to **new or substantially refactored classes**. Existing classes are migrated incrementally — do not reorder a whole file just to satisfy this rule unless that is the explicit goal of the current task.
+- **Quick scan**: `perl scripts/check-convention-stepdown.pl` — reports callee-above-caller violations.
 
 ---
 
@@ -105,6 +121,7 @@ protected ITabularView toTabularView(...) { ... }      // (4)
 - **SLF4J**: always use `{}` placeholders, never string concatenation.
   - Correct: `log.debug("Processing {} rows", count);`
   - Wrong:   `log.debug("Processing " + count + " rows");`
+  - **Quick scan**: `perl scripts/check-convention-logging.pl` — detects string concatenation in log calls.
 
 ---
 
