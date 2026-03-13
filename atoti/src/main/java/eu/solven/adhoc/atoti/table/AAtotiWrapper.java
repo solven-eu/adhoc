@@ -47,12 +47,13 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Getter;
 import lombok.NonNull;
@@ -64,12 +65,18 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder(builderMethodName = "a")
-public abstract class AAdhocAtotiTable implements ITableWrapper {
+public abstract class AAtotiWrapper implements ITableWrapper {
 
 	@NonNull
 	// @Builder.Default
 	@Getter
-	final ITableAliaser transcoder = AtotiAliaser.builder().build();
+	final ITableAliaser aliaser = AtotiAliaser.builder().build();
+
+
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+		return InMemoryTable.compositeOnV2(queryPod, tableQuery, this::streamSlices);
+	}
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod executingQueryContext, TableQueryV2 tableQuery) {

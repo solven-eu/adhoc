@@ -114,7 +114,7 @@ public class QueryWithLeftover {
 
 		List<String> leftoversColumns = leftovers.stream()
 				.flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream())
-				// Make sure a latecolumn is not also a normal groupBy column
+				// Make sure a late column is not also a normal groupBy column
 				.filter(Predicate.not(groupByColumns::contains))
 				.toList();
 

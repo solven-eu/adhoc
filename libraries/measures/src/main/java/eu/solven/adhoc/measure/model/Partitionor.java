@@ -75,6 +75,7 @@ public class Partitionor implements IMeasure, ICombineUnderlyingMeasures, IHasAg
 	@Default
 	String aggregationKey = SumAggregation.KEY;
 
+	@NonNull
 	@Singular
 	ImmutableMap<String, ?> aggregationOptions;
 

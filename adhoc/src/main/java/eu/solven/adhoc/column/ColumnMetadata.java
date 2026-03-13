@@ -72,7 +72,7 @@ public class ColumnMetadata implements IHasName, IHasTags {
 	 * 
 	 * @param columns
 	 *            a Set of {@link ColumnMetadata}. Must not be empty
-	 * @return a ColumnMetdata representing the union of input columns.
+	 * @return a ColumnMetadata representing the union of input columns.
 	 */
 	public static ColumnMetadata merge(Collection<? extends ColumnMetadata> columns) {
 		if (columns.isEmpty()) {

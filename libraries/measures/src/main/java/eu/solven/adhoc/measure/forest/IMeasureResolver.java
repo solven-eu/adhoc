@@ -26,7 +26,7 @@ import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * Typically useful to resolve {@link ReferencedMeasure} or {@link AliasedMeasure}
+ * Typically useful to resolve {@link ReferencedMeasure}
  * 
  * @author Benoit Lacelle
  */

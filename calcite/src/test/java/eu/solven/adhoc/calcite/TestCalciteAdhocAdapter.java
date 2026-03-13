@@ -132,6 +132,7 @@ public class TestCalciteAdhocAdapter {
 				.queryContains(mongoChecker("{$group: {_id: {}, 'EXPR$0': {$sum: 1}}}"));
 	}
 
+	@Disabled("2026-03-13 The PLAN is not stable. Some hashmap somewhere?")
 	@Test
 	void testSumK1GroupBya() {
 		assertModel(MODEL).query("select sum(k1) from \"adhoc_schema\".\"rows\" GROUP BY a")

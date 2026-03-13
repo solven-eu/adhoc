@@ -43,6 +43,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
@@ -147,7 +148,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + "=" + engineId;
+		return MoreObjects.toStringHelper(this).add("engineId", engineId).toString();
 	}
 
 	@Override

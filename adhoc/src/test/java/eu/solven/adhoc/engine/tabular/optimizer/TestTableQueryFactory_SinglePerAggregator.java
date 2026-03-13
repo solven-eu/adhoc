@@ -44,7 +44,7 @@ import eu.solven.adhoc.query.filter.OrFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
-public class TestTableQueryOptimizerSinglePerAggregator implements IAdhocTestConstants {
+public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestConstants {
 
 	CubeQueryStep step = CubeQueryStep.builder().measure(k1Sum).build();
 

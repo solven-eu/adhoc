@@ -29,7 +29,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * A Data-structure similar to an array, enable multitype.
+ * A data-structure similar to an array, enabling multitype.
  * 
  * @author Benoit Lacelle
  */

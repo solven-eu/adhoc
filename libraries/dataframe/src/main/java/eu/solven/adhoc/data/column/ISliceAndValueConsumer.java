@@ -27,7 +27,7 @@ import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * For data-structure in which we an associate a slice to a value.
+ * For data-structure in which we can associate a slice to a value.
  * 
  * @author Benoit Lacelle
  */

@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
@@ -73,7 +74,7 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 	// tableWrapper and should be ignored)
 	@NonNull
 	@Singular
-	Map<CubeQueryStep, TableQueryV3> stepToTables;
+	ImmutableMap<CubeQueryStep, TableQueryV3> stepToTables;
 
 	@NonNull
 	@Default
@@ -109,6 +110,9 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 		return query.getAggregators().stream().flatMap(filteredAggregator -> {
 			return query.streamGroupBy().map(groupBy -> {
 				CubeQueryStep step = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
+
+				// TODO If we were to restore customMarker into steps (e.g. if suppressed by TableQueryV3), if would
+				// probably happen around here
 
 				if (containsStep(step)) {
 					return new StepAndFilteredAggregator(filteredAggregator, step);

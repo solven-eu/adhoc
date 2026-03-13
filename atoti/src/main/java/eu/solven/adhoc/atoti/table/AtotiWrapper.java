@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,29 +22,26 @@
  */
 package eu.solven.adhoc.atoti.table;
 
-import java.util.Set;
-
+import com.quartetfs.biz.pivot.IActivePivotManager;
 import com.quartetfs.biz.pivot.IActivePivotVersion;
-import com.quartetfs.biz.pivot.cellset.impl.EmptyCellSet;
-import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;
-import com.quartetfs.biz.pivot.query.impl.GetAggregatesQuery;
-import com.quartetfs.fwk.query.IQuery;
+import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
 import com.quartetfs.fwk.query.IQueryable;
 
+import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.pepper.mappath.MapPathGet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
 
 /**
- * This simulates a ActivePivot/Atoti instance receiving {@link IGetAggregatesQuery}. Can be used to log about the
- * received {@link IGetAggregatesQuery}.
- * 
+ * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
+ *
  * @author Benoit Lacelle
  */
 @SuperBuilder
-@Slf4j
-public class LoggingAtotiTable extends AAdhocAtotiTable implements IQueryable {
+public class AtotiWrapper extends AAtotiWrapper {
+	@NonNull
+	final IActivePivotManager apManager;
 
 	@NonNull
 	@Getter
@@ -52,27 +49,12 @@ public class LoggingAtotiTable extends AAdhocAtotiTable implements IQueryable {
 
 	@Override
 	protected IActivePivotVersion inferPivotId() {
-		throw new UnsupportedOperationException();
+		IMultiVersionActivePivot mvActivePivot = MapPathGet.getRequiredAs(apManager.getActivePivots(), pivotId);
+		return mvActivePivot.getHead();
 	}
 
 	@Override
 	protected IQueryable inferQueryable() {
-		return this;
-	}
-
-	@Override
-	public Set<String> getSupportedQueries() {
-		return Set.of(GetAggregatesQuery.PLUGIN_KEY);
-	}
-
-	@Override
-	public <R> R execute(IQuery<R> query) {
-		if (query instanceof IGetAggregatesQuery gaq) {
-			log.info("pivot={} received gaq={}", getPivotId(), gaq);
-
-			return (R) EmptyCellSet.getInstance();
-		} else {
-			throw new UnsupportedOperationException("query=%s".formatted(query));
-		}
+		return inferPivotId();
 	}
 }

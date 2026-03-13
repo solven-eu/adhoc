@@ -60,7 +60,7 @@ public interface IMultitypeMergeableGrid<T> {
 	 * 
 	 * @param aggregator
 	 * @param key
-	 * @return a {@link IValueReceiver} into which an aggregate ha to be written for given aggregator and given key
+	 * @return a {@link IValueReceiver} into which an aggregate has to be written for given aggregator and given key
 	 */
 	default IValueReceiver contribute(T key, IAliasedAggregator aggregator) {
 		return openSlice(key).contribute(aggregator);

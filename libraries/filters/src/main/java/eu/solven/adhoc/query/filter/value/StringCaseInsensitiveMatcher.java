@@ -20,41 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
-
-import org.jooq.conf.ParseNameCase;
-import org.jooq.conf.Settings;
+package eu.solven.adhoc.query.filter.value;
 
 import lombok.Builder;
-import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * Helps switching Adhoc into Case-Sensitive or Case-Insensitive.
+ * Useful to transcode from Pivotable/JSON as String to a known value with given type.
  * 
  * @author Benoit Lacelle
  */
 @Value
 @Builder
-public class AdhocCaseSensitivity {
+@Jacksonized
+public class StringCaseInsensitiveMatcher implements IValueMatcher {
+	@NonNull
+	String string;
 
-	// Adhoc is currently case-sensitive
-	// But many Database (DuckDB, PostgreSQL, RedShift) are caseInsensitive
-	// https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html#case-sensitivity-of-identifiers
-	// Some of them can be turned caseSensitive (RedShift)
-	// https://docs.aws.amazon.com/redshift/latest/dg/r_enable_case_sensitive_identifier.html
-	private static final boolean D_CASESENSITIVE = true;
-
-	@Default
-	boolean caseSensitive = D_CASESENSITIVE;
-
-	public static Settings jooqSettings() {
-		Settings settings = new Settings();
-
-		// Adhoc being caseSensitive by default, we prefer to keep the case of encountered identifiers
-		settings.setParseNameCase(ParseNameCase.AS_IS);
-
-		return settings;
+	@Override
+	public boolean match(Object value) {
+		if (value == null) {
+			return false;
+		} else {
+			return string.equalsIgnoreCase(value.toString());
+		}
 	}
 
+	/**
+	 * 
+	 * @param hasToString
+	 *            an Object from which we'll get {@link Object#toString()} as matching {@link String}.
+	 * @return
+	 */
+	@SuppressWarnings("PMD.LinguisticNaming")
+	public static IValueMatcher hasToString(Object hasToString) {
+		String string = String.valueOf(hasToString);
+		return StringCaseInsensitiveMatcher.builder().string(string).build();
+	}
 }

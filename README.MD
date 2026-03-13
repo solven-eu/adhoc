@@ -11,11 +11,12 @@
 
 ## Motivation
 
-Adhoc makes it easy to define/code/review [a la Excel](https://support.microsoft.com/en-us/office/Formulas-and-functions-294d9486-b332-48ed-b489-abe7d0f9eda9) formulas, over a wide range of databases and query engines.
+Adhoc makes it easy to define/code/review [a la Excel](https://support.microsoft.com/en-us/office/Formulas-and-functions-294d9486-b332-48ed-b489-abe7d0f9eda9) formulas in the context of OLAP queries. It is compatible with a wide range of databases and query engines.
 
-- The formulas define a DAG/Directed-Acyclic-Graph, going from abstract measures to raw data. Intermediate formulas could also be used as measures.
+- The formulas define a DAG/Directed-Acyclic-Graph, going from abstract measures to aggregated measures. Intermediate formulas could also be used as measures.
 - The DAG should be easily readable and modifiable by a human, not necessarily a developer.
 - The DAG can express simple operations like `SUM` or `PRODUCT`, and complex operations like `GROUP BY` or any custom logic. 
+- Aggregated measures are evaluation by external databased (e.g. `GROUP BY` queries in SQL databases).
 
 Most measures, including intermediate measures, hold a functional meaning. Hence, Adhoc can be seen as a semantic layer, enabling complex formulas over a snowflake SQL/!SQL schema, or a composite of snowflake schemas.
 

@@ -59,8 +59,8 @@ import lombok.extern.slf4j.Slf4j;
  * Builds a JGraphT class-hierarchy graph from Java source files (via JavaParser) and renders it to Mermaid.
  *
  * <p>
- * Unlike the reflection-based {@link ClassHierarchyAsMermaid}, this implementation reads source code directly,
- * capturing field initializers to show the <em>actual default wiring</em>.
+ * Unlike the reflection-based ClassHierarchyAsMermaid, this implementation reads source code directly, capturing field
+ * initializers to show the <em>actual default wiring</em>.
  *
  * <ul>
  * <li>For fields <strong>with a default value</strong> (either a {@code @Builder.Default} annotation or any field

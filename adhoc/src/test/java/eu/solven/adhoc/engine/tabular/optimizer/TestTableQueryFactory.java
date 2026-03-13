@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
@@ -43,7 +45,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
-public class TestTableQueryOptimizer {
+public class TestTableQueryFactory {
 	CubeQueryStep step = CubeQueryStep.builder()
 			.measure("m1")
 			.groupBy(GroupByColumns.named("g", "h"))
@@ -127,4 +129,47 @@ public class TestTableQueryOptimizer {
 		Assertions.assertThat(output).hasSize(1);
 		Assertions.assertThat(output.values().stream().collect(Collectors.toSet())).hasSize(1);
 	}
+
+	@Test
+	public void testSanityChecks() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("a", "a1"))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(Aggregator.sum("m1"))
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("c", "c1"))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(Aggregator.sum("m1"))
+				.build();
+
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+		// Check default is safe
+		optimizer.sanityChecks(split);
+
+		// Simulate an orphan inducerStep which is not covered by tableQueries
+		{
+			// https://stackoverflow.com/questions/14938591/how-to-copy-a-graph-in-jgrapht
+			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> copytableStepsDag =
+					(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge>) split.getInducedToInducer().clone();
+
+			copytableStepsDag.addVertex(CubeQueryStep.builder().measure("m").build());
+
+			SplitTableQueries splitWithAdditionalExplicit =
+					split.toBuilder().inducedToInducer(copytableStepsDag).build();
+			Assertions.assertThatThrownBy(() -> optimizer.sanityChecks(splitWithAdditionalExplicit))
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessage("Missing 1 steps from tableQueries to cover inducers");
+		}
+
+		// Simulate an orphan tableStep from cube DAG
+		{
+			SplitTableQueries splitWithAdditionalExplicit =
+					split.toBuilder().explicit(CubeQueryStep.builder().measure("m").build()).build();
+			Assertions.assertThatThrownBy(() -> optimizer.sanityChecks(splitWithAdditionalExplicit))
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessage("Missing 1 steps from tableQueries+induceProcess to fill cube DAG tableSteps");
+		}
+	}
+
 }

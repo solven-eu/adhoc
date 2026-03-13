@@ -38,7 +38,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * An example {@link IAdhocImplicitFilter} based on Spring Security.
+ * An example {@link IImplicitFilter} based on Spring Security.
  */
 @Slf4j
 public class SpringSecurityAdhocImplicitFilter implements IImplicitFilter {

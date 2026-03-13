@@ -124,3 +124,22 @@ ActivePivot `AggregatedMeasure` can be translated into Adhoc `IAggregator`.
 ## AAdvancedPostProcessorV2
 
 `AAdvancedPostProcessorV2` can generally be implemented through `Dispatchor`
+
+# Concepts
+
+## IQueryCache
+
+[Javadoc](https://docs.activeviam.com/products/atoti/server/javadoc/6.1.4/com/activeviam/activepivot/core/intf/api/query/IQueryCache.html)
+[Wiki](https://docs.activeviam.com/products/atoti/server/6.0.3/docs/cube/context_values/#iquerycache)
+
+- IQueryCache is a cache with a lifespan associated to current query.
+- Equivalent concept in Adhoc is `CubeQueryStep.getTransverseCache()`.
+
+## SumAggregation
+
+[Wiki](https://docs.activeviam.com/products/atoti/server/6.0.3/docs/cube/aggregation-functions/#sum)
+
+- *Adhoc* Aggregations are defined by the interface `IAggregation`
+- *Adhoc* They are instantiated through a `IOperatorFactory`
+
+- *Atoti* They are instantiated through a [Registry](https://docs.activeviam.com/products/atoti/server/6.0.3/docs/cube/aggregation-functions/#modifying-native-aggregation-functions)

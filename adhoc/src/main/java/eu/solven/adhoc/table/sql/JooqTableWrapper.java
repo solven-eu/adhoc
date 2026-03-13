@@ -472,7 +472,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		}
 
 		{
-			// Rercord fields may not match exactly the columns, especially on qualified fields
+			// Record fields may not match exactly the columns, especially on qualified fields
 			ImmutableList<String> columns = tabularRecordFactory.getColumns().asList();
 			int size = columns.size();
 

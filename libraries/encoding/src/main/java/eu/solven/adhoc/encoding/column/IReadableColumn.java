@@ -23,7 +23,7 @@
 package eu.solven.adhoc.encoding.column;
 
 /**
- * Represents an appendable column, with random read access.
+ * Represents a readable column, with random read access.
  * 
  * @author Benoit Lacelle
  */

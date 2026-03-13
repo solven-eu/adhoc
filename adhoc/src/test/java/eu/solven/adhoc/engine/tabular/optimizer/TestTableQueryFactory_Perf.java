@@ -52,7 +52,7 @@ import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-public class TestTableQueryOptimizer_Perf {
+public class TestTableQueryFactory_Perf {
 
 	int cardinalityIn = 1_000_000;
 	int cardinalityOut = 1000;

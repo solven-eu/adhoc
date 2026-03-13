@@ -187,7 +187,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.
 	@Test
 	public void testCustomTableQueryOptimizer() {
-		ITableQueryFactoryFactory optimizerFactory = (factories, filterOptimizer, hasOptions) -> {
+		ITableQueryFactoryFactory queryFactoryFactory = (factories, filterOptimizer, hasOptions) -> {
 			return TableQueryFactory.builder()
 					.factories(AdhocFactories.builder().build())
 					.filterOptimizer(filterOptimizer)
@@ -196,7 +196,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 					.build();
 		};
 		CubeQueryEngine cubeEngine = CubeQueryEngine.builder()
-				.tableQueryEngine(TableQueryEngine.builder().optimizerFactory(optimizerFactory).build())
+				.tableQueryEngine(TableQueryEngine.builder().queryFactoryFactory(queryFactoryFactory).build())
 				.build();
 
 		Assertions.assertThat(cubeEngine.getTableQueryEngine()).isNotNull();

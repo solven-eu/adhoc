@@ -49,17 +49,14 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 	public ITableQueryFactory makeOptimizer(IAdhocFactories factories,
 			IFilterOptimizer filterOptimizer,
 			IHasQueryOptions hasOptions) {
-		ITableStepsSplitter splitter;
-		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
-			splitter = new InduceByAdhoc();
-		} else if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_TABLE)) {
-			splitter = new InduceByGroupingSets();
-		} else {
-			// BEWARE We're unclear about the right defaults
-			splitter = new InduceByGroupingSets();
-			log.debug("Default {} led to {}", ITableStepsSplitter.class.getName(), splitter.getClass().getName());
-		}
+		ITableStepsSplitter splitter = makeSplitter(hasOptions);
 
+		ITableStepsGrouper grouper = makeGrouper(hasOptions);
+
+		return new TableQueryFactory(factories, filterOptimizer, splitter, grouper);
+	}
+
+	protected ITableStepsGrouper makeGrouper(IHasQueryOptions hasOptions) {
 		ITableStepsGrouper grouper;
 		if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)) {
 			grouper = new TableStepsGrouper();
@@ -72,8 +69,21 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 			grouper = new TableStepsGrouper();
 			log.debug("Default {} led to {}", ITableStepsGrouper.class.getName(), grouper.getClass().getName());
 		}
+		return grouper;
+	}
 
-		return new TableQueryFactory(factories, filterOptimizer, splitter, grouper);
+	protected ITableStepsSplitter makeSplitter(IHasQueryOptions hasOptions) {
+		ITableStepsSplitter splitter;
+		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
+			splitter = new InduceByAdhoc();
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_TABLE)) {
+			splitter = new InduceByGroupingSets();
+		} else {
+			// BEWARE We're unclear about the right defaults
+			splitter = new InduceByGroupingSets();
+			log.debug("Default {} led to {}", ITableStepsSplitter.class.getName(), splitter.getClass().getName());
+		}
+		return splitter;
 	}
 
 }

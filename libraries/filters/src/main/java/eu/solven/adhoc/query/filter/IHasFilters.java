@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A {@link List} of filters. Typically used by {@link IAdhocQuery}, or {@link NotFilter}.
+ * A {@link List} of filters. Typically used by {@link ICubeQuery}, or {@link NotFilter}.
  * 
  * @author Benoit Lacelle
  *

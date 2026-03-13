@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -106,8 +107,8 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 					.build();
 		}).collect(ImmutableSet.toImmutableSet());
 
-		Map<String, List<FilteredAggregator>> aliasToAggregators =
-				strippedAggregators.stream().collect(Collectors.groupingBy(FilteredAggregator::getAlias));
+		Map<String, List<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
+				.collect(Collectors.groupingBy(FilteredAggregator::getAlias, LinkedHashMap::new, Collectors.toList()));
 
 		// Ensure each aggregator has a different name even if they rely on the same column
 		List<FilteredAggregator> aliasedAggregators = aliasToAggregators.entrySet().stream().flatMap(e -> {

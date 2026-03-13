@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2014-2024 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.atoti.table;
+package eu.solven.pepper.core;
 
-import com.quartetfs.biz.pivot.IActivePivotManager;
-import com.quartetfs.biz.pivot.IActivePivotVersion;
-import com.quartetfs.biz.pivot.IMultiVersionActivePivot;
-import com.quartetfs.fwk.query.IQueryable;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.pepper.mappath.MapPathGet;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
+import lombok.experimental.UtilityClass;
 
 /**
- * Wraps an {@link IActivePivotManager} and rely on JooQ to use it as database for {@link TableQuery}.
+ * Various helpers for Java8 {@link Stream}
  *
  * @author Benoit Lacelle
+ *
  */
-@SuperBuilder
-public class AdhocAtotiTable extends AAdhocAtotiTable {
-	@NonNull
-	final IActivePivotManager apManager;
+// Remove with Pepper 5.5
+@UtilityClass
+public class PepperStreamHelperHacked {
 
-	@NonNull
-	@Getter
-	final String pivotId;
-
-	@Override
-	protected IActivePivotVersion inferPivotId() {
-		IMultiVersionActivePivot mvActivePivot = MapPathGet.getRequiredAs(apManager.getActivePivots(), pivotId);
-		return mvActivePivot.getHead();
+	public static <T> BinaryOperator<T> throwingMerger() {
+		return (u, v) -> {
+			throw new IllegalStateException("Duplicate key over values %s and %s"
+					.formatted(PepperLogHelper.getObjectAndClass(u), PepperLogHelper.getObjectAndClass(v)));
+		};
 	}
 
-	@Override
-	protected IQueryable inferQueryable() {
-		return inferPivotId();
+	/**
+	 *
+	 * http://stackoverflow.com/questions/31004899/java-8-collectors-tomap-sortedmap
+	 *
+	 * @param keyMapper
+	 * @param valueMapper
+	 * @return
+	 */
+	public static <T, K, U> Collector<T, ?, Map<K, U>> toLinkedMap(Function<? super T, ? extends K> keyMapper,
+			Function<? super T, ? extends U> valueMapper) {
+		return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new);
 	}
 }

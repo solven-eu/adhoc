@@ -27,7 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import com.google.common.base.MoreObjects;
@@ -48,6 +48,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.pepper.core.PepperStreamHelperHacked;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -169,7 +170,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		IntStream.range(0, indexToSlice.size()).limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(sliceIndex -> {
 			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
 					.stream()
-					.collect(Collectors.toMap(e -> e,
+					.collect(PepperStreamHelperHacked.toLinkedMap(Function.identity(),
 							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
 
 			sh.add(String.valueOf(indexToSlice.get(sliceIndex)), aggregates);

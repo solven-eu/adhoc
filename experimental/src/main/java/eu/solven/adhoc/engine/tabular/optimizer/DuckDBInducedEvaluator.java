@@ -82,7 +82,7 @@ import lombok.extern.slf4j.Slf4j;
  * row-by-row Java streaming path in {@link ATableQueryFactory#evaluateInduced}.
  *
  * <p>
- * Each call materialises the inducer {@link ISliceToValue} into a transient in-memory DuckDB table, executes a
+ * Each call materialises the inducer {@link ICuboid} into a transient in-memory DuckDB table, executes a
  * {@code SELECT cols, AGG(v) FROM t WHERE filter GROUP BY cols} query, and reads the results back into an
  * {@link IMultitypeMergeableColumn}.
  *

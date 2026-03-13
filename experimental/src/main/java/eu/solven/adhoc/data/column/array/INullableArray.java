@@ -36,7 +36,7 @@ public interface INullableArray {
 
 	/**
 	 * 
-	 * @return the number of nun-null elements
+	 * @return the number of non-null elements
 	 */
 	int sizeNotNull();
 
@@ -49,7 +49,7 @@ public interface INullableArray {
 
 	/**
 	 * 
-	 * @return an {@link IntStream} of the indexes associated to a nun-null value
+	 * @return an {@link IntStream} of the indexes associated to a non-null value
 	 */
 	IntStream indexStream();
 

@@ -47,8 +47,7 @@ import lombok.experimental.SuperBuilder;
 /**
  * A {@link ISliceFactory} which enable dictionarization of created {@link IAdhocMap}.
  * 
- * Each row are independent (contrary to {@link ColumnarSliceFactory}) and relies on an `int[]` of dictionarized
- * indexes.
+ * Each row are independent (contrary to {@link ColumnSliceFactory}) and relies on an `int[]` of dictionarized indexes.
  * 
  * @author Benoit Lacelle
  */

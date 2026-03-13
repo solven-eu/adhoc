@@ -37,8 +37,8 @@ import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * {@link ITableWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet known
- * (e.g. when one has to switch the underlying table depending on some queried filter).
+ * {@link ITableWrapper} which is always empty. Useful when the {@link ITableWrapper} to use is not yet known (e.g. when
+ * one has to switch the underlying table depending on some queried filter).
  *
  * @author Benoit Lacelle
  */

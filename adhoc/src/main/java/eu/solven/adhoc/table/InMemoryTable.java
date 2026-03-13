@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,10 +41,10 @@ import org.springframework.util.ClassUtils;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
@@ -121,7 +122,14 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		List<ITabularRecordStream> underlyings = tableQuery.streamV2().map(v2 -> streamSlices(queryPod, v2)).toList();
+		return compositeOnV2(queryPod, tableQuery, this::streamSlices);
+	}
+
+	public static ITabularRecordStream compositeOnV2(QueryPod queryPod,
+			TableQueryV3 tableQuery,
+			BiFunction<QueryPod, TableQueryV2, ITabularRecordStream> biConsumer) {
+		List<ITabularRecordStream> underlyings =
+				tableQuery.streamV2().map(v2 -> biConsumer.apply(queryPod, v2)).toList();
 
 		return new ITabularRecordStream() {
 
@@ -206,7 +214,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
 			});
 
-			SetMultimap<String, FilteredAggregator> columnToAggregators = HashMultimap.create();
+			SetMultimap<String, FilteredAggregator> columnToAggregators = LinkedHashMultimap.create();
 			aggregateColumns.forEach(aggregatedColumn -> {
 				tableQuery.getAggregators()
 						.stream()
@@ -226,6 +234,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				// groupBy groupedByColumns
 				Map<IAdhocSlice, Optional<ITabularRecord>> groupedAggregatedRecord =
 						stream.collect(Collectors.groupingBy(ITabularRecord::getGroupBys,
+								LinkedHashMap::new,
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
 
@@ -285,7 +294,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	 * @param tableColumns
 	 *            all columns known by this table, given rows
 	 * @param queriedColumns
-	 *            columns requested the the {@link TableQueryV2}
+	 *            columns requested by the {@link TableQueryV2}
 	 * @param columnUse
 	 *            some type to be referred in logs
 	 */
@@ -357,7 +366,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
-		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.hashKeys().hashSetValues().build();
+		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		Set<String> nullableColumns = new LinkedHashSet<>();
 
 		rows.forEach(row -> row.forEach((k, v) -> {

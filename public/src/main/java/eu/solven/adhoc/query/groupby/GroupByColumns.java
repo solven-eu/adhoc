@@ -147,7 +147,7 @@ public class GroupByColumns implements IGroupBy {
 
 	protected String escape(String name) {
 		// TODO There should be a utility method somewhere, as the logic is much more complex
-		// e.g. espacing `,`, escpaing `"`, etc.
+		// e.g. escaping `,`, escaping `"`, etc.
 		if (name.contains(",") && !name.matches("\".*\"")) {
 			return "\"" + name + "\"";
 		}

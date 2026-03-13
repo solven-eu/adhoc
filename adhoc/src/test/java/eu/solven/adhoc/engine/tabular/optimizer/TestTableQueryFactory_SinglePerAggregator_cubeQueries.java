@@ -54,7 +54,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 /**
  * This will test actual queries over TableQueryOptimizerSinglePerAggregator.
  */
-public class TestTableQueryOptimizerSinglePerAggregator_cubeQueries extends ADagTest {
+public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagTest {
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
 			.factories(AdhocFactories.builder().build())
