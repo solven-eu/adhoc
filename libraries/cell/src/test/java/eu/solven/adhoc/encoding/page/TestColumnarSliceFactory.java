@@ -126,4 +126,10 @@ public class TestColumnarSliceFactory {
 					.hasSameHashCodeAs(ImmutableMap.of("a", "a1"));
 		}
 	}
+
+	@Test
+	public void testAppendTooMuch() {
+		Assertions.assertThatThrownBy(() -> factory.newMapBuilder(List.of("a", "b")).append("a1", "b1", "c1"))
+				.isInstanceOf(IllegalStateException.class);
+	}
 }

@@ -47,8 +47,7 @@ import lombok.experimental.SuperBuilder;
 /**
  * A {@link ISliceFactory} which enable dictionarization of created {@link IAdhocMap}.
  * 
- * Each row are independent (contrary to {@link ColumnarSliceFactory}) and relies on an `int[]` of dictionarized
- * indexes.
+ * Each row are independent (contrary to {@link ColumnSliceFactory}) and relies on an `int[]` of dictionarized indexes.
  * 
  * @author Benoit Lacelle
  */
@@ -97,14 +96,17 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 			return keysLikeList;
 		}
 
+		protected String peekNextKey() {
+			return keysLikeList.getKey(values.size());
+		}
+
 		@Override
 		public MapBuilderPreKeys append(Object value) {
 			if (values == null) {
 				values = new IntArrayList(keysLikeList.size());
 			}
 			Object normalizedValue = factory.normalizeCoordinate(value);
-			int dictionarizedValue =
-					dictionaryFactory.makeDictionarizer(keysLikeList.getKey(values.size())).toInt(normalizedValue);
+			int dictionarizedValue = dictionaryFactory.makeDictionarizer(peekNextKey()).toInt(normalizedValue);
 			values.add(dictionarizedValue);
 
 			return this;

@@ -61,9 +61,15 @@ public class SpringImplicitOptions implements IImplicitOptions {
 					.add(Maps.immutableEntry(P_OPTION + "table.",
 							// TODO Add sanity checks to detect conflicts (in environment)
 							ImmutableSet.<IQueryOption>builder()
-									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_INDUCER)
-									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_AGGREGATOR)
-									.add(InternalQueryOptions.ONE_TABLE_QUERY_PER_ROOT_INDUCER)
+									.add(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)
+									.add(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR)
+									.add(InternalQueryOptions.TABLEQUERY_PER_STEPS)
+									.build()))
+					.add(Maps.immutableEntry(P_OPTION + "table.",
+							// TODO Add sanity checks to detect conflicts (in environment)
+							ImmutableSet.<IQueryOption>builder()
+									.add(InternalQueryOptions.INDUCE_BY_ADHOC)
+									.add(InternalQueryOptions.INDUCE_BY_TABLE)
 									.build()))
 					.add(Maps.immutableEntry(P_OPTION,
 							ImmutableSet.<IQueryOption>builder()

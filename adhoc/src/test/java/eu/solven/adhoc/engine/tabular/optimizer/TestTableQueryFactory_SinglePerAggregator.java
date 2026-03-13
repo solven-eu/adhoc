@@ -1,0 +1,380 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.engine.tabular.optimizer;
+
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocMergingIntoSingle;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.query.filter.ColumnFilter;
+import eu.solven.adhoc.query.filter.FilterBuilder;
+import eu.solven.adhoc.query.filter.OrFilter;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.table.TableQuery;
+
+public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestConstants {
+
+	CubeQueryStep step = CubeQueryStep.builder().measure(k1Sum).build();
+
+	TableQueryFactory optimizer = TableQueryFactory.builder()
+			.factories(AdhocFactories.builder().build())
+			.splitter(new InduceByAdhocMergingIntoSingle(AdhocFactories.builder().build()))
+			.groupByAggregator()
+			.build();
+
+	@Test
+	public void testCanInduce_OrDifferentColumns() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("a", "a1"))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("c", "c1"))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), ImmutableSet.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1"))
+								.optimize())
+						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(2)
+				.contains(CubeQueryStep.edit(step)
+						.filter(ColumnFilter.matchEq("a", "a1"))
+						.groupBy(GroupByColumns.named("b"))
+						.build())
+				.contains(CubeQueryStep.edit(step)
+						.filter(ColumnFilter.matchEq("c", "c1"))
+						.groupBy(GroupByColumns.named("d"))
+						.build());
+	}
+
+	@Test
+	public void testCanInduce_OrDifferentColumns_noMeasure() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("a", "a1"))
+				.groupBy(GroupByColumns.named("b"))
+				.clearAggregators()
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(ColumnFilter.matchEq("c", "c1"))
+				.groupBy(GroupByColumns.named("d"))
+				.clearAggregators()
+				.build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1"))
+								.optimize())
+						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
+						.measure(Aggregator.empty())
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(2)
+				.contains(CubeQueryStep.edit(step)
+						.filter(ColumnFilter.matchEq("a", "a1"))
+						.groupBy(GroupByColumns.named("b"))
+						.measure(Aggregator.empty())
+						.build())
+				.contains(CubeQueryStep.edit(step)
+						.filter(ColumnFilter.matchEq("c", "c1"))
+						.groupBy(GroupByColumns.named("d"))
+						.measure(Aggregator.empty())
+						.build());
+	}
+
+	@Test
+	public void testCanInduce_AndDifferentColumns() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(
+						CubeQueryStep.edit(step)
+								.filter(FilterBuilder
+										.and(AndFilter.and(Map.of("a", "a1")),
+												FilterBuilder
+														.or(ColumnFilter.matchEq("b", "b1"),
+																ColumnFilter.matchEq("c", "c1"))
+														.combine())
+										.combine())
+								.groupBy(GroupByColumns.named("b", "c", "d"))
+								.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(2)
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.groupBy(GroupByColumns.named("b"))
+						.build())
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+						.groupBy(GroupByColumns.named("d"))
+						.build());
+	}
+
+	@Test
+	public void testCanInduce_AndDifferentColumns_andThirdOnlyCommonFilter() {
+		TableQuery tq1 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.groupBy(GroupByColumns.named("b"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq2 = TableQuery.edit(step)
+				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+				.groupBy(GroupByColumns.named("d"))
+				.aggregator(k1Sum)
+				.build();
+		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and(Map.of("a", "a1"))).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2, tq3));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1")))
+						.groupBy(GroupByColumns.named("b", "c", "d"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(3)
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.groupBy(GroupByColumns.named("b"))
+						.build())
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+						.groupBy(GroupByColumns.named("d"))
+						.build())
+				.contains(CubeQueryStep.edit(step).filter(ColumnFilter.matchEq("a", "a1")).build());
+	}
+
+	@Test
+	public void testCanInduce_SelfAndGranular() {
+		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
+		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
+	}
+
+	@Test
+	public void testCanInduce_chainOfInducers() {
+		TableQuery tqABC = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "c")).aggregator(k1Sum).build();
+		TableQuery tqAB = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
+		TableQuery tqA = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
+		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tqABC, tqAB, tqA));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(3)
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build())
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build())
+				.contains(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
+
+		Assertions.assertThat(split.getInducedToInducer().edgeSet())
+				// `a,b,c->a,b`, `a,b,c->a,c`, `a,c->a`
+				.hasSize(3)
+				.anySatisfy(e -> {
+					CubeQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
+					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
+
+					Assertions.assertThat(inducer)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+					Assertions.assertThat(induced)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+				})
+				.anySatisfy(e -> {
+					CubeQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
+					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
+
+					Assertions.assertThat(inducer)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+					Assertions.assertThat(induced)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
+				})
+				.anySatisfy(e -> {
+					CubeQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
+					CubeQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
+
+					// BEWARE `a,b` could also induce `a`, but it must not be `a,b,c`
+					NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
+					Assertions.assertThat(inducerColumns).hasSize(2).contains("a").containsAnyOf("b", "c");
+					Assertions.assertThat(induced)
+							.isEqualTo(CubeQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
+				});
+	}
+
+	/**
+	 * Given `GROUP BY a,b FILTER d`, `GROUP BY a,c FILTER d` and `GROUP BY a FILTER e`, we may generate a single
+	 * inducer `GROUP BY a,b,c FILTER d || e`. In the case `FILTER d` is empty, it is a pity to execute the filter
+	 * twice, given there is 1 steps with `FILTER d`.
+	 * 
+	 * hence, we ensure we add intermediate steps per `FILTER`, in order to share FILTER.
+	 */
+	@Test
+	public void testCanInduce_IntermediateNodeForFilterSharing() {
+		CubeQueryStep tq1 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a", "b"))
+				.filter(ColumnFilter.matchEq("d", "d1"))
+				.measure(k1Sum)
+				.build();
+		CubeQueryStep tq2 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a", "c"))
+				.filter(ColumnFilter.matchEq("d", "d1"))
+				.measure(k1Sum)
+				.build();
+		CubeQueryStep tq3 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a"))
+				.filter(ColumnFilter.matchEq("e", "e1"))
+				.measure(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("d", "d1"), ColumnFilter.matchEq("e", "e1"))
+								.optimize())
+						.groupBy(GroupByColumns.named("a", "b", "c", "d", "e"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(4)
+				.contains(tq1, tq2, tq3)
+				// intermediate for tq1 and tq2
+				.contains(CubeQueryStep.edit(step)
+						.filter(ColumnFilter.matchEq("d", "d1"))
+						.groupBy(GroupByColumns.named("a", "b", "c"))
+						.build());
+	}
+
+	// `a&b|a&b|a&b&c|a&c|d`
+	@Test
+	public void testCanInduce_IntermediateNodeForFilterSharing_deep() {
+		CubeQueryStep tq1 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+				.measure(k1Sum)
+				.build();
+		// second step has same filter with different groupBy
+		CubeQueryStep tq2 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("y"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+				.measure(k1Sum)
+				.build();
+		// third step has stricter filter
+		CubeQueryStep tq3 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1")))
+				.measure(k1Sum)
+				.build();
+		// fourth step has intermediate filter: it may lead to ordering issues
+		CubeQueryStep tq4 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
+				.measure(k1Sum)
+				.build();
+		// fifth step has unrelated filter
+		CubeQueryStep tq5 = CubeQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("x"))
+				.filter(AndFilter.and(ImmutableMap.of("d", "d1")))
+				.measure(k1Sum)
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3, tq4, tq5));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder
+								.or(ColumnFilter.matchEq("d", "d1"),
+										FilterBuilder
+												.and(ColumnFilter.matchEq("a", "a1"),
+														OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
+												.combine())
+								.combine())
+						.groupBy(GroupByColumns.named("a", "b", "c", "d", "x", "y"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds())
+				.hasSize(7)
+				.contains(tq1, tq2, tq3, tq4, tq5)
+
+				// intermediate to the `a|b|c` branch
+				.contains(CubeQueryStep.edit(step)
+						.filter(FilterBuilder
+								.and(ColumnFilter.matchEq("a", "a1"),
+										OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
+								.combine())
+						// `a` is not groupedBy as it is common to all
+						.groupBy(GroupByColumns.named("b", "c", "x", "y"))
+						.build())
+
+				// intermediate for the 2 `a|b` steps
+				.contains(CubeQueryStep.edit(step)
+						.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+						// BEWARE `c` is present as groupBy as this intermediate is also used for `a&b&c` step
+						.groupBy(GroupByColumns.named("c", "x", "y"))
+						.build());
+	}
+}

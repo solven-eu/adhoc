@@ -43,6 +43,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
@@ -147,7 +148,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + "=" + engineId;
+		return MoreObjects.toStringHelper(this).add("engineId", engineId).toString();
 	}
 
 	@Override
@@ -515,12 +516,12 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		List<ICuboid> underlyings = getUnderlyingColumns(queryStepToValues, underlyingSteps);
 
 		// BEWARE The need to call again `.wrapNode` looks weird
-		IMeasureQueryStep transformatorQuerySteps =
+		IMeasureQueryStep measureQuerySteps =
 				factories.getMeasureQueryStepFactory().makeQueryStep(queryStep, hasUnderlyingMeasures);
 
 		ICuboid coordinatesToValues;
 		try {
-			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
+			coordinatesToValues = measureQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
 			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryStep.getOptions())) {
 				IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();

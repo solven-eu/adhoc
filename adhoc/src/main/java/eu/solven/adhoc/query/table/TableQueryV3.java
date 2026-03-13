@@ -22,9 +22,11 @@
  */
 package eu.solven.adhoc.query.table;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -92,7 +94,12 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 		// https://stackoverflow.com/questions/23699371/distinct-by-property
 		return getGroupBys().stream()
 				.flatMap(gb -> gb.getNameToColumn().values().stream())
-				.collect(Collectors.toMap(IAdhocColumn::getName, p -> p, (p, q) -> p));
+				.collect(Collectors.toMap(IAdhocColumn::getName, p -> p, (p, q) -> {
+					if (!Objects.equals(p, q)) {
+						throw new IllegalArgumentException("%s!=%s".formatted(p, q));
+					}
+					return p;
+				}, LinkedHashMap::new));
 	}
 
 	public static TableQueryV3.TableQueryV3Builder edit(TableQuery tableQuery) {
@@ -120,7 +127,8 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 
 	}
 
-	protected CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
+	// TODO This should not be public
+	public CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {
 		// Recombine the stepFilter given the tableQuery filter and the measure filter
@@ -136,25 +144,37 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 				.build();
 	}
 
-	public void forEachCubeQuerySteps(IFilterOptimizer filterOptimizer,
-			BiConsumer<FilteredAggregator, CubeQueryStep> biConsumer) {
-		getAggregators().stream().forEach(filteredAggregator -> getGroupBys().stream().forEach(groupBy -> {
-			CubeQueryStep step = recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
+	public Stream<IGroupBy> streamGroupBy() {
+		Stream<IGroupBy> groupBysStream;
 
-			biConsumer.accept(filteredAggregator, step);
-		}));
+		if (groupBys.isEmpty()) {
+			groupBysStream = Stream.of(IGroupBy.GRAND_TOTAL);
+		} else {
+			groupBysStream = groupBys.stream();
+		}
+		return groupBysStream;
 	}
 
 	public Stream<TableQueryV2> streamV2() {
-		return groupBys.stream()
-				.map(groupBy -> TableQueryV2.builder()
-						.aggregators(getAggregators())
-						.customMarker(getCustomMarker())
-						.filter(getFilter())
-						.groupBy(groupBy)
-						.options(getOptions())
-						.topClause(getTopClause())
-						.build());
+		Stream<IGroupBy> groupBysStream = streamGroupBy();
+		return groupBysStream.map(groupBy -> TableQueryV2.builder()
+				.aggregators(getAggregators())
+				.customMarker(getCustomMarker())
+				.filter(getFilter())
+				.groupBy(groupBy)
+				.options(getOptions())
+				.topClause(getTopClause())
+				.build());
+	}
+
+	public Optional<IGroupBy> singleGroupBy() {
+		if (groupBys.isEmpty()) {
+			return Optional.of(IGroupBy.GRAND_TOTAL);
+		} else if (groupBys.size() == 1) {
+			return groupBys.stream().findFirst();
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	public Set<String> getGroupedByColumns() {
@@ -162,6 +182,10 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 				.flatMap(gb -> gb.getGroupedByColumns().stream())
 				.distinct()
 				.collect(ImmutableSet.toImmutableSet());
+	}
+
+	public static TableQueryV3Builder edit(CubeQueryStep step) {
+		return TableQueryV3.builder().options(step.getOptions()).customMarker(step.getCustomMarker());
 	}
 
 }

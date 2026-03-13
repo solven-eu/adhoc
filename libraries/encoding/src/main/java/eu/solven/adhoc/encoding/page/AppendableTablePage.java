@@ -145,7 +145,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 		public ITableRowRead freeze() {
 			if (columnNames.size() != size()) {
 				throw new IllegalArgumentException(
-						"keys size (%s) differs from values size (%s)".formatted(columnNames.size(), size()));
+						"keys size=%s differs from values size=%s".formatted(columnNames.size(), size()));
 			}
 
 			if (isLastRowPolled.get()) {

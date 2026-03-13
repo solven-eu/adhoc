@@ -36,8 +36,8 @@ import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +49,7 @@ import software.amazon.awssdk.services.redshiftdata.model.GetStatementResultRequ
 import software.amazon.awssdk.services.redshiftdata.model.RedshiftDataException;
 
 /**
- * Enables querying Google BigQuery.
+ * Enables querying Amazon Redshift.
  *
  * @author Benoit Lacelle
  */
@@ -67,7 +67,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, IJooqTableQueryFactory.QueryWithLeftover sqlQuery) {
+	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, QueryWithLeftover sqlQuery) {
 		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
 		String sqlStatement = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
@@ -129,9 +129,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 		// }
 	}
 
-	protected TabularRecordOverMaps toTabularRecord(QueryPod queryPod,
-			IJooqTableQueryFactory.QueryWithLeftover sqlQuery,
-			List<Field> row) {
+	protected TabularRecordOverMaps toTabularRecord(QueryPod queryPod, QueryWithLeftover sqlQuery, List<Field> row) {
 		Map<String, Object> aggregates = new LinkedHashMap<>();
 
 		{
@@ -190,7 +188,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected void debugResultQuery(IJooqTableQueryFactory.QueryWithLeftover resultQuery) {
+	protected void debugResultQuery(QueryWithLeftover resultQuery) {
 		// Default behavior is not valid as we do not have a JDBC Connection to execute the DEBUG SQL
 		log.info("[DEBUG] TODO Amazon Redshift");
 	}

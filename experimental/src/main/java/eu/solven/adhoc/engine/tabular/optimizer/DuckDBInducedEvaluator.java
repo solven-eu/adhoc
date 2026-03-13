@@ -79,10 +79,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Evaluates an induced {@link CubeQueryStep} via an in-process DuckDB engine. Provides a vectorized alternative to the
- * row-by-row Java streaming path in {@link ATableQueryOptimizer#evaluateInduced}.
+ * row-by-row Java streaming path in {@link ATableQueryFactory#evaluateInduced}.
  *
  * <p>
- * Each call materialises the inducer {@link ISliceToValue} into a transient in-memory DuckDB table, executes a
+ * Each call materialises the inducer {@link ICuboid} into a transient in-memory DuckDB table, executes a
  * {@code SELECT cols, AGG(v) FROM t WHERE filter GROUP BY cols} query, and reads the results back into an
  * {@link IMultitypeMergeableColumn}.
  *

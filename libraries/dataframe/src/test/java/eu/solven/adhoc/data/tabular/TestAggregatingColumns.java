@@ -32,6 +32,7 @@ import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.UndictionarizedColumn;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -45,7 +46,8 @@ public class TestAggregatingColumns {
 	public void testUnknownKey() {
 		aggregatingColumns.contribute("k", a).onLong(123);
 
-		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(a);
+		IMultitypeColumnFastGet<String> closedColumn =
+				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure("m").build(), a);
 
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();
@@ -62,7 +64,8 @@ public class TestAggregatingColumns {
 					Assertions.assertThat(value).hasSizeGreaterThan(1024);
 				});
 
-		IMultitypeColumnFastGet<String> closed = aggregatingColumns.closeColumn(Aggregator.sum("k"));
+		IMultitypeColumnFastGet<String> closed =
+				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure("m").build(), Aggregator.sum("k"));
 		Assertions.assertThat(closed).isInstanceOfSatisfying(MultitypeHashColumn.class, closed2 -> {
 			Field field = ReflectionUtils.findField(MultitypeHashColumn.class, "sliceToL");
 			field.setAccessible(true);
@@ -84,7 +87,8 @@ public class TestAggregatingColumns {
 					Assertions.assertThat(value).hasSizeGreaterThan(1024);
 				});
 
-		IMultitypeColumnFastGet<String> closed = aggregatingColumns.closeColumn(a);
+		IMultitypeColumnFastGet<String> closed =
+				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure("m").build(), a);
 		Assertions.assertThat(closed).isInstanceOfSatisfying(UndictionarizedColumn.class, closed2 -> {
 			Field field = ReflectionUtils.findField(UndictionarizedColumn.class, "column");
 			field.setAccessible(true);

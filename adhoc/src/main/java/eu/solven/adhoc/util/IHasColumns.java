@@ -23,12 +23,14 @@
 package eu.solven.adhoc.util;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.column.ColumnMetadata;
+import eu.solven.pepper.core.PepperStreamHelperHacked;
 
 /**
  * Helps describing the column of some data-structure.
@@ -46,12 +48,15 @@ public interface IHasColumns extends IHasColumnsKeySet, IHasColumnTypes {
 	Collection<ColumnMetadata> getColumns();
 
 	default Map<String, ColumnMetadata> getColumnsAsMap() {
-		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
+		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, Function.identity(), (a, b) -> {
+			throw new IllegalStateException("Duplicate key");
+		}, LinkedHashMap::new));
 	}
 
 	@Override
 	default Map<String, Class<?>> getColumnTypes() {
-		return getColumns().stream().collect(Collectors.toMap(ColumnMetadata::getName, ColumnMetadata::getType));
+		return getColumns().stream()
+				.collect(PepperStreamHelperHacked.toLinkedMap(ColumnMetadata::getName, ColumnMetadata::getType));
 	}
 
 	@Override

@@ -22,17 +22,9 @@
  */
 package eu.solven.adhoc.query.table;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
-import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -42,7 +34,6 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.top.AdhocTopClause;
@@ -101,69 +92,6 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 				.customMarker(tableQuery.getCustomMarker())
 				.options(tableQuery.getOptions())
 				.topClause(tableQuery.getTopClause());
-	}
-
-	/**
-	 * As {@link TableQueryV2} enables {@link FilteredAggregator}, it may pack multiple {@link TableQuery} into the same
-	 * {@link TableQueryV2}.
-	 * 
-	 * @param tableQueries
-	 * @return
-	 */
-	public static Set<TableQueryV2> fromV1(Set<TableQuery> tableQueries) {
-		Multimap<TableQuery, FilteredAggregator> groupByToFilteredAggregators =
-				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
-
-		AtomicLongMap<List<?>> filteredAggregatorAliasIndex = AtomicLongMap.create();
-
-		// groupBy tableQueries by `GROUP BY`, as TableQueryV2 relies on a single `GROUP BY` and as many `FILTER` as
-		// possible.
-		tableQueries.forEach(tableQuery -> {
-			tableQuery.getAggregators().forEach(aggregator -> {
-				// use as groupBy the tableQuery without aggregators and filters
-				// it enables keeping other options like customMarkers, which behave like groupBy in this phase
-				TableQuery groupBy = TableQuery.edit(tableQuery)
-						.clearAggregators()
-						// remove the filter from the `WHERE`
-						.filter(ISliceFilter.MATCH_ALL)
-						.build();
-				FilteredAggregator filteredAggregator = FilteredAggregator.builder()
-						.aggregator(aggregator)
-						// transfer the whole filter as `FILTER`
-						.filter(tableQuery.getFilter())
-						// The index should be unique per groupBy+aggregator, but it is simpler and totally fine to
-						// increment more often
-						.index(filteredAggregatorAliasIndex.getAndIncrement(List.of(groupBy, aggregator.getName())))
-						.build();
-				groupByToFilteredAggregators.put(groupBy, filteredAggregator);
-			});
-		});
-
-		Set<TableQueryV2> queriesV2 = new LinkedHashSet<>();
-
-		groupByToFilteredAggregators.asMap().forEach((groupBy, filteredAggregators) -> {
-			// This is the filter applicable to all aggregators: it will be applied in WHERE
-			Set<ISliceFilter> filters = filteredAggregators.stream()
-					.map(FilteredAggregator::getFilter)
-					.collect(Collectors.toCollection(LinkedHashSet::new));
-			ISliceFilter commonFilter = FilterHelpers.commonAnd(filters);
-
-			TableQueryV2Builder v2Builder = edit(groupBy).filter(commonFilter).clearAggregators();
-
-			filteredAggregators.forEach(filteredAggregator -> {
-				ISliceFilter strippedFromWhere =
-						FilterHelpers.stripWhereFromFilter(commonFilter, filteredAggregator.getFilter());
-				v2Builder.aggregator(filteredAggregator.toBuilder().filter(strippedFromWhere).build());
-			});
-
-			queriesV2.add(v2Builder.build());
-		});
-
-		return queriesV2;
-	}
-
-	public static TableQueryV2 fromV1(TableQuery tableQuery) {
-		return Iterables.getOnlyElement(fromV1(ImmutableSet.of(tableQuery)));
 	}
 
 	public TableQueryV3 toV3() {

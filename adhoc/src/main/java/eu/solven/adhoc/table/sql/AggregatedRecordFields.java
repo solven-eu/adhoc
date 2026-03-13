@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import lombok.Builder;
@@ -54,10 +55,14 @@ public class AggregatedRecordFields {
 	@Singular
 	ImmutableList<String> leftovers;
 
-	private Supplier<ImmutableList<String>> allColumns =
-			Suppliers.memoize(() -> ImmutableList.copyOf(Iterables.concat(getColumns(), getLeftovers())));
+	@NonNull
+	@Singular
+	ImmutableSet<String> groupingColumns;
 
-	public ImmutableList<String> getAllColumns() {
+	private Supplier<ImmutableSet<String>> allColumns =
+			Suppliers.memoize(() -> ImmutableSet.copyOf(Iterables.concat(getColumns(), getLeftovers())));
+
+	public ImmutableSet<String> getAllColumns() {
 		return allColumns.get();
 	}
 }

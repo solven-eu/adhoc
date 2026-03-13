@@ -35,9 +35,9 @@ import eu.solven.adhoc.eventbus.TableStepIsCompleted;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 
 /**
- * Used to report active operations, typically useful when some long operations is going on.
+ * Used to report active operations, typically useful when some long operations are going on.
  * 
- * @deprecated Beware we may have multiple CubeQuery refers to the same TableQuery. Should rely on queryId?
+ * @deprecated Beware we may have multiple CubeQuery instances refer to the same TableQuery. Should rely on queryId?
  * 
  * 
  * @author Benoit Lacelle

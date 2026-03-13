@@ -106,7 +106,7 @@ public class DuckDBHelper {
 	public static IDSLSupplier dslSupplier(DuckDBConnection duckDbConnection) {
 		DataSource dataSource = new DuckDBDataSource(duckDbConnection);
 
-		return StandardDSLSupplier.builder().dialect(SQLDialect.DUCKDB).dataSource(dataSource).build();
+		return StandardDSLSupplier.builder(false).dialect(SQLDialect.DUCKDB).dataSource(dataSource).build();
 	}
 
 	public static CoordinatesSample getCoordinates(JooqTableWrapper table,

@@ -38,6 +38,7 @@ import eu.solven.adhoc.query.filter.value.OrMatcher;
 import eu.solven.adhoc.query.filter.value.RegexMatcher;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
+import eu.solven.adhoc.table.transcoder.value.StandardCustomTypeManager;
 
 public class TestMoreFilterHelpers2 {
 
@@ -63,22 +64,7 @@ public class TestMoreFilterHelpers2 {
 	};
 
 	// Manager that never transcodes any column
-	static final ICustomTypeManagerSimple NO_TRANSCODE_MANAGER = new ICustomTypeManagerSimple() {
-		@Override
-		public boolean mayTranscode(String column) {
-			return false;
-		}
-
-		@Override
-		public Object toTable(String column, Object coordinate) {
-			return coordinate;
-		}
-
-		@Override
-		public IValueMatcher toTable(String column, IValueMatcher valueMatcher) {
-			return valueMatcher;
-		}
-	};
+	static final ICustomTypeManagerSimple NO_TRANSCODE_MANAGER = new StandardCustomTypeManager();
 
 	// -----------------------------------------------------------------------
 	// transcodeType

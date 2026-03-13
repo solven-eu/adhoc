@@ -23,6 +23,9 @@
 package eu.solven.adhoc.data.row;
 
 import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Helps creating a stream of {@link ITabularRecord}.
@@ -33,8 +36,25 @@ public interface ITabularRecordFactory {
 
 	List<String> getAggregates();
 
-	List<String> getColumns();
+	ImmutableSet<String> getColumns();
 
-	TabularRecordBuilder makeTabularRecordBuilder();
+	/**
+	 * With `GROUPING SET`, some column may be missing from each record.
+	 * 
+	 * @return
+	 */
+	List<String> getOptionalColumns();
+
+	default TabularRecordBuilder makeTabularRecordBuilder() {
+		return makeTabularRecordBuilder(ImmutableSet.of());
+	}
+
+	/**
+	 * 
+	 * @param absentColumns
+	 *            the columns which are not present, as we're considering a `GROUPING SET`
+	 * @return
+	 */
+	TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns);
 
 }

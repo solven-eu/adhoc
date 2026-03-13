@@ -25,7 +25,7 @@ package eu.solven.adhoc.coordinate;
 import java.util.List;
 
 /**
- * A column whic has been added calculated members. The typical case is to all `*` as an additional member, which
+ * A column which has been added calculated members. The typical case is to add `*` as an additional member, which
  * returns the value if current column was not grouped by.
  * 
  * Other example can be `WHERE someColumn LIKE 'a%'` to make a member evaluating the aggregate over the set of matching

@@ -40,7 +40,7 @@ public class UnsafeAdhocEventBusHelpers {
 	private static final AdhocEventsFromGuavaEventBusToSfl4j TO_SLF4J = new AdhocEventsFromGuavaEventBusToSfl4j();
 
 	/**
-	 * Wraps an {@link IAdhocEventBus} so that all events ares forked into a plain SLF4J log, with proper FQDN
+	 * Wraps an {@link IAdhocEventBus} so that all events are forked into a plain SLF4J log, with proper FQDN
 	 * management.
 	 */
 	@RequiredArgsConstructor

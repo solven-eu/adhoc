@@ -38,7 +38,7 @@ import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.experimental.UtilityClass;
 
 /**
- * Helps implementing {@link StandardQueryOptions#EXCEPTIONS_AS_MEASURE_VALUEX}
+ * Helps implementing {@link StandardQueryOptions#EXCEPTIONS_AS_MEASURE_VALUE}
  * 
  * @author Benoit Lacelle
  */
@@ -82,6 +82,11 @@ public class AdhocExceptionAsMeasureValueHelper {
 			@Override
 			public void close() {
 				// nothing to close
+			}
+
+			@Override
+			public Object getTableQuery() {
+				return transcodedQuery;
 			}
 		};
 	}

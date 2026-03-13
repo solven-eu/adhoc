@@ -30,11 +30,15 @@ import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerFactory;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducerFactory;
+import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducerFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactoryFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
+import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -70,25 +74,40 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 	@NonNull
 	@Default
-	final ITableQueryOptimizerFactory optimizerFactory = new TableQueryOptimizerFactory();
+	final ITableQueryFactoryFactory queryFactoryFactory = new TableQueryFactoryFactory();
+
+	@NonNull
+	@Default
+	final ITableQueryInducerFactory inducerFactory = new TableQueryInducerFactory();
 
 	@Override
 	public Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
 	}
 
-	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod) {
-		ITableQueryOptimizer optimizer = optimizerFactory.makeOptimizer(factories, queryPod);
+	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
+		// WithCache as this optimizer will be used for a single query
+		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
+	}
 
+	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod) {
+		// WithCache as this optimize will be used for a single query
+		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
+
+		ITableQueryFactory optimizer = queryFactoryFactory.makeOptimizer(factories, filterOptimizer, queryPod);
 		if (queryPod.isDebugOrExplain()) {
 			log.info("[EXPLAIN] Using optimizer={} for query={}", optimizer, queryPod.getQueryId());
 		}
 
-		return bootstrap(queryPod, optimizer);
+		ITableQueryInducer inducer = inducerFactory.makeInducer(factories, filterOptimizer);
+
+		return bootstrap(queryPod, optimizer, inducer);
 	}
 
-	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod, ITableQueryOptimizer optimizer) {
-		return new TableQueryEngineBootstrapped(factories, eventBus, queryPod, optimizer);
+	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod,
+			ITableQueryFactory optimizer,
+			ITableQueryInducer inducer) {
+		return new TableQueryEngineBootstrapped(factories, eventBus, queryPod, optimizer, inducer);
 	}
 
 }

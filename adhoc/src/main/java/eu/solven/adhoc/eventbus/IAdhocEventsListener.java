@@ -25,7 +25,7 @@ package eu.solven.adhoc.eventbus;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**
- * Describe each event which may be submitted by Adhoc.
+ * Describes each event which may be submitted by Adhoc.
  * 
  * An alternative is to just listen for {@link IAdhocEvent}
  * 

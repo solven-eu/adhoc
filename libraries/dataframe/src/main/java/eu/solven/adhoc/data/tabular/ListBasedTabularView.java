@@ -77,7 +77,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 		}
 
 		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
-			Map<String, ?> coordinatesAsMap = coordinates.getCoordinates();
+			Map<String, ?> coordinatesAsMap = coordinates.asAdhocMap();
 
 			return o -> {
 				Map<String, ?> oAsMap = (Map<String, ?>) o;
@@ -135,7 +135,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 	}
 
 	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
-		coordinates.add(slice.getCoordinates());
+		coordinates.add(slice.asAdhocMap());
 		values.add(mToValues);
 	}
 

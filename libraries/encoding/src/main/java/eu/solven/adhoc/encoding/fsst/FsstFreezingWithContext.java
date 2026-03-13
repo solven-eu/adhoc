@@ -23,6 +23,7 @@
 package eu.solven.adhoc.encoding.fsst;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,7 +49,7 @@ import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
  */
 public class FsstFreezingWithContext implements IFreezingWithContext {
 	private static final Set<Class<? extends Object>> FREEZABLE_CLASSES =
-			Sets.newHashSet(String.class, Utf8ByteSlice.class, null);
+			Sets.newLinkedHashSet(Arrays.asList(String.class, Utf8ByteSlice.class, null));
 
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	@Override

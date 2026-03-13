@@ -25,3 +25,10 @@ Enables:
 Enables:
 - Custom freezers. Normal customization goes with `IFreezingStrategy`.
 - `AdhocFreezingUnsafe.setCheckPostCompression(true);` can be used to investigate data-corruption in compression algorithms.
+
+## AdhocCaseInsensitivityUnsafe
+
+**BEWARE** Case-Insensitivity is not fully supported yet. Only a very limited number of cases are functional.
+
+Enable:
+- switching to case-insensitivity

@@ -25,6 +25,7 @@ package eu.solven.adhoc.data.tabular;
 import java.util.Set;
 
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
@@ -59,17 +60,18 @@ public interface IMultitypeMergeableGrid<T> {
 	 * 
 	 * @param aggregator
 	 * @param key
-	 * @return a {@link IValueReceiver} into which an aggregate ha to be written for given aggregator and given key
+	 * @return a {@link IValueReceiver} into which an aggregate has to be written for given aggregator and given key
 	 */
 	default IValueReceiver contribute(T key, IAliasedAggregator aggregator) {
 		return openSlice(key).contribute(aggregator);
 	}
 
 	/**
+	 * @param queryStep
 	 * @param aggregator
 	 * @return the close {@link IMultitypeColumnFastGet}
 	 */
-	IMultitypeColumnFastGet<T> closeColumn(IAliasedAggregator aggregator);
+	IMultitypeColumnFastGet<T> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator);
 
 	long size(IAliasedAggregator aggregator);
 

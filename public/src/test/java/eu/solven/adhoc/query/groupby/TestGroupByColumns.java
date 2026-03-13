@@ -75,6 +75,14 @@ public class TestGroupByColumns {
 		Assertions.assertThat(groupBy).hasToString("(a, b)");
 	}
 
+	@Test
+	public void testToString_refHasComa() {
+		Assertions.assertThat(GroupByColumns.grandTotal()).hasToString("grandTotal");
+
+		IGroupBy groupBy = GroupByColumns.named("a", "b,c");
+		Assertions.assertThat(groupBy).hasToString("(a, \"b,c\")");
+	}
+
 	@Builder
 	@Getter
 	public static class CustomTestColumn implements IAdhocColumn {
@@ -89,7 +97,6 @@ public class TestGroupByColumns {
 	@Test
 	public void testToString_customColumn() {
 		IGroupBy groupBy = GroupByColumns.of(ReferencedColumn.ref("a"), CustomTestColumn.builder().name("b").build());
-		Assertions.assertThat(groupBy)
-				.hasToString("GroupByColumns{size=2, #0=a=ReferencedColumn(name=a), #1=b=CustomTestColumn{name=b}}");
+		Assertions.assertThat(groupBy).hasToString("(a, CustomTestColumn{name=b})");
 	}
 }

@@ -26,7 +26,7 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * Some {@link IMultitypeColumn} needs no only `.append` but also to `.merge` into an already present slice.
+ * Some {@link IMultitypeColumn} need not only `.append` but also to `.merge` into an already present slice.
  * 
  * Typically used by {@link Partitionor}.
  * 

@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.primitives.Ints;
 
@@ -158,7 +159,7 @@ public final class ArrowReflection {
 		TabularRecordBuilder builder = factory.makeTabularRecordBuilder();
 
 		List<String> aggregates = factory.getAggregates();
-		List<String> columns = factory.getColumns();
+		Set<String> columns = factory.getColumns();
 
 		int vectorIndex = 0;
 
@@ -182,8 +183,8 @@ public final class ArrowReflection {
 	 * <p>
 	 * {@code VarCharVector.getObject()} returns an {@code org.apache.arrow.vector.util.Text} wrapping a UTF-8
 	 * byte-buffer. To avoid a UTF-8&nbsp;→&nbsp;UTF-16&nbsp;→&nbsp;UTF-8 round-trip when the value is later
-	 * FSST-compressed, this method wraps the raw buffer in an {@link AdhocUtf8} (zero copy) instead of decoding to a
-	 * {@link String}.
+	 * FSST-compressed, this method wraps the raw buffer in an {@link Utf8ByteSlice} (zero copy) instead of decoding to
+	 * a {@link String}.
 	 */
 	static Object convertValue(Object value) {
 		if (value == null) {

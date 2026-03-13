@@ -284,6 +284,28 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	}
 
 	@Test
+	public void testCoachScore_filterYear() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure("coach_score",
+						"goal_count",
+						// "redcard_count",
+						"match_count")
+				.andFilter("year", 1998L)
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of(), v -> {
+			Assertions.assertThat((Map) v).hasEntrySatisfying("coach_score", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(0.71, 0.72);
+			}).hasEntrySatisfying("goal_count", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.LONG).isEqualTo(148L);
+			}).hasEntrySatisfying("match_count", score -> {
+				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.LONG).isEqualTo(64L);
+			}).hasSize(3);
+		}).hasSize(1);
+	}
+
+	@Test
 	public void testCoachScore_sinceInception_groupByYear() {
 		ITabularView result = cube().execute(
 				CubeQuery.builder().measure("coach_score", "coach_score.sinceInception2").groupByAlso("year").build());
