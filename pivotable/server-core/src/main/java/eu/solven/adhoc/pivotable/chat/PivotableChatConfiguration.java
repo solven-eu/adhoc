@@ -32,9 +32,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -45,7 +45,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Activates the AI chat endpoint when {@code adhoc.pivotable.chat.anthropic-api-key} is set.
  *
- * <p>Example configuration:
+ * <p>
+ * Example configuration:
+ * 
  * <pre>{@code
  * adhoc:
  *   pivotable:

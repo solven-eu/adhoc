@@ -29,11 +29,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.data.aggregating.AggregatingColumns;
+import eu.solven.adhoc.data.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.tabular.AggregatingColumns;
-import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;

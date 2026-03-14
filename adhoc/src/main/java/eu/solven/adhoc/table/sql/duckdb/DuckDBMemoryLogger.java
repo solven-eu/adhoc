@@ -62,21 +62,23 @@ public class DuckDBMemoryLogger implements AutoCloseable {
 	// https://duckdb.org/docs/stable/sql/meta/duckdb_table_functions.html#duckdb_memory
 	private static final String SQL = "SELECT tag, memory_usage_bytes, temporary_storage_bytes FROM duckdb_memory()";
 
-	protected final DuckDBConnection monitorConn;
+	protected final DuckDBConnection sourceConnection;
+	protected final DuckDBConnection monitorConnection;
 	protected final ScheduledExecutorService scheduler;
 
 	/**
 	 * Creates and immediately starts the sampling daemon.
 	 *
-	 * @param source
+	 * @param sourceConnection
 	 *            the root {@link DuckDBConnection} whose memory is being monitored; a duplicate is created internally
 	 *            so the caller's connection is never touched by the daemon thread
 	 * @param period
 	 *            how often to call {@code duckdb_memory()}
 	 */
-	public DuckDBMemoryLogger(DuckDBConnection source, Duration period) {
+	public DuckDBMemoryLogger(DuckDBConnection sourceConnection, Duration period) {
+		this.sourceConnection = sourceConnection;
 		try {
-			monitorConn = source.duplicate();
+			monitorConnection = sourceConnection.duplicate();
 		} catch (SQLException e) {
 			throw new IllegalStateException("Issue duplicating DuckDB connection for memory logging", e);
 		}
@@ -90,29 +92,34 @@ public class DuckDBMemoryLogger implements AutoCloseable {
 	}
 
 	protected void sample() {
-		try (Statement st = monitorConn.createStatement(); ResultSet rs = st.executeQuery(SQL)) {
-			while (rs.next()) {
-				String tag = rs.getString("tag");
-				long memUsageBytes = rs.getLong("memory_usage_bytes");
-				long tmpStorageBytes = rs.getLong("temporary_storage_bytes");
-				log.info("DuckDB memory tag={} memory_usage_bytes={} temporary_storage_bytes={}",
-						tag,
-						memUsageBytes,
-						tmpStorageBytes);
-			}
-		} catch (Exception e) {
-			if (isConnectionClosed()) {
-				log.info("DuckDB monitoring connection closed — stopping memory logger");
-				scheduler.shutdown();
-			} else {
-				log.warn("Failed to sample duckdb_memory()", e);
+		if (isConnectionClosed()) {
+			log.info("DuckDB source connection closed — stopping memory logger");
+			close();
+		} else {
+			try (Statement st = monitorConnection.createStatement(); ResultSet rs = st.executeQuery(SQL)) {
+				while (rs.next()) {
+					String tag = rs.getString("tag");
+					long memUsageBytes = rs.getLong("memory_usage_bytes");
+					long tmpStorageBytes = rs.getLong("temporary_storage_bytes");
+					log.info("DuckDB memory tag={} memory_usage_bytes={} temporary_storage_bytes={}",
+							tag,
+							memUsageBytes,
+							tmpStorageBytes);
+				}
+			} catch (Exception e) {
+				if (isConnectionClosed()) {
+					log.info("DuckDB monitoring connection closed — stopping memory logger");
+					close();
+				} else {
+					log.warn("Failed to sample duckdb_memory()", e);
+				}
 			}
 		}
 	}
 
 	protected boolean isConnectionClosed() {
 		try {
-			return monitorConn.isClosed();
+			return sourceConnection.isClosed();
 		} catch (SQLException e) {
 			return true;
 		}
@@ -122,7 +129,7 @@ public class DuckDBMemoryLogger implements AutoCloseable {
 	public void close() {
 		scheduler.shutdown();
 		try {
-			monitorConn.close();
+			monitorConnection.close();
 		} catch (SQLException e) {
 			log.warn("Failed to close DuckDB monitoring connection", e);
 		}

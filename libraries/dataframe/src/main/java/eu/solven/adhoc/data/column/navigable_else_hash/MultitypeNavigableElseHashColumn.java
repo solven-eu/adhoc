@@ -35,7 +35,7 @@ import eu.solven.adhoc.data.column.SliceAndMeasure;
 import eu.solven.adhoc.data.column.StreamStrategy;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
-import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
+import eu.solven.adhoc.data.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Builder.Default;

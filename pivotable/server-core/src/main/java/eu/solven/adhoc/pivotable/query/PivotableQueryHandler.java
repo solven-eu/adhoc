@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.pivotable.query;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.UUID;
 
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -37,6 +41,8 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
+import eu.solven.adhoc.data.tabular.IReadableTabularView;
+import eu.solven.adhoc.data.tabular.ITabularViewArrowSerializer;
 import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
@@ -52,11 +58,13 @@ import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * Pivotable API for queries.
- * 
+ *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
@@ -66,6 +74,9 @@ public class PivotableQueryHandler {
 	final AdhocCubesRegistry cubesRegistry;
 
 	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
+
+	public static final MediaType ARROW_STREAM_MEDIA_TYPE =
+			MediaType.parseMediaType("application/vnd.apache.arrow.stream");
 
 	final AtomicLongMap<UUID> queryIdPolls = AtomicLongMap.create();
 
@@ -112,6 +123,52 @@ public class PivotableQueryHandler {
 	public Mono<ServerResponse> executeQuery(ServerRequest serverRequest) {
 		Mono<TargetedCubeQuery> queryOnSchemaMono = serverRequest.bodyToMono(TargetedCubeQuery.class);
 		return executeQuery(queryOnSchemaMono);
+	}
+
+	/**
+	 * Execute an {@link eu.solven.adhoc.query.cube.IAdhocQuery} defined through POST parameter and return the result as
+	 * a streaming Arrow IPC stream ({@code application/vnd.apache.arrow.stream}). Requires {@code adhoc-experimental}
+	 * (or any other {@link ITabularViewArrowSerializer} provider) on the runtime classpath.
+	 *
+	 * <p>
+	 * The serializer runs on a bounded-elastic thread so that blocking Arrow I/O does not stall the event loop. Each
+	 * internal write by the Arrow library produces one {@link DataBuffer} chunk, so the response body is streamed
+	 * incrementally rather than buffered into a single byte array.
+	 *
+	 * @param serverRequest
+	 * @return
+	 */
+	public Mono<ServerResponse> executeQueryAsArrow(ServerRequest serverRequest) {
+		DataBufferFactory bufferFactory = serverRequest.exchange().getResponse().bufferFactory();
+		Mono<TargetedCubeQuery> queryOnSchemaMono = serverRequest.bodyToMono(TargetedCubeQuery.class);
+		return executeQueryAsArrow(queryOnSchemaMono, bufferFactory);
+	}
+
+	protected Mono<ServerResponse> executeQueryAsArrow(Mono<TargetedCubeQuery> queryOnSchemaMono,
+			DataBufferFactory bufferFactory) {
+		return queryOnSchemaMono.map(queryOnSchema -> {
+			AdhocSchema schema = schemaRegistry.getSchema(queryOnSchema.getEndpointId());
+			return schema.execute(queryOnSchema.getCube(), queryOnSchema.getQuery());
+		})
+				.flatMap(view -> ServerResponse.ok()
+						.contentType(ARROW_STREAM_MEDIA_TYPE)
+						.body(BodyInserters.fromDataBuffers(serializeToArrowFlux(view, bufferFactory))));
+	}
+
+	protected Flux<DataBuffer> serializeToArrowFlux(IReadableTabularView view, DataBufferFactory bufferFactory) {
+		ITabularViewArrowSerializer serializer = ServiceLoader.load(ITabularViewArrowSerializer.class)
+				.findFirst()
+				.orElseThrow(() -> new IllegalStateException(
+						"No ITabularViewArrowSerializer on the classpath. Add adhoc-experimental as a runtime dependency."));
+
+		return Flux.<DataBuffer>create(sink -> {
+			try (DataBufferEmittingChannel channel = new DataBufferEmittingChannel(sink, bufferFactory)) {
+				serializer.serialize(view, channel);
+				sink.complete();
+			} catch (IOException | RuntimeException e) {
+				sink.error(e);
+			}
+		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	/**

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.chat;
+package eu.solven.adhoc.data.aggregating;
 
-import java.util.UUID;
+import java.util.Collection;
 
-import com.google.common.collect.ImmutableList;
-
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Singular;
-import lombok.Value;
-import lombok.extern.jackson.Jacksonized;
+import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import lombok.experimental.UtilityClass;
 
 /**
- * Body of a POST to the chat endpoint. Carries the user message, the targeted cube, and previous conversation turns so
- * that the LLM can maintain context.
- *
+ * 
+ * Helps building {@link Collection}, especially if it relies on a primitive type.
+ * 
  * @author Benoit Lacelle
+ * 
  */
-@Value
-@Builder
-@Jacksonized
-public class ChatRequest {
+// TODO Move to eu.solven.adhoc.data.tabular.primitives
+@UtilityClass
+public class AdhocPrimitiveMapHelpers {
 
-	@NonNull
-	UUID endpointId;
+	public static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
+		return newHashMapDefaultMinus1(AdhocColumnUnsafe.getDefaultColumnCapacity());
+	}
 
-	@NonNull
-	String cube;
+	@SuppressWarnings("PMD.LooseCoupling")
+	public static <T> Object2IntMap<T> newHashMapDefaultMinus1(int size) {
+		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(size);
 
-	@NonNull
-	String message;
+		// If we request an unknown slice, we must not map to an existing index
+		map.defaultReturnValue(-1);
 
-	/** Previous conversation turns, oldest first. May be empty for the first message. */
-	@NonNull
-	@Singular
-	ImmutableList<ChatMessage> conversations;
+		return map;
+	}
+
 }

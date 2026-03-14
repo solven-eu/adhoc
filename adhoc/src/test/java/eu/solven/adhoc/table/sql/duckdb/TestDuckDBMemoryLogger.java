@@ -72,16 +72,21 @@ public class TestDuckDBMemoryLogger {
 
 	@Test
 	public void closedConnectionStopsTheDaemon() throws Exception {
-		DuckDBConnection conn = DuckDBHelper.makeFreshInMemoryDb();
+		try (DuckDBConnection conn = DuckDBHelper.makeFreshInMemoryDb()) {
 
-		// Short period so the closed-connection is detected quickly
-		DuckDBMemoryLogger logger = new DuckDBMemoryLogger(conn, Duration.ofMillis(50));
+			// Short period so the closed-connection is detected quickly
+			try (DuckDBMemoryLogger logger = new DuckDBMemoryLogger(conn, Duration.ofMillis(50))) {
 
-		// Close the root connection to simulate a failure (e.g. exception during query execution)
-		conn.close();
+				// Close the root connection to simulate a failure (e.g. exception during query execution)
+				conn.close();
 
-		// The next sample() should detect the closed connection and shut down the scheduler
-		boolean terminated = logger.scheduler.awaitTermination(2, TimeUnit.SECONDS);
-		Assertions.assertThat(terminated).as("scheduler should have self-terminated after connection was closed").isTrue();
+				// The next sample() should detect the closed connection and shut down the scheduler
+				boolean terminated = logger.scheduler.awaitTermination(2, TimeUnit.SECONDS);
+				Assertions.assertThat(terminated)
+						.as("scheduler should have self-terminated after connection was closed")
+						.isTrue();
+
+			}
+		}
 	}
 }

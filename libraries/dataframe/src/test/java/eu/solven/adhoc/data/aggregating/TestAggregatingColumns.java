@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.data.aggregating;
 
 import java.lang.reflect.Field;
 

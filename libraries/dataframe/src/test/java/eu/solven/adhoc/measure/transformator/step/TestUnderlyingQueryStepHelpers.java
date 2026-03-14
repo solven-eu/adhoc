@@ -34,12 +34,12 @@ import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.data.join.SliceAndMeasures;
+import eu.solven.adhoc.data.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
 
 public class TestUnderlyingQueryStepHelpers {
 	@Test

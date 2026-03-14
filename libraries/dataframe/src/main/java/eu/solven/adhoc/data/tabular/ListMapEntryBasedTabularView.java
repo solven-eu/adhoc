@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.data.aggregating.AdhocPrimitiveMapHelpers;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.AdhocMapHelpers;
@@ -57,7 +58,7 @@ import lombok.extern.jackson.Jacksonized;
 @EqualsAndHashCode(callSuper = false)
 public class ListMapEntryBasedTabularView extends AListBasedTabularView implements ITabularView, IWritableTabularView {
 
-	// Split into 2 lists as a List of Map.Entry is not easy to serialize
+	// Split into a List of Map.Entry is not easy to serialize
 	@Default
 	@Getter
 	final List<TabularEntry> entries = new ArrayList<>();

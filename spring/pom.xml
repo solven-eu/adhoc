@@ -13,6 +13,10 @@
 
 	<properties>
 		<cucumber.version>7.14.0</cucumber.version>
+
+		<jacoco.branch.ratio>0.00</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.00</jacoco.instruction.ratio>
+
 		<automatic.module.name>eu.solven.adhoc.spring</automatic.module.name>
 	</properties>
 

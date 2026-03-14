@@ -77,6 +77,13 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ---
 
+## After every change
+
+- **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 85 % LOC / instruction coverage for new files. Test files live in the same module under `src/test/java/`.
+- **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change.
+
+---
+
 ## DO NOT — Prohibited actions
 
 - Do **NOT** modify test files (`src/test/java/**`).

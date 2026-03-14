@@ -31,9 +31,9 @@ import java.util.Optional;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,15 +51,16 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Handles POST {@code /cubes/chat}: proxies user messages to the Anthropic API with the cube schema
- * as context, and streams back simplified SSE events that the Vue chatbot can act on.
+ * Handles POST {@code /cubes/chat}: proxies user messages to the Anthropic API with the cube schema as context, and
+ * streams back simplified SSE events that the Vue chatbot can act on.
  *
- * <p>Simplified SSE event types emitted to the client:
+ * <p>
+ * Simplified SSE event types emitted to the client:
  * <ul>
- *   <li>{@code {"type":"text","content":"..."}} — a text fragment to display</li>
- *   <li>{@code {"type":"tool_use","name":"...","input":{...}}} — a tool call to apply to the query model</li>
- *   <li>{@code {"type":"done"}} — stream finished</li>
- *   <li>{@code {"type":"error","message":"..."}} — error</li>
+ * <li>{@code {"type":"text","content":"..."}} — a text fragment to display</li>
+ * <li>{@code {"type":"tool_use","name":"...","input":{...}}} — a tool call to apply to the query model</li>
+ * <li>{@code {"type":"done"}} — stream finished</li>
+ * <li>{@code {"type":"error","message":"..."}} — error</li>
  * </ul>
  *
  * @author Benoit Lacelle
@@ -67,6 +68,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Slf4j
 public class PivotableChatHandler {
+	private static final int MAX_TOKENS = 1024;
 
 	final PivotableAdhocSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
@@ -87,7 +89,7 @@ public class PivotableChatHandler {
 
 			Map<String, Object> anthropicBody = new LinkedHashMap<>();
 			anthropicBody.put("model", model);
-			anthropicBody.put("max_tokens", 1024);
+			anthropicBody.put("max_tokens", MAX_TOKENS);
 			anthropicBody.put("stream", true);
 			anthropicBody.put("system", systemPrompt);
 			anthropicBody.put("messages", messages);
@@ -146,24 +148,23 @@ public class PivotableChatHandler {
 	}
 
 	protected List<Map<String, Object>> buildTools() {
-		return List.of(
-				Map.of("name",
-						"set_measures",
-						"description",
-						"Select the measures to display in the query result. Replaces any previously selected measures.",
-						"input_schema",
-						Map.of("type",
-								"object",
-								"properties",
-								Map.of("measureNames",
-										Map.of("type",
-												"array",
-												"items",
-												Map.of("type", "string"),
-												"description",
-												"Exact measure names from the cube schema")),
-								"required",
-								List.of("measureNames"))),
+		return List.of(Map.of("name",
+				"set_measures",
+				"description",
+				"Select the measures to display in the query result. Replaces any previously selected measures.",
+				"input_schema",
+				Map.of("type",
+						"object",
+						"properties",
+						Map.of("measureNames",
+								Map.of("type",
+										"array",
+										"items",
+										Map.of("type", "string"),
+										"description",
+										"Exact measure names from the cube schema")),
+						"required",
+						List.of("measureNames"))),
 
 				Map.of("name",
 						"set_groupby",
@@ -198,11 +199,13 @@ public class PivotableChatHandler {
 				.accept(MediaType.TEXT_EVENT_STREAM)
 				.bodyValue(body)
 				.retrieve()
-				.bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {});
+				.bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {
+				});
 
 		return parseAnthropicStream(rawStream);
 	}
 
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected Flux<String> parseAnthropicStream(Flux<ServerSentEvent<String>> rawStream) {
 		return Flux.create(sink -> {
 			// Mutable state for the current content block

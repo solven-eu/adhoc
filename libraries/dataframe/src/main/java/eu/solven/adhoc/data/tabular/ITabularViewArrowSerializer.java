@@ -22,36 +22,30 @@
  */
 package eu.solven.adhoc.data.tabular;
 
-import java.util.Collection;
-
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import lombok.experimental.UtilityClass;
+import java.io.IOException;
+import java.nio.channels.WritableByteChannel;
 
 /**
- * 
- * Helps building {@link Collection}, especially if it relies on a primitive type.
- * 
+ * Converts an {@link IReadableTabularView} into an Apache Arrow IPC stream (application/vnd.apache.arrow.stream) and
+ * writes it to a {@link WritableByteChannel}.
+ *
+ * <p>
+ * Implementations are discovered at runtime via {@link java.util.ServiceLoader}. The {@code adhoc-experimental} module
+ * provides a default implementation backed by the Apache Arrow Java library.
+ *
  * @author Benoit Lacelle
- * 
  */
-// TODO Move to eu.solven.adhoc.data.tabular.primitives
-@UtilityClass
-public class AdhocPrimitiveMapHelpers {
+public interface ITabularViewArrowSerializer {
 
-	public static <T> Object2IntMap<T> newHashMapDefaultMinus1() {
-		return newHashMapDefaultMinus1(AdhocColumnUnsafe.getDefaultColumnCapacity());
-	}
-
-	@SuppressWarnings("PMD.LooseCoupling")
-	public static <T> Object2IntMap<T> newHashMapDefaultMinus1(int size) {
-		Object2IntOpenHashMap<T> map = new Object2IntOpenHashMap<>(size);
-
-		// If we request an unknown slice, we must not map to an existing index
-		map.defaultReturnValue(-1);
-
-		return map;
-	}
-
+	/**
+	 * Serializes the given view as an Arrow IPC stream and writes all bytes to {@code channel}.
+	 *
+	 * @param view
+	 *            the tabular view to serialize; must be fully materialized before calling this method
+	 * @param channel
+	 *            the destination channel; the caller is responsible for closing it
+	 * @throws IOException
+	 *             if writing to the channel fails
+	 */
+	void serialize(IReadableTabularView view, WritableByteChannel channel) throws IOException;
 }

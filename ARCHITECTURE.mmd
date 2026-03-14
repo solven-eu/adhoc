@@ -58,7 +58,7 @@ classDiagram
     class TableQueryEngine {
         IAdhocFactories factories
         IAdhocEventBus eventBus
-        ITableQueryFactoryFactory optimizerFactory
+        ITableQueryFactoryFactory queryFactoryFactory
         ITableQueryInducerFactory inducerFactory
     }
     class TableQueryFactoryFactory {
@@ -115,8 +115,8 @@ classDiagram
     }
 
     %% ─── Abstract classes ──────────────────────────────────────────
-    class AAdhocAtotiTable {
-        ITableAliaser transcoder
+    class AAtotiWrapper {
+        ITableAliaser aliaser
     }
 
     %% ─── Implements / Extends ──────────────────────────────────────
@@ -127,7 +127,7 @@ classDiagram
     ITableWrapper <|.. InMemoryTable
     ITableWrapper <|.. JooqTableWrapper
     IDSLSupplier <|.. StandardDSLSupplier
-    ITableWrapper <|.. AAdhocAtotiTable
+    ITableWrapper <|.. AAtotiWrapper
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
 
@@ -149,7 +149,7 @@ classDiagram
     StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
     TableQueryEngine *-- AdhocFactories : factories
     TableQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
-    TableQueryEngine *-- TableQueryFactoryFactory : optimizerFactory
+    TableQueryEngine *-- TableQueryFactoryFactory : queryFactoryFactory
     TableQueryEngine *-- TableQueryInducerFactory : inducerFactory
     CachingTableWrapper *-- ITableWrapper : decorated
     CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
@@ -162,7 +162,7 @@ classDiagram
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
     JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
-    AAdhocAtotiTable *-- AtotiAliaser : transcoder
+    AAtotiWrapper *-- AtotiAliaser : aliaser
     StandardQueryPreparator *-- IImplicitFilter : implicitFilter
     StandardQueryPreparator *-- IImplicitOptions : implicitOptions
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache

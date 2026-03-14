@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.data.tabular;
+package eu.solven.adhoc.data.aggregating;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 
 import eu.solven.adhoc.data.column.IMultitypeColumn;
 import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.data.tabular.primitives.Object2IntBiConsumer;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
