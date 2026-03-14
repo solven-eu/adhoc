@@ -72,7 +72,6 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 	@Getter
 	final ITableAliaser aliaser = AtotiAliaser.builder().build();
 
-
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
 		return InMemoryTable.compositeOnV2(queryPod, tableQuery, this::streamSlices);
