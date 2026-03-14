@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.groupingset;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 
 /**

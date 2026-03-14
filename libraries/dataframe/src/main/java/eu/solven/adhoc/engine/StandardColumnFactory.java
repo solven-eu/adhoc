@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.join.DagBottomUpStrategyNavigableElseHash;
+import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.transformator.iterator.DagBottomUpStrategyNavigableElseHash;
-import eu.solven.adhoc.measure.transformator.iterator.IDagBottomUpStrategy;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

@@ -29,8 +29,8 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;

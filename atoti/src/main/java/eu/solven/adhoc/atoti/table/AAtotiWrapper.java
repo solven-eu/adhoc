@@ -43,10 +43,10 @@ import com.quartetfs.fwk.query.QueryException;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.TableQuery;

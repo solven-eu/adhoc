@@ -1,0 +1,11 @@
+# Activated by Spring profile: IPivotableSpringProfiles.P_MCP = "pivotable-mcp"
+spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: pivotable-mcp-server
+        version: 0.0.17
+        # SSE transport — Claude Code connects via GET /mcp/sse
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message

@@ -31,8 +31,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.data.row.TabularRecordBuilder;
+import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
+import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import lombok.AllArgsConstructor;

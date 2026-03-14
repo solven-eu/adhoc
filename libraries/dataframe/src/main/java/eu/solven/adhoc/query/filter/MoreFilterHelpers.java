@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.query.filter.FilterMatcher.FilterMatcherBuilder;

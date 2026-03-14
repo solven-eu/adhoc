@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * A simple {@link IManyToMany1DDefinition} which is based on {@link SetMultimap}. This is typically used by unittests,
  * or simple/small/config-based manytomany.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -50,10 +50,6 @@ public class ManyToMany1DInMemoryDefinition implements IManyToMany1DDefinition {
 	@Override
 	public Set<Object> getGroups(Object element) {
 		return elementToGroups.get(element);
-	}
-
-	protected Stream<Object> streamMatchingGroups(IValueMatcher groupMatcher) {
-		return groupToElements.keySet().stream().filter(groupMatcher::match);
 	}
 
 	@Override
@@ -73,6 +69,10 @@ public class ManyToMany1DInMemoryDefinition implements IManyToMany1DDefinition {
 	@Override
 	public Set<?> getMatchingGroups(IValueMatcher groupMatcher) {
 		return streamMatchingGroups(groupMatcher).collect(ImmutableSet.toImmutableSet());
+	}
+
+	protected Stream<Object> streamMatchingGroups(IValueMatcher groupMatcher) {
+		return groupToElements.keySet().stream().filter(groupMatcher::match);
 	}
 
 	public void putElementToGroup(Object element, Object group) {

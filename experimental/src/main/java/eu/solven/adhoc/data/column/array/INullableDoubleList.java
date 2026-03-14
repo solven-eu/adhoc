@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.data.column.array;
 
-import eu.solven.adhoc.data.tabular.primitives.Int2DoubleBiConsumer;
+import eu.solven.adhoc.dataframe.tabular.primitives.Int2DoubleBiConsumer;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 
 /**

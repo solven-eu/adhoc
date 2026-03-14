@@ -28,12 +28,12 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

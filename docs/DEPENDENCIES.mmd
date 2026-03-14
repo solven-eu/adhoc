@@ -1,0 +1,73 @@
+flowchart TD
+    adhoc["adhoc"]
+    adhoc_aggregate["adhoc-aggregate"]
+    adhoc_atoti["adhoc-atoti"]
+    adhoc_calcite["adhoc-calcite"]
+    adhoc_experimental["adhoc-experimental"]
+    adhoc_jmh["adhoc-jmh"]
+    adhoc_cell["adhoc-cell"]
+    adhoc_dataframe["adhoc-dataframe"]
+    adhoc_encoding["adhoc-encoding"]
+    adhoc_filters["adhoc-filters"]
+    adhoc_fsst["adhoc-fsst"]
+    adhoc_measures["adhoc-measures"]
+    adhoc_libraries["adhoc-libraries"]
+    pivotable_authorization["pivotable-authorization"]
+    pivotable_js["pivotable-js"]
+    pivotable_mcp["pivotable-mcp"]
+    pivotable["pivotable"]
+    pivotable_public["pivotable-public"]
+    pivotable_server_core["pivotable-server-core"]
+    pivotable_server["pivotable-server"]
+    pivotable_tools["pivotable-tools"]
+    adhoc_public["adhoc-public"]
+    adhoc_spring["adhoc-spring"]
+    adhoc_training["adhoc-training"]
+
+    subgraph spring-boot-starter-parent
+        aggregator_adhoc["aggregator-adhoc"]
+    end
+
+    adhoc --> adhoc_public
+    adhoc --> adhoc_encoding
+    adhoc --> adhoc_dataframe
+    adhoc --> adhoc_cell
+    adhoc --> adhoc_measures
+    adhoc_aggregate --> adhoc_fsst
+    adhoc_aggregate --> adhoc_cell
+    adhoc_aggregate --> adhoc_filters
+    adhoc_aggregate --> adhoc_measures
+    adhoc_aggregate --> adhoc_dataframe
+    adhoc_aggregate --> adhoc
+    adhoc_aggregate --> adhoc_experimental
+    adhoc_aggregate --> pivotable_server
+    adhoc_atoti --> adhoc
+    adhoc_calcite --> adhoc
+    adhoc_experimental --> adhoc
+    adhoc_jmh --> adhoc
+    adhoc_jmh --> adhoc_experimental
+    adhoc_jmh --> adhoc_fsst
+    adhoc_cell --> adhoc_encoding
+    adhoc_cell --> adhoc_filters
+    adhoc_cell -.-> adhoc_public
+    adhoc_dataframe --> adhoc_public
+    adhoc_dataframe --> adhoc_encoding
+    adhoc_dataframe --> adhoc_cell
+    adhoc_dataframe --> adhoc_measures
+    adhoc_encoding --> adhoc_public
+    adhoc_encoding --> adhoc_fsst
+    adhoc_filters --> adhoc_public
+    adhoc_measures --> adhoc_cell
+    adhoc_measures -.-> adhoc_public
+    pivotable_authorization --> pivotable_tools
+    pivotable_authorization --> pivotable_public
+    pivotable_mcp --> pivotable_server_core
+    pivotable_public --> adhoc_filters
+    pivotable_server_core --> adhoc
+    pivotable_server_core --> pivotable_tools
+    pivotable_server_core --> pivotable_public
+    pivotable_server --> pivotable_server_core
+    pivotable_server --> pivotable_authorization
+    pivotable_server --> pivotable_js
+    adhoc_spring --> adhoc
+    adhoc_training --> pivotable_server

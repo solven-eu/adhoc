@@ -100,11 +100,6 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 	}
 
 	@Override
-	public boolean containsStep(CubeQueryStep queryStep) {
-		return stepToTables.containsKey(queryStep);
-	}
-
-	@Override
 	public Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query,
 			IFilterOptimizer filterOptimizer) {
 		return query.getAggregators().stream().flatMap(filteredAggregator -> {
@@ -123,5 +118,10 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 				}
 			}).filter(Objects::nonNull);
 		});
+	}
+
+	@Override
+	public boolean containsStep(CubeQueryStep queryStep) {
+		return stepToTables.containsKey(queryStep);
 	}
 }

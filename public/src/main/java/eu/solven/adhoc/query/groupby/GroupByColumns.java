@@ -50,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link IGroupBy} based on a {@link Set} of {@link IAdhocColumn}.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -69,11 +69,6 @@ public class GroupByColumns implements IGroupBy {
 	@JsonIgnore
 	final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn =
 			Suppliers.memoize(() -> namedColumns(getColumns()));
-
-	@Override
-	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
-		return cachedNameToColumn.get();
-	}
 
 	@Override
 	public String toString() {
@@ -100,15 +95,17 @@ public class GroupByColumns implements IGroupBy {
 		}).collect(Collectors.joining(", ", "(", ")"));
 	}
 
-	public static IGroupBy of(Collection<? extends IAdhocColumn> columns) {
-		// `namedColumns` is useful to check the consistency of names
-		namedColumns(columns);
-
-		return GroupByColumns.builder().columns(List.copyOf(columns)).build();
+	@Override
+	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
+		return cachedNameToColumn.get();
 	}
 
-	public static IGroupBy of(IAdhocColumn wildcard, IAdhocColumn... wildcards) {
-		return of(Lists.asList(wildcard, wildcards));
+	/**
+	 *
+	 * @return grandTotal as there is no wildcard column.
+	 */
+	public static IGroupBy grandTotal() {
+		return named(ImmutableSet.of());
 	}
 
 	public static IGroupBy named(Collection<String> columns) {
@@ -119,12 +116,15 @@ public class GroupByColumns implements IGroupBy {
 		return named(Lists.asList(column, moreColumns));
 	}
 
-	/**
-	 * 
-	 * @return grandTotal as there is no wildcard column.
-	 */
-	public static IGroupBy grandTotal() {
-		return named(ImmutableSet.of());
+	public static IGroupBy of(Collection<? extends IAdhocColumn> columns) {
+		// `namedColumns` is useful to check the consistency of names
+		namedColumns(columns);
+
+		return GroupByColumns.builder().columns(List.copyOf(columns)).build();
+	}
+
+	public static IGroupBy of(IAdhocColumn wildcard, IAdhocColumn... wildcards) {
+		return of(Lists.asList(wildcard, wildcards));
 	}
 
 	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {

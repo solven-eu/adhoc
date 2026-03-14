@@ -31,32 +31,25 @@ import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**
  * This {@link ITableStepsGrouper} will generate a {@link TableQueryV3} by differing options.
- * 
+ *
  * Custom markers are nullified (but this may can be easily tweaked): if 2 {@link CubeQueryStep} differs by
  * customMarker, they will be executed a single {@link TableQueryV3} with no customMarker.
- * 
+ *
  * This {@link ITableStepsGrouper} will minimize the number of {@link TableQueryV3} per {@link CubeQuery}.
- * 
+ *
  * @author Benoit Lacelle
  */
 public class TableStepsGrouper implements ITableStepsGrouper {
 
-	// @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
-	protected Object contextOnly(Object customMarker) {
-		// In most cases, 2 different customMarker should lead to a single tableQuery, except in very special scenario
-		// (Example: `CCY=EUR` and `CCY=USD` may map to 2 different tables).
-		// TODO UnitTest this scenario
-
-		// TODO For now we return the customMarker, as we did not find how to manage null properly
-		// Typically, we need a way to restore customMarker in
-		// ITableQueryOptimizer.SplitTableQueries.forEachCubeQuerySteps
-		return customMarker;
+	@Override
+	public CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer) {
+		return contextOnly(inducer);
 	}
 
 	/**
 	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the
 	 * customMarker.
-	 * 
+	 *
 	 * @param inducer
 	 * @return a CubeQueryStep which has been fleshed-out of what's not the query context.
 	 */
@@ -69,9 +62,16 @@ public class TableStepsGrouper implements ITableStepsGrouper {
 				.build();
 	}
 
-	@Override
-	public CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer) {
-		return contextOnly(inducer);
+	// @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
+	protected Object contextOnly(Object customMarker) {
+		// In most cases, 2 different customMarker should lead to a single tableQuery, except in very special scenario
+		// (Example: `CCY=EUR` and `CCY=USD` may map to 2 different tables).
+		// TODO UnitTest this scenario
+
+		// TODO For now we return the customMarker, as we did not find how to manage null properly
+		// Typically, we need a way to restore customMarker in
+		// ITableQueryOptimizer.SplitTableQueries.forEachCubeQuerySteps
+		return customMarker;
 	}
 
 }

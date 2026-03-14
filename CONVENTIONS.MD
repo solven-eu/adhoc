@@ -5,6 +5,19 @@
 
 ---
 
+## Running Convention Checks
+
+To scan the whole codebase in one shot:
+
+```bash
+./scripts/check-conventions.sh
+```
+
+Individual checkers can also be run directly (see **Quick scan** notes in each section below).
+All checkers are informational — they never block the build.
+
+---
+
 ## General Principles
 
 - Code should be easy to read and understand.
@@ -48,16 +61,21 @@
   - `ImmutableList.of(…)` instead of `new ArrayList<>(…)` or `List.of(…)`
   - `.collect(ImmutableSet.toImmutableSet())` instead of `.collect(Collectors.toSet())` or `.collect(Collectors.toCollection(LinkedHashSet::new))`
   - Note: `List.of().contains(null)` throws; Guava equivalents behave consistently.
-  - Exception: unit tests may use JDK factories for conciseness.
 - **Ordered mutability when mutation is needed**: when a collection must be mutated after construction, prefer insertion-ordered types over unordered ones.
   - `LinkedHashSet` over `HashSet`
   - `LinkedHashMap` over `HashMap`
   - `.collect(Collectors.toCollection(LinkedHashSet::new))` over `.collect(Collectors.toSet())`
   - `Collectors.groupingBy(keyFn, LinkedHashMap::new, downstream)` over `Collectors.groupingBy(keyFn, downstream)` — the 2-arg overload produces a `HashMap` whose iteration order is non-deterministic across JVM runs, causing subtly unstable query results.
   - `PepperStreamHelperHacked.toLinkedMap(kFn, vFn)` over `Collectors.toMap(kFn, vFn)` — prefer the helper which enforces `LinkedHashMap` and a throwing merge function. Use the 4-arg `Collectors.toMap(..., LinkedHashMap::new)` only when `PepperStreamHelperHacked` is not on the classpath (e.g. `libraries/dataframe`).
+  - **Quick scan**: `perl scripts/check-convention-linked.pl` — detects `new HashMap`, `new HashSet`, and bare `Collectors.toMap`.
 - **Prefer Guava immutable collections** over JDK factories (applies even for literal constructions):
   - `ImmutableList.of(…)` instead of `List.of(…)`
   - `ImmutableSet.of(…)` instead of `Set.of(…)`
+  - **Quick scan**: `perl scripts/check-convention-guava.pl` — detects `Set.of`, `List.of`, `Map.of`, `Collectors.toSet()`, `Collectors.toList()`.
+- **Map literals with 2+ entries**: `Map.of(` and `ImmutableMap.of(` are permitted only for 0 or 1 entry. For 2 or more entries, use `ImmutableMap.builder().put(…).put(…).build()` for readability.
+  - `ImmutableMap.of("k", v)` — OK (1 entry)
+  - `ImmutableMap.builder().put("k1", v1).put("k2", v2).build()` — required for 2+ entries
+  - **Quick scan**: `perl scripts/check-convention-map-builder.pl` — detects multi-entry `Map.of`/`ImmutableMap.of` calls.
 
 ---
 
@@ -97,6 +115,7 @@ protected ITabularView toTabularView(...) { ... }      // (4)
 - Static constants and fields precede all methods, as usual.
 - Constructors follow fields and precede instance methods.
 - This rule applies to **new or substantially refactored classes**. Existing classes are migrated incrementally — do not reorder a whole file just to satisfy this rule unless that is the explicit goal of the current task.
+- **Quick scan**: `perl scripts/check-convention-stepdown.pl` — reports callee-above-caller violations.
 
 ---
 
@@ -105,6 +124,7 @@ protected ITabularView toTabularView(...) { ... }      // (4)
 - **SLF4J**: always use `{}` placeholders, never string concatenation.
   - Correct: `log.debug("Processing {} rows", count);`
   - Wrong:   `log.debug("Processing " + count + " rows");`
+  - **Quick scan**: `perl scripts/check-convention-logging.pl` — detects string concatenation in log calls.
 
 ---
 

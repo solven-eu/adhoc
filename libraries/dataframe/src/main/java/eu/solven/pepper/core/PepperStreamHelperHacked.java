@@ -42,13 +42,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class PepperStreamHelperHacked {
 
-	public static <T> BinaryOperator<T> throwingMerger() {
-		return (u, v) -> {
-			throw new IllegalStateException("Duplicate key over values %s and %s"
-					.formatted(PepperLogHelper.getObjectAndClass(u), PepperLogHelper.getObjectAndClass(v)));
-		};
-	}
-
 	/**
 	 *
 	 * http://stackoverflow.com/questions/31004899/java-8-collectors-tomap-sortedmap
@@ -60,5 +53,12 @@ public class PepperStreamHelperHacked {
 	public static <T, K, U> Collector<T, ?, Map<K, U>> toLinkedMap(Function<? super T, ? extends K> keyMapper,
 			Function<? super T, ? extends U> valueMapper) {
 		return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new);
+	}
+
+	public static <T> BinaryOperator<T> throwingMerger() {
+		return (u, v) -> {
+			throw new IllegalStateException("Duplicate key over values %s and %s"
+					.formatted(PepperLogHelper.getObjectAndClass(u), PepperLogHelper.getObjectAndClass(v)));
+		};
 	}
 }

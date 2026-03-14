@@ -26,8 +26,8 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 

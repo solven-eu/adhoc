@@ -73,6 +73,9 @@ public class TestCubeQueryStep {
 		// transverseCache is still valid after an `invalidateAll`
 		step.invalidateAll();
 		Assertions.assertThat(step.getTransverseCache()).isSameAs(transverseCache);
+
+		CubeQueryStep copy = step.toBuilder().build();
+		Assertions.assertThat(copy.getTransverseCache()).isSameAs(transverseCache);
 	}
 
 	@Test

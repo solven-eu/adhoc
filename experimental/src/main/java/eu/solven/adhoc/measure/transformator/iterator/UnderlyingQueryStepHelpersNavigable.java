@@ -34,11 +34,12 @@ import java.util.stream.StreamSupport;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.extern.slf4j.Slf4j;

@@ -40,8 +40,8 @@ import org.junit.jupiter.api.Test;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.measure.aggregation.collection.AtomicLongMapAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
