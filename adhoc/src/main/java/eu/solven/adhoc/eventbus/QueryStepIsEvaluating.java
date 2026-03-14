@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;

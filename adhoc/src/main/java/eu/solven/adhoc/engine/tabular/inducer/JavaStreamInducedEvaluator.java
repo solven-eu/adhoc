@@ -30,8 +30,8 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;

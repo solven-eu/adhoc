@@ -26,9 +26,9 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;

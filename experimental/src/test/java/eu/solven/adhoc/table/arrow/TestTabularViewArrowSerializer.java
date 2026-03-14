@@ -27,7 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,8 +46,11 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.tabular.ColumnarTabularView;
-import eu.solven.adhoc.data.tabular.ListBasedTabularView;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.dataframe.tabular.ColumnarTabularView;
+import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
 
 /**
  * Unit tests for {@link TabularViewArrowSerializer}. Each test serializes a view and then deserializes the resulting
@@ -106,14 +109,13 @@ public class TestTabularViewArrowSerializer {
 	@Test
 	void stringColumn() throws IOException {
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("country", "FR"), Map.of("country", "DE"))))
-				.values(new ArrayList<>(List.of(Map.of("label", "France"), Map.of("label", "Germany"))))
+				.coordinates(ImmutableList.of(Map.of("country", "FR"), Map.of("country", "DE")))
+				.values(ImmutableList.of(Map.of("label", "France"), Map.of("label", "Germany")))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			Assertions.assertThat(root.getRowCount()).isEqualTo(2);
 
 			VarCharVector country = (VarCharVector) root.getVector("country");
@@ -132,14 +134,13 @@ public class TestTabularViewArrowSerializer {
 	@Test
 	void longColumn() throws IOException {
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("ccy", "EUR"))))
-				.values(new ArrayList<>(List.of(Map.of("revenue", 123_456L))))
+				.coordinates(ImmutableList.of(Map.of("ccy", "EUR")))
+				.values(ImmutableList.of(Map.of("revenue", 123_456L)))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			BigIntVector revenue = (BigIntVector) root.getVector("revenue");
 			Assertions.assertThat(revenue.get(0)).isEqualTo(123_456L);
 		}
@@ -152,14 +153,13 @@ public class TestTabularViewArrowSerializer {
 	@Test
 	void intColumn() throws IOException {
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("k", "a"))))
-				.values(new ArrayList<>(List.of(Map.of("count", 42))))
+				.coordinates(ImmutableList.of(Map.of("k", "a")))
+				.values(ImmutableList.of(Map.of("count", 42)))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			IntVector count = (IntVector) root.getVector("count");
 			Assertions.assertThat(count.get(0)).isEqualTo(42);
 		}
@@ -172,14 +172,13 @@ public class TestTabularViewArrowSerializer {
 	@Test
 	void doubleColumn() throws IOException {
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("k", "a"))))
-				.values(new ArrayList<>(List.of(Map.of("rate", 0.05))))
+				.coordinates(ImmutableList.of(Map.of("k", "a")))
+				.values(ImmutableList.of(Map.of("rate", 0.05)))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			Float8Vector rate = (Float8Vector) root.getVector("rate");
 			Assertions.assertThat(rate.get(0)).isEqualTo(0.05);
 		}
@@ -192,14 +191,13 @@ public class TestTabularViewArrowSerializer {
 	@Test
 	void booleanColumn() throws IOException {
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("k", "a"), Map.of("k", "b"))))
-				.values(new ArrayList<>(List.of(Map.of("flag", Boolean.TRUE), Map.of("flag", Boolean.FALSE))))
+				.coordinates(ImmutableList.of(Map.of("k", "a"), Map.of("k", "b")))
+				.values(ImmutableList.of(Map.of("flag", Boolean.TRUE), Map.of("flag", Boolean.FALSE)))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			BitVector flag = (BitVector) root.getVector("flag");
 			Assertions.assertThat(flag.get(0)).isEqualTo(1);
 			Assertions.assertThat(flag.get(1)).isEqualTo(0);
@@ -214,14 +212,13 @@ public class TestTabularViewArrowSerializer {
 	void localDateColumn() throws IOException {
 		LocalDate date = LocalDate.of(2024, 6, 15);
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("date", date))))
-				.values(new ArrayList<>(List.of(Map.of("revenue", 100L))))
+				.coordinates(ImmutableList.of(Map.of("date", date)))
+				.values(ImmutableList.of(Map.of("revenue", 100L)))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			Schema schema = root.getSchema();
 			Assertions.assertThat(schema.findField("date").getType())
 					.isInstanceOf(org.apache.arrow.vector.types.pojo.ArrowType.Date.class);
@@ -237,24 +234,19 @@ public class TestTabularViewArrowSerializer {
 
 	@Test
 	void nullValues() throws IOException {
-		List<Map<String, ?>> coords = new ArrayList<>();
-		coords.add(Map.of("k", "a"));
-		coords.add(Map.of("k", "b"));
-
-		// Use a mutable map so we can store null
-		List<Map<String, ?>> vals = new ArrayList<>();
-		Map<String, Object> row0 = new java.util.LinkedHashMap<>();
+		// LinkedHashMap required to store null values (ImmutableList/Map.of reject nulls)
+		Map<String, Object> row0 = new LinkedHashMap<>();
 		row0.put("revenue", 10L);
-		Map<String, Object> row1 = new java.util.LinkedHashMap<>();
+		Map<String, Object> row1 = new LinkedHashMap<>();
 		row1.put("revenue", null);
-		vals.add(row0);
-		vals.add(row1);
 
-		ListBasedTabularView view = ListBasedTabularView.builder().coordinates(coords).values(vals).build();
+		ListBasedTabularView view = ListBasedTabularView.builder()
+				.coordinates(ImmutableList.of(Map.of("k", "a"), Map.of("k", "b")))
+				.values(ImmutableList.of(row0, row1))
+				.build();
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			BigIntVector revenue = (BigIntVector) root.getVector("revenue");
 			Assertions.assertThat(revenue.isNull(1)).isTrue();
 		}
@@ -266,19 +258,14 @@ public class TestTabularViewArrowSerializer {
 
 	@Test
 	void mixedTypesFallsBackToUtf8() throws IOException {
-		List<Map<String, ?>> coords = new ArrayList<>();
-		coords.add(Map.of("k", "a"));
-		coords.add(Map.of("k", "b"));
+		ListBasedTabularView view = ListBasedTabularView.builder()
+				.coordinates(ImmutableList.of(Map.of("k", "a"), Map.of("k", "b")))
+				.values(ImmutableList.of(Map.of("mixed", "hello"), Map.of("mixed", 42L)))
+				.build();
 
-		List<Map<String, ?>> vals = new ArrayList<>();
-		vals.add(Map.of("mixed", "hello"));
-		vals.add(Map.of("mixed", 42L)); // different type → Utf8
-
-		ListBasedTabularView view = ListBasedTabularView.builder().coordinates(coords).values(vals).build();
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			FieldVector mixed = root.getVector("mixed");
 			Assertions.assertThat(mixed).isInstanceOf(VarCharVector.class);
 		}
@@ -296,8 +283,7 @@ public class TestTabularViewArrowSerializer {
 
 		byte[] bytes = roundTripColumnar(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
 			Assertions.assertThat(root.getRowCount()).isEqualTo(2);
 
 			VarCharVector country = (VarCharVector) root.getVector("country");
@@ -316,17 +302,18 @@ public class TestTabularViewArrowSerializer {
 
 	@Test
 	void schemaOrderCoordinatesFirst() throws IOException {
+		// ImmutableMap preserves insertion order by contract
 		ListBasedTabularView view = ListBasedTabularView.builder()
-				.coordinates(new ArrayList<>(List.of(Map.of("country", "FR", "ccy", "EUR"))))
-				.values(new ArrayList<>(List.of(Map.of("revenue", 1L, "cost", 2L))))
+				.coordinates(ImmutableList
+						.of(ImmutableMap.<String, Object>builder().put("country", "FR").put("ccy", "EUR").build()))
+				.values(ImmutableList
+						.of(ImmutableMap.<String, Object>builder().put("revenue", 1L).put("cost", 2L).build()))
 				.build();
 
 		byte[] bytes = roundTrip(view);
 
-		try (BufferAllocator allocator = new RootAllocator()) {
-			VectorSchemaRoot root = readBatch(bytes, allocator);
-			Schema schema = root.getSchema();
-			List<String> fieldNames = schema.getFields().stream().map(f -> f.getName()).toList();
+		try (BufferAllocator allocator = new RootAllocator(); VectorSchemaRoot root = readBatch(bytes, allocator)) {
+			List<String> fieldNames = root.getSchema().getFields().stream().map(f -> f.getName()).toList();
 			Assertions.assertThat(fieldNames.subList(0, 2)).containsExactly("country", "ccy");
 			Assertions.assertThat(fieldNames.subList(2, 4)).containsExactly("revenue", "cost");
 		}

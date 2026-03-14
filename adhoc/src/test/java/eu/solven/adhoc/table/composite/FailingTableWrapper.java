@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;

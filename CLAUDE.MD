@@ -81,12 +81,13 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 - **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 85 % LOC / instruction coverage for new files. Test files live in the same module under `src/test/java/`.
 - **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change.
+- **Final pass**: Before declaring work done, review all touched files for convention violations (see `CONVENTIONS.MD`) and obvious simplifications — e.g. `ImmutableList.of(…)` instead of `new ArrayList<>(List.of(…))`, `ImmutableMap.builder()` instead of `LinkedHashMap` or multi-entry `Map.of`, unnecessary mutability, dead variables, overly verbose expressions. Note: `ImmutableMap` preserves insertion order by contract, so `LinkedHashMap` is only justified when null keys/values are required. Apply fixes in the same commit.
 
 ---
 
 ## DO NOT — Prohibited actions
 
-- Do **NOT** modify test files (`src/test/java/**`).
+- Do **NOT** modify test files (`src/test/java/**`) to change test assertions or business logic. You **may** fix resource leaks, compilation errors, or other clear bugs in existing test files.
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
 - Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
 - Do **NOT** modify anything under `pivotable/js/` (JS/TS handled by Prettier separately).

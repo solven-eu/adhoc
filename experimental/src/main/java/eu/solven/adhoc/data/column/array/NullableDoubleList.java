@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 import org.roaringbitmap.RoaringBitmap;
 
 import eu.solven.adhoc.data.column.ICompactable;
-import eu.solven.adhoc.data.tabular.primitives.Int2DoubleBiConsumer;
+import eu.solven.adhoc.dataframe.tabular.primitives.Int2DoubleBiConsumer;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;

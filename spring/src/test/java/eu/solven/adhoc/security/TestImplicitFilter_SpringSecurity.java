@@ -35,7 +35,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.google.common.eventbus.EventBus;
 
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;

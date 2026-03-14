@@ -60,12 +60,12 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.data.row.TabularRecordBuilder;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;

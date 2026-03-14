@@ -27,9 +27,9 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;

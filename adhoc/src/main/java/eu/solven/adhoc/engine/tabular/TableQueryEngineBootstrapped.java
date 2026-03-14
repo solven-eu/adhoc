@@ -48,13 +48,13 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;

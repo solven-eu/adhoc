@@ -24,12 +24,12 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.join.SliceAndMeasures;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TransverseCacheHelper;

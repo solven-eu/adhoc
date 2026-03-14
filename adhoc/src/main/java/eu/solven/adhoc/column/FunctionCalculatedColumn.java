@@ -30,8 +30,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;

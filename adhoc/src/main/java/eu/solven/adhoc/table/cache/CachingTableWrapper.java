@@ -41,9 +41,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.HideAggregatorsTabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.HideAggregatorsTabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.FilterBuilder;

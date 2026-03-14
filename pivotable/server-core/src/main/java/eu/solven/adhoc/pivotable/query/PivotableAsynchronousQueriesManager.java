@@ -42,7 +42,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;

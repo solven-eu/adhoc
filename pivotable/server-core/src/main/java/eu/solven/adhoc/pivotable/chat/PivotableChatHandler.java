@@ -101,6 +101,10 @@ public class PivotableChatHandler {
 		});
 	}
 
+	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration",
+			"PMD.ConsecutiveAppendsShouldReuse",
+			"PMD.ConsecutiveLiteralAppends",
+			"PMD.AppendCharacterWithChar" })
 	protected String buildSystemPrompt(String cube, EndpointSchemaMetadata metadata) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("You are a helpful data analyst assistant embedded in a query builder UI.\n");
@@ -147,6 +151,7 @@ public class PivotableChatHandler {
 		return messages;
 	}
 
+	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 	protected List<Map<String, Object>> buildTools() {
 		return List.of(Map.of("name",
 				"set_measures",
@@ -199,7 +204,7 @@ public class PivotableChatHandler {
 				.accept(MediaType.TEXT_EVENT_STREAM)
 				.bodyValue(body)
 				.retrieve()
-				.bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {
+				.bodyToFlux(new ParameterizedTypeReference<>() {
 				});
 
 		return parseAnthropicStream(rawStream);

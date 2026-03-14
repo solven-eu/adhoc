@@ -28,8 +28,8 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.Builder;

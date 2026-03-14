@@ -35,8 +35,8 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.decomposition.CumulatingDecomposition;

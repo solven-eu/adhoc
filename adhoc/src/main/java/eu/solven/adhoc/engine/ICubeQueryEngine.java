@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine;
 
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;

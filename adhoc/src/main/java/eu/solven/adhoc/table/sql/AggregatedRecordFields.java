@@ -36,7 +36,7 @@ import lombok.ToString;
 import lombok.Value;
 
 /**
- * Help transforming a {@link org.jooq.Record} into {@link eu.solven.adhoc.data.row.ITabularRecord}
+ * Help transforming a {@link org.jooq.Record} into {@link eu.solven.adhoc.dataframe.row.ITabularRecord}
  * 
  * @author Benoit Lacelle
  */

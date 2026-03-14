@@ -51,9 +51,9 @@ import org.apache.arrow.vector.types.pojo.Schema;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.tabular.ColumnarTabularView;
-import eu.solven.adhoc.data.tabular.IReadableTabularView;
-import eu.solven.adhoc.data.tabular.ITabularViewArrowSerializer;
+import eu.solven.adhoc.dataframe.tabular.ColumnarTabularView;
+import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularViewArrowSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -139,10 +139,12 @@ public class TabularViewArrowSerializer implements ITabularViewArrowSerializer {
 			int rowCount) {
 		int fieldIndex = 0;
 		for (Map.Entry<String, List<?>> entry : coordCols.entrySet()) {
-			fillVector(root.getVector(fieldIndex++), entry.getValue(), rowCount);
+			fillVector(root.getVector(fieldIndex), entry.getValue(), rowCount);
+			fieldIndex++;
 		}
 		for (Map.Entry<String, List<?>> entry : aggCols.entrySet()) {
-			fillVector(root.getVector(fieldIndex++), entry.getValue(), rowCount);
+			fillVector(root.getVector(fieldIndex), entry.getValue(), rowCount);
+			fieldIndex++;
 		}
 	}
 
@@ -175,6 +177,7 @@ public class TabularViewArrowSerializer implements ITabularViewArrowSerializer {
 		return arrowTypeFor(inferredClass);
 	}
 
+	@SuppressWarnings("checkstyle:MagicNumber")
 	protected ArrowType arrowTypeFor(Class<?> javaType) {
 		if (javaType == null) {
 			return ArrowType.Utf8.INSTANCE;
@@ -209,7 +212,11 @@ public class TabularViewArrowSerializer implements ITabularViewArrowSerializer {
 		} else if (vector instanceof Float8Vector v) {
 			v.setSafe(index, ((Number) value).doubleValue());
 		} else if (vector instanceof BitVector v) {
-			v.setSafe(index, Boolean.TRUE.equals(value) ? 1 : 0);
+			int bitValue = 0;
+			if (Boolean.TRUE.equals(value)) {
+				bitValue = 1;
+			}
+			v.setSafe(index, bitValue);
 		} else if (vector instanceof DateDayVector v) {
 			v.setSafe(index, Ints.checkedCast(((LocalDate) value).toEpochDay()));
 		} else if (vector instanceof VarCharVector v) {

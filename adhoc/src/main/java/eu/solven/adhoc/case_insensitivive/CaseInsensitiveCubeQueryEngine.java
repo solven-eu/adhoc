@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.case_insensitivive;
 
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.cube.CubeQuery;

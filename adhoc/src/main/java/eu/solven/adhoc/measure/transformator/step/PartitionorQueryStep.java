@@ -28,12 +28,12 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.data.join.SliceAndMeasures;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;

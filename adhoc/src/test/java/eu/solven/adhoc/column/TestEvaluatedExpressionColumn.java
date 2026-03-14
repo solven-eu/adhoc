@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.pepper.unittest.PepperJacksonTestHelper;

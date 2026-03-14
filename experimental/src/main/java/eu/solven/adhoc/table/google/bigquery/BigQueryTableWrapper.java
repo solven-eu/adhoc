@@ -44,9 +44,9 @@ import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.TableResult;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;

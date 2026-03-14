@@ -7,6 +7,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Arrow IPC streaming endpoint: `POST /api/v1/cubes/query` with `Accept: application/vnd.apache.arrow.stream` returns query results as a streaming Arrow IPC response. Backed by `TabularViewArrowSerializer` (in `adhoc-experimental`) discovered via `ServiceLoader`. Supports `Long`, `Integer`, `Double`, `Boolean`, `LocalDate`, and `String` column types.
+- `MavenDependencyAsMermaid`: utility that scans `pom.xml` files across a multi-module Maven project and renders a Mermaid `flowchart TD` of inter-module dependencies; compile edges use solid arrows, test-scope edges use dashed arrows, and modules are grouped into `subgraph` blocks by their aggregator parent.
 - `ColumnarTabularView`: columnar alternative to `ListBasedTabularView` — stores one `List<?>` per coordinate column and one per aggregate, enabling zero-transposition Arrow serialization.
 - `pivotable-mcp` module: exposes Pivotable as an MCP server (list endpoints, browse schemas, execute queries) via `PivotableMcpTools`.
 - `PivotableChatHandler`: optional AI query assistant in the SPA, streaming tool calls to update the query model in real time (requires `adhoc.pivotable.chat.anthropic-api-key`).

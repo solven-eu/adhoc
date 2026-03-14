@@ -34,9 +34,9 @@ import java.util.Set;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.data.row.TabularRecordBuilder;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
+import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import lombok.experimental.UtilityClass;

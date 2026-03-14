@@ -41,9 +41,9 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
-import eu.solven.adhoc.data.tabular.IReadableTabularView;
-import eu.solven.adhoc.data.tabular.ITabularViewArrowSerializer;
-import eu.solven.adhoc.data.tabular.ListBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularViewArrowSerializer;
+import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;

@@ -25,12 +25,12 @@ package eu.solven.adhoc.engine;
 import java.util.List;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumn;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.join.SliceAndMeasures;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 

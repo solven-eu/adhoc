@@ -34,8 +34,8 @@ import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.UnmodifiableIterator;
 
 import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.join.SliceAndMeasures;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 
