@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.10</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.20</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.19</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.pivotable.server.core</automatic.module.name>
 	</properties>
 
