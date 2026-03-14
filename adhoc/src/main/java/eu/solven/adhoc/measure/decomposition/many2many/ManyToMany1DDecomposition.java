@@ -107,7 +107,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		Optional<?> optInput = slice.getSlice().optGroupBy(elementColumn);
 		if (optInput.isEmpty()) {
 			// There is no expressed element
-			return ImmutableList.of(IDecompositionEntry.of(Map.of(), value));
+			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(), value));
 		}
 
 		Object element = optInput.get();
@@ -150,11 +150,11 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		if (isGroupedByGroup) {
 			// One contribution per filtered groups
 			return groups.stream()
-					.map(group -> IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)))
-					.toList();
+					.map(group -> IDecompositionEntry.of(ImmutableMap.of(groupColumn, group), scale(element, value)))
+					.collect(ImmutableList.toImmutableList());
 		} else {
 			// A single contribution for the filtered groups
-			return ImmutableList.of(IDecompositionEntry.of(Map.of(), scale(groups, value)));
+			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(), scale(groups, value)));
 		}
 	}
 
@@ -199,7 +199,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 				.filter(filter)
 				.onMissingColumn(DecompositionHelpers.onMissingColumn())
 				.build()
-				.match(Map.of(groupColumn, groupCandidate));
+				.match(ImmutableMap.of(groupColumn, groupCandidate));
 	}
 
 	/**
@@ -222,7 +222,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
-			return List.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
+			return ImmutableList.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -237,7 +237,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		// TODO If we filter some group, we should propagate as filtering some element
 		// step.getFilter().
 
-		return List.of(
+		return ImmutableList.of(
 				MeasurelessQuery.edit(step).filter(underlyingFilter).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 

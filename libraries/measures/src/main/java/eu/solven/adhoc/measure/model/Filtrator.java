@@ -25,6 +25,7 @@ package eu.solven.adhoc.measure.model;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -67,7 +68,7 @@ public class Filtrator implements IMeasure, IHasUnderlyingMeasures {
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return List.of(underlying);
+		return ImmutableList.of(underlying);
 	}
 
 }

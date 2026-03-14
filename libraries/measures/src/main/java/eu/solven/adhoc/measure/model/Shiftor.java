@@ -23,9 +23,10 @@
 package eu.solven.adhoc.measure.model;
 
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.lambda.LambdaCombination;
@@ -73,12 +74,12 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 
 	@NonNull
 	@Singular
-	Map<String, ?> editorOptions;
+	ImmutableMap<String, ?> editorOptions;
 
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return List.of(underlying);
+		return ImmutableList.of(underlying);
 	}
 
 	/**

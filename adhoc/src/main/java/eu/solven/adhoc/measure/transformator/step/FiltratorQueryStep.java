@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
@@ -74,7 +76,7 @@ public class FiltratorQueryStep extends AMeasureQueryStep {
 		ISliceFilter combinedFilter = FilterBuilder.and(step.getFilter(), filtrator.getFilter()).optimize(optimizer);
 		CubeQueryStep underlyingStep =
 				CubeQueryStep.edit(step).filter(combinedFilter).measure(filtrator.getUnderlying()).build();
-		return List.of(underlyingStep);
+		return ImmutableList.of(underlyingStep);
 	}
 
 	@Override
