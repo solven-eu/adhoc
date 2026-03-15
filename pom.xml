@@ -758,6 +758,8 @@
 
 					<!-- On each release, push the jars to Maven Central -->
 					<goals>deploy</goals>
+					<!-- Temporarily ensure release:perform is fast, until release is stabilized -->
+					<arguments>-Pfast</arguments>
 				</configuration>
 			</plugin>
 
