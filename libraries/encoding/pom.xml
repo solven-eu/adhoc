@@ -37,11 +37,12 @@
 
 		<!--
 		https://mvnrepository.com/artifact/me.lemire.integercompression/JavaFastPFOR/0.3.10 -->
-		<dependency>
-			<groupId>me.lemire.integercompression</groupId>
-			<artifactId>JavaFastPFOR</artifactId>
-			<version>0.3.10</version>
-		</dependency>
+		<!-- https://github.com/fast-pack/JavaFastPFOR/pull/69 -->
+		<!--		<dependency>-->
+		<!--			<groupId>me.lemire.integercompression</groupId>-->
+		<!--			<artifactId>JavaFastPFOR</artifactId>-->
+		<!--			<version>0.3.10</version>-->
+		<!--		</dependency>-->
 
 		<!-- Source: https://mvnrepository.com/artifact/org.agrona/agrona -->
 		<dependency>

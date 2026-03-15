@@ -39,8 +39,8 @@ import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.measure.transformator.MapWithNulls;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestConstants {
 

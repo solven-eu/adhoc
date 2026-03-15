@@ -42,7 +42,6 @@ import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import tools.jackson.databind.ObjectMapper;
 
 public class TestFilterHelpers {

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.fsst;
+package eu.solven.adhoc.encoding.string;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -40,6 +40,8 @@ import eu.solven.adhoc.encoding.column.freezer.FreezerHelpers;
 import eu.solven.adhoc.encoding.column.freezer.FsstReadableColumn;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
 import eu.solven.adhoc.encoding.column.freezer.SynchronousFreezingStrategy;
+import eu.solven.adhoc.encoding.fsst.FsstTrainer;
+import eu.solven.adhoc.encoding.fsst.IFsstEncoding;
 
 /**
  * Extends {@link SynchronousFreezingStrategy} by enabling FSST over columns of {@link String}.
@@ -83,13 +85,13 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected IReadableColumn readableColumn(List<IByteSlice> primitiveArray) {
-		SymbolTable table = FsstTrainer.builder().build().train(primitiveArray);
+		IFsstEncoding table = FsstTrainer.builder().build().train(primitiveArray);
 
 		List<IByteSlice> encoded =
 				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();
 
 		// BEWARE This will drop the trained symbols, keeping only decoded capacities
-		return FsstReadableColumn.builder().decoder(table.getDecoding()).encoded(encoded).build();
+		return FsstReadableColumn.builder().decoder(table.asDecoder()).encoded(encoded).build();
 	}
 
 }

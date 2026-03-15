@@ -37,7 +37,7 @@ import eu.solven.adhoc.data.column.ICompactable;
 import eu.solven.adhoc.data.column.SliceAndMeasure;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IMultitypeConstants;

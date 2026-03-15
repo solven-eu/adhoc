@@ -21,7 +21,6 @@
  * THE SOFTWARE.
  */
 package eu.solven.adhoc.engine.tabular;
-
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -101,7 +100,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.pepper.core.PepperLogHelper;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -727,7 +726,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
 			return Map.entry(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
-		}).collect(PepperStreamHelperHacked.toLinkedMap(Map.Entry::getKey, Map.Entry::getValue));
+		}).collect(PepperStreamHelper.toLinkedMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -776,7 +775,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 */
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
 		return suppressedColumns.stream()
-				.collect(PepperStreamHelperHacked.toLinkedMap(Function.identity(),
+				.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
 						c -> IColumnGenerator.COORDINATE_GENERATED));
 	}
 

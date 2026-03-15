@@ -39,7 +39,7 @@ import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
-import eu.solven.adhoc.measure.transformator.MapWithNulls;
+import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestSliceAsMap {
 	@Test

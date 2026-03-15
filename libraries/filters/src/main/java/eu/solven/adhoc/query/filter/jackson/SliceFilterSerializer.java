@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.query.filter.jackson;
 
-import java.beans.Customizer;
 import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
+import eu.solven.adhoc.query.filter.AdhocPublicJackson.SliceFilterSerializerModifier;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
@@ -35,7 +35,7 @@ import tools.jackson.databind.jsontype.TypeSerializer;
 import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
- * {@link Customizer} serialization to write matchAll and matchNone as plain {@link String}.
+ * Customize serialization to write `matchAll` and `matchNone` as plain {@link String}.
  * 
  * @author Benoit Lacelle
  * @see SliceFilterSerializerModifier

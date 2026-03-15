@@ -28,6 +28,7 @@ import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAffinity;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -51,12 +52,21 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 			IHasQueryOptions hasOptions) {
 		ITableStepsSplitter splitter = makeSplitter(hasOptions);
 
-		ITableStepsGrouper grouper = makeGrouper(hasOptions);
+		ITableStepsGrouper grouper = makeGrouper(hasOptions, splitter);
 
 		return new TableQueryFactory(factories, filterOptimizer, splitter, grouper);
 	}
 
 	protected ITableStepsGrouper makeGrouper(IHasQueryOptions hasOptions) {
+		return makeGrouper(hasOptions, null);
+	}
+
+	/**
+	 * Selects the {@link ITableStepsGrouper} for the given query options and splitter. When the splitter is
+	 * {@link InduceByGroupingSets}, defaults to {@link TableStepsGrouperByAffinity} to avoid cartesian-product waste in
+	 * GROUPING SETS queries.
+	 */
+	protected ITableStepsGrouper makeGrouper(IHasQueryOptions hasOptions, ITableStepsSplitter splitter) {
 		ITableStepsGrouper grouper;
 		if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)) {
 			grouper = new TableStepsGrouper();
@@ -64,6 +74,13 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 			grouper = new TableStepsGrouperByAggregator();
 		} else if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_STEPS)) {
 			grouper = new TableStepsGrouperNoGroup();
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_AFFINITY)) {
+			grouper = new TableStepsGrouperByAffinity();
+		} else if (splitter instanceof InduceByGroupingSets) {
+			// Tightly coupled: InduceByGroupingSets makes every step a leaf, so without an affinity grouper the
+			// resulting TableQueryV3 would contain the full cartesian product of measures × groupBys.
+			grouper = new TableStepsGrouperByAffinity();
+			log.debug("InduceByGroupingSets splitter led to default grouper {}", grouper.getClass().getName());
 		} else {
 			// BEWARE We're unclear about the right defaults
 			grouper = new TableStepsGrouper();

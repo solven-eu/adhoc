@@ -20,13 +20,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter.value;
+package eu.solven.adhoc.query.filter.value;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 public class TestValueMatcher {
 	@Test

@@ -25,9 +25,9 @@ package eu.solven.adhoc.query.filter.jackson;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.query.filter.AdhocPublicJackson;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.resource.AdhocPublicJackson;
 import tools.jackson.databind.ObjectMapper;
 
 public class TestSliceFilterJackson {

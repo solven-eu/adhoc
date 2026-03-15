@@ -28,9 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IAppendableColumnFactory;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
@@ -56,7 +55,6 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-@NotThreadSafe
 public class AppendableTablePage implements IAppendableTablePage {
 
 	@Default

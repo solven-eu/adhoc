@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter.value;
+package eu.solven.adhoc.query.filter.value;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -32,14 +32,6 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.value.ComparingMatcher;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
-import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.query.filter.value.StringMatcher;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;

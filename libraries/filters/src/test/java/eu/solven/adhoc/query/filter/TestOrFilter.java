@@ -40,7 +40,6 @@ import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer.IOptimizerEventLi
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;

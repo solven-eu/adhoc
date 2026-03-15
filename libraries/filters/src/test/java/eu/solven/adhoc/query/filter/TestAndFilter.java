@@ -43,7 +43,6 @@ import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer.IOptimizerEventLi
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.adhoc.resource.AdhocPublicJackson;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.PerformanceGateway;
 import tools.jackson.databind.ObjectMapper;

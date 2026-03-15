@@ -20,13 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.encoding.column;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
 
 public class TestAdhocColumnUnsafe {
 	@BeforeEach
