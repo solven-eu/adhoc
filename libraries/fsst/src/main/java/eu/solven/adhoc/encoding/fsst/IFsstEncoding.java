@@ -28,5 +28,9 @@ package eu.solven.adhoc.encoding.fsst;
  * @author Benoit Lacelle
  */
 public interface IFsstEncoding extends IFsstDecoder, IFsstEncoder {
-
+	/**
+	 * 
+	 * @return as a simple {@link IFsstDecoder}. May lose information enabling encoding, hence sparing memory.
+	 */
+	IFsstDecoder asDecoder();
 }

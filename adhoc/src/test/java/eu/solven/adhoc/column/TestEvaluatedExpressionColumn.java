@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
-import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.adhoc.query.filter.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 

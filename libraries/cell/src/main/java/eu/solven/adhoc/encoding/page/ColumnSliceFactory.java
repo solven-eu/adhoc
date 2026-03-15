@@ -26,6 +26,7 @@ import java.util.Collection;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;

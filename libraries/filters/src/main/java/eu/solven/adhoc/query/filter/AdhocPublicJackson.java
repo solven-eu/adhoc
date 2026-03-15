@@ -20,9 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.resource;
+package eu.solven.adhoc.query.filter;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.jackson.SliceFilterDeserializer;
 import eu.solven.adhoc.query.filter.jackson.SliceFilterSerializer;
 import lombok.experimental.UtilityClass;

@@ -32,7 +32,7 @@ import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
-import eu.solven.adhoc.encoding.fsst.FsstFreezingWithContext;
+import eu.solven.adhoc.encoding.string.FsstFreezingWithContext;
 
 /**
  * Fallback {@link IFreezingWithContext} that normalises {@link AdhocUtf8} values to {@link String}.

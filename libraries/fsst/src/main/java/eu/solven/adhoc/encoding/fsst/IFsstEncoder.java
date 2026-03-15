@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.fsst;
 
+import java.nio.charset.StandardCharsets;
+
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 
 /**
@@ -34,6 +36,10 @@ public interface IFsstEncoder {
 
 	default IByteSlice encodeAll(IByteSlice input) {
 		return encode(null, input);
+	}
+
+	default IByteSlice encodeAll(String string) {
+		return encodeAll(IByteSlice.wrap(string.getBytes(StandardCharsets.UTF_8)));
 	}
 
 	IByteSlice encode(byte[] buf, IByteSlice input);

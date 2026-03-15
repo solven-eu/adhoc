@@ -30,7 +30,6 @@ import java.util.Set;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 

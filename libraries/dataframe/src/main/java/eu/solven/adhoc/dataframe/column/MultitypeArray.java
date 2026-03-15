@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueFunction;
 import eu.solven.adhoc.primitive.IValueProvider;

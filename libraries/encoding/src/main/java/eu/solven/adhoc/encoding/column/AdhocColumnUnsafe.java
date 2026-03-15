@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.page;
+package eu.solven.adhoc.encoding.column;
 
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Getter;

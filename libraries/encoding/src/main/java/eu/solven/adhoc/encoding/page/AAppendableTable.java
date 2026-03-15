@@ -25,6 +25,7 @@ package eu.solven.adhoc.encoding.page;
 import java.util.List;
 
 import eu.solven.adhoc.collection.ILikeList;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.encoding.column.IAppendableColumnFactory;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumnsFactory;
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;

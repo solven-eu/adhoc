@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.encoding.fsst;
 
-import java.nio.charset.StandardCharsets;
-
 import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
@@ -37,12 +35,12 @@ import lombok.RequiredArgsConstructor;
  */
 @ThreadSafe
 @RequiredArgsConstructor
-@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.PublicMemberInNonPublicType" })
+@SuppressWarnings("checkstyle:MagicNumber")
 class SymbolTable implements IFsstConstants, IFsstEncoding {
 	final SymbolTableEncoder encoder;
 
 	@Getter
-	final SymbolTableDecoder decoding;
+	final SymbolTableDecoder decoder;
 
 	// Encode compresses input, reusing buf if provided.
 	// Returns compressed data (may be a different slice than buf).
@@ -51,32 +49,33 @@ class SymbolTable implements IFsstConstants, IFsstEncoding {
 		return encoder.encode(buf, input);
 	}
 
-	public IByteSlice encodeAll(String string) {
-		return encodeAll(IByteSlice.wrap(string.getBytes(StandardCharsets.UTF_8)));
-	}
-
 	@Override
 	public IByteSlice decode(byte[] buf, IByteSlice src) {
-		return decoding.decode(buf, src);
+		return decoder.decode(buf, src);
 	}
 
 	@Override
 	public IByteSlice decode(byte[] buf, byte[] src) {
-		return decoding.decode(buf, src);
+		return decoder.decode(buf, src);
 	}
 
 	@Override
 	public IByteSlice decode(byte[] buf, byte[] src, int srcStart, int srcEnd) {
-		return decoding.decode(buf, src, srcStart, srcEnd);
+		return decoder.decode(buf, src, srcStart, srcEnd);
 	}
 
 	@Override
 	public IByteSlice decodeAll(byte[] src) {
-		return decoding.decode(null, src);
+		return decoder.decode(null, src);
 	}
 
 	@Override
 	public IByteSlice decodeAll(IByteSlice src) {
-		return decoding.decode(null, src);
+		return decoder.decode(null, src);
+	}
+
+	@Override
+	public IFsstDecoder asDecoder() {
+		return decoder;
 	}
 }

@@ -57,7 +57,7 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 
 	@Override
 	public void writeExternal(ObjectOutput w) throws IOException {
-		long ver = (FSST_VERSION << 32) | ((long) symbolTable.decoding.suffixLim << 16)
+		long ver = (FSST_VERSION << 32) | ((long) symbolTable.decoder.suffixLim << 16)
 				| ((long) symbolTable.encoder.symbols.nSymbols << 8)
 				| 1;
 		byte[] buf8 = new byte[8];
@@ -146,7 +146,7 @@ final class SymbolTableExternalizable implements IFsstConstants, Externalizable 
 
 		this.symbolTable = new SymbolTable(new SymbolTableEncoder(t, suffixLim), decoded);
 		SymbolTableDecoder fDecoding = decoded;
-		SymbolTableDecoder tDecoding = this.symbolTable.decoding;
+		SymbolTableDecoder tDecoding = this.symbolTable.decoder;
 		System.arraycopy(fDecoding.decLen, 0, tDecoding.decLen, 0, tDecoding.decLen.length);
 		System.arraycopy(fDecoding.decSymbol, 0, tDecoding.decSymbol, 0, tDecoding.decSymbol.length);
 	}

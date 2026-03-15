@@ -44,6 +44,7 @@ import com.google.common.math.LongMath;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
+import eu.solven.adhoc.query.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
@@ -61,7 +62,6 @@ import eu.solven.adhoc.query.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.InMatcher;
 import eu.solven.adhoc.query.filter.value.NotMatcher;
-import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import eu.solven.adhoc.util.AdhocTime;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;

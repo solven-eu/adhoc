@@ -33,6 +33,7 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.query.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.IAndFilter;
@@ -42,7 +43,6 @@ import eu.solven.adhoc.query.filter.IOrFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.util.AdhocFilterUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Singular;
