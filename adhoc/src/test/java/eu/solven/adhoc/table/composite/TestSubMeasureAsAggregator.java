@@ -27,9 +27,8 @@ import java.util.Arrays;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestSubMeasureAsAggregator {
@@ -39,14 +38,15 @@ public class TestSubMeasureAsAggregator {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		SubMeasureAsAggregator subMeasure = SubMeasureAsAggregator.builder()
 				.name("someName")
 				.subMeasure("subMeasureName")
 				.underlyings(Arrays.asList("u1", "u2"))
 				.build();
 
-		String asString = PepperJacksonTestHelper.verifyJackson(SubMeasureAsAggregator.class, subMeasure);
+		String asString = PepperJackson3TestHelper
+				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), SubMeasureAsAggregator.class, subMeasure);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

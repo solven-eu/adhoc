@@ -32,7 +32,8 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestTargetedCubeQuery {
@@ -53,17 +54,15 @@ public class TestTargetedCubeQuery {
 						.build())
 				.build();
 
-		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);
+		String asString = PepperJackson3TestHelper
+				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), TargetedCubeQuery.class, query);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
 				  "endpointId" : "12345678-1234-1234-1234-12345678abcd",
 				  "cube" : "someCube",
 				  "query" : {
-				    "filter" : {
-				      "type" : "and",
-				      "filters" : [ ]
-				    },
+				    "filter" : "matchAll",
 				    "groupBy" : {
 				      "columns" : [ "someColumn" ]
 				    },
@@ -94,7 +93,7 @@ public class TestTargetedCubeQuery {
 						.build())
 				.build();
 
-		String asString = PepperJacksonTestHelper.verifyJackson(TargetedCubeQuery.class, query);
+		String asString = PepperJackson3TestHelper.verifyJackson(TargetedCubeQuery.class, query);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{

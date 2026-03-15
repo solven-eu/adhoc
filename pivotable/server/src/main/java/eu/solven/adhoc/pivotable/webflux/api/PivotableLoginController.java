@@ -79,6 +79,8 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class PivotableLoginController {
 
+	public static final String P_OAUTH2 = "adhoc.pivotable.login.oauth2.enabled";
+
 	final ApplicationContext appContext;
 
 	final PivotableUsersRegistry usersRegistry;
@@ -90,8 +92,8 @@ public class PivotableLoginController {
 	public Map<String, ?> loginProviders() {
 		Map<String, Object> registrationIdToDetails = new TreeMap<>();
 
-		if (appContext.getEnvironment().getProperty("adhoc.pivotable.login.oauth2.enabled", Boolean.class, true)) {
-			// BEWARE If the following fails, you probably lacks somr oauth2 registrations, as suggested in
+		if (appContext.getEnvironment().getProperty(P_OAUTH2, Boolean.class, true)) {
+			// BEWARE If the following fails, you probably lacks some oauth2 registrations, as suggested in
 			// application-pivotable-demo_external_oauth2.yml
 			final InMemoryReactiveClientRegistrationRepository clientRegistrationRepository =
 					appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
@@ -166,12 +168,11 @@ public class PivotableLoginController {
 			throw new LoginRouteButNotAuthenticatedException("No BASIC");
 		}
 
-		return user().map(user -> Map.of("Authentication",
-				"BASIC",
-				"username",
-				user.getAccountId(),
-				HttpHeaders.LOCATION,
-				"/html/login?success"));
+		return user().map(user -> ImmutableMap.builder()
+				.put("Authentication", "BASIC")
+				.put("username", user.getAccountId())
+				.put(HttpHeaders.LOCATION, "/html/login?success")
+				.build());
 	}
 
 	private PivotableUser userFromOAuth2(OAuth2User o) {

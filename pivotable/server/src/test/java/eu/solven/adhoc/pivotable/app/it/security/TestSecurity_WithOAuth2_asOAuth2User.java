@@ -31,8 +31,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.OAuth2LoginMutator;
@@ -45,6 +45,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
+import eu.solven.adhoc.pivotable.app.PivotableJackson;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.login.RefreshTokenWrapper;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
@@ -54,13 +55,13 @@ import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingController;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
-import eu.solven.adhoc.pivottable.app.PivotableJackson;
 import eu.solven.pepper.unittest.ILogDisabler;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * OAuth2 enables logging-in a subset of APIs, especially the login APIs.
+ * OAuth2 enables logging-in a subset of APIs, especially the login APIs. Fact is oauth2 is used only for login
+ * purposes, as the login flow will generate a JWT for further APi usage.
  * 
  * @author Benoit Lacelle
  *
@@ -68,14 +69,13 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerSecurityApplication.class,
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-		properties = IPivotableSpringProfiles.P_CONFIG_IMPORT)
-@ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, })
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, "logging.level.org.springframework.security=DEBUG" })
+@ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, "pivotable-unittest_external_oauth2", })
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 // https://stackoverflow.com/questions/56784289/autoconfigurewebtestclienttimeout-600000-has-no-effect
 @AutoConfigureWebTestClient(timeout = "PT10M")
-// @WithMockUser
-public class TestSecurity_WithOAuth2User {
+public class TestSecurity_WithOAuth2_asOAuth2User {
 
 	// Spring Boot will create a `WebTestClient` for you,
 	// already configure and ready to issue requests against "localhost:RANDOM_PORT"
@@ -219,7 +219,7 @@ public class TestSecurity_WithOAuth2User {
 
 	@Test
 	public void testLoginJson() {
-		log.debug("About {}", GreetingHandler.class);
+		log.debug("About {}", PivotableLoginController.class);
 
 		getWebTestClient()
 
@@ -232,6 +232,14 @@ public class TestSecurity_WithOAuth2User {
 				// Though we prefer to return a nice API answer
 				.expectStatus()
 				.isOk()
+
+				// https://github.com/spring-projects/spring-security/issues/16969
+				// Check that "SESSION" cookie exists in the response and save it in the variable.
+				// .expectCookie()
+				// .exists("SESSION")
+				// .getResponseCookies()
+				// .getFirst("SESSION")
+
 				.expectBody(Map.class)
 				.value(body -> {
 					Assertions.assertThat(body).containsEntry("login", 200).hasSize(1);

@@ -25,19 +25,16 @@ package eu.solven.adhoc.pivotable.account;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
-import eu.solven.adhoc.pivottable.app.PivotableJackson;
+import eu.solven.adhoc.pivotable.app.PivotableJackson;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestPivotableUserRaw implements IPivotableTestConstants {
 	final ObjectMapper objectMapper = PivotableJackson.objectMapper();
 
 	@Test
-	public void testJackson() throws JsonMappingException, JsonProcessingException {
+	public void testJackson() {
 		PivotableUserDetails userRaw = IPivotableTestConstants.userDetails();
 		PivotableUserRaw initial = PivotableUserRaw.builder().accountId(someAccountId).details(userRaw).build();
 

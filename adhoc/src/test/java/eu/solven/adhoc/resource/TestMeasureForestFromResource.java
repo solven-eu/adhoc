@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -50,6 +49,7 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.filter.ColumnFilter;
+import tools.jackson.databind.ObjectMapper;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees
 //An `anonymous` measure is a measure which has no name. It leads to more compact but less re-usable trees.

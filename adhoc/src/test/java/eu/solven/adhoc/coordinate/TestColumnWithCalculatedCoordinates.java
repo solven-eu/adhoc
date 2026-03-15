@@ -25,18 +25,19 @@ package eu.solven.adhoc.coordinate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;
+import io.cucumber.core.internal.com.fasterxml.jackson.databind.JsonMappingException;
 
 public class TestColumnWithCalculatedCoordinates {
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class,
+	public void testJackson() {
+		String asString = PepperJackson3TestHelper.verifyJackson(AdhocPublicJackson.makeObjectMapper(),
+				IAdhocColumn.class,
 				ColumnWithCalculatedCoordinates.builder()
 						.column("d")
 						.calculatedCoordinate(CalculatedCoordinate.star())
@@ -49,17 +50,14 @@ public class TestColumnWithCalculatedCoordinates {
 				  "calculatedCoordinates" : [ {
 				    "type" : ".CalculatedCoordinate",
 				    "coordinate" : "*",
-				    "filter" : {
-				      "type" : "and",
-				      "filters" : [ ]
-				    }
+				    "filter" : "matchAll"
 				  } ]
 				}""");
 	}
 
 	@Test
 	public void testImplicitMatchAll() throws JsonMappingException, JsonProcessingException {
-		IAdhocColumn column = PepperJacksonTestHelper.makeObjectMapper().readValue("""
+		IAdhocColumn column = PepperJackson3TestHelper.makeObjectMapper().readValue("""
 				{
 				  "type" : ".ColumnWithCalculatedCoordinates",
 				  "column" : "d",

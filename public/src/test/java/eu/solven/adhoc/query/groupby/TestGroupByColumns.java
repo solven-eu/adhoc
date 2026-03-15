@@ -25,13 +25,12 @@ package eu.solven.adhoc.query.groupby;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.MoreObjects;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import lombok.Builder;
 import lombok.Getter;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -51,10 +50,10 @@ public class TestGroupByColumns {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		IGroupBy groupByAsc = GroupByColumns.named("a", "b");
 
-		String asString = PepperJacksonTestHelper.verifyJackson(IGroupBy.class, groupByAsc);
+		String asString = PepperJackson3TestHelper.verifyJackson(IGroupBy.class, groupByAsc);
 		Assertions.assertThat(asString).isEqualTo("""
 				{
 				  "columns" : [ "a", "b" ]

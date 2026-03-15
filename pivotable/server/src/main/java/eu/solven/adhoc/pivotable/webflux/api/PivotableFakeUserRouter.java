@@ -36,7 +36,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
 
 /**

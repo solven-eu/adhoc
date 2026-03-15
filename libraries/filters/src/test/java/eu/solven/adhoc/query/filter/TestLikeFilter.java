@@ -26,20 +26,18 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 
 public class TestLikeFilter {
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		IValueMatcher matcher = LikeMatcher.builder().pattern("a%").build();
 		ISliceFilter filter = ColumnFilter.match("a", matcher);
 
-		String asString = PepperJacksonTestHelper.verifyJackson(ISliceFilter.class, filter);
+		String asString = PepperJackson3TestHelper.verifyJackson(ISliceFilter.class, filter);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "column",

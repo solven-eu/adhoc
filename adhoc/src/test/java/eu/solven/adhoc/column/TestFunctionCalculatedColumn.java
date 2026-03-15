@@ -25,12 +25,10 @@ package eu.solven.adhoc.column;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import tools.jackson.databind.exc.InvalidDefinitionException;
 
 public class TestFunctionCalculatedColumn {
 	@Test
@@ -39,14 +37,14 @@ public class TestFunctionCalculatedColumn {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		Assertions
-				.assertThatThrownBy(() -> PepperJacksonTestHelper.verifyJackson(FunctionCalculatedColumn.class,
+				.assertThatThrownBy(() -> PepperJackson3TestHelper.verifyJackson(FunctionCalculatedColumn.class,
 						FunctionCalculatedColumn.builder()
 								.name("someColumn")
 								.recordToCoordinate(record -> record.getGroupBy("a") + "-" + record.getGroupBy("b"))
 								.build()))
-				.hasRootCauseInstanceOf(InvalidDefinitionException.class)
+				.isInstanceOf(InvalidDefinitionException.class)
 				.hasStackTraceContaining("Cannot construct instance of `java.util.function.Function`");
 	}
 

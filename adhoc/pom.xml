@@ -118,7 +118,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<groupId>tools.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-yaml</artifactId>
 			<!-- One may need require reading/writing Yaml files-->
 			<optional>true</optional>
@@ -135,13 +135,13 @@
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<!-- JdbcClient for inserting arrays-->
-			<groupId>org.apache.arrow.adbc</groupId>
-			<artifactId>adbc-driver-jdbc</artifactId>
-			<version>0.22.0</version>
-			<scope>test</scope>
-		</dependency>
+		<!--		<dependency>-->
+		<!--			 JdbcClient for inserting arrays-->
+		<!--			<groupId>org.apache.arrow.adbc</groupId>-->
+		<!--			<artifactId>adbc-driver-jdbc</artifactId>-->
+		<!--			<version>0.22.0</version>-->
+		<!--			<scope>test</scope>-->
+		<!--		</dependency>-->
 		<!--<dependency>-->
 		<!-- QuickSlect-->
 		<!--    <groupId>org.apache.commons</groupId>-->

@@ -39,13 +39,13 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.query.QueryResultHolder;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
 
 /**

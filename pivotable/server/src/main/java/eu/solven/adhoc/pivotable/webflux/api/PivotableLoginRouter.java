@@ -33,10 +33,10 @@ import org.springframework.web.reactive.function.server.RequestPredicates;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.greeting.Greeting;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
 
 /**

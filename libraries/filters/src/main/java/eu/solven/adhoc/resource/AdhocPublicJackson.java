@@ -22,22 +22,24 @@
  */
 package eu.solven.adhoc.resource;
 
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.jackson.SliceFilterDeserializer;
 import eu.solven.adhoc.query.filter.jackson.SliceFilterSerializer;
 import lombok.experimental.UtilityClass;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.BeanDescription.Supplier;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.ValueDeserializerModifier;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.ValueSerializerModifier;
 
 /**
  * Jackson specific classes for Adhoc public classes.
@@ -46,35 +48,40 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class AdhocPublicJackson {
+	/**
+	 * Intercepts {@link ValueSerializer} for {@link ISliceFilter}
+	 */
 	// https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-	protected static class SliceFilterSerializerModifier extends BeanSerializerModifier {
+	public static class SliceFilterSerializerModifier extends ValueSerializerModifier {
 		private static final long serialVersionUID = -9176152914317924040L;
 
 		@Override
-		public JsonSerializer<?> modifySerializer(SerializationConfig config,
-				BeanDescription beanDesc,
-				JsonSerializer<?> serializer) {
+		public ValueSerializer<?> modifySerializer(SerializationConfig config,
+				Supplier beanDesc,
+				ValueSerializer<?> serializer) {
 			if (ISliceFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
-				return new SliceFilterSerializer((JsonSerializer) serializer);
+				return new SliceFilterSerializer((ValueSerializer) serializer);
 			}
 
 			return serializer;
 		}
 	}
 
+	/**
+	 * Intercepts {@link ValueDeserializer} for {@link ISliceFilter}
+	 */
 	// https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-	protected static class SliceFilterDeserializerModifier extends BeanDeserializerModifier {
+	public static class SliceFilterDeserializerModifier extends ValueDeserializerModifier {
 		private static final long serialVersionUID = -9176152914317924040L;
 
 		@Override
-		public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config,
-				BeanDescription beanDesc,
-				JsonDeserializer<?> deserializer) {
-
-			if (ISliceFilter.class.isAssignableFrom(beanDesc.getBeanClass())) {
+		public ValueDeserializer<?> modifyDeserializer(DeserializationConfig config,
+				Supplier beanDescRef,
+				ValueDeserializer<?> deserializer) {
+			if (ISliceFilter.class.isAssignableFrom(beanDescRef.getBeanClass())) {
 				return new SliceFilterDeserializer(deserializer);
 			} else {
-				return super.modifyDeserializer(config, beanDesc, deserializer);
+				return super.modifyDeserializer(config, beanDescRef, deserializer);
 			}
 		}
 	}
@@ -82,6 +89,12 @@ public class AdhocPublicJackson {
 	public static SimpleModule makeModule() {
 		SimpleModule adhocModule = new SimpleModule("AdhocModule");
 
+		// This design is a bit cumbersome
+		// As we want some class to be serialized as a String when they are very simple (e.g. `matchAll`), we need a
+		// custom Serializer. We can not use `@JsonSerializer` as we do not want to code manually the standard
+		// serialization. Especially as we rely on `@JsonInfoType`. So we rely on these modifiers to intercept the
+		// default serializers, and code our own serializer which may either write a String, or rely on the standard
+		// serialization.
 		adhocModule.setSerializerModifier(new SliceFilterSerializerModifier());
 		adhocModule.setDeserializerModifier(new SliceFilterDeserializerModifier());
 
@@ -98,8 +111,18 @@ public class AdhocPublicJackson {
 		// https://stackoverflow.com/questions/14938667/jackson-json-deserialization-array-elements-in-each-line
 		DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
 		prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
-		objectMapper.setDefaultPrettyPrinter(prettyPrinter);
+		return objectMapper.rebuild().defaultPrettyPrinter(prettyPrinter).build();
+	}
 
-		return objectMapper;
+	public static ObjectMapper makeObjectMapper() {
+		return JsonMapper.builder()
+				// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
+				.enable(SerializationFeature.INDENT_OUTPUT)
+				// https://github.com/FasterXML/jackson-databind/issues/5704
+				// `@JsonPropertyOrder(alphabetic = false)` is not functional
+				.disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+				// handle ISliceFilter custom behaviors
+				.addModule(makeModule())
+				.build();
 	}
 }

@@ -34,8 +34,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 
@@ -47,7 +45,7 @@ import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = { PivotableMcpConfiguration.class })
 @EnableAutoConfiguration
-@MockitoBean(types = { PivotableEndpointsRegistry.class, PivotableAdhocSchemaRegistry.class, ObjectMapper.class })
+@MockitoBean(types = { PivotableEndpointsRegistry.class, PivotableAdhocSchemaRegistry.class, })
 public class TestPivotableMcpConfiguration {
 
 	@Autowired

@@ -27,12 +27,11 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestEvaluatedExpressionColumn {
@@ -43,10 +42,11 @@ public class TestEvaluatedExpressionColumn {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + b").build();
-		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class, column);
+		String asString = PepperJackson3TestHelper
+				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), IAdhocColumn.class, column);
 
 		Assertions.assertThat(asString).isEqualTo("""
 				{
@@ -58,7 +58,7 @@ public class TestEvaluatedExpressionColumn {
 	}
 
 	@Test
-	public void testEvaluate() throws JsonProcessingException {
+	public void testEvaluate() {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
 		// not null
@@ -73,7 +73,7 @@ public class TestEvaluatedExpressionColumn {
 	}
 
 	@Test
-	public void testEvaluate_missingGroupBy() throws JsonProcessingException {
+	public void testEvaluate_missingGroupBy() {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
 

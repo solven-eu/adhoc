@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.pepper.mappath.MapPathGet;
 

@@ -25,37 +25,35 @@ package eu.solven.adhoc.query.filter.jackson;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.resource.AdhocPublicJackson;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestSliceFilterJackson {
 
-	final ObjectMapper mapper = new ObjectMapper().registerModule(AdhocPublicJackson.makeModule());
+	final ObjectMapper mapper = AdhocPublicJackson.makeObjectMapper();
 
 	// -----------------------------------------------------------------------
 	// Serialization
 	// -----------------------------------------------------------------------
 
 	@Test
-	public void serialize_matchAll() throws JsonProcessingException {
+	public void serialize_matchAll() {
 		String json = mapper.writeValueAsString(ISliceFilter.MATCH_ALL);
 		// MATCH_ALL is serialized as the plain string "matchAll"
 		Assertions.assertThat(json).isEqualTo("\"matchAll\"");
 	}
 
 	@Test
-	public void serialize_matchNone() throws JsonProcessingException {
+	public void serialize_matchNone() {
 		String json = mapper.writeValueAsString(ISliceFilter.MATCH_NONE);
 		// MATCH_NONE is serialized as the plain string "matchNone"
 		Assertions.assertThat(json).isEqualTo("\"matchNone\"");
 	}
 
 	@Test
-	public void serialize_columnFilter() throws JsonProcessingException {
+	public void serialize_columnFilter() {
 		String json = mapper.writeValueAsString(ColumnFilter.matchEq("col", "v"));
 		// Regular filter is serialized via the default bean serializer, not as a bare string
 		Assertions.assertThat(json).contains("\"col\"").contains("\"v\"");
@@ -68,32 +66,32 @@ public class TestSliceFilterJackson {
 	// -----------------------------------------------------------------------
 
 	@Test
-	public void deserialize_matchAll() throws JsonProcessingException {
+	public void deserialize_matchAll() {
 		ISliceFilter filter = mapper.readValue("\"matchAll\"", ISliceFilter.class);
 		Assertions.assertThat(filter).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
-	public void deserialize_matchAll_caseInsensitive() throws JsonProcessingException {
+	public void deserialize_matchAll_caseInsensitive() {
 		// onText uses equalsIgnoreCase
 		ISliceFilter filter = mapper.readValue("\"MATCHALL\"", ISliceFilter.class);
 		Assertions.assertThat(filter).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
-	public void deserialize_matchNone() throws JsonProcessingException {
+	public void deserialize_matchNone() {
 		ISliceFilter filter = mapper.readValue("\"matchNone\"", ISliceFilter.class);
 		Assertions.assertThat(filter).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
-	public void deserialize_matchNone_caseInsensitive() throws JsonProcessingException {
+	public void deserialize_matchNone_caseInsensitive() {
 		ISliceFilter filter = mapper.readValue("\"MATCHNONE\"", ISliceFilter.class);
 		Assertions.assertThat(filter).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
-	public void deserialize_columnFilter() throws JsonProcessingException {
+	public void deserialize_columnFilter() {
 		// A regular JSON object (with type property) should deserialize into a ColumnFilter
 		String json = mapper.writeValueAsString(ColumnFilter.matchEq("myCol", "myVal"));
 		ISliceFilter filter = mapper.readValue(json, ISliceFilter.class);
@@ -111,21 +109,21 @@ public class TestSliceFilterJackson {
 	// -----------------------------------------------------------------------
 
 	@Test
-	public void roundTrip_matchAll() throws JsonProcessingException {
+	public void roundTrip_matchAll() {
 		String json = mapper.writeValueAsString(ISliceFilter.MATCH_ALL);
 		ISliceFilter restored = mapper.readValue(json, ISliceFilter.class);
 		Assertions.assertThat(restored).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
-	public void roundTrip_matchNone() throws JsonProcessingException {
+	public void roundTrip_matchNone() {
 		String json = mapper.writeValueAsString(ISliceFilter.MATCH_NONE);
 		ISliceFilter restored = mapper.readValue(json, ISliceFilter.class);
 		Assertions.assertThat(restored).isEqualTo(ISliceFilter.MATCH_NONE);
 	}
 
 	@Test
-	public void roundTrip_columnFilter() throws JsonProcessingException {
+	public void roundTrip_columnFilter() {
 		ISliceFilter original = ColumnFilter.matchEq("k", "v");
 		String json = mapper.writeValueAsString(original);
 		ISliceFilter restored = mapper.readValue(json, ISliceFilter.class);

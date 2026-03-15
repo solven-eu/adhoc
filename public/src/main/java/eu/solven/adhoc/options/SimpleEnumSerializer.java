@@ -22,12 +22,10 @@
  */
 package eu.solven.adhoc.options;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * This is used to print a complex `(a -> ref(a), b -> ref(b)` into a simpler `[a, b]`
@@ -36,8 +34,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
  */
 // https://www.baeldung.com/jackson-custom-serialization
 public class SimpleEnumSerializer extends StdSerializer<IQueryOption> {
-	private static final long serialVersionUID = 1L;
-
 	public SimpleEnumSerializer() {
 		this(null);
 	}
@@ -49,14 +45,14 @@ public class SimpleEnumSerializer extends StdSerializer<IQueryOption> {
 	@Override
 	public void serializeWithType(IQueryOption value,
 			JsonGenerator gen,
-			SerializerProvider serializers,
-			TypeSerializer typeSer) throws IOException {
-		gen.writeObject(value.toString());
+			SerializationContext ctxt,
+			TypeSerializer typeSer) {
+		gen.writeString(value.toString());
 	}
 
 	@Override
-	public void serialize(IQueryOption value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeObject(value.toString());
+	public void serialize(IQueryOption value, JsonGenerator gen, SerializationContext provider) {
+		gen.writeString(value.toString());
 	}
 
 }

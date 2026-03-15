@@ -25,12 +25,10 @@ package eu.solven.adhoc.query.filter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.query.filter.value.OrMatcher;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 
 public class TestNotFilter {
 	@Test
@@ -119,10 +117,10 @@ public class TestNotFilter {
 	}
 
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		ISliceFilter filter = FilterBuilder.not(ColumnFilter.matchEq("a", "a1")).optimize();
 
-		String asString = PepperJacksonTestHelper.verifyJackson(ISliceFilter.class, filter);
+		String asString = PepperJackson3TestHelper.verifyJackson(ISliceFilter.class, filter);
 		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "column",

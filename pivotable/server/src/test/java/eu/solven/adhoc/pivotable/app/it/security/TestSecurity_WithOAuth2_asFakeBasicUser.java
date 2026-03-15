@@ -37,13 +37,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
+import eu.solven.adhoc.pivotable.app.PivotableJackson;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginController;
-import eu.solven.adhoc.pivottable.app.PivotableJackson;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * OAuth2 enables logging-in a subset of APIs, especially the login APIs.
+ * Re-check {@link TestSecurity_WithOAuth2_asOAuth2User}, with the configuration activating a fake BASIC user.
  * 
  * @author Benoit Lacelle
  *
@@ -51,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE, IPivotableSpringProfiles.P_FAKEUSER })
 @Slf4j
-public class TestSecurity_WithFakeUser extends TestSecurity_WithOAuth2User {
+public class TestSecurity_WithOAuth2_asFakeBasicUser extends TestSecurity_WithOAuth2_asOAuth2User {
 
 	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })

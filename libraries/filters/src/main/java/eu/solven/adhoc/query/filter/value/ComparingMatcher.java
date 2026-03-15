@@ -56,7 +56,8 @@ public final class ComparingMatcher implements IValueMatcher, IColumnToString {
 
 	@Builder(toBuilder = true)
 	@Jacksonized
-	private ComparingMatcher(Object operand, boolean greaterThan, boolean matchIfEqual, boolean matchIfNull) {
+	@Deprecated(since = "public only to workaround https://github.com/FasterXML/jackson-databind/issues/5704")
+	public ComparingMatcher(Object operand, boolean greaterThan, boolean matchIfEqual, boolean matchIfNull) {
 		this.operand = AdhocPrimitiveHelpers.normalizeValue(operand);
 		this.greaterThan = greaterThan;
 		this.matchIfEqual = matchIfEqual;

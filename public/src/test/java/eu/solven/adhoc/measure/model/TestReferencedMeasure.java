@@ -26,17 +26,15 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestReferencedMeasure {
 	@Test
-	public void testJackson() throws JsonProcessingException {
+	public void testJackson() {
 		String asString =
-				PepperJacksonTestHelper.verifyJackson(ReferencedMeasure.class, ReferencedMeasure.ref("someMeasure"));
+				PepperJackson3TestHelper.verifyJackson(ReferencedMeasure.class, ReferencedMeasure.ref("someMeasure"));
 
 		Assertions.assertThat(asString).isEqualTo("""
 				"someMeasure"
@@ -45,8 +43,8 @@ public class TestReferencedMeasure {
 
 	@Disabled("Does not work as `type` is expected to be a minimal class, not a name like `ref`")
 	@Test
-	public void testJackson_rawFormat() throws JsonProcessingException {
-		ObjectMapper objectMapper = PepperJacksonTestHelper.makeObjectMapper();
+	public void testJackson_rawFormat() {
+		ObjectMapper objectMapper = PepperJackson3TestHelper.makeObjectMapper();
 
 		String asString = "{\"type\": \"ref\", \"ref\": \"someMeasure\"}";
 
@@ -56,7 +54,7 @@ public class TestReferencedMeasure {
 	}
 
 	@Test
-	public void testGetName() throws JsonProcessingException {
+	public void testGetName() {
 		ReferencedMeasure ref = ReferencedMeasure.ref("someMeasure");
 
 		Assertions.assertThat(ref.getRef()).isEqualTo("someMeasure");

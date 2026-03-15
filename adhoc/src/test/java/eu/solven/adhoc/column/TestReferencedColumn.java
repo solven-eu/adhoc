@@ -29,22 +29,20 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.resource.AdhocJackson;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestReferencedColumn {
 	@Test
-	public void testJackson() throws JsonProcessingException {
-		String asString = PepperJacksonTestHelper.verifyJackson(IAdhocColumn.class, ReferencedColumn.ref("someColumn"));
+	public void testJackson() {
+		String asString =
+				PepperJackson3TestHelper.verifyJackson(IAdhocColumn.class, ReferencedColumn.ref("someColumn"));
 
 		Assertions.assertThat(asString).isEqualTo("""
 				"someColumn"
@@ -52,10 +50,8 @@ public class TestReferencedColumn {
 	}
 
 	@Test
-	public void testJackson_rawFormat() throws JsonProcessingException {
+	public void testJackson_rawFormat() {
 		ObjectMapper objectMapper = AdhocJackson.makeObjectMapper("json");
-		// https://stackoverflow.com/questions/17617370/pretty-printing-json-from-jackson-2-2s-objectmapper
-		objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
 
 		String asString = "{\"type\": \".ReferencedColumn\", \"name\": \"someColumn\"}";
 
@@ -66,7 +62,7 @@ public class TestReferencedColumn {
 
 	@Disabled("Irrelevant as the type is converted by default into a String, which is not convertible into a Map")
 	@Test
-	public void testJackson_asMap() throws JsonProcessingException {
+	public void testJackson_asMap() {
 		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		ReferencedColumn initial = ReferencedColumn.ref("someColumn");
@@ -79,7 +75,7 @@ public class TestReferencedColumn {
 
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	@Test
-	public void testJackson_asMap_wrappedInGroupByColumns() throws JsonProcessingException {
+	public void testJackson_asMap_wrappedInGroupByColumns() {
 		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		IGroupBy initial = GroupByColumns.of(ReferencedColumn.ref("someColumn"));
@@ -101,7 +97,7 @@ public class TestReferencedColumn {
 
 	// https://github.com/FasterXML/jackson-databind/issues/5030
 	@Test
-	public void testJackson_asMap_wrappedInPojo() throws JsonProcessingException {
+	public void testJackson_asMap_wrappedInPojo() {
 		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		HasColumn initial = HasColumn.builder().c(ReferencedColumn.ref("someColumn")).build();
@@ -116,7 +112,7 @@ public class TestReferencedColumn {
 
 	@Disabled("Irrelevant as Map does not hint the embedded type")
 	@Test
-	public void testJackson_asMap_wrappedInMap() throws JsonProcessingException {
+	public void testJackson_asMap_wrappedInMap() {
 		ObjectMapper om = AdhocJackson.makeObjectMapper("json");
 
 		Map<String, ?> initial = Map.of("k", Arrays.asList(ReferencedColumn.ref("someColumn")));

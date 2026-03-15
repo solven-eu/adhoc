@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -36,6 +35,7 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * This is useful to refer to an existing {@link IMeasure} in the {@link MeasureForest}, hence preventing to need to

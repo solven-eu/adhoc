@@ -22,11 +22,10 @@
  */
 package eu.solven.adhoc.resource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-
 import lombok.experimental.UtilityClass;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 /**
  * This is the only class actually referring to {@link YAMLFactory}. This is useful as Jackson YAML databind is an
@@ -38,7 +37,7 @@ import lombok.experimental.UtilityClass;
 public class AdhocYamlObjectMapper {
 	public static ObjectMapper yamlObjectMapper() {
 		// Use a qualifiedName to enable loading this class even if YAMLGenerator is not on the classPath
-		YAMLFactory yamlFactory = new YAMLFactory().disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+		YAMLFactory yamlFactory = new YAMLFactory().rebuild().disable(YAMLWriteFeature.WRITE_DOC_START_MARKER).build();
 		return new ObjectMapper(yamlFactory);
 	}
 }

@@ -27,21 +27,19 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 public class TestThrowableAsStackSerializer {
 
 	@Test
-	public void testSerialization() throws JsonProcessingException {
-		ObjectMapper objectMapper = PepperJacksonTestHelper.makeObjectMapper();
+	public void testSerialization() {
+		ObjectMapper objectMapper = PepperJackson3TestHelper.makeObjectMapper();
 
 		SimpleModule adhocModule = new SimpleModule("Adhoc");
 		adhocModule.addSerializer(new ThrowableAsStackSerializer());
-		objectMapper.registerModule(adhocModule);
+		objectMapper = objectMapper.rebuild().addModule(adhocModule).build();
 
 		Exception e1 = new IllegalArgumentException("Aie");
 		Exception e2 = new UnsupportedOperationException("Ouille", e1);
@@ -51,12 +49,12 @@ public class TestThrowableAsStackSerializer {
 	}
 
 	@Test
-	public void testInMap() throws JsonProcessingException {
-		ObjectMapper objectMapper = PepperJacksonTestHelper.makeObjectMapper();
+	public void testInMap() {
+		ObjectMapper objectMapper = PepperJackson3TestHelper.makeObjectMapper();
 
 		SimpleModule adhocModule = new SimpleModule("Adhoc");
 		adhocModule.addSerializer(new ThrowableAsStackSerializer());
-		objectMapper.registerModule(adhocModule);
+		objectMapper = objectMapper.rebuild().addModule(adhocModule).build();
 
 		Exception e1 = new IllegalArgumentException("Aie");
 		Exception e2 = new UnsupportedOperationException("Ouille", e1);

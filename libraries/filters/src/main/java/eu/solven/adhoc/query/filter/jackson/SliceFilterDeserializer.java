@@ -23,79 +23,64 @@
 package eu.solven.adhoc.query.filter.jackson;
 
 import java.beans.Customizer;
-import java.io.IOException;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.deser.ResolvableDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
+import org.jspecify.annotations.NonNull;
 
 import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.resource.AdhocPublicJackson;
+import eu.solven.adhoc.resource.AdhocPublicJackson.SliceFilterDeserializerModifier;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.jsontype.TypeDeserializer;
 
 /**
  * {@link Customizer} serialization to write matchAll and matchNone as plain {@link String}.
  * 
  * @author Benoit Lacelle
+ * @see SliceFilterDeserializerModifier
  */
 // https://stackoverflow.com/questions/58963529/custom-serializer-with-fallback-to-default-serialization
-public class SliceFilterDeserializer extends JsonDeserializer<ISliceFilter> implements ResolvableDeserializer {
-	// private static final long serialVersionUID = 8174515895932210350L;
+public class SliceFilterDeserializer extends ValueDeserializer<ISliceFilter> {
+	@NonNull
+	private final ValueDeserializer<?> base;
 
-	private final JsonDeserializer<?> base;
-
-	public SliceFilterDeserializer(JsonDeserializer<?> base) {
+	public SliceFilterDeserializer(ValueDeserializer<?> base) {
 		this.base = Objects.requireNonNull(base);
 	}
 
-	// Used before AdhocFilterDeserializerModifier rewrap it
-	public SliceFilterDeserializer() {
-		this.base = null;
+	@Override
+	public void resolve(DeserializationContext ctxt) {
+		super.resolve(ctxt);
+		base.resolve(ctxt);
 	}
 
-	protected ISliceFilter onText(JsonParser p) throws IOException {
-		if ("matchAll".equalsIgnoreCase(p.getText())) {
+	protected ISliceFilter onString(JsonParser p) {
+		String asString = p.getString();
+		if ("matchAll".equalsIgnoreCase(asString)) {
 			return ISliceFilter.MATCH_ALL;
-		} else if ("matchNone".equalsIgnoreCase(p.getText())) {
+		} else if ("matchNone".equalsIgnoreCase(asString)) {
 			return ISliceFilter.MATCH_NONE;
 		} else {
-			throw new IllegalArgumentException("Not managed text: %s".formatted(p.getText()));
+			throw new IllegalArgumentException("Not managed text: %s".formatted(asString));
 		}
 	}
 
 	@Override
-	public Object deserializeWithType(JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer)
-			throws IOException, JacksonException {
-		if (p.hasTextCharacters()) {
-			return onText(p);
-		} else if (base == null) {
-			throw new IllegalStateException(
-					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
+	public Object deserializeWithType(JsonParser p, DeserializationContext ctxt, TypeDeserializer typeDeserializer) {
+		if (p.hasStringCharacters()) {
+			return onString(p);
 		} else {
-			return base.deserializeWithType(p, ctxt, typeDeserializer);
+			return (ISliceFilter) base.deserializeWithType(p, ctxt, typeDeserializer);
 		}
 	}
 
 	@Override
-	public ISliceFilter deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
-		if (p.hasTextCharacters()) {
-			return onText(p);
-		} else if (base == null) {
-			throw new IllegalStateException(
-					"You need to register %s.%s".formatted(AdhocPublicJackson.class.getName(), "makeAdhocModule"));
+	public ISliceFilter deserialize(JsonParser p, DeserializationContext ctxt) {
+		if (p.hasStringCharacters()) {
+			return onString(p);
 		} else {
 			return (ISliceFilter) base.deserialize(p, ctxt);
-		}
-	}
-
-	@Override
-	public void resolve(DeserializationContext ctxt) throws JsonMappingException {
-		if (base instanceof ResolvableDeserializer resolvable) {
-			resolvable.resolve(ctxt);
 		}
 	}
 

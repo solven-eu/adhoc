@@ -29,9 +29,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
@@ -41,8 +38,8 @@ import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * MCP tools exposing the Pivotable OLAP API to AI agents (e.g. Claude Code).
@@ -86,7 +83,6 @@ public class PivotableMcpTools {
 			+ "Call listEndpoints and getSchema first to discover valid endpointId, cubeName and available measures/columns. "
 			+ "queryJson must be a valid CubeQuery JSON, "
 			+ "e.g. {\"measureNames\":[\"Revenue.SUM\"],\"groupBy\":[\"Country\"]}")
-	@SneakyThrows(JsonProcessingException.class)
 	public String executeQuery(@ToolParam(description = "Endpoint UUID returned by listEndpoints") String endpointId,
 			@ToolParam(description = "Cube name returned by getSchema") String cubeName,
 			@ToolParam(description = "CubeQuery as JSON") String queryJson) {
@@ -99,7 +95,6 @@ public class PivotableMcpTools {
 		return toJson(ListBasedTabularView.load(result));
 	}
 
-	@SneakyThrows(JsonProcessingException.class)
 	private String toJson(Object value) {
 		return objectMapper.writeValueAsString(value);
 	}

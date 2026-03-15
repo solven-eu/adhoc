@@ -36,11 +36,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
-import eu.solven.adhoc.pivottable.api.IPivotableApiConstants;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Activates the AI chat endpoint when {@code adhoc.pivotable.chat.anthropic-api-key} is set.

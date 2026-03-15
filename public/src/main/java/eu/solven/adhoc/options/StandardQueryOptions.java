@@ -26,7 +26,8 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Various standard/not-exotic options for querying.

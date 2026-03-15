@@ -27,23 +27,21 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-
 import eu.solven.adhoc.map.SliceHelpers;
-import eu.solven.pepper.unittest.PepperJacksonTestHelper;
+import eu.solven.pepper.unittest.PepperJackson3TestHelper;
+import tools.jackson.databind.exc.InvalidDefinitionException;
 
 public class TestMapBasedTabularView {
 
 	@Test
-	public void testJackson_KO() throws JsonProcessingException {
+	public void testJackson_KO() {
 		MapBasedTabularView view = MapBasedTabularView.builder().build();
 
 		view.appendSlice(SliceHelpers.asSlice(Map.of("c1", "v1")), "m", 123);
 
 		// Serialization fails as we consider a Map with complex keys (Maps) which is not trivial to represent in a JSON
-		Assertions.assertThatThrownBy(() -> PepperJacksonTestHelper.verifyJackson(MapBasedTabularView.class, view))
-				.hasRootCauseInstanceOf(InvalidDefinitionException.class);
+		Assertions.assertThatThrownBy(() -> PepperJackson3TestHelper.verifyJackson(MapBasedTabularView.class, view))
+				.isInstanceOf(InvalidDefinitionException.class);
 	}
 
 	@Test

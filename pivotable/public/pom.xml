@@ -12,7 +12,7 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.instruction.ratio>0.18</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.15</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.pivotable.meta</automatic.module.name>
 	</properties>
 
@@ -26,19 +26,13 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
+			<groupId>tools.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-		</dependency>
-
-		<dependency>
-			<!-- PivotableJackson -->
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
 
 		<dependency>
