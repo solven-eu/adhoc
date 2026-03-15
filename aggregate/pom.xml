@@ -12,10 +12,11 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<!-- skip tests ele JUnit complains not to find any-->
+		<!-- skip tests else JUnit complains not to find any-->
 		<maven.test.skip>true</maven.test.skip>
 		<maven.install.skip>true</maven.install.skip>
 		<maven.deploy.skip>true</maven.deploy.skip>
+		<gpg.skip>true</gpg.skip>
 
 		<jacoco.branch.ratio>0.69</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.65</jacoco.instruction.ratio>

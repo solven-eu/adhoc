@@ -16,6 +16,8 @@
 	<properties>
 		<maven.install.skip>true</maven.install.skip>
 		<maven.deploy.skip>true</maven.deploy.skip>
+		<gpg.skip>true</gpg.skip>
+
 		<automatic.module.name>eu.solven.adhoc.training</automatic.module.name>
 	</properties>
 
