@@ -39,6 +39,7 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestTransformator_Partitionor extends ADagTest implements IAdhocTestConstants {
 	@Override

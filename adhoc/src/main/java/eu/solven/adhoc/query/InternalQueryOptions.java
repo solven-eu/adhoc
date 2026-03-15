@@ -72,10 +72,19 @@ public enum InternalQueryOptions implements IQueryOption {
 	TABLEQUERY_PER_AGGREGATOR,
 
 	/**
-	 * 
+	 *
 	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup
 	 */
 	TABLEQUERY_PER_STEPS,
+
+	/**
+	 * Groups inducers via biclique decomposition of the (measure×filter, groupBy) bipartite graph, so that each
+	 * produced {@link eu.solven.adhoc.query.table.TableQueryV3} contains only the strictly required (measure, groupBy)
+	 * combinations with no cartesian-product waste.
+	 *
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAffinity
+	 */
+	TABLEQUERY_PER_AFFINITY,
 
 	;
 

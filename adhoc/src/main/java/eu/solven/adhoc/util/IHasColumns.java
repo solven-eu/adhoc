@@ -21,7 +21,6 @@
  * THE SOFTWARE.
  */
 package eu.solven.adhoc.util;
-
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import eu.solven.pepper.core.PepperStreamHelper;
 
 /**
  * Helps describing the column of some data-structure.
@@ -56,7 +55,7 @@ public interface IHasColumns extends IHasColumnsKeySet, IHasColumnTypes {
 	@Override
 	default Map<String, Class<?>> getColumnTypes() {
 		return getColumns().stream()
-				.collect(PepperStreamHelperHacked.toLinkedMap(ColumnMetadata::getName, ColumnMetadata::getType));
+				.collect(PepperStreamHelper.toLinkedMap(ColumnMetadata::getName, ColumnMetadata::getType));
 	}
 
 	@Override
