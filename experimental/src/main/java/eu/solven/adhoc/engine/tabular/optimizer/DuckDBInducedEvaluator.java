@@ -48,12 +48,14 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.data.column.SliceAndMeasure;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluator;
+import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluatorFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -77,10 +79,10 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Evaluates an induced {@link CubeQueryStep} via an in-process DuckDB engine. Provides a vectorized alternative to the
- * row-by-row Java streaming path in {@link ATableQueryOptimizer#evaluateInduced}.
+ * row-by-row Java streaming path in {@link ATableQueryFactory#evaluateInduced}.
  *
  * <p>
- * Each call materialises the inducer {@link ISliceToValue} into a transient in-memory DuckDB table, executes a
+ * Each call materialises the inducer {@link ICuboid} into a transient in-memory DuckDB table, executes a
  * {@code SELECT cols, AGG(v) FROM t WHERE filter GROUP BY cols} query, and reads the results back into an
  * {@link IMultitypeMergeableColumn}.
  *

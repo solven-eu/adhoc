@@ -23,7 +23,7 @@
 package eu.solven.adhoc.options;
 
 /**
- * Some components can have their queryPlan explained. If true, we will spent some time providing information about the
+ * Some components can have their queryPlan explained. If true, we will spend some time providing information about the
  * queryPlan.
  * 
  * @author Benoit Lacelle

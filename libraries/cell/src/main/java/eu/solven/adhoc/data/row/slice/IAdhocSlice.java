@@ -37,7 +37,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
 /**
- * A slice expresses the coordinates of an output row, given columns expressed by a a {@link IGroupBy}.
+ * A slice expresses the coordinates of an output row, given columns expressed by a {@link IGroupBy}.
  * 
  * Coordinates (e.g. Map values) are normalized: e.g. `int` and `long` are considered equals.
  * 

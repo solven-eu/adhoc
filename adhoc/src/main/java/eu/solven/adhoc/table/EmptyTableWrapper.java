@@ -28,17 +28,17 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * {@link ITableWrapper} which is always empty. Useful when the {@link IAdhocDatabaseWrapper} to use is not yet known
- * (e.g. when one has to switch the underlying table depending on some queried filter).
+ * {@link ITableWrapper} which is always empty. Useful when the {@link ITableWrapper} to use is not yet known (e.g. when
+ * one has to switch the underlying table depending on some queried filter).
  *
  * @author Benoit Lacelle
  */
@@ -50,7 +50,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
 		return new SuppliedTabularRecordStream("empty", true
 		// , "NULL-" + this.getClass().getName()
 				, Stream::empty);

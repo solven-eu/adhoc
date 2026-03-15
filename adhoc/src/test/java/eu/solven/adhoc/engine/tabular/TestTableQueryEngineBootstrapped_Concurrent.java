@@ -28,23 +28,25 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizer;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +66,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 		TableQueryEngineBootstrapped engine = TableQueryEngineBootstrapped.builder()
 				.queryPod(queryPod)
-				.optimizer(new TableQueryOptimizer(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
+				.optimizer(new TableQueryFactory(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
 				.build();
 
 		CountDownLatch cdl = new CountDownLatch(2);
@@ -78,19 +80,24 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 			cdl.await();
 
 			return ITabularRecordStream.empty();
-		}).when(tableWrapper).streamSlices(Mockito.eq(queryPod), Mockito.any(TableQueryV2.class));
+		}).when(tableWrapper).streamSlices(Mockito.eq(queryPod), Mockito.any(TableQueryV3.class));
 
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
-			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, SizeAndDuration) -> {
-			},
-					ImmutableSet.of(
-							TableQueryV2.builder()
+			SplitTableQueries split = SplitTableQueries.builder()
+					.inducedToInducer(new DirectedAcyclicGraph<CubeQueryStep, DefaultEdge>(DefaultEdge.class))
+					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("a")).build(),
+							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build())
-									.build(),
-							TableQueryV2.builder()
+									.build())
+					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("b")).build(),
+							TableQueryV3.builder()
 									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build())
-									.build()));
+									.build())
+					.build();
+
+			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, sizeAndDuration) -> {
+			}, split);
 
 			try {
 				if (!cdl.await(1, TimeUnit.SECONDS)) {

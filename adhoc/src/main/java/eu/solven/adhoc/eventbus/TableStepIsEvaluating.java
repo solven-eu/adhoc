@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.eventbus;
 
-import eu.solven.adhoc.data.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -41,7 +41,7 @@ import lombok.With;
 @Builder
 public class TableStepIsEvaluating implements IAdhocEvent {
 	@NonNull
-	TableQueryV2 tableQuery;
+	TableQueryV3 tableQuery;
 
 	@NonNull
 	Object source;

@@ -167,4 +167,21 @@ public class TestSimpleFilterEditor {
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
+
+	@Test
+	public void testEdit() {
+		SimpleFilterEditor editor = SimpleFilterEditor.builder().columnToValue("a", "a2").build();
+
+		Assertions.assertThat(editor.editFilter(AndFilter.and(Map.of("a", "a1", "b", "b1"))))
+				.isEqualTo(AndFilter.and(Map.of("a", "a2", "b", "b1")));
+		Assertions.assertThat(editor.editFilter(OrFilter.or(Map.of("a", "a1", "b", "b1"))))
+				.isEqualTo(OrFilter.or(Map.of("a", "a2", "b", "b1")));
+	}
+
+	@Test
+	public void testRetainsColumns_and() {
+		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		Assertions.assertThat(SimpleFilterEditor.retainsColumns(filter, Set.of("b", "c")))
+				.isEqualTo(AndFilter.and(Map.of("b", "b1", "c", "c1")));
+	}
 }

@@ -42,7 +42,7 @@ public class CancellationHelpers {
 	 * To be called in a finally block of a cancellable block.
 	 * 
 	 * It would typically log to report failure or delay cancellation. But it would not throw, as we prefer a slightly
-	 * delayed succesful queries than a can
+	 * delayed successful queries than a cancelled query
 	 * 
 	 * @param queryPod
 	 */

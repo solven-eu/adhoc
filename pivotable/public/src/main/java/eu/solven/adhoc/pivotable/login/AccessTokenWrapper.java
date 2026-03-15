@@ -29,7 +29,7 @@ import tools.jackson.databind.PropertyNamingStrategies;
 import tools.jackson.databind.annotation.JsonNaming;
 
 /**
- * Wraps an access_token, it is OAUth2 meaning.
+ * Wraps an access_token, in its OAuth2 meaning.
  * 
  * @author Benoit Lacelle
  */

@@ -34,7 +34,7 @@ import org.jooq.ResultQuery;
 import com.clickhouse.client.api.Client;
 import com.clickhouse.client.api.query.QueryResponse;
 
-import eu.solven.adhoc.table.arrow.ArrowJooqTableWrapper;
+import eu.solven.adhoc.table.arrow.AArrowJooqTableWrapper;
 import eu.solven.adhoc.table.arrow.ArrowReflection;
 import lombok.Builder;
 
@@ -43,7 +43,7 @@ import lombok.Builder;
  *
  * @author Benoit Lacelle
  */
-public class ClickHouseTableWrapper extends ArrowJooqTableWrapper {
+public class ClickHouseTableWrapper extends AArrowJooqTableWrapper {
 
 	final ClickHouseTableWrapperParameters clickHouseParameters;
 

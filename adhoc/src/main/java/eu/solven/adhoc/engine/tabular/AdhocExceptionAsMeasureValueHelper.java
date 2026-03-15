@@ -27,48 +27,40 @@ import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.experimental.UtilityClass;
 
 /**
- * Helps implementing {@link StandardQueryOptions#EXCEPTIONS_AS_MEASURE_VALUEX}
- * 
+ * Helps implementing {@link StandardQueryOptions#EXCEPTIONS_AS_MEASURE_VALUE}
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
 public class AdhocExceptionAsMeasureValueHelper {
 
-	public static Map<String, ?> asMap(NavigableSet<String> columns) {
-		Map<String, Object> errorSliceAsMap = new TreeMap<>();
-		columns.forEach(c -> errorSliceAsMap.put(c, "error"));
-		return errorSliceAsMap;
-	}
-
-	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
-		return SliceHelpers.asSlice(asMap(columns));
-	}
-
-	public static ITabularRecordStream makeErrorStream(TableQueryV2 transcodedQuery, Throwable e) {
+	public static ITabularRecordStream makeErrorStream(TableQueryV3 transcodedQuery, Throwable e) {
 		return new ITabularRecordStream() {
 
 			@Override
 			public Stream<ITabularRecord> records() {
 				TabularRecordOverMapsBuilder errorRecordBuilder = TabularRecordOverMaps.builder();
 
-				NavigableSet<String> groupedByColumns = transcodedQuery.getGroupBy().getGroupedByColumns();
+				return transcodedQuery.getGroupBys().stream().map(groupBy -> {
+					NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
 
-				errorRecordBuilder.slice(asSlice(groupedByColumns));
-				transcodedQuery.getAggregators().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));
+					errorRecordBuilder.slice(asSlice(groupedByColumns));
+					transcodedQuery.getAggregators().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));
 
-				ITabularRecord errorRecord = errorRecordBuilder.build();
-				return Stream.of(errorRecord);
+					return errorRecordBuilder.build();
+				});
+
 			}
 
 			@Override
@@ -81,6 +73,21 @@ public class AdhocExceptionAsMeasureValueHelper {
 			public void close() {
 				// nothing to close
 			}
+
+			@Override
+			public Object getTableQuery() {
+				return transcodedQuery;
+			}
 		};
+	}
+
+	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
+		return SliceHelpers.asSlice(asMap(columns));
+	}
+
+	public static Map<String, ?> asMap(NavigableSet<String> columns) {
+		Map<String, Object> errorSliceAsMap = new TreeMap<>();
+		columns.forEach(c -> errorSliceAsMap.put(c, "error"));
+		return errorSliceAsMap;
 	}
 }

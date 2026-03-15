@@ -32,8 +32,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -186,9 +186,9 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 								    |   \\-- #3 m=d(SUM) filter=country==FR groupBy=grandTotal
 								    \\-- #4 m=onUS(Filtrator) filter=matchAll groupBy=grandTotal
 								        \\-- #5 m=d(SUM) filter=country==US groupBy=grandTotal
-								/-- 2 inducers from SELECT d:SUM(d) FILTER(country==FR), d:SUM(d) FILTER(country==US) GROUP BY ()
-								|\\- step SELECT d:SUM(d) WHERE country==FR GROUP BY ()
-								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY ()
+								/-- 2 inducers from SELECT d:SUM(d) FILTER(country==FR), d:SUM(d) FILTER(country==US) GROUP BY grandTotal
+								|\\- step SELECT d:SUM(d) WHERE country==FR GROUP BY grandTotal
+								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY grandTotal
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|\\- #1 m=d(SUM) filter=country==FR groupBy=grandTotal
 								\\-- #2 m=d(SUM) filter=country==US groupBy=grandTotal""")

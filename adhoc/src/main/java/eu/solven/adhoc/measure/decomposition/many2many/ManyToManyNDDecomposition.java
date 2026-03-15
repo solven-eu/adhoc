@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.measure.decomposition.many2many;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -136,7 +135,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		Map<String, ?> elementCoordinates = slice.getSlice().optGroupBy(elementColumns);
 		if (elementCoordinates.size() < elementColumns.size()) {
 			// We lack some coordinates
-			return ImmutableList.of(IDecompositionEntry.of(Map.of(), value));
+			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(), value));
 		}
 
 		Set<Object> groups = getGroups(slice, elementCoordinates);
@@ -150,13 +149,9 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 			Object value,
 			String groupColumn,
 			Set<Object> groups) {
-		List<IDecompositionEntry> output = new ArrayList<>(groups.size());
-
-		groups.forEach(group -> {
-			output.add(IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)));
-		});
-
-		return output;
+		return groups.stream()
+				.map(group -> IDecompositionEntry.of(ImmutableMap.of(groupColumn, group), scale(element, value)))
+				.collect(ImmutableList.toImmutableList());
 	}
 
 	protected Set<Object> getGroups(ISliceWithStep slice, Map<String, ?> columnToElement) {
@@ -190,7 +185,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 				.filter(filter)
 				.onMissingColumn(DecompositionHelpers.onMissingColumn())
 				.build()
-				.match(Map.of(groupColumn, groupCandidate));
+				.match(ImmutableMap.of(groupColumn, groupCandidate));
 	}
 
 	/**
@@ -213,7 +208,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 
 		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
-			return List.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
+			return ImmutableList.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
 		}
 
 		// If we are requested on the dispatched level, we have to groupBy the input level
@@ -227,7 +222,7 @@ public class ManyToManyNDDecomposition implements IDecomposition {
 		// TODO If we filter some group, we should propagate as filtering some element
 		// step.getFilter().
 
-		return List.of(
+		return ImmutableList.of(
 				MeasurelessQuery.edit(step).filter(underlyingFilter).groupBy(GroupByColumns.of(allGroupBys)).build());
 	}
 

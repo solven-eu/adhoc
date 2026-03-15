@@ -38,6 +38,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -180,7 +181,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 
 				indexToGroupBys.add(subColumns);
 			} else {
-				indexToGroupBys.add(List.of(Map.entry(column, ISliceFilter.MATCH_ALL)));
+				indexToGroupBys.add(ImmutableList.of(Map.entry(column, ISliceFilter.MATCH_ALL)));
 			}
 		});
 

@@ -38,8 +38,8 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;

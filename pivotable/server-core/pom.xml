@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.17-SNAPSHOT</version>
+		<version>0.0.18-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-server-core</artifactId>
@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.04</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.13</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.19</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.pivotable.server.core</automatic.module.name>
 	</properties>
 

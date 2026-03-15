@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.coordinate.CalculatedCoordinate;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
@@ -111,6 +111,7 @@ public class TestCubeQuery_DuckDb_WithCalculatedCoordinate extends ADuckDbJooqTe
 				.hasSize(3);
 	}
 
+	// Adds calculated coordinates on 2 different columns: it leads to a cartesian product
 	@Test
 	public void test_GroupByDateAndColor() {
 		ITabularView result = cube().execute(CubeQuery.builder()

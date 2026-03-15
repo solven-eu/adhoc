@@ -32,20 +32,21 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
+import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -53,8 +54,9 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
 
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
-	ITableQueryOptimizer optimizer =
-			engine.optimizerFactory.makeOptimizer(engine().getFactories(), IHasQueryOptions.noOption());
+	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
+	ITableQueryFactory optimizer = engine.queryFactoryFactory.makeOptimizer(engine().getFactories(),
+			() -> Set.of(InternalQueryOptions.INDUCE_BY_ADHOC));
 
 	@Override
 	public void feedTable() {
@@ -75,7 +77,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 		CubeQuery cubeQuery = CubeQuery.builder().measure("byCcy", k1Sum.getName()).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(2);
 
@@ -141,7 +144,8 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				CubeQuery.builder().measure("byCcyCountry", "byCcy", k1Sum.getName()).explain(true).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		TableQueryEngineBootstrapped bootstrapped = engine.bootstrap(queryPod, optimizer);
+		TableQueryEngineBootstrapped bootstrapped =
+				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(3);
 

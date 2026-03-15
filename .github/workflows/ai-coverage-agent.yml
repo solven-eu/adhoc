@@ -10,16 +10,16 @@ on:
         required: false
         default: ''
 
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write  # required by gh label create
+permissions: read-all
 
 jobs:
 
   # ── Job 1 ── AI-powered coverage improvements via Claude Code CLI ──────────
   ai-coverage:
+    name: AI coverage improvements
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push the agent branch
     outputs:
       changed: ${{ steps.detect-changes.outputs.changed }}
 
@@ -45,7 +45,7 @@ jobs:
             maven-ai-coverage-${{ runner.os }}-
 
       - name: Install Claude Code CLI
-        run: npm install -g @anthropic-ai/claude-code
+        run: npm install -g @anthropic-ai/claude-code@2.1.70
 
       - name: Configure Git
         run: |
@@ -113,9 +113,13 @@ jobs:
 
   # ── Job 2 ── Open a PR if the AI job produced changes ────────────────────────
   open-pr:
+    name: Open PR
     needs: ai-coverage
     runs-on: ubuntu-latest
     if: ${{ !failure() && !cancelled() && needs.ai-coverage.outputs.changed == 'true' }}
+    permissions:
+      pull-requests: write
+      issues: write  # required by gh label create
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -144,7 +148,7 @@ jobs:
           Automated PR from the [AI Coverage Agent](https://github.com/solven-eu/adhoc/actions/runs/${{ github.run_id }}) (run `${{ github.run_id }}`).
 
           ### Changes may include
-          - New `*Test.java` classes for production classes with low JaCoCo branch or instruction coverage
+          - New `Test*.java` classes for production classes with low JaCoCo branch or instruction coverage
           - Additional test methods in existing test classes targeting uncovered branches
           - Tests written with JUnit 5 (`@Test`, `@ParameterizedTest`) and AssertJ assertions
 

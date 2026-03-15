@@ -43,19 +43,20 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.IColumnScanner;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.ListMapEntryBasedTabularViewDrillThrough;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -147,7 +148,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + "=" + engineId;
+		return MoreObjects.toStringHelper(this).add("engineId", engineId).toString();
 	}
 
 	@Override
@@ -426,7 +427,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected void walkUpDag(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ICuboid> queryStepToValues) {
-		if (queryPod.getOptions().contains(StandardQueryOptions.DRILLTHROUGH)) {
+		if (StandardQueryOptions.DRILLTHROUGH.isActive(queryPod.getOptions())) {
 			// In case of drillthrough, we do not process any measure
 			return;
 		}
@@ -515,14 +516,14 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		List<ICuboid> underlyings = getUnderlyingColumns(queryStepToValues, underlyingSteps);
 
 		// BEWARE The need to call again `.wrapNode` looks weird
-		IMeasureQueryStep transformatorQuerySteps =
+		IMeasureQueryStep measureQuerySteps =
 				factories.getMeasureQueryStepFactory().makeQueryStep(queryStep, hasUnderlyingMeasures);
 
 		ICuboid coordinatesToValues;
 		try {
-			coordinatesToValues = transformatorQuerySteps.produceOutputColumn(underlyings);
+			coordinatesToValues = measureQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
-			if (queryStep.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
+			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryStep.getOptions())) {
 				IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
 
 				IAdhocSlice errorSlice = makeErrorSlice(queryStep, e);
@@ -669,7 +670,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				boolean isEmptyMeasure = step.getMeasure() instanceof Aggregator agg && EmptyAggregation.isEmpty(agg);
 
 				boolean doClearCarriers = mayHoldCarriers(step)
-						&& !queryPod.getOptions().contains(StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED);
+						&& !StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED.isActive(queryPod.getOptions());
 
 				IColumnScanner<IAdhocSlice> baseRowScanner =
 						slice -> view.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);

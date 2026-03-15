@@ -103,7 +103,7 @@ public class DagRecursiveAction<T> extends RecursiveAction {
 		// Join results
 		missingStepStasks.forEach(ForkJoinTask::join);
 
-		log.debug("Executing step: {} after having waiting for {} (amongst {})",
+		log.debug("Executing step: {} after having waited for {} (amongst {})",
 				step,
 				missingStepStasks.size(),
 				outgoingEdgesOf.size());

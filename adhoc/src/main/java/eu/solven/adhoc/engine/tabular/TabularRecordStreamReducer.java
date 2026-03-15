@@ -23,17 +23,23 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.util.NavigableSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.tabular.AggregatingColumns;
-import eu.solven.adhoc.data.tabular.AggregatingColumnsDistinct;
-import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid;
-import eu.solven.adhoc.data.tabular.IMultitypeMergeableGrid.IOpenedSlice;
+import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
+import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.tabular.groupingset.GroupingSetMergeableGrid;
+import eu.solven.adhoc.engine.tabular.groupingset.IGroupingSetAnalyzer;
+import eu.solven.adhoc.engine.tabular.groupingset.UniqueGroupingSetAnalyzer;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -43,8 +49,9 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -59,6 +66,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
+
 	@NonNull
 	IOperatorFactory operatorFactory;
 
@@ -68,45 +76,80 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	QueryPod queryPod;
 	@NonNull
-	TableQueryV2 tableQuery;
+	TableQueryV3 tableQuery;
 
 	protected IMultitypeMergeableGrid<IAdhocSlice> makeAggregatingMeasures(ITabularRecordStream stream) {
+
+		Supplier<IMultitypeMergeableGrid<IAdhocSlice>> gridFactory;
+
 		if (stream.isDistinctSlices()) {
-			return AggregatingColumnsDistinct.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory =
+					() -> AggregatingColumnsDistinct.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
 		} else {
-			return AggregatingColumns.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory = () -> AggregatingColumns.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+		}
+
+		if (tableQuery.singleGroupBy().isPresent()) {
+			return gridFactory.get();
+		} else {
+			return GroupingSetMergeableGrid.builder().gridFactory(gridFactory).build();
+		}
+	}
+
+	protected IGroupingSetAnalyzer makeGroupingSetAnalyzer() {
+		Optional<IGroupBy> singleGroupBy = tableQuery.singleGroupBy();
+		if (singleGroupBy.isPresent()) {
+			NavigableSet<String> groupedByColumns = singleGroupBy.get().getGroupedByColumns();
+			SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
+			return UniqueGroupingSetAnalyzer.builder().sequencedKeyset(sequencedKeyset).build();
+		} else {
+			return r -> {
+				Set<String> groupedByColumns = r.getGroupBys().columnsKeySet();
+				return queryPod.getSliceFactory().internKeyset(groupedByColumns);
+			};
 		}
 	}
 
 	@Override
 	public IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream) {
+
+		// IGroupByToGrid groupByToGrid = null;
 		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
 
-		TabularRecordLogger aggregatedRecordLogger =
-				TabularRecordLogger.builder().table(queryPod.getTable().getName()).build();
+		// Useful to log on the last row, to have the number of row actually streamed
+		TabularRecordLogger aggregatedRecordLogger = TabularRecordLogger.builder()
+				.table(queryPod.getTable().getName())
+				.options(queryPod.getOptions())
+				.build();
 
-		// TODO We'd like to log on the last row, to have the number of row actually
-		// streamed
 		BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate =
 				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
-		NavigableSet<String> groupedByColumns = tableQuery.getGroupBy().getGroupedByColumns();
-		SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
+		IGroupingSetAnalyzer groupingSetAnalyzer = makeGroupingSetAnalyzer();
 
 		// Process the underlying stream of data to execute aggregations
 		try {
-			// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-			// For any reason, `closeHandler` is not called automatically on a terminal
-			// operation
+			// TODO This will consider all measures and all groupBys, while maybe only a subset relates to a relevant
+			// CubeQueryStep. This is due to the fact it may be faster to do a single SQL doing a bit too many
+			// operations than doing multiple SQLs will seemingly less irrelevant computations, as the multiple SQLs
+			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
+			// reasonable to prefer doing as many computations in a single pass).
 			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
-				records.forEach(input -> forEachRow(sequencedKeyset, input, peekOnCoordinate, grid));
+				records.forEach(input -> {
+					SequencedSetLikeList sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);
+					forEachMeasure(sequencedKeyset, input, peekOnCoordinate, grid);
+				});
 			}
 
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
-				IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupedByColumns);
 
-				tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
+				tableQuery.getGroupBys().forEach(groupBy -> {
+					IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
+
+					tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
+				});
+
 			} else {
 				String msgE = "Issue processing stream from %s".formatted(stream);
 				throw AdhocExceptionHelpers.wrap(msgE, e);
@@ -117,7 +160,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		return grid;
 	}
 
-	protected void forEachRow(SequencedSetLikeList sequencedKeyset,
+	protected void forEachMeasure(SequencedSetLikeList sequencedKeyset,
 			ITabularRecord tableRow,
 			BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate,
 			IMultitypeMergeableGrid<IAdhocSlice> sliceToAgg) {

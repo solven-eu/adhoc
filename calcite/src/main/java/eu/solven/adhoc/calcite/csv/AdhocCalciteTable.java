@@ -46,9 +46,9 @@ import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.calcite.sql.type.SqlTypeName;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;

@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.17-SNAPSHOT</version>
+		<version>0.0.18-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable</artifactId>
@@ -19,6 +19,7 @@
 		<module>public</module>
 		<module>server-core</module>
 		<module>js</module>
+		<module>mcp</module>
 
 		<!-- Following modules are bootable-->
 		<module>server</module>

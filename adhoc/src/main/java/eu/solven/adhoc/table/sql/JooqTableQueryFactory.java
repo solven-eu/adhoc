@@ -70,9 +70,11 @@ import eu.solven.adhoc.query.groupby.IHasSqlExpression;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.util.IHasName;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -93,6 +95,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
+	public static final String PREFIX_GROUPING = "adhoc_grouping_";
+
 	@NonNull
 	@Builder.Default
 	final IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
@@ -160,8 +164,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		ISliceFilter leftover = ISliceFilter.MATCH_ALL;
 	}
 
-	@Override
+	@Deprecated
 	public QueryWithLeftover prepareQuery(TableQueryV2 tableQuery) {
+		return prepareQuery(TableQueryV3.edit(tableQuery).build());
+	}
+
+	@Override
+	public QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
 		ISliceToJooqCondition toCondition = makeToCondition();
 
 		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);
@@ -215,10 +224,12 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		return QueryWithLeftover.builder()
+				// TODO We may like to break `GROUPING SET` around here
 				.queries(partitionQuery(resultQuery))
 				.leftover(conditionAndLeftover.getLeftover())
 				.aggregatorToLeftovers(aggregateToLeftover)
 				.fields(fields)
+				// .groupingColumns(groupingColumns)
 				.build();
 	}
 
@@ -230,7 +241,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return queryPartitionor.partition(resultQuery);
 	}
 
-	protected ConditionWithFilter toConditions(ISliceToJooqCondition toCondition, TableQueryV2 tableQuery) {
+	protected ConditionWithFilter toConditions(ISliceToJooqCondition toCondition, TableQueryV3 tableQuery) {
 		Collection<Condition> conditions = new ArrayList<>();
 		Collection<ISliceFilter> leftoverFilters = new ArrayList<>();
 
@@ -248,7 +259,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected List<SelectFieldOrAsterisk> makeSelectedFields(ISliceToJooqCondition toCondition,
-			TableQueryV2 tableQuery,
+			TableQueryV3 tableQuery,
 			AggregatedRecordFields fields) {
 		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
 		tableQuery.getAggregators().stream().distinct().map(a -> {
@@ -262,18 +273,33 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.filter(Objects::nonNull)
 				.forEach(selectedFields::add);
 
-		tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-			Field<Object> field = columnAsField(column);
-			selectedFields.add(field);
-		});
+		tableQuery.getGroupBys()
+				.stream()
+				.flatMap(gb -> gb.getNameToColumn().values().stream())
+				// Distinct as `GROUPING SET` typically leads to a column to appear multiple times
+				.distinct()
+				.forEach(column -> {
+					Field<Object> field = columnAsField(column);
+					selectedFields.add(field);
+				});
 
+		// TODO Should the leftover be also added in `.makeGroupingFields`?
 		fields.getLeftovers().forEach(leftover -> {
 			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
 			selectedFields.add(field);
 		});
 
+		// https://learn.microsoft.com/en-us/sql/t-sql/functions/grouping-transact-sql?view=sql-server-ver17
+		// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_aggregation-extensions.html#r_GROUP_BY_aggregation-extentions-grouping
+		// https://neon.com/postgresql/postgresql-tutorial/postgresql-grouping-sets#grouping-function
+		fields.getGroupingColumns()
+				.stream()
+				// alias else jooq would name `grouping` leading to ambiguities
+				.map(column -> DSL.grouping(columnAsField(ReferencedColumn.ref(column))).as(groupingAlias(column)))
+				.forEach(selectedFields::add);
+
 		if (selectedFields.isEmpty()) {
-			// Typically happens on EmptyAggregation
+			// Typically happens on EmptyAggregation on grandTotal
 			// We force one field to prevent JooQ querying automatically for `*`
 			// BEWARE Rely on `count(1)` and not `1`, else DuckDB considers all fields are requested, and the groupBy
 			// lists all rows.
@@ -283,8 +309,42 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return selectedFields;
 	}
 
-	protected AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
-		return TableQuery.makeSelectedColumns(tableQuery, leftovers);
+	/**
+	 * @param tableQuery
+	 *            the initial tableQuery
+	 * @param leftovers
+	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
+	 *            not be transcoded for given table). As a set as there may be a leftover on the common `WHERE` clause,
+	 *            and on each `FILTER` clause.
+	 * @return the {@link List} of the columns to be output by the tableQuery
+	 */
+	// BEWARE Is this a JooQ specific logic?
+	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
+		List<String> aggregatorNames = tableQuery.getAggregators()
+				.stream()
+				.distinct()
+				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregator().getAggregationKey()))
+				.map(FilteredAggregator::getAlias)
+				.toList();
+
+		List<String> groupByColumns =
+				tableQuery.getGroupBy().getNameToColumn().values().stream().map(IHasName::getName).toList();
+
+		List<String> leftoversColumns = new ArrayList<>(
+				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
+
+		// Make sure a late column is not also a normal groupBy column
+		leftoversColumns.removeAll(groupByColumns);
+
+		return AggregatedRecordFields.builder()
+				.aggregates(aggregatorNames)
+				.columns(groupByColumns)
+				.leftovers(leftoversColumns)
+				.build();
+	}
+
+	protected AggregatedRecordFields makeSelectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
+		return QueryWithLeftover.makeSelectedColumns(tableQuery, leftovers);
 	}
 
 	/**
@@ -306,7 +366,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			Field<Object> unaliasedField = DSL.field(name(columnName));
 
 			// GroupBy: refer to the underlying column, to prevent ambiguities
-			// If we were to have some aliasing around here, aliases should probably not be appled on groupBy
+			// If we were to have some aliasing around here, aliases should probably not be applied on groupBy
 			// https://github.com/duckdb/duckdb/issues/16097
 			// https://github.com/jOOQ/jOOQ/issues/17980
 			field = unaliasedField;
@@ -332,23 +392,35 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 *            the filter which has not been able to be transcoded into a {@link Condition}
 	 * @return
 	 */
-	protected Collection<GroupField> makeGroupingFields(TableQueryV2 tableQuery, ISliceFilter leftoverFilter) {
+	protected Collection<GroupField> makeGroupingFields(TableQueryV3 tableQuery, ISliceFilter leftoverFilter) {
 		List<GroupField> groupedFields = new ArrayList<>();
-		if (canGroupByAll()) {
-			// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
-			// https://duckdb.org/docs/stable/sql/query_syntax/groupby.html#group-by-all
-			// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_clause.html
-			groupedFields.add(DSL.field(DSL.unquotedName("ALL")));
-		} else {
-			tableQuery.getGroupBy().getNameToColumn().values().forEach(column -> {
-				Field<Object> field = columnAsField(column);
-				groupedFields.add(field);
-			});
+		if (tableQuery.singleGroupBy().isPresent()) {
+			if (canGroupByAll()) {
+				// `GROUP BY ALL` is supported by: DuckDB, RedShift, More?
+				// https://duckdb.org/docs/stable/sql/query_syntax/groupby.html#group-by-all
+				// https://docs.aws.amazon.com/redshift/latest/dg/r_GROUP_BY_clause.html
+				groupedFields.add(DSL.field(DSL.unquotedName("ALL")));
+			} else {
+				tableQuery.getColumns().values().forEach(column -> {
+					Field<Object> field = columnAsField(column);
+					groupedFields.add(field);
+				});
 
-			FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
-				Field<Object> field = columnAsField(ReferencedColumn.ref(column));
-				groupedFields.add(field);
-			});
+				FilterHelpers.getFilteredColumns(leftoverFilter).forEach(column -> {
+					Field<Object> field = columnAsField(ReferencedColumn.ref(column));
+					groupedFields.add(field);
+				});
+			}
+		} else {
+			// At least 2 groupingSets
+
+			List<? extends List<? extends Field<?>>> fields2 = tableQuery.streamGroupBy().map(gb -> {
+				return gb.getNameToColumn().values().stream().map(this::columnAsField).toList();
+			}).toList();
+
+			Collection<? extends Field<?>>[] fieldSets = fields2.toArray(List[]::new);
+
+			groupedFields.add(DSL.groupingSets(fieldSets));
 		}
 
 		return groupedFields;
@@ -362,7 +434,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return capabilities.isAbleToFilterAggregates();
 	}
 
-	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV2 tableQuery) {
+	protected List<? extends OrderField<?>> getOptionalOrders(TableQueryV3 tableQuery) {
 		AdhocTopClause topClause = tableQuery.getTopClause();
 		return topClause.getColumns().stream().map(c -> {
 			Field<Object> field = columnAsField(c);
@@ -396,7 +468,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				unaliasedField = DSL.field(DSL.sql(columnName));
 
 				if (!filteredAggregator.getFilter().isMatchAll()) {
-					// BEWARE It is unclear how this could be managed: how to help TableQueryV2 producing valid FILTERs?
+					// BEWARE It is unclear how this could be managed: how to help TableQueryV3 producing valid FILTERs?
 					throw new NotYetImplementedException(
 							"FILTER with `ExpressionAggregation` is not managed. filteredAggregator="
 									+ filteredAggregator);
@@ -517,7 +589,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Deprecated(since = "TODO Migrate unitTests")
 	public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
-		return prepareQuery(TableQueryV2.fromV1(tableQuery));
+		return prepareQuery(TableQueryV3.edit(tableQuery).build());
+	}
+
+	public static String groupingAlias(String c) {
+		return "grouping_" + c.replaceAll("[\".]", "") + "_";
 	}
 
 }

@@ -1,0 +1,239 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.query.filter;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
+import eu.solven.adhoc.query.filter.value.LikeMatcher;
+import eu.solven.adhoc.query.filter.value.NullMatcher;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.PrefixAliaser;
+
+public class TestMoreFilterHelpers {
+
+	@Test
+	public void testIn() {
+		ColumnFilter inV1OrV2 = ColumnFilter.builder().column("c").matching(Set.of("v1", "v2")).build();
+		Assertions.assertThat(MoreFilterHelpers.match(inV1OrV2, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(inV1OrV2, Map.of("c", "v3"))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(inV1OrV2, Map.of("c", "v1"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(inV1OrV2, Map.of("c", "v2"))).isTrue();
+	}
+
+	@Test
+	public void testLike() {
+		ColumnFilter startsWithV1 =
+				ColumnFilter.builder().column("c").valueMatcher(LikeMatcher.builder().pattern("v1%").build()).build();
+
+		Assertions.assertThat(MoreFilterHelpers.match(startsWithV1, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(startsWithV1, Map.of("c", "v3"))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(startsWithV1, Map.of("c", "v1"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(startsWithV1, Map.of("c", "v2"))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(startsWithV1, Map.of("c", "p_v1"))).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(startsWithV1, Map.of("c", "v1_s"))).isTrue();
+	}
+
+	@Test
+	public void testIn_Transcoded() {
+		ITableAliaser transcoder = PrefixAliaser.builder().prefix("p_").build();
+
+		Assertions
+				.assertThat(
+						MoreFilterHelpers.match(transcoder, ColumnFilter.matchIn("c", "c1", "c2"), Map.of("p_c", "c1")))
+				.isTrue();
+
+		Assertions.assertThat(MoreFilterHelpers.match(transcoder,
+				AndFilter.and(ColumnFilter.matchLike("c", "a%"), ColumnFilter.matchLike("c", "%a")),
+				Map.of("p_c", "a"))).isTrue();
+
+		Assertions.assertThat(MoreFilterHelpers.match(transcoder,
+				FilterBuilder.or(ColumnFilter.matchLike("c", "a%"), ColumnFilter.matchLike("c", "%a")).optimize(),
+				Map.of("p_c", "azerty"))).isTrue();
+	}
+
+	/**
+	 *
+	 * @param key
+	 * @param value
+	 * @return a {@link Map} with given entry, accepting null key and value
+	 */
+	private static Map<String, Object> mapOfMayBeNull(String key, Object value) {
+		Map<String, Object> explicitNull = new HashMap<>();
+		explicitNull.put(key, value);
+		return explicitNull;
+	}
+
+	@Test
+	public void testMatchNull() {
+		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matchNull().build();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+
+		Assertions.assertThat(kIsNull.toString()).isEqualTo("k IS NULL");
+	}
+
+	@Test
+	public void testMatchNullButNotMissing() {
+		ColumnFilter kIsNull = ColumnFilter.builder().column("k").matchNull().nullIfAbsent(false).build();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+	}
+
+	@Test
+	public void testMatchNotNull() {
+		ColumnFilter filterToNegate = ColumnFilter.builder().column("k").matchNull().build();
+		NotFilter filter = NotFilter.builder().negated(filterToNegate).build();
+
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(filter, mapOfMayBeNull("k", null))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(filterToNegate, Map.of("k", "v2"))).isFalse();
+	}
+
+	@Test
+	public void testJavaUtilSetOf() {
+		Set<String> allowedValues = Set.of("v1", "v2");
+		Assertions.assertThat(allowedValues.getClass().getName()).startsWith("java.util.ImmutableCollections$");
+
+		ColumnFilter filter = ColumnFilter.builder().column("k").matching(allowedValues).build();
+
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(filter, mapOfMayBeNull("k", null))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of("k", "v2"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of("k", "v3"))).isFalse();
+
+		// The .toString can not be guaranteed as we test a not deterministic implementation: `Set.of`
+		Assertions.assertThat(filter.toString()).isIn("k=in=(v1,v2)", "k=in=(v2,v1)");
+	}
+
+	@Test
+	public void testCollectionsWithNull() {
+		ColumnFilter filter = ColumnFilter.builder().column("k").matching(Arrays.asList(null, "v")).build();
+
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of())).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(filter, mapOfMayBeNull("k", null))).isTrue();
+
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(filter, Map.of("k", "v2"))).isFalse();
+	}
+
+	@Test
+	public void testIsDistinctFrom() {
+		ISliceFilter kIsNull = ColumnFilter.notEq("k", "v");
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isTrue();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isTrue();
+	}
+
+	@Test
+	public void testIsIn_single() {
+		ISliceFilter kIsNull = ColumnFilter.matchIn("k", "v");
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+	}
+
+	@Test
+	public void testIsIn_list() {
+		ISliceFilter kIsNull = ColumnFilter.matchIn("k", List.of("v"));
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, mapOfMayBeNull("k", null))).isFalse();
+
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(kIsNull, Map.of("k", "v2"))).isFalse();
+	}
+
+	@Test
+	public void testNot_nullMatcher() {
+		ISliceFilter matchNull = ColumnFilter.match("c", NullMatcher.matchNull());
+		Assertions.assertThat(MoreFilterHelpers.match(matchNull, Map.of())).isTrue();
+
+		ISliceFilter notMatchNull = matchNull.negate();
+		Assertions.assertThat(MoreFilterHelpers.match(notMatchNull, Map.of())).isFalse();
+	}
+
+	@Test
+	public void testMatchAll() {
+		Assertions.assertThat(MoreFilterHelpers.match(ISliceFilter.MATCH_ALL, Map.of())).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(ISliceFilter.MATCH_NONE, Map.of())).isFalse();
+	}
+
+	@Test
+	public void testShiftIfPresent_Or_function() {
+		Function<Object, Object> shiftPreviousYear =
+				rawYear -> rawYear instanceof Number year ? year.longValue() - 1 : rawYear;
+
+		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", 123));
+		ISliceFilter shiftedFilter = SimpleFilterEditor.shiftIfPresent(filter, "b", shiftPreviousYear);
+		Assertions.assertThat(shiftedFilter).isInstanceOf(OrFilter.class);
+
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of())).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("a", "a1"))).isTrue();
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("b", 123))).isFalse();
+		Assertions.assertThat(MoreFilterHelpers.match(shiftedFilter, Map.of("b", 122))).isTrue();
+	}
+
+	@Test
+	public void testPresentIfMissing() {
+		FilterMatcher matcher = FilterMatcher.builder()
+				.filter(ColumnFilter.matchEq("a", "a1"))
+				.onMissingColumn(DecompositionHelpers.onMissingColumn())
+				.build();
+
+		Assertions.assertThat(matcher.match(Map.of("a", "a1"))).isTrue();
+		Assertions.assertThat(matcher.match(Map.of("b", "b1"))).isTrue();
+
+		Assertions.assertThat(matcher.match(Map.of("a", "a2"))).isFalse();
+	}
+
+}

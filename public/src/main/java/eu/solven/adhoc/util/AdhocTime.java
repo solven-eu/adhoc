@@ -31,7 +31,7 @@ import lombok.experimental.UtilityClass;
 
 /**
  * Helps working with time through Adhoc.
- * 
+ *
  * @author Benoit Lacelle
  */
 @UtilityClass
@@ -41,12 +41,12 @@ public class AdhocTime {
 	public static Clock unsafeClock = Clock.systemUTC();
 	public static ZoneOffset unsafeZoneOffset = ZoneOffset.UTC;
 
-	public static Instant now() {
-		return Instant.now(unsafeClock);
-	}
-
 	public static Duration untilNow(Instant start) {
 		return Duration.between(start, now());
+	}
+
+	public static Instant now() {
+		return Instant.now(unsafeClock);
 	}
 
 	public static ZoneOffset zoneOffset() {

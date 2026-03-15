@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>aggregator-adhoc</artifactId>
-		<version>0.0.17-SNAPSHOT</version>
+		<version>0.0.18-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-experimental</artifactId>
@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.09</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.17</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.61</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.63</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.experimental</automatic.module.name>
 
 		<!-- \-\-add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED is for arrow -->
@@ -37,7 +37,7 @@
 			<dependency>
 				<groupId>com.google.cloud</groupId>
 				<artifactId>libraries-bom</artifactId>
-				<version>26.76.0</version>
+				<version>26.77.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -81,7 +81,7 @@
 			<!-- TODO Clarify the difference between redshift and redshiftdata -->
 			<!--artifactId>redshift</artifactId-->
 			<artifactId>redshiftdata</artifactId>
-			<version>2.42.6</version>
+			<version>2.42.13</version>
 			<!-- One may need to query from Amazon RedShift -->
 			<optional>true</optional>
 		</dependency>

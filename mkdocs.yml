@@ -9,3 +9,21 @@ theme:
     logo: favicon.ico
     icon:
         repo: fontawesome/brands/github
+
+# pymdownx.superfences renders ```mermaid``` fenced blocks via the Mermaid JS library bundled
+# with mkdocs-material.  pymdownx.snippets pulls the generated .mmd files into those blocks at
+# build time so the diagrams stay in sync without duplicating content.
+markdown_extensions:
+    - pymdownx.superfences:
+          custom_fences:
+              - name: mermaid
+                class: mermaid
+                format: !!python/name:pymdownx.superfences.fence_code_format
+    - pymdownx.snippets:
+          base_path: ["."]
+
+nav:
+    - Home: index.md
+    - Lexicon: lexicon.md
+    - Architecture: architecture.md
+    - Module Dependencies: dependencies.md

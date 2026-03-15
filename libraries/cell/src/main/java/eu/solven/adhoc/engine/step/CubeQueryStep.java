@@ -36,6 +36,7 @@ import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasMeasure;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -68,7 +69,8 @@ import lombok.Value;
 		"cache" })
 // BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
 // measure
-public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions, IHasCache {
+public final class CubeQueryStep
+		implements IWhereGroupByQuery, IHasMeasure, IHasCustomMarker, IHasQueryOptions, IHasCache {
 	private static final String KEY_CACHE_TRANSVERSE = "adhoc-transverseCache";
 	public static final String KEY_FILTER_OPTIMIZER = "adhoc-filterOptimizer";
 
@@ -119,7 +121,7 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 
 		public CubeQueryStepBuilder customMarker(Object customMarker) {
 			if (customMarker instanceof Optional<?> optional) {
-				customMarker = optional.get();
+				customMarker = optional.orElse(null);
 			}
 			this.customMarker = customMarker;
 
@@ -129,6 +131,7 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 
 	@Deprecated(since = "use .toBuilder()", forRemoval = true)
 	public static CubeQueryStepBuilder edit(CubeQueryStep step) {
+		// TODO Clearing the cache (but the transverseCache) is not preserved in `.toBuilder()`
 		Map<Object, Object> newCache = new ConcurrentHashMap<>();
 		if (step.getCache().containsKey(KEY_CACHE_TRANSVERSE)) {
 			Map<Object, Object> transverseCache = step.getTransverseCache();
@@ -147,9 +150,8 @@ public final class CubeQueryStep implements IWhereGroupByQuery, IHasCustomMarker
 		if (step instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
 		}
-		// TODO if hasMeasure, to be compatible with CubeQueryStep
-		if (step instanceof CubeQueryStep queryStep) {
-			builder.measure(queryStep.getMeasure());
+		if (step instanceof IHasMeasure hasMeasure) {
+			builder.measure(hasMeasure.getMeasure());
 		}
 
 		return builder;

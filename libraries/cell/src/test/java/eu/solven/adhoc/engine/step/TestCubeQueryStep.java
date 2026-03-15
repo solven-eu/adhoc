@@ -73,6 +73,9 @@ public class TestCubeQueryStep {
 		// transverseCache is still valid after an `invalidateAll`
 		step.invalidateAll();
 		Assertions.assertThat(step.getTransverseCache()).isSameAs(transverseCache);
+
+		CubeQueryStep copy = step.toBuilder().build();
+		Assertions.assertThat(copy.getTransverseCache()).isSameAs(transverseCache);
 	}
 
 	@Test
@@ -102,7 +105,12 @@ public class TestCubeQueryStep {
 						.customMarker(Optional.of("foo"))
 						.build();
 		Assertions.assertThat(stepEditThenOptional).isEqualTo(stepExplicit);
+	}
 
+	@Test
+	public void testCustomMarker_emptyOptional() {
+		CubeQueryStep stepOptional = CubeQueryStep.builder().measure("m").customMarker(Optional.empty()).build();
+		Assertions.assertThat(stepOptional).isEqualTo(CubeQueryStep.builder().measure("m").build());
 	}
 
 	@Test

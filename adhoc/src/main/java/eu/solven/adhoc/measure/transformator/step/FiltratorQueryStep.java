@@ -24,11 +24,14 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.Cuboid;
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TransverseCacheHelper;
@@ -36,7 +39,6 @@ import eu.solven.adhoc.measure.combination.CoalesceCombination;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
 import eu.solven.adhoc.query.filter.FilterBuilder;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
@@ -74,7 +76,7 @@ public class FiltratorQueryStep extends AMeasureQueryStep {
 		ISliceFilter combinedFilter = FilterBuilder.and(step.getFilter(), filtrator.getFilter()).optimize(optimizer);
 		CubeQueryStep underlyingStep =
 				CubeQueryStep.edit(step).filter(combinedFilter).measure(filtrator.getUnderlying()).build();
-		return List.of(underlyingStep);
+		return ImmutableList.of(underlyingStep);
 	}
 
 	@Override

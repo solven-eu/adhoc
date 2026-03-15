@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -68,8 +70,12 @@ public class FilterMatcher {
 	@NonNull
 	Predicate<IColumnFilter> onMissingColumn = IF_MISSING_AS_NULL;
 
+	@Default
+	@NonNull
+	ISliceFactory sliceFactory = MoreFilterHelpers.SLICE_FACTORY;
+
 	public boolean match(Map<String, ?> map) {
-		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, map);
+		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, SliceHelpers.asSlice(sliceFactory, map));
 	}
 
 	public boolean match(ITabularGroupByRecord tabularRecord) {

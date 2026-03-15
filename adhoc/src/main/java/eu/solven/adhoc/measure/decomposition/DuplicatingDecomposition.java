@@ -36,12 +36,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.FilterMatcher;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -62,10 +64,12 @@ import lombok.extern.slf4j.Slf4j;
 public class DuplicatingDecomposition implements IDecomposition {
 	public static final String K_COLUMN_TO_COORDINATES = "columnToCoordinates";
 
+	final IAdhocFactories factories;
+
 	@Singular
 	@NonNull
 	@Getter(AccessLevel.PROTECTED)
-	Map<String, Collection<?>> columnToCoordinates;
+	final Map<String, Collection<?>> columnToCoordinates;
 
 	final Supplier<Map<String, Class<?>>> columnToTypeSupplier = Suppliers.memoize(() -> {
 		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
@@ -80,6 +84,8 @@ public class DuplicatingDecomposition implements IDecomposition {
 
 	public DuplicatingDecomposition(Map<String, ?> options) {
 		columnToCoordinates = AdhocMapPathGet.getRequiredAs(options, K_COLUMN_TO_COORDINATES);
+		factories = AdhocMapPathGet.<IAdhocFactories>getOptionalAs(options, "factories")
+				.orElse(AdhocFactoriesUnsafe.factories);
 	}
 
 	protected Set<String> getDuplicatedColumns() {
@@ -200,6 +206,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 			// (e.g. on `group=G8|G20`, we would send 2 decompositionEntry (one for G8 and one for G20),
 			// while only one of them should be kept).
 			FilterMatcher decompositionMatcher = FilterMatcher.builder()
+					.sliceFactory(factories.getSliceFactory())
 					.filter(slice.getQueryStep().getFilter())
 					.onMissingColumn(DecompositionHelpers.onMissingColumn())
 					.build();

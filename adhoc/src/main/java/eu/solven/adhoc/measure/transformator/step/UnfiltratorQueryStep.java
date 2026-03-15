@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -78,7 +79,7 @@ public class UnfiltratorQueryStep implements IMeasureQueryStep {
 				.filter(unfilter(step.getFilter()))
 				.measure(unfiltrator.getUnderlying())
 				.build();
-		return List.of(underlyingStep);
+		return ImmutableList.of(underlyingStep);
 	}
 
 	protected ISliceFilter unfilter(ISliceFilter filter) {

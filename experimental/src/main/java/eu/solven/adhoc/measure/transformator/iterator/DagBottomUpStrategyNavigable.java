@@ -28,13 +28,15 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.data.column.MultitypeArray;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.hash.MultitypeHashMergeableColumn;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableMergeableColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.MultitypeArray;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableColumn;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableColumn;
+import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
@@ -42,9 +44,9 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  * Relies on {@link MultitypeNavigableColumn} by default, and {@link UnderlyingQueryStepHelpersNavigable} to merge
  * underlyings.
  * 
- * Known issue: some {@link ITransformatorQueryStep} will not write slices in proper order (e.g. Dispatchor): so they
- * rely on a {@link MultitypeHashColumn}. Hence, dependents measures may receive navigable and hash columns. Given
- * merging strategy will fallback into a distinctNotSorted {@link Iterator}, which is not efficient given the default
+ * Known issue: some {@link IMeasureQueryStep} will not write slices in proper order (e.g. Dispatchor): so they rely on
+ * a {@link MultitypeHashColumn}. Hence, dependents measures may receive navigable and hash columns. Given merging
+ * strategy will fallback into a distinctNotSorted {@link Iterator}, which is not efficient given the default
  * {@link MultitypeNavigableColumn} (of the dependent).
  * 
  * @author Benoit Lacelle

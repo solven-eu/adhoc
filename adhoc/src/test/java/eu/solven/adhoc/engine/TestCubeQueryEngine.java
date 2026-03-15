@@ -36,17 +36,17 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
-import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
-import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryOptimizerFactory;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
@@ -57,7 +57,6 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
@@ -188,12 +187,16 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.
 	@Test
 	public void testCustomTableQueryOptimizer() {
-		ITableQueryOptimizerFactory optimizerFactory = (factories, hasOptions) -> {
-			IFilterOptimizer filterOptimizer = IFilterOptimizerFactory.standard().makeOptimizer();
-			return new TableQueryOptimizerSinglePerAggregator(factories, filterOptimizer);
+		ITableQueryFactoryFactory queryFactoryFactory = (factories, filterOptimizer, hasOptions) -> {
+			return TableQueryFactory.builder()
+					.factories(AdhocFactories.builder().build())
+					.filterOptimizer(filterOptimizer)
+					.splitter(new InduceByAdhoc())
+					.groupByAggregator()
+					.build();
 		};
 		CubeQueryEngine cubeEngine = CubeQueryEngine.builder()
-				.tableQueryEngine(TableQueryEngine.builder().optimizerFactory(optimizerFactory).build())
+				.tableQueryEngine(TableQueryEngine.builder().queryFactoryFactory(queryFactoryFactory).build())
 				.build();
 
 		Assertions.assertThat(cubeEngine.getTableQueryEngine()).isNotNull();

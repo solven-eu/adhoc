@@ -155,7 +155,7 @@ public class PivotableEndpointsHandler {
 		});
 
 		if (columnSearch.getTable().isEmpty() && columnSearch.getCube().isEmpty()) {
-			throw new NotYetImplementedException("Need to explicit a table or acube");
+			throw new NotYetImplementedException("Need to explicit a table or a cube");
 		}
 
 		// Request columns only for expressed cube and table

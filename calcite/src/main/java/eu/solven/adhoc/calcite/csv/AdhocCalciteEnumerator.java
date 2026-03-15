@@ -40,8 +40,8 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 
 /** Enumerator that reads from an Adhoc {@link ITabularView}. */
 class AdhocCalciteEnumerator implements Enumerator<Object> {

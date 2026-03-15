@@ -27,12 +27,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
@@ -42,7 +39,6 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -54,7 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link IGroupBy} based on a {@link Set} of {@link IAdhocColumn}.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -75,11 +71,6 @@ public class GroupByColumns implements IGroupBy {
 			Suppliers.memoize(() -> namedColumns(getColumns()));
 
 	@Override
-	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
-		return cachedNameToColumn.get();
-	}
-
-	@Override
 	public String toString() {
 		if (isGrandTotal()) {
 			return "grandTotal";
@@ -91,17 +82,38 @@ public class GroupByColumns implements IGroupBy {
 			return nameToColumn.values()
 					.stream()
 					.map(c -> ((ReferencedColumn) c).getName())
+					.map(this::escape)
 					.collect(Collectors.joining(", ", "(", ")"));
 		}
 
-		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this).add("size", nameToColumn.size());
+		return nameToColumn.values().stream().map(filter -> {
+			if (filter instanceof ReferencedColumn ref) {
+				return ref.getName();
+			} else {
+				return filter.toString();
+			}
+		}).collect(Collectors.joining(", ", "(", ")"));
+	}
 
-		AtomicInteger index = new AtomicInteger();
-		nameToColumn.entrySet().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(filter -> {
-			toStringHelper.add("#" + index.getAndIncrement(), filter);
-		});
+	@Override
+	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
+		return cachedNameToColumn.get();
+	}
 
-		return toStringHelper.toString();
+	/**
+	 *
+	 * @return grandTotal as there is no wildcard column.
+	 */
+	public static IGroupBy grandTotal() {
+		return named(ImmutableSet.of());
+	}
+
+	public static IGroupBy named(Collection<String> columns) {
+		return of(columns.stream().map(ReferencedColumn::ref).toList());
+	}
+
+	public static IGroupBy named(String column, String... moreColumns) {
+		return named(Lists.asList(column, moreColumns));
 	}
 
 	public static IGroupBy of(Collection<? extends IAdhocColumn> columns) {
@@ -113,22 +125,6 @@ public class GroupByColumns implements IGroupBy {
 
 	public static IGroupBy of(IAdhocColumn wildcard, IAdhocColumn... wildcards) {
 		return of(Lists.asList(wildcard, wildcards));
-	}
-
-	public static IGroupBy named(Collection<String> columns) {
-		return of(columns.stream().map(ReferencedColumn::ref).toList());
-	}
-
-	public static IGroupBy named(String column, String... moreColumns) {
-		return named(Lists.asList(column, moreColumns));
-	}
-
-	/**
-	 * 
-	 * @return grandTotal as there is no wildcard column.
-	 */
-	public static IGroupBy grandTotal() {
-		return named(ImmutableSet.of());
 	}
 
 	public static <T extends IHasName> NavigableMap<String, T> namedColumns(Collection<? extends T> columns) {
@@ -147,5 +143,14 @@ public class GroupByColumns implements IGroupBy {
 		});
 
 		return nameToColumnBuilder.build();
+	}
+
+	protected String escape(String name) {
+		// TODO There should be a utility method somewhere, as the logic is much more complex
+		// e.g. escaping `,`, escaping `"`, etc.
+		if (name.contains(",") && !name.matches("\".*\"")) {
+			return "\"" + name + "\"";
+		}
+		return name;
 	}
 }

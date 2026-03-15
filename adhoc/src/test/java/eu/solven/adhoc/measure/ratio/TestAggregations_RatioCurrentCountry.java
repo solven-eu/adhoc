@@ -31,8 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.data.tabular.ITabularView;
-import eu.solven.adhoc.data.tabular.MapBasedTabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.examples.RatioOverCurrentColumnValueCompositor;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
@@ -203,12 +203,12 @@ public class TestAggregations_RatioCurrentCountry extends ADagTest {
 								        |   \\-- #5 m=d(SUM) filter=country==US groupBy=(country)
 								        \\-- #6 m=d_country=current_whole(Unfiltrator) filter=country==US groupBy=grandTotal
 								            \\-- !4
-								/-- 1 inducers from SELECT d:SUM(d) WHERE country==US GROUP BY (country)
+								/-- 2 inducers from SELECT d:SUM(d) WHERE country==US GROUPING SETS (grandTotal,(country))
+								|\\- step SELECT d:SUM(d) WHERE country==US GROUP BY grandTotal
 								\\-- step SELECT d:SUM(d) WHERE country==US GROUP BY (country)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								|\\- #1 m=d(SUM) filter=country==US groupBy=grandTotal
-								|   \\-- #2 m=d(SUM) filter=country==US groupBy=(country)
-								\\-- !2""");
+								|\\- #1 m=d(SUM) filter=country==US groupBy=(country)
+								\\-- #2 m=d(SUM) filter=country==US groupBy=grandTotal""");
 
 		Assertions.assertThat(messages).hasSize(8 + 2 + 4);
 	}

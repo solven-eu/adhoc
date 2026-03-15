@@ -23,16 +23,10 @@
 package eu.solven.adhoc.query;
 
 import java.util.Locale;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.TableQueryEngine;
-import eu.solven.adhoc.engine.tabular.optimizer.TableQueryOptimizerSinglePerAggregator;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**
@@ -45,28 +39,43 @@ import eu.solven.adhoc.table.ITableWrapper;
  */
 // @JsonSerialize(using = SimpleEnumSerializer.class)
 public enum InternalQueryOptions implements IQueryOption {
+
 	/**
-	 * Given the {@link Set} of {@link TableQuery}, {@link TableQueryEngine} generally prefers querying the
-	 * {@link ITableWrapper} a minimal set of {@link CubeQueryStep}, and computing within Adhoc induced results.
+	 * Rely on `GROUPING SET` so that {@link ITableWrapper} evaluate itself various `GROUP BY`.
 	 * 
-	 * This option disables this behavior.
+	 * It leads to more work in the database, and less work into Adhoc.
+	 * 
+	 * @see eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets
 	 */
-	ONE_TABLE_QUERY_PER_INDUCER,
+	INDUCE_BY_TABLE,
 
 	/**
-	 * Enable the use of {@link TableQueryOptimizerSinglePerAggregator}, which will do one {@link TableQuery} per
-	 * {@link Aggregator}, hence potentially reducing the number of queries to the database, but querying some
-	 * information potentially useless (e.g. by querying some groupBy which is irrelevant for a part of the filter)
+	 * Do not rely on `GROUPING SET` and request the finest granularity to {@link ITableWrapper}. Adhoc will induce the
+	 * less granular steps.
+	 * 
+	 * It leads to less work in the database, and more work into Adhoc.
+	 * 
+	 * @see eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc
 	 */
-	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_AGGREGATOR,
+	INDUCE_BY_ADHOC,
 
 	/**
-	 * This is the default behavior. Given a {@link Set} of {@link CubeQueryStep}, we find the sub-set which can induce
-	 * all the others. This option is useful if the default behavior has been customized.
+	 * 
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper
 	 */
-	@Deprecated(since = "Unclear if this should be a boolean, or if we should have some option exposed as an enum")
-	ONE_TABLE_QUERY_PER_ROOT_INDUCER,
+	TABLEQUERY_PER_OPTIONS,
+
+	/**
+	 * 
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator
+	 */
+	TABLEQUERY_PER_AGGREGATOR,
+
+	/**
+	 * 
+	 * @see eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup
+	 */
+	TABLEQUERY_PER_STEPS,
 
 	;
 

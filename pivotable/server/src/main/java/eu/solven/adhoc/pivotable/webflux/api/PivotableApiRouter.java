@@ -38,8 +38,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
-import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
+import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
@@ -62,6 +62,11 @@ public class PivotableApiRouter {
 	private static RequestPredicate json(String path) {
 		final RequestPredicate json = RequestPredicates.accept(MediaType.APPLICATION_JSON);
 		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(json);
+	}
+
+	private static RequestPredicate arrow(String path) {
+		final RequestPredicate arrowStream = RequestPredicates.accept(PivotableQueryHandler.ARROW_STREAM_MEDIA_TYPE);
+		return RequestPredicates.path(IPivotableApiConstants.PREFIX + path).and(arrowStream);
 	}
 
 	/**
@@ -175,6 +180,13 @@ public class PivotableApiRouter {
 										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200")
 										.implementation(ListBasedTabularView.class)))
+				.POST(arrow("/cubes/query"),
+						queryHandler::executeQueryAsArrow,
+						ops -> ops.operationId("executeQueryAsArrow")
+								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
+										.implementation(TargetedCubeQuery.class))
+								.response(responseBuilder().responseCode("200")
+										.description("Apache Arrow IPC stream (application/vnd.apache.arrow.stream)")))
 				.POST(json("/cubes/query/asynchronous"),
 						queryHandler::executeAsynchronousQuery,
 						ops -> ops.operationId("executeQuery")

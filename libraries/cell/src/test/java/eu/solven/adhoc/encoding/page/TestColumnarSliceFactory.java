@@ -36,7 +36,7 @@ import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.AdhocMapUnsafe;
 
 public class TestColumnarSliceFactory {
-	ColumnarSliceFactory factory = ColumnarSliceFactory.builder().build();
+	ColumnSliceFactory factory = ColumnSliceFactory.builder().build();
 
 	@Test
 	public void testRetainAll() {
@@ -125,5 +125,11 @@ public class TestColumnarSliceFactory {
 					.isEqualTo(ImmutableMap.of("a", "a1"))
 					.hasSameHashCodeAs(ImmutableMap.of("a", "a1"));
 		}
+	}
+
+	@Test
+	public void testAppendTooMuch() {
+		Assertions.assertThatThrownBy(() -> factory.newMapBuilder(List.of("a", "b")).append("a1", "b1", "c1"))
+				.isInstanceOf(IllegalStateException.class);
 	}
 }

@@ -22,26 +22,23 @@
  */
 package eu.solven.adhoc.query.table;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.sum.EmptyAggregation;
+import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasMeasure;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.sql.AggregatedRecordFields;
-import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -50,6 +47,8 @@ import lombok.Value;
 
 /**
  * A query over an {@link ITableWrapper}, which typically represents an external database.
+ * 
+ * This relates to {@link CubeQueryStep} by enabling multiple {@link Aggregator}.
  * 
  * @author Benoit Lacelle
  * @see eu.solven.adhoc.table.transcoder.ITableAliaser
@@ -106,42 +105,23 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 		if (query instanceof IHasQueryOptions hasQueryOptions) {
 			builder.options(hasQueryOptions.getOptions());
 		}
+		if (query instanceof IHasMeasure hasMeasure) {
+			IMeasure measure = hasMeasure.getMeasure();
+			if (measure instanceof Aggregator aggregator) {
+				builder.aggregator(aggregator);
+			}
+		}
+		if (query instanceof IHasMeasures hasMeasures) {
+			Set<IMeasure> measures = hasMeasures.getMeasures();
+
+			measures.forEach(measure -> {
+				if (measure instanceof Aggregator aggregator) {
+					builder.aggregator(aggregator);
+				}
+			});
+		}
 
 		return builder;
-	}
-
-	/**
-	 * @param tableQuery
-	 *            the initial tableQuery
-	 * @param leftovers
-	 *            the filter which has to be applied manually over the output slices (e.g. on a customFilter which can
-	 *            not be transcoded for given table). As a set as there may be a leftover on the common `WHERE` clause,
-	 *            and on each `FILTER` clause.
-	 * @return the {@link List} of the columns to be output by the tableQuery
-	 */
-	// BEWARE Is this a JooQ specific logic?
-	public static AggregatedRecordFields makeSelectedColumns(TableQueryV2 tableQuery, Set<ISliceFilter> leftovers) {
-		List<String> aggregatorNames = tableQuery.getAggregators()
-				.stream()
-				.distinct()
-				.filter(a -> !EmptyAggregation.isEmpty(a.getAggregator().getAggregationKey()))
-				.map(FilteredAggregator::getAlias)
-				.toList();
-
-		List<String> groupByColumns =
-				tableQuery.getGroupBy().getNameToColumn().values().stream().map(IHasName::getName).toList();
-
-		List<String> leftoversColumns = new ArrayList<>(
-				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
-
-		// Make sure a latecolumn is not also a normal groupBy column
-		leftoversColumns.removeAll(groupByColumns);
-
-		return AggregatedRecordFields.builder()
-				.aggregates(aggregatorNames)
-				.columns(groupByColumns)
-				.leftovers(leftoversColumns)
-				.build();
 	}
 
 	/**

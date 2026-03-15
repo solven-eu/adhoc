@@ -33,6 +33,7 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
  * 
  * @author Benoit Lacelle
  */
+// TODO This should enable customization of customMarker
 @JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS,
 		include = JsonTypeInfo.As.PROPERTY,
 		property = "type",

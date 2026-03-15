@@ -62,6 +62,10 @@ public class FilteredAggregator implements IAliasedAggregator {
 		}
 	}
 
+	public Aggregator getAggregatorWithAlias() {
+		return toAggregator(this);
+	}
+
 	public static Aggregator toAggregator(FilteredAggregator fa) {
 		return fa.aggregator.toBuilder().name(fa.getAlias()).build();
 	}

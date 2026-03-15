@@ -30,7 +30,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.cube.CubeWrapper;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;

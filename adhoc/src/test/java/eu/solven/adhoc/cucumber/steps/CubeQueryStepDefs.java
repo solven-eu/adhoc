@@ -28,7 +28,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 
 import eu.solven.adhoc.ADagTest;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;

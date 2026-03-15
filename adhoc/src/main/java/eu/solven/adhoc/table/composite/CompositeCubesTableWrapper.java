@@ -52,12 +52,12 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
-import eu.solven.adhoc.data.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.data.row.TabularRecordOverMaps;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
@@ -74,17 +74,18 @@ import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.filter.FilterHelpers;
 import eu.solven.adhoc.query.filter.IColumnFilter;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -194,19 +195,17 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 compositeQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 compositeQuery) {
 		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
 
 		checkColumns(compositeQuery);
 
-		IGroupBy compositeGroupBy = compositeQuery.getGroupBy();
-
 		Map<String, ICubeQuery> cubeToQuery = new LinkedHashMap<>();
 
 		cubes.stream().filter(subCube -> isEligible(subCube, compositeQuery)).forEach(subCube -> {
-			ICubeQuery subQuery = makeSubQuery(queryPod, compositeQuery, compositeGroupBy, subCube);
+			ICubeQuery subQuery = makeSubQuery(queryPod, compositeQuery, subCube);
 
 			var previous = cubeToQuery.put(subCube.getName(), subQuery);
 			if (previous != null) {
@@ -218,7 +217,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
 
 		// not distinct slices as different subCubes may refer to the same slices
-		return new SuppliedTabularRecordStream(compositeQuery, false, () -> openStream(compositeGroupBy, cubeToView));
+		return new SuppliedTabularRecordStream(compositeQuery, false, () -> openStream(compositeQuery, cubeToView));
 	}
 
 	/**
@@ -227,9 +226,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * 
 	 * @param compositeQuery
 	 */
-	protected void checkColumns(TableQueryV2 compositeQuery) {
-		NavigableSet<String> groupedByColumns =
-				new ConcurrentSkipListSet<>(compositeQuery.getGroupBy().getNameToColumn().keySet());
+	protected void checkColumns(TableQueryV3 compositeQuery) {
+		NavigableSet<String> groupedByColumns = new ConcurrentSkipListSet<>(compositeQuery.getGroupedByColumns());
 		Set<String> filteredColumns =
 				new ConcurrentSkipListSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
 
@@ -263,7 +261,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 	}
 
-	protected Stream<ITabularRecord> openStream(IGroupBy compositeGroupBy, final Map<String, ITabularView> cubeToView) {
+	protected Stream<ITabularRecord> openStream(TableQueryV3 compositeQuery,
+			final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		return cubeToView.entrySet().stream().flatMap(e -> {
@@ -273,7 +272,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
 			// from current subCube.
 			NavigableSet<String> subMissingColumns =
-					new TreeSet<>(Sets.difference(compositeGroupBy.getNameToColumn().keySet(), subColumns));
+					new TreeSet<>(Sets.difference(compositeQuery.getGroupedByColumns(), subColumns));
 
 			Map<String, Object> missingColumnsAsmask;
 
@@ -299,7 +298,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		return nameToCube;
 	}
 
-	protected CompatibleMeasures computeSubMeasures(TableQueryV2 compositeQuery,
+	protected CompatibleMeasures computeSubMeasures(TableQueryV3 compositeQuery,
 			ICubeWrapper subCube,
 			Predicate<String> isSubColumn) {
 		Set<String> cubeMeasures = subCube.getNameToMeasure().keySet();
@@ -345,7 +344,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				.build();
 	}
 
-	protected boolean isEligible(ICubeWrapper subCube, TableQueryV2 compositeQuery) {
+	protected boolean isEligible(ICubeWrapper subCube, TableQueryV3 compositeQuery) {
 		if (EmptyAggregation.isEmpty(compositeQuery.getAggregators())) {
 			// Requesting for slices: to be propagated to each underlying cube
 			return true;
@@ -358,22 +357,28 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		}
 	}
 
-	protected ICubeQuery makeSubQuery(QueryPod queryPod,
-			TableQueryV2 compositeQuery,
-			IGroupBy compositeGroupBy,
-			ICubeWrapper subCube) {
+	protected ICubeQuery makeSubQuery(QueryPod queryPod, TableQueryV3 compositeQuery, ICubeWrapper subCube) {
 		Predicate<String> subCubeKnownMeasure = makeSubColumnPredicate(subCube);
 
 		// groupBy only by relevant columns. Other columns are ignored
-		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>(compositeGroupBy.getNameToColumn());
-		subGroupBy.keySet().removeIf(c -> !subCubeKnownMeasure.test(c));
+		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>();
+
+		compositeQuery.getGroupBys().forEach(compositeGroupBy -> subGroupBy.putAll(compositeGroupBy.getNameToColumn()));
+
+		subGroupBy.keySet().removeIf(Predicate.not(subCubeKnownMeasure::test));
 
 		ISliceFilter compositeFilter = compositeQuery.getFilter();
 		ISliceFilter subFilter = filterForColumns(subCube, compositeFilter, subCubeKnownMeasure);
 
 		CompatibleMeasures subMeasures = computeSubMeasures(compositeQuery, subCube, subCubeKnownMeasure);
 
-		ICubeQuery query = CubeQuery.edit(compositeQuery)
+		List<TableQueryV2> asV2 = compositeQuery.streamV2().toList();
+
+		if (asV2.size() != 1) {
+			throw new NotYetImplementedException("GROUPING SET");
+		}
+
+		ICubeQuery query = CubeQuery.edit(asV2.getFirst())
 				.filter(subFilter)
 				.groupBy(GroupByColumns.of(subGroupBy.values()))
 				// Reference the measures already known by the subCube

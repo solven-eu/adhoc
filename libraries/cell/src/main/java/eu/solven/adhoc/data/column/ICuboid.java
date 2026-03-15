@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.data.column;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -32,7 +33,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * A {@link ICuboid} is an immutable data-structure, expressing the mapping from slices to values, typically computed by
- * a {@link ITransformatorQueryStep}.
+ * a {@link IMeasureQueryStep}.
  * 
  * This is very similar to a Dataframe. But an cuboid has additional constrains like guaranteeing each slice to be
  * unique amongst the cuboid, and each slice is mapping to a measure value.
@@ -96,5 +97,7 @@ public interface ICuboid extends ICompactable {
 	 * @return another {@link ICuboid} which has been purged from {@link IAggregationCarrier}.
 	 */
 	ICuboid purgeCarriers();
+
+	ICuboid mask(Map<String, ?> mask);
 
 }

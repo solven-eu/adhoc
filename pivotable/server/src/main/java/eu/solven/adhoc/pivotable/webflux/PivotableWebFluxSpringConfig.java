@@ -39,7 +39,7 @@ import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Wraps API-related conponents.
+ * Wraps API-related components.
  * 
  * @author Benoit Lacelle
  */

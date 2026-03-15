@@ -27,7 +27,7 @@ import java.util.Map;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.query.cube.ICubeQuery;

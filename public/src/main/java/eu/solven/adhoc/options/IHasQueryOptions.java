@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableSet;
  * {@link eu.solven.adhoc.engine.step.CubeQueryStep}.
  *
  * For instance, in ActivePivot/Atoti, this could be an IContextValue.
- * 
+ *
  * @author Benoit Lacelle
  *
  */
@@ -40,21 +40,21 @@ import com.google.common.collect.ImmutableSet;
 public interface IHasQueryOptions extends IIsExplainable, IIsDebugable {
 	Set<IQueryOption> getOptions();
 
+	@JsonIgnore
+	default boolean isDebugOrExplain() {
+		return isDebug() || isExplain();
+	}
+
 	@Override
 	@JsonIgnore
 	default boolean isExplain() {
-		return getOptions().contains(StandardQueryOptions.EXPLAIN);
+		return StandardQueryOptions.EXPLAIN.isActive(getOptions());
 	}
 
 	@Override
 	@JsonIgnore
 	default boolean isDebug() {
-		return getOptions().contains(StandardQueryOptions.DEBUG);
-	}
-
-	@JsonIgnore
-	default boolean isDebugOrExplain() {
-		return isDebug() || isExplain();
+		return StandardQueryOptions.DEBUG.isActive(getOptions());
 	}
 
 	static IHasQueryOptions noOption() {

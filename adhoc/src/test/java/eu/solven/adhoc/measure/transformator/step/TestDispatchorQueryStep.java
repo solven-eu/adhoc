@@ -100,7 +100,7 @@ public class TestDispatchorQueryStep {
 				.build();
 		IAdhocSlice o = step(stepFilter).queryGroupBy(groupBy, sliceWithStep, Map.of());
 
-		Assertions.assertThat((Map) o.getCoordinates()).containsEntry("computedC", "underlyingV" + "_post");
+		Assertions.assertThat((Map) o.asAdhocMap()).containsEntry("computedC", "underlyingV" + "_post");
 	}
 
 }

@@ -27,12 +27,12 @@ import java.util.Set;
 
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -48,7 +48,7 @@ import eu.solven.adhoc.util.IHasColumnTypes;
  */
 public interface IColumnsManager extends IHasColumnTypes {
 
-	ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV2 tableQuery);
+	ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV3 tableQuery);
 
 	Object onMissingColumn(ICubeWrapper cube, String column);
 

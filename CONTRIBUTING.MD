@@ -24,8 +24,10 @@ The style is ensured with Spotless, and various sub-plugins. Just run `mvn spotl
 
 # Make a release
 
-    mvn release:clean release:prepare release:perform -Pactiveviam
-    
+    mvn release:clean release:prepare -Pfast release:perform -Pactiveviam
+
+Note that `-Pfast` on cli applies only to `prepare`, not to `perform`.
+
 ## In case of error:
 
         git reset --hard HEAD~~

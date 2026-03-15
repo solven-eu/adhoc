@@ -46,6 +46,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.encoding.perfect_hashing.CollectionWithCustomIndexOf;
+import eu.solven.adhoc.encoding.perfect_hashing.IHasIndexOf;
+import eu.solven.adhoc.encoding.perfect_hashing.ImmutableSortedSetHasIndexOf;
 import it.unimi.dsi.bits.TransformationStrategies;
 import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.sux4j.mph.GOVMinimalPerfectHashFunction;

@@ -137,16 +137,16 @@ public class AdhocCollectionHelpers {
 	/**
 	 * Relates with {@link Iterables#getFirst(Iterable, Object)} and {@link Iterables#get(Iterable, int)}.
 	 * 
-	 * It prevent an {@link Iterator} creation when possible.
+	 * It prevents an {@link Iterator} creation when possible.
 	 * 
 	 * @param c
 	 * @return the first item of input {@link Collection}
 	 */
-	public static Object getFirst(Collection<?> c) {
+	public static <T> T getFirst(Collection<T> c) {
 		if (c.isEmpty()) {
 			throw new IllegalArgumentException("Can not .getFirst due to emptyness");
 		}
-		if (c instanceof List<?> list) {
+		if (c instanceof List<T> list) {
 			return list.getFirst();
 		} else {
 			return c.iterator().next();

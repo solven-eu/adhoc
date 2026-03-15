@@ -37,7 +37,7 @@ import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.table.ITableWrapper;

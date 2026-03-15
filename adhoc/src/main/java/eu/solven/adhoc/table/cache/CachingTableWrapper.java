@@ -41,9 +41,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.HideAggregatorsTabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.row.HideAggregatorsTabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.filter.FilterBuilder;
@@ -51,9 +51,11 @@ import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.IHasCache;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -173,10 +175,20 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return decorated.getName();
 	}
 
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+		if (tableQuery.getGroupBys().size() != 1) {
+			throw new NotYetImplementedException("GROUPING SET");
+		}
+
+		TableQueryV2 queryV2 = tableQuery.streamV2().findFirst().get();
+		return streamSlices(queryPod, queryV2);
+	}
+
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
-		if (queryPod.getOptions().contains(StandardQueryOptions.NO_CACHE)) {
+		if (StandardQueryOptions.NO_CACHE.isActive(queryPod.getOptions())) {
 			return streamDecorated(queryPod, tableQuery);
 		}
 
@@ -216,6 +228,11 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 			return new ITabularRecordStream() {
 
 				@Override
+				public Object getTableQuery() {
+					return TableQueryV3.edit(tableQuery).build();
+				}
+
+				@Override
 				public boolean isDistinctSlices() {
 					// TODO `mergeAggregate` does not distinct slices
 					return false;
@@ -246,6 +263,11 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 			}
 
 			return new ITabularRecordStream() {
+
+				@Override
+				public Object getTableQuery() {
+					return tableQuery;
+				}
 
 				@Override
 				public boolean isDistinctSlices() {

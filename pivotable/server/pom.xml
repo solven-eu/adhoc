@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.17-SNAPSHOT</version>
+		<version>0.0.18-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-server</artifactId>
@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.46</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.80</jacoco.instruction.ratio>
 
 		<springdoc-openapi.version>3.0.1</springdoc-openapi.version>
 		<automatic.module.name>eu.solven.adhoc.pivotable.server</automatic.module.name>
@@ -96,12 +96,13 @@
 			<artifactId>springdoc-openapi-starter-webflux-api</artifactId>
 			<version>${springdoc-openapi.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<scope>runtime</scope>
-			<optional>true</optional>
-		</dependency>
+		<!--		<dependency>-->
+		<!--			 https://docs.spring.io/spring-boot/reference/using/devtools.html -->
+		<!--			<groupId>org.springframework.boot</groupId>-->
+		<!--			<artifactId>spring-boot-devtools</artifactId>-->
+		<!--			<scope>runtime</scope>-->
+		<!--			<optional>true</optional>-->
+		<!--		</dependency>-->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -122,7 +123,7 @@
 		<dependency>
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue</artifactId>
-			<version>3.5.29</version>
+			<version>3.5.30</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
 		<dependency>

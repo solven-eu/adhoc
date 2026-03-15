@@ -23,7 +23,7 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 
 /**
  * Typically extended by an {@link IAdhocColumn} in order to generate a column based on the output from the

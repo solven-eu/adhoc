@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>adhoc-libraries</artifactId>
-		<version>0.0.17-SNAPSHOT</version>
+		<version>0.0.18-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>adhoc-filters</artifactId>
@@ -12,6 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
+		<jacoco.branch.ratio>0.79</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.83</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.filters</automatic.module.name>
 	</properties>
 

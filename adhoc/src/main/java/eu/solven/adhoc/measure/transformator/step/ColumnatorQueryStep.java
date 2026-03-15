@@ -79,7 +79,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 			// hideIfPresent and present: hidden
 			return columnIsPresent;
 		} else {
-			throw new NotYetImplementedException("mode=&s".formatted(mode));
+			throw new NotYetImplementedException("mode=%s".formatted(mode));
 		}
 	}
 

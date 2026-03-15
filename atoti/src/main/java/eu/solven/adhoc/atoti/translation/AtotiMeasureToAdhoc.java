@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -43,6 +42,7 @@ import com.activeviam.pivot.postprocessing.impl.ADynamicAggregationPostProcessor
 import com.activeviam.pivot.postprocessing.impl.AFilteringPostProcessorV2;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.qfs.agg.impl.SingleValueFunction;
 import com.quartetfs.biz.pivot.cube.hierarchy.measures.IMeasureHierarchy;
 import com.quartetfs.biz.pivot.definitions.IActivePivotDescription;
@@ -616,13 +616,13 @@ public class AtotiMeasureToAdhoc {
 				.filter(k -> !AAdvancedPostProcessorV2.ANALYSIS_LEVELS_PROPERTY.equals(k))
 				// leafLevels are not excluded as they hold some order which may be relied upon by some PostProcessors
 				// Adhoc groupByColumns may be sorted (e.g. may be re-ordered lexicographically)
-				.filter(k -> !Set.of(excludedProperties).contains(k))
+				.filter(k -> !ImmutableSet.copyOf(excludedProperties).contains(k))
 				.forEach(key -> options.put(key, properties.get(key)));
 
 		properties.entrySet()
 				.stream()
 				.filter(e -> !(e.getKey() instanceof String && e.getValue() instanceof String))
-				.filter(e -> !Set.of(excludedProperties).contains(e.getKey()))
+				.filter(e -> !ImmutableSet.copyOf(excludedProperties).contains(e.getKey()))
 				// No interest in these properties, mapped to an int value
 				.filter(e -> !AAdvancedPostProcessorV2.OUTPUT_TYPE.equals(e.getKey()))
 				.filter(e -> !ADynamicAggregationPostProcessorV2.LEAF_TYPE.equals(e.getKey()))

@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
 		<artifactId>pivotable</artifactId>
-		<version>0.0.17-SNAPSHOT</version>
+		<version>0.0.18-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>pivotable-authorization</artifactId>
@@ -14,7 +14,7 @@
 
 	<properties>
 		<jacoco.branch.ratio>0.43</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.43</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.44</jacoco.instruction.ratio>
 		<automatic.module.name>eu.solven.adhoc.pivotable.authorization</automatic.module.name>
 	</properties>
 

@@ -29,17 +29,17 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.Cuboid;
 import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.data.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.data.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
+import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.transformator.iterator.SliceAndMeasures;
-import eu.solven.adhoc.measure.transformator.iterator.UnderlyingQueryStepHelpersNavigableElseHash;
 
 public class TestUnderlyingQueryStepHelpers {
 	@Test
@@ -145,7 +145,7 @@ public class TestUnderlyingQueryStepHelpers {
 				UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(queryStep, underlyings).toList();
 
 		List<Object> coordinates =
-				slices.stream().<Object>map(s -> s.getSlice().getSlice().getCoordinates().get("c")).toList();
+				slices.stream().<Object>map(s -> s.getSlice().getSlice().asAdhocMap().get("c")).toList();
 
 		Assertions.assertThat(coordinates).startsWith("c1", "c2", "c3", "c4").contains("c5");
 

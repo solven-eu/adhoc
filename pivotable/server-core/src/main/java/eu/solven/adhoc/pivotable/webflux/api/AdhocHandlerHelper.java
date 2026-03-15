@@ -34,7 +34,7 @@ import lombok.experimental.UtilityClass;
 import reactor.core.publisher.Mono;
 
 /**
- * Helpers around {@link AdhocApiRouter} handlers.
+ * Helpers around {@link PivotableApiRouter} handlers.
  * 
  * @author Benoit Lacelle
  *

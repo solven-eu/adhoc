@@ -25,14 +25,21 @@ package eu.solven.adhoc.table.sql;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import eu.solven.adhoc.data.row.ITabularRecordFactory;
-import eu.solven.adhoc.data.row.TabularRecordBuilder;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+
+import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
+import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Singular;
 
 /**
  * Enable creating {@link TabularRecordBuilder} given an {@link AggregatedRecordFields}.
@@ -47,6 +54,9 @@ public class JooqTabularRecordFactory implements ITabularRecordFactory {
 	AggregatedRecordFields fields;
 	@NonNull
 	ISliceFactory sliceFactory;
+	@Singular
+	@Getter
+	ImmutableList<String> optionalColumns;
 
 	@Override
 	public List<String> getAggregates() {
@@ -54,17 +64,29 @@ public class JooqTabularRecordFactory implements ITabularRecordFactory {
 	}
 
 	@Override
-	public List<String> getColumns() {
+	public ImmutableSet<String> getColumns() {
 		return fields.getAllColumns();
 	}
 
 	@Override
-	public TabularRecordBuilder makeTabularRecordBuilder() {
+	public TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns) {
 		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(getAggregates().size());
 
-		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(getColumns());
+		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(getColumns(absentColumns));
 
 		return new TabularRecordBuilder(aggregates, sliceBuilder);
+	}
+
+	protected Iterable<? extends String> getColumns(Set<String> absentColumns) {
+		if (absentColumns.isEmpty()) {
+			return getColumns();
+		} else {
+			if (!getColumns().containsAll(absentColumns)) {
+				throw new IllegalArgumentException(
+						"Some absent are unknown. absent=%s known=%s".formatted(absentColumns, getColumns()));
+			}
+			return Sets.difference(getColumns(), absentColumns);
+		}
 	}
 
 }

@@ -29,10 +29,11 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.tabular.IReadableTabularView;
-import eu.solven.adhoc.data.tabular.ListBasedTabularView;
 import eu.solven.adhoc.resource.AdhocJackson;
 import tools.jackson.databind.ObjectMapper;
+
+import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
+import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
 
 public class TestQueryResultHolder {
 	@Test

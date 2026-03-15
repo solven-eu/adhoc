@@ -45,13 +45,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
-import eu.solven.adhoc.encoding.page.ColumnarSliceFactory;
+import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 
 /**
- * Benchmarks related with {@link SliceAsMap#compareTo(IAdhocSlice)}
+ * Benchmarks related with {@link eu.solven.adhoc.data.row.slice.IAdhocSlice#compareTo(Object)}
  * 
  * @author Benoit Lacelle
  */
@@ -64,7 +62,7 @@ import eu.solven.adhoc.map.IAdhocMap;
 @Measurement(iterations = 3, time = 2, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkColumnarSliceFactory {
 
-	ColumnarSliceFactory factory = ColumnarSliceFactory.builder().build();
+	ColumnSliceFactory factory = ColumnSliceFactory.builder().build();
 
 	Map<String, ?> javaMap = Map.of("a", "a1", "b", "b1");
 	Map<String, ?> guavaMap = ImmutableMap.of("a", "a1", "b", "b1");

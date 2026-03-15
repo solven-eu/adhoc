@@ -22,14 +22,18 @@
  */
 package eu.solven.adhoc.engine.tabular;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
-import eu.solven.adhoc.data.row.ITabularRecord;
-import eu.solven.adhoc.data.row.ITabularRecordStream;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.Builder;
+import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,15 +48,20 @@ public class TabularRecordLogger {
 
 	final String table;
 
-	// https://stackoverflow.com/questions/25168660/why-is-not-java-util-stream-streamclose-called
-	@Deprecated(since = "Not called automatically")
+	@Singular
+	final Set<IQueryOption> options;
+
 	public Runnable closeHandler() {
 		return () -> {
-			log.info("Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			if (StandardQueryOptions.EXPLAIN.isActive(options)) {
+				log.info("[EXPLAIN] Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			} else {
+				log.debug("[DEBUG] Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			}
 		};
 	}
 
-	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(TableQueryV2 tableQuery) {
+	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(IHasQueryOptions tableQuery) {
 		return (input, optCoordinates) -> {
 			int currentIn = nbIn.incrementAndGet();
 			if (logAboutRow(tableQuery, currentIn)) {
@@ -62,7 +71,7 @@ public class TabularRecordLogger {
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected boolean logAboutRow(TableQueryV2 tableQuery, int currentOut) {
+	protected boolean logAboutRow(IHasQueryOptions tableQuery, int currentOut) {
 		return tableQuery.isDebug() && (currentOut <= 16 || Integer.bitCount(currentOut) == 1);
 	}
 

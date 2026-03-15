@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import eu.solven.adhoc.data.tabular.IReadableTabularView;
+import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

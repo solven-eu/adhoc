@@ -23,11 +23,15 @@
 package eu.solven.adhoc.measure.model;
 
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.measure.lambda.LambdaCombination;
+import eu.solven.adhoc.measure.lambda.LambdaEditor;
+import eu.solven.adhoc.measure.lambda.LambdaEditor.ILambdaFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocIdentity;
@@ -69,13 +73,21 @@ public class Shiftor implements IMeasure, IHasUnderlyingMeasures {
 	String editorKey = AdhocIdentity.KEY;
 
 	@NonNull
-	@Builder.Default
-	Map<String, ?> editorOptions = Map.of();
+	@Singular
+	ImmutableMap<String, ?> editorOptions;
 
 	@JsonIgnore
 	@Override
 	public List<String> getUnderlyingNames() {
-		return List.of(underlying);
+		return ImmutableList.of(underlying);
 	}
 
+	/**
+	 * Lombok @Builder
+	 */
+	public static class ShiftorBuilder {
+		public ShiftorBuilder lambda(ILambdaFilterEditor lambda) {
+			return editorKey(LambdaEditor.class.getName()).editorOption(LambdaCombination.K_LAMBDA, lambda);
+		}
+	}
 }

@@ -39,7 +39,7 @@ import org.jooq.tools.StopWatchListener;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.query.AdhocCaseSensitivity;
+import eu.solven.adhoc.case_insensitivive.AdhocCaseInsensitivityUnsafe;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
@@ -58,13 +58,20 @@ public class StandardDSLSupplier implements IDSLSupplier {
 		return DSL.using(configuration);
 	}
 
+	public static StandardDSLSupplierBuilder builder() {
+		return builder(AdhocCaseInsensitivityUnsafe.isCaseInsensitive());
+	}
+
+	public static StandardDSLSupplierBuilder builder(boolean caseInsensitive) {
+		Configuration configuration =
+				new DefaultConfiguration().set(AdhocCaseInsensitivityUnsafe.jooqSettings(caseInsensitive));
+		return new StandardDSLSupplierBuilder().configuration(configuration);
+	}
+
 	/**
 	 * Lombok @Builder
 	 */
 	public static class StandardDSLSupplierBuilder {
-		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-		Configuration configuration = new DefaultConfiguration().set(AdhocCaseSensitivity.jooqSettings());
-
 		public StandardDSLSupplierBuilder configuration(Configuration configuration) {
 			this.configuration = configuration;
 

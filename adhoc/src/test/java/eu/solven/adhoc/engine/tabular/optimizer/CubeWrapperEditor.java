@@ -53,16 +53,16 @@ public class CubeWrapperEditor {
 
 	/**
 	 * 
-	 * @param optimizerFactory
-	 * @return this builder after editing current {@link ICubeWrapper} with given {@link ITableQueryOptimizerFactory}.
+	 * @param queryFactoryFactory
+	 * @return this builder after editing current {@link ICubeWrapper} with given {@link ITableQueryFactoryFactory}.
 	 */
-	public CubeWrapperEditor editTableQueryOptimizer(ITableQueryOptimizerFactory optimizerFactory) {
+	public CubeWrapperEditor editTableQueryOptimizer(ITableQueryFactoryFactory queryFactoryFactory) {
 		CubeWrapper rawCubeWrapper = (CubeWrapper) cubeWrapper;
 
 		CubeQueryEngine rawCubeQueryEngine = (CubeQueryEngine) rawCubeWrapper.getEngine();
 		TableQueryEngine rawTableQueryEngine = (TableQueryEngine) rawCubeQueryEngine.getTableQueryEngine();
 		ITableQueryEngine editedTableQueryEngine =
-				rawTableQueryEngine.toBuilder().optimizerFactory(optimizerFactory).build();
+				rawTableQueryEngine.toBuilder().queryFactoryFactory(queryFactoryFactory).build();
 
 		ICubeQueryEngine editedEngine = rawCubeQueryEngine.toBuilder().tableQueryEngine(editedTableQueryEngine).build();
 		cubeWrapper = rawCubeWrapper.toBuilder().engine(editedEngine).build();

@@ -111,10 +111,7 @@ public class TestSliceAsMap {
 		IAdhocSlice slice = AdhocMapHelpers.fromMap(Map.of("k", "v")).asSlice();
 
 		IAdhocSlice extended = slice.addColumns(Map.of("k2", "v2"));
-		Assertions.assertThat((Map) extended.getCoordinates())
-				.hasSize(2)
-				.containsEntry("k", "v")
-				.containsEntry("k2", "v2");
+		Assertions.assertThat((Map) extended.asAdhocMap()).hasSize(2).containsEntry("k", "v").containsEntry("k2", "v2");
 	}
 
 	@Test
@@ -155,6 +152,7 @@ public class TestSliceAsMap {
 	public void testKeepAdhocMap() {
 		IAdhocSlice sliceOverAdhocMap = AdhocMapHelpers.fromMap(AdhocMapHelpers.fromMap(Map.of("k", 123))).asSlice();
 
+		// TODO If no null, we could skip the transformation
 		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())
 				.isEqualTo("com.google.common.collect.Maps$TransformedEntriesMap");
 	}
