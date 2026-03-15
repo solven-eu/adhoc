@@ -67,7 +67,7 @@
 	<properties>
 		<java.version>21</java.version>
 
-		<lombok.version>edge-SNAPSHOT</lombok.version>
+		<lombok.version>1.18.44</lombok.version>
 
 		<pepper.version>5.4</pepper.version>
 
