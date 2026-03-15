@@ -27,7 +27,6 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.transformator.MapWithNulls;

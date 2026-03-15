@@ -35,20 +35,17 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Handles POST {@code /cubes/chat}: proxies user messages to the Anthropic API with the cube schema as context, and
@@ -225,25 +222,25 @@ public class PivotableChatHandler {
 				}
 				try {
 					JsonNode node = objectMapper.readTree(data);
-					String type = node.path("type").asText();
+					String type = node.path("type").asString();
 
 					switch (type) {
 					case "content_block_start": {
 						JsonNode block = node.path("content_block");
-						blockType[0] = block.path("type").asText("none");
+						blockType[0] = block.path("type").asString("none");
 						if ("tool_use".equals(blockType[0])) {
-							toolName[0] = block.path("name").asText();
+							toolName[0] = block.path("name").asString();
 							toolInput.setLength(0);
 						}
 						break;
 					}
 					case "content_block_delta": {
 						JsonNode delta = node.path("delta");
-						String deltaType = delta.path("type").asText();
+						String deltaType = delta.path("type").asString();
 						if ("text_delta".equals(deltaType)) {
-							sink.next(toSseData(Map.of("type", "text", "content", delta.path("text").asText(""))));
+							sink.next(toSseData(Map.of("type", "text", "content", delta.path("text").asString(""))));
 						} else if ("input_json_delta".equals(deltaType)) {
-							toolInput.append(delta.path("partial_json").asText(""));
+							toolInput.append(delta.path("partial_json").asString(""));
 						}
 						break;
 					}
@@ -279,7 +276,6 @@ public class PivotableChatHandler {
 		});
 	}
 
-	@SneakyThrows(JsonProcessingException.class)
 	private String toSseData(Object event) {
 		return "data: " + objectMapper.writeValueAsString(event) + "\n\n";
 	}
