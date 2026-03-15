@@ -758,6 +758,9 @@
 
 					<!-- On each release, push the jars to Maven Central -->
 					<goals>deploy</goals>
+					<!-- Temporarily ensure release:perform is fast, until release is stabilized -->
+					<!-- Ensure Javadoc is not skipped -->
+					<arguments>-Pfast</arguments>
 				</configuration>
 			</plugin>
 
@@ -843,7 +846,7 @@
 				<pmd.skip>true</pmd.skip>
 				<cpd.skip>true</cpd.skip>
 				<spotbugs.skip>true</spotbugs.skip>
-				<maven.javadoc.skip>true</maven.javadoc.skip>
+				<!--				<maven.javadoc.skip>true</maven.javadoc.skip>-->
 				<license.skip>true</license.skip>
 				<formatter.skip>true</formatter.skip>
 				<impsort.skip>true</impsort.skip>
@@ -868,7 +871,7 @@
 				<pmd.skip>true</pmd.skip>
 				<cpd.skip>true</cpd.skip>
 				<spotbugs.skip>true</spotbugs.skip>
-				<maven.javadoc.skip>true</maven.javadoc.skip>
+				<!--				<maven.javadoc.skip>true</maven.javadoc.skip>-->
 				<license.skip>true</license.skip>
 				<formatter.skip>true</formatter.skip>
 				<impsort.skip>true</impsort.skip>

@@ -16,7 +16,7 @@
 		<maven.test.skip>true</maven.test.skip>
 		<maven.install.skip>true</maven.install.skip>
 		<maven.deploy.skip>true</maven.deploy.skip>
-		<gpg.skip>true</gpg.skip>
+		<skipPublishing>true</skipPublishing>
 
 		<jacoco.branch.ratio>0.69</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.65</jacoco.instruction.ratio>
