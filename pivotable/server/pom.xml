@@ -15,7 +15,7 @@
 		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.80</jacoco.instruction.ratio>
 
-		<springdoc-openapi.version>3.0.1</springdoc-openapi.version>
+		<springdoc-openapi.version>3.0.2</springdoc-openapi.version>
 		<automatic.module.name>eu.solven.adhoc.pivotable.server</automatic.module.name>
 	</properties>
 
