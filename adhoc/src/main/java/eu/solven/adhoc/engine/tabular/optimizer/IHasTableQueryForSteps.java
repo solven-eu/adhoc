@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV3;
 

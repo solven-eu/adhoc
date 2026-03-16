@@ -51,7 +51,7 @@ public interface ITabularGroupByRecord extends IHasColumnsKeySet {
 	 *
 	 * @param column
 	 * @return the sliced coordinate, only if the column is actually sliced. Can not be a {@link Collection} nor a
-	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}. May be null.
+	 *         {@link eu.solven.adhoc.filter.value.IValueMatcher}. May be null.
 	 */
 	@Nullable
 	Object getGroupBy(String column);
@@ -61,7 +61,7 @@ public interface ITabularGroupByRecord extends IHasColumnsKeySet {
 	 * @param column
 	 * @param clazz
 	 * @return the filtered coordinate on given column. Can not be a {@link Collection} nor a
-	 *         {@link eu.solven.adhoc.query.filter.value.IValueMatcher}.
+	 *         {@link eu.solven.adhoc.filter.value.IValueMatcher}.
 	 * @param <T>
 	 */
 	default <T> T getGroupBy(String column, Class<? extends T> clazz) {

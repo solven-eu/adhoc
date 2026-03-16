@@ -30,11 +30,11 @@ import cz.jirutka.rsql.parser.ast.ComparisonOperator;
 import cz.jirutka.rsql.parser.ast.OrNode;
 import cz.jirutka.rsql.parser.ast.RSQLOperators;
 import cz.jirutka.rsql.parser.ast.RSQLVisitor;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter.ColumnFilterBuilder;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.ComparingMatcher;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.ColumnFilter.ColumnFilterBuilder;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.ComparingMatcher;
 
 /**
  * {@link RSQLVisitor} generating {@link ISliceFilter}.

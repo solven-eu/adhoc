@@ -35,8 +35,7 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!--
-		https://mvnrepository.com/artifact/me.lemire.integercompression/JavaFastPFOR/0.3.10 -->
+		<!-- https://mvnrepository.com/artifact/me.lemire.integercompression/JavaFastPFOR/ -->
 		<dependency>
 			<groupId>me.lemire.integercompression</groupId>
 			<artifactId>JavaFastPFOR</artifactId>

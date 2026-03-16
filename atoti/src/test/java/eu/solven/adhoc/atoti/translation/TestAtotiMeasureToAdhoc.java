@@ -58,6 +58,8 @@ import com.quartetfs.fwk.filtering.impl.EqualCondition;
 import eu.solven.adhoc.atoti.custom.CustomActivePivotMeasureToAdhoc;
 import eu.solven.adhoc.atoti.custom.CustomAtotiConditionCubeToAdhoc;
 import eu.solven.adhoc.atoti.translation.AtotiMeasureToAdhoc.SourceMode;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -70,8 +72,6 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestAtotiMeasureToAdhoc {

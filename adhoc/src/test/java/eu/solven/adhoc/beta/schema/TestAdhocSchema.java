@@ -36,11 +36,11 @@ import eu.solven.adhoc.beta.schema.IAdhocSchema.AdhocSchemaQuery;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {

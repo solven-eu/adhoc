@@ -53,7 +53,7 @@ public class TestFsstV3 {
 	// If optimal, we should have a single symbol
 	@Test
 	public void testTrain_8chars() {
-		SymbolTable table = trainer.trainOverStrings(List.of("01234567"));
+		IFsstEncoding table = trainer.trainOverStrings(List.of("01234567"));
 
 		IByteSlice encoded = table.encodeAll("01234567");
 
@@ -67,7 +67,7 @@ public class TestFsstV3 {
 
 	@Test
 	public void testTrain_helloWorld() {
-		SymbolTable table = trainer.trainOverStrings(List.of("hello hello hello"));
+		IFsstEncoding table = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		IByteSlice encoded = table.encodeAll("Hello World");
 
@@ -83,7 +83,7 @@ public class TestFsstV3 {
 	// TODO Could we improve this? Should be feasible given the low number of different symbols.
 	@Test
 	public void testTrain_hello() {
-		SymbolTable table = trainer.trainOverStrings(List.of("hello hello hello"));
+		IFsstEncoding table = trainer.trainOverStrings(List.of("hello hello hello"));
 
 		IByteSlice encoded = table.encodeAll("Hello");
 
@@ -98,7 +98,7 @@ public class TestFsstV3 {
 	@Test
 	public void testTrain_2codes() {
 		// 1x 2x 3x 4x
-		SymbolTable table = trainer.trainOverStrings(List.of("az_azaz_azazaz_azazazaz"));
+		IFsstEncoding table = trainer.trainOverStrings(List.of("az_azaz_azazaz_azazazaz"));
 
 		// 2x
 		IByteSlice encoded = table.encodeAll("azaz");
@@ -130,7 +130,7 @@ public class TestFsstV3 {
 			input[i] = recurrent;
 		}
 
-		SymbolTable table = trainer.train(new byte[][] { input });
+		IFsstEncoding table = trainer.train(new byte[][] { input });
 
 		byte[] original = new byte[] { recurrent, recurrent, recurrent, recurrent };
 		IByteSlice encoded = table.encodeAll(IByteSlice.wrap(original));
@@ -145,10 +145,11 @@ public class TestFsstV3 {
 
 	@Test
 	public void testSerialization() throws IOException, ClassNotFoundException {
-		SymbolTable tableOriginal = trainer.trainOverStrings(List.of("hello hello hello"));
+		IFsstEncoding tableOriginal = trainer.trainOverStrings(List.of("hello hello hello"));
 
-		byte[] tableAsBytes = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(tableOriginal));
-		SymbolTable table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
+		byte[] tableAsBytes =
+				PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap((SymbolTable) tableOriginal));
+		IFsstEncoding table = PepperSerializationHelper.<SymbolTableExternalizable>fromBytes(tableAsBytes).symbolTable;
 
 		IByteSlice encoded = table.encodeAll("Hello");
 
@@ -172,7 +173,7 @@ public class TestFsstV3 {
 
 		// Compress input as a single entry
 		{
-			SymbolTable table = trainer.train(input);
+			IFsstEncoding table = trainer.train(input);
 			IByteSlice encoded = table.encodeAll(input);
 
 			IByteSlice decoded = table.decodeAll(encoded);
@@ -195,7 +196,7 @@ public class TestFsstV3 {
 			List<String> inputs = List.of(input.split("[\r\n]+"));
 
 			for (int iRetry = 0; iRetry < nbRetryForBenchmark; iRetry++) {
-				SymbolTable table = trainer.trainOverStrings(inputs);
+				IFsstEncoding table = trainer.trainOverStrings(inputs);
 
 				long sizeEncoded = 0;
 
@@ -227,7 +228,7 @@ public class TestFsstV3 {
 
 	@Test
 	public void testEncode_ByteSliceWithOffset() {
-		SymbolTable table = trainer.trainOverStrings(List.of("01234567"));
+		IFsstEncoding table = trainer.trainOverStrings(List.of("01234567"));
 
 		IByteSlice full = IByteSlice.wrap("01234567".getBytes(StandardCharsets.UTF_8));
 		IByteSlice sub = full.sub(1, full.length() - 2);
@@ -241,10 +242,10 @@ public class TestFsstV3 {
 		Assertions.assertThat(decodedString).isEqualTo("123456");
 	}
 
-	private long byteLength(SymbolTable table) {
+	private long byteLength(IFsstEncoding table) {
 		long sizeTable;
 		try {
-			sizeTable = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap(table)).length;
+			sizeTable = PepperSerializationHelper.toBytes(SymbolTableExternalizable.wrap((SymbolTable) table)).length;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}

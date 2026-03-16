@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.dataframe;
 
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 
 /**

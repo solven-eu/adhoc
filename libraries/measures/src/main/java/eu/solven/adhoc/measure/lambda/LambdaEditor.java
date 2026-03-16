@@ -25,10 +25,10 @@ package eu.solven.adhoc.measure.lambda;
 import java.util.Map;
 import java.util.function.Function;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.AdhocMapPathGet;
 
 /**

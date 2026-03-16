@@ -28,7 +28,10 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -39,9 +42,6 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public interface IAdhocTestConstants {

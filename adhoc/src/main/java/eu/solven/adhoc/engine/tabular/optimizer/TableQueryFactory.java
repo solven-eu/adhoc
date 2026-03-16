@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -45,14 +46,15 @@ import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAffinity;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
+import eu.solven.adhoc.filter.FilterEquivalencyHelpers;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.OrFilter;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.FilterEquivalencyHelpers;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -137,12 +139,14 @@ public class TableQueryFactory extends ATableQueryFactory {
 				.build()
 				.getInducers();
 
-		Map<CubeQueryStep, List<CubeQueryStep>> contextToSteps = leaves.stream()
-				.collect(Collectors.groupingBy(grouper::tableQueryGroupBy, LinkedHashMap::new, Collectors.toList()));
+		Collection<? extends Collection<CubeQueryStep>> groups = grouper.groupInducers(leaves);
 
 		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
 
-		contextToSteps.forEach((context, steps) -> stepToTableQuery.putAll(processRelatedSteps(context, steps)));
+		groups.forEach(group -> {
+			CubeQueryStep context = grouper.tableQueryGroupBy(group.iterator().next());
+			stepToTableQuery.putAll(processRelatedSteps(context, new ArrayList<>(group)));
+		});
 
 		return stepToTableQuery;
 	}
@@ -356,6 +360,10 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 		public TableQueryFactoryBuilder oneTableQueryperStep() {
 			return this.grouper(new TableStepsGrouperNoGroup());
+		}
+
+		public TableQueryFactoryBuilder groupByAffinity() {
+			return this.grouper(new TableStepsGrouperByAffinity());
 		}
 
 	}

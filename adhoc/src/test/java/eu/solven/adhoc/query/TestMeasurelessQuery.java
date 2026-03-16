@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestMeasurelessQuery {

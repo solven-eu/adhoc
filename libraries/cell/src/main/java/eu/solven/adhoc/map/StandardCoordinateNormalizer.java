@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.map;
 
+import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 
 /**
  * Default implementation of {@link ICoordinateNormalizer}.

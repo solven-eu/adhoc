@@ -43,7 +43,7 @@ public class FsstAdhoc implements Fsst {
 	}
 
 	public org.maplibre.mlt.converter.encodings.fsst.SymbolTable encode(byte[] data, IFsstEncoding st2) {
-		SymbolTableDecoder st = ((SymbolTable) st2).decoding;
+		SymbolTableDecoder st = ((SymbolTable) st2).decoder;
 		IByteSlice encoded = st2.encodeAll(IByteSlice.wrap(data));
 
 		ByteArrayList concatenatedSymbols = new ByteArrayList();

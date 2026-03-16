@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.step;
 
 import java.util.Map;
 
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.experimental.UtilityClass;
 
 /**

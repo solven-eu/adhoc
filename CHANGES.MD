@@ -7,6 +7,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Changed
 - Upgraded SpringBoot to `4.1.0-M2`
+- Upgraded DuckDB to `1.5.0.0`
+- Upgraded Arrow to `19.0.0`
 
 ## [0.0.17]
 

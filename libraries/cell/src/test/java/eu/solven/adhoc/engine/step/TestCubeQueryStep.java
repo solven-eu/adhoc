@@ -36,11 +36,11 @@ import org.mockito.Mockito;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestCubeQueryStep {
 	@Test

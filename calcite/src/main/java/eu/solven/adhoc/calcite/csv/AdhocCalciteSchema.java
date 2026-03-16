@@ -30,7 +30,7 @@ import org.apache.calcite.schema.impl.AbstractSchema;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -53,7 +53,6 @@ public class AdhocCalciteSchema extends AbstractSchema {
 	protected Map<String, Table> getTableMap() {
 		return schema.getCubes()
 				.stream()
-				.collect(PepperStreamHelperHacked.toLinkedMap(c -> c.getName(),
-						c -> new AdhocCalciteTable(c, queryOptions)));
+				.collect(PepperStreamHelper.toLinkedMap(c -> c.getName(), c -> new AdhocCalciteTable(c, queryOptions)));
 	}
 }

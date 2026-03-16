@@ -28,14 +28,14 @@ import java.util.Map.Entry;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import eu.solven.pepper.core.PepperStreamHelper;
 
 /**
  * Wraps a database (actually storing data for {@link ICubeQuery}) to be queried by {@link ICubeQuery}.
@@ -106,7 +106,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	default Map<String, CoordinatesSample> getCoordinates(Map<String, IValueMatcher> columnToValueMatcher, int limit) {
 		return columnToValueMatcher.entrySet()
 				.stream()
-				.collect(PepperStreamHelperHacked.toLinkedMap(Entry::getKey,
+				.collect(PepperStreamHelper.toLinkedMap(Entry::getKey,
 						e -> getCoordinates(e.getKey(), e.getValue(), limit)));
 	}
 }

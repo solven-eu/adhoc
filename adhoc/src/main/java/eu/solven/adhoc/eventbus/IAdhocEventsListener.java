@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.eventbus;
 
+import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 
 /**

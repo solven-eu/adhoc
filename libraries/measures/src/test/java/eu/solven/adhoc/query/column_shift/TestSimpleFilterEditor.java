@@ -30,13 +30,13 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.NotFilter;
+import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
-import eu.solven.adhoc.query.filter.OrFilter;
 
 public class TestSimpleFilterEditor {
 	@Test

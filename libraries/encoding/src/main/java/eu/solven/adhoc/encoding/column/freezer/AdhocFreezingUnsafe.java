@@ -26,8 +26,9 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.encoding.dictionary.DistinctFreezer;
-import eu.solven.adhoc.encoding.fsst.FsstFreezingWithContext;
+import eu.solven.adhoc.encoding.string.FsstFreezingWithContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.UtilityClass;

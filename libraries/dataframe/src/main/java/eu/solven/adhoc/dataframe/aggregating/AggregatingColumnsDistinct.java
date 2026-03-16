@@ -39,7 +39,7 @@ import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -48,7 +48,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import eu.solven.pepper.core.PepperStreamHelper;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -170,7 +170,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		IntStream.range(0, indexToSlice.size()).limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(sliceIndex -> {
 			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
 					.stream()
-					.collect(PepperStreamHelperHacked.toLinkedMap(Function.identity(),
+					.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
 							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
 
 			sh.add(String.valueOf(indexToSlice.get(sliceIndex)), aggregates);

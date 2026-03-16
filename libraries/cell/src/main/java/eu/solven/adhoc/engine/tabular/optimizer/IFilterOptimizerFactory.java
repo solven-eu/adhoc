@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.FilterOptimizerWithCache;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.util.AdhocFilterUnsafe;
+import eu.solven.adhoc.filter.AdhocFilterUnsafe;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.optimizer.FilterOptimizerWithCache;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 
 /**
  * Helps creating a {@link IFilterOptimizer}.

@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.options;
 
-import javax.management.Query;
-
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**

@@ -28,13 +28,13 @@ import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 
 /**
  * A slice expresses the coordinates of an output row, given columns expressed by a {@link IGroupBy}.

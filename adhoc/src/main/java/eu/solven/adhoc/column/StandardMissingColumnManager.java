@@ -23,9 +23,9 @@
 package eu.solven.adhoc.column;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

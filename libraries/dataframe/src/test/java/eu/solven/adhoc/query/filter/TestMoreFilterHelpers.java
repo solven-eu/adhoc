@@ -32,10 +32,18 @@ import java.util.function.Function;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.dataframe.filter.FilterMatcher;
+import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.NotFilter;
+import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.filter.value.LikeMatcher;
+import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.PrefixAliaser;
 

@@ -33,15 +33,15 @@ import java.util.function.BiConsumer;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

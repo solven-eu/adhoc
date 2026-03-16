@@ -24,7 +24,7 @@ package eu.solven.adhoc.dataframe.aggregating;
 
 import java.util.Collection;
 
-import eu.solven.adhoc.encoding.page.AdhocColumnUnsafe;
+import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.experimental.UtilityClass;

@@ -48,12 +48,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.ComparingMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.OrMatcher;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.ComparingMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.OrMatcher;
 
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in MongoDB.

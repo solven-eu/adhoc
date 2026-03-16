@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.DoubleConsumer;
 
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.Builder;
 import lombok.Builder.Default;

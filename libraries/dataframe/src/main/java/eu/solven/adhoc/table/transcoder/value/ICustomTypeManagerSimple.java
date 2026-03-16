@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
  * Provides logic about type transcoding on a per-column basis.
@@ -40,8 +40,8 @@ public interface ICustomTypeManagerSimple {
 	Object toTable(String column, Object coordinate);
 
 	/**
-	 * This is especially useful to skip column with {@link eu.solven.adhoc.query.filter.value.IValueMatcher} which may
-	 * not be supported
+	 * This is especially useful to skip column with {@link eu.solven.adhoc.filter.value.IValueMatcher} which may not be
+	 * supported
 	 * 
 	 * @param column
 	 * @return true if this column may be transcoded

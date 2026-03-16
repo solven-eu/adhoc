@@ -23,10 +23,10 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**

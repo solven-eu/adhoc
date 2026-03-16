@@ -23,9 +23,9 @@
 package eu.solven.adhoc.engine.context;
 
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**

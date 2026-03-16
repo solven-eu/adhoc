@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.engine.context;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * This provides an implicit {@link ISliceFilter}, typically based on a static security context.

@@ -25,8 +25,8 @@ package eu.solven.adhoc.pivotable.endpoint;
 import java.util.Optional;
 import java.util.UUID;
 
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.pivotable.util.PivotableUnsafe;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Value;

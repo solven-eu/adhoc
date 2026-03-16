@@ -64,6 +64,7 @@ public class SpringImplicitOptions implements IImplicitOptions {
 									.add(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)
 									.add(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR)
 									.add(InternalQueryOptions.TABLEQUERY_PER_STEPS)
+									.add(InternalQueryOptions.TABLEQUERY_PER_AFFINITY)
 									.build()))
 					.add(Maps.immutableEntry(P_OPTION + "table.",
 							// TODO Add sanity checks to detect conflicts (in environment)

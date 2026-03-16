@@ -29,9 +29,9 @@ import org.junit.jupiter.api.Test;
 
 import com.qfs.condition.impl.BaseConditions;
 
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 
 public class TestAtotiConditionDatastoreToAdhoc {
 	AtotiConditionDatastoreToAdhoc apConditionToAdhoc = new AtotiConditionDatastoreToAdhoc();

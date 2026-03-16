@@ -40,9 +40,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import com.google.common.collect.ImmutableMap;
 
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * Benchmarks related with {@link SimpleFilterEditor}.

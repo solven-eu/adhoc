@@ -25,7 +25,7 @@ package eu.solven.adhoc.column.generated_column;
 import java.util.Map;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
  * An empty {@link IColumnGenerator}.

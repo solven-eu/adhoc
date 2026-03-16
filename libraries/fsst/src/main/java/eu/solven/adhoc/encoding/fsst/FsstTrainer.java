@@ -55,7 +55,7 @@ public class FsstTrainer {
 	@NonNull
 	final FsstTrainerConfig config = FsstTrainerConfig.builder().build();
 
-	public SymbolTable train(byte[] inputs) {
+	public IFsstEncoding train(byte[] inputs) {
 		return train(new byte[][] { inputs });
 	}
 
@@ -63,12 +63,12 @@ public class FsstTrainer {
 	 * Train builds and finalizes a compression Table from the provided corpora. It samples inputs, iteratively parses
 	 * and counts symbol usage, proposes merged symbols, retains top-gain candidates, and finalizes code layout.
 	 */
-	public SymbolTable train(byte[][] inputs) {
+	public IFsstEncoding train(byte[][] inputs) {
 		SamplingResult sample = makeSample(config, Stream.of(inputs).map(IByteSlice::wrap).toList());
 		return train(sample);
 	}
 
-	public SymbolTable train(List<IByteSlice> inputs) {
+	public IFsstEncoding train(List<IByteSlice> inputs) {
 		SamplingResult sample = makeSample(config, inputs);
 		return train(sample);
 	}
@@ -612,7 +612,7 @@ public class FsstTrainer {
 	/**
 	 * Converts String to UTF-8 byte[] and trains a {@link SymbolTable}
 	 */
-	public SymbolTable train(String... inputs) {
+	public IFsstEncoding train(String... inputs) {
 		byte[][] bytes = new byte[inputs.length][];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = inputs[i].getBytes(StandardCharsets.UTF_8);
@@ -623,7 +623,7 @@ public class FsstTrainer {
 	/**
 	 * Converts String to UTF-8 byte[] and trains a {@link SymbolTable}
 	 */
-	public SymbolTable trainOverStrings(List<String> inputs) {
+	public IFsstEncoding trainOverStrings(List<String> inputs) {
 		byte[][] bytes = new byte[inputs.size()][];
 		for (int i = 0; i < bytes.length; i++) {
 			bytes[i] = inputs.get(i).getBytes(StandardCharsets.UTF_8);

@@ -23,9 +23,9 @@
 package eu.solven.adhoc.engine.step;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
 
 /**
  * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more context to

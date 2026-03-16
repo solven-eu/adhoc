@@ -25,11 +25,11 @@ package eu.solven.adhoc.beta.schema;
 import java.time.LocalDate;
 import java.util.NavigableMap;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
-import eu.solven.adhoc.query.filter.value.StringMatcher;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
+import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AllArgsConstructor;

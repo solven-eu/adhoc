@@ -39,6 +39,7 @@ import org.springframework.core.io.ClassPathResource;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.MeasureBagTestHelpers;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.forest.MeasureForest;
@@ -48,7 +49,6 @@ import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 import tools.jackson.databind.ObjectMapper;
 
 //An `implicit` measure is a measure which is not defined by itself, but as an underlying of another measure. It leads to deeper (hence more compact but more complex) trees

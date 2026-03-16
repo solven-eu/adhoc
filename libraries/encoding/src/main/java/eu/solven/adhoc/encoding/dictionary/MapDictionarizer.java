@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.ToIntFunction;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.agrona.collections.Object2IntHashMap;
+
+import com.google.errorprone.annotations.ThreadSafe;
 
 import lombok.Builder;
 import lombok.Builder.Default;

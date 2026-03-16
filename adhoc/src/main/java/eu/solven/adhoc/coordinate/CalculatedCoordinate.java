@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.coordinate;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;

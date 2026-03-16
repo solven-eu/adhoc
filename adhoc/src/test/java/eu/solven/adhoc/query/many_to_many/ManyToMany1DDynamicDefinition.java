@@ -24,8 +24,8 @@ package eu.solven.adhoc.query.many_to_many;
 
 import java.util.Set;
 
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.decomposition.many2many.IManyToMany1DDefinition;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

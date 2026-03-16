@@ -41,13 +41,13 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.LikeMatcher;
+import eu.solven.adhoc.filter.value.NotMatcher;
+import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
-import eu.solven.adhoc.query.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;

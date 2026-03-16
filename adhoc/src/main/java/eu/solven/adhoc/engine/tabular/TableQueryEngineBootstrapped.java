@@ -53,6 +53,7 @@ import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.AdhocFactories;
@@ -80,18 +81,17 @@ import eu.solven.adhoc.eventbus.TableStepIsCompleted;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.FilterMatcher;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -101,7 +101,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.pepper.core.PepperLogHelper;
-import eu.solven.pepper.core.PepperStreamHelperHacked;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -727,7 +727,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
 			return Map.entry(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
-		}).collect(PepperStreamHelperHacked.toLinkedMap(Map.Entry::getKey, Map.Entry::getValue));
+		}).collect(PepperStreamHelper.toLinkedMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -776,7 +776,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 */
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
 		return suppressedColumns.stream()
-				.collect(PepperStreamHelperHacked.toLinkedMap(Function.identity(),
+				.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
 						c -> IColumnGenerator.COORDINATE_GENERATED));
 	}
 

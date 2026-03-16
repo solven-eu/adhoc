@@ -22,17 +22,39 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**
  * Defines the grouping {@link CubeQueryStep}, driving the granularity of {@link TableQueryV3}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface ITableStepsGrouper {
 
+	/**
+	 * Maps a single inducer to the key that identifies its {@link TableQueryV3} group. Inducers sharing the same key
+	 * are combined into one {@link TableQueryV3}.
+	 */
 	CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer);
+
+	/**
+	 * Partitions all inducers into groups that will each be compiled into a single {@link TableQueryV3}. The default
+	 * implementation delegates to {@link #tableQueryGroupBy(CubeQueryStep)} for each inducer. Implementations may
+	 * override this method to apply a global optimisation across the full set (e.g. biclique decomposition to avoid
+	 * cartesian-product waste in GROUPING SETS queries).
+	 *
+	 * @param inducers
+	 *            the full set of leaf {@link CubeQueryStep}s that must be evaluated by the table layer
+	 * @return a partition of {@code inducers}; every inducer must appear in exactly one group
+	 */
+	default Collection<? extends Collection<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
+		return inducers.stream().collect(Collectors.groupingBy(this::tableQueryGroupBy)).values();
+	}
 
 }

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.column.IColumnsManager;
-import eu.solven.adhoc.query.filter.AndFilter;
+import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;

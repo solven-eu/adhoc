@@ -25,8 +25,8 @@ package eu.solven.adhoc.query.table;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestFilteredAggregator {

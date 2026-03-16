@@ -25,9 +25,6 @@ package eu.solven.adhoc.filter.value;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
-
 public class TestValueMatcher {
 	@Test
 	public void testMatchAll() {

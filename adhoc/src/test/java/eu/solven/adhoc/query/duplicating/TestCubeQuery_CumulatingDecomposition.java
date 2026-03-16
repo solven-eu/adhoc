@@ -39,11 +39,11 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
+import eu.solven.adhoc.filter.value.ComparingMatcher;
 import eu.solven.adhoc.measure.decomposition.CumulatingDecomposition;
 import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.value.ComparingMatcher;
 
 public class TestCubeQuery_CumulatingDecomposition extends ADagTest implements IAdhocTestConstants {
 

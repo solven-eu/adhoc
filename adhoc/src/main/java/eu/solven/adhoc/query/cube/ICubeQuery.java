@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.query.cube;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * A aggregation query. It is configured by:

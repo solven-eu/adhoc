@@ -1,0 +1,216 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.dataframe.filter;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.dataframe.filter.FilterMatcher.FilterMatcherBuilder;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.IAndFilter;
+import eu.solven.adhoc.filter.IColumnFilter;
+import eu.solven.adhoc.filter.INotFilter;
+import eu.solven.adhoc.filter.IOrFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.AndMatcher;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
+import eu.solven.adhoc.filter.value.LikeMatcher;
+import eu.solven.adhoc.filter.value.NotMatcher;
+import eu.solven.adhoc.filter.value.NullMatcher;
+import eu.solven.adhoc.filter.value.OrMatcher;
+import eu.solven.adhoc.filter.value.RegexMatcher;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.factory.RowSliceFactory;
+import eu.solven.adhoc.table.transcoder.ITableAliaser;
+import eu.solven.adhoc.table.transcoder.value.ICustomTypeManagerSimple;
+import eu.solven.pepper.core.PepperLogHelper;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Helpers methods around {@link ISliceFilter} and {@link IValueMatcher}. This includes those which does not fit into
+ * {@link FilterHelpers}, due to dependency to `!public` dependencies.
+ *
+ * @author Benoit Lacelle
+ */
+@UtilityClass
+@Slf4j
+public class MoreFilterHelpers {
+	// Ensure the slices for `.match` are transient
+	static final ISliceFactory SLICE_FACTORY = RowSliceFactory.builder().build();
+
+	public static IValueMatcher transcodeType(ICustomTypeManagerSimple customTypeManager,
+			String column,
+			IValueMatcher valueMatcher) {
+
+		if (!customTypeManager.mayTranscode(column)) {
+			return valueMatcher;
+		}
+
+		if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+			return EqualsMatcher.matchEq(customTypeManager.toTable(column, equalsMatcher.getOperand()));
+		} else if (valueMatcher instanceof InMatcher inMatcher) {
+			List<Object> transcodedOperands = inMatcher.getOperands()
+					.stream()
+					.map(operand -> customTypeManager.toTable(column, operand))
+					.toList();
+
+			return InMatcher.matchIn(transcodedOperands);
+		} else if (valueMatcher instanceof NotMatcher notMatcher) {
+			return NotMatcher.builder()
+					.negated(transcodeType(customTypeManager, column, notMatcher.getNegated()))
+					.build();
+		} else if (valueMatcher instanceof NullMatcher || valueMatcher instanceof LikeMatcher
+				|| valueMatcher instanceof RegexMatcher) {
+			return valueMatcher;
+		} else if (valueMatcher instanceof AndMatcher andMatcher) {
+			List<IValueMatcher> transcoded = andMatcher.getOperands()
+					.stream()
+					.map(operand -> transcodeType(customTypeManager, column, operand))
+					.toList();
+			return AndMatcher.and(transcoded);
+		} else if (valueMatcher instanceof OrMatcher orMatcher) {
+			List<IValueMatcher> transcoded = orMatcher.getOperands()
+					.stream()
+					.map(operand -> transcodeType(customTypeManager, column, operand))
+					.toList();
+			return OrMatcher.or(transcoded);
+		} else {
+			// For complex valueMatcher, the custom may have a custom way to convert it into a table IValueMatcher
+			return customTypeManager.toTable(column, valueMatcher);
+		}
+	}
+
+	public static ISliceFilter transcodeFilter(ICustomTypeManagerSimple customTypeManager,
+			ITableAliaser tableTranscoder,
+			ISliceFilter filter) {
+
+		if (filter.isMatchAll() || filter.isMatchNone()) {
+			return filter;
+		} else if (filter instanceof IColumnFilter columnFilter) {
+			String column = columnFilter.getColumn();
+			return ColumnFilter.builder()
+					.column(tableTranscoder.underlyingNonNull(column))
+					.valueMatcher(transcodeType(customTypeManager, column, columnFilter.getValueMatcher()))
+					.build();
+		} else if (filter instanceof IAndFilter andFilter) {
+			// Combine as we keep the original optimizations, not to risk a slow optimize in `transcodeFilter`
+			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
+			return FilterBuilder.and(andFilter.getOperands()
+					.stream()
+					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
+					.toList()).combine();
+		} else if (filter instanceof IOrFilter orFilter) {
+			// Combine as we keep the original optimizations, not to risk a slow optimize in `transcodeFilter`
+			// BEWARE If we want optimization, rely on a IntraCacheFilterOptimizer
+			return FilterBuilder.or(orFilter.getOperands()
+					.stream()
+					.map(operand -> transcodeFilter(customTypeManager, tableTranscoder, operand))
+					.toList()).combine();
+		} else if (filter instanceof INotFilter notFilter) {
+			return transcodeFilter(customTypeManager, tableTranscoder, notFilter.getNegated()).negate();
+		} else {
+			throw new UnsupportedOperationException(
+					"Not managed: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
+		}
+	}
+
+	static FilterMatcherBuilder prepareMatcher() {
+		// BEWARE Rely on a sliceFactory not leaking (e.g. ColumnRowFactory would be bad)
+		return FilterMatcher.builder().sliceFactory(SLICE_FACTORY);
+	}
+
+	/**
+	 *
+	 * @param filter
+	 * @param input
+	 * @return true if the input matches the filter
+	 */
+	public static boolean match(ISliceFilter filter, Map<String, ?> input) {
+		return prepareMatcher().filter(filter).build().match(input);
+	}
+
+	public static boolean match(ISliceFilter filter, String column, Object value) {
+		return prepareMatcher().filter(filter).build().match(Collections.singletonMap(column, value));
+	}
+
+	public static boolean match(ITableAliaser transcoder, ISliceFilter filter, Map<String, ?> input) {
+		return prepareMatcher().transcoder(transcoder).filter(filter).build().match(input);
+	}
+
+	public static boolean match(ISliceFilter filter, ITabularRecord input) {
+		return prepareMatcher().filter(filter).build().match(input);
+	}
+
+	/**
+	 *
+	 * @return true if the input matches the filter, where each column in input is transcoded.
+	 */
+	@Deprecated(since = "Signature may be regularly enriched. Rely on `FilterMatcher`", forRemoval = true)
+	public static boolean match(ITableAliaser transcoder,
+			ISliceFilter filter,
+			Predicate<IColumnFilter> onMissingColumn,
+			ITabularGroupByRecord input) {
+
+		// Fast-track, to skip opening Stream on empty Collection
+		if (ISliceFilter.MATCH_ALL.equals(filter)) {
+			return true;
+		} else if (ISliceFilter.MATCH_NONE.equals(filter)) {
+			return false;
+		}
+
+		if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
+			return andFilter.getOperands().stream().allMatch(f -> match(transcoder, f, onMissingColumn, input));
+		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
+			return orFilter.getOperands().stream().anyMatch(f -> match(transcoder, f, onMissingColumn, input));
+		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
+			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
+
+			Optional<?> optValue = input.getGroupBys().optGroupBy(underlyingColumn);
+
+			if (optValue.isEmpty()) {
+				if (input.columnsKeySet().contains(underlyingColumn)) {
+					log.trace("Key to null-ref");
+				} else {
+					log.trace("Missing key");
+					return onMissingColumn.test(columnFilter);
+				}
+			}
+
+			return columnFilter.getValueMatcher().match(optValue.orElse(null));
+		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
+			return !match(transcoder, notFilter.getNegated(), onMissingColumn, input);
+		} else {
+			throw new UnsupportedOperationException(PepperLogHelper.getObjectAndClass(filter).toString());
+		}
+	}
+}
