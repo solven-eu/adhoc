@@ -39,10 +39,10 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.LikeMatcher;
-import eu.solven.adhoc.query.filter.value.NotMatcher;
-import eu.solven.adhoc.query.filter.value.StringMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.LikeMatcher;
+import eu.solven.adhoc.filter.value.NotMatcher;
+import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;

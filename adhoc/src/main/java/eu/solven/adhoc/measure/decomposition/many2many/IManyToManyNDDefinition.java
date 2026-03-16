@@ -25,7 +25,7 @@ package eu.solven.adhoc.measure.decomposition.many2many;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
  * Advanced many2many relies on a multiple input columns, and value matchers.

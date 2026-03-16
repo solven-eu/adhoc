@@ -25,8 +25,8 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import java.util.Set;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.TableQuery;
 
 /**

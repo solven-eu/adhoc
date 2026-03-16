@@ -34,11 +34,11 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestDispatchorQueryStep {

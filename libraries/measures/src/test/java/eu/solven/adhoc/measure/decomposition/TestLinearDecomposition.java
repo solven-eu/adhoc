@@ -35,8 +35,8 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 
 public class TestLinearDecomposition {
 

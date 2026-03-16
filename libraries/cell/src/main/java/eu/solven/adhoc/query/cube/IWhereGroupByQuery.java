@@ -24,9 +24,9 @@ package eu.solven.adhoc.query.cube;
 
 import java.util.List;
 
-import eu.solven.adhoc.query.filter.IHasFilters;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.NotFilter;
+import eu.solven.adhoc.filter.IHasFilters;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.NotFilter;
 
 /**
  * An {@link IWhereGroupByQuery} is view of a query, not expressing its measures.

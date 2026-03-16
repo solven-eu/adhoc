@@ -28,10 +28,10 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Columnator.Mode;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestColumnatorQueryStep {
 

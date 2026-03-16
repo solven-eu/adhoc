@@ -34,6 +34,8 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.forest.IMeasureForestVisitor;
@@ -43,8 +45,6 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.pepper.collection.MapWithNulls;
 import lombok.extern.slf4j.Slf4j;
 

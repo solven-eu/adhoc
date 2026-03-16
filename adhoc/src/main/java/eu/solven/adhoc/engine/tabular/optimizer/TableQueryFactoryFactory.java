@@ -31,9 +31,9 @@ import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAffinity;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,11 +76,11 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 			grouper = new TableStepsGrouperNoGroup();
 		} else if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_AFFINITY)) {
 			grouper = new TableStepsGrouperByAffinity();
-		} else if (splitter instanceof InduceByGroupingSets) {
-			// Tightly coupled: InduceByGroupingSets makes every step a leaf, so without an affinity grouper the
-			// resulting TableQueryV3 would contain the full cartesian product of measures × groupBys.
-			grouper = new TableStepsGrouperByAffinity();
-			log.debug("InduceByGroupingSets splitter led to default grouper {}", grouper.getClass().getName());
+			// } else if (splitter instanceof InduceByGroupingSets) {
+			// // Tightly coupled: InduceByGroupingSets makes every step a leaf, so without an affinity grouper the
+			// // resulting TableQueryV3 would contain the full cartesian product of measures × groupBys.
+			// grouper = new TableStepsGrouperByAffinity();
+			// log.debug("InduceByGroupingSets splitter led to default grouper {}", grouper.getClass().getName());
 		} else {
 			// BEWARE We're unclear about the right defaults
 			grouper = new TableStepsGrouper();

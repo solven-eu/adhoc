@@ -33,9 +33,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;

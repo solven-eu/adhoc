@@ -33,11 +33,11 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -31,11 +31,11 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.model.Unfiltrator.Mode;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

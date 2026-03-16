@@ -38,7 +38,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactoryFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import lombok.Builder;
 import lombok.Builder.Default;

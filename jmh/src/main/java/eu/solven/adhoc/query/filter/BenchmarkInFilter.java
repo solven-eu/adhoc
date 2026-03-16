@@ -40,8 +40,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
 
 /**
  * Benchmarks related with {@link AndFilter}.

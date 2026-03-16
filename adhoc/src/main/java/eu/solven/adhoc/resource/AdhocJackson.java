@@ -27,7 +27,7 @@ import java.lang.reflect.Method;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
-import eu.solven.adhoc.query.filter.AdhocPublicJackson;
+import eu.solven.adhoc.filter.AdhocPublicJackson;
 import lombok.experimental.UtilityClass;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.ObjectMapper;

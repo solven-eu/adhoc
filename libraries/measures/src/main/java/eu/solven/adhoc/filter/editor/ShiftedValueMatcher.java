@@ -24,9 +24,9 @@ package eu.solven.adhoc.filter.editor;
 
 import java.util.function.Function;
 
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;

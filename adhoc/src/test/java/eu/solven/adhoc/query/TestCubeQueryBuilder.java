@@ -29,9 +29,9 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.resource.AdhocJackson;
 import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;

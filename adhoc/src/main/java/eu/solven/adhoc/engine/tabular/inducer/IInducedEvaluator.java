@@ -28,9 +28,9 @@ import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 /**
  * Defines the contract for evaluating an induced {@link CubeQueryStep} into an aggregated result column.

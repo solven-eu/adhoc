@@ -38,11 +38,11 @@ import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.splitter.InducerHelpers;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

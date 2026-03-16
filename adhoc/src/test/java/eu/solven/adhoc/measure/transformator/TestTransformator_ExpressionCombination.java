@@ -36,10 +36,10 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 
 public class TestTransformator_ExpressionCombination extends ADagTest implements IAdhocTestConstants {
 

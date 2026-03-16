@@ -23,7 +23,7 @@
 package eu.solven.adhoc.engine.tabular.inducer;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.Builder;
 import lombok.NonNull;
 

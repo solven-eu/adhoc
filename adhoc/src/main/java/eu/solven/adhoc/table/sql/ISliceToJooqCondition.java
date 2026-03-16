@@ -26,7 +26,7 @@ import java.util.Collection;
 
 import org.jooq.Condition;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory.ConditionWithFilter;
 import lombok.NonNull;
 

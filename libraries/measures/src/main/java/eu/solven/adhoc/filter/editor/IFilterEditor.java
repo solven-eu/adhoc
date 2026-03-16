@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.filter.editor;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

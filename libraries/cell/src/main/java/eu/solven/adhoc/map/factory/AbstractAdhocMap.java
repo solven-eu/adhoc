@@ -45,11 +45,11 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapComparisonHelpers;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.query.filter.value.NullMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Builder;

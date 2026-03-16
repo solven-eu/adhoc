@@ -31,11 +31,11 @@ import org.mockito.Mockito;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestSliceAsMapWithStep {

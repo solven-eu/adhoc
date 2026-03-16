@@ -5,11 +5,11 @@
 module eu.solven.adhoc.query.filters {
 
 	// ── Exported packages ────────────────────────────────────────────────────
-	exports eu.solven.adhoc.query.filter;
-	exports eu.solven.adhoc.query.filter.jackson;
-	exports eu.solven.adhoc.query.filter.optimizer;
-	exports eu.solven.adhoc.query.filter.stripper;
-	exports eu.solven.adhoc.query.filter.value;
+	exports eu.solven.adhoc.filter;
+	exports eu.solven.adhoc.filter.jackson;
+	exports eu.solven.adhoc.filter.optimizer;
+	exports eu.solven.adhoc.filter.stripper;
+	exports eu.solven.adhoc.filter.value;
 
 	// ── Sibling modules ──────────────────────────────────────────────────────
 	// adhoc-public: AdhocUnsafe, ILikeList, options.*
@@ -21,8 +21,8 @@ module eu.solven.adhoc.query.filters {
 	requires eu.solven.pepper;
 	
 	// Jackson needs reflective access to Lombok-generated builders for deserialization
-	opens eu.solven.adhoc.query.filter to tools.jackson.databind;
-	opens eu.solven.adhoc.query.filter.value to tools.jackson.databind;
+	opens eu.solven.adhoc.filter to tools.jackson.databind;
+	opens eu.solven.adhoc.filter.value to tools.jackson.databind;
 
 	// Runtime via Lombok @Slf4j
 	requires org.slf4j;

@@ -28,8 +28,8 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

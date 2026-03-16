@@ -37,11 +37,11 @@ import com.quartetfs.fwk.filtering.impl.InCondition;
 import com.quartetfs.fwk.filtering.impl.OrCondition;
 import com.quartetfs.fwk.filtering.impl.TrueCondition;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.ComparingMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.ComparingMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**

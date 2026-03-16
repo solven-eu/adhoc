@@ -41,6 +41,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 

@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.filter.rsql;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.rsql.RsqlToAdhocFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 
 public class TestRsqlToAdhocFilter {
 	RsqlToAdhocFilter rsqlToAdhocFilter = new RsqlToAdhocFilter();

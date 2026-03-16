@@ -38,8 +38,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.query.filter.AndFilter;
 
 /**
  * Benchmarks related with {@link AndFilter}.

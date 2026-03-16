@@ -39,8 +39,8 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.ColumnFilter;
 
 /**
  * Verifies that {@link CaseInsensitiveCubeQueryEngine} normalizes filter and groupBy column names to the canonical

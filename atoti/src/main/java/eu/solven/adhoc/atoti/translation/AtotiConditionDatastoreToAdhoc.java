@@ -29,10 +29,10 @@ import com.qfs.condition.IConstantCondition;
 import com.qfs.condition.IDynamicCondition;
 import com.qfs.condition.ImplementationCode;
 
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.RegexMatcher;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.RegexMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**

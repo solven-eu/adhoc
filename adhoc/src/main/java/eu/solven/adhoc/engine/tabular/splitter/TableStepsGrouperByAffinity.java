@@ -33,9 +33,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**

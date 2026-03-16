@@ -40,15 +40,15 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.ColumnFilter;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**

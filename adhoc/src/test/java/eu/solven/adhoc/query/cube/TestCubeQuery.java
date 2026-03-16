@@ -25,8 +25,8 @@ package eu.solven.adhoc.query.cube;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 
 public class TestCubeQuery {

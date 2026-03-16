@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.decomposition.many2many;
 
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
  * Simplest many2many relies on a single input columns, and equals matching.

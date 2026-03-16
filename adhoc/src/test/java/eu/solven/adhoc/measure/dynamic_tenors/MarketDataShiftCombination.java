@@ -27,9 +27,9 @@ import java.util.Optional;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
 import lombok.extern.slf4j.Slf4j;
 
 /**

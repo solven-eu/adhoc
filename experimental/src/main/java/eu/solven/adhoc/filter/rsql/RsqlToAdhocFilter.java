@@ -24,7 +24,7 @@ package eu.solven.adhoc.filter.rsql;
 
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
-import eu.solven.adhoc.query.filter.ISliceFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
 
 /**
  * Demonstrate how to create {@link ISliceFilter} given RSQL queries.

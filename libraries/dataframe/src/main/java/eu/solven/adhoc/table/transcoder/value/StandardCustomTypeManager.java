@@ -24,7 +24,7 @@ package eu.solven.adhoc.table.transcoder.value;
 
 import java.util.Map;
 
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 

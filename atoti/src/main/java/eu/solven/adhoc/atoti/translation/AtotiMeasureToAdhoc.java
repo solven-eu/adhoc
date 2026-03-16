@@ -63,6 +63,8 @@ import com.quartetfs.fwk.types.IExtendedPlugin;
 import com.quartetfs.fwk.types.impl.FactoryValue;
 
 import eu.solven.adhoc.atoti.table.AtotiAliaser;
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.combination.ReversePolishCombination;
@@ -82,8 +84,6 @@ import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.filter.FilterBuilder;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.AccessLevel;

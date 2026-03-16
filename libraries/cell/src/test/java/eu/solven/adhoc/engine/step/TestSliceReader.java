@@ -27,9 +27,9 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.AndFilter;
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.AndFilter;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 
 public class TestSliceReader {
 	@Test

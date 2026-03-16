@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.query.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 
 /**
  * Helps re-using an IFilterOptimizer, especially if it may have some pre-filled cache.

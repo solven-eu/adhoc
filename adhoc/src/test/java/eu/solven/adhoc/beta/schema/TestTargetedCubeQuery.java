@@ -28,11 +28,11 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.filter.AdhocPublicJackson;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.filter.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 

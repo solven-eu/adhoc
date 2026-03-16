@@ -24,9 +24,9 @@ package eu.solven.adhoc.engine.step;
 
 import java.util.Set;
 
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.ISliceFilter;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
  * Enables reading coordinates/column value given a {@link ISliceWithStep}.

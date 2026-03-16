@@ -27,9 +27,9 @@ import java.time.LocalDate;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.filter.value.EqualsMatcher;
-import eu.solven.adhoc.query.filter.value.InMatcher;
-import eu.solven.adhoc.query.filter.value.StringMatcher;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
+import eu.solven.adhoc.filter.value.StringMatcher;
 
 public class TestCubeWrapperTypeTranscoder {
 

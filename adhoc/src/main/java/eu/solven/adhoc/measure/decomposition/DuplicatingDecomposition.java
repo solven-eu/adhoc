@@ -36,13 +36,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.FilterHelpers;
-import eu.solven.adhoc.query.filter.FilterMatcher;
-import eu.solven.adhoc.query.filter.value.IValueMatcher;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocMapPathGet;
 import lombok.AccessLevel;

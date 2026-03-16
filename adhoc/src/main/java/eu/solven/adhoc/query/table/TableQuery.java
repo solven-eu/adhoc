@@ -27,6 +27,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -36,7 +37,6 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IHasMeasure;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.query.filter.ISliceFilter;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;

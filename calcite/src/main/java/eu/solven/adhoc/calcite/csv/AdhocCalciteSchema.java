@@ -53,7 +53,6 @@ public class AdhocCalciteSchema extends AbstractSchema {
 	protected Map<String, Table> getTableMap() {
 		return schema.getCubes()
 				.stream()
-				.collect(PepperStreamHelper.toLinkedMap(c -> c.getName(),
-						c -> new AdhocCalciteTable(c, queryOptions)));
+				.collect(PepperStreamHelper.toLinkedMap(c -> c.getName(), c -> new AdhocCalciteTable(c, queryOptions)));
 	}
 }

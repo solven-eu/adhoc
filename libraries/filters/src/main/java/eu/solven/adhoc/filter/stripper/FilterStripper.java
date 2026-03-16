@@ -1,0 +1,293 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.filter.stripper;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Sets;
+
+import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.IColumnFilter;
+import eu.solven.adhoc.filter.INotFilter;
+import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.AndMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.With;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Default implementation of IFilterStripper
+ * 
+ * @author Benoit Lacelle
+ */
+@Slf4j
+@RequiredArgsConstructor
+@Builder
+public class FilterStripper implements IFilterStripper {
+	@Getter(AccessLevel.PROTECTED)
+	@With
+	@NonNull
+	protected final ISliceFilter where;
+
+	protected final Supplier<Set<String>> whereColumns =
+			Suppliers.memoize(() -> FilterHelpers.getFilteredColumns(getWhere()));
+
+	// Splitting `WHERE` is memoized as it is called many times, as `isStricterThan` is recursive.
+	protected final Supplier<Set<ISliceFilter>> whereAnds = Suppliers.memoize(this::splitWhereAnd);
+
+	// Cache isStricterThan as due to the recursivity of the argument, we often call on the same input
+	protected final Cache<ISliceFilter, Boolean> knownAsStricter = CacheBuilder.newBuilder().build();
+
+	// Cache filterStripper to benefit from the subWhere stripper own cache
+	@Default
+	protected final Cache<ISliceFilter, FilterStripper> filterToStripper = CacheBuilder.newBuilder().build();
+
+	protected Set<String> getColumns() {
+		return whereColumns.get();
+	}
+
+	protected Set<ISliceFilter> splitWhereAnd() {
+		return FilterHelpers.splitAnd(where);
+	}
+
+	@SneakyThrows(ExecutionException.class)
+	protected FilterStripper makeStripper(ISliceFilter subWhere) {
+		return filterToStripper.get(subWhere, () -> this.withWhere(subWhere));
+	}
+
+	@Override
+	public ISliceFilter strip(ISliceFilter filter) {
+		if (where.isMatchAll()) {
+			// `WHERE` has no clause: `FILTER` has to keep all clauses
+			return filter;
+		} else if (where.isMatchNone()) {
+			return ISliceFilter.MATCH_ALL;
+		}
+
+		Set<String> filterColumns = FilterHelpers.getFilteredColumns(filter);
+		if (Sets.intersection(whereColumns.get(), filterColumns).isEmpty()) {
+			// The FILTER is unrelated with the WHERE
+			return filter;
+		}
+
+		if (isStricterThan(filter)) {
+			// Catch some edge-case like `where.equals(filter)`
+			// More generally: if `WHERE && FILTER === WHERE`, then `FILTER` is irrelevant
+			return ISliceFilter.MATCH_ALL;
+		}
+
+		// Given the FILTER, we reject the AND operands already covered by WHERE
+		ISliceFilter postAnd;
+		{
+			// Split the FILTER in parts
+			Set<? extends ISliceFilter> andOperands = FilterHelpers.splitAnd(filter);
+
+			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
+
+			boolean singleAnd = andOperands.size() == 1;
+
+			// For each part of `FILTER`, reject those already filtered in `WHERE`
+			for (ISliceFilter subFilter : andOperands) {
+				ISliceFilter simplerSubFilter;
+				if (singleAnd) {
+					// Break cycle when we reach simplest filters
+					simplerSubFilter = subFilter;
+				} else {
+					simplerSubFilter = strip(subFilter);
+				}
+
+				if (isDisjoint(simplerSubFilter)) {
+					return ISliceFilter.MATCH_NONE;
+				} else {
+					boolean whereCoversSubFilter = isStricterThan(simplerSubFilter);
+
+					if (!whereCoversSubFilter) {
+						// Add only if this is not a matchAll (in the context of WHERE)
+						notInWhere.add(simplerSubFilter);
+					}
+				}
+			}
+			// `.combine` to break cycle, and output has not reason to be more optimized than input
+			postAnd = FilterBuilder.and(notInWhere).combine();
+		}
+
+		// Given the FILTER, we reject the OR operands already rejected by WHERE
+		// TODO Why managing OR after AND? (and not the inverse)
+		ISliceFilter postOr;
+		{
+			Set<ISliceFilter> orOperands = FilterHelpers.splitOr(postAnd);
+			boolean singleOr = orOperands.size() == 1;
+
+			Set<ISliceFilter> notInWhere = new LinkedHashSet<>();
+			// For each part of `FILTER`, reject those already filtered in `WHERE`
+			for (ISliceFilter subFilter : orOperands) {
+
+				ISliceFilter simplerSubFilter;
+				if (singleOr) {
+					// Break cycle when we reach simplest filters
+					simplerSubFilter = subFilter;
+				} else {
+					simplerSubFilter = strip(subFilter);
+				}
+
+				if (isDisjoint(simplerSubFilter)) {
+					continue;
+				} else {
+					boolean whereCoversSubFilter = isStricterThan(simplerSubFilter);
+
+					if (whereCoversSubFilter) {
+						// One operand is fully covered by WHERE: as this is an OR, the whole is matched
+						return ISliceFilter.MATCH_ALL;
+					} else {
+						notInWhere.add(simplerSubFilter);
+					}
+				}
+			}
+
+			// `.combine` to break cycle, and output has not reason to be more optimized than input
+			postOr = FilterBuilder.or(notInWhere).combine();
+		}
+
+		return postOr;
+	}
+
+	// `a&b=matchNone` is equivalent to `a includes !b`, which is equivalent to `a is stricter than !b`
+	protected boolean isDisjoint(ISliceFilter right) {
+		return isStricterThan(right.negate());
+	}
+
+	@Override
+	@SneakyThrows(ExecutionException.class)
+	public boolean isStricterThan(ISliceFilter laxer) {
+		return knownAsStricter.get(laxer, () -> {
+			return noCacheIsStricterThan(laxer);
+		});
+	}
+
+	protected boolean noCacheIsStricterThan(ISliceFilter filter) {
+		if (where instanceof INotFilter notStricter && filter instanceof INotFilter notLaxer) {
+			return makeStripper(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
+		} else if (where instanceof IColumnFilter stricterColumn && filter instanceof IColumnFilter laxerFilter) {
+			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
+			if (!isSameColumn) {
+				return false;
+			}
+			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
+		}
+
+		FilterStripper filterStripper = makeStripper(filter.negate());
+
+		boolean isStricterThanAnd = isStricerThanSplitAnd(filter, filterStripper);
+		if (isStricterThanAnd) {
+			return true;
+		}
+
+		// `WHERE isStricterThan FILTER` is equivalent with `!FILTER isStricterThan !WHERE`
+		// `!` turns `OR into `AND`, which enables reusing previous block, and implementing only `AND`
+		boolean isStricterThanOr = filterStripper.isStricerThanSplitAnd(where.negate(), this);
+		if (isStricterThanOr) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * `isStricterThan` comparing the operands following a `splitAnd` operations. `WHERE` is stricter than `FILTER` if
+	 * all `FILTER` operand is covered by one `WHERE` operand.
+	 * 
+	 * Typical example is `WHERE:a=a1&b=7&c=c3` versus `FILTER:a=in=(a1,a2)&b>=5`
+	 * 
+	 * @param laxer
+	 * @param laxerStripper
+	 * @return
+	 */
+	protected boolean isStricerThanSplitAnd(ISliceFilter laxer, FilterStripper laxerStripper) {
+		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
+		// relies on `AndFilter` optimization. Doing so would lead to cycle in the optimizations.
+		// BEWARE Do not rely on AndFilter either, else it may lead on further cycles
+		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
+
+		Set<String> filterColumns = laxerStripper.getColumns();
+		if (!whereColumns.get().containsAll(filterColumns)) {
+			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1&c=c3` due to `c`
+			// BEWARE if laxer is a ColumnFilter with a `matchAll` matcher
+			log.trace("Some filter in laxer are necessarily not present in WHERE");
+			return false;
+		}
+
+		Set<ISliceFilter> allStricters = whereAnds.get();
+		Set<ISliceFilter> allLaxers = FilterHelpers.splitAnd(laxer);
+
+		if (allStricters.containsAll(allLaxers)) {
+			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1`
+			return true;
+		}
+		// true if `WHERE:a==a1&b==b1&c==c1` and `FILTER:a=in=(a1,a2)&b=in=(b1,b2)`.
+		boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
+			if (allStricters.contains(oneLaxer)) {
+				// Fast track for `a==a1` in `WHERE:a==a1&b==b1&c==c1` and `FILTER:a==a1&b=in=(b1,b2)`
+				return true;
+			}
+
+			return allStricters.stream().anyMatch(oneStricter -> {
+				if (oneStricter.equals(where) && oneLaxer.equals(laxer)) {
+					// break cycle in recursivity
+					return false;
+				}
+
+				// true if `WHERE:a==a1` and `FILTER:a=in=(a1,a2)`.
+				return makeStripper(oneStricter).isStricterThan(oneLaxer);
+			});
+		});
+		if (allLaxersHasStricter) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * 
+	 * @param stricter
+	 * @param laxer
+	 * @return true if stricter {@link IValueMatcher} matches a subset of objects than laxer.
+	 */
+	protected boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
+		return AndMatcher.and(stricter, laxer).equals(stricter);
+	}
+}

@@ -654,12 +654,12 @@
 					<groupId>org.jacoco</groupId>
 					<artifactId>jacoco-maven-plugin</artifactId>
 					<version>0.8.14</version>
-                <configuration>
-                        <excludes>
-                                <!-- Vendored third-party sources, excluded from coverage -->
-                                <exclude>**/me/lemire/integercompression/**</exclude>
-                        </excludes>
-                </configuration>
+					<configuration>
+						<excludes>
+							<!-- Vendored third-party sources, excluded from coverage -->
+							<exclude>**/me/lemire/integercompression/**</exclude>
+						</excludes>
+					</configuration>
 					<executions>
 						<execution>
 							<id>default-prepare-agent</id>
