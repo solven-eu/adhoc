@@ -27,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
@@ -54,9 +56,12 @@ public interface ITableStepsGrouper {
 	 *            the full set of leaf {@link CubeQueryStep}s that must be evaluated by the table layer
 	 * @return a partition of {@code inducers}; every inducer must appear in exactly one group
 	 */
-	default Collection<? extends Collection<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
+	default Collection<? extends Set<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
+		// Multimaps.toMultimap(this::tableQueryGroupBy, Function.identity(), () ->
+		// MultimapBuilder.linkedHashKeys().hashSetValues().build())
 		return inducers.stream()
-				.collect(Collectors.groupingBy(this::tableQueryGroupBy, LinkedHashMap::new, Collectors.toList()))
+				.collect(Collectors
+						.groupingBy(this::tableQueryGroupBy, LinkedHashMap::new, ImmutableSet.toImmutableSet()))
 				.values();
 	}
 
