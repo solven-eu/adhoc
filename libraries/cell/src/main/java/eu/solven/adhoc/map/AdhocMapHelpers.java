@@ -41,7 +41,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AdhocMapHelpers {
 
-	// @Deprecated
+	@Deprecated(since = "Provide your own ISliceFactory")
 	public static IAdhocMap fromMap(Map<String, ?> asMap) {
 		return fromMap(RowSliceFactory.builder().build(), asMap);
 	}
