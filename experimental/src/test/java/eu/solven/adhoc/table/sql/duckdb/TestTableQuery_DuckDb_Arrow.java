@@ -22,8 +22,19 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import org.jspecify.annotations.NonNull;
+import java.util.Map;
 
+import org.assertj.core.api.Assertions;
+import org.jooq.impl.DSL;
+import org.jooq.impl.SQLDataType;
+import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableMap;
+
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestTableQuery_DB;
 import eu.solven.adhoc.table.sql.IDSLSupplier;

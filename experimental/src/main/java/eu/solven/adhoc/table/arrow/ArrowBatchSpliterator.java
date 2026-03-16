@@ -94,6 +94,7 @@ public final class ArrowBatchSpliterator implements Spliterator<ITabularRecord> 
 	}
 
 	private ITabularRecord buildRecord(int rowIndex) {
+		List<String> fieldNames = ArrowReflection.getFieldNames(currentRoot);
 		return ArrowReflection.buildRecord(currentVectors, rowIndex, factory);
 	}
 

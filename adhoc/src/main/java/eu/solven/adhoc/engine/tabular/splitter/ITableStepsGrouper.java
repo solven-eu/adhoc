@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,7 +55,9 @@ public interface ITableStepsGrouper {
 	 * @return a partition of {@code inducers}; every inducer must appear in exactly one group
 	 */
 	default Collection<? extends Collection<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
-		return inducers.stream().collect(Collectors.groupingBy(this::tableQueryGroupBy)).values();
+		return inducers.stream()
+				.collect(Collectors.groupingBy(this::tableQueryGroupBy, LinkedHashMap::new, Collectors.toList()))
+				.values();
 	}
 
 }

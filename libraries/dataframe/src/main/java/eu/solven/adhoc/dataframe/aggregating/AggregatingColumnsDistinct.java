@@ -168,10 +168,12 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		sh.add("aggregators", getAggregators().size());
 
 		IntStream.range(0, indexToSlice.size()).limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(sliceIndex -> {
-			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
+			Map<String, String> aggregates = aggregatorToAggregates.keySet()
 					.stream()
+					// `String.valueOf` will cover null values
 					.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
-							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
+							a -> String.valueOf(
+									IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex)))));
 
 			sh.add(String.valueOf(indexToSlice.get(sliceIndex)), aggregates);
 		});

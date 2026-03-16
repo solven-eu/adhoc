@@ -26,12 +26,14 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestAggregatingColumnsDistinct {
 	Aggregator a = Aggregator.sum("c");
+	CubeQueryStep step = CubeQueryStep.builder().measure("m").build();
 
 	AggregatingColumnsDistinct<String> aggregatingColumns = AggregatingColumnsDistinct.<String>builder().build();
 
@@ -39,11 +41,40 @@ public class TestAggregatingColumnsDistinct {
 	public void testUnknownKey() {
 		aggregatingColumns.contribute("k", a).onLong(123);
 
-		IMultitypeColumnFastGet<String> closedColumn =
-				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure("m").build(), a);
+		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(step, a);
 
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k"))).isEqualTo(123L);
 		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("unknownKey"))).isNull();
-
 	}
+
+	// A slice is opened but no aggregate is ever contributed for it: the column must be empty, no NPE.
+	@Test
+	public void testSliceOpenedWithNoAggregate() {
+		aggregatingColumns.openSlice("k");
+
+		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(step, a);
+
+		Assertions.assertThat(closedColumn.isEmpty()).isTrue();
+	}
+
+	// One slice has an aggregate, a second slice is opened but receives no aggregate.
+	// Querying the second slice must return null, not throw NPE.
+	@Test
+	public void testMixedSlices_oneWithAggregateOneWithout() {
+		aggregatingColumns.contribute("k1", a).onLong(123);
+		aggregatingColumns.openSlice("k2");
+
+		IMultitypeColumnFastGet<String> closedColumn = aggregatingColumns.closeColumn(step, a);
+
+		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k1"))).isEqualTo(123L);
+		Assertions.assertThat(IValueProvider.getValue(closedColumn.onValue("k2"))).isNull();
+	}
+
+	@Test
+	public void testNullValue() {
+		aggregatingColumns.contribute("k1", a).onObject(null);
+		
+		Assertions.assertThat(aggregatingColumns).hasToString("AggregatingColumnsDistinct{#slices=1, aggregators=1, k1={c=null}}");
+	}
+
 }

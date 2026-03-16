@@ -177,10 +177,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 		sliceToIndex.object2IntEntrySet().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(entry -> {
 			int sliceIndex = entry.getIntValue();
-			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
+			Map<String, String> aggregates = aggregatorToAggregates.keySet()
 					.stream()
 					.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
-							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
+							a -> String.valueOf(
+									IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex)))));
 
 			sh.add(String.valueOf(entry.getKey()), aggregates);
 		});

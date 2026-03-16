@@ -66,11 +66,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create and push agent branch
-        run: |
-          BRANCH="ai-quality-agent/nightly-${{ github.run_id }}"
-          git checkout -b "$BRANCH"
-          git push origin "$BRANCH"
+      - name: Create agent branch (local only — pushed only if changes are made)
+        run: git checkout -b "ai-quality-agent/nightly-${{ github.run_id }}"
 
       - name: Format JS with Prettier
         working-directory: ./pivotable/js
@@ -82,12 +79,13 @@ jobs:
       - name: Detect and commit changes
         id: detect-changes
         run: |
+          BRANCH="ai-quality-agent/nightly-${{ github.run_id }}"
           if git diff --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git add -A
             git commit -m "chore: auto-format via Spotless and Prettier [skip ci]"
-            git push origin HEAD
+            git push origin "$BRANCH"
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
