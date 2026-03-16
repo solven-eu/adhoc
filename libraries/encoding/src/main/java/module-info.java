@@ -24,17 +24,7 @@ module eu.solven.adhoc.encoding {
 	requires com.google.common;
 	requires org.agrona;
 	requires it.unimi.dsi.fastutil;
-	// TODO: JavaFastPFOR (me.lemire.integercompression:JavaFastPFOR) has no Automatic-Module-Name,
-	// so Maven keeps it on the classpath (unnamed module). Named modules cannot read unnamed modules
-	// without a compiler flag. Two options to unblock:
-	//   1. Ask upstream to add Automatic-Module-Name=me.lemire.integercompression to their MANIFEST.MF,
-	//      then change this line to: requires me.lemire.integercompression;
-	//   2. Add to maven-compiler-plugin compilerArgs in pom.xml:
-	//        <compilerArg>--add-reads</compilerArg>
-	//        <compilerArg>eu.solven.adhoc.encoding=ALL-UNNAMED</compilerArg>
-	//      (option 2 does not need a requires directive here)
-	// https://github.com/fast-pack/JavaFastPFOR/pull/69
-	// requires JavaFastPFOR;
+	 requires me.lemire.integercompression;
 
 	// Runtime via Lombok @Slf4j
 	requires org.slf4j;

@@ -108,6 +108,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 These rules exist because slow sessions have been observed and root-caused here.
 
 - **Prefer `Bash` over `Task` subagents for simple CLI lookups.** Use `gh pr view`, `gh run view --log-failed`, `git log`, etc. directly as `Bash` calls (parallelised when independent). Only spawn a `Task` subagent when a search is genuinely open-ended or would flood the main context. Each subagent adds ~2–3 min of overhead.
+- **Never use Python/Perl/shell scripts to edit files.** If the `Edit` tool fails (e.g. due to tab indentation — see known bug in memory), show the user the exact change to make as a code block and explain where to apply it. Do **not** fall back to `python3 -c`, `perl -i`, `awk`, or any other scripted in-place file mutation.
 - **Don't re-read files already in context.** If a file was written or fully read earlier in the same session, edit it directly without a preceding `Read` call.
 - **Combine Maven goals** to avoid redundant JVM startups: e.g. `mvn spotless:apply pmd:check --file pom.xml --batch-mode` instead of two separate invocations.
 - **Scope Maven to the affected module** with `-pl <module>` when only one module was changed (e.g. `-pl adhoc`), rather than running the full reactor.
