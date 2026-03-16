@@ -54,6 +54,7 @@ import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -177,12 +178,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		if (tableQuery.getGroupBys().size() != 1) {
-			throw new NotYetImplementedException("GROUPING SET");
-		}
-
-		TableQueryV2 queryV2 = tableQuery.streamV2().findFirst().get();
-		return streamSlices(queryPod, queryV2);
+		return InMemoryTable.compositeOnV2(queryPod, tableQuery, this::streamSlices);
 	}
 
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })
