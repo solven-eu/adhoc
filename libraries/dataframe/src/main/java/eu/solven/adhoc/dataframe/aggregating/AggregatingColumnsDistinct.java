@@ -21,6 +21,7 @@
  * THE SOFTWARE.
  */
 package eu.solven.adhoc.dataframe.aggregating;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

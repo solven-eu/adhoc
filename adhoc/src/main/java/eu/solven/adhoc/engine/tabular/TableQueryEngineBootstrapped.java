@@ -21,6 +21,7 @@
  * THE SOFTWARE.
  */
 package eu.solven.adhoc.engine.tabular;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;

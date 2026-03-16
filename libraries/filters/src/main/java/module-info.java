@@ -19,6 +19,10 @@ module eu.solven.adhoc.query.filters {
 	requires com.google.common;
 	requires tools.jackson.databind;
 	requires eu.solven.pepper;
+	
+	// Jackson needs reflective access to Lombok-generated builders for deserialization
+	opens eu.solven.adhoc.query.filter to tools.jackson.databind;
+	opens eu.solven.adhoc.query.filter.value to tools.jackson.databind;
 
 	// Runtime via Lombok @Slf4j
 	requires org.slf4j;

@@ -34,7 +34,6 @@ import eu.solven.pepper.collection.MapWithNulls;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-
 public class TestEvaluatedExpressionColumn {
 
 	@Test

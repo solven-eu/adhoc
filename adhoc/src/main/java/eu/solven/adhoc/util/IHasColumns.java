@@ -21,6 +21,7 @@
  * THE SOFTWARE.
  */
 package eu.solven.adhoc.util;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;

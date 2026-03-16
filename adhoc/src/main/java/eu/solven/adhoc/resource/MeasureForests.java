@@ -21,6 +21,7 @@
  * THE SOFTWARE.
  */
 package eu.solven.adhoc.resource;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +59,6 @@ public class MeasureForests {
 	}
 
 	public Map<String, IMeasureForest> getNameToForest() {
-		return forests.stream()
-				.collect(PepperStreamHelper.toLinkedMap(IMeasureForest::getName, Function.identity()));
+		return forests.stream().collect(PepperStreamHelper.toLinkedMap(IMeasureForest::getName, Function.identity()));
 	}
 }
