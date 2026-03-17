@@ -262,7 +262,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.build();
 
 		CompatibleMeasures compatibleMeasures =
-				composite.computeSubMeasures(compositeQuery, subCube, Set.of()::contains);
+				composite.computeSubMeasures(compositeQuery.toV4(), subCube, Set.of()::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(MeasureHelpers.alias("min", k1Sum.getName()))
 				.contains(MeasureHelpers.alias("max", k1Sum.getName()))
@@ -294,7 +294,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.build();
 
 		CompatibleMeasures compatibleMeasures =
-				composite.computeSubMeasures(compositeQuery, subCube, subColumns::contains);
+				composite.computeSubMeasures(compositeQuery.toV4(), subCube, subColumns::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(Filtrator.builder()
 						.name("max_c1")
@@ -673,7 +673,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 								"""
 										/-- time=6ms for openingStream
 										|/- time=8ms for mergingAggregates
-										|/- time=9ms sizes=[1] for sortingColumns
+										|/- time=9ms sizes=[1] for toCuboids
 										\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) GROUP BY grandTotal
 										/-- #0 t=someTableName1 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000001)
 										|      No cost info
@@ -688,7 +688,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cubeElseTable=true, cube=composite))
 										/-- time=13ms for openingStream
 										|/- time=15ms for mergingAggregates
-										|/- time=16ms sizes=[1] for sortingColumns
+										|/- time=16ms sizes=[1] for toCuboids
 										\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) GROUP BY grandTotal
 										/-- #0 t=someTableName2 id=00000000-0000-0000-0000-000000000004 (parentId=00000000-0000-0000-0000-000000000003)
 										|      No cost info
@@ -703,7 +703,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cubeElseTable=true, cube=composite))
 										/-- time=150ms for openingStream
 										|/- time=19ms for mergingAggregates
-										|/- time=20ms sizes=[1, 1] for sortingColumns
+										|/- time=20ms sizes=[1, 1] for toCuboids
 										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2), table2_k_minus3:SUM(table2_k_minus3) GROUP BY grandTotal
 										/-- #0 t=composite id=00000000-0000-0000-0000-000000000005 (parentId=00000000-0000-0000-0000-000000000000)
 										|      No cost info

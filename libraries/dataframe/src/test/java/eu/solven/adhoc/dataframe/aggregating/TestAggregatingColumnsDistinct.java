@@ -26,7 +26,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
-import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -73,8 +72,9 @@ public class TestAggregatingColumnsDistinct {
 	@Test
 	public void testNullValue() {
 		aggregatingColumns.contribute("k1", a).onObject(null);
-		
-		Assertions.assertThat(aggregatingColumns).hasToString("AggregatingColumnsDistinct{#slices=1, aggregators=1, k1={c=null}}");
+
+		Assertions.assertThat(aggregatingColumns)
+				.hasToString("AggregatingColumnsDistinct{#slices=1, aggregators=1, k1={c=null}}");
 	}
 
 }

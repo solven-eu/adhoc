@@ -36,13 +36,10 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
 import eu.solven.adhoc.filter.FilterBuilder;
-import eu.solven.adhoc.filter.IHasFilters;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -63,7 +60,7 @@ import lombok.Value;
 @Value
 @Builder(toBuilder = true)
 // https://blog.jooq.org/how-to-calculate-multiple-aggregate-functions-in-a-single-query/
-public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOptions {
+public class TableQueryV3 implements ITableQuery {
 
 	// a filter shared through all aggregators
 	@Default
@@ -90,6 +87,7 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 	@Singular
 	ImmutableSet<IQueryOption> options;
 
+	// TODO If this method is actual relevant, it should return an IGroupBy
 	public Map<String, IAdhocColumn> getColumns() {
 		// https://stackoverflow.com/questions/23699371/distinct-by-property
 		return getGroupBys().stream()
@@ -124,10 +122,10 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 
 	protected CubeQueryStepBuilder asQueryStep() {
 		return CubeQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
-
 	}
 
 	// TODO This should not be public
+	@Deprecated(since = "V4", forRemoval = true)
 	public CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {
@@ -177,6 +175,7 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 		}
 	}
 
+	@Override
 	public Set<String> getGroupedByColumns() {
 		return getGroupBys().stream()
 				.flatMap(gb -> gb.getGroupedByColumns().stream())
@@ -186,6 +185,10 @@ public class TableQueryV3 implements IHasFilters, IHasCustomMarker, IHasQueryOpt
 
 	public static TableQueryV3Builder edit(CubeQueryStep step) {
 		return TableQueryV3.builder().options(step.getOptions()).customMarker(step.getCustomMarker());
+	}
+
+	public TableQueryV4 toV4() {
+		return TableQueryV4.edit(this).build();
 	}
 
 }

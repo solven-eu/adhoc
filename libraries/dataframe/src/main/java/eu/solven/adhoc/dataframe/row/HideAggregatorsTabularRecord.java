@@ -31,11 +31,13 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.With;
+import lombok.experimental.Delegate;
 
 /**
  * Decorate a {@link ITabularRecord}, and shows only given Set of aggregates.
@@ -51,6 +53,11 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	// @Singular
 	@NonNull
 	final ImmutableSet<String> keptAggregates;
+	
+	@Override
+	public IGroupBy getGroupBy() {
+		return decorated.getGroupBy();
+	}
 
 	@Override
 	public Set<String> aggregateKeySet() {
@@ -104,8 +111,8 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public IAdhocSlice getGroupBys() {
-		return decorated.getGroupBys();
+	public IAdhocSlice getSlice() {
+		return decorated.getSlice();
 	}
 
 	@Override

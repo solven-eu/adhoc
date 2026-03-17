@@ -57,10 +57,14 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 
 	protected abstract int dictionarize(T key);
 
-	protected abstract IMultitypeColumn<K> getColumn(IAliasedAggregator aggregator);
+	protected abstract IMultitypeColumn<K> getColumn(String aggregator);
+
+	protected IMultitypeColumn<K> getColumn(IAliasedAggregator aggregator) {
+		return getColumn(aggregator.getAlias());
+	}
 
 	@Override
-	public long size(IAliasedAggregator aggregator) {
+	public long size(String aggregator) {
 		long size = 0L;
 
 		IMultitypeColumn<?> preColumn = getColumn(aggregator);

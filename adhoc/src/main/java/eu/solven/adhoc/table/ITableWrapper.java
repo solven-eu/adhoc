@@ -33,6 +33,7 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 import eu.solven.pepper.core.PepperStreamHelper;
@@ -54,7 +55,11 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery);
+	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery);
+
+	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+		return streamSlices(queryPod, tableQuery.toV4());
+	}
 
 	/**
 	 * Could be useful for {@link ITableWrapper} not supporting `GROUPING SET`.
@@ -65,6 +70,10 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 */
 	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV3());
+	}
+
+	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQuery tableQuery) {
+		return streamSlices(queryPod, tableQuery.toV2());
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
@@ -79,9 +88,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		TableQueryV3 queryV2 = TableQueryV3.edit(tableQuery).build();
-
-		return streamSlices(queryV2);
+		return streamSlices(QueryPod.forTable(this), tableQuery);
 	}
 
 	/**

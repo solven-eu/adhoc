@@ -38,6 +38,7 @@ import org.slf4j.event.Level;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
@@ -67,8 +68,7 @@ import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
-import eu.solven.adhoc.query.table.TableQueryV3.TableQueryV3Builder;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.IHasAliasedColumns;
@@ -126,7 +126,15 @@ public class ColumnsManager implements IColumnsManager {
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
-	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV3 query) {
+	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV4 query) {
+		// When multiple groupBys share one AliasingContext but one of them contains a
+		// FunctionCalculatedColumn, evaluateCalculated would apply that computed coordinate to ALL rows
+		// (including rows from other groupBys that already carry real column values). Split the query
+		// into single-groupBy sub-queries so each context stays isolated.
+		if (hasFunctionCalculatedColumnInGroupBy(query) && query.getGroupByToAggregators().keySet().size() > 1) {
+			return openTableStreamPerGroupBy(queryPod, query);
+		}
+
 		AliasingContext transcodingContext = openTranscodingContext();
 
 		ISliceFilter transcodedFilter;
@@ -167,16 +175,13 @@ public class ColumnsManager implements IColumnsManager {
 			});
 		}
 
-		TableQueryV3 transcodedQuery;
+		TableQueryV4 transcodedQuery;
 
 		{
-			TableQueryV3Builder transcodedQueryBuilder = query.toBuilder()
-					.filter(transcodedFilter)
-					.clearAggregators()
-					.aggregators(transcodeAggregators(transcodingContext, query.getAggregators()));
+			TableQueryV4.TableQueryV4Builder transcodedQueryBuilder =
+					query.toBuilder().filter(transcodedFilter).clearGroupByToAggregators();
 
-			transcodedQueryBuilder.clearGroupBys();
-			query.getGroupBys().forEach(groupBy -> {
+			Multimaps.asMap(query.getGroupByToAggregators()).forEach((groupBy, aggregators) -> {
 				IGroupBy groupByIncludingPostFilterColumns;
 
 				{
@@ -192,7 +197,11 @@ public class ColumnsManager implements IColumnsManager {
 
 					groupByIncludingPostFilterColumns = GroupByColumns.of(columnToDetails.values());
 				}
-				transcodedQueryBuilder.groupBy(transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns));
+
+				IGroupBy transcodedGroupBuy = transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns);
+				Collection<? extends FilteredAggregator> transcodedAggregators =
+						transcodeAggregators(transcodingContext, aggregators);
+				transcodedQueryBuilder.groupByToAggregators(transcodedGroupBuy, transcodedAggregators);
 			});
 
 			transcodedQuery = transcodedQueryBuilder.build();
@@ -230,11 +239,69 @@ public class ColumnsManager implements IColumnsManager {
 		return transcodeRows(transcodingContext, tabularRecordStream, postFilter);
 	}
 
-	protected Set<String> getFiltrableCalculatedColumns(TableQueryV3 query) {
+	/**
+	 * Returns {@code true} when at least one groupBy in the query contains a {@link FunctionCalculatedColumn}.
+	 *
+	 * <p>
+	 * Such columns must be processed in their own {@link AliasingContext}: if merged into a single context together
+	 * with regular {@link ReferencedColumn} groupBys, {@link #evaluateCalculated} would stamp the computed coordinate
+	 * onto rows that came from a different groupBy, corrupting real column values.
+	 */
+	protected boolean hasFunctionCalculatedColumnInGroupBy(TableQueryV4 query) {
+		return query.getGroupByToAggregators()
+				.keySet()
+				.stream()
+				.flatMap(gb -> gb.getNameToColumn().values().stream())
+				.anyMatch(c -> c instanceof FunctionCalculatedColumn);
+	}
+
+	/**
+	 * Processes each groupBy in the query as an independent single-groupBy {@link TableQueryV4}, giving it its own
+	 * {@link AliasingContext}, and merges the resulting streams. Used when any groupBy contains a
+	 * {@link FunctionCalculatedColumn} and there are multiple groupBys.
+	 */
+	protected ITabularRecordStream openTableStreamPerGroupBy(QueryPod queryPod, TableQueryV4 query) {
+		List<ITabularRecordStream> subStreams =
+				Multimaps.asMap(query.getGroupByToAggregators()).entrySet().stream().map(e -> {
+					TableQueryV4 subQuery = query.toBuilder()
+							.clearGroupByToAggregators()
+							.groupByToAggregators(e.getKey(), e.getValue())
+							.build();
+					return openTableStream(queryPod, subQuery);
+				}).toList();
+
+		return new ITabularRecordStream() {
+
+			@Override
+			public Stream<ITabularRecord> records() {
+				return subStreams.stream().flatMap(ITabularRecordStream::records);
+			}
+
+			@Override
+			public boolean isDistinctSlices() {
+				return false;
+			}
+
+			@Override
+			public Object getTableQuery() {
+				return query;
+			}
+
+			@Override
+			public void close() {
+				subStreams.forEach(ITabularRecordStream::close);
+			}
+		};
+	}
+
+	protected Set<String> getFiltrableCalculatedColumns(TableQueryV4 query) {
+		// Calculated columns from ColumnsManager (static definitions)
 		Set<String> calculatedColumns = this.calculatedColumns.stream()
 				.map(ICalculatedColumn::getName)
 				.collect(Collectors.toCollection(TreeSet::new));
-		query.getGroupBys()
+		// Calculated columns from Query (dynamic definitions)
+		query.getGroupByToAggregators()
+				.keySet()
 				.stream()
 				.flatMap(gb -> gb.getNameToColumn().values().stream())
 				.filter(c -> c instanceof ICalculatedColumn
@@ -331,8 +398,8 @@ public class ColumnsManager implements IColumnsManager {
 		};
 	}
 
-	protected ITabularRecord evaluateCalculated(AliasingContext transcodingContext, ITabularRecord row) {
-		Map<String, ICalculatedColumn> columns = transcodingContext.getNameToCalculated();
+	protected ITabularRecord evaluateCalculated(AliasingContext aliasingContext, ITabularRecord row) {
+		Map<String, ICalculatedColumn> columns = aliasingContext.getNameToCalculated();
 
 		if (columns.isEmpty()) {
 			return row;
@@ -346,13 +413,13 @@ public class ColumnsManager implements IColumnsManager {
 		});
 
 		return TabularRecordOverMaps.builder()
-				.slice(row.getGroupBys().addColumns(computed))
+				.slice(row.getSlice().addColumns(computed))
 				.aggregates(row.aggregatesAsMap())
 				.build();
 	}
 
-	protected IColumnValueTranscoder prepareTypeTranscoder(AliasingContext transcodingContext) {
-		Set<String> mayBeTypeTranscoded = transcodingContext.underlyings()
+	protected IColumnValueTranscoder prepareTypeTranscoder(AliasingContext aliasingContext) {
+		Set<String> mayBeTypeTranscoded = aliasingContext.underlyings()
 				.stream()
 				.filter(customTypeManager::mayTranscode)
 				.collect(ImmutableSet.toImmutableSet());

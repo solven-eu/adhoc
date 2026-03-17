@@ -48,10 +48,12 @@ import eu.solven.adhoc.query.cube.IGroupBy;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRecord, IHasAdhocMap {
+public interface IAdhocSlice extends Comparable<IAdhocSlice>
+//, ITabularGroupByRecord
+, IHasAdhocMap {
 
 	@Override
-	default IAdhocSlice getGroupBys() {
+	default IAdhocSlice getSlice() {
 		return this;
 	}
 

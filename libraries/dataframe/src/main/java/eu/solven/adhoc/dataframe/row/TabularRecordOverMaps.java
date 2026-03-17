@@ -37,6 +37,7 @@ import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
@@ -61,6 +62,11 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@Singular
 	final ImmutableMap<String, ?> aggregates;
+	
+	@Override
+	public IGroupBy getGroupBy() {
+		return groupBy.getGroupBy();
+	}
 
 	@Override
 	public Set<String> aggregateKeySet() {
@@ -100,18 +106,18 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		asMap.putAll(aggregates);
-		asMap.putAll(groupBy.getGroupBys().asAdhocMap());
+		asMap.putAll(groupBy.getSlice().asAdhocMap());
 
 		return asMap;
 	}
 
 	public static ITabularRecord empty() {
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceHelpers.grandTotal()).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(IGroupBy.GRAND_TOTAL, SliceHelpers.grandTotal()).build();
 	}
 
 	@Override
-	public IAdhocSlice getGroupBys() {
-		return groupBy.getGroupBys();
+	public IAdhocSlice getSlice() {
+		return groupBy.getSlice();
 	}
 
 	protected ITabularRecord withSlice(ISliceFactory factory, Map<String, ?> slice) {
@@ -121,17 +127,17 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	@Override
 	public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
 		Map<String, ?> transcodedSlice =
-				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.getGroupBys().asAdhocMap());
+				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.getSlice().asAdhocMap());
 
-		return withSlice(groupBy.getGroupBys().getFactory(), transcodedSlice);
+		return withSlice(groupBy.getSlice().getFactory(), transcodedSlice);
 	}
 
 	@Override
 	public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
 		Map<String, ?> transcodedSlice =
-				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, groupBy.getGroupBys().asAdhocMap());
+				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, groupBy.getSlice().asAdhocMap());
 
-		return withSlice(this.groupBy.getGroupBys().getFactory(), transcodedSlice);
+		return withSlice(this.groupBy.getSlice().getFactory(), transcodedSlice);
 	}
 
 	@Override
@@ -171,8 +177,8 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	 * @author Benoit Lacelle
 	 */
 	public static class TabularRecordOverMapsBuilder {
-		public TabularRecordOverMapsBuilder slice(IAdhocSlice slice) {
-			return groupBy(TabularGroupByRecordOverMap.builder().slice(slice).build());
+		public TabularRecordOverMapsBuilder slice(IGroupBy groupBy, IAdhocSlice slice) {
+			return groupBy(TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(slice).build());
 		}
 	}
 }

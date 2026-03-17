@@ -28,12 +28,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTabularGroupByRecordOverMap {
 	@Test
 	public void testToString() {
 		String asString = TabularGroupByRecordOverMap
-				.toString(TabularGroupByRecordOverMap.builder().slice(SliceHelpers.asSlice(Map.of("k", "v"))).build());
+				.toString(TabularGroupByRecordOverMap.builder().groupBy(GroupByColumns.named("k")).slice(SliceHelpers.asSlice(Map.of("k", "v"))).build());
 
 		Assertions.assertThat(asString).isEqualTo("slice:{k=v}");
 	}

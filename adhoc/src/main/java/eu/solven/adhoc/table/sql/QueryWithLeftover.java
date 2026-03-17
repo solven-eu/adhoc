@@ -69,9 +69,6 @@ public class QueryWithLeftover {
 
 	AggregatedRecordFields fields;
 
-	// @Singular
-	// ImmutableSet<Field<?>> groupingColumns;
-
 	@Deprecated(since = "This may fail if the query has been partitioned. Might be fine for unitTests.")
 	public ResultQuery<Record> getQuery() {
 		return Iterables.getOnlyElement(queries);

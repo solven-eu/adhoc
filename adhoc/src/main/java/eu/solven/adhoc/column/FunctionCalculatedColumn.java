@@ -33,6 +33,7 @@ import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
@@ -125,7 +126,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public SliceAsMap getGroupBys() {
+		public SliceAsMap getSlice() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
 
@@ -141,6 +142,11 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 
 		@Override
 		public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+		@Override
+		public IGroupBy getGroupBy() {
 			throw new UnsupportedOperationException("Recording does not implement this");
 		}
 

@@ -60,7 +60,7 @@ public class TestAdhocMapHelpers {
 		});
 
 		Assertions.assertThat(transcoded).isNotSameAs(originalRecord).isEqualTo(originalRecord);
-		Assertions.assertThat((Map) transcoded.getGroupBys().asAdhocMap()).isSameAs(original);
+		Assertions.assertThat((Map) transcoded.getSlice().asAdhocMap()).isSameAs(original);
 	}
 
 	@Test

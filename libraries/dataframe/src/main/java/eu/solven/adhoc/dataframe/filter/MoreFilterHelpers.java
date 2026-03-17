@@ -195,7 +195,7 @@ public class MoreFilterHelpers {
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
 
-			Optional<?> optValue = input.getGroupBys().optGroupBy(underlyingColumn);
+			Optional<?> optValue = input.getSlice().optGroupBy(underlyingColumn);
 
 			if (optValue.isEmpty()) {
 				if (input.columnsKeySet().contains(underlyingColumn)) {

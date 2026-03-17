@@ -93,8 +93,8 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
-	protected IMultitypeColumnFastGet<Integer> getColumn(IAliasedAggregator aggregator) {
-		return aggregatorToAggregates.get(aggregator.getAlias());
+	protected IMultitypeColumnFastGet<Integer> getColumn(String aggregator) {
+		return aggregatorToAggregates.get(aggregator);
 	}
 
 	@Override
@@ -126,7 +126,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
-		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator);
+		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator.getAlias());
 
 		if (notFinalColumn == null) {
 			// Typically happens when a filter reject completely one of the underlying

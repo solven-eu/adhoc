@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.filter.AdhocPublicJackson;
 import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.pepper.collection.MapWithNulls;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -62,13 +63,13 @@ public class TestEvaluatedExpressionColumn {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
 		// not null
-		Assertions.assertThat(column.computeCoordinate(
-				TabularRecordOverMaps.builder().slice(SliceHelpers.asSlice(Map.of("a", "a1", "b", "b1"))).build()))
-				.isEqualTo("a1-b1");
+		Assertions.assertThat(column.computeCoordinate(TabularRecordOverMaps.builder()
+				.slice(GroupByColumns.named("a", "b"), SliceHelpers.asSlice(Map.of("a", "a1", "b", "b1")))
+				.build())).isEqualTo("a1-b1");
 
 		// one is null
 		Assertions.assertThat(column.computeCoordinate(TabularRecordOverMaps.builder()
-				.slice(SliceHelpers.asSlice(MapWithNulls.of("a", "a1", "b", null)))
+				.slice(GroupByColumns.named("a", "b"), SliceHelpers.asSlice(MapWithNulls.of("a", "a1", "b", null)))
 				.build())).isEqualTo("a1-null");
 	}
 
@@ -77,9 +78,8 @@ public class TestEvaluatedExpressionColumn {
 		EvaluatedExpressionColumn column =
 				EvaluatedExpressionColumn.builder().name("someColumn").expression("a + \"-\" + b").build();
 
-		Assertions
-				.assertThatThrownBy(() -> column.computeCoordinate(
-						TabularRecordOverMaps.builder().slice(SliceHelpers.asSlice(Map.of("a", "a1"))).build()))
-				.isInstanceOf(IllegalArgumentException.class);
+		Assertions.assertThatThrownBy(() -> column.computeCoordinate(TabularRecordOverMaps.builder()
+				.slice(GroupByColumns.named("a"), SliceHelpers.asSlice(Map.of("a", "a1")))
+				.build())).isInstanceOf(IllegalArgumentException.class);
 	}
 }

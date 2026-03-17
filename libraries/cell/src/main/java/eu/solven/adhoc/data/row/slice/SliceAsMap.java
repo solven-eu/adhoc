@@ -82,20 +82,20 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		return asMap.isEmpty();
 	}
 
-	@Override
-	public Set<String> columnsKeySet() {
-		return asMap.keySet();
-	}
-
-	@Override
-	public Object getGroupBy(String column) {
-		if (asMap.containsKey(column)) {
-			return explicitNull(asMap.get(column));
-		} else {
-			throw new IllegalArgumentException(
-					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
-		}
-	}
+//	@Override
+//	public Set<String> columnsKeySet() {
+//		return asMap.keySet();
+//	}
+//
+//	@Override
+//	public Object getGroupBy(String column) {
+//		if (asMap.containsKey(column)) {
+//			return explicitNull(asMap.get(column));
+//		} else {
+//			throw new IllegalArgumentException(
+//					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
+//		}
+//	}
 
 	@Override
 	public Optional<Object> optGroupBy(String column) {

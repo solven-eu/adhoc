@@ -73,7 +73,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
@@ -247,7 +247,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
 		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
@@ -297,7 +297,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		return resultQuery.getSQL(ParamType.INLINED);
 	}
 
-	protected boolean areDistinctSliced(TableQueryV3 tableQuery, QueryWithLeftover resultQuery) {
+	protected boolean areDistinctSliced(TableQueryV4 tableQuery, QueryWithLeftover resultQuery) {
 		if (resultQuery.getQueries().size() >= 2) {
 			// Given the groupBy, we are guaranteed to receive distinct records
 			// Clarify when partitioning breaks isDistinct
@@ -384,7 +384,10 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				}
 			});
 
-			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
+			return TabularRecordOverMaps.builder()
+					.aggregates(aggregates)
+					.slice(row.getGroupBy(), row.getSlice())
+					.build();
 		}
 	}
 

@@ -61,7 +61,7 @@ public class ForeignExchangeCombination implements ICombination {
 		}
 
 		// The ccy of the input value is determined by the slice providing the value
-		String ccyFrom = slice.getSlice().getGroupBy("ccyFrom").toString();
+		String ccyFrom = slice.sliceReader().extractCoordinate("ccyFrom", String.class);
 
 		// The ccy of the output value is determined dynamically
 		String ccyTo = getCcyTo(slice);

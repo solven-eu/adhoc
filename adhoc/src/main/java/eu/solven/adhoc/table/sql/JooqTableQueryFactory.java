@@ -71,6 +71,7 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
@@ -170,7 +171,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	@Override
-	public QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
+	public QueryWithLeftover prepareQuery(TableQueryV4 tableQuery) {
+		return prepareQuery(tableQuery.asCoveringV3());
+	}
+
+	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
 		ISliceToJooqCondition toCondition = makeToCondition();
 
 		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);

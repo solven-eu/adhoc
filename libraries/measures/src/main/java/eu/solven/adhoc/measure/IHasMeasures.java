@@ -22,12 +22,12 @@
  */
 package eu.solven.adhoc.measure;
 
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.model.IMeasure;
 
@@ -45,7 +45,7 @@ public interface IHasMeasures {
 	 */
 	@JsonIgnore
 	default Map<String, IMeasure> getNameToMeasure() {
-		return getMeasures().stream().collect(Collectors.toUnmodifiableMap(IMeasure::getName, m -> m));
+		return getMeasures().stream().collect(ImmutableMap.toImmutableMap(IMeasure::getName, m -> m));
 	}
 
 	/**
@@ -53,7 +53,7 @@ public interface IHasMeasures {
 	 * @return the {@link Set} of {@link IMeasure}
 	 */
 	default Set<IMeasure> getMeasures() {
-		return getNameToMeasure().values().stream().collect(Collectors.toCollection(LinkedHashSet::new));
+		return getNameToMeasure().values().stream().collect(ImmutableSet.toImmutableSet());
 	}
 
 }

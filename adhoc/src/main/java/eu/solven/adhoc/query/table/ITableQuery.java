@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,42 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.query.table;
 
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
-
-import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.query.table.TableQueryV4;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+import eu.solven.adhoc.filter.IHasFilters;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
 
 /**
- * {@link ITableWrapper} which is always empty. Useful when the {@link ITableWrapper} to use is not yet known (e.g. when
- * one has to switch the underlying table depending on some queried filter).
- *
+ * Common interface to any table query
+ * 
  * @author Benoit Lacelle
  */
-@Builder
-public class EmptyTableWrapper implements ITableWrapper {
+public interface ITableQuery extends IHasFilters, IHasCustomMarker, IHasQueryOptions {
 
-	@NonNull
-	@Getter
-	final String name;
+	Set<IGroupBy> getGroupBys();
 
-	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
-		return new SuppliedTabularRecordStream("empty", true, Stream::empty);
-	}
+	Set<String> getGroupedByColumns();
 
-	@Override
-	public List<ColumnMetadata> getColumns() {
-		return ImmutableList.of();
-	}
 }

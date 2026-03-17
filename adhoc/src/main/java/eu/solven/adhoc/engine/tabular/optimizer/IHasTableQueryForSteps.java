@@ -28,27 +28,27 @@ import java.util.stream.Stream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 
 /**
- * Enables executing {@link TableQueryV3} inferring {@link CubeQueryStep}.
- * 
+ * Enables executing {@link TableQueryV4} inferring {@link CubeQueryStep}.
+ *
  * @author Benoit Lacelle
  */
 public interface IHasTableQueryForSteps {
 
-	Set<TableQueryV3> getTableQueries();
+	Set<TableQueryV4> getTableQueries();
 
 	@Deprecated(since = "Useful?")
 	boolean containsStep(CubeQueryStep queryStep);
 
 	/**
-	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV3} and the original {@link CubeQueryStep}.
+	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} and the original {@link CubeQueryStep}.
 	 */
 	record StepAndFilteredAggregator(FilteredAggregator aggregator, CubeQueryStep step) {
 
 	}
 
-	Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query, IFilterOptimizer filterOptimizer);
+	Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV4 query, IFilterOptimizer filterOptimizer);
 
 }

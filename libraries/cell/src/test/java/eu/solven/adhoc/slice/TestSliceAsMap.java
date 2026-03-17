@@ -45,6 +45,7 @@ public class TestSliceAsMap {
 	@Test
 	public void testRequireFilter_String() {
 		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
+		TabularGroupByRecordOverMap tabular = TabularGroupByRecordOverMap.
 
 		Assertions.assertThat(slice.columnsKeySet()).containsExactly("k");
 

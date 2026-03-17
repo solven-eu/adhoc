@@ -29,6 +29,7 @@ import java.util.function.BiConsumer;
 import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasColumnsKeySet;
 import eu.solven.pepper.core.PepperLogHelper;
 
@@ -38,8 +39,14 @@ import eu.solven.pepper.core.PepperLogHelper;
  * @author Benoit Lacelle
  */
 public interface ITabularGroupByRecord extends IHasColumnsKeySet {
+	/**
+	 * Column names may not be sufficient, especially given ICalculatedColumn.
+	 * 
+	 * @return the {@link IGroupBy} which has produced this column.
+	 */
+	IGroupBy getGroupBy();
 
-	IAdhocSlice getGroupBys();
+	IAdhocSlice getSlice();
 
 	/**
 	 * The columns for which a coordinate is expressed

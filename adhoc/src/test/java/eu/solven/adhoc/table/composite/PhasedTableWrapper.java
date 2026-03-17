@@ -40,7 +40,9 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.TableWrapperHelpers;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -118,6 +120,11 @@ public class PhasedTableWrapper implements ITableWrapper {
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+		return TableWrapperHelpers.v4ToV3(queryPod, Stream.of(tableQuery), this);
 	}
 
 	@Override

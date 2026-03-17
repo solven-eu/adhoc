@@ -291,21 +291,6 @@ public final class ArrowReflection {
 		};
 	}
 
-	public static List<String> getFieldNames(Object currentRoot) {
-		try {
-			List<?> vectors = (List<?>) GET_FIELD_VECTORS.invoke(currentRoot);
-			List<String> names = new ArrayList<>(vectors.size());
-			for (Object vector : vectors) {
-				names.add(getVectorName(vector));
-			}
-			return ImmutableList.copyOf(names);
-		} catch (InvocationTargetException e) {
-			throw new IllegalStateException("Error getting field names from Arrow VectorSchemaRoot", e.getCause());
-		} catch (IllegalAccessException e) {
-			throw new IllegalStateException("Unexpected reflection access error", e);
-		}
-	}
-
 	private static String getVectorName(Object vector) {
 		try {
 			Object field = GET_FIELD.invoke(vector);

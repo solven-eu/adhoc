@@ -270,7 +270,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 						"""
 								/-- time=3ms for openingStream
 								|/- time=5ms for mergingAggregates
-								|/- time=6ms sizes=[2] for sortingColumns
+								|/- time=6ms sizes=[2] for toCuboids
 								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE color==red GROUP BY (ccyFrom, letter)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info

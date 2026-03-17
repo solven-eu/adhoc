@@ -30,6 +30,6 @@ import java.util.function.BiConsumer;
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface Int2ObjectBiConsumer {
-	void acceptInt2Object(int i, Object o);
+public interface Int2ObjectBiConsumer<T> {
+	void acceptInt2Object(int i, T o);
 }

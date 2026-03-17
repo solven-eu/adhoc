@@ -29,7 +29,10 @@ import java.util.stream.Collectors;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.With;
 
@@ -42,16 +45,29 @@ import lombok.With;
 public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 	@NonNull
 	@With
+	@Getter
+	final IGroupBy groupBy;
+
+	@NonNull
+	@With
+	@Getter
 	final IAdhocSlice slice;
 
 	@Override
 	public Set<String> columnsKeySet() {
-		return slice.columnsKeySet();
+		return slice.asAdhocMap().keySet();
 	}
 
 	@Override
-	public Object getGroupBy(String columnName) {
-		return slice.getGroupBy(columnName);
+	public Object getGroupBy(String column) {
+		IAdhocMap asMap = slice.asAdhocMap();
+
+		if (asMap.containsKey(column)) {
+			return explicitNull(asMap.get(column));
+		} else {
+			throw new IllegalArgumentException(
+					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
+		}
 	}
 
 	@Override
@@ -74,12 +90,7 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 	}
 
 	@Override
-	public IAdhocSlice getGroupBys() {
-		return slice;
-	}
-
-	@Override
 	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
-		slice.forEachGroupBy(action);
+		slice.asAdhocMap().forEach(action);
 	}
 }

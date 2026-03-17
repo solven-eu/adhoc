@@ -76,6 +76,7 @@ public class GroupByColumns implements IGroupBy {
 			return "grandTotal";
 		}
 
+		// Order columns by name to have `.toString()` consistent with `.equals()`
 		NavigableMap<String, IAdhocColumn> nameToColumn = getNameToColumn();
 
 		if (nameToColumn.values().stream().allMatch(c -> c instanceof ReferencedColumn)) {

@@ -29,6 +29,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import com.google.common.collect.Multimaps;
+
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
@@ -51,7 +53,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -76,7 +78,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	QueryPod queryPod;
 	@NonNull
-	TableQueryV3 tableQuery;
+	TableQueryV4 tableQuery;
 
 	protected IMultitypeMergeableGrid<IAdhocSlice> makeAggregatingMeasures(ITabularRecordStream stream) {
 
@@ -104,7 +106,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			return UniqueGroupingSetAnalyzer.builder().sequencedKeyset(sequencedKeyset).build();
 		} else {
 			return r -> {
-				Set<String> groupedByColumns = r.getGroupBys().columnsKeySet();
+				Set<String> groupedByColumns = r.getSlice().columnsKeySet();
 				return queryPod.getSliceFactory().internKeyset(groupedByColumns);
 			};
 		}
@@ -112,8 +114,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	@Override
 	public IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream) {
-
-		// IGroupByToGrid groupByToGrid = null;
 		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
 
 		// Useful to log on the last row, to have the number of row actually streamed
@@ -144,10 +144,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 
-				tableQuery.getGroupBys().forEach(groupBy -> {
+				Multimaps.asMap(tableQuery.getGroupByToAggregators()).entrySet().forEach(ee -> {
+					IGroupBy groupBy = ee.getKey();
 					IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
 
-					tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
+					ee.getValue().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 				});
 
 			} else {
@@ -170,7 +171,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		IOpenedSlice openedSlice = sliceToAgg.openSlice(coordinates);
 
-		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators()) {
+		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset)) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
 			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
@@ -208,11 +209,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		groupBy.size() == tableRecord.columnsKeySet().size()) {
 			// BEWARE Could we have same size but different columns?
 			// In most cases, the tableSlice should have same columns as requested by the groupBy
-			return tableRecord.getGroupBys();
+			return tableRecord.getSlice();
 		} else {
 			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
 			// or in a different order (What would be the impact of different order else still relevant columns?).
-			return tableRecord.getGroupBys().retainAll(groupBy.sortedSet());
+			return tableRecord.getSlice().retainAll(groupBy.sortedSet());
 		}
 	}
 

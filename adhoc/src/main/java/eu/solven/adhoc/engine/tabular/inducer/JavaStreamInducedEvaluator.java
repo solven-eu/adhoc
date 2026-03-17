@@ -74,7 +74,7 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
 
-		inducerValues.stream().filter(s -> filterMatcher.match(s.getSlice())).forEach(inducerSlice -> {
+		inducerValues.stream().filter(s -> filterMatcher.match(s.getSlice().asAdhocMap())).forEach(inducerSlice -> {
 			IAdhocSlice inducedSlice;
 			if (sameColumns) {
 				inducedSlice = inducerSlice.getSlice();
