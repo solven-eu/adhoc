@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine.tabular.groupingset;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 
 /**
@@ -34,10 +33,10 @@ import lombok.Builder;
  */
 @Builder
 public class UniqueGroupingSetAnalyzer implements IGroupingSetAnalyzer {
-	final SequencedSetLikeList sequencedKeyset;
+	final GroupByMarker sequencedKeyset;
 
 	@Override
-	public SequencedSetLikeList getGroupingSet(ITabularRecord input) {
+	public GroupByMarker getGroupingSet(ITabularRecord input) {
 		return sequencedKeyset;
 	}
 }

@@ -103,7 +103,7 @@ public abstract class EqualsMatcher implements IValueMatcher, IHasWrapped, IColu
 	 *         is an instance of clazz.
 	 * @param <T>
 	 */
-	public static <T> Optional<T> extractOperand(IValueMatcher valueMatcher, Class<T> clazz) {
+	public static <T> Optional<T> extractOperand(IValueMatcher valueMatcher, Class<? extends T> clazz) {
 		if (!(valueMatcher instanceof EqualsMatcher equalsMatcher)) {
 			return Optional.empty();
 		} else {

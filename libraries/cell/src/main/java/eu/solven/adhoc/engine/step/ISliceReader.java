@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.step;
 
+import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -57,6 +58,10 @@ public interface ISliceReader {
 	default <T> T extractCoordinate(String column, Class<? extends T> clazz) {
 		return EqualsMatcher.extractOperand(getValueMatcher(column), clazz)
 				.orElseThrow(() -> new IllegalStateException("No operand for column=%s".formatted(column)));
+	}
+
+	default <T> Optional<T> extractCoordinateLax(String column, Class<? extends T> clazz) {
+		return EqualsMatcher.extractOperand(getValueMatcherLax(column), clazz);
 	}
 
 	/**

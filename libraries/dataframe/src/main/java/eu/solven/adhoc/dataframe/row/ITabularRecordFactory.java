@@ -45,10 +45,6 @@ public interface ITabularRecordFactory {
 	 */
 	List<String> getOptionalColumns();
 
-	default TabularRecordBuilder makeTabularRecordBuilder() {
-		return makeTabularRecordBuilder(ImmutableSet.of());
-	}
-
 	/**
 	 * 
 	 * @param absentColumns

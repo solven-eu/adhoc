@@ -22,31 +22,26 @@
  */
 package eu.solven.adhoc.data.row;
 
-import java.util.Collection;
+import java.util.NavigableSet;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
-import org.jspecify.annotations.Nullable;
-
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.data.row.slice.IHasAdhocSlice;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.util.IHasColumnsKeySet;
-import eu.solven.pepper.core.PepperLogHelper;
+import eu.solven.adhoc.query.cube.IHasGroupBy;
 
 /**
  * Used to hold the slice (given the groupBy) from {@link ITableWrapper}.
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularGroupByRecord extends IHasColumnsKeySet {
+public interface ITabularGroupByRecord extends IHasAdhocSlice, IHasGroupBy, ITabularGroupBySlice {
 	/**
 	 * Column names may not be sufficient, especially given ICalculatedColumn.
 	 * 
 	 * @return the {@link IGroupBy} which has produced this column.
 	 */
+	@Override
 	IGroupBy getGroupBy();
-
-	IAdhocSlice getSlice();
 
 	/**
 	 * The columns for which a coordinate is expressed
@@ -54,33 +49,6 @@ public interface ITabularGroupByRecord extends IHasColumnsKeySet {
 	@Override
 	Set<String> columnsKeySet();
 
-	/**
-	 *
-	 * @param column
-	 * @return the sliced coordinate, only if the column is actually sliced. Can not be a {@link Collection} nor a
-	 *         {@link eu.solven.adhoc.filter.value.IValueMatcher}. May be null.
-	 */
-	@Nullable
-	Object getGroupBy(String column);
+	ITabularGroupByRecord retainAll(NavigableSet<String> columns);
 
-	/**
-	 *
-	 * @param column
-	 * @param clazz
-	 * @return the filtered coordinate on given column. Can not be a {@link Collection} nor a
-	 *         {@link eu.solven.adhoc.filter.value.IValueMatcher}.
-	 * @param <T>
-	 */
-	default <T> T getGroupBy(String column, Class<? extends T> clazz) {
-		Object filter = getGroupBy(column);
-
-		if (clazz.isInstance(filter)) {
-			return clazz.cast(filter);
-		} else {
-			throw new IllegalArgumentException("column=%s is missing or with unexpected type: %s (expected class=%s)"
-					.formatted(column, PepperLogHelper.getObjectAndClass(filter), clazz));
-		}
-	}
-
-	void forEachGroupBy(BiConsumer<? super String, ? super Object> action);
 }

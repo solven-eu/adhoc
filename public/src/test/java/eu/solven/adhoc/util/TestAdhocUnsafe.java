@@ -123,6 +123,7 @@ public class TestAdhocUnsafe {
 		AdhocUnsafe.resetDeterministicQueryIds();
 
 		Assertions.assertThat(AdhocUnsafe.nextQueryIndex()).isEqualTo(0);
+		Assertions.assertThat(AdhocUnsafe.nextQueryStepIndex()).isEqualTo(0);
 		Assertions.assertThat(AdhocUnsafe.randomUUID()).hasToString("00000000-0000-0000-0000-000000000000");
 		Assertions.assertThat(AdhocUnsafe.randomUUID()).hasToString("00000000-0000-0000-0000-000000000001");
 	}

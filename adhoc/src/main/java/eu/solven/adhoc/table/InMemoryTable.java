@@ -202,7 +202,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 				// groupBy groupedByColumns
 				Map<IAdhocSlice, Optional<ITabularRecord>> groupedAggregatedRecord =
-						stream.collect(Collectors.groupingBy(ITabularRecord::getSlice,
+						stream.collect(Collectors.groupingBy(ITabularRecord::asSlice,
 								LinkedHashMap::new,
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));

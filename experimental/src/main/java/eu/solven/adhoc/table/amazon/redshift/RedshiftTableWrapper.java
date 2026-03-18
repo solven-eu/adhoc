@@ -32,10 +32,12 @@ import org.jooq.conf.ParamType;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -67,7 +69,9 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, QueryWithLeftover sqlQuery) {
+	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
+			QueryWithLeftover sqlQuery) {
 		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
 		String sqlStatement = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
@@ -106,7 +110,9 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 						}
 
 						// Extract and print the field values using streams if the response is valid.
-						return response.records().stream().map(row -> toTabularRecord(queryPod, sqlQuery, row));
+						return response.records()
+								.stream()
+								.map(row -> toTabularRecord(queryPod, mergedGroupBy, sqlQuery, row));
 					})
 					.join();
 		}).thenApply(result -> {
@@ -129,7 +135,10 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 		// }
 	}
 
-	protected TabularRecordOverMaps toTabularRecord(QueryPod queryPod, QueryWithLeftover sqlQuery, List<Field> row) {
+	protected TabularRecordOverMaps toTabularRecord(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
+			QueryWithLeftover sqlQuery,
+			List<Field> row) {
 		Map<String, Object> aggregates = new LinkedHashMap<>();
 
 		{
@@ -145,12 +154,12 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		ImmutableList<String> aggregateGroupBys = sqlQuery.getFields().getColumns();
-		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(aggregateGroupBys);
+		ImmutableList<String> groupedByColumns = sqlQuery.getFields().getColumns();
+		IMapBuilderPreKeys slice = queryPod.getSliceFactory().newMapBuilder(groupedByColumns);
 
 		{
-			for (int i = 0; i < aggregateGroupBys.size(); i++) {
-				Field field = row.get(aggregateGroupBys.size() + i);
+			for (int i = 0; i < groupedByColumns.size(); i++) {
+				Field field = row.get(groupedByColumns.size() + i);
 
 				Object value = toObject(field);
 				slice.append(value);
@@ -161,7 +170,11 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 			throw new NotYetImplementedException("leftovers=%s".formatted(sqlQuery.getFields().getLeftovers()));
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
+		IAdhocSlice sliceSlice = slice.build().asSlice();
+		return TabularRecordOverMaps.builder()
+				.aggregates(aggregates)
+				.slice(mergedGroupBy.retainAll(sliceSlice.columnsKeySet()), sliceSlice)
+				.build();
 	}
 
 	protected Object toObject(Field field) {

@@ -65,7 +65,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		return super.makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build();
 	}
 
-	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
+	@NonNull
+	IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
 		return new StandardOperatorFactory() {
 			@Override
@@ -192,12 +193,10 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 			forest.addMeasure(k1Sum);
 		}
 
-		Assertions.setMaxStackTraceElementsDisplayed(128);
-
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasRootCauseInstanceOf(IllegalArgumentException.class)
-				.hasStackTraceContaining("ccyFrom", " not a sliced column");
+				.hasRootCauseInstanceOf(IllegalStateException.class)
+				.hasStackTraceContaining("ccyFrom");
 	}
 
 	@Test

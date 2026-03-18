@@ -63,7 +63,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
@@ -252,7 +252,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		// Request the min and the max of the same measure cross cubes
-		TableQueryV3 compositeQuery = TableQueryV3.builder()
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("min").aggregationKey(MinAggregation.KEY).build())
 						.build())
@@ -262,7 +262,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.build();
 
 		CompatibleMeasures compatibleMeasures =
-				composite.computeSubMeasures(compositeQuery.toV4(), subCube, Set.of()::contains);
+				composite.computeSubMeasures(compositeQuery, subCube, Set.of()::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(MeasureHelpers.alias("min", k1Sum.getName()))
 				.contains(MeasureHelpers.alias("max", k1Sum.getName()))
@@ -282,7 +282,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Set<String> subColumns = Set.of("c1");
 
 		// Request the min and the max of the same measure cross cubes
-		TableQueryV3 compositeQuery = TableQueryV3.builder()
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("max_c1").aggregationKey(MaxAggregation.KEY).build())
 						.filter(ColumnFilter.matchLike("c1", "a%"))
@@ -294,7 +294,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 				.build();
 
 		CompatibleMeasures compatibleMeasures =
-				composite.computeSubMeasures(compositeQuery.toV4(), subCube, subColumns::contains);
+				composite.computeSubMeasures(compositeQuery, subCube, subColumns::contains);
 		Assertions.assertThat(compatibleMeasures.getPredefined())
 				.contains(Filtrator.builder()
 						.name("max_c1")

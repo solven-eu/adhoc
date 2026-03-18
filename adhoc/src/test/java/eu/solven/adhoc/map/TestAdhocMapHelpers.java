@@ -33,6 +33,7 @@ import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
@@ -43,8 +44,10 @@ public class TestAdhocMapHelpers {
 	@Test
 	public void testFromMapIdentity() {
 		IAdhocMap original = sliceFactory.newMapBuilder(List.of("c")).append("v").build();
-		ITabularRecord originalRecord =
-				TabularRecordOverMaps.builder().groupBy(original.asSlice()).aggregate("a", 123L).build();
+		ITabularRecord originalRecord = TabularRecordOverMaps.builder()
+				.slice(GroupByColumns.named("c"), original.asSlice())
+				.aggregate("a", 123L)
+				.build();
 
 		ITabularRecord transcoded = originalRecord.transcode(new IColumnValueTranscoder() {
 
@@ -60,7 +63,7 @@ public class TestAdhocMapHelpers {
 		});
 
 		Assertions.assertThat(transcoded).isNotSameAs(originalRecord).isEqualTo(originalRecord);
-		Assertions.assertThat((Map) transcoded.getSlice().asAdhocMap()).isSameAs(original);
+		Assertions.assertThat((Map) transcoded.asSlice().asAdhocMap()).isSameAs(original);
 	}
 
 	@Test

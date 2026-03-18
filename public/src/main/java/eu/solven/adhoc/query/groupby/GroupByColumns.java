@@ -25,7 +25,9 @@ package eu.solven.adhoc.query.groupby;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,9 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -139,6 +144,7 @@ public class GroupByColumns implements IGroupBy {
 			} else {
 				// Typically when referencing the same column multiple times
 				// Occurs when different calculatedColumns refers to the same underlying
+				// TODO Should we throw if the multiple columns are not equals?
 				log.trace("Skip {} as it is already in the groupBy", column);
 			}
 		});
@@ -153,5 +159,22 @@ public class GroupByColumns implements IGroupBy {
 			return "\"" + name + "\"";
 		}
 		return name;
+	}
+
+	public static IGroupBy mergeNonAmbiguous(Set<IGroupBy> groupBys) {
+		SetMultimap<String, IAdhocColumn> nameToColumns =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		groupBys.forEach(gb -> {
+			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+		});
+
+		Optional<Map.Entry<String, Collection<IAdhocColumn>>> optFaultyEntry =
+				nameToColumns.asMap().entrySet().stream().filter(e -> e.getValue().size() >= 2).findAny();
+		optFaultyEntry.ifPresent(faultyEntry -> {
+			throw new IllegalArgumentException(
+					"Ambiguous column=%s to %s".formatted(faultyEntry.getKey(), faultyEntry.getValue()));
+		});
+
+		return of(nameToColumns.values());
 	}
 }

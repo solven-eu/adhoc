@@ -35,6 +35,8 @@ import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -58,6 +60,13 @@ public class JooqTabularRecordFactory implements ITabularRecordFactory {
 	@Getter
 	ImmutableList<String> optionalColumns;
 
+	// A non-ambiguous mapping from columnName to column
+	// It is not compatible with all TableQueryV3, as different groupBy may have different columns referring the same
+	// columnName
+	// Some earlier step shall split the tableQuery to prevent such ambiguities
+	@NonNull
+	IGroupBy globalGroupBy;
+
 	@Override
 	public List<String> getAggregates() {
 		return fields.getAggregates();
@@ -72,9 +81,12 @@ public class JooqTabularRecordFactory implements ITabularRecordFactory {
 	public TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns) {
 		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(getAggregates().size());
 
-		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(getColumns(absentColumns));
+		Iterable<? extends String> presentColumns = getColumns(absentColumns);
+		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(presentColumns);
 
-		return new TabularRecordBuilder(aggregates, sliceBuilder);
+		SequencedSetLikeList columns = sliceFactory.internKeyset(ImmutableSet.copyOf(presentColumns));
+
+		return new TabularRecordBuilder(globalGroupBy.retainAll(columns.sortedSet()), aggregates, sliceBuilder);
 	}
 
 	protected Iterable<? extends String> getColumns(Set<String> absentColumns) {

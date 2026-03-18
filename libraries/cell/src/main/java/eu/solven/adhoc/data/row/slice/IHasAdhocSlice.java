@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.groupingset;
-
-import eu.solven.adhoc.dataframe.row.ITabularRecord;
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.query.cube.IGroupBy;
+package eu.solven.adhoc.data.row.slice;
 
 /**
- * Helps identifying the groupingSet of a {@link ITabularRecord}.
+ * For any structure representable as an {@link IAdhocSlice}
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IGroupingSetAnalyzer {
-
-	/**
-	 * Combine a {@link IGroupBy} and the related {@link SequencedSetLikeList}
-	 */
-	record GroupByMarker(IGroupBy groupBy, SequencedSetLikeList keySet) {
-
-	}
-
-	GroupByMarker getGroupingSet(ITabularRecord input);
-
+public interface IHasAdhocSlice {
+	IAdhocSlice asSlice();
 }

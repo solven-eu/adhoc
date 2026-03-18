@@ -104,13 +104,13 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		String elementColumn = AdhocMapPathGet.getRequiredString(options, K_INPUT);
 
-		Optional<?> optInput = slice.getSlice().optGroupBy(elementColumn);
-		if (optInput.isEmpty()) {
+		Optional<?> optElement = slice.sliceReader().extractCoordinateLax(elementColumn, Object.class);
+		if (optElement.isEmpty()) {
 			// There is no expressed element
 			return ImmutableList.of(IDecompositionEntry.of(ImmutableMap.of(), value));
 		}
 
-		Object element = optInput.get();
+		Object element = optElement.get();
 
 		if (element instanceof Collection<?>) {
 			throw new UnsupportedOperationException("TODO Handle element being a Collection");

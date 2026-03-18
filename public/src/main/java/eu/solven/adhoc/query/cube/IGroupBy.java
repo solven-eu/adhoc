@@ -25,11 +25,13 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import lombok.NonNull;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
@@ -71,4 +73,13 @@ public interface IGroupBy {
 	// @JsonIgnore as only the columns would be serialized. (name->column) is syntactic sugar.
 	@JsonIgnore
 	NavigableMap<String, IAdhocColumn> getNameToColumn();
+
+	@NonNull
+	default IGroupBy retainAll(Set<String> columns) {
+		if (columns.isEmpty()) {
+			return GRAND_TOTAL;
+		}
+		return GroupByColumns
+				.of(this.getNameToColumn().values().stream().filter(c -> columns.contains(c.getName())).toList());
+	}
 }

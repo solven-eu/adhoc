@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.row;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -52,7 +54,7 @@ import lombok.With;
  *
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 @EqualsAndHashCode
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
@@ -62,7 +64,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@Singular
 	final ImmutableMap<String, ?> aggregates;
-	
+
 	@Override
 	public IGroupBy getGroupBy() {
 		return groupBy.getGroupBy();
@@ -102,42 +104,50 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
+	public Optional<Object> optGroupBy(String column) {
+		return groupBy.optGroupBy(column);
+	}
+
+	@Override
 	public Map<String, ?> asMap() {
 		Map<String, Object> asMap = new LinkedHashMap<>();
 
 		asMap.putAll(aggregates);
-		asMap.putAll(groupBy.getSlice().asAdhocMap());
+		asMap.putAll(groupBy.asSlice().asAdhocMap());
 
 		return asMap;
 	}
 
 	public static ITabularRecord empty() {
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(IGroupBy.GRAND_TOTAL, SliceHelpers.grandTotal()).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(Map.of())
+				.slice(IGroupBy.GRAND_TOTAL, SliceHelpers.grandTotal())
+				.build();
 	}
 
 	@Override
-	public IAdhocSlice getSlice() {
-		return groupBy.getSlice();
+	public IAdhocSlice asSlice() {
+		return groupBy.asSlice();
 	}
 
 	protected ITabularRecord withSlice(ISliceFactory factory, Map<String, ?> slice) {
-		return withGroupBy(AdhocMapHelpers.fromMap(factory, slice).asSlice());
+		return toBuilder().slice(groupBy.getGroupBy(), AdhocMapHelpers.fromMap(factory, slice).asSlice()).build();
 	}
 
 	@Override
 	public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
-		Map<String, ?> transcodedSlice =
-				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.getSlice().asAdhocMap());
+		Map<String, ?> transcoded =
+				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.asSlice().asAdhocMap());
 
-		return withSlice(groupBy.getSlice().getFactory(), transcodedSlice);
+		return withSlice(groupBy.asSlice().getFactory(), transcoded);
 	}
 
 	@Override
 	public ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder) {
-		Map<String, ?> transcodedSlice =
-				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, groupBy.getSlice().asAdhocMap());
+		Map<String, ?> transcoded =
+				AdhocTranscodingHelper.transcodeValues(customValueTranscoder, groupBy.asSlice().asAdhocMap());
 
-		return withSlice(this.groupBy.getSlice().getFactory(), transcodedSlice);
+		return withSlice(this.groupBy.asSlice().getFactory(), transcoded);
 	}
 
 	@Override
@@ -177,8 +187,17 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	 * @author Benoit Lacelle
 	 */
 	public static class TabularRecordOverMapsBuilder {
+		// public TabularRecordOverMapsBuilder slice(IAdhocSlice slice) {
+		// return slice(GroupByColumns.named(slice.columnsKeySet()), slice);
+		// }
+
 		public TabularRecordOverMapsBuilder slice(IGroupBy groupBy, IAdhocSlice slice) {
 			return groupBy(TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(slice).build());
 		}
+	}
+
+	@Override
+	public ITabularRecord retainAll(NavigableSet<String> columns) {
+		return withGroupBy(groupBy.retainAll(columns));
 	}
 }

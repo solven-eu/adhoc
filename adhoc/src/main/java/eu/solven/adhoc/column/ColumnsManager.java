@@ -67,6 +67,7 @@ import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.groupby.GroupByColumns.GroupByColumnsBuilder;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -125,15 +126,18 @@ public class ColumnsManager implements IColumnsManager {
 	@NonNull
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
+	// TODO
+	@SuppressWarnings("checkstyle:SimplifyBooleanExpression")
 	@Override
 	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV4 query) {
 		// When multiple groupBys share one AliasingContext but one of them contains a
 		// FunctionCalculatedColumn, evaluateCalculated would apply that computed coordinate to ALL rows
 		// (including rows from other groupBys that already carry real column values). Split the query
 		// into single-groupBy sub-queries so each context stays isolated.
-		if (hasFunctionCalculatedColumnInGroupBy(query) && query.getGroupByToAggregators().keySet().size() > 1) {
-			return openTableStreamPerGroupBy(queryPod, query);
-		}
+		// if (false && hasFunctionCalculatedColumnInGroupBy(query)
+		// && query.getGroupByToAggregators().keySet().size() > 1) {
+		// return openTableStreamPerGroupBy(queryPod, query);
+		// }
 
 		AliasingContext transcodingContext = openTranscodingContext();
 
@@ -239,60 +243,60 @@ public class ColumnsManager implements IColumnsManager {
 		return transcodeRows(transcodingContext, tabularRecordStream, postFilter);
 	}
 
-	/**
-	 * Returns {@code true} when at least one groupBy in the query contains a {@link FunctionCalculatedColumn}.
-	 *
-	 * <p>
-	 * Such columns must be processed in their own {@link AliasingContext}: if merged into a single context together
-	 * with regular {@link ReferencedColumn} groupBys, {@link #evaluateCalculated} would stamp the computed coordinate
-	 * onto rows that came from a different groupBy, corrupting real column values.
-	 */
-	protected boolean hasFunctionCalculatedColumnInGroupBy(TableQueryV4 query) {
-		return query.getGroupByToAggregators()
-				.keySet()
-				.stream()
-				.flatMap(gb -> gb.getNameToColumn().values().stream())
-				.anyMatch(c -> c instanceof FunctionCalculatedColumn);
-	}
+	// /**
+	// * Returns {@code true} when at least one groupBy in the query contains a {@link FunctionCalculatedColumn}.
+	// *
+	// * <p>
+	// * Such columns must be processed in their own {@link AliasingContext}: if merged into a single context together
+	// * with regular {@link ReferencedColumn} groupBys, {@link #evaluateCalculated} would stamp the computed coordinate
+	// * onto rows that came from a different groupBy, corrupting real column values.
+	// */
+	// protected boolean hasFunctionCalculatedColumnInGroupBy(TableQueryV4 query) {
+	// return query.getGroupByToAggregators()
+	// .keySet()
+	// .stream()
+	// .flatMap(gb -> gb.getNameToColumn().values().stream())
+	// .anyMatch(c -> c instanceof FunctionCalculatedColumn);
+	// }
 
-	/**
-	 * Processes each groupBy in the query as an independent single-groupBy {@link TableQueryV4}, giving it its own
-	 * {@link AliasingContext}, and merges the resulting streams. Used when any groupBy contains a
-	 * {@link FunctionCalculatedColumn} and there are multiple groupBys.
-	 */
-	protected ITabularRecordStream openTableStreamPerGroupBy(QueryPod queryPod, TableQueryV4 query) {
-		List<ITabularRecordStream> subStreams =
-				Multimaps.asMap(query.getGroupByToAggregators()).entrySet().stream().map(e -> {
-					TableQueryV4 subQuery = query.toBuilder()
-							.clearGroupByToAggregators()
-							.groupByToAggregators(e.getKey(), e.getValue())
-							.build();
-					return openTableStream(queryPod, subQuery);
-				}).toList();
-
-		return new ITabularRecordStream() {
-
-			@Override
-			public Stream<ITabularRecord> records() {
-				return subStreams.stream().flatMap(ITabularRecordStream::records);
-			}
-
-			@Override
-			public boolean isDistinctSlices() {
-				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return query;
-			}
-
-			@Override
-			public void close() {
-				subStreams.forEach(ITabularRecordStream::close);
-			}
-		};
-	}
+	// /**
+	// * Processes each groupBy in the query as an independent single-groupBy {@link TableQueryV4}, giving it its own
+	// * {@link AliasingContext}, and merges the resulting streams. Used when any groupBy contains a
+	// * {@link FunctionCalculatedColumn} and there are multiple groupBys.
+	// */
+	// protected ITabularRecordStream openTableStreamPerGroupBy(QueryPod queryPod, TableQueryV4 query) {
+	// List<ITabularRecordStream> subStreams =
+	// Multimaps.asMap(query.getGroupByToAggregators()).entrySet().stream().map(e -> {
+	// TableQueryV4 subQuery = query.toBuilder()
+	// .clearGroupByToAggregators()
+	// .groupByToAggregators(e.getKey(), e.getValue())
+	// .build();
+	// return openTableStream(queryPod, subQuery);
+	// }).toList();
+	//
+	// return new ITabularRecordStream() {
+	//
+	// @Override
+	// public Stream<ITabularRecord> records() {
+	// return subStreams.stream().flatMap(ITabularRecordStream::records);
+	// }
+	//
+	// @Override
+	// public boolean isDistinctSlices() {
+	// return false;
+	// }
+	//
+	// @Override
+	// public Object getTableQuery() {
+	// return query;
+	// }
+	//
+	// @Override
+	// public void close() {
+	// subStreams.forEach(ITabularRecordStream::close);
+	// }
+	// };
+	// }
 
 	protected Set<String> getFiltrableCalculatedColumns(TableQueryV4 query) {
 		// Calculated columns from ColumnsManager (static definitions)
@@ -407,13 +411,16 @@ public class ColumnsManager implements IColumnsManager {
 
 		Map<String, Object> computed = new LinkedHashMap<>();
 
+		GroupByColumnsBuilder groupByWithCalculated =
+				GroupByColumns.builder().columns(row.getGroupBy().getNameToColumn().values());
 		columns.forEach((columnName, column) -> {
 			// TODO handle recursive formulas (e.g. a formula relying on another formula)
 			computed.put(columnName, column.computeCoordinate(row));
+			groupByWithCalculated.column(column);
 		});
 
 		return TabularRecordOverMaps.builder()
-				.slice(row.getSlice().addColumns(computed))
+				.slice(groupByWithCalculated.build(), row.asSlice().addColumns(computed))
 				.aggregates(row.aggregatesAsMap())
 				.build();
 	}

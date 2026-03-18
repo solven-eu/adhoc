@@ -22,13 +22,10 @@
  */
 package eu.solven.adhoc.data.row.slice;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -82,36 +79,19 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		return asMap.isEmpty();
 	}
 
-//	@Override
-//	public Set<String> columnsKeySet() {
-//		return asMap.keySet();
-//	}
-//
-//	@Override
-//	public Object getGroupBy(String column) {
-//		if (asMap.containsKey(column)) {
-//			return explicitNull(asMap.get(column));
-//		} else {
-//			throw new IllegalArgumentException(
-//					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
-//		}
-//	}
+	@Override
+	public Object getGroupBy(String column) {
+		if (asAdhocMap().containsKey(column)) {
+			return explicitNull(asAdhocMap().get(column));
+		} else {
+			throw new IllegalArgumentException(
+					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
+		}
+	}
 
 	@Override
 	public Optional<Object> optGroupBy(String column) {
 		return Optional.ofNullable(explicitNull(asMap.get(column)));
-	}
-
-	@Override
-	public Map<String, ?> optGroupBy(Set<String> columns) {
-		// Keep requested columns ordering
-		Map<String, Object> filters = new LinkedHashMap<>();
-
-		columns.forEach(column -> {
-			optGroupBy(column).ifPresent(v -> filters.put(column, v));
-		});
-
-		return filters;
 	}
 
 	@Override
@@ -180,7 +160,7 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	public IAdhocSlice addColumns(Map<String, ?> mask) {
 		if (mask.isEmpty()) {
 			return this;
-		} else if (!Sets.intersection(mask.keySet(), columnsKeySet()).isEmpty()) {
+		} else if (!Sets.intersection(mask.keySet(), asAdhocMap().keySet()).isEmpty()) {
 			throw new IllegalArgumentException("Conflicting key between slice=%s and mask=%s".formatted(this, mask));
 		} else {
 			// This branch has to be optimized as we tend to generate large number of slice with such masked columns
@@ -188,11 +168,33 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		}
 	}
 
-	@Override
-	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
-		asMap.forEach(action);
-	}
-
+	// /**
+	// * @param groupBy
+	// * @param tableRecord
+	// * @return the coordinate for given input.
+	// */
+	// protected IAdhocSlice makeCoordinate(SequencedSetLikeList groupBy, ITabularRecord tableRecord) {
+	// if (groupBy.isEmpty()) {
+	// return SliceHelpers.grandTotal();
+	// }
+	//
+	// // BEWARE This order may differ from tableSlice due to calculatedColumns
+	// // NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
+	//
+	// if (
+	// // groupBy.asList().equals(tableSlice.columnsKeySet()) Iterables.elementsEqual(tableSlice.columnsKeySet(),
+	// // groupedByColumns)
+	// groupBy.size() == tableRecord.columnsKeySet().size()) {
+	// // BEWARE Could we have same size but different columns?
+	// // In most cases, the tableSlice should have same columns as requested by the groupBy
+	// return tableRecord.asSlice();
+	// } else {
+	// // In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
+	// // or in a different order (What would be the impact of different order else still relevant columns?).
+	// return tableRecord.asSlice().retainAll(groupBy.sortedSet());
+	// }
+	// }
+	//
 	@Override
 	public IAdhocSlice retainAll(NavigableSet<String> columns) {
 		return AdhocMapHelpers.fromMap(factory, asMap.retainAll(columns)).asSlice();

@@ -23,9 +23,11 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -45,7 +47,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.column.FunctionCalculatedColumn;
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -118,7 +120,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 // https://math.stackexchange.com/questions/2966359/how-to-calculate-cost-in-discrete-markov-transitions
 public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapped {
 
@@ -332,75 +334,109 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return stepToValues;
 	}
 
-	/**
-	 * Returns {@code true} when the query has multiple groupBys and at least one of them contains a
-	 * {@link FunctionCalculatedColumn}. In that case the groupBys share the same {@code getGroupedByColumns()} set,
-	 * which makes {@link TableQueryV4#getAggregators(Set)} ambiguous — each groupBy must be processed through its own
-	 * independent pipeline.
-	 */
-	protected boolean requiresPerGroupByProcessing(TableQueryV4 tableQuery) {
-		if (tableQuery.getGroupByToAggregators().keySet().size() <= 1) {
-			return false;
-		}
-		return tableQuery.getGroupByToAggregators()
-				.keySet()
-				.stream()
-				.flatMap(gb -> gb.getNameToColumn().values().stream())
-				.anyMatch(FunctionCalculatedColumn.class::isInstance);
-	}
-
-	/**
-	 * Processes each groupBy in the query as an independent single-groupBy pipeline (stream + aggregation), then merges
-	 * the results. Used when {@link #requiresPerGroupByProcessing} returns {@code true}.
-	 */
-	protected Map<CubeQueryStep, ICuboid> processPerGroupBy(ISinkExecutionFeedback sinkExecutionFeedback,
-			IHasTableQueryForSteps tableQueries,
-			TableQueryV4 tableQuery) {
-		Map<CubeQueryStep, ICuboid> result = new LinkedHashMap<>();
-		Multimaps.asMap(tableQuery.getGroupByToAggregators()).forEach((groupBy, aggregators) -> {
-			TableQueryV4 subQuery = tableQuery.toBuilder()
-					.clearGroupByToAggregators()
-					.groupByToAggregators(groupBy, aggregators)
-					.build();
-			result.putAll(processOneTableQueryV4(sinkExecutionFeedback, tableQueries, subQuery));
-		});
-		return result;
-	}
-
 	protected Map<CubeQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
 			TableQueryV4 tableQuery) {
-		if (requiresPerGroupByProcessing(tableQuery) && false) {
-			return processPerGroupBy(sinkExecutionFeedback, tableQueries, tableQuery);
-		}
+		List<TableQueryV4> nonAmbiguousQueries = splitForNonAmbiguousColumns(tableQuery);
 
-		IStopwatch stopWatchSinking;
-		Map<CubeQueryStep, ICuboid> stepToValues;
+		Map<CubeQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
 
-		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
-		// Open the stream: the table may or may not return after the actual execution
-		try (ITabularRecordStream rowsStream = openTableStream(tableQuery)) {
-			if (queryPod.isDebugOrExplain()) {
-				// JooQ may be slow to load some classes
-				// Slowness also due to fetching stream characteristics, which actually open the query
-				Duration openingElasped = openingStopwatch.elapsed();
-				eventBus.post(AdhocLogEvent.builder()
-						.debug(queryPod.isDebug())
-						.explain(queryPod.isExplain())
-						.performance(true)
-						.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, tableQuery))
-						.source(this)
-						.build());
+		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
+			IStopwatch stopWatchSinking;
+			Map<CubeQueryStep, ICuboid> stepToValues;
+
+			IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
+			// Open the stream: the table may or may not return after the actual execution
+			try (ITabularRecordStream rowsStream = openTableStream(nonAmbiguousQuery)) {
+				if (queryPod.isDebugOrExplain()) {
+					// JooQ may be slow to load some classes
+					// Slowness also due to fetching stream characteristics, which actually open the query
+					Duration openingElasped = openingStopwatch.elapsed();
+					eventBus.post(AdhocLogEvent.builder()
+							.debug(queryPod.isDebug())
+							.explain(queryPod.isExplain())
+							.performance(true)
+							.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, nonAmbiguousQuery))
+							.source(this)
+							.build());
+				}
+
+				stopWatchSinking = factories.getStopwatchFactory().createStarted();
+				stepToValues = aggregateStreamToAggregates(tableQueries, nonAmbiguousQuery, rowsStream);
 			}
 
-			stopWatchSinking = factories.getStopwatchFactory().createStarted();
-			stepToValues = aggregateStreamToAggregates(tableQueries, tableQuery, rowsStream);
+			Duration elapsed = stopWatchSinking.elapsed();
+			reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+
+			allStepToValues.putAll(stepToValues);
+		});
+		return allStepToValues;
+	}
+
+	/**
+	 * Relevant for ICalculatedColumn, as we must different between a referencedColumn and a calculated column even if
+	 * they have the same name.
+	 * 
+	 * @param tableQuery
+	 * @return
+	 */
+	protected List<TableQueryV4> splitForNonAmbiguousColumns(TableQueryV4 tableQuery) {
+		SetMultimap<String, IAdhocColumn> nameToColumns =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		tableQuery.getGroupBys().forEach(gb -> {
+			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+		});
+
+		if (nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1)) {
+			// Not a single conflicting column
+			return List.of(tableQuery);
 		}
 
-		Duration elapsed = stopWatchSinking.elapsed();
-		reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+		// TODO We have to reason to believe we may end in this case in, sometimes, not legitimate case
+		// Typically, if `c` is computed, the actual groupBy should not have `c` in groupBy while it seems to persist
+		List<TableQueryV4> split = new ArrayList<>();
 
-		return stepToValues;
+		SetMultimap<IGroupBy, FilteredAggregator> leftToAdd =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		leftToAdd.putAll(tableQuery.getGroupByToAggregators());
+
+		while (!leftToAdd.isEmpty()) {
+			SetMultimap<IGroupBy, FilteredAggregator> nextQuery =
+					MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+
+			leftToAdd.forEach((groupBy, aggregators) -> {
+				if (noAmbiguity(nextQuery.keySet(), groupBy)) {
+					nextQuery.put(groupBy, aggregators);
+				}
+			});
+
+			if (nextQuery.isEmpty()) {
+				throw new IllegalStateException("Should not be empty given %s".formatted(leftToAdd));
+			}
+
+			leftToAdd.keySet().removeAll(nextQuery.keySet());
+			split.add(tableQuery.toBuilder().clearGroupByToAggregators().groupByToAggregators(nextQuery).build());
+		}
+
+		if (tableQuery.isDebugOrExplain()) {
+			log.info("[EXPLAIN] Ambiguities in columnNames led to split into {} queries: (original={} split={})",
+					split.size(),
+					tableQuery,
+					split);
+		}
+
+		return split;
+	}
+
+	protected boolean noAmbiguity(Set<IGroupBy> accepted, IGroupBy candidate) {
+		SetMultimap<String, IAdhocColumn> nameToColumns =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		accepted.forEach(gb -> {
+			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+		});
+		nameToColumns.putAll(Multimaps.forMap(candidate.getNameToColumn()));
+
+		return nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1);
 	}
 
 	// `InsufficientStringBufferDeclaration`: Unclear if we prefer a MagicNumber
@@ -424,6 +460,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			sb.append(" GROUP BY ").append(groupBy);
 		} else {
+			// TODO tableQueryV3 is NOT a GROUPING SET but rather a UNION ALL
 			String groupByClause = tableQuery.getGroupBys()
 					.stream()
 					.map(IGroupBy::toString)

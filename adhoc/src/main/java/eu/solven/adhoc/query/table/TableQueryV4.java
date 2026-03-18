@@ -253,18 +253,8 @@ public class TableQueryV4 implements ITableQuery {
 		return Optional.empty();
 	}
 
-	public Set<FilteredAggregator> getAggregators(Set<String> groupedBy) {
-		List<IGroupBy> matchingGroupBy = groupByToAggregators.keySet()
-				.stream()
-				.filter(gb -> gb.getGroupedByColumns().equals(groupedBy))
-				.toList();
-
-		if (matchingGroupBy.size() >= 2) {
-			// May happen with ICalculatedColumns
-			throw new IllegalStateException(
-					"Multiple groupBys matches columns=%s: %s".formatted(groupedBy, matchingGroupBy));
-		}
-		return matchingGroupBy.stream().findAny().map(groupByToAggregators::get).orElse(ImmutableSet.of());
+	public Set<FilteredAggregator> getAggregators(IGroupBy groupBy) {
+		return groupByToAggregators.get(groupBy);
 	}
 
 	public ImmutableSet<FilteredAggregator> getAggregators() {

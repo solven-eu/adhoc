@@ -50,6 +50,8 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import lombok.Builder;
@@ -73,9 +75,12 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod, QueryWithLeftover sqlQuery) {
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
+			QueryWithLeftover sqlQuery) {
 		return sqlQuery.getQueries().stream().flatMap(oneQuery -> {
-			ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery, oneQuery);
+			ITabularRecordFactory tabularRecordFactory =
+					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toBigQueryStream(queryPod, oneQuery, tabularRecordFactory);
 		});
 	}
@@ -176,7 +181,11 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 			}
 		}
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(slice.build().asSlice()).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(aggregates)
+				// TODO Should refer some input groupBy
+				.slice(GroupByColumns.named(groupedByColumns), slice.build().asSlice())
+				.build();
 	}
 
 	@Override
