@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import lombok.NonNull;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
@@ -41,7 +40,6 @@ import tools.jackson.databind.annotation.JsonDeserialize;
  *
  */
 @JsonDeserialize(as = GroupByColumns.class)
-@FunctionalInterface
 public interface IGroupBy {
 	IGroupBy GRAND_TOTAL = GroupByColumns.grandTotal();
 
@@ -74,12 +72,5 @@ public interface IGroupBy {
 	@JsonIgnore
 	NavigableMap<String, IAdhocColumn> getNameToColumn();
 
-	@NonNull
-	default IGroupBy retainAll(Set<String> columns) {
-		if (columns.isEmpty()) {
-			return GRAND_TOTAL;
-		}
-		return GroupByColumns
-				.of(this.getNameToColumn().values().stream().filter(c -> columns.contains(c.getName())).toList());
-	}
+	IGroupBy retainAll(Set<String> columns);
 }

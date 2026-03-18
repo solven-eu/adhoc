@@ -168,33 +168,6 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 		}
 	}
 
-	// /**
-	// * @param groupBy
-	// * @param tableRecord
-	// * @return the coordinate for given input.
-	// */
-	// protected IAdhocSlice makeCoordinate(SequencedSetLikeList groupBy, ITabularRecord tableRecord) {
-	// if (groupBy.isEmpty()) {
-	// return SliceHelpers.grandTotal();
-	// }
-	//
-	// // BEWARE This order may differ from tableSlice due to calculatedColumns
-	// // NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
-	//
-	// if (
-	// // groupBy.asList().equals(tableSlice.columnsKeySet()) Iterables.elementsEqual(tableSlice.columnsKeySet(),
-	// // groupedByColumns)
-	// groupBy.size() == tableRecord.columnsKeySet().size()) {
-	// // BEWARE Could we have same size but different columns?
-	// // In most cases, the tableSlice should have same columns as requested by the groupBy
-	// return tableRecord.asSlice();
-	// } else {
-	// // In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
-	// // or in a different order (What would be the impact of different order else still relevant columns?).
-	// return tableRecord.asSlice().retainAll(groupBy.sortedSet());
-	// }
-	// }
-	//
 	@Override
 	public IAdhocSlice retainAll(NavigableSet<String> columns) {
 		return AdhocMapHelpers.fromMap(factory, asMap.retainAll(columns)).asSlice();

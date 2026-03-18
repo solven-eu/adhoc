@@ -28,6 +28,8 @@ import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.map.factory.AbstractAdhocMap.RetainedKeySet;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 import lombok.NonNull;
@@ -91,7 +93,16 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 
 	@Override
 	public IAdhocMap retainAll(Set<String> retainedColumns) {
+		if (retainedColumns.isEmpty()) {
+			return SliceHelpers.grandTotal().asAdhocMap();
+		}
+
 		RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
+
+		if (this.sequencedKeys.equals(retainedKeyset.getKeys())) {
+			// In many cases, we retain all columns
+			return this;
+		}
 
 		int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();
 		IntFunction<Object> retainedSequencedValues;

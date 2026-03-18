@@ -57,8 +57,7 @@ public interface ITableStepsGrouper {
 	 * @return a partition of {@code inducers}; every inducer must appear in exactly one group
 	 */
 	default Collection<? extends Set<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
-		// Multimaps.toMultimap(this::tableQueryGroupBy, Function.identity(), () ->
-		// MultimapBuilder.linkedHashKeys().hashSetValues().build())
+		// TODO Introduce some AdhocStreams.groupingBy, with nice defaults (LinkedHashMap, ImmutableSet)
 		return inducers.stream()
 				.collect(Collectors
 						.groupingBy(this::tableQueryGroupBy, LinkedHashMap::new, ImmutableSet.toImmutableSet()))

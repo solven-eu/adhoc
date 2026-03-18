@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -63,7 +64,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-@EqualsAndHashCode(exclude = "cachedNameToColumn")
+@EqualsAndHashCode(exclude = { "cachedNameToColumn", "retainedToGroupBy" })
 public class GroupByColumns implements IGroupBy {
 	// Set as not ordered
 	@Singular
@@ -74,6 +75,10 @@ public class GroupByColumns implements IGroupBy {
 	@JsonIgnore
 	final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn =
 			Suppliers.memoize(() -> namedColumns(getColumns()));
+
+	// Used a cache as this may be called once per ITabularRecord
+	@JsonIgnore
+	final Map<Set<String>, IGroupBy> retainedToGroupBy = new ConcurrentHashMap<>();
 
 	@Override
 	public String toString() {
@@ -159,6 +164,24 @@ public class GroupByColumns implements IGroupBy {
 			return "\"" + name + "\"";
 		}
 		return name;
+	}
+
+	@Override
+	public @NonNull IGroupBy retainAll(Set<String> columns) {
+		if (columns.isEmpty() || columns.isEmpty()) {
+			return GRAND_TOTAL;
+		}
+
+		return retainedToGroupBy.computeIfAbsent(columns, ks -> {
+			List<IAdhocColumn> retainedColumns =
+					getNameToColumn().values().stream().filter(c -> columns.contains(c.getName())).toList();
+
+			if (retainedColumns.size() == this.columns.size()) {
+				return this;
+			}
+
+			return GroupByColumns.of(retainedColumns);
+		});
 	}
 
 	public static IGroupBy mergeNonAmbiguous(Set<IGroupBy> groupBys) {

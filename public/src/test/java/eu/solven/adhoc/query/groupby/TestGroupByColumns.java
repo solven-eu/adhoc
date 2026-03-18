@@ -40,7 +40,9 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestGroupByColumns {
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn").verify();
+		EqualsVerifier.forClass(GroupByColumns.class)
+				.withIgnoredFields("cachedNameToColumn", "retainedToGroupBy")
+				.verify();
 	}
 
 	@Test
@@ -103,10 +105,12 @@ public class TestGroupByColumns {
 
 	@Test
 	public void retainAll() {
-		IGroupBy groupBy = GroupByColumns.named("a", "b", "a");
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
 
 		Assertions.assertThat(groupBy.retainAll(ImmutableSortedSet.of())).isEqualTo(GroupByColumns.grandTotal());
 		Assertions.assertThat(groupBy.retainAll(ImmutableSortedSet.of("a"))).isEqualTo(GroupByColumns.named("a"));
+
+		Assertions.assertThat(groupBy.retainAll(ImmutableSortedSet.of("a", "b"))).isSameAs(groupBy);
 	}
 
 	@Test

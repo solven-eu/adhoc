@@ -35,7 +35,8 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.AdhocMapUnsafe;
 
-public class TestColumnarSliceFactory {
+public class TestColumnSliceFactory {
+
 	ColumnSliceFactory factory = ColumnSliceFactory.builder().build();
 
 	@Test
@@ -47,6 +48,9 @@ public class TestColumnarSliceFactory {
 
 		IAdhocMap onlyB = aAndB.retainAll(ImmutableSet.of("b"));
 		Assertions.assertThat((Map) onlyB).isEqualTo(Map.of("b", "b1")).hasSameHashCodeAs(Map.of("b", "b1"));
+
+		IAdhocMap retainAll = aAndB.retainAll(ImmutableSet.of("a", "b"));
+		Assertions.assertThat((Map) retainAll).isSameAs(aAndB);
 	}
 
 	@Test
