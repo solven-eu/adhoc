@@ -71,9 +71,9 @@ public class MapOverLists extends AbstractAdhocMap {
 		if (retainedColumns.isEmpty()) {
 			return SliceHelpers.grandTotal().asAdhocMap();
 		}
-		
+
 		RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
-		
+
 		if (this.sequencedKeys.equals(retainedKeyset.getKeys())) {
 			// In many cases, we retain all columns
 			return this;

@@ -29,7 +29,6 @@ import java.util.function.IntSupplier;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.SliceHelpers;
-import eu.solven.adhoc.map.factory.AbstractAdhocMap.RetainedKeySet;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 import lombok.NonNull;

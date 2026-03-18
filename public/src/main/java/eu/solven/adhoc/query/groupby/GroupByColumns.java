@@ -168,7 +168,7 @@ public class GroupByColumns implements IGroupBy {
 
 	@Override
 	public @NonNull IGroupBy retainAll(Set<String> columns) {
-		if (columns.isEmpty() || columns.isEmpty()) {
+		if (this.columns.isEmpty() || columns.isEmpty()) {
 			return GRAND_TOTAL;
 		}
 
@@ -180,7 +180,7 @@ public class GroupByColumns implements IGroupBy {
 				return this;
 			}
 
-			return GroupByColumns.of(retainedColumns);
+			return of(retainedColumns);
 		});
 	}
 
