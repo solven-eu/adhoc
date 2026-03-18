@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -39,7 +40,6 @@ import tools.jackson.databind.annotation.JsonDeserialize;
  *
  */
 @JsonDeserialize(as = GroupByColumns.class)
-@FunctionalInterface
 public interface IGroupBy {
 	IGroupBy GRAND_TOTAL = GroupByColumns.grandTotal();
 
@@ -71,4 +71,6 @@ public interface IGroupBy {
 	// @JsonIgnore as only the columns would be serialized. (name->column) is syntactic sugar.
 	@JsonIgnore
 	NavigableMap<String, IAdhocColumn> getNameToColumn();
+
+	IGroupBy retainAll(Set<String> columns);
 }

@@ -33,6 +33,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.util.concurrent.Futures;
 
 import eu.solven.adhoc.data.column.ICuboid;
@@ -45,8 +46,9 @@ import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +59,6 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 
 	@Test
 	public void testConcurrentTableQueries() throws InterruptedException {
-
 		ITableWrapper tableWrapper = Mockito.mock(ITableWrapper.class);
 		Mockito.when(tableWrapper.getName()).thenReturn("someTableName");
 
@@ -80,19 +81,21 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 			cdl.await();
 
 			return ITabularRecordStream.empty();
-		}).when(tableWrapper).streamSlices(Mockito.eq(queryPod), Mockito.any(TableQueryV3.class));
+		}).when(tableWrapper).streamSlices(Mockito.eq(queryPod), Mockito.any(TableQueryV4.class));
 
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
 			SplitTableQueries split = SplitTableQueries.builder()
 					.inducedToInducer(new DirectedAcyclicGraph<CubeQueryStep, DefaultEdge>(DefaultEdge.class))
 					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("a")).build(),
-							TableQueryV3.builder()
-									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build())
+							TableQueryV4.builder()
+									.groupByToAggregators(ImmutableSetMultimap.of(IGroupBy.GRAND_TOTAL,
+											FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build()))
 									.build())
 					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("b")).build(),
-							TableQueryV3.builder()
-									.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build())
+							TableQueryV4.builder()
+									.groupByToAggregators(ImmutableSetMultimap.of(IGroupBy.GRAND_TOTAL,
+											FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build()))
 									.build())
 					.build();
 

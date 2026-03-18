@@ -22,10 +22,12 @@
  */
 package eu.solven.adhoc.engine.step;
 
+import java.util.Optional;
 import java.util.Set;
 
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
@@ -52,6 +54,15 @@ public interface ISliceReader {
 	 * @return a perfectly matching {@link IValueMatcher} for given column.
 	 */
 	IValueMatcher getValueMatcher(String column);
+
+	default <T> T extractCoordinate(String column, Class<? extends T> clazz) {
+		return EqualsMatcher.extractOperand(getValueMatcher(column), clazz)
+				.orElseThrow(() -> new IllegalStateException("No operand for column=%s".formatted(column)));
+	}
+
+	default <T> Optional<T> extractCoordinateLax(String column, Class<? extends T> clazz) {
+		return EqualsMatcher.extractOperand(getValueMatcherLax(column), clazz);
+	}
 
 	/**
 	 * Follows the semantic of {@link FilterHelpers#getValueMatcherLax(ISliceFilter, String)}.

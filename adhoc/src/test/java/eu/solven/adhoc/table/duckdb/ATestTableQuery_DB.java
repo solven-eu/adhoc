@@ -37,6 +37,8 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
@@ -801,5 +803,32 @@ public abstract class ATestTableQuery_DB extends AJooqTest implements IAdhocTest
 				.containsEntry(Map.of(),
 						Map.of(k1Sum.getName(), 0D + 123 + 234 + 345, k1SumFiltered.getName(), 0D + 123 + 234))
 				.hasSize(1);
+	}
+
+	@Test
+	public void testGroupingSet() {
+		dsl.createTableIfNotExists(tableName)
+				.column("a", SQLDataType.VARCHAR)
+				.column("k1", SQLDataType.INTEGER)
+				.column("k2", SQLDataType.INTEGER)
+				.execute();
+		dsl.insertInto(DSL.table(tableName)).values("a1", 123, 12).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 13, 234).execute();
+		dsl.insertInto(DSL.table(tableName)).values("a2", 14, 345).execute();
+
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
+		forest.addMeasure(sum_MaxK1K2ByA);
+
+		ITabularView result = cube()
+				.execute(CubeQuery.builder().measure(k1Sum.getName(), sum_MaxK1K2ByA.getName()).explain(true).build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat((Map) mapBased.getCoordinatesToValues())
+				.containsEntry(Map.of(),
+						ImmutableMap.builder()
+								.put(k1Sum.getName(), 0L + 123 + 13 + 14)
+								.put(sum_MaxK1K2ByA.getName(), 0L + 123 + 234 + 345)
+								.build());
 	}
 }

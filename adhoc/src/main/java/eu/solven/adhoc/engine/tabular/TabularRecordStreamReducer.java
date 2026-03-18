@@ -22,12 +22,16 @@
  */
 package eu.solven.adhoc.engine.tabular;
 
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
@@ -39,9 +43,9 @@ import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.groupingset.GroupingSetMergeableGrid;
 import eu.solven.adhoc.engine.tabular.groupingset.IGroupingSetAnalyzer;
+import eu.solven.adhoc.engine.tabular.groupingset.IGroupingSetAnalyzer.GroupByMarker;
 import eu.solven.adhoc.engine.tabular.groupingset.UniqueGroupingSetAnalyzer;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -51,7 +55,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -76,7 +80,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	QueryPod queryPod;
 	@NonNull
-	TableQueryV3 tableQuery;
+	TableQueryV4 tableQuery;
 
 	protected IMultitypeMergeableGrid<IAdhocSlice> makeAggregatingMeasures(ITabularRecordStream stream) {
 
@@ -99,21 +103,26 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	protected IGroupingSetAnalyzer makeGroupingSetAnalyzer() {
 		Optional<IGroupBy> singleGroupBy = tableQuery.singleGroupBy();
 		if (singleGroupBy.isPresent()) {
-			NavigableSet<String> groupedByColumns = singleGroupBy.get().getGroupedByColumns();
-			SequencedSetLikeList sequencedKeyset = queryPod.getSliceFactory().internKeyset(groupedByColumns);
-			return UniqueGroupingSetAnalyzer.builder().sequencedKeyset(sequencedKeyset).build();
+			IGroupBy groupBy = singleGroupBy.get();
+			NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
+			SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
+			return UniqueGroupingSetAnalyzer.builder()
+					.sequencedKeyset(new GroupByMarker(groupBy, sequencedKeyset))
+					.build();
 		} else {
-			return r -> {
-				Set<String> groupedByColumns = r.getGroupBys().columnsKeySet();
-				return queryPod.getSliceFactory().internKeyset(groupedByColumns);
-			};
+			Map<Set<String>, GroupByMarker> columnsToMarker =
+					tableQuery.getGroupBys().stream().collect(Collectors.toMap(IGroupBy::getGroupedByColumns, gb -> {
+						Set<String> groupedByColumns = gb.getGroupedByColumns();
+						SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
+						return new GroupByMarker(gb, sequencedKeyset);
+					}));
+
+			return r -> columnsToMarker.get(r.asSlice().columnsKeySet());
 		}
 	}
 
 	@Override
 	public IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream) {
-
-		// IGroupByToGrid groupByToGrid = null;
 		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
 
 		// Useful to log on the last row, to have the number of row actually streamed
@@ -136,7 +145,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// reasonable to prefer doing as many computations in a single pass).
 			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
 				records.forEach(input -> {
-					SequencedSetLikeList sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);
+					GroupByMarker sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);
 					forEachMeasure(sequencedKeyset, input, peekOnCoordinate, grid);
 				});
 			}
@@ -144,10 +153,11 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 
-				tableQuery.getGroupBys().forEach(groupBy -> {
+				Multimaps.asMap(tableQuery.getGroupByToAggregators()).entrySet().forEach(ee -> {
+					IGroupBy groupBy = ee.getKey();
 					IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
 
-					tableQuery.getAggregators().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
+					ee.getValue().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 				});
 
 			} else {
@@ -160,24 +170,27 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		return grid;
 	}
 
-	protected void forEachMeasure(SequencedSetLikeList sequencedKeyset,
+	protected void forEachMeasure(GroupByMarker sequencedKeyset,
 			ITabularRecord tableRow,
 			BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate,
 			IMultitypeMergeableGrid<IAdhocSlice> sliceToAgg) {
-		IAdhocSlice coordinates = makeCoordinate(sequencedKeyset, tableRow);
+		// Typically useful to discard the column underlying a calculated column
+		ITabularRecord retainedRecord = tableRow.retainAll(sequencedKeyset.keySet().sortedSet());
 
-		peekOnCoordinate.accept(tableRow, coordinates);
+		IAdhocSlice slice = retainedRecord.asSlice();
 
-		IOpenedSlice openedSlice = sliceToAgg.openSlice(coordinates);
+		peekOnCoordinate.accept(tableRow, slice);
 
-		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators()) {
+		IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
+
+		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
 			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
 
 			if (queryPod.isDebug()) {
 				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));
-				log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, coordinates);
+				log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, slice);
 			}
 
 			if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
@@ -186,33 +199,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			} else {
 				tableRow.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
 			}
-		}
-	}
-
-	/**
-	 * @param groupBy
-	 * @param tableRecord
-	 * @return the coordinate for given input.
-	 */
-	protected IAdhocSlice makeCoordinate(SequencedSetLikeList groupBy, ITabularRecord tableRecord) {
-		if (groupBy.isEmpty()) {
-			return SliceHelpers.grandTotal();
-		}
-
-		// BEWARE This order may differ from tableSlice due to calculatedColumns
-		// NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
-
-		if (
-		// groupBy.asList().equals(tableSlice.columnsKeySet()) Iterables.elementsEqual(tableSlice.columnsKeySet(),
-		// groupedByColumns)
-		groupBy.size() == tableRecord.columnsKeySet().size()) {
-			// BEWARE Could we have same size but different columns?
-			// In most cases, the tableSlice should have same columns as requested by the groupBy
-			return tableRecord.getGroupBys();
-		} else {
-			// In some edge-cases (like calculatedColumns, or InMemoryTable), we may receive more columns than expected,
-			// or in a different order (What would be the impact of different order else still relevant columns?).
-			return tableRecord.getGroupBys().retainAll(groupBy.sortedSet());
 		}
 	}
 

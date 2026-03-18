@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,7 +65,7 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
@@ -121,38 +120,8 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		return compositeOnV2(queryPod, tableQuery, this::streamSlices);
-	}
-
-	public static ITabularRecordStream compositeOnV2(QueryPod queryPod,
-			TableQueryV3 tableQuery,
-			BiFunction<QueryPod, TableQueryV2, ITabularRecordStream> biConsumer) {
-		List<ITabularRecordStream> underlyings =
-				tableQuery.streamV2().map(v2 -> biConsumer.apply(queryPod, v2)).toList();
-
-		return new ITabularRecordStream() {
-
-			@Override
-			public Stream<ITabularRecord> records() {
-				return underlyings.stream().flatMap(ITabularRecordStream::records);
-			}
-
-			@Override
-			public boolean isDistinctSlices() {
-				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return tableQuery;
-			}
-
-			@Override
-			public void close() {
-				underlyings.forEach(ITabularRecordStream::close);
-			}
-		};
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
 	@Override
@@ -233,7 +202,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 				// groupBy groupedByColumns
 				Map<IAdhocSlice, Optional<ITabularRecord>> groupedAggregatedRecord =
-						stream.collect(Collectors.groupingBy(ITabularRecord::getGroupBys,
+						stream.collect(Collectors.groupingBy(ITabularRecord::asSlice,
 								LinkedHashMap::new,
 								// empty is legit as we query no measure
 								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
@@ -242,7 +211,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 						.stream()
 						.filter(e -> e.getValue().isPresent())
 						.map(e -> TabularRecordOverMaps.builder()
-								.slice(e.getKey())
+								.slice(tableQuery.getGroupBy(), e.getKey())
 								.aggregates(e.getValue().get().aggregatesAsMap())
 								.build());
 			} else {
@@ -361,7 +330,10 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 			groupByBuilder.append(value);
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(groupByBuilder.build().asSlice()).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(aggregates)
+				.slice(tableQuery.getGroupBy(), groupByBuilder.build().asSlice())
+				.build();
 	}
 
 	@Override

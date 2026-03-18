@@ -88,8 +88,8 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	@Override
-	protected IMultitypeMergeableColumn<Integer> getColumn(IAliasedAggregator aggregator) {
-		return aggregatorToAggregates.get(aggregator.getAlias());
+	protected IMultitypeMergeableColumn<Integer> getColumn(String aggregator) {
+		return aggregatorToAggregates.get(aggregator);
 	}
 
 	@Override
@@ -127,7 +127,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
-		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator);
+		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator.getAlias());
 
 		if (notFinalColumn == null) {
 			// Typically happens when a filter reject completely one of the underlying
@@ -177,10 +177,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 		sliceToIndex.object2IntEntrySet().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(entry -> {
 			int sliceIndex = entry.getIntValue();
-			Map<String, Object> aggregates = aggregatorToAggregates.keySet()
+			Map<String, String> aggregates = aggregatorToAggregates.keySet()
 					.stream()
 					.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
-							a -> IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex))));
+							a -> String.valueOf(
+									IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex)))));
 
 			sh.add(String.valueOf(entry.getKey()), aggregates);
 		});

@@ -23,9 +23,7 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.assertj.core.api.Assertions;
 import org.jgrapht.graph.DefaultEdge;
@@ -43,7 +41,7 @@ import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 
 public class TestTableQueryFactory {
 	CubeQueryStep step = CubeQueryStep.builder()
@@ -81,53 +79,50 @@ public class TestTableQueryFactory {
 
 	@Test
 	public void testProcessRelatedSteps_grandTotalAndGroupBy() {
-		Map<CubeQueryStep, TableQueryV3> output =
-				optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
-						List.of(CubeQueryStep.builder().measure(Aggregator.empty()).build(),
-								CubeQueryStep.builder()
-										.measure(Aggregator.empty())
-										.groupBy(GroupByColumns.named("c"))
-										.build()));
+		TableQueryV4 output = optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
+				List.of(CubeQueryStep.builder().measure(Aggregator.empty()).build(),
+						CubeQueryStep.builder()
+								.measure(Aggregator.empty())
+								.groupBy(GroupByColumns.named("c"))
+								.build()));
 
-		Assertions.assertThat(output).hasSize(2);
-		Assertions.assertThat(output.values().stream().collect(Collectors.toSet())).hasSize(1);
+		Assertions.assertThat(output.getGroupByToAggregators().keySet()).hasSize(2);
+		Assertions.assertThat(output.streamV3().toList()).hasSize(1);
 	}
 
 	@Test
 	public void testProcessRelatedSteps_oneCalculated() {
-		Map<CubeQueryStep, TableQueryV3> output =
-				optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
-						List.of(CubeQueryStep.builder()
-								.measure(Aggregator.empty())
-								.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
-										.column("c")
-										.calculatedCoordinate(CalculatedCoordinate.star())
-										.build()))
-								.build()));
+		TableQueryV4 output = optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
+				List.of(CubeQueryStep.builder()
+						.measure(Aggregator.empty())
+						.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+								.column("c")
+								.calculatedCoordinate(CalculatedCoordinate.star())
+								.build()))
+						.build()));
 
-		Assertions.assertThat(output).hasSize(1);
-		Assertions.assertThat(output.values().stream().collect(Collectors.toSet())).hasSize(1);
+		Assertions.assertThat(output.getGroupByToAggregators().keySet()).hasSize(1);
+		Assertions.assertThat(output.streamV3().toList()).hasSize(1);
 	}
 
 	@Test
 	public void testProcessRelatedSteps_twoCalculated() {
-		Map<CubeQueryStep, TableQueryV3> output =
-				optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
-						List.of(CubeQueryStep.builder()
-								.measure(Aggregator.empty())
-								.groupBy(GroupByColumns.of(
-										ColumnWithCalculatedCoordinates.builder()
-												.column("c")
-												.calculatedCoordinate(CalculatedCoordinate.star())
-												.build(),
-										ColumnWithCalculatedCoordinates.builder()
-												.column("d")
-												.calculatedCoordinate(CalculatedCoordinate.star())
-												.build()))
-								.build()));
+		TableQueryV4 output = optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
+				List.of(CubeQueryStep.builder()
+						.measure(Aggregator.empty())
+						.groupBy(GroupByColumns.of(
+								ColumnWithCalculatedCoordinates.builder()
+										.column("c")
+										.calculatedCoordinate(CalculatedCoordinate.star())
+										.build(),
+								ColumnWithCalculatedCoordinates.builder()
+										.column("d")
+										.calculatedCoordinate(CalculatedCoordinate.star())
+										.build()))
+						.build()));
 
-		Assertions.assertThat(output).hasSize(1);
-		Assertions.assertThat(output.values().stream().collect(Collectors.toSet())).hasSize(1);
+		Assertions.assertThat(output.getGroupByToAggregators().keySet()).hasSize(1);
+		Assertions.assertThat(output.streamV3().toList()).hasSize(1);
 	}
 
 	@Test

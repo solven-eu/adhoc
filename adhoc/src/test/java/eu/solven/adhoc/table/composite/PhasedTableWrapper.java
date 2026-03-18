@@ -39,8 +39,10 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.TableWrapperHelpers;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -121,7 +123,12 @@ public class PhasedTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
+	}
+
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		log.info("opening arriveAndAwaitAdvance() {} {}", name, phasers.opening);
 		int phase;
 		try {
@@ -163,11 +170,9 @@ public class PhasedTableWrapper implements ITableWrapper {
 						.collect(Collectors.toMap(FilteredAggregator::getAlias, a -> 1L));
 
 				return Stream.<ITabularRecord>of(TabularRecordOverMaps.builder()
-						.slice(SliceHelpers.asSlice(slice))
+						.slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(queryPod.getSliceFactory(), slice))
 						.aggregates(aggregates)
-						.build())
-				// .onClose(() -> this.close())
-				;
+						.build());
 			}
 
 			@Override

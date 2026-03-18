@@ -579,7 +579,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 						"""
 								/-- time=6ms for openingStream
 								|/- time=8ms for mergingAggregates
-								|/- time=9ms sizes=[0, 0] for sortingColumns
+								|/- time=9ms sizes=[0, 0] for toCuboids
 								\\------ time=35ms for tableQuery on SELECT k1:SUM(k1), k2:SUM(k2) WHERE b==red GROUP BY (a)
 								/-- #0 t=someTableName1 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000001)
 								|      No cost info
@@ -596,7 +596,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								Executed status=OK duration=39ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==red, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k2)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cubeElseTable=true, cube=composite))
 								/-- time=12ms for openingStream
 								|/- time=14ms for mergingAggregates
-								|/- time=15ms sizes=[0, 0] for sortingColumns
+								|/- time=15ms sizes=[0, 0] for toCuboids
 								\\------ time=65ms for tableQuery on SELECT k1:SUM(k1), k3:SUM(k3) WHERE matchNone GROUP BY (a)
 								/-- #0 t=someTableName2 id=00000000-0000-0000-0000-000000000004 (parentId=00000000-0000-0000-0000-000000000003)
 								|      No cost info
@@ -613,7 +613,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								Executed status=OK duration=75ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k1), ReferencedMeasure(ref=k3)], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=488b0235, cubeElseTable=true, cube=composite))
 								/-- time=117ms for openingStream
 								|/- time=17ms for mergingAggregates
-								|/- time=18ms sizes=[0, 0, 0] for sortingColumns
+								|/- time=18ms sizes=[0, 0, 0] for toCuboids
 								\\------ time=170ms for tableQuery on SELECT k1:SUM(k1), k2:SUM(k2), k3:SUM(k3) WHERE b==red GROUP BY (a)
 								/-- #0 t=composite id=00000000-0000-0000-0000-000000000005 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info
@@ -669,7 +669,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 						"""
 								/-- time=6ms for openingStream
 								|/- time=8ms for mergingAggregates
-								|/- time=9ms sizes=[1] for sortingColumns
+								|/- time=9ms sizes=[1] for toCuboids
 								\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) WHERE b==b1 GROUP BY (a)
 								/-- #0 t=someTableName1 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000001)
 								|      No cost info
@@ -685,7 +685,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=b==b1, groupBy=(a), measures=[ReferencedMeasure(ref=k1), Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
 								/-- time=13ms for openingStream
 								|/- time=15ms for mergingAggregates
-								|/- time=16ms sizes=[0] for sortingColumns
+								|/- time=16ms sizes=[0] for toCuboids
 								\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) WHERE matchNone GROUP BY (a)
 								/-- #0 t=someTableName2 id=00000000-0000-0000-0000-000000000004 (parentId=00000000-0000-0000-0000-000000000003)
 								|      No cost info
@@ -701,7 +701,7 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 								Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchNone, groupBy=(a), measures=[ReferencedMeasure(ref=k1), Combinator(name=k1.someTableName1.cube, tags=[], underlyings=[k1], combinationKey=COALESCE, combinationOptions={})], customMarker=JPY, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=a878012f, cubeElseTable=true, cube=composite))
 								/-- time=150ms for openingStream
 								|/- time=19ms for mergingAggregates
-								|/- time=20ms sizes=[1, 1] for sortingColumns
+								|/- time=20ms sizes=[1, 1] for toCuboids
 								\\------ time=209ms for tableQuery on SELECT k1:MAX(k1), k1.someTableName1.cube:SUM(k1) WHERE b==b1 GROUP BY (a)
 								/-- #0 t=composite id=00000000-0000-0000-0000-000000000005 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info

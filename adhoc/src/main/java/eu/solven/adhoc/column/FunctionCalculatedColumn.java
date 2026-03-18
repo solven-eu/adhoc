@@ -25,14 +25,18 @@ package eu.solven.adhoc.column;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.slice.SliceAsMap;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
@@ -57,6 +61,8 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 @Jacksonized
 public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn {
+	public static final String RECORDING_VALUE = "$ADHOC$_RECORDINGVALUE";
+
 	// The name of the evaluated column
 	@NonNull
 	String name;
@@ -114,9 +120,22 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public Object getGroupBy(String columnName) {
-			usedColumn.add(columnName);
-			return null;
+		public Object getGroupBy(String column) {
+			usedColumn.add(column);
+			return RECORDING_VALUE;
+		}
+
+		@Override
+		public Optional<Object> optGroupBy(String column) {
+			usedColumn.add(column);
+			return Optional.of(RECORDING_VALUE);
+		}
+
+		@Override
+		public Map<String, ?> optGroupBy(Set<String> columns) {
+			usedColumn.addAll(columns);
+
+			return columns.stream().collect(Collectors.toMap(Function.identity(), c -> RECORDING_VALUE));
 		}
 
 		@Override
@@ -125,7 +144,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public SliceAsMap getGroupBys() {
+		public SliceAsMap asSlice() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
 
@@ -141,6 +160,16 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 
 		@Override
 		public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+		@Override
+		public IGroupBy getGroupBy() {
+			throw new UnsupportedOperationException("Recording does not implement this");
+		}
+
+		@Override
+		public ITabularRecord retainAll(NavigableSet<String> keyset) {
 			throw new UnsupportedOperationException("Recording does not implement this");
 		}
 

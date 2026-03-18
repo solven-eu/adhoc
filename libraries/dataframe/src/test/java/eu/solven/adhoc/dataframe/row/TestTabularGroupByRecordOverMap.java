@@ -22,19 +22,84 @@
  */
 package eu.solven.adhoc.dataframe.row;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTabularGroupByRecordOverMap {
 	@Test
 	public void testToString() {
-		String asString = TabularGroupByRecordOverMap
-				.toString(TabularGroupByRecordOverMap.builder().slice(SliceHelpers.asSlice(Map.of("k", "v"))).build());
+		String asString = TabularGroupByRecordOverMap.toString(TabularGroupByRecordOverMap.builder()
+				.groupBy(GroupByColumns.named("k"))
+				.slice(SliceHelpers.asSlice(Map.of("k", "v")))
+				.build());
 
 		Assertions.assertThat(asString).isEqualTo("slice:{k=v}");
+	}
+
+	@Test
+	public void testRequireFilter_String() {
+		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
+		TabularGroupByRecordOverMap tabular =
+				TabularGroupByRecordOverMap.builder().groupBy(GroupByColumns.named("k")).slice(slice).build();
+
+		Assertions.assertThat(tabular.columnsKeySet()).containsExactly("k");
+
+		{
+			Assertions.assertThat(tabular.getGroupBy("k")).isEqualTo("v");
+			Assertions.assertThat(tabular.getGroupBy("k", Object.class)).isEqualTo("v");
+			Assertions.assertThat(tabular.getGroupBy("k", String.class)).isEqualTo("v");
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(tabular.optGroupBy("k")).contains("v");
+		}
+
+		{
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k2", Object.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k2", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(tabular.optGroupBy("k2")).isEmpty();
+		}
+	}
+
+	// @Disabled("AdhocSliceAsMap does not accept Collection sliced")
+	@Test
+	public void testRequireFilter_Collection() {
+		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", Arrays.asList("v1", "v2")));
+		TabularGroupByRecordOverMap tabular =
+				TabularGroupByRecordOverMap.builder().groupBy(GroupByColumns.named("k")).slice(slice).build();
+
+		Assertions.assertThat(tabular.columnsKeySet()).containsExactly("k");
+
+		{
+			Assertions.assertThat(tabular.getGroupBy("k")).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(tabular.getGroupBy("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(tabular.getGroupBy("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThat(tabular.getGroupBy("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k", String.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(tabular.optGroupBy("k")).contains(Arrays.asList("v1", "v2"));
+		}
+
+		{
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k2")).isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k2", Object.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThatThrownBy(() -> tabular.getGroupBy("k2", Number.class))
+					.isInstanceOf(IllegalArgumentException.class);
+			Assertions.assertThat(tabular.optGroupBy("k2")).isEmpty();
+		}
 	}
 }

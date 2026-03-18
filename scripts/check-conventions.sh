@@ -33,6 +33,12 @@ run_checker "Linked collections" "$SCRIPT_DIR/check-convention-linked.pl"
 run_checker "Guava collections"  "$SCRIPT_DIR/check-convention-guava.pl"
 run_checker "Logging"            "$SCRIPT_DIR/check-convention-logging.pl"
 
+# Informational only — always exits 0. Printed so the AI agent and reviewers can
+# see outstanding TODOs without blocking CI.
+echo "=== TODO report ==="
+perl "$SCRIPT_DIR/report-todos.pl" "${SRCDIRS[@]}"
+echo ""
+
 if [ "$total_violations" -gt 0 ]; then
     echo "Total: $total_violations convention violation(s) found across all checkers."
     exit 1

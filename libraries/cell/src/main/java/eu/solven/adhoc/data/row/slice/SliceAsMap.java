@@ -22,13 +22,10 @@
  */
 package eu.solven.adhoc.data.row.slice;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -83,14 +80,9 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	}
 
 	@Override
-	public Set<String> columnsKeySet() {
-		return asMap.keySet();
-	}
-
-	@Override
 	public Object getGroupBy(String column) {
-		if (asMap.containsKey(column)) {
-			return explicitNull(asMap.get(column));
+		if (asAdhocMap().containsKey(column)) {
+			return explicitNull(asAdhocMap().get(column));
 		} else {
 			throw new IllegalArgumentException(
 					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
@@ -100,18 +92,6 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	@Override
 	public Optional<Object> optGroupBy(String column) {
 		return Optional.ofNullable(explicitNull(asMap.get(column)));
-	}
-
-	@Override
-	public Map<String, ?> optGroupBy(Set<String> columns) {
-		// Keep requested columns ordering
-		Map<String, Object> filters = new LinkedHashMap<>();
-
-		columns.forEach(column -> {
-			optGroupBy(column).ifPresent(v -> filters.put(column, v));
-		});
-
-		return filters;
 	}
 
 	@Override
@@ -180,17 +160,12 @@ public final class SliceAsMap implements IAdhocSlice, IHasAdhocMap {
 	public IAdhocSlice addColumns(Map<String, ?> mask) {
 		if (mask.isEmpty()) {
 			return this;
-		} else if (!Sets.intersection(mask.keySet(), columnsKeySet()).isEmpty()) {
+		} else if (!Sets.intersection(mask.keySet(), asAdhocMap().keySet()).isEmpty()) {
 			throw new IllegalArgumentException("Conflicting key between slice=%s and mask=%s".formatted(this, mask));
 		} else {
 			// This branch has to be optimized as we tend to generate large number of slice with such masked columns
 			return MaskedAdhocMap.builder().decorated(asMap).mask(mask).build().asSlice();
 		}
-	}
-
-	@Override
-	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
-		asMap.forEach(action);
 	}
 
 	@Override

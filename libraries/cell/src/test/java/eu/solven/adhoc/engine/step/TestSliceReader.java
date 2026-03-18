@@ -43,6 +43,44 @@ public class TestSliceReader {
 		Assertions.assertThat(reader.getValueMatcher("b")).isEqualTo(EqualsMatcher.matchEq("b2"));
 	}
 
+	// ── extractCoordinate ────────────────────────────────────────────────────
+
+	// Nominal: column is present with an EqualsMatcher — typed value is returned.
+	@Test
+	public void testExtractCoordinate_present() {
+		SliceReader reader = SliceReader.builder()
+				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
+				.stepFilter(AndFilter.and(Map.of()))
+				.build();
+
+		String value = reader.extractCoordinate("a", String.class);
+		Assertions.assertThat(value).isEqualTo("a1");
+	}
+
+	// Column is present but the caller asks for an incompatible type — extractOperand returns empty → ISE.
+	@Test
+	public void testExtractCoordinate_wrongType() {
+		SliceReader reader = SliceReader.builder()
+				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
+				.stepFilter(AndFilter.and(Map.of()))
+				.build();
+
+		Assertions.assertThatThrownBy(() -> reader.extractCoordinate("a", Integer.class))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("a");
+	}
+
+	// Column is absent — getValueMatcher returns MATCH_ALL, not an EqualsMatcher → ISE.
+	@Test
+	public void testExtractCoordinate_absent() {
+		SliceReader reader =
+				SliceReader.builder().sliceFilter(AndFilter.and(Map.of())).stepFilter(AndFilter.and(Map.of())).build();
+
+		Assertions.assertThatThrownBy(() -> reader.extractCoordinate("missing", String.class))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("missing");
+	}
+
 	@Test
 	public void testIncompatible() {
 		SliceReader reader = SliceReader.builder()

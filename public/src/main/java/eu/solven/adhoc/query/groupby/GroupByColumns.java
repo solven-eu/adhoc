@@ -25,8 +25,11 @@ package eu.solven.adhoc.query.groupby;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -35,6 +38,9 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -58,7 +64,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-@EqualsAndHashCode(exclude = "cachedNameToColumn")
+@EqualsAndHashCode(exclude = { "cachedNameToColumn", "retainedToGroupBy" })
 public class GroupByColumns implements IGroupBy {
 	// Set as not ordered
 	@Singular
@@ -70,12 +76,17 @@ public class GroupByColumns implements IGroupBy {
 	final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn =
 			Suppliers.memoize(() -> namedColumns(getColumns()));
 
+	// Used a cache as this may be called once per ITabularRecord
+	@JsonIgnore
+	final Map<Set<String>, IGroupBy> retainedToGroupBy = new ConcurrentHashMap<>();
+
 	@Override
 	public String toString() {
 		if (isGrandTotal()) {
 			return "grandTotal";
 		}
 
+		// Order columns by name to have `.toString()` consistent with `.equals()`
 		NavigableMap<String, IAdhocColumn> nameToColumn = getNameToColumn();
 
 		if (nameToColumn.values().stream().allMatch(c -> c instanceof ReferencedColumn)) {
@@ -138,6 +149,7 @@ public class GroupByColumns implements IGroupBy {
 			} else {
 				// Typically when referencing the same column multiple times
 				// Occurs when different calculatedColumns refers to the same underlying
+				// TODO Should we throw if the multiple columns are not equals?
 				log.trace("Skip {} as it is already in the groupBy", column);
 			}
 		});
@@ -152,5 +164,40 @@ public class GroupByColumns implements IGroupBy {
 			return "\"" + name + "\"";
 		}
 		return name;
+	}
+
+	@Override
+	public @NonNull IGroupBy retainAll(Set<String> columns) {
+		if (this.columns.isEmpty() || columns.isEmpty()) {
+			return GRAND_TOTAL;
+		}
+
+		return retainedToGroupBy.computeIfAbsent(columns, ks -> {
+			List<IAdhocColumn> retainedColumns =
+					getNameToColumn().values().stream().filter(c -> columns.contains(c.getName())).toList();
+
+			if (retainedColumns.size() == this.columns.size()) {
+				return this;
+			}
+
+			return of(retainedColumns);
+		});
+	}
+
+	public static IGroupBy mergeNonAmbiguous(Set<IGroupBy> groupBys) {
+		SetMultimap<String, IAdhocColumn> nameToColumns =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		groupBys.forEach(gb -> {
+			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+		});
+
+		Optional<Map.Entry<String, Collection<IAdhocColumn>>> optFaultyEntry =
+				nameToColumns.asMap().entrySet().stream().filter(e -> e.getValue().size() >= 2).findAny();
+		optFaultyEntry.ifPresent(faultyEntry -> {
+			throw new IllegalArgumentException(
+					"Ambiguous column=%s to %s".formatted(faultyEntry.getKey(), faultyEntry.getValue()));
+		});
+
+		return of(nameToColumns.values());
 	}
 }

@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
@@ -81,8 +82,9 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 	 * Builds a {@link JooqTabularRecordFactory} that maps the first (and only) Arrow vector to an aggregate named
 	 * {@code "v"}.
 	 */
-	private JooqTabularRecordFactory makeFactory() {
+	JooqTabularRecordFactory makeFactory() {
 		return JooqTabularRecordFactory.builder()
+				.globalGroupBy(IGroupBy.GRAND_TOTAL)
 				.fields(AggregatedRecordFields.builder().aggregate("v").build())
 				.sliceFactory(RowSliceFactory.builder().build())
 				.build();

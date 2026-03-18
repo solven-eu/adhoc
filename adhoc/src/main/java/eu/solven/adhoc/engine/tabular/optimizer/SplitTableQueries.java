@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -39,7 +38,9 @@ import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -74,7 +75,7 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 	// tableWrapper and should be ignored)
 	@NonNull
 	@Singular
-	ImmutableMap<CubeQueryStep, TableQueryV3> stepToTables;
+	ImmutableMap<CubeQueryStep, TableQueryV4> stepToTables;
 
 	@NonNull
 	@Default
@@ -95,28 +96,24 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 	}
 
 	@Override
-	public Set<TableQueryV3> getTableQueries() {
+	public Set<TableQueryV4> getTableQueries() {
 		return ImmutableSet.copyOf(stepToTables.values());
 	}
 
 	@Override
-	public Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV3 query,
+	public Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV4 query,
 			IFilterOptimizer filterOptimizer) {
-		return query.getAggregators().stream().flatMap(filteredAggregator -> {
-			return query.streamGroupBy().map(groupBy -> {
-				CubeQueryStep step = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
+		return query.getGroupByToAggregators().entries().stream().map(e -> {
+			FilteredAggregator filteredAggregator = e.getValue();
+			IGroupBy groupBy = e.getKey();
+			CubeQueryStep step = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
 
-				// TODO If we were to restore customMarker into steps (e.g. if suppressed by TableQueryV3), if would
-				// probably happen around here
-
-				if (containsStep(step)) {
-					return new StepAndFilteredAggregator(filteredAggregator, step);
-				} else {
-					// TODO Should we clear some data consuming RAM?
-					log.debug("Skip step as produce by table but irrelevant for cube. step={}", step);
-					return null;
-				}
-			}).filter(Objects::nonNull);
+			if (containsStep(step)) {
+				return new StepAndFilteredAggregator(filteredAggregator, step);
+			} else {
+				log.debug("Skip step as produce by table but irrelevant for cube. step={}", step);
+				return null;
+			}
 		});
 	}
 

@@ -30,6 +30,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 import lombok.NonNull;
@@ -67,7 +68,16 @@ public class MapOverLists extends AbstractAdhocMap {
 
 	@Override
 	public IAdhocMap retainAll(Set<String> retainedColumns) {
+		if (retainedColumns.isEmpty()) {
+			return SliceHelpers.grandTotal().asAdhocMap();
+		}
+
 		RetainedKeySet retainedKeyset = retainKeyset(retainedColumns);
+
+		if (this.sequencedKeys.equals(retainedKeyset.getKeys())) {
+			// In many cases, we retain all columns
+			return this;
+		}
 
 		int[] retainedIndexes = retainedKeyset.getSequencedIndexes();
 		List<?> retainedSequencedValues = new AbstractList<>() {

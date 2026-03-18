@@ -55,7 +55,7 @@ import lombok.Value;
  */
 @Value
 @Builder(toBuilder = true)
-public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
+public class TableQuery implements IWhereGroupByQuery, ITableQuery {
 
 	@Default
 	ISliceFilter filter = ISliceFilter.MATCH_ALL;
@@ -89,6 +89,16 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 			return ImmutableSet.of(Aggregator.empty());
 		}
 		return aggregators;
+	}
+
+	@Override
+	public Set<IGroupBy> getGroupBys() {
+		return ImmutableSet.of(getGroupBy());
+	}
+
+	@Override
+	public Set<String> getGroupedByColumns() {
+		return groupBy.getGroupedByColumns();
 	}
 
 	@Deprecated(since = "use .toBuilder()", forRemoval = true)
@@ -134,5 +144,9 @@ public class TableQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQue
 		return aggregatorSteps.stream()
 				.map(step -> edit(step).aggregator((Aggregator) step.getMeasure()).build())
 				.collect(ImmutableSet.toImmutableSet());
+	}
+
+	public TableQueryV2 toV2() {
+		return TableQueryV2.edit(this).build();
 	}
 }

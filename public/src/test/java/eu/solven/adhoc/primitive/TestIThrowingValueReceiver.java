@@ -66,4 +66,30 @@ public class TestIThrowingValueReceiver {
 
 		Assertions.assertThat(list).containsExactly("foo", 123L, 12.34D);
 	}
+
+	@Test
+	public void testOnPrimitives_doThrow() throws Exception {
+		Exception rootCause = new IllegalArgumentException("Arg");
+
+		IThrowingValueReceiver receiver = new IThrowingValueReceiver() {
+
+			@Override
+			public void onObjectMayThrow(Object v) throws Exception {
+				throw rootCause;
+			}
+		};
+
+		Assertions.assertThatThrownBy(() -> receiver.onObject("foo"))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessageContaining("v=foo")
+				.hasRootCause(rootCause);
+		Assertions.assertThatThrownBy(() -> receiver.onLong(123))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessageContaining("v=123")
+				.hasRootCause(rootCause);
+		Assertions.assertThatThrownBy(() -> receiver.onDouble(12.34))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessageContaining("v=12.34")
+				.hasRootCause(rootCause);
+	}
 }

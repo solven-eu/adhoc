@@ -29,9 +29,13 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
@@ -66,6 +70,9 @@ public final class ArrowReflection {
 	static final Method GET_FIELD_VECTORS;
 	static final Method GET_OBJECT;
 
+	static final Method GET_FIELD;
+	static final Method FIELD_GET_NAME;
+
 	// VectorSchemaRoot.slice(int index, int length) creates a new root sharing the same ArrowBuf
 	// objects via reference counting. Safe to use after loadNextBatch() because the original
 	// vectors decrement the ref-count (but don't free) when they are cleared for the next batch.
@@ -93,6 +100,10 @@ public final class ArrowReflection {
 
 			Class<?> vectorClass = Class.forName("org.apache.arrow.vector.ValueVector");
 			GET_OBJECT = vectorClass.getMethod("getObject", int.class);
+			GET_FIELD = vectorClass.getMethod("getField");
+
+			Class<?> fieldClass = Class.forName("org.apache.arrow.vector.types.pojo.Field");
+			FIELD_GET_NAME = fieldClass.getMethod("getName");
 
 			Class<?> textClass = Class.forName("org.apache.arrow.vector.util.Text");
 			TEXT_GET_BYTES = textClass.getMethod("getBytes");
@@ -154,12 +165,37 @@ public final class ArrowReflection {
 
 	/**
 	 * Builds a {@link ITabularRecord} for {@code rowIndex} from the given vectors.
+	 *
+	 * <p>
+	 * Grouping-set absent columns are detected by looking for indicator vectors named {@code grouping_<col>_} (same
+	 * convention as {@code JooqTableQueryFactory.groupingAlias}): a value of {@code 0} means the column is present in
+	 * this grouping set; any other value means it is absent.
+	 *
+	 * @see eu.solven.adhoc.table.sql.JooqTableWrapper.intoTabularRecord(ITabularRecordFactory, Record)
 	 */
 	static ITabularRecord buildRecord(List<?> vectors, int rowIndex, ITabularRecordFactory factory) {
-		TabularRecordBuilder builder = factory.makeTabularRecordBuilder();
+		// Build a name→index map to allow fast lookup of grouping indicator vectors.
+		Map<String, Integer> nameToIndex = new LinkedHashMap<>();
+		for (int i = 0; i < vectors.size(); i++) {
+			nameToIndex.put(getVectorName(vectors.get(i)), i);
+		}
+
+		// Detect absent optional columns using grouping indicator vectors.
+		// A non-zero grouping indicator means the column is absent from this grouping set.
+		Set<String> absentColumns = factory.getOptionalColumns().stream().filter(c -> {
+			String indicatorName = groupingAlias(c);
+			Integer indicatorIdx = nameToIndex.get(indicatorName);
+			if (indicatorIdx == null) {
+				return false;
+			}
+			Object indicatorValue = getVectorValue(vectors, indicatorIdx, rowIndex);
+			return !Long.valueOf(0).equals(indicatorValue);
+		}).collect(ImmutableSet.toImmutableSet());
+
+		TabularRecordBuilder builder = factory.makeTabularRecordBuilder(absentColumns);
 
 		List<String> aggregates = factory.getAggregates();
-		Set<String> columns = factory.getColumns();
+		ImmutableList<String> columns = factory.getColumns().asList();
 
 		int vectorIndex = 0;
 
@@ -170,11 +206,27 @@ public final class ArrowReflection {
 			}
 		}
 
-		for (int i = 0; i < columns.size(); i++, vectorIndex++) {
+		int nbToAppend = columns.size() - absentColumns.size();
+		int nbAppended = 0;
+		for (int i = 0; i < columns.size() && nbAppended < nbToAppend; i++, vectorIndex++) {
+			String col = columns.get(i);
+			if (absentColumns.contains(col)) {
+				log.debug("Skip NULL as {} not in current GROUPING SET", col);
+				continue;
+			}
 			builder.appendGroupBy(getVectorValue(vectors, vectorIndex, rowIndex));
+			nbAppended++;
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * Returns the grouping indicator vector name for a column, matching the convention in
+	 * {@code JooqTableQueryFactory.groupingAlias}.
+	 */
+	private static String groupingAlias(String column) {
+		return "grouping_" + column.replaceAll("[\".]", "") + "_";
 	}
 
 	/**
@@ -236,5 +288,16 @@ public final class ArrowReflection {
 		}
 		default -> convertValue(value);
 		};
+	}
+
+	private static String getVectorName(Object vector) {
+		try {
+			Object field = GET_FIELD.invoke(vector);
+			return (String) FIELD_GET_NAME.invoke(field);
+		} catch (InvocationTargetException e) {
+			throw new IllegalStateException("Error getting vector field name", e.getCause());
+		} catch (IllegalAccessException e) {
+			throw new IllegalStateException("Unexpected reflection access error", e);
+		}
 	}
 }

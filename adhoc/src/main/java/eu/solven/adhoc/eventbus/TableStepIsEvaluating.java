@@ -24,7 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -41,7 +41,7 @@ import lombok.With;
 @Builder
 public class TableStepIsEvaluating implements IAdhocEvent {
 	@NonNull
-	TableQueryV3 tableQuery;
+	TableQueryV4 tableQuery;
 
 	@NonNull
 	Object source;

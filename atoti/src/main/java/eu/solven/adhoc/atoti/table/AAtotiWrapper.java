@@ -52,8 +52,9 @@ import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.InMemoryTable;
+import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Getter;
 import lombok.NonNull;
@@ -73,8 +74,8 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 	final ITableAliaser aliaser = AtotiAliaser.builder().build();
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		return InMemoryTable.compositeOnV2(queryPod, tableQuery, this::streamSlices);
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
 	@Override
@@ -130,7 +131,7 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 			slice.put(column, getColumnCoordinate(tableQuery, result, locationIndex, column));
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(SliceHelpers.asSlice(slice)).build();
+		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(slice)).build();
 	}
 
 	protected Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {

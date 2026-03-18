@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,6 +61,8 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.ICalculatedColumn;
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
@@ -72,8 +75,10 @@ import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
@@ -247,10 +252,24 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
 		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
+		} else {
+			Optional<IAdhocColumn> optInvalidColumn = tableQuery.getGroupBys()
+					.stream()
+					.flatMap(gb -> gb.getNameToColumn().values().stream())
+					.filter(c -> c instanceof ICalculatedColumn)
+					.findAny();
+			if (optInvalidColumn.isPresent()) {
+				// These should be handled by ColumnsManager, which itself call ITableWrapper
+				// BEWARE We still accept TableExpressionColumn
+				throw new IllegalArgumentException("%s are not manageable by ITableWrapper. query=%s"
+						.formatted(optInvalidColumn.get(), tableQuery));
+			}
 		}
+
+		IGroupBy mergedGroupBy = GroupByColumns.mergeNonAmbiguous(tableQuery.getGroupBys());
 
 		IJooqTableQueryFactory queryFactory = makeQueryFactory();
 
@@ -275,7 +294,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			debugResultQuery(resultQuery);
 		}
 
-		Stream<ITabularRecord> tableStream = toMapStream(queryPod, resultQuery);
+		Stream<ITabularRecord> tableStream = toMapStream(queryPod, mergedGroupBy, resultQuery);
 
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
@@ -297,7 +316,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		return resultQuery.getSQL(ParamType.INLINED);
 	}
 
-	protected boolean areDistinctSliced(TableQueryV3 tableQuery, QueryWithLeftover resultQuery) {
+	protected boolean areDistinctSliced(TableQueryV4 tableQuery, QueryWithLeftover resultQuery) {
 		if (resultQuery.getQueries().size() >= 2) {
 			// Given the groupBy, we are guaranteed to receive distinct records
 			// Clarify when partitioning breaks isDistinct
@@ -344,8 +363,10 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.build();
 	}
 
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod, QueryWithLeftover sqlQuery) {
-		Stream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, sqlQuery);
+	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
+			QueryWithLeftover sqlQuery) {
+		Stream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, mergedGroupBy, sqlQuery);
 		return tabularRecords
 				// leftover in WHERE
 				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
@@ -353,11 +374,14 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.map(row -> applyAggregatorLeftovers(sqlQuery, row));
 	}
 
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod, QueryWithLeftover sqlQuery) {
+	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
+			QueryWithLeftover sqlQuery) {
 		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
 
 		return resultQuery.stream().flatMap(oneQuery -> {
-			ITabularRecordFactory tabularRecordFactory = makeTabularRecordFactory(queryPod, sqlQuery, oneQuery);
+			ITabularRecordFactory tabularRecordFactory =
+					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toStream(queryPod, oneQuery).map(r -> intoTabularRecord(tabularRecordFactory, r));
 		});
 	}
@@ -384,14 +408,19 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				}
 			});
 
-			return TabularRecordOverMaps.builder().aggregates(aggregates).slice(row.getGroupBys()).build();
+			return TabularRecordOverMaps.builder()
+					.aggregates(aggregates)
+					.slice(row.getGroupBy(), row.asSlice())
+					.build();
 		}
 	}
 
 	protected ITabularRecordFactory makeTabularRecordFactory(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery,
 			ResultQuery<Record> oneQuery) {
 		return JooqTabularRecordFactory.builder()
+				.globalGroupBy(mergedGroupBy)
 				.fields(sqlQuery.getFields())
 				.sliceFactory(queryPod.getSliceFactory())
 				.optionalColumns(sqlQuery.getFields().getGroupingColumns())

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.table;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
@@ -31,10 +32,8 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -56,7 +55,7 @@ import lombok.Value;
 @Value
 @Builder(toBuilder = true)
 // https://blog.jooq.org/how-to-calculate-multiple-aggregate-functions-in-a-single-query/
-public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
+public class TableQueryV2 implements IWhereGroupByQuery, ITableQuery {
 
 	// a filter shared through all aggregators
 	@Default
@@ -106,5 +105,15 @@ public class TableQueryV2 implements IWhereGroupByQuery, IHasCustomMarker, IHasQ
 						.aggregator(fa.getAggregator())
 						.filter(FilterBuilder.and(getFilter(), fa.getFilter()).optimize(filterOptimizer))
 						.build());
+	}
+
+	@Override
+	public Set<IGroupBy> getGroupBys() {
+		return ImmutableSet.of(getGroupBy());
+	}
+
+	@Override
+	public Set<String> getGroupedByColumns() {
+		return groupBy.getGroupedByColumns();
 	}
 }

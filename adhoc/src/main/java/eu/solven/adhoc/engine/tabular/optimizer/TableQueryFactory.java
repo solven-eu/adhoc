@@ -29,15 +29,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
@@ -56,7 +56,7 @@ import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -97,10 +97,14 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 	@Override
 	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableSteps) {
+		if (tableSteps.isEmpty()) {
+			return SplitTableQueries.empty();
+		}
+
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
 				splitter.splitInducedAsDag(hasOptions, tableSteps);
 
-		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
+		Map<CubeQueryStep, TableQueryV4> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
 
 		SplitTableQueries splitTableQueries = SplitTableQueries.builder()
 				.explicits(tableSteps)
@@ -108,30 +112,45 @@ public class TableQueryFactory extends ATableQueryFactory {
 				.stepToTables(stepToTableQuery)
 				.build();
 
+		// Sanity checks will typically ensure the tableQueries covers all leaves inducers
 		sanityChecks(splitTableQueries);
 
 		if (hasOptions.isDebugOrExplain()) {
-			Set<TableQueryV3> tableQueries = splitTableQueries.getTableQueries();
+			Set<TableQueryV4> tableQueries = splitTableQueries.getTableQueries();
 
 			// This represents the number of CubeQueryStep evaluated by the tableQuery, amongst which a bunch are
 			// possibly useless.
 			// BEWARE If customMarker are suppressed from tableQueries, these numbers would need additional
 			// interpretations
 			long nbOutputSteps = tableQueries.stream()
-					.mapToLong(tq -> tq.getAggregators().size() * tq.streamGroupBy().count())
+					.flatMap(TableQueryV4::streamV3)
+					.mapToLong(v3 -> v3.getAggregators().size() * v3.streamGroupBy().count())
 					.sum();
 
-			log.info("[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps)",
+			// prints percent with 1 digit.
+			String percentEfficiency = asPercent(tableSteps, nbOutputSteps);
+			log.info(
+					"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
 					tableSteps.size(),
 					splitTableQueries.getInducers().size(),
 					tableQueries.size(),
-					nbOutputSteps);
+					nbOutputSteps,
+					percentEfficiency);
+
+			forEachIndexed(tableQueries, (indexQuery, tableQuery) -> {
+				log.info("[EXPLAIN] TableQuery {}/{}: {}", indexQuery, tableQueries.size(), tableQuery);
+			});
 		}
 
 		return splitTableQueries;
 	}
 
-	protected Map<CubeQueryStep, TableQueryV3> makeStepToTableQuery(Set<CubeQueryStep> tableSteps,
+	@SuppressWarnings("checkstyle:MagicNumber")
+	protected String asPercent(Set<CubeQueryStep> tableSteps, long nbOutputSteps) {
+		return "%.1f%%".formatted(100.0 * tableSteps.size() / nbOutputSteps);
+	}
+
+	protected Map<CubeQueryStep, TableQueryV4> makeStepToTableQuery(Set<CubeQueryStep> tableSteps,
 			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer) {
 		Set<CubeQueryStep> leaves = SplitTableQueries.builder()
 				.explicits(tableSteps)
@@ -141,51 +160,28 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 		Collection<? extends Collection<CubeQueryStep>> groups = grouper.groupInducers(leaves);
 
-		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
+		Map<CubeQueryStep, TableQueryV4> stepToTableQuery = new LinkedHashMap<>();
 
 		groups.forEach(group -> {
 			CubeQueryStep context = grouper.tableQueryGroupBy(group.iterator().next());
-			stepToTableQuery.putAll(processRelatedSteps(context, new ArrayList<>(group)));
+			TableQueryV4 v4 = processRelatedSteps(context, new ArrayList<>(group));
+			group.forEach(step -> stepToTableQuery.put(step, v4));
 		});
 
 		return stepToTableQuery;
 	}
 
-	protected Map<CubeQueryStep, TableQueryV3> processRelatedSteps(CubeQueryStep context, List<CubeQueryStep> steps) {
-		// BEWARE There is difficulties around GROUPING SET and calculated columns
-		// (e.g. confusion between a reference to column `c`, and a calculated column based on `c` which will actually
-		// do a grandTotal (e.g. the `*` coordinate)).
-		Map<Boolean, List<CubeQueryStep>> partitioningByCalculated = steps.stream()
-				.collect(Collectors.partitioningBy(s -> s.getGroupBy()
-						.getNameToColumn()
-						.values()
-						.stream()
-						.anyMatch(c -> !(c instanceof ReferencedColumn))));
-
-		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
-
-		// Add one tableQuery without any calculated columns
-		stepToTableQuery.putAll(processSteps(context, partitioningByCalculated.get(false)));
-
-		// Add one tableQuery per step with at least one calculated column
-		// BEWARE Should work on this necessity as it looks not legitimate and very sub-optimal
-		partitioningByCalculated.get(true).forEach(notOnlyRef -> {
-			stepToTableQuery.putAll(processSteps(context, ImmutableSet.of(notOnlyRef)));
-		});
-
-		return stepToTableQuery;
+	protected TableQueryV4 processRelatedSteps(CubeQueryStep context, List<CubeQueryStep> steps) {
+		// BEWARE Calculated columns (where a groupBy column is not a ReferencedColumn) previously required separate
+		// queries to avoid GROUPING SET issues. With TableQueryV4, streamV3() naturally gives each groupBy with a
+		// unique aggregator set its own V3 sub-query, which resolves the conflict in most cases.
+		// TODO Verify that calculated columns with the same aggregator set as a non-calculated groupBy are handled
+		// correctly by streamV3().
+		return processSteps(context, steps);
 	}
 
-	protected Map<CubeQueryStep, TableQueryV3> processSteps(CubeQueryStep context, Collection<CubeQueryStep> steps) {
-		if (steps.isEmpty()) {
-			return Map.of();
-		}
-
-		TableQueryV3 query = makeTableQuery(context, steps);
-
-		Map<CubeQueryStep, TableQueryV3> stepToTableQuery = new LinkedHashMap<>();
-		steps.forEach(step -> stepToTableQuery.put(step, query));
-		return stepToTableQuery;
+	protected TableQueryV4 processSteps(CubeQueryStep context, Collection<CubeQueryStep> steps) {
+		return makeTableQueryV4(context, steps);
 	}
 
 	/**
@@ -194,13 +190,21 @@ public class TableQueryFactory extends ATableQueryFactory {
 	 * @param inducerAndInduced
 	 */
 	protected void sanityChecks(SplitTableQueries inducerAndInduced) {
-		Set<TableQueryV3> tableQueries = inducerAndInduced.getTableQueries();
+		Set<TableQueryV4> tableQueries = inducerAndInduced.getTableQueries();
 
 		// Checks the steps from tableQueries covers the inducers
 		sanityCheckInducers(inducerAndInduced, tableQueries);
 
 		// Check inducing covers all expected steps
 		sanityCheckExplicits(inducerAndInduced);
+	}
+
+	public static <T> void forEachIndexed(Collection<T> c, Int2ObjectBiConsumer<T> consumer) {
+		int index = 0;
+		for (T one : c) {
+			index++;
+			consumer.acceptInt2Object(index, one);
+		}
 	}
 
 	protected void sanityCheckExplicits(SplitTableQueries inducerAndInduced) {
@@ -213,31 +217,23 @@ public class TableQueryFactory extends ATableQueryFactory {
 			int nbMissing = missingFromTable.size();
 			{
 				log.warn("Missing {} steps from tableQueries to fill cube DAG roots", nbMissing);
-				int indexMissing = 0;
-				for (CubeQueryStep missingStep : missingFromTable) {
-					indexMissing++;
+				forEachIndexed(missingFromTable, (indexMissing, missingStep) -> {
 					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
-				}
+				});
 			}
 
 			{
 				log.warn("requested steps (from cube DAG):");
-				int indexRequested = 0;
-				int nbRequested = requestedStepFromDag.size();
-				for (CubeQueryStep availableStep : requestedStepFromDag) {
-					indexRequested++;
-					log.warn("Requested {}/{}: {}", indexRequested, nbRequested, availableStep);
-				}
+				forEachIndexed(requestedStepFromDag, (indexRequested, availableStep) -> {
+					log.warn("Requested {}/{}: {}", indexRequested, requestedStepFromDag.size(), availableStep);
+				});
 			}
 
 			{
 				log.warn("provided steps (from tableQueries):");
-				int indexExpected = 0;
-				int nbProvided = stepsInducedFromTable.size();
-				for (CubeQueryStep availableStep : stepsInducedFromTable) {
-					indexExpected++;
-					log.warn("Provided {}/{}: {}", indexExpected, nbProvided, availableStep);
-				}
+				forEachIndexed(stepsInducedFromTable, (indexExpected, availableStep) -> {
+					log.warn("Provided {}/{}: {}", indexExpected, stepsInducedFromTable.size(), availableStep);
+				});
 			}
 
 			// Take the shorter/simpler problematic entry
@@ -276,7 +272,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 		}
 	}
 
-	protected void sanityCheckInducers(SplitTableQueries inducerAndInduced, Set<TableQueryV3> tableQueries) {
+	protected void sanityCheckInducers(SplitTableQueries inducerAndInduced, Set<TableQueryV4> tableQueries) {
 		// Holds the querySteps evaluated from the ITableWrapper
 		Set<CubeQueryStep> receivedInducerSteps = tableQueries.stream()
 				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterOptimizer))
@@ -336,6 +332,11 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 	protected CubeQueryStep suppressFilter(CubeQueryStep s) {
 		return CubeQueryStep.edit(s).filter(ISliceFilter.MATCH_ALL).build();
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this).add("grouper", grouper).add("splitter", splitter).toString();
 	}
 
 	/**

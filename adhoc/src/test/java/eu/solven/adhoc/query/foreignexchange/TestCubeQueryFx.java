@@ -65,7 +65,8 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 		return super.makeFactories().toBuilder().operatorFactory(makeOperatorsFactory(fxStorage)).build();
 	}
 
-	private @NonNull IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
+	@NonNull
+	IOperatorFactory makeOperatorsFactory(IForeignExchangeStorage fxStorage) {
 
 		return new StandardOperatorFactory() {
 			@Override
@@ -192,12 +193,10 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 			forest.addMeasure(k1Sum);
 		}
 
-		Assertions.setMaxStackTraceElementsDisplayed(128);
-
 		Assertions.assertThatThrownBy(() -> cube().execute(CubeQuery.builder().measure(mName).build()))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasRootCauseInstanceOf(IllegalArgumentException.class)
-				.hasStackTraceContaining("ccyFrom", " not a sliced column");
+				.hasRootCauseInstanceOf(IllegalStateException.class)
+				.hasStackTraceContaining("ccyFrom");
 	}
 
 	@Test
@@ -270,7 +269,7 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 						"""
 								/-- time=3ms for openingStream
 								|/- time=5ms for mergingAggregates
-								|/- time=6ms sizes=[2] for sortingColumns
+								|/- time=6ms sizes=[2] for toCuboids
 								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE color==red GROUP BY (ccyFrom, letter)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -46,7 +47,7 @@ import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
 public class TestATableQueryOptimizer {
@@ -98,33 +99,33 @@ public class TestATableQueryOptimizer {
 
 	@Test
 	public void testGrandTotalAndFilterA1() {
-		TableQueryV3 v2 = optimizer.makeTableQuery(contextStep, ImmutableSet.of(groupByA, filterA1));
+		TableQueryV4 v2 = optimizer.makeTableQueryV4(contextStep, ImmutableSet.of(groupByA, filterA1));
 		Assertions.assertThat(v2)
-				.isEqualTo(TableQueryV3.builder()
-						.groupBy(GroupByColumns.named("a"))
-						.aggregator(
+				.isEqualTo(TableQueryV4.builder()
+						.groupByToAggregator(GroupByColumns.named("a"),
 								FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
-						.aggregator(FilteredAggregator.builder()
-								.aggregator(sumK1)
-								.filter(AndFilter.and(Map.of("a", "a1")))
-								.index(1)
-								.build())
+						.groupByToAggregator(GroupByColumns.named("a"),
+								FilteredAggregator.builder()
+										.aggregator(sumK1)
+										.filter(AndFilter.and(Map.of("a", "a1")))
+										.index(1)
+										.build())
 						.build());
 	}
 
 	@Test
 	public void testFilterA1FilterA1B1() {
-		TableQueryV3 v2 = optimizer.makeTableQuery(contextStep, ImmutableSet.of(filterA1, filterA1B1));
+		TableQueryV4 v2 = optimizer.makeTableQueryV4(contextStep, ImmutableSet.of(filterA1, filterA1B1));
 		Assertions.assertThat(v2)
-				.isEqualTo(TableQueryV3.builder()
-						.groupBy(GroupByColumns.named("a"))
-						.aggregator(
+				.isEqualTo(TableQueryV4.builder()
+						.groupByToAggregator(GroupByColumns.named("a"),
 								FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
-						.aggregator(FilteredAggregator.builder()
-								.aggregator(sumK1)
-								.filter(AndFilter.and(Map.of("b", "b1")))
-								.index(1)
-								.build())
+						.groupByToAggregator(GroupByColumns.named("a"),
+								FilteredAggregator.builder()
+										.aggregator(sumK1)
+										.filter(AndFilter.and(Map.of("b", "b1")))
+										.index(1)
+										.build())
 						.filter(AndFilter.and(Map.of("a", "a1")))
 						.build());
 	}
@@ -132,30 +133,35 @@ public class TestATableQueryOptimizer {
 	// IN is not AND
 	@Test
 	public void testFilterA1FilterA12() {
-		TableQueryV3 v2 = optimizer.makeTableQuery(contextStep, ImmutableSet.of(filterA1, filterA12));
+		TableQueryV4 v2 = optimizer.makeTableQueryV4(contextStep, ImmutableSet.of(filterA1, filterA12));
 		Assertions.assertThat(v2)
-				.isEqualTo(TableQueryV3.builder()
-						.groupBy(GroupByColumns.named("a"))
-						.aggregator(FilteredAggregator.builder()
-								.aggregator(sumK1)
-								.filter(AndFilter.and(Map.of("a", "a1")))
-								.build())
-						.aggregator(FilteredAggregator.builder()
-								.aggregator(sumK1)
-								.filter(AndFilter.and(Map.of("a", Set.of("a1", "a2"))))
-								.index(1)
-								.build())
+				.isEqualTo(TableQueryV4.builder()
+						.groupByToAggregator(GroupByColumns.named("a"),
+								FilteredAggregator.builder()
+										.aggregator(sumK1)
+										.filter(AndFilter.and(Map.of("a", "a1")))
+										.build())
+						.groupByToAggregator(GroupByColumns.named("a"),
+								FilteredAggregator.builder()
+										.aggregator(sumK1)
+										.filter(AndFilter.and(Map.of("a", Set.of("a1", "a2"))))
+										.index(1)
+										.build())
 						// .filter(AndFilter.and(Map.of("a", "a1")))
 						.build());
 	}
 
 	@Test
 	public void testAndMatcher() {
-		TableQueryV3 v2 = optimizer.makeTableQuery(contextStep, ImmutableSet.of(filterAPrefix, filterAPrefixNotAzerty));
+		TableQueryV4 v2 =
+				optimizer.makeTableQueryV4(contextStep, ImmutableSet.of(filterAPrefix, filterAPrefixNotAzerty));
 		Assertions.assertThat(v2).satisfies(q -> {
-			Assertions.assertThat(q.getGroupBys()).containsExactly(GroupByColumns.named("a"));
 			Assertions.assertThat(q.getFilter()).isEqualTo(ColumnFilter.matchLike("a", "a%"));
-			Assertions.assertThat(q.getAggregators())
+			Assertions.assertThat(v2.getGroupByToAggregators().asMap())
+					.hasSize(1)
+					.containsKey(GroupByColumns.named("a"))
+
+					.extractingByKey(GroupByColumns.named("a"), InstanceOfAssertFactories.SET)
 					.hasSize(2)
 					.contains(FilteredAggregator.builder().aggregator(sumK1).filter(ISliceFilter.MATCH_ALL).build())
 					.contains(FilteredAggregator.builder()
@@ -168,44 +174,44 @@ public class TestATableQueryOptimizer {
 
 	@Test
 	public void testDifferentAggregators() {
-		TableQueryV3 v2 = optimizer.makeTableQuery(contextStep, ImmutableSet.of(groupByA, groupByA_K2));
+		TableQueryV4 v2 = optimizer.makeTableQueryV4(contextStep, ImmutableSet.of(groupByA, groupByA_K2));
 		Assertions.assertThat(v2)
-				.isEqualTo(TableQueryV3.builder()
-						.groupBy(GroupByColumns.named("a"))
-						.aggregator(
+				.isEqualTo(TableQueryV4.builder()
+						.groupByToAggregator(GroupByColumns.named("a"),
 								FilteredAggregator.builder().aggregator(sumK1).filter(AndFilter.and(Map.of())).build())
-						.aggregator(
+						.groupByToAggregator(GroupByColumns.named("a"),
 								FilteredAggregator.builder().aggregator(sumK2).filter(AndFilter.and(Map.of())).build())
 						.build());
 	}
 
 	@Test
 	public void testNoMeasure() {
-		TableQueryV3 v2 =
-				optimizer.makeTableQuery(CubeQueryStep.builder().measure(EmptyMeasure.builder().build()).build(),
+		TableQueryV4 v2 =
+				optimizer.makeTableQueryV4(CubeQueryStep.builder().measure(EmptyMeasure.builder().build()).build(),
 						ImmutableSet.of(CubeQueryStep.builder()
 								.filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")))
 								.measure(Aggregator.empty())
 								.build()));
 		Assertions.assertThat(v2)
-				.isEqualTo(TableQueryV3.builder()
-						.groupBy(IGroupBy.GRAND_TOTAL)
+				.isEqualTo(TableQueryV4.builder()
 						.filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")))
-						.aggregator(FilteredAggregator.builder()
-								.aggregator(Aggregator.empty())
-								.filter(ISliceFilter.MATCH_ALL)
-								.build())
+						.groupByToAggregator(IGroupBy.GRAND_TOTAL,
+								FilteredAggregator.builder()
+										.aggregator(Aggregator.empty())
+										.filter(ISliceFilter.MATCH_ALL)
+										.build())
 						.build());
 	}
 
 	@Test
 	public void testGroupBy_independantColumn_sameMeasure() {
-		TableQueryV3 v2 = optimizer.makeTableQuery(contextStep, ImmutableSet.of(groupByA, groupByB));
+		TableQueryV4 v2 = optimizer.makeTableQueryV4(contextStep, ImmutableSet.of(groupByA, groupByB));
 		Assertions.assertThat(v2)
-				.isEqualTo(TableQueryV3.builder()
-						.groupBy(GroupByColumns.named("a"))
-						.groupBy(GroupByColumns.named("b"))
-						.aggregator(FilteredAggregator.builder().aggregator(sumK1).build())
+				.isEqualTo(TableQueryV4.builder()
+						.groupByToAggregator(GroupByColumns.named("a"),
+								FilteredAggregator.builder().aggregator(sumK1).build())
+						.groupByToAggregator(GroupByColumns.named("b"),
+								FilteredAggregator.builder().aggregator(sumK1).build())
 						.build());
 	}
 

@@ -73,6 +73,9 @@ public interface IMultitypeMergeableGrid<T> {
 	 */
 	IMultitypeColumnFastGet<T> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator);
 
-	long size(IAliasedAggregator aggregator);
+	long size(String aggregator);
 
+	default long size(IAliasedAggregator aggregator) {
+		return size(aggregator.getAlias());
+	}
 }

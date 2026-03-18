@@ -36,6 +36,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class SliceHelpers {
 
+	@Deprecated(since = "Provide your own ISliceFactory")
 	public static IAdhocSlice asSlice(Map<String, ?> asMap) {
 		return AdhocMapHelpers.fromMap(asMap).asSlice();
 	}

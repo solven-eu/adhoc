@@ -24,10 +24,10 @@ package eu.solven.adhoc.data.row.slice;
 
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.data.row.ITabularGroupBySlice;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
@@ -48,10 +48,10 @@ import eu.solven.adhoc.query.cube.IGroupBy;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRecord, IHasAdhocMap {
+public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupBySlice, IHasAdhocMap, IHasAdhocSlice {
 
 	@Override
-	default IAdhocSlice getGroupBys() {
+	default IAdhocSlice asSlice() {
 		return this;
 	}
 
@@ -67,21 +67,6 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRec
 	 *         {@link AndFilter} of {@link EqualsMatcher}.
 	 */
 	ISliceFilter asFilter();
-
-	/**
-	 * Differs from {@link #getGroupBy(String)} as it will not fail if the column is not groupedBy.
-	 *
-	 * @param column
-	 * @return the {@link Optional} filtered value along given column.
-	 */
-	Optional<Object> optGroupBy(String column);
-
-	/**
-	 * 
-	 * @param columns
-	 * @return a {@link Map} of available columns.
-	 */
-	Map<String, ?> optGroupBy(Set<String> columns);
 
 	// BEWARE This usage is unclear, and may be a flawed design
 	@Deprecated
@@ -101,5 +86,15 @@ public interface IAdhocSlice extends Comparable<IAdhocSlice>, ITabularGroupByRec
 	 * @return
 	 */
 	IAdhocSlice retainAll(NavigableSet<String> columns);
+
+	@Override
+	default void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+		asAdhocMap().forEach(action);
+	}
+
+	@Override
+	default Set<String> columnsKeySet() {
+		return asAdhocMap().keySet();
+	}
 
 }

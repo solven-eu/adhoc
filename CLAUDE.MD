@@ -10,7 +10,8 @@
 ## Project Overview
 
 - **Language / runtime**: Java 21, multi-module Maven project
-- **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks)
+- **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks; **note**: `-Pfast` also skips tests via `maven.test.skip=true`)
+- **Running tests without static analysis**: `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode` — use this instead of `-Pfast` when you need to run tests while skipping only static analysis
 - **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
 - **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`. When reading PMD output, use the `Grep` tool to filter for `org.apache.maven.plugins.pmd.PmdViolationCheckMojo` to quickly locate violations.
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok

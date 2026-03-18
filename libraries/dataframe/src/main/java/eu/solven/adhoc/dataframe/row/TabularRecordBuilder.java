@@ -28,6 +28,7 @@ import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public class TabularRecordBuilder {
+	final IGroupBy groupBy;
 	final Map<String, Object> aggregates;
 	final IMapBuilderPreKeys sliceBuilder;
 
@@ -54,7 +56,10 @@ public class TabularRecordBuilder {
 	}
 
 	public ITabularRecord build() {
-		return TabularRecordOverMaps.builder().aggregates(aggregates).slice(sliceBuilder.build().asSlice()).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(aggregates)
+				.slice(groupBy, sliceBuilder.build().asSlice())
+				.build();
 	}
 
 }

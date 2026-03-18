@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.data.row.ITabularGroupBySlice;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher.FilterMatcherBuilder;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -179,7 +179,7 @@ public class MoreFilterHelpers {
 	public static boolean match(ITableAliaser transcoder,
 			ISliceFilter filter,
 			Predicate<IColumnFilter> onMissingColumn,
-			ITabularGroupByRecord input) {
+			ITabularGroupBySlice input) {
 
 		// Fast-track, to skip opening Stream on empty Collection
 		if (ISliceFilter.MATCH_ALL.equals(filter)) {
@@ -195,7 +195,7 @@ public class MoreFilterHelpers {
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			String underlyingColumn = transcoder.underlyingNonNull(columnFilter.getColumn());
 
-			Optional<?> optValue = input.getGroupBys().optGroupBy(underlyingColumn);
+			Optional<?> optValue = input.asSlice().optGroupBy(underlyingColumn);
 
 			if (optValue.isEmpty()) {
 				if (input.columnsKeySet().contains(underlyingColumn)) {

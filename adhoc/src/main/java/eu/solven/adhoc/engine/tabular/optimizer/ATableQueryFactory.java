@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
 
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -51,7 +52,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -88,45 +89,54 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		this.filterHelper = FilterUtility.builder().optimizer(this.filterOptimizer).build();
 	}
 
-	protected TableQueryV3 makeTableQuery(CubeQueryStep context, Collection<CubeQueryStep> steps) {
-		Set<IGroupBy> groupBys = steps.stream().map(CubeQueryStep::getGroupBy).collect(ImmutableSet.toImmutableSet());
-
+	/**
+	 * Builds a {@link TableQueryV4} from the given steps, grouping them by {@link IGroupBy} so that each groupBy only
+	 * carries the aggregators it actually needs. A shared WHERE filter is extracted from the common prefix of all step
+	 * filters; individual FILTER clauses handle the remainder per aggregator.
+	 */
+	protected TableQueryV4 makeTableQueryV4(CubeQueryStep context, Collection<CubeQueryStep> steps) {
 		// This is the filter applicable to all aggregators: it will be applied in WHERE
 		Set<ISliceFilter> filters = steps.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 		ISliceFilter commonFilter = filterUtility.get().commonAnd(filters);
 		IFilterStripper stripper = factories.getFilterStripperFactory().makeFilterStripper(commonFilter);
 
-		// Strip the WHERE from each individual FILTER
-		Set<FilteredAggregator> strippedAggregators = steps.stream().map(step -> {
-			ISliceFilter strippedFromWhere = stripper.strip(step.getFilter());
+		// Group steps by their IGroupBy
+		Map<IGroupBy, List<CubeQueryStep>> byGroupBy = steps.stream()
+				.collect(Collectors.groupingBy(CubeQueryStep::getGroupBy, LinkedHashMap::new, Collectors.toList()));
 
-			return FilteredAggregator.builder()
-					.aggregator((Aggregator) step.getMeasure())
-					// transfer the stripped filter as `FILTER`
-					.filter(strippedFromWhere)
-					.build();
-		}).collect(ImmutableSet.toImmutableSet());
+		ImmutableSetMultimap.Builder<IGroupBy, FilteredAggregator> multimapBuilder = ImmutableSetMultimap.builder();
+		byGroupBy.forEach((groupBy, groupBySteps) -> {
+			// Strip the WHERE from each individual FILTER
+			Set<FilteredAggregator> strippedAggregators = groupBySteps.stream().map(step -> {
+				ISliceFilter strippedFromWhere = stripper.strip(step.getFilter());
+				return FilteredAggregator.builder()
+						.aggregator((Aggregator) step.getMeasure())
+						.filter(strippedFromWhere)
+						.build();
+			}).collect(ImmutableSet.toImmutableSet());
 
-		Map<String, List<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
-				.collect(Collectors.groupingBy(FilteredAggregator::getAlias, LinkedHashMap::new, Collectors.toList()));
+			Map<String, List<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
+					.collect(Collectors
+							.groupingBy(FilteredAggregator::getAlias, LinkedHashMap::new, Collectors.toList()));
 
-		// Ensure each aggregator has a different name even if they rely on the same column
-		List<FilteredAggregator> aliasedAggregators = aliasToAggregators.entrySet().stream().flatMap(e -> {
-			List<FilteredAggregator> aggregators = e.getValue();
+			List<FilteredAggregator> aliasedAggregators = aliasToAggregators.entrySet().stream().flatMap(e -> {
+				List<FilteredAggregator> aggregators = e.getValue();
+				if (aggregators.size() == 1) {
+					return Stream.of(aggregators.getFirst());
+				} else {
+					AtomicInteger aliasIndex = new AtomicInteger();
+					return aggregators.stream().map(a -> a.toBuilder().index(aliasIndex.getAndIncrement()).build());
+				}
+			}).toList();
 
-			if (aggregators.size() == 1) {
-				// no conflict
-				return Stream.of(aggregators.getFirst());
-			} else {
-				AtomicInteger aliasIndex = new AtomicInteger();
-				return aggregators.stream().map(a -> a.toBuilder().index(aliasIndex.getAndIncrement()).build());
-			}
-		}).toList();
+			multimapBuilder.putAll(groupBy, aliasedAggregators);
+		});
 
-		return TableQueryV3.edit(context)
-				.groupBys(groupBys)
-				.aggregators(aliasedAggregators)
+		return TableQueryV4.builder()
 				.filter(commonFilter)
+				.groupByToAggregators(multimapBuilder.build())
+				.customMarker(context.getCustomMarker())
+				.options(context.getOptions())
 				.build();
 	}
 

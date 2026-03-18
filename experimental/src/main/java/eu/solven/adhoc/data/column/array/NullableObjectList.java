@@ -142,7 +142,7 @@ public class NullableObjectList<T> extends AbstractObjectList<T> implements INul
 	}
 
 	@Override
-	public void forEach(Int2ObjectBiConsumer indexToValue) {
+	public void forEach(Int2ObjectBiConsumer<Object> indexToValue) {
 		indexStream().forEach(index -> indexToValue.acceptInt2Object(index, list.get(index)));
 	}
 

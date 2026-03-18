@@ -26,6 +26,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
@@ -38,7 +40,9 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestGroupByColumns {
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn").verify();
+		EqualsVerifier.forClass(GroupByColumns.class)
+				.withIgnoredFields("cachedNameToColumn", "retainedToGroupBy")
+				.verify();
 	}
 
 	@Test
@@ -98,4 +102,32 @@ public class TestGroupByColumns {
 		IGroupBy groupBy = GroupByColumns.of(ReferencedColumn.ref("a"), CustomTestColumn.builder().name("b").build());
 		Assertions.assertThat(groupBy).hasToString("(a, CustomTestColumn{name=b})");
 	}
+
+	@Test
+	public void retainAll() {
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
+
+		Assertions.assertThat(groupBy.retainAll(ImmutableSortedSet.of())).isEqualTo(GroupByColumns.grandTotal());
+		Assertions.assertThat(groupBy.retainAll(ImmutableSortedSet.of("a"))).isEqualTo(GroupByColumns.named("a"));
+
+		Assertions.assertThat(groupBy.retainAll(ImmutableSortedSet.of("a", "b"))).isSameAs(groupBy);
+	}
+
+	@Test
+	public void mergeNonAmbiguous() {
+		IGroupBy merged = GroupByColumns
+				.mergeNonAmbiguous(ImmutableSet.of(GroupByColumns.named("a", "b"), GroupByColumns.named("b", "c")));
+		Assertions.assertThat(merged).isEqualTo(GroupByColumns.named("a", "b", "c"));
+	}
+
+	@Test
+	public void mergeNonAmbiguous_ambiguous() {
+		Assertions
+				.assertThatThrownBy(
+						() -> GroupByColumns.mergeNonAmbiguous(ImmutableSet.of(GroupByColumns.named("someC", "b"),
+								GroupByColumns.of(CustomTestColumn.builder().name("someC").build()))))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("Ambiguous", "someC", CustomTestColumn.class.getName());
+	}
+
 }

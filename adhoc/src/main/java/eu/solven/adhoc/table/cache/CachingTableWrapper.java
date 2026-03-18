@@ -52,10 +52,11 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.util.IHasCache;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -73,7 +74,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
-@Deprecated(since = "May need time to stabilize")
+@Deprecated(since = "May need time to stabilize. Seem actually useless given IQueryStepCache", forRemoval = true)
 public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	// ~1GB
 	private static final int DEFAULT_MAX_WEIGHT = 1024 * 1024 * 1024;
@@ -176,13 +177,8 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
-		if (tableQuery.getGroupBys().size() != 1) {
-			throw new NotYetImplementedException("GROUPING SET");
-		}
-
-		TableQueryV2 queryV2 = tableQuery.streamV2().findFirst().get();
-		return streamSlices(queryPod, queryV2);
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })

@@ -23,20 +23,20 @@
 package eu.solven.adhoc.engine.tabular;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
@@ -47,6 +47,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.data.column.ICuboid;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
@@ -97,6 +98,7 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IStopwatch;
@@ -118,7 +120,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 // https://math.stackexchange.com/questions/2966359/how-to-calculate-cost-in-discrete-markov-transitions
 public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapped {
 
@@ -190,25 +192,23 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		Multimaps.invertFrom(asMultimap, suppressedToGenerated);
 
 		Map<CubeQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
-		{
-			stepToSuppressedValues.forEach((suppressedStep, suppressedValue) -> {
-				Set<CubeQueryStep> generated = suppressedToGenerated.get(suppressedStep);
+		stepToSuppressedValues.forEach((suppressedStep, suppressedValue) -> {
+			Set<CubeQueryStep> generated = suppressedToGenerated.get(suppressedStep);
 
-				generated.forEach(oneGenerated -> {
-					Set<String> suppressedGroupBys =
-							getSuppressedGroupBy(oneGenerated.getGroupBy(), suppressedStep.getGroupBy());
+			generated.forEach(oneGenerated -> {
+				Set<String> suppressedGroupBys =
+						getSuppressedGroupBy(oneGenerated.getGroupBy(), suppressedStep.getGroupBy());
 
-					ICuboid generatedValue;
-					if (suppressedGroupBys.isEmpty()) {
-						generatedValue = suppressedValue;
-					} else {
-						generatedValue = restoreSuppressedGroupBy(oneGenerated, suppressedGroupBys, suppressedValue);
-					}
-					stepToValues.put(oneGenerated, generatedValue);
-				});
-
+				ICuboid generatedValue;
+				if (suppressedGroupBys.isEmpty()) {
+					generatedValue = suppressedValue;
+				} else {
+					generatedValue = restoreSuppressedGroupBy(oneGenerated, suppressedGroupBys, suppressedValue);
+				}
+				stepToValues.put(oneGenerated, generatedValue);
 			});
-		}
+
+		});
 		return stepToValues;
 	}
 
@@ -274,38 +274,16 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			IHasTableQueryForSteps tableQueries) {
 		try {
 			return queryPod.getExecutorService().submit(() -> {
-				Stream<TableQueryV3> tableQueriesStream = tableQueries.getTableQueries().stream();
+				Stream<TableQueryV4> tableQueriesStream = tableQueries.getTableQueries().stream();
 
 				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
 					tableQueriesStream = tableQueriesStream.parallel();
 				}
 				Map<CubeQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
-					eventBus.post(TableStepIsEvaluating.builder().tableQuery(tableQuery).source(this).build());
-
-					IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
-
-					Map<CubeQueryStep, ICuboid> queryStepToValues =
-							processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery);
-
-					Duration elapsed = stopWatch.elapsed();
-					eventBus.post(TableStepIsCompleted.builder()
-							.tableQuery(tableQuery)
-							.nbCells(queryStepToValues.values().stream().mapToLong(ICuboid::size).sum())
-							.source(this)
-							.duration(elapsed)
-							.build());
-
-					eventBus.post(AdhocLogEvent.builder()
-							.debug(queryPod.isDebug())
-							.explain(queryPod.isExplain())
-							.performance(true)
-							.message(formatPerfLog("\\------ time=%s for tableQuery on %s", elapsed, tableQuery))
-							.source(this)
-							.build());
-
-					// BEWARE Could we have multiple TableQueryV2 computing the same CubeQueryStep?
-					queryStepToValuesInner.putAll(queryStepToValues);
+					// BEWARE Could we have multiple TableQueryV4 computing the same CubeQueryStep?
+					queryStepToValuesInner
+							.putAll(processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery));
 				});
 
 				return queryStepToValuesInner;
@@ -323,47 +301,147 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		}
 	}
 
-	protected String formatPerfLog(String template, Duration elapsed, TableQueryV3 tableQuery) {
+	protected String formatPerfLog(String template, Duration elapsed, TableQueryV4 tableQuery) {
 		return template.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), toPerfLog(tableQuery));
 	}
 
 	protected Map<CubeQueryStep, ICuboid> processOneTableQuery(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
-			TableQueryV3 tableQuery) {
+			TableQueryV4 tableQuery) {
+		eventBus.post(TableStepIsEvaluating.builder().tableQuery(tableQuery).source(this).build());
 
-		IStopwatch stopWatchSinking;
+		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
-		Map<CubeQueryStep, ICuboid> stepToValues;
+		Map<CubeQueryStep, ICuboid> stepToValues =
+				processOneTableQueryV4(sinkExecutionFeedback, tableQueries, tableQuery);
 
-		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
-		// Open the stream: the table may or may not return after the actual execution
-		try (ITabularRecordStream rowsStream = openTableStream(tableQuery)) {
-			if (queryPod.isDebugOrExplain()) {
-				// JooQ may be slow to load some classes
-				// Slowness also due to fetching stream characteristics, which actually open the query
-				Duration openingElasped = openingStopwatch.elapsed();
-				eventBus.post(AdhocLogEvent.builder()
-						.debug(queryPod.isDebug())
-						.explain(queryPod.isExplain())
-						.performance(true)
-						.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, tableQuery))
-						.source(this)
-						.build());
-			}
+		Duration elapsed = stopWatch.elapsed();
+		eventBus.post(TableStepIsCompleted.builder()
+				.tableQuery(tableQuery)
+				.nbCells(stepToValues.values().stream().mapToLong(ICuboid::size).sum())
+				.source(this)
+				.duration(elapsed)
+				.build());
 
-			stopWatchSinking = factories.getStopwatchFactory().createStarted();
-			stepToValues = aggregateStreamToAggregates(tableQueries, tableQuery, rowsStream);
-		}
-
-		Duration elapsed = stopWatchSinking.elapsed();
-		reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+		eventBus.post(AdhocLogEvent.builder()
+				.debug(queryPod.isDebug())
+				.explain(queryPod.isExplain())
+				.performance(true)
+				.message(formatPerfLog("\\------ time=%s for tableQuery on %s", elapsed, tableQuery))
+				.source(this)
+				.build());
 
 		return stepToValues;
 	}
 
+	protected Map<CubeQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
+			IHasTableQueryForSteps tableQueries,
+			TableQueryV4 tableQuery) {
+		List<TableQueryV4> nonAmbiguousQueries = splitForNonAmbiguousColumns(tableQuery);
+
+		Map<CubeQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
+
+		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
+			IStopwatch stopWatchSinking;
+			Map<CubeQueryStep, ICuboid> stepToValues;
+
+			IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
+			// Open the stream: the table may or may not return after the actual execution
+			try (ITabularRecordStream rowsStream = openTableStream(nonAmbiguousQuery)) {
+				if (queryPod.isDebugOrExplain()) {
+					// JooQ may be slow to load some classes
+					// Slowness also due to fetching stream characteristics, which actually open the query
+					Duration openingElasped = openingStopwatch.elapsed();
+					eventBus.post(AdhocLogEvent.builder()
+							.debug(queryPod.isDebug())
+							.explain(queryPod.isExplain())
+							.performance(true)
+							.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, nonAmbiguousQuery))
+							.source(this)
+							.build());
+				}
+
+				stopWatchSinking = factories.getStopwatchFactory().createStarted();
+				stepToValues = aggregateStreamToAggregates(tableQueries, nonAmbiguousQuery, rowsStream);
+			}
+
+			Duration elapsed = stopWatchSinking.elapsed();
+			reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+
+			allStepToValues.putAll(stepToValues);
+		});
+		return allStepToValues;
+	}
+
+	/**
+	 * Relevant for ICalculatedColumn, as we must different between a referencedColumn and a calculated column even if
+	 * they have the same name.
+	 * 
+	 * @param tableQuery
+	 * @return
+	 */
+	protected List<TableQueryV4> splitForNonAmbiguousColumns(TableQueryV4 tableQuery) {
+		SetMultimap<String, IAdhocColumn> nameToColumns =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		tableQuery.getGroupBys().forEach(gb -> {
+			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+		});
+
+		if (nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1)) {
+			// Not a single conflicting column
+			return List.of(tableQuery);
+		}
+
+		// TODO We have to reason to believe we may end in this case in, sometimes, not legitimate case
+		// Typically, if `c` is computed, the actual groupBy should not have `c` in groupBy while it seems to persist
+		List<TableQueryV4> split = new ArrayList<>();
+
+		SetMultimap<IGroupBy, FilteredAggregator> leftToAdd =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		leftToAdd.putAll(tableQuery.getGroupByToAggregators());
+
+		while (!leftToAdd.isEmpty()) {
+			SetMultimap<IGroupBy, FilteredAggregator> nextQuery =
+					MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+
+			leftToAdd.forEach((groupBy, aggregators) -> {
+				if (noAmbiguity(nextQuery.keySet(), groupBy)) {
+					nextQuery.put(groupBy, aggregators);
+				}
+			});
+
+			if (nextQuery.isEmpty()) {
+				throw new IllegalStateException("Should not be empty given %s".formatted(leftToAdd));
+			}
+
+			leftToAdd.keySet().removeAll(nextQuery.keySet());
+			split.add(tableQuery.toBuilder().clearGroupByToAggregators().groupByToAggregators(nextQuery).build());
+		}
+
+		if (tableQuery.isDebugOrExplain()) {
+			log.info("[EXPLAIN] Ambiguities in columnNames led to split into {} queries: (original={} split={})",
+					split.size(),
+					tableQuery,
+					split);
+		}
+
+		return split;
+	}
+
+	protected boolean noAmbiguity(Set<IGroupBy> accepted, IGroupBy candidate) {
+		SetMultimap<String, IAdhocColumn> nameToColumns =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		accepted.forEach(gb -> {
+			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+		});
+		nameToColumns.putAll(Multimaps.forMap(candidate.getNameToColumn()));
+
+		return nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1);
+	}
+
 	// `InsufficientStringBufferDeclaration`: Unclear if we prefer a MagicNumber
 	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
-	protected String toPerfLog(TableQueryV3 tableQuery) {
+	protected String toPerfLog(TableQueryV4 tableQuery) {
 		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
 
 		StringBuilder sb = new StringBuilder();
@@ -382,6 +460,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			sb.append(" GROUP BY ").append(groupBy);
 		} else {
+			// TODO tableQueryV3 is NOT a GROUPING SET but rather a UNION ALL
 			String groupByClause = tableQuery.getGroupBys()
 					.stream()
 					.map(IGroupBy::toString)
@@ -393,7 +472,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	}
 
 	protected String toPerfLog(CubeQueryStep cubeQueryStep) {
-		TableQueryV3 tableQueries = TableQueryV3.edit(TableQuery.edit(cubeQueryStep).build()).build();
+		TableQueryV4 tableQueries = TableQueryV4.edit(TableQuery.edit(cubeQueryStep).build()).build();
 		return toPerfLog(tableQueries);
 	}
 
@@ -405,7 +484,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		}
 	}
 
-	protected void reportOnTableQuery(TableQueryV3 tableQuery,
+	protected void reportOnTableQuery(TableQueryV4 tableQuery,
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			Duration elapsed,
 			Map<CubeQueryStep, ICuboid> oneQueryStepToValues) {
@@ -586,20 +665,20 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return edited.build();
 	}
 
-	protected ITabularRecordStream openTableStream(TableQueryV3 tableQuery) {
+	protected ITabularRecordStream openTableStream(TableQueryV4 tableQuery) {
 		return queryPod.getColumnsManager().openTableStream(queryPod, tableQuery);
 	}
 
 	protected Map<CubeQueryStep, ICuboid> aggregateStreamToAggregates(IHasTableQueryForSteps tableQueries,
-			TableQueryV3 query,
+			TableQueryV4 query,
 			ITabularRecordStream stream) {
 		IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates = mergeTableAggregates(query, stream);
 
-		return splitTableGridToColumns(tableQueries, query, sliceToAggregates);
+		return splitTableGridToCuboids(tableQueries, query, sliceToAggregates);
 	}
 
-	protected Map<CubeQueryStep, ICuboid> splitTableGridToColumns(IHasTableQueryForSteps tableQueries,
-			TableQueryV3 query,
+	protected Map<CubeQueryStep, ICuboid> splitTableGridToCuboids(IHasTableQueryForSteps tableQueries,
+			TableQueryV4 query,
 			IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates) {
 		IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
 
@@ -611,12 +690,12 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			long[] sizes = immutableChunks.values().stream().mapToLong(ICuboid::size).toArray();
 
 			if (queryPod.isDebug()) {
-				long totalSize = LongStream.of(sizes).sum();
+				long totalSize = Arrays.stream(sizes).sum();
 
 				eventBus.post(AdhocLogEvent.builder()
 						.debug(true)
 						.performance(true)
-						.message("|/- time=%s sizes=%s total_size=%s for sortingColumns".formatted(PepperLogHelper
+						.message("|/- time=%s sizes=%s total_size=%s for toCuboids".formatted(PepperLogHelper
 								.humanDuration(elapsed.toMillis()), Arrays.toString(sizes), totalSize))
 						.source(this)
 						.build());
@@ -624,7 +703,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 				eventBus.post(AdhocLogEvent.builder()
 						.explain(true)
 						.performance(true)
-						.message("|/- time=%s sizes=%s for sortingColumns"
+						.message("|/- time=%s sizes=%s for toCuboids"
 								.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), Arrays.toString(sizes)))
 						.source(this)
 						.build());
@@ -639,7 +718,13 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return mergeTableAggregates(TableQueryV3.edit(query).build(), stream);
 	}
 
+	@Deprecated
 	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(TableQueryV3 query,
+			ITabularRecordStream stream) {
+		return mergeTableAggregates(TableQueryV4.edit(query).build(), stream);
+	}
+
+	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(TableQueryV4 query,
 			ITabularRecordStream stream) {
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
@@ -648,7 +733,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		// BEWARE This timing is dependent of the table
 		Duration elapsed = stopWatch.elapsed();
 		if (queryPod.isDebug()) {
-			long totalSize = query.getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
+			long totalSize = sliceToAggregates.getAggregators().stream().mapToLong(sliceToAggregates::size).sum();
 
 			eventBus.post(AdhocLogEvent.builder()
 					.debug(queryPod.isDebug())
@@ -669,16 +754,14 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return sliceToAggregates;
 	}
 
-	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates2(TableQueryV3 tableQuery,
+	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates2(TableQueryV4 tableQuery,
 			ITabularRecordStream stream) {
-		ITabularRecordStreamReducer streamReducer = makeTabularRecordStreamReducer(
-				// (TableQueryV3) stream.getTableQuery()
-				tableQuery);
+		ITabularRecordStreamReducer streamReducer = makeTabularRecordStreamReducer(tableQuery);
 
 		return streamReducer.reduce(stream);
 	}
 
-	protected ITabularRecordStreamReducer makeTabularRecordStreamReducer(TableQueryV3 tableQuery) {
+	protected ITabularRecordStreamReducer makeTabularRecordStreamReducer(TableQueryV4 tableQuery) {
 		return TabularRecordStreamReducer.builder()
 				.operatorFactory(factories.getOperatorFactory())
 				.sliceFactory(queryPod.getSliceFactory())
@@ -705,7 +788,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * @return a {@link Map} from each {@link Aggregator} to the column of values
 	 */
 	protected Map<CubeQueryStep, ICuboid> toCuboids(IHasTableQueryForSteps tableQueries,
-			TableQueryV3 query,
+			TableQueryV4 query,
 			IMultitypeMergeableGrid<IAdhocSlice> coordinatesToAggregates) {
 		Stream<StepAndFilteredAggregator> stepStream =
 				tableQueries.forEachCubeQuerySteps(query, filterOptimizerSupplier.get());
@@ -788,15 +871,13 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * @param inducerAndInduced
 	 */
 	protected void walkUpInducedDag(Map<CubeQueryStep, ICuboid> stepToValues, SplitTableQueries inducerAndInduced) {
-		Consumer<? super CubeQueryStep> queryStepConsumer = induced -> {
+		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);
 			} catch (RuntimeException e) {
 				throw AdhocExceptionHelpers.wrap("Issue inducing step=%s".formatted(induced), e);
 			}
-		};
-
-		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, queryStepConsumer);
+		});
 	}
 
 	protected void evaluateInduced(Map<CubeQueryStep, ICuboid> stepToValues,

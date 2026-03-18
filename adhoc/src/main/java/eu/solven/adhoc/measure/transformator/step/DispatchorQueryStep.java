@@ -236,13 +236,14 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 					sliceAsMap.put(groupByColumn, value);
 				}
 				IAdhocSlice preSlice = AdhocMapHelpers.fromMap(sliceFactory, sliceAsMap).asSlice();
-				ITabularGroupByRecord groupByRecord = TabularGroupByRecordOverMap.builder().slice(preSlice).build();
+				ITabularGroupByRecord groupByRecord =
+						TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(preSlice).build();
 				Object calculatedCoordinate = calculatedColumn.computeCoordinate(groupByRecord);
 				value = calculatedCoordinate;
 			} else {
 				if (value == null) {
 					// Happens on groupBy along not-generated columns
-					value = slice.getSlice().getGroupBy(groupByColumn);
+					value = slice.sliceReader().extractCoordinateLax(groupByColumn, Object.class).orElse(null);
 				}
 
 				if (value == null) {

@@ -23,13 +23,18 @@
 package eu.solven.adhoc.dataframe.row;
 
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.With;
 
@@ -38,20 +43,42 @@ import lombok.With;
  *
  * @author Benoit Lacelle
  */
-@Builder
+@Builder(toBuilder = true)
 public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
+	@NonNull
+	@With
+	@Getter
+	final IGroupBy groupBy;
+
 	@NonNull
 	@With
 	final IAdhocSlice slice;
 
 	@Override
-	public Set<String> columnsKeySet() {
-		return slice.columnsKeySet();
+	public IAdhocSlice asSlice() {
+		return slice;
 	}
 
 	@Override
-	public Object getGroupBy(String columnName) {
-		return slice.getGroupBy(columnName);
+	public Set<String> columnsKeySet() {
+		return slice.asAdhocMap().keySet();
+	}
+
+	@Override
+	public Object getGroupBy(String column) {
+		IAdhocMap asMap = slice.asAdhocMap();
+
+		Object value = asMap.get(column);
+		if (value == null && !asMap.containsKey(column)) {
+			throw new IllegalArgumentException(
+					"%s is not a sliced column, amongst %s".formatted(column, columnsKeySet()));
+		}
+		return value;
+	}
+
+	@Override
+	public Optional<Object> optGroupBy(String column) {
+		return Optional.ofNullable(slice.asAdhocMap().get(column));
 	}
 
 	@Override
@@ -74,12 +101,12 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 	}
 
 	@Override
-	public IAdhocSlice getGroupBys() {
-		return slice;
+	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
+		slice.asAdhocMap().forEach(action);
 	}
 
 	@Override
-	public void forEachGroupBy(BiConsumer<? super String, ? super Object> action) {
-		slice.forEachGroupBy(action);
+	public ITabularGroupByRecord retainAll(NavigableSet<String> columns) {
+		return toBuilder().groupBy(groupBy.retainAll(columns)).slice(slice.retainAll(columns)).build();
 	}
 }

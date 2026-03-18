@@ -49,6 +49,9 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
 public class AdhocUnsafe {
 	static {
+		// TODO Log current version and build-time, similarly to JooQ
+		log.info("Thanks for using Adhoc");
+
 		reloadProperties();
 	}
 

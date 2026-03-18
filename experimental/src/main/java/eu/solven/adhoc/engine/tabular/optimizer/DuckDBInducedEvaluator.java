@@ -278,7 +278,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			DataType<?> valueDataType) {
 		List<Field<?>> columnDefs = new ArrayList<>();
 		for (String col : inducerGroupByCols) {
-			DataType<?> colType = javaToSqlDataType(firstSlice.optGroupBy(col).orElse(null));
+			DataType<?> colType = javaToSqlDataType(firstSlice.asAdhocMap().get(col));
 			columnDefs.add(DSL.field(DSL.quotedName(col), colType));
 		}
 		columnDefs.add(DSL.field(DSL.quotedName(VALUE_COL), valueDataType));

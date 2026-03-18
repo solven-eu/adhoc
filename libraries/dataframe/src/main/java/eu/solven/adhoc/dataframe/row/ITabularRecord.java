@@ -23,6 +23,7 @@
 package eu.solven.adhoc.dataframe.row;
 
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 
 import eu.solven.adhoc.data.row.ITabularGroupByRecord;
@@ -59,4 +60,6 @@ public interface ITabularRecord extends ITabularGroupByRecord {
 
 	ITabularRecord transcode(IColumnValueTranscoder customValueTranscoder);
 
+	@Override
+	ITabularRecord retainAll(NavigableSet<String> columns);
 }

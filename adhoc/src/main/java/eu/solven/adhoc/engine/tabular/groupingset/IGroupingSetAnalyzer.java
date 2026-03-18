@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.tabular.groupingset;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.query.cube.IGroupBy;
 
 /**
  * Helps identifying the groupingSet of a {@link ITabularRecord}.
@@ -33,6 +34,13 @@ import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 @FunctionalInterface
 public interface IGroupingSetAnalyzer {
 
-	SequencedSetLikeList getGroupingSet(ITabularRecord input);
+	/**
+	 * Combine a {@link IGroupBy} and the related {@link SequencedSetLikeList}
+	 */
+	record GroupByMarker(IGroupBy groupBy, SequencedSetLikeList keySet) {
+
+	}
+
+	GroupByMarker getGroupingSet(ITabularRecord input);
 
 }

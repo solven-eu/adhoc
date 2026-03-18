@@ -124,7 +124,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 			Assertions.assertThat(e.getTableQuery().getAggregators()).hasSize(1).anySatisfy(fa -> {
 				Assertions.assertThat(fa.getAggregator().getName()).isEqualTo("k1");
 			});
-			Assertions.assertThat(e.getTableQuery().getColumns().keySet()).containsExactly("a", "b");
+			Assertions.assertThat(e.getTableQuery().getGroupedByColumns()).containsExactly("a", "b");
 		});
 	}
 
@@ -183,7 +183,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 				Assertions.assertThat(fa.getAggregator().getName()).isEqualTo("k1");
 				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and(Map.of("b", "b1")));
 			});
-			Assertions.assertThat(e.getTableQuery().getColumns().keySet()).containsExactly("a", "b");
+			Assertions.assertThat(e.getTableQuery().getGroupedByColumns()).containsExactly("a", "b");
 			Assertions.assertThat(e.getTableQuery().getFilter()).isEqualTo(ISliceFilter.MATCH_ALL);
 		});
 	}

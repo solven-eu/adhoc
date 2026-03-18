@@ -63,7 +63,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
@@ -252,7 +252,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Mockito.when(subCube.getNameToMeasure()).thenReturn(Map.of(k1Sum.getName(), k1Sum));
 
 		// Request the min and the max of the same measure cross cubes
-		TableQueryV3 compositeQuery = TableQueryV3.builder()
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("min").aggregationKey(MinAggregation.KEY).build())
 						.build())
@@ -282,7 +282,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		Set<String> subColumns = Set.of("c1");
 
 		// Request the min and the max of the same measure cross cubes
-		TableQueryV3 compositeQuery = TableQueryV3.builder()
+		TableQueryV2 compositeQuery = TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(k1Sum.toBuilder().name("max_c1").aggregationKey(MaxAggregation.KEY).build())
 						.filter(ColumnFilter.matchLike("c1", "a%"))
@@ -673,7 +673,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 								"""
 										/-- time=6ms for openingStream
 										|/- time=8ms for mergingAggregates
-										|/- time=9ms sizes=[1] for sortingColumns
+										|/- time=9ms sizes=[1] for toCuboids
 										\\------ time=35ms for tableQuery on SELECT k1:SUM(k1) GROUP BY grandTotal
 										/-- #0 t=someTableName1 id=00000000-0000-0000-0000-000000000002 (parentId=00000000-0000-0000-0000-000000000001)
 										|      No cost info
@@ -688,7 +688,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										Executed status=OK duration=49ms on table=someTableName1 forest=someTableName1-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table1_k_minus2)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cubeElseTable=true, cube=composite))
 										/-- time=13ms for openingStream
 										|/- time=15ms for mergingAggregates
-										|/- time=16ms sizes=[1] for sortingColumns
+										|/- time=16ms sizes=[1] for toCuboids
 										\\------ time=70ms for tableQuery on SELECT k1:SUM(k1) GROUP BY grandTotal
 										/-- #0 t=someTableName2 id=00000000-0000-0000-0000-000000000004 (parentId=00000000-0000-0000-0000-000000000003)
 										|      No cost info
@@ -703,7 +703,7 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 										Executed status=OK duration=98ms on table=someTableName2 forest=someTableName2-filtered query=AdhocSubQuery(subQuery=CubeQuery(filter=matchAll, groupBy=grandTotal, measures=[ReferencedMeasure(ref=table2_k_minus3)], customMarker=null, options=[EXPLAIN, UNKNOWN_MEASURES_ARE_EMPTY, AGGREGATION_CARRIERS_STAY_WRAPPED]), parentQueryId=AdhocQueryId(queryIndex=0, queryId=00000000-0000-0000-0000-000000000000, parentQueryId=null, queryHash=3de24a35, cubeElseTable=true, cube=composite))
 										/-- time=150ms for openingStream
 										|/- time=19ms for mergingAggregates
-										|/- time=20ms sizes=[1, 1] for sortingColumns
+										|/- time=20ms sizes=[1, 1] for toCuboids
 										\\------ time=209ms for tableQuery on SELECT table1_k_minus2:SUM(table1_k_minus2), table2_k_minus3:SUM(table2_k_minus3) GROUP BY grandTotal
 										/-- #0 t=composite id=00000000-0000-0000-0000-000000000005 (parentId=00000000-0000-0000-0000-000000000000)
 										|      No cost info

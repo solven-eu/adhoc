@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.row;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -31,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import lombok.Builder;
@@ -51,6 +54,11 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	// @Singular
 	@NonNull
 	final ImmutableSet<String> keptAggregates;
+
+	@Override
+	public IGroupBy getGroupBy() {
+		return decorated.getGroupBy();
+	}
 
 	@Override
 	public Set<String> aggregateKeySet() {
@@ -88,8 +96,13 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public Object getGroupBy(String columnName) {
-		return decorated.getGroupBy(columnName);
+	public Object getGroupBy(String column) {
+		return decorated.getGroupBy(column);
+	}
+
+	@Override
+	public Optional<Object> optGroupBy(String column) {
+		return decorated.optGroupBy(column);
 	}
 
 	@Override
@@ -104,8 +117,8 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public IAdhocSlice getGroupBys() {
-		return decorated.getGroupBys();
+	public IAdhocSlice asSlice() {
+		return decorated.asSlice();
 	}
 
 	@Override
@@ -128,5 +141,10 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 		decorated.forEachGroupBy((k, v) -> {
 			action.accept(k, v);
 		});
+	}
+
+	@Override
+	public ITabularRecord retainAll(NavigableSet<String> keyset) {
+		return withDecorated(decorated.retainAll(keyset));
 	}
 }

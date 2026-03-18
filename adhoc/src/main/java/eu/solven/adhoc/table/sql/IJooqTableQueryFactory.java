@@ -25,7 +25,7 @@ package eu.solven.adhoc.table.sql;
 import org.jooq.ResultQuery;
 
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 
 /**
  * Converts a {@link TableQuery} into a sql {@link ResultQuery}
@@ -35,6 +35,6 @@ import eu.solven.adhoc.query.table.TableQueryV3;
 @FunctionalInterface
 public interface IJooqTableQueryFactory {
 
-	QueryWithLeftover prepareQuery(TableQueryV3 tableQuery);
+	QueryWithLeftover prepareQuery(TableQueryV4 tableQuery);
 
 }

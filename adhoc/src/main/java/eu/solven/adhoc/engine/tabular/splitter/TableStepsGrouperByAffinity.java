@@ -71,12 +71,12 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 	}
 
 	@Override
-	public Collection<? extends Collection<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
+	public Collection<? extends Set<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
 		// Mandatory partition: steps with different (options, customMarker) must be in separate TableQueryV3
 		Map<CubeQueryStep, List<CubeQueryStep>> mandatoryGroups = inducers.stream()
 				.collect(Collectors.groupingBy(this::tableQueryGroupBy, LinkedHashMap::new, Collectors.toList()));
 
-		List<Collection<CubeQueryStep>> result = new ArrayList<>();
+		List<Set<CubeQueryStep>> result = new ArrayList<>();
 		mandatoryGroups.values().forEach(group -> result.addAll(bicliqueCover(group)));
 		return result;
 	}

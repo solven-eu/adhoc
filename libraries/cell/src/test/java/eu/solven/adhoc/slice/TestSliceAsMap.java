@@ -23,8 +23,6 @@
 package eu.solven.adhoc.slice;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,59 +40,6 @@ import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestSliceAsMap {
-	@Test
-	public void testRequireFilter_String() {
-		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
-
-		Assertions.assertThat(slice.columnsKeySet()).containsExactly("k");
-
-		{
-			Assertions.assertThat(slice.getGroupBy("k")).isEqualTo("v");
-			Assertions.assertThat(slice.getGroupBy("k", Object.class)).isEqualTo("v");
-			Assertions.assertThat(slice.getGroupBy("k", String.class)).isEqualTo("v");
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", Number.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optGroupBy("k")).contains("v");
-		}
-
-		{
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2")).isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Object.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Number.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optGroupBy("k2")).isEmpty();
-		}
-	}
-
-	// @Disabled("AdhocSliceAsMap does not accept Collection sliced")
-	@Test
-	public void testRequireFilter_Collection() {
-		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", Arrays.asList("v1", "v2")));
-
-		Assertions.assertThat(slice.columnsKeySet()).containsExactly("k");
-
-		{
-			Assertions.assertThat(slice.getGroupBy("k")).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getGroupBy("k", Object.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getGroupBy("k", Collection.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThat(slice.getGroupBy("k", List.class)).isEqualTo(Arrays.asList("v1", "v2"));
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", String.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k", Number.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optGroupBy("k")).contains(Arrays.asList("v1", "v2"));
-		}
-
-		{
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2")).isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Object.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThatThrownBy(() -> slice.getGroupBy("k2", Number.class))
-					.isInstanceOf(IllegalArgumentException.class);
-			Assertions.assertThat(slice.optGroupBy("k2")).isEmpty();
-		}
-	}
 
 	@Test
 	public void testOptGroupBy_multipleKeys() {

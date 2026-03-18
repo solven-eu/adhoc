@@ -75,7 +75,7 @@ public class GroupingSetMergeableGrid implements IMultitypeMergeableGrid<IAdhocS
 	}
 
 	@Override
-	public long size(IAliasedAggregator aggregator) {
+	public long size(String aggregator) {
 		return groupByToGrid.values().stream().mapToLong(grid -> grid.size(aggregator)).sum();
 	}
 }
