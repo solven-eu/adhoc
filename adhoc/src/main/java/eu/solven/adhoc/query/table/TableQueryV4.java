@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
@@ -37,6 +38,7 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
@@ -161,8 +163,18 @@ public class TableQueryV4 implements ITableQuery {
 	 * @return a {@link TableQueryV3} covering this V4.
 	 */
 	public TableQueryV3 asCoveringV3() {
-		ImmutableSet<FilteredAggregator> aggregators = ImmutableSet.copyOf(groupByToAggregators.values());
-		ImmutableSet<IGroupBy> groupBys = ImmutableSet.copyOf(groupByToAggregators.keySet());
+		// Normalize index to 0, deduplicate by (aggregator, filter), then re-index name conflicts.
+		// Normalization ensures (aggregator, filter)-equivalent FAs from different groupBys collapse into one
+		// even if they carried different per-groupBy indices.
+		List<FilteredAggregator> deduped =
+				groupByToAggregators.values().stream().map(fa -> fa.withIndex(0)).distinct().toList();
+
+		AtomicLongMap<String> nameToNextIndex = AtomicLongMap.create();
+		Set<FilteredAggregator> aggregators = deduped.stream().map(fa -> {
+			long i = nameToNextIndex.getAndIncrement(fa.getAggregator().getName());
+			return fa.withIndex(i);
+		}).collect(ImmutableSet.toImmutableSet());
+		Set<IGroupBy> groupBys = ImmutableSet.copyOf(groupByToAggregators.keySet());
 
 		return TableQueryV3.builder()
 				.filter(filter)
