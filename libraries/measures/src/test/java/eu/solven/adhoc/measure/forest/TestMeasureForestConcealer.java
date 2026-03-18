@@ -37,9 +37,12 @@ import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.measure.forest.MeasureForestConcealer.ConcealingDefinition;
 import eu.solven.adhoc.measure.forest.MeasureForestConcealer.ConcealingResult;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 
 public class TestMeasureForestConcealer {
@@ -121,10 +124,9 @@ public class TestMeasureForestConcealer {
 		Assertions.assertThat(concealedComb.getName()).isEqualTo(mn("ratio"));
 		// underlyings renamed to hashed measure names
 		Assertions.assertThat(concealedComb.getUnderlyings()).containsExactly(mn("numerator"), mn("denominator"));
-		// formula preserved
+		// combinationKey preserved; options cleared
 		Assertions.assertThat(concealedComb.getCombinationKey()).isEqualTo("customDivideKey");
-		Assertions.assertThat((Map<String, Object>) (Map<?, ?>) concealedComb.getCombinationOptions())
-				.containsEntry("scale", 4);
+		Assertions.assertThat(concealedComb.getCombinationOptions()).isEmpty();
 	}
 
 	// ── Filtrator ────────────────────────────────────────────────────────────
@@ -198,12 +200,9 @@ public class TestMeasureForestConcealer {
 		Shiftor concealedShiftor = (Shiftor) result;
 		Assertions.assertThat(concealedShiftor.getName()).isEqualTo(mn("shiftedRevenue"));
 		Assertions.assertThat(concealedShiftor.getUnderlying()).isEqualTo(mn("revenue"));
-		// editorKey preserved (not a column or value)
+		// editorKey preserved (not a column or value); editorOptions cleared
 		Assertions.assertThat(concealedShiftor.getEditorKey()).isEqualTo("someEditorKey");
-		// editorOptions are NOT modified by default — keys and values kept as-is
-		Assertions.assertThat((Map<String, Object>) (Map<?, ?>) concealedShiftor.getEditorOptions())
-				.containsOnlyKeys("country")
-				.containsEntry("country", "FR");
+		Assertions.assertThat(concealedShiftor.getEditorOptions()).isEmpty();
 	}
 
 	// ── Tags ──────────────────────────────────────────────────────────────────
@@ -317,5 +316,104 @@ public class TestMeasureForestConcealer {
 		Filtrator restoredFil = (Filtrator) restored.getNameToMeasure().get("eurRevenue");
 		Assertions.assertThat(restoredFil.getUnderlying()).isEqualTo("rawRevenue");
 		Assertions.assertThat(restoredFil.getFilter()).isEqualTo(ColumnFilter.matchEq("ccy", "EUR"));
+	}
+
+	// ── Columnator ────────────────────────────────────────────────────────────
+
+	// The Columnator type, mode, combinationKey, and combinationOptions are preserved.
+	// Name, underlyings, and columns are all concealed.
+	@Test
+	public void testColumnator_nameUnderlyingsAndColumnsConcealed() {
+		Columnator secret = Columnator.builder()
+				.name("conditionalRevenue")
+				.underlying("revenue")
+				.column("ccy")
+				.column("country")
+				.mode(Columnator.Mode.HideIfMissing)
+				.build();
+		IMeasureForest forest =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(secret).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Assertions.assertThat(concealed.getNameToMeasure()).doesNotContainKey("conditionalRevenue");
+		IMeasure result = concealed.getNameToMeasure().get(mn("conditionalRevenue"));
+		Assertions.assertThat(result).isInstanceOf(Columnator.class);
+
+		Columnator concealedCol = (Columnator) result;
+		Assertions.assertThat(concealedCol.getName()).isEqualTo(mn("conditionalRevenue"));
+		// underlying measure reference is hashed
+		Assertions.assertThat(concealedCol.getUnderlyings()).containsExactly(mn("revenue"));
+		// column names are hashed
+		Assertions.assertThat(concealedCol.getColumns()).containsExactlyInAnyOrder(cn("ccy"), cn("country"));
+		// mode and combinationKey preserved
+		Assertions.assertThat(concealedCol.getMode()).isEqualTo(Columnator.Mode.HideIfMissing);
+		Assertions.assertThat(concealedCol.getCombinationKey()).isNotEmpty();
+	}
+
+	// ── Partitionor ───────────────────────────────────────────────────────────
+
+	// The Partitionor type, aggregationKey, combinationKey, and options are preserved.
+	// Name, underlyings, and groupBy column names are all concealed.
+	@Test
+	public void testPartitionor_groupByColumnsConcealed() {
+		Partitionor secret = Partitionor.builder()
+				.name("fxRevenue")
+				.underlying("revenue")
+				.groupBy(eu.solven.adhoc.query.groupby.GroupByColumns.named("ccy", "region"))
+				.build();
+		IMeasureForest forest =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(secret).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Assertions.assertThat(concealed.getNameToMeasure()).doesNotContainKey("fxRevenue");
+		IMeasure result = concealed.getNameToMeasure().get(mn("fxRevenue"));
+		Assertions.assertThat(result).isInstanceOf(Partitionor.class);
+
+		Partitionor concealedPar = (Partitionor) result;
+		Assertions.assertThat(concealedPar.getName()).isEqualTo(mn("fxRevenue"));
+		// underlying measure reference is hashed
+		Assertions.assertThat(concealedPar.getUnderlyings()).containsExactly(mn("revenue"));
+		// groupBy column names are hashed
+		Assertions.assertThat(concealedPar.getGroupBy().getGroupedByColumns())
+				.containsExactlyInAnyOrder(cn("ccy"), cn("region"));
+		// aggregation and combination keys preserved
+		Assertions.assertThat(concealedPar.getAggregationKey()).isNotEmpty();
+		Assertions.assertThat(concealedPar.getCombinationKey()).isNotEmpty();
+	}
+
+	// ── Dispatchor ────────────────────────────────────────────────────────────
+
+	// The Dispatchor type, aggregationKey, and decompositionKey are preserved.
+	// Name and underlying are concealed; aggregationOptions and decompositionOptions are cleared.
+	@Test
+	public void testDispatchor_optionsCleared() {
+		Dispatchor secret = Dispatchor.builder()
+				.name("dispatched")
+				.underlying("revenue")
+				.decompositionKey("percentBucket")
+				.decompositionOption("min", 0)
+				.decompositionOption("max", 100)
+				.aggregationOption("scale", 2)
+				.build();
+		IMeasureForest forest =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(secret).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Assertions.assertThat(concealed.getNameToMeasure()).doesNotContainKey("dispatched");
+		IMeasure result = concealed.getNameToMeasure().get(mn("dispatched"));
+		Assertions.assertThat(result).isInstanceOf(Dispatchor.class);
+
+		Dispatchor concealedDis = (Dispatchor) result;
+		Assertions.assertThat(concealedDis.getName()).isEqualTo(mn("dispatched"));
+		Assertions.assertThat(concealedDis.getUnderlying()).isEqualTo(mn("revenue"));
+		// structural keys preserved
+		Assertions.assertThat(concealedDis.getDecompositionKey()).isEqualTo("percentBucket");
+		Assertions.assertThat(concealedDis.getAggregationKey()).isNotEmpty();
+		// options cleared
+		Assertions.assertThat(concealedDis.getDecompositionOptions()).isEmpty();
+		Assertions.assertThat(concealedDis.getAggregationOptions()).isEmpty();
 	}
 }

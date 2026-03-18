@@ -43,6 +43,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.NotFilter;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
@@ -50,6 +51,8 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,9 +67,10 @@ import lombok.extern.slf4j.Slf4j;
  * <li><b>Aggregator.columnName</b> — replaced by {@code c_<hash>}.</li>
  * <li><b>Filtrator.filter</b> — column names inside the filter tree are replaced by {@code c_<hash>}.</li>
  * <li><b>Tags</b> — replaced by {@code t_<hash>}.</li>
- * <li><b>Options</b> (e.g. {@code Combinator.combinationOptions}, {@code Shiftor.editorOptions}) — left unchanged by
- * default; subclasses of {@link ConcealingVisitor} may override {@link AMappingVisitor#mapOptions(Map)} for custom
- * logic.</li>
+ * <li><b>Options</b> (e.g. {@code Combinator.combinationOptions}, {@code Shiftor.editorOptions}) — cleared by default,
+ * since they typically contain arbitrary domain-specific data that cannot be safely anonymised; subclasses of
+ * {@link ConcealingVisitor} may override {@link AMappingVisitor#mapOptions(Map)} to selectively preserve or transform
+ * specific keys.</li>
  * </ul>
  * Within each prefix namespace ({@code m_}, {@code c_}, {@code t_}, {@code v_}), hash collisions are resolved by
  * appending {@code _2}, {@code _3}, … to the duplicate, with the first occurrence keeping the un-suffixed slot.
@@ -143,6 +147,12 @@ public class MeasureForestConcealer {
 			}
 			if (m instanceof Filtrator fil) {
 				collectFilterColumns(fil.getFilter(), columnNames);
+			}
+			if (m instanceof Columnator col) {
+				columnNames.addAll(col.getColumns());
+			}
+			if (m instanceof Partitionor par) {
+				columnNames.addAll(par.getGroupBy().getGroupedByColumns());
 			}
 		}
 		Map<String, String> columnMapping = buildColumnMapping(columnNames);
@@ -323,47 +333,64 @@ public class MeasureForestConcealer {
 				return agg.toBuilder()
 						.name(newName)
 						.columnName(columnMapping.getOrDefault(agg.getColumnName(), agg.getColumnName()))
+						.clearAggregationOptions()
+						.aggregationOptions(mapOptions(agg.getAggregationOptions()))
 						.build();
-			}
-
-			if (measure instanceof Combinator comb) {
+			} else if (measure instanceof Combinator comb) {
 				return comb.toBuilder()
 						.name(newName)
 						.clearUnderlyings()
 						.underlyings(mapNames(comb.getUnderlyings()))
+						.clearCombinationOptions()
+						.combinationOptions(mapOptions(comb.getCombinationOptions()))
 						.build();
-			}
-
-			if (measure instanceof Filtrator fil) {
+			} else if (measure instanceof Columnator col) {
+				return col.toBuilder()
+						.name(newName)
+						.clearColumns()
+						.columns(col.getColumns()
+								.stream()
+								.map(c -> columnMapping.getOrDefault(c, c))
+								.collect(ImmutableSet.toImmutableSet()))
+						.clearUnderlyings()
+						.underlyings(mapNames(col.getUnderlyings()))
+						.clearCombinationOptions()
+						.combinationOptions(mapOptions(col.getCombinationOptions()))
+						.build();
+			} else if (measure instanceof Filtrator fil) {
 				return fil.toBuilder()
 						.name(newName)
 						.underlying(mapName(fil.getUnderlying()))
 						.filter(mapFilter(fil.getFilter()))
 						.build();
-			}
-
-			if (measure instanceof Shiftor shiftor) {
+			} else if (measure instanceof Shiftor shiftor) {
 				return shiftor.toBuilder()
 						.name(newName)
 						.underlying(mapName(shiftor.getUnderlying()))
 						.clearEditorOptions()
 						.editorOptions(mapOptions(shiftor.getEditorOptions()))
 						.build();
-			}
-
-			if (measure instanceof Dispatchor dis) {
-				return dis.toBuilder().name(newName).underlying(mapName(dis.getUnderlying())).build();
-			}
-
-			if (measure instanceof Partitionor par) {
+			} else if (measure instanceof Dispatchor dis) {
+				return dis.toBuilder()
+						.name(newName)
+						.underlying(mapName(dis.getUnderlying()))
+						.clearAggregationOptions()
+						.aggregationOptions(mapOptions(dis.getAggregationOptions()))
+						.clearDecompositionOptions()
+						.decompositionOptions(mapOptions(dis.getDecompositionOptions()))
+						.build();
+			} else if (measure instanceof Partitionor par) {
 				return par.toBuilder()
 						.name(newName)
 						.clearUnderlyings()
 						.underlyings(mapNames(par.getUnderlyings()))
+						.groupBy(mapGroupBy(par.getGroupBy()))
+						.clearAggregationOptions()
+						.aggregationOptions(mapOptions(par.getAggregationOptions()))
+						.clearCombinationOptions()
+						.combinationOptions(mapOptions(par.getCombinationOptions()))
 						.build();
-			}
-
-			if (measure instanceof Unfiltrator unf) {
+			} else if (measure instanceof Unfiltrator unf) {
 				return unf.toBuilder().name(newName).underlying(mapName(unf.getUnderlying())).build();
 			}
 
@@ -399,16 +426,24 @@ public class MeasureForestConcealer {
 		 * Transforms an option map (e.g. {@code Shiftor.editorOptions}, {@code Combinator.combinationOptions}).
 		 *
 		 * <p>
-		 * The default implementation is a no-op: options are returned unchanged, since they may contain arbitrary
-		 * domain-specific data that cannot be safely transformed without custom logic. Subclasses may override this
-		 * method.
+		 * The default implementation clears all options, since they typically contain arbitrary domain-specific data
+		 * that cannot be safely anonymised. Subclasses may override this method to selectively preserve or transform
+		 * specific keys.
 		 *
 		 * @param options
 		 *            the original options map (never {@code null})
 		 * @return the options to write into the mapped measure
 		 */
 		protected Map<String, ?> mapOptions(Map<String, ?> options) {
-			return options;
+			return Collections.emptyMap();
+		}
+
+		protected IGroupBy mapGroupBy(IGroupBy groupBy) {
+			if (groupBy.isGrandTotal()) {
+				return IGroupBy.GRAND_TOTAL;
+			}
+			return GroupByColumns
+					.named(groupBy.getGroupedByColumns().stream().map(c -> columnMapping.getOrDefault(c, c)).toList());
 		}
 
 		protected String mapName(String name) {

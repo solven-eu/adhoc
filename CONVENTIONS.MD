@@ -26,6 +26,26 @@ All checkers are informational — they never block the build.
 - Only use comments when necessary, as they can become outdated. Strive to make the code self-explanatory.
 - When comments are used, they should add useful information not readily apparent from the code itself.
 - Properly handle errors and exceptions to ensure robustness. Use exceptions rather than error codes.
+- **Exclusive branches**: when a chain of `if` blocks are mutually exclusive (each branch returns or throws), write them as `if / else if / … / else` rather than a sequence of independent `if` statements. The chained form communicates the exclusivity to the reader and lets the compiler/JIT skip the remaining checks once a branch is taken.
+  ```java
+  // ✓ preferred — communicates mutual exclusivity
+  if (x instanceof Foo f) {
+      return handleFoo(f);
+  } else if (x instanceof Bar b) {
+      return handleBar(b);
+  } else {
+      throw new IllegalArgumentException("unknown: " + x);
+  }
+
+  // ✗ avoid — reader must infer that the branches are exclusive
+  if (x instanceof Foo f) {
+      return handleFoo(f);
+  }
+  if (x instanceof Bar b) {
+      return handleBar(b);
+  }
+  throw new IllegalArgumentException("unknown: " + x);
+  ```
 
 ---
 
