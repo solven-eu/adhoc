@@ -27,9 +27,9 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
-import eu.solven.adhoc.data.column.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.IColumnValueConverter;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocUnsafe;

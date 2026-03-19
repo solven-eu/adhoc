@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -61,7 +61,7 @@ public class TabularRecordLogger {
 		};
 	}
 
-	public BiConsumer<ITabularRecord, IAdhocSlice> prepareStreamLogger(IHasQueryOptions tableQuery) {
+	public BiConsumer<ITabularRecord, ISlice> prepareStreamLogger(IHasQueryOptions tableQuery) {
 		return (input, optCoordinates) -> {
 			int currentIn = nbIn.incrementAndGet();
 			if (logAboutRow(tableQuery, currentIn)) {

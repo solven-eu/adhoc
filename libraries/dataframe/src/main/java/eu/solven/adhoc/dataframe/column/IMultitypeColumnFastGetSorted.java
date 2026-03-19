@@ -24,14 +24,14 @@ package eu.solven.adhoc.dataframe.column;
 
 import java.util.Optional;
 
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * For {@link IMultitypeColumn} which enables fast `.get` operations.
  * 
  * @param <T>
- *            typically {@link SliceAsMap}
+ *            typically {@link Slice}
  * @author Benoit Lacelle
  */
 public interface IMultitypeColumnFastGetSorted<T> extends IMultitypeColumnFastGet<T>, IIsSorted {

@@ -307,6 +307,26 @@ public class TestInduceByAdhoc {
 	}
 
 	@Test
+	public void testSplitAsDag_missingIntermediateCardinality() {
+		// groupBy sizes 1 and 3 with no size-2 step: iterating inducerGroupBy from 1 to 3
+		// previously caused NPE at cardinality=2 since cardinalityToSteps.get(2) returned null
+		CubeQueryStep size1 =
+				CubeQueryStep.builder().measure(Aggregator.sum("m")).groupBy(GroupByColumns.named("a")).build();
+		CubeQueryStep size3 = CubeQueryStep.builder()
+				.measure(Aggregator.sum("m"))
+				.groupBy(GroupByColumns.named("a", "b", "c"))
+				.build();
+
+		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> split =
+				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(size1, size3));
+
+		// size3 can induce size1 (it contains column "a")
+		Assertions.assertThat(split.edgeSet()).hasSize(1);
+		Assertions.assertThat(split.getEdgeSource(split.edgeSet().iterator().next())).isEqualTo(size1);
+		Assertions.assertThat(split.getEdgeTarget(split.edgeSet().iterator().next())).isEqualTo(size3);
+	}
+
+	@Test
 	public void testSplitAsDag_2groupByWithNonEmptyIntersection_andIntersection() {
 		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
 				ImmutableSet.<CubeQueryStep>builder()

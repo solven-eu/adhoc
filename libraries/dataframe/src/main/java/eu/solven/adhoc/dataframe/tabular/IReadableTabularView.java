@@ -27,12 +27,12 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
+ * Holds the data for a {@link Set} of {@link ISlice} and a {@link Set} of {@link IMeasure}. Typical output of an
  * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
  * 
  * {@link IReadableTabularView} implementations are generally immutable.
@@ -59,14 +59,14 @@ public interface IReadableTabularView {
 	 *
 	 * @return a distinct stream of slices
 	 */
-	Stream<IAdhocSlice> slices();
+	Stream<ISlice> slices();
 
 	/**
 	 * Will apply the {@link IColumnScanner} to each distinct slice.
 	 * 
 	 * @param rowScanner
 	 */
-	void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner);
+	void acceptScanner(IColumnScanner<ISlice> rowScanner);
 
 	/**
 	 *
@@ -76,5 +76,5 @@ public interface IReadableTabularView {
 	 * @param <U>
 	 *            the output type of the rowConvertor
 	 */
-	<U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowConverter);
+	<U> Stream<U> stream(ITabularRecordConverter<ISlice, U> rowConverter);
 }

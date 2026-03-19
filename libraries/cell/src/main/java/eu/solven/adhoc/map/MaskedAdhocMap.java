@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Builder;
@@ -78,8 +78,8 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	}
 
 	@Override
-	public IAdhocSlice asSlice() {
-		return SliceAsMap.fromMapUnsafe(this);
+	public ISlice asSlice() {
+		return Slice.fromMapUnsafe(this);
 	}
 
 	@Override

@@ -34,7 +34,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.data.column.ICompactable;
+import eu.solven.adhoc.cuboid.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;

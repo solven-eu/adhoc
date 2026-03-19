@@ -22,19 +22,19 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 
 /**
- * An {@link IAdhocSlice} combined with an {@link CubeQueryStep}. It is useful to provide more context to
+ * An {@link ISlice} combined with an {@link CubeQueryStep}. It is useful to provide more context to
  * {@link eu.solven.adhoc.measure.model.IMeasure}.
  * 
  * @author Benoit Lacelle
  */
 public interface ISliceWithStep {
-	IAdhocSlice getSlice();
+	ISlice getSlice();
 
 	/**
 	 * 

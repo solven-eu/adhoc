@@ -49,7 +49,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
@@ -201,7 +201,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
 
 				// groupBy groupedByColumns
-				Map<IAdhocSlice, Optional<ITabularRecord>> groupedAggregatedRecord =
+				Map<ISlice, Optional<ITabularRecord>> groupedAggregatedRecord =
 						stream.collect(Collectors.groupingBy(ITabularRecord::asSlice,
 								LinkedHashMap::new,
 								// empty is legit as we query no measure

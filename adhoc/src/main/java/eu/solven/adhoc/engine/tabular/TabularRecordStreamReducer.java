@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.Multimaps;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
@@ -82,15 +82,14 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	TableQueryV4 tableQuery;
 
-	protected IMultitypeMergeableGrid<IAdhocSlice> makeAggregatingMeasures(ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream) {
 
-		Supplier<IMultitypeMergeableGrid<IAdhocSlice>> gridFactory;
+		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
 
 		if (stream.isDistinctSlices()) {
-			gridFactory =
-					() -> AggregatingColumnsDistinct.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory = () -> AggregatingColumnsDistinct.<ISlice>builder().operatorFactory(operatorFactory).build();
 		} else {
-			gridFactory = () -> AggregatingColumns.<IAdhocSlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory = () -> AggregatingColumns.<ISlice>builder().operatorFactory(operatorFactory).build();
 		}
 
 		if (tableQuery.singleGroupBy().isPresent()) {
@@ -122,8 +121,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	}
 
 	@Override
-	public IMultitypeMergeableGrid<IAdhocSlice> reduce(ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<IAdhocSlice> grid = makeAggregatingMeasures(stream);
+	public IMultitypeMergeableGrid<ISlice> reduce(ITabularRecordStream stream) {
+		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream);
 
 		// Useful to log on the last row, to have the number of row actually streamed
 		TabularRecordLogger aggregatedRecordLogger = TabularRecordLogger.builder()
@@ -131,8 +130,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				.options(queryPod.getOptions())
 				.build();
 
-		BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate =
-				aggregatedRecordLogger.prepareStreamLogger(tableQuery);
+		BiConsumer<ITabularRecord, ISlice> peekOnCoordinate = aggregatedRecordLogger.prepareStreamLogger(tableQuery);
 
 		IGroupingSetAnalyzer groupingSetAnalyzer = makeGroupingSetAnalyzer();
 
@@ -155,7 +153,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 				Multimaps.asMap(tableQuery.getGroupByToAggregators()).entrySet().forEach(ee -> {
 					IGroupBy groupBy = ee.getKey();
-					IAdhocSlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
+					ISlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
 
 					ee.getValue().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 				});
@@ -172,12 +170,12 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 	protected void forEachMeasure(GroupByMarker sequencedKeyset,
 			ITabularRecord tableRow,
-			BiConsumer<ITabularRecord, IAdhocSlice> peekOnCoordinate,
-			IMultitypeMergeableGrid<IAdhocSlice> sliceToAgg) {
+			BiConsumer<ITabularRecord, ISlice> peekOnCoordinate,
+			IMultitypeMergeableGrid<ISlice> sliceToAgg) {
 		// Typically useful to discard the column underlying a calculated column
 		ITabularRecord retainedRecord = tableRow.retainAll(sequencedKeyset.keySet().sortedSet());
 
-		IAdhocSlice slice = retainedRecord.asSlice();
+		ISlice slice = retainedRecord.asSlice();
 
 		peekOnCoordinate.accept(tableRow, slice);
 

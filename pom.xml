@@ -164,6 +164,36 @@
 						</archive>
 						<skipIfEmpty>true</skipIfEmpty>
 					</configuration>
+					<executions>
+						<execution>
+							<goals>
+								<!-- Provides a classifier=tests jar, helpful for integration tests or benchmarks-->
+								<goal>test-jar</goal>
+							</goals>
+							<!-- Set -DtestJarPhase=none to skip building and deploying the tests jar -->
+							<phase>${testJarPhase}</phase>
+							<configuration>
+								<archive>
+									<manifestEntries>
+										<Automatic-Module-Name>${automatic.module.name}.tests</Automatic-Module-Name>
+									</manifestEntries>
+								</archive>
+								<!-- Skip modules without test sources (e.g. the aggregator POM) -->
+								<skipIfEmpty>true</skipIfEmpty>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<configuration>
+						<!-- https://stackoverflow.com/questions/52110023/how-do-you-organize-tests-in-a-modular-java-project -->
+						<!-- https://stackoverflow.com/questions/46613214/java-9-maven-junit-does-test-code-need-module-info-java-of-its-own-and-wher -->
+						<!--  allow to use unnamed modules -->
+						<useModulePath>false</useModulePath>
+					</configuration>
 				</plugin>
 
 				<plugin>
@@ -720,20 +750,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<goals>
-							<!-- Provides a classifier=tests jar, helpful for integration tests or benchmarks-->
-							<goal>test-jar</goal>
-						</goals>
-						<!-- Set -DtestJarPhase=none to skip building and deploying the tests jar -->
-						<phase>${testJarPhase}</phase>
-						<configuration>
-							<!-- Skip modules without test sources (e.g. the aggregator POM) -->
-							<skipIfEmpty>true</skipIfEmpty>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<!-- mvn spotless:apply -->

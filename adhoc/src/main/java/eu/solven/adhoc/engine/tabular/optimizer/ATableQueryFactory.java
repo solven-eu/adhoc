@@ -37,8 +37,8 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
@@ -140,7 +140,7 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 				.build();
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> prepareInducedColumn(CubeQueryStep inducer,
+	protected IMultitypeMergeableColumn<ISlice> prepareInducedColumn(CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ICuboid inducerValues,
 			IAggregation aggregation) {
@@ -148,7 +148,7 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 		boolean doesBreakSorting = breakSorting(inducerColumns, inducedColumns);
 
-		IMultitypeMergeableColumn<IAdhocSlice> inducedValues;
+		IMultitypeMergeableColumn<ISlice> inducedValues;
 		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
 		IColumnFactory columnFactory = factories.getColumnFactory();
 
@@ -180,7 +180,7 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		return !inducerAsList.equals(inducedAsList);
 	}
 
-	protected IAdhocSlice inducedGroupBy(NavigableSet<String> groupedByColumns, IAdhocSlice inducer) {
+	protected ISlice inducedGroupBy(NavigableSet<String> groupedByColumns, ISlice inducer) {
 		return inducer.retainAll(groupedByColumns);
 	}
 

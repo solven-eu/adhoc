@@ -28,9 +28,9 @@ import java.util.Optional;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.column.ICompactable;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICompactable;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.engine.IAdhocFactories;
@@ -58,14 +58,14 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 	}
 
 	@Override
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
+	public Optional<IMultitypeMergeableColumn<ISlice>> tryEvaluate(ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
 			IAggregation aggregation,
 			Aggregator aggregator) {
 
-		IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
+		IMultitypeMergeableColumn<ISlice> inducedValues =
 				prepareInducedColumn(inducer, induced, inducerValues, aggregation);
 
 		FilterMatcher filterMatcher =
@@ -75,7 +75,7 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
 
 		inducerValues.stream().filter(s -> filterMatcher.match(s.getSlice().asAdhocMap())).forEach(inducerSlice -> {
-			IAdhocSlice inducedSlice;
+			ISlice inducedSlice;
 			if (sameColumns) {
 				inducedSlice = inducerSlice.getSlice();
 			} else {
@@ -93,7 +93,7 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 		return Optional.of(inducedValues);
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> prepareInducedColumn(CubeQueryStep inducer,
+	protected IMultitypeMergeableColumn<ISlice> prepareInducedColumn(CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ICuboid inducerValues,
 			IAggregation aggregation) {

@@ -29,7 +29,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
  * Enable an {@link ICombination} to be defined through a lambda. Beware this is typically not serializable.

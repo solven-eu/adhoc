@@ -27,7 +27,7 @@ import java.util.Map;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
  * A {@link ICombination} returning a constant value.

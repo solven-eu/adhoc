@@ -34,11 +34,11 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 
 /**
  * This will handle transforming the underlying array into individual array elements if `scenarioIndex` column is

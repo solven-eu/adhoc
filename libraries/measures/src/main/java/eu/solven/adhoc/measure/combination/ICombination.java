@@ -32,8 +32,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 
 /**
  * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value. As a
- * {@link eu.solven.adhoc.measure.model.IMeasure}, it writes into current
- * {@link eu.solven.adhoc.data.row.slice.IAdhocSlice}.
+ * {@link eu.solven.adhoc.measure.model.IMeasure}, it writes into current {@link eu.solven.adhoc.cuboid.slice.ISlice}.
  * 
  * At least one of the `.combine` methods has to be overridden.
  *

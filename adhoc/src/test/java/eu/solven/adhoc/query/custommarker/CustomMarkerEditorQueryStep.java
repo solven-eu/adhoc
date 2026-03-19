@@ -24,8 +24,8 @@ package eu.solven.adhoc.query.custommarker;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -64,7 +64,7 @@ public class CustomMarkerEditorQueryStep implements IMeasureQueryStep {
 			throw new IllegalArgumentException("underlyingNames.size() != 1 (was %s)".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<IAdhocSlice> values = makeStorage();
+		IMultitypeColumnFastGet<ISlice> values = makeStorage();
 
 		ICuboid singleUnderlying = underlyings.getFirst();
 
@@ -89,7 +89,7 @@ public class CustomMarkerEditorQueryStep implements IMeasureQueryStep {
 		output.putSlice(slice.getSlice()).onObject(value);
 	}
 
-	protected IMultitypeColumnFastGet<IAdhocSlice> makeStorage() {
-		return MultitypeHashColumn.<IAdhocSlice>builder().build();
+	protected IMultitypeColumnFastGet<ISlice> makeStorage() {
+		return MultitypeHashColumn.<ISlice>builder().build();
 	}
 }

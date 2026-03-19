@@ -25,7 +25,7 @@ package eu.solven.adhoc.engine.cache;
 import java.util.Map;
 import java.util.Optional;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 

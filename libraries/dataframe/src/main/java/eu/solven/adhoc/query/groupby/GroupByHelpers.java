@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.ConstantMaskMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -72,7 +72,7 @@ public class GroupByHelpers {
 	 *            a mask as a {@link Map} of column to value to apply to each slice of the column
 	 * @return a {@link IMultitypeColumnFastGet}
 	 */
-	public static IMultitypeColumnFastGet<IAdhocSlice> addConstantColumns(IMultitypeColumnFastGet<IAdhocSlice> column,
+	public static IMultitypeColumnFastGet<ISlice> addConstantColumns(IMultitypeColumnFastGet<ISlice> column,
 			Map<String, ?> mask) {
 		if (mask.isEmpty()) {
 			return column;

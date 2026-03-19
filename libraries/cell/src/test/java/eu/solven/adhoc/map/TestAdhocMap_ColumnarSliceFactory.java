@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.map;
 
-import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
+import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 
 public class TestAdhocMap_ColumnarSliceFactory extends TestAdhocMap_RowSliceFactory {

@@ -24,7 +24,7 @@ package eu.solven.adhoc.measure.decomposition;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 
 /**
  * Used by {@link IDecomposition} which are configured by the underlying slices.

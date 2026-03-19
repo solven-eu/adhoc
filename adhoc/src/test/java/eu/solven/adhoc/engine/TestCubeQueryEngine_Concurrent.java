@@ -46,7 +46,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

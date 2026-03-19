@@ -24,6 +24,7 @@ package eu.solven.adhoc.filter.editor;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import lombok.Builder;
 import lombok.NonNull;

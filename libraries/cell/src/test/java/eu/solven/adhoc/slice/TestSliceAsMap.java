@@ -32,10 +32,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.pepper.collection.MapWithNulls;
 
@@ -43,7 +43,7 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testOptGroupBy_multipleKeys() {
-		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
+		ISlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
 
 		Assertions.assertThat((Map) slice.optGroupBy(Set.of("k"))).containsExactlyEntriesOf(ImmutableMap.of("k", "v"));
 		Assertions.assertThat((Map) slice.optGroupBy(Set.of("k2"))).containsExactlyEntriesOf(ImmutableMap.of());
@@ -53,15 +53,15 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testAddColumn() {
-		IAdhocSlice slice = AdhocMapHelpers.fromMap(Map.of("k", "v")).asSlice();
+		ISlice slice = AdhocMapHelpers.fromMap(Map.of("k", "v")).asSlice();
 
-		IAdhocSlice extended = slice.addColumns(Map.of("k2", "v2"));
+		ISlice extended = slice.addColumns(Map.of("k2", "v2"));
 		Assertions.assertThat((Map) extended.asAdhocMap()).hasSize(2).containsEntry("k", "v").containsEntry("k2", "v2");
 	}
 
 	@Test
 	public void testAddColumn_overlap() {
-		IAdhocSlice slice = AdhocMapHelpers.fromMap(Map.of("k", "v")).asSlice();
+		ISlice slice = AdhocMapHelpers.fromMap(Map.of("k", "v")).asSlice();
 
 		Assertions.assertThatThrownBy(() -> slice.addColumns(Map.of("k", "v2")))
 				.isInstanceOf(IllegalArgumentException.class)
@@ -71,16 +71,16 @@ public class TestSliceAsMap {
 	// Typically happens with nullable columns
 	@Test
 	public void testCompare_differentType() {
-		IAdhocSlice sliceDate = AdhocMapHelpers.fromMap(Map.of("d", LocalDate.now())).asSlice();
-		IAdhocSlice sliceString = AdhocMapHelpers.fromMap(Map.of("d", "NULL")).asSlice();
+		ISlice sliceDate = AdhocMapHelpers.fromMap(Map.of("d", LocalDate.now())).asSlice();
+		ISlice sliceString = AdhocMapHelpers.fromMap(Map.of("d", "NULL")).asSlice();
 
 		Assertions.assertThat(sliceDate).isGreaterThan(sliceString);
 	}
 
 	@Test
 	public void testIntAndLong_notAdhocMap() {
-		IAdhocSlice sliceInt = AdhocMapHelpers.fromMap(Map.of("k", 123)).asSlice();
-		IAdhocSlice sliceLong = AdhocMapHelpers.fromMap(Map.of("k", 123L)).asSlice();
+		ISlice sliceInt = AdhocMapHelpers.fromMap(Map.of("k", 123)).asSlice();
+		ISlice sliceLong = AdhocMapHelpers.fromMap(Map.of("k", 123L)).asSlice();
 
 		Assertions.assertThat(sliceInt).isEqualTo(sliceLong);
 	}
@@ -95,7 +95,7 @@ public class TestSliceAsMap {
 
 	@Test
 	public void testKeepAdhocMap() {
-		IAdhocSlice sliceOverAdhocMap = AdhocMapHelpers.fromMap(AdhocMapHelpers.fromMap(Map.of("k", 123))).asSlice();
+		ISlice sliceOverAdhocMap = AdhocMapHelpers.fromMap(AdhocMapHelpers.fromMap(Map.of("k", 123))).asSlice();
 
 		// TODO If no null, we could skip the transformation
 		Assertions.assertThat(sliceOverAdhocMap.getCoordinates().getClass().getName())

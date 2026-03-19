@@ -28,8 +28,8 @@ import java.util.Set;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.IHasName;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
  * Holds a {@link Set} of {@link IMeasure}, independent of an underlying {@link ITableWrapper}.

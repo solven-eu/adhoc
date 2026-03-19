@@ -6,8 +6,10 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ## [0.0.18]
 
 ### Fixed
+- `InduceByAdhoc.splitInducedDag`: fixed NPE when input steps have non-contiguous groupBy cardinalities (e.g. sizes 1 and 3 with no size-2 step) — iterating through missing cardinalities now yields an empty list instead of `null`.
 
 ### Added
+- `TpchSchema`: TPC-H example schema using DuckDB's built-in `tpch` extension (`CALL dbgen(sf=0.1)`); builds a snowflake view (`lineitem → orders → customer → nation → region`, `lineitem → part`, `lineitem → supplier`) with measures for `revenue` (expression aggregation), `quantity`, `avg_discount`, `order_count`, and `customer_count`. Accompanied by `TestTableQuery_DuckDb_Tpch`.
 - `TableQueryV4`: new query model that explicitly maps each `IGroupBy` to the exact `FilteredAggregator`s it needs, eliminating the cartesian-product waste of `TableQueryV3`. `streamV3()` collapses groupBys with identical aggregator sets into a single GROUPING SET and emits the rest as independent V3s (UNION ALL). `TableQueryFactory.processSteps` now builds V4 internally.
 - `MeasureForestConcealer`: utility that produces a "concealed" copy of a `MeasureForest` safe for export — measure names, column names, filter column names, and tags are replaced by deterministic hashes; options are preserved unchanged by default (extensible via `concealOptions()`). `concealWithDefinition()` also returns a `ConcealingDefinition` that a trusted party can pass to `restore()` to recover the original forest.
 - `MeasureForestAnalyzer`: utility that analyses a `MeasureForest` and returns (1) `columnToSpecialValues` — a map from every referenced column to the set of equality/IN-membership values in filter conditions, and (2) `tagToColumns` — a `SetMultimap` from tags to the columns referenced by measures carrying that tag.
@@ -16,6 +18,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Upgraded SpringBoot to `4.1.0-M2`
 - Upgraded DuckDB to `1.5.0.0`
 - Upgraded Arrow to `19.0.0`
+- Renamed `IAdhocSlice` into `ISlice`.
+- Renamed `SliceAsMap` into `Slice`.
 
 ## [0.0.17]
 

@@ -31,17 +31,23 @@
 			<groupId>com.activeviam.tech</groupId>
 			<artifactId>datastore</artifactId>
 			<version>${activepivot.server.version}</version>
+			<!-- Not needed for AtotiAliaser -->
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>com.activeviam.activepivot</groupId>
 			<artifactId>activepivot-impl</artifactId>
 			<version>${activepivot.server.version}</version>
+			<!-- Not needed for AtotiAliaser -->
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>com.activeviam.activepivot</groupId>
 			<artifactId>activepivot-ext</artifactId>
 			<version>${activepivot.server.version}</version>
+			<!-- Not needed for AtotiAliaser -->
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<!-- DrillUpPostProcessor -->
@@ -50,6 +56,8 @@
 			<groupId>com.activeviam.activepivot</groupId>
 			<artifactId>activepivot-copper2-impl</artifactId>
 			<version>${activepivot.server.version}</version>
+			<!-- Not needed for AtotiAliaser -->
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>

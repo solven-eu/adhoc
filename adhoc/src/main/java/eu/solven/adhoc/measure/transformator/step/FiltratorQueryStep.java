@@ -26,8 +26,8 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -88,7 +88,7 @@ public class FiltratorQueryStep extends AMeasureQueryStep {
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<IAdhocSlice> values =
+		IMultitypeColumnFastGet<ISlice> values =
 				factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
@@ -102,7 +102,7 @@ public class FiltratorQueryStep extends AMeasureQueryStep {
 
 		Object value = combination.combine(input.getSlice(), underlyingVs);
 
-		IAdhocSlice output = input.getSlice().getSlice();
+		ISlice output = input.getSlice().getSlice();
 		if (isDebug()) {
 			log.info("[DEBUG] Write {}={} (over {}) in {}", getMeasure().getName(), value, underlyingVs, output);
 		}

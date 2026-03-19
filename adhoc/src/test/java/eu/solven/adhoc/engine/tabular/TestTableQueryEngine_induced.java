@@ -32,8 +32,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
@@ -42,7 +43,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
@@ -93,7 +93,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				.hasSize(1);
 
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> columnFromTable = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> columnFromTable = MultitypeHashColumn.<ISlice>builder().build();
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR"))).onLong(123);
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD"))).onLong(234);
 
@@ -164,7 +164,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				.hasSize(2);
 
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> columnFromTable = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> columnFromTable = MultitypeHashColumn.<ISlice>builder().build();
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR", "country", "France"))).onLong(123);
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR", "country", "Germany"))).onLong(234);
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD", "country", "USA"))).onLong(345);

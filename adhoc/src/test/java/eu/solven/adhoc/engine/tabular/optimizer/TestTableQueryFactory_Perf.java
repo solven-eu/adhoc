@@ -35,8 +35,9 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSortedSet;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
@@ -45,7 +46,6 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -76,7 +76,7 @@ public class TestTableQueryFactory_Perf {
 
 		SplitTableQueries split = SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
 
-		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
+		IMultitypeColumnFastGet<ISlice> inducerValues = MultitypeHashColumn.<ISlice>builder().build();
 
 		// BEWARE This tests demonstrates DictionaryFactoryValue is behaving badly on large cardinalities
 		RowSliceFactory sliceFactory = RowSliceFactory.builder().build();
@@ -91,7 +91,7 @@ public class TestTableQueryFactory_Perf {
 		ICuboid inducerValues2 = Cuboid.builder().columns(Set.of("c0", "c1")).values(inducerValues).build();
 		inducers.put(inducerStep, inducerValues2);
 
-		IMultitypeMergeableColumn<IAdhocSlice> induced =
+		IMultitypeMergeableColumn<ISlice> induced =
 				inducer.evaluateInduced(IHasQueryOptions.noOption(), split, inducers, inducedStep);
 
 		Assertions.assertThat(induced.size()).isEqualTo(cardinalityOut);

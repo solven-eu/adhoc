@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**

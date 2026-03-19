@@ -48,9 +48,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
@@ -524,9 +524,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			coordinatesToValues = measureQuerySteps.produceOutputColumn(underlyings);
 		} catch (RuntimeException e) {
 			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryStep.getOptions())) {
-				IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
+				IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
 
-				IAdhocSlice errorSlice = makeErrorSlice(queryStep, e);
+				ISlice errorSlice = makeErrorSlice(queryStep, e);
 				column.append(errorSlice).onObject(e);
 				coordinatesToValues = Cuboid.forGroupBy(queryStep).values(column).build();
 			} else {
@@ -542,7 +542,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	}
 
 	// TODO We should ensure this slice is valid given current filter
-	protected IAdhocSlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
+	protected ISlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
 		IMapBuilderPreKeys errorSliceAsMapBuilder = factories.getSliceFactoryFactory()
 				.makeFactory(queryStep)
 				.newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
@@ -672,10 +672,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				boolean doClearCarriers = mayHoldCarriers(step)
 						&& !StandardQueryOptions.AGGREGATION_CARRIERS_STAY_WRAPPED.isActive(queryPod.getOptions());
 
-				IColumnScanner<IAdhocSlice> baseRowScanner =
+				IColumnScanner<ISlice> baseRowScanner =
 						slice -> view.sliceFeeder(slice, step.getMeasure().getName(), isEmptyMeasure);
 
-				IColumnScanner<IAdhocSlice> rowScanner =
+				IColumnScanner<ISlice> rowScanner =
 						scannerForTabularView(isEmptyMeasure, doClearCarriers, baseRowScanner);
 				coordinatesToValues.forEachSlice(rowScanner);
 			}
@@ -694,10 +694,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		}
 	}
 
-	protected IColumnScanner<IAdhocSlice> scannerForTabularView(boolean isEmptyMeasure,
+	protected IColumnScanner<ISlice> scannerForTabularView(boolean isEmptyMeasure,
 			boolean doClearCarriers,
-			IColumnScanner<IAdhocSlice> baseRowScanner) {
-		IColumnScanner<IAdhocSlice> rowScanner;
+			IColumnScanner<ISlice> baseRowScanner) {
+		IColumnScanner<ISlice> rowScanner;
 		if (isEmptyMeasure) {
 			rowScanner = slice -> {
 				IValueReceiver sliceFeeder = baseRowScanner.onKey(slice);

@@ -36,7 +36,7 @@ import org.mockito.Mockito;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.util.concurrent.Futures;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;

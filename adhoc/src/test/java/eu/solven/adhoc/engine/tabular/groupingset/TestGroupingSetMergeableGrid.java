@@ -27,11 +27,11 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -40,14 +40,14 @@ public class TestGroupingSetMergeableGrid {
 	Aggregator a = Aggregator.sum("v");
 
 	GroupingSetMergeableGrid grid = GroupingSetMergeableGrid.builder()
-			.gridFactory(() -> AggregatingColumnsDistinct.<IAdhocSlice>builder().build())
+			.gridFactory(() -> AggregatingColumnsDistinct.<ISlice>builder().build())
 			.build();
 
 	// Slices from two different groupBy keysets trigger two distinct underlying grids.
 	@Test
 	public void testTwoUnderlyingGrids() {
-		IAdhocSlice sliceCountry = SliceHelpers.asSlice(Map.of("country", "FR"));
-		IAdhocSlice sliceCcy = SliceHelpers.asSlice(Map.of("ccy", "EUR"));
+		ISlice sliceCountry = SliceHelpers.asSlice(Map.of("country", "FR"));
+		ISlice sliceCcy = SliceHelpers.asSlice(Map.of("ccy", "EUR"));
 
 		grid.contribute(sliceCountry, a).onLong(10);
 		grid.contribute(sliceCcy, a).onLong(20);
@@ -58,8 +58,8 @@ public class TestGroupingSetMergeableGrid {
 				CubeQueryStep.builder().measure("m").groupBy(GroupByColumns.named("country")).build();
 		CubeQueryStep stepCcy = CubeQueryStep.builder().measure("m").groupBy(GroupByColumns.named("ccy")).build();
 
-		IMultitypeColumnFastGet<IAdhocSlice> colCountry = grid.closeColumn(stepCountry, a);
-		IMultitypeColumnFastGet<IAdhocSlice> colCcy = grid.closeColumn(stepCcy, a);
+		IMultitypeColumnFastGet<ISlice> colCountry = grid.closeColumn(stepCountry, a);
+		IMultitypeColumnFastGet<ISlice> colCcy = grid.closeColumn(stepCcy, a);
 
 		Assertions.assertThat(IValueProvider.getValue(colCountry.onValue(sliceCountry))).isEqualTo(10L);
 		Assertions.assertThat(IValueProvider.getValue(colCcy.onValue(sliceCcy))).isEqualTo(20L);
@@ -68,8 +68,8 @@ public class TestGroupingSetMergeableGrid {
 	// toString() must not throw even when two underlying grids are present.
 	@Test
 	public void testToString_twoGrids() {
-		IAdhocSlice sliceCountry = SliceHelpers.asSlice(Map.of("country", "FR"));
-		IAdhocSlice sliceCcy = SliceHelpers.asSlice(Map.of("ccy", "EUR"));
+		ISlice sliceCountry = SliceHelpers.asSlice(Map.of("country", "FR"));
+		ISlice sliceCcy = SliceHelpers.asSlice(Map.of("ccy", "EUR"));
 
 		grid.contribute(sliceCountry, a).onLong(10);
 		grid.contribute(sliceCcy, a).onLong(20);

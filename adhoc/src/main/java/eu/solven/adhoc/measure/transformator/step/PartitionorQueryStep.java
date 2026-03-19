@@ -28,8 +28,8 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -93,7 +93,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 
 		IAggregation agg = getMakeAggregation();
 
-		IMultitypeMergeableColumn<IAdhocSlice> values = makeColumn(agg, underlyings);
+		IMultitypeMergeableColumn<ISlice> values = makeColumn(agg, underlyings);
 
 		ICombination combinator = combinationSupplier.get();
 
@@ -102,7 +102,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg, List<? extends ICuboid> underlyings) {
+	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg, List<? extends ICuboid> underlyings) {
 		// BEWARE The output capacity is at most the sum of input capacity. But it is
 		// generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
@@ -125,7 +125,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 						contributionSlice);
 			}
 
-			IAdhocSlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
+			ISlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
 
 			if (isDebug()) {
 				log.info("[DEBUG] m={} contributed {} into {}",
@@ -144,7 +144,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		}
 	}
 
-	protected IAdhocSlice queriedSlice(IGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
+	protected ISlice queriedSlice(IGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
 		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
 
 		return bucketedSlice.getSlice().retainAll(groupedByColumns);

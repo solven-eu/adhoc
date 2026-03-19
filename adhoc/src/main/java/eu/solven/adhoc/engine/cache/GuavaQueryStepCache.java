@@ -29,7 +29,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;

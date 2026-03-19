@@ -24,8 +24,8 @@ package eu.solven.adhoc.engine.tabular.inducer;
 
 import java.util.Map;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
@@ -47,7 +47,7 @@ public interface ITableQueryInducer {
 	 * @param induced
 	 * @return a {@link IMultitypeMergeableColumn} holding the result for given induced step
 	 */
-	IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
+	IMultitypeMergeableColumn<ISlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ICuboid> stepToValues,
 			CubeQueryStep induced);

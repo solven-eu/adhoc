@@ -27,7 +27,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.measure.MeasureQueryStepFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;

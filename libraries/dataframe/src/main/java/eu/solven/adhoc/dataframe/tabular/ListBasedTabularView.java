@@ -32,8 +32,8 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
@@ -76,7 +76,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 			return asMapBased;
 		}
 
-		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
+		IColumnScanner<ISlice> rowScanner = coordinates -> {
 			Map<String, ?> coordinatesAsMap = coordinates.asAdhocMap();
 
 			return o -> {
@@ -93,7 +93,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 	}
 
 	@Override
-	public Stream<IAdhocSlice> slices() {
+	public Stream<ISlice> slices() {
 		return coordinates.stream().map(s -> AdhocMapHelpers.fromMap(sliceFactory, s).asSlice());
 	}
 
@@ -109,7 +109,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 	}
 
 	@Override
-	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IColumnScanner<ISlice> rowScanner) {
 		for (int i = 0; i < size(); i++) {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
@@ -118,7 +118,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 	}
 
 	@Override
-	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(ITabularRecordConverter<ISlice, U> rowScanner) {
 		return IntStream.range(0, Ints.checkedCast(size())).mapToObj(i -> {
 			Map<String, ?> k = coordinates.get(i);
 			Map<String, ?> v = values.get(i);
@@ -134,7 +134,7 @@ public class ListBasedTabularView extends AListBasedTabularView implements IRead
 				.build();
 	}
 
-	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
+	public void appendSlice(ISlice slice, Map<String, ?> mToValues) {
 		coordinates.add(slice.asAdhocMap());
 		values.add(mToValues);
 	}

@@ -23,20 +23,18 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -154,10 +152,11 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
 		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
 		// not be inferred by a tableQUery with less groupBys.
-		Map<Integer, List<CubeQueryStep>> cardinalityToSteps = steps.stream()
-				.collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size(),
-						LinkedHashMap::new,
-						Collectors.toList()));
+
+		ListMultimap<Integer, CubeQueryStep> cardinalityToSteps = steps.stream()
+				.collect(Multimaps.toMultimap(s -> s.getGroupBy().getGroupedByColumns().size(),
+						s -> s,
+						LinkedListMultimap::create));
 
 		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
 

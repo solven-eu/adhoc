@@ -83,9 +83,9 @@ import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -278,7 +278,9 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			if (c.getAutoCommit()) {
 				// Performance check-up
 				// BEWARE ClickHouse seems not to allow autoCommit false
-				log.warn("autoCommit should not be true. connection={}", c);
+				// TODO Switch to WARN once we have a clear strategy to set this flag. Typically, most test-cases have
+				// autoCommit=true for now
+				log.debug("autoCommit should not be true. connection={}", c);
 			}
 		});
 

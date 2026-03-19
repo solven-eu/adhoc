@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -38,16 +38,16 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
 
 /**
- * A decorating {@link IMultitypeMergeableGrid} which handle receiving a stream of {@link IAdhocSlice} for differing
+ * A decorating {@link IMultitypeMergeableGrid} which handle receiving a stream of {@link ISlice} for differing
  * {@link IGroupBy}. It will delegate its work to an underlying {@link IMultitypeMergeableGrid} based on the input
  * keySet.
  *
  * @author Benoit Lacelle
  */
 @Builder
-public class GroupingSetMergeableGrid implements IMultitypeMergeableGrid<IAdhocSlice> {
-	protected final Supplier<IMultitypeMergeableGrid<IAdhocSlice>> gridFactory;
-	protected final Map<Set<String>, IMultitypeMergeableGrid<IAdhocSlice>> groupByToGrid = new ConcurrentHashMap<>();
+public class GroupingSetMergeableGrid implements IMultitypeMergeableGrid<ISlice> {
+	protected final Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
+	protected final Map<Set<String>, IMultitypeMergeableGrid<ISlice>> groupByToGrid = new ConcurrentHashMap<>();
 
 	@Override
 	public Set<String> getAggregators() {
@@ -58,18 +58,17 @@ public class GroupingSetMergeableGrid implements IMultitypeMergeableGrid<IAdhocS
 	}
 
 	@Override
-	public IOpenedSlice openSlice(IAdhocSlice key) {
+	public IOpenedSlice openSlice(ISlice key) {
 		return getGroupByGrid(gridFactory, key.columnsKeySet()).openSlice(key);
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<IAdhocSlice> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
+	public IMultitypeColumnFastGet<ISlice> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		return getGroupByGrid(gridFactory, queryStep.getGroupBy().getGroupedByColumns()).closeColumn(queryStep,
 				aggregator);
 	}
 
-	protected IMultitypeMergeableGrid<IAdhocSlice> getGroupByGrid(
-			Supplier<IMultitypeMergeableGrid<IAdhocSlice>> gridFactory,
+	protected IMultitypeMergeableGrid<ISlice> getGroupByGrid(Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory,
 			Set<String> set) {
 		return groupByToGrid.computeIfAbsent(set, k -> gridFactory.get());
 	}

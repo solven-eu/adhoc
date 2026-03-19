@@ -26,11 +26,11 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.encoding.page.ColumnSliceFactory;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
-import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
+import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;

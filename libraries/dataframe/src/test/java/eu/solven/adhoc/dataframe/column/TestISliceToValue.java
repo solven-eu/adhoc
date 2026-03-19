@@ -27,16 +27,16 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.map.SliceHelpers;
 
 public class TestISliceToValue {
 	@Test
 	public void testGetValue() {
-		IMultitypeColumnFastGet<IAdhocSlice> values = MultitypeHashColumn.<IAdhocSlice>builder().capacity(1).build();
-		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("a", "a1", "b", "b1"));
+		IMultitypeColumnFastGet<ISlice> values = MultitypeHashColumn.<ISlice>builder().capacity(1).build();
+		ISlice slice = SliceHelpers.asSlice(Map.of("a", "a1", "b", "b1"));
 		values.append(slice).onLong(123);
 
 		ICuboid sliceToValue = Cuboid.builder().column("a").column("b").values(values).build();

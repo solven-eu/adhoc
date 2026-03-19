@@ -47,9 +47,9 @@ import org.jooq.True;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
@@ -137,7 +137,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 *         column.
 	 */
 	@Override
-	public Optional<IMultitypeMergeableColumn<IAdhocSlice>> tryEvaluate(ICuboid inducerValues,
+	public Optional<IMultitypeMergeableColumn<ISlice>> tryEvaluate(ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
 			ISliceFilter leftoverFilter,
@@ -181,7 +181,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 				|| CountAggregation.isCount(aggKey);
 	}
 
-	protected Optional<IMultitypeMergeableColumn<IAdhocSlice>> evaluateViaDuckDB(IAdhocFactories factories,
+	protected Optional<IMultitypeMergeableColumn<ISlice>> evaluateViaDuckDB(IAdhocFactories factories,
 			ICuboid inducerValues,
 			CubeQueryStep inducer,
 			CubeQueryStep induced,
@@ -193,12 +193,12 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		NavigableSet<String> inducedGroupByCols = induced.getGroupBy().getGroupedByColumns();
 
 		// Probe the first entry to determine schema types
-		Optional<SliceAndMeasure<IAdhocSlice>> optFirst = inducerValues.stream().findFirst();
+		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findFirst();
 		if (optFirst.isEmpty()) {
 			return Optional.empty();
 		}
-		SliceAndMeasure<IAdhocSlice> firstEntry = optFirst.get();
-		IAdhocSlice firstSlice = firstEntry.getSlice();
+		SliceAndMeasure<ISlice> firstEntry = optFirst.get();
+		ISlice firstSlice = firstEntry.getSlice();
 
 		DataType<?> valueDataType = probeValueDataType(firstEntry);
 
@@ -230,7 +230,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			Result<Record> records = fetchRecords(dsl, toName, inducedGroupByCols, aggKey, conditionWithFilter);
 
 			// ── 4. Read results into IMultitypeMergeableColumn ───────────────────────
-			IMultitypeMergeableColumn<IAdhocSlice> result =
+			IMultitypeMergeableColumn<ISlice> result =
 					collectResults(records, inducedGroupByCols, aggregation, firstSlice.getFactory());
 
 			log.debug("DuckDB evaluateInduced: inducer.size={} result.size={} for inducer={} induced={}",
@@ -245,7 +245,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 	}
 
-	protected static DataType<?> probeValueDataType(SliceAndMeasure<IAdhocSlice> firstEntry) {
+	protected static DataType<?> probeValueDataType(SliceAndMeasure<ISlice> firstEntry) {
 		boolean[] valueIsLong = { false };
 		boolean[] valueIsDouble = { false };
 		firstEntry.getValueProvider().acceptReceiver(new IValueReceiver() {
@@ -274,7 +274,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	}
 
 	protected List<Field<?>> buildColumnDefs(NavigableSet<String> inducerGroupByCols,
-			IAdhocSlice firstSlice,
+			ISlice firstSlice,
 			DataType<?> valueDataType) {
 		List<Field<?>> columnDefs = new ArrayList<>();
 		for (String col : inducerGroupByCols) {
@@ -338,11 +338,11 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		}
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> collectResults(Result<Record> records,
+	protected IMultitypeMergeableColumn<ISlice> collectResults(Result<Record> records,
 			NavigableSet<String> inducedGroupByCols,
 			IAggregation aggregation,
 			ISliceFactory sliceFactory) {
-		IMultitypeMergeableColumn<IAdhocSlice> result =
+		IMultitypeMergeableColumn<ISlice> result =
 				factories.getColumnFactory().makeColumnRandomInsertions(aggregation, records.size());
 
 		int inducedColCount = inducedGroupByCols.size();
@@ -351,7 +351,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			for (int i = 0; i < inducedColCount; i++) {
 				builder = builder.append(record.get(i));
 			}
-			IAdhocSlice slice = builder.build().asSlice();
+			ISlice slice = builder.build().asSlice();
 
 			// The aggregated value is in the last column (index = inducedColCount)
 			Object aggValue = record.get(inducedColCount);

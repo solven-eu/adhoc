@@ -32,7 +32,7 @@ import org.jooq.conf.ParamType;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -170,7 +170,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 			throw new NotYetImplementedException("leftovers=%s".formatted(sqlQuery.getFields().getLeftovers()));
 		}
 
-		IAdhocSlice sliceSlice = slice.build().asSlice();
+		ISlice sliceSlice = slice.build().asSlice();
 		return TabularRecordOverMaps.builder()
 				.aggregates(aggregates)
 				.slice(mergedGroupBy.retainAll(sliceSlice.columnsKeySet()), sliceSlice)

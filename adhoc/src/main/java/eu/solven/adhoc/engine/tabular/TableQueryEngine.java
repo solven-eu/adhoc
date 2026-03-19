@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;

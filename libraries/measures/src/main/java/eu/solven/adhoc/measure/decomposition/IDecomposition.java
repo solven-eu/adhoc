@@ -27,7 +27,7 @@ import java.util.List;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 
 /**
  * Used for {@link eu.solven.adhoc.measure.model.IMeasure} which generates/contributes into multiple slices given an

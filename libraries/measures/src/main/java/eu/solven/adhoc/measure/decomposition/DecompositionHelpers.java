@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -37,7 +38,6 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.MeasurelessQuery.MeasurelessQueryBuilder;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import lombok.experimental.UtilityClass;
 

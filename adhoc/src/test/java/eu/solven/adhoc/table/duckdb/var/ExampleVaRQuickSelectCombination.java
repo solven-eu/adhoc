@@ -30,7 +30,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
 import smile.math.MathEx;
 import smile.sort.QuickSelect;

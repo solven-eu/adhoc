@@ -29,14 +29,14 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
-import eu.solven.adhoc.data.column.ICompactable;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.column.StreamStrategy;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.IColumnValueConverter;
+import eu.solven.adhoc.cuboid.ICompactable;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.StreamStrategy;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -48,7 +48,7 @@ import lombok.Singular;
 import lombok.ToString;
 
 /**
- * This is a simple way to store the value for a {@link java.util.Set} of {@link SliceAsMap}.
+ * This is a simple way to store the value for a {@link java.util.Set} of {@link Slice}.
  * 
  * @author Benoit Lacelle
  */
@@ -60,7 +60,7 @@ public class Cuboid implements ICuboid {
 	@NonNull
 	// Getter for testing
 	@Getter
-	final IMultitypeColumnFastGet<IAdhocSlice> values;
+	final IMultitypeColumnFastGet<ISlice> values;
 
 	@NonNull
 	@Singular
@@ -72,32 +72,32 @@ public class Cuboid implements ICuboid {
 	}
 
 	@Override
-	public IValueProvider onValue(IAdhocSlice slice) {
+	public IValueProvider onValue(ISlice slice) {
 		return values.onValue(slice);
 	}
 
 	@Override
-	public Stream<IAdhocSlice> slices() {
+	public Stream<ISlice> slices() {
 		return values.keyStream();
 	}
 
 	@Override
-	public Set<IAdhocSlice> slicesSet() {
+	public Set<ISlice> slicesSet() {
 		return values.keyStream().collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override
-	public void forEachSlice(IColumnScanner<IAdhocSlice> rowScanner) {
+	public void forEachSlice(IColumnScanner<ISlice> rowScanner) {
 		values.scan(rowScanner);
 	}
 
 	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(IColumnValueConverter<ISlice, U> rowScanner) {
 		return values.stream(rowScanner);
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<IAdhocSlice>> stream() {
+	public Stream<SliceAndMeasure<ISlice>> stream() {
 		return values.stream();
 	}
 
@@ -120,7 +120,7 @@ public class Cuboid implements ICuboid {
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<IAdhocSlice>> stream(StreamStrategy strategy) {
+	public Stream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy) {
 		return values.stream(strategy);
 	}
 
@@ -148,7 +148,7 @@ public class Cuboid implements ICuboid {
 			throw new IllegalArgumentException("Intersection between %s and %s".formatted(columns, mask.keySet()));
 		}
 
-		IMultitypeColumnFastGet<IAdhocSlice> maskedColumn = GroupByHelpers.addConstantColumns(values, mask);
+		IMultitypeColumnFastGet<ISlice> maskedColumn = GroupByHelpers.addConstantColumns(values, mask);
 		return toBuilder().values(maskedColumn).build();
 	}
 

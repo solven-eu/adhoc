@@ -49,8 +49,8 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
@@ -672,14 +672,14 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected Map<CubeQueryStep, ICuboid> aggregateStreamToAggregates(IHasTableQueryForSteps tableQueries,
 			TableQueryV4 query,
 			ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates = mergeTableAggregates(query, stream);
+		IMultitypeMergeableGrid<ISlice> sliceToAggregates = mergeTableAggregates(query, stream);
 
 		return splitTableGridToCuboids(tableQueries, query, sliceToAggregates);
 	}
 
 	protected Map<CubeQueryStep, ICuboid> splitTableGridToCuboids(IHasTableQueryForSteps tableQueries,
 			TableQueryV4 query,
-			IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates) {
+			IMultitypeMergeableGrid<ISlice> sliceToAggregates) {
 		IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
 
 		Map<CubeQueryStep, ICuboid> immutableChunks = toCuboids(tableQueries, query, sliceToAggregates);
@@ -713,22 +713,19 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	}
 
 	@Deprecated
-	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(TableQueryV2 query,
-			ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> mergeTableAggregates(TableQueryV2 query, ITabularRecordStream stream) {
 		return mergeTableAggregates(TableQueryV3.edit(query).build(), stream);
 	}
 
 	@Deprecated
-	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(TableQueryV3 query,
-			ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> mergeTableAggregates(TableQueryV3 query, ITabularRecordStream stream) {
 		return mergeTableAggregates(TableQueryV4.edit(query).build(), stream);
 	}
 
-	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates(TableQueryV4 query,
-			ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> mergeTableAggregates(TableQueryV4 query, ITabularRecordStream stream) {
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
-		IMultitypeMergeableGrid<IAdhocSlice> sliceToAggregates = mergeTableAggregates2(query, stream);
+		IMultitypeMergeableGrid<ISlice> sliceToAggregates = mergeTableAggregates2(query, stream);
 
 		// BEWARE This timing is dependent of the table
 		Duration elapsed = stopWatch.elapsed();
@@ -754,7 +751,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return sliceToAggregates;
 	}
 
-	protected IMultitypeMergeableGrid<IAdhocSlice> mergeTableAggregates2(TableQueryV4 tableQuery,
+	protected IMultitypeMergeableGrid<ISlice> mergeTableAggregates2(TableQueryV4 tableQuery,
 			ITabularRecordStream stream) {
 		ITabularRecordStreamReducer streamReducer = makeTabularRecordStreamReducer(tableQuery);
 
@@ -789,7 +786,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 */
 	protected Map<CubeQueryStep, ICuboid> toCuboids(IHasTableQueryForSteps tableQueries,
 			TableQueryV4 query,
-			IMultitypeMergeableGrid<IAdhocSlice> coordinatesToAggregates) {
+			IMultitypeMergeableGrid<ISlice> coordinatesToAggregates) {
 		Stream<StepAndFilteredAggregator> stepStream =
 				tableQueries.forEachCubeQuerySteps(query, filterOptimizerSupplier.get());
 
@@ -804,8 +801,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
 			// TODO do close only if the queryStep is actually relevant for the rest of the DAG.
-			IMultitypeColumnFastGet<IAdhocSlice> values =
-					coordinatesToAggregates.closeColumn(queryStep, filteredAggregator);
+			IMultitypeColumnFastGet<ISlice> values = coordinatesToAggregates.closeColumn(queryStep, filteredAggregator);
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
@@ -905,7 +901,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
-			IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
+			IMultitypeMergeableColumn<ISlice> inducedValues =
 					inducer.evaluateInduced(queryPod, inducerAndInduced, stepToValues, induced);
 
 			Duration elapsed = stopWatch.elapsed();

@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;

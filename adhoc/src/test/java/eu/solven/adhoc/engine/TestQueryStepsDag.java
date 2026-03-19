@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;

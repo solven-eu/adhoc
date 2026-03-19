@@ -27,8 +27,8 @@ import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
@@ -73,7 +73,7 @@ public class TestDuckDBInducedEvaluator {
 	 * </pre>
 	 */
 	ICuboid buildInducerValues() {
-		IMultitypeColumnFastGet<IAdhocSlice> col = MultitypeHashColumn.<IAdhocSlice>builder().build();
+		IMultitypeColumnFastGet<ISlice> col = MultitypeHashColumn.<ISlice>builder().build();
 
 		col.append(sliceFactory.newMapBuilder("country", "id").append("FR").append(1L).build().asSlice()).onLong(10L);
 		col.append(sliceFactory.newMapBuilder("country", "id").append("FR").append(2L).build().asSlice()).onLong(20L);
@@ -95,20 +95,20 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
-		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
+		IMultitypeMergeableColumn<ISlice> col = result.get();
 
 		// Expect 2 groups: FR=30, DE=70
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
-		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
+		ISlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		IValueProvider frValue = col.onValue(frSlice);
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(frValue)).isEqualTo(30L);
 
-		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
+		ISlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		IValueProvider deValue = col.onValue(deSlice);
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(deValue)).isEqualTo(70L);
 	}
@@ -128,16 +128,16 @@ public class TestDuckDBInducedEvaluator {
 		// Only keep rows where country = "FR"
 		ISliceFilter leftoverFilter = ColumnFilter.matchEq("country", "FR");
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, leftoverFilter, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
-		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
+		IMultitypeMergeableColumn<ISlice> col = result.get();
 
 		// Only FR should appear (DE filtered out)
 		Assertions.assertThat(col.size()).isEqualTo(1);
 
-		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
+		ISlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(30L);
 	}
 
@@ -153,18 +153,18 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
-		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
+		IMultitypeMergeableColumn<ISlice> col = result.get();
 
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
-		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
+		ISlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(20L);
 
-		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
+		ISlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(deSlice))).isEqualTo(40L);
 	}
 
@@ -180,18 +180,18 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
-		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
+		IMultitypeMergeableColumn<ISlice> col = result.get();
 
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
-		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
+		ISlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(frSlice))).isEqualTo(10L);
 
-		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
+		ISlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getLong(col.onValue(deSlice))).isEqualTo(30L);
 	}
 
@@ -207,20 +207,20 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		Assertions.assertThat(result).isPresent();
-		IMultitypeMergeableColumn<IAdhocSlice> col = result.get();
+		IMultitypeMergeableColumn<ISlice> col = result.get();
 
 		Assertions.assertThat(col.size()).isEqualTo(2);
 
 		// Each country has 2 rows
-		IAdhocSlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
+		ISlice frSlice = sliceFactory.newMapBuilder("country").append("FR").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getObject(col.onValue(frSlice)))
 				.isEqualTo(CountAggregation.CountAggregationCarrier.builder().count(2L).build());
 
-		IAdhocSlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
+		ISlice deSlice = sliceFactory.newMapBuilder("country").append("DE").build().asSlice();
 		Assertions.assertThat(IValueProviderTestHelpers.getObject(col.onValue(deSlice)))
 				.isEqualTo(CountAggregation.CountAggregationCarrier.builder().count(2L).build());
 	}
@@ -237,7 +237,7 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		// PRODUCT is not supported by DuckDB path → must fall back (return empty)
@@ -256,7 +256,7 @@ public class TestDuckDBInducedEvaluator {
 		CubeQueryStep induced =
 				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
 
-		Optional<IMultitypeMergeableColumn<IAdhocSlice>> result =
+		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(empty, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
 
 		// Empty input → skip DuckDB path

@@ -28,13 +28,13 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
@@ -46,7 +46,7 @@ public class TestSliceAsMapWithStep {
 		ISliceFilter stepFilter = ColumnFilter.matchEq("c1", "v1");
 		CubeQueryStep step =
 				CubeQueryStep.builder().measure(k1Sum).filter(stepFilter).groupBy(GroupByColumns.named("c2")).build();
-		IAdhocSlice parentSlice = SliceHelpers.asSlice(Map.of("c2", "v2"));
+		ISlice parentSlice = SliceHelpers.asSlice(Map.of("c2", "v2"));
 
 		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().queryStep(step).slice(parentSlice).build();
 

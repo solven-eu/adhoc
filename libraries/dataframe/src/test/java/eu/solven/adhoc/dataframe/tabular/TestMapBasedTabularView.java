@@ -27,7 +27,7 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import tools.jackson.databind.exc.InvalidDefinitionException;
 

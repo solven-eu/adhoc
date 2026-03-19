@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import eu.solven.adhoc.data.row.ITabularGroupBySlice;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupBySlice;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher.FilterMatcherBuilder;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.filter.ColumnFilter;

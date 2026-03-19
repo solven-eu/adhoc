@@ -31,8 +31,8 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -81,7 +81,7 @@ public class TableQueryInducer implements ITableQueryInducer {
 	}
 
 	@Override
-	public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(IHasQueryOptions hasOptions,
+	public IMultitypeMergeableColumn<ISlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
 			Map<CubeQueryStep, ICuboid> stepToValues,
 			CubeQueryStep induced) {
@@ -109,7 +109,7 @@ public class TableQueryInducer implements ITableQueryInducer {
 
 		ISliceFilter sliceFilter = optSliceFilter.get();
 
-		IMultitypeMergeableColumn<IAdhocSlice> inducedValues =
+		IMultitypeMergeableColumn<ISlice> inducedValues =
 				inducedEvaluator.tryEvaluate(inducerValues, inducer, induced, sliceFilter, aggregation, aggregator)
 						.orElseThrow(() -> new IllegalStateException(
 								"No evaluator succeeded for inducer=%s induced=%s".formatted(inducer, induced)));

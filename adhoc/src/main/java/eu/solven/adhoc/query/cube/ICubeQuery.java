@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.query.cube;
 
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.model.Aggregator;

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.transcoder.IdentityReversibleAliaser;
 

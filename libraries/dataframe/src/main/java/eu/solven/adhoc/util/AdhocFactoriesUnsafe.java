@@ -23,7 +23,7 @@
 package eu.solven.adhoc.util;
 
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.tabular.optimizer.IFilterOptimizerFactory;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 

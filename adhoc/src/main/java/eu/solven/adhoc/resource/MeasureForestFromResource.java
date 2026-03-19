@@ -54,7 +54,7 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.extern.slf4j.Slf4j;
