@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.coordinate;
+package eu.solven.adhoc.column.coordinate;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;

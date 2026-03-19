@@ -23,5 +23,7 @@
 
 		<!-- Following modules are bootable-->
 		<module>server</module>
+
+		<module>bom</module>
 	</modules>
 </project>

@@ -189,7 +189,6 @@ public class TableQueryV4 implements ITableQuery {
 		return CubeQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
 	}
 
-	// TODO This should not be public
 	public CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {

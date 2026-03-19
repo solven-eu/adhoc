@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.column;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -29,7 +29,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.column.ColumnMetadata;
+import eu.solven.adhoc.util.IHasColumnTypes;
+import eu.solven.adhoc.util.IHasColumnsKeySet;
 import eu.solven.pepper.core.PepperStreamHelper;
 
 /**

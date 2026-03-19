@@ -25,8 +25,6 @@ package eu.solven.adhoc.data.tabular;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -43,6 +41,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 

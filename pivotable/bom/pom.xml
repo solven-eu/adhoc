@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>pivotable</artifactId>
+		<version>0.0.18-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>pivotable-bom</artifactId>
+	<packaging>pom</packaging>
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>Bill of Materials for Pivotable — the Spring Boot web layer on top of Adhoc. Imports adhoc-bom and pins the Spring Boot / WebFlux / Netty stack and pivotable-specific dependencies.</description>
+
+	<properties>
+		<!-- Override parent skip flags: this BOM must be deployed -->
+		<maven.install.skip>false</maven.install.skip>
+		<maven.deploy.skip>false</maven.deploy.skip>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<!-- ── Import adhoc-bom first (engine + its third-party deps) ─────── -->
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-bom</artifactId>
+				<version>${project.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- ── Import the full Spring Boot dependency stack ──────────────── -->
+			<!-- Covers Spring WebFlux, Netty, Reactor, Spring Security, etc.    -->
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-dependencies</artifactId>
+				<!-- Hardcoded: property interpolation is unreliable inside <dependencyManagement> BOM imports -->
+				<version>4.1.0-M2</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- ── Pivotable modules ─────────────────────────────────────────── -->
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>pivotable-public</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>pivotable-authorization</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>pivotable-server-core</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>pivotable-server</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>pivotable-tools</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>pivotable-mcp</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- ── Pivotable-specific third-party ────────────────────────────── -->
+
+			<!-- jOOQ — SQL DSL used for table access -->
+			<dependency>
+				<groupId>org.jooq</groupId>
+				<artifactId>jooq</artifactId>
+				<version>${jooq.version}</version>
+			</dependency>
+
+			<!-- DuckDB — in-process analytical database -->
+			<dependency>
+				<groupId>org.duckdb</groupId>
+				<artifactId>duckdb_jdbc</artifactId>
+				<version>${duckdb.version}</version>
+			</dependency>
+
+			<!-- EvalEx — expression evaluator -->
+			<dependency>
+				<groupId>com.ezylang</groupId>
+				<artifactId>EvalEx</artifactId>
+				<version>${evalex.ezylang.version}</version>
+			</dependency>
+
+			<!-- Apache Arrow — columnar data format for tabular serialization -->
+			<dependency>
+				<groupId>org.apache.arrow</groupId>
+				<artifactId>arrow-vector</artifactId>
+				<version>${arrow.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.arrow</groupId>
+				<artifactId>arrow-memory-netty</artifactId>
+				<version>${arrow.version}</version>
+			</dependency>
+
+			<!-- JGraphT — graph library used for measure DAG computations -->
+			<dependency>
+				<groupId>org.jgrapht</groupId>
+				<artifactId>jgrapht-core</artifactId>
+				<version>${jgrapht.version}</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+</project>

@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.concurrent.TimeUnit;
 
-import eu.solven.adhoc.cuboid.slice.ISlice;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -40,6 +39,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import lombok.extern.slf4j.Slf4j;
 

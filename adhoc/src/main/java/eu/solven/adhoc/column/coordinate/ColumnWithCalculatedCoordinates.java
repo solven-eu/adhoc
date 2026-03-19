@@ -20,32 +20,59 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.coordinate;
+package eu.solven.adhoc.column.coordinate;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.column.ReferencedColumn;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 /**
- * A Coordinate is a possible value along an {@link IAdhocColumn}. While most coordinate are defined as distinct values,
- * as would be reported by a `GROUP BY`, some coordinates can be defined programmatically relatively to current column.
+ * An {@link IAdhocColumn} which is enriched with additional {@link ICalculatedCoordinate}.
  * 
  * @author Benoit Lacelle
  */
-// TODO This should enable customization of customMarker
-@JsonTypeInfo(use = JsonTypeInfo.Id.MINIMAL_CLASS,
-		include = JsonTypeInfo.As.PROPERTY,
-		property = "type",
-		defaultImpl = CalculatedCoordinate.class)
-public interface ICalculatedCoordinate {
+@Value
+@Builder
+@Jacksonized
+public class ColumnWithCalculatedCoordinates implements IAdhocColumn, IHasCalculatedCoordinates {
+
+	@NonNull
+	IAdhocColumn column;
+
+	@Singular
+	ImmutableList<ICalculatedCoordinate> calculatedCoordinates;
+
+	@Override
+	// JsonIgnore as we rely on the column which may not be a ReferencedColumn
+	@JsonIgnore
+	public String getName() {
+		return column.getName();
+	}
+
 	/**
-	 * A calculated coordinate representing all available coordinates. If current column is filtered, this would include
-	 * only the filtered members.
+	 * Lombok Builder
+	 * 
+	 * @author Benoit Lacelle
 	 */
-	String COORDINATE_STAR = "*";
+	public static class ColumnWithCalculatedCoordinatesBuilder {
+		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+		IAdhocColumn column;
 
-	Object getCoordinate();
+		public ColumnWithCalculatedCoordinatesBuilder column(IAdhocColumn column) {
+			this.column = column;
+			return this;
+		}
 
-	ISliceFilter getFilter();
+		public ColumnWithCalculatedCoordinatesBuilder column(String column) {
+			return column(ReferencedColumn.ref(column));
+		}
+	}
+
 }

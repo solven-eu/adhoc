@@ -53,6 +53,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
@@ -172,7 +173,21 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@Override
 	public QueryWithLeftover prepareQuery(TableQueryV4 tableQuery) {
-		return prepareQuery(tableQuery.asCoveringV3());
+		TableQueryV3 v3 = tableQuery.asCoveringV3();
+
+		if (tableQuery.isDebugOrExplain()) {
+			long nbEvaluatedTableInducers = TableQueryV3.nbCuboids(v3);
+			long tableStepsCount = tableQuery.streamV3().mapToLong(TableQueryV3::nbCuboids).sum();
+
+			// prints percent with 1 digit.
+			String percentEfficiency = TableQueryFactory.asPercent(tableStepsCount, nbEvaluatedTableInducers);
+			log.info("[EXPLAIN] {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
+					tableStepsCount,
+					1,
+					nbEvaluatedTableInducers,
+					percentEfficiency);
+		}
+		return prepareQuery(v3);
 	}
 
 	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
@@ -229,7 +244,23 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}
 
 		return QueryWithLeftover.builder()
-				// TODO We may like to break `GROUPING SET` around here
+				// TODO We may like to break `GROUPING SET` around here (see TableQueryV4.streamV3 and
+				// JooqTableWrapper.streamSlices). Three strategies worth exposing as a configurable option:
+				//
+				// 1. GROUPING SETS (current default via asCoveringV3): one SQL query, cartesian product of all
+				// (groupBy × aggregator) pairs. Fast when groupBys share the same aggregators; wasteful when they
+				// differ, because it computes irrelevant (groupBy, aggregator) combinations.
+				//
+				// 2. UNION ALL via multiple TableQueryV3 (TableQueryV4.streamV3): one SQL per distinct aggregator
+				// set; each query covers only the (groupBy, aggregator) pairs that actually need each other.
+				// Avoids cartesian waste but adds per-query overhead. Preferable when aggregator sets diverge.
+				//
+				// 3. Literal SQL UNION ALL (not yet implemented): a single SQL statement whose branches are
+				// UNION ALL'd by the DB engine itself. Unlike option 2 (which concatenates at the Java level),
+				// this lets the DB share one scan across branches and can be faster on columnar engines.
+				//
+				// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
+				// overlap. Benchmark with TestTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
 				.queries(partitionQuery(resultQuery))
 				.leftover(conditionAndLeftover.getLeftover())
 				.aggregatorToLeftovers(aggregateToLeftover)

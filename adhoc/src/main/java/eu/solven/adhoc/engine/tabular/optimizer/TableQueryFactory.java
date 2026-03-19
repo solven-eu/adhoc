@@ -56,6 +56,7 @@ import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -118,23 +119,22 @@ public class TableQueryFactory extends ATableQueryFactory {
 		if (hasOptions.isDebugOrExplain()) {
 			Set<TableQueryV4> tableQueries = splitTableQueries.getTableQueries();
 
+			int nbTableInducers = splitTableQueries.getInducers().size();
 			// This represents the number of CubeQueryStep evaluated by the tableQuery, amongst which a bunch are
 			// possibly useless.
 			// BEWARE If customMarker are suppressed from tableQueries, these numbers would need additional
 			// interpretations
-			long nbOutputSteps = tableQueries.stream()
-					.flatMap(TableQueryV4::streamV3)
-					.mapToLong(v3 -> v3.getAggregators().size() * v3.streamGroupBy().count())
-					.sum();
+			long nbEvaluatedTableInducers =
+					tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
 
 			// prints percent with 1 digit.
-			String percentEfficiency = asPercent(tableSteps, nbOutputSteps);
+			String percentEfficiency = asPercent(tableSteps.size(), nbEvaluatedTableInducers);
 			log.info(
 					"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
 					tableSteps.size(),
-					splitTableQueries.getInducers().size(),
+					nbTableInducers,
 					tableQueries.size(),
-					nbOutputSteps,
+					nbEvaluatedTableInducers,
 					percentEfficiency);
 
 			forEachIndexed(tableQueries, (indexQuery, tableQuery) -> {
@@ -146,8 +146,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected String asPercent(Set<CubeQueryStep> tableSteps, long nbOutputSteps) {
-		return "%.1f%%".formatted(100.0 * tableSteps.size() / nbOutputSteps);
+	public static String asPercent(long nbNeededSteps, long nbEvaluatedSteps) {
+		return "%.1f%%".formatted(100.0 * nbNeededSteps / nbEvaluatedSteps);
 	}
 
 	protected Map<CubeQueryStep, TableQueryV4> makeStepToTableQuery(Set<CubeQueryStep> tableSteps,

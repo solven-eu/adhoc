@@ -20,20 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.coordinate;
+package eu.solven.adhoc.engine.cache;
 
-import java.util.List;
+import java.util.Map;
+
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import lombok.experimental.UtilityClass;
 
 /**
- * A column which has been added calculated members. The typical case is to add `*` as an additional member, which
- * returns the value if current column was not grouped by.
- * 
- * Other example can be `WHERE someColumn LIKE 'a%'` to make a member evaluating the aggregate over the set of matching
- * coordinates.
+ * Helps working with the {@link CubeQueryStep} transverse Cache.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface IHasCalculatedCoordinates {
-	List<ICalculatedCoordinate> getCalculatedCoordinates();
+@UtilityClass
+public class TransverseCacheHelper {
+	public static IFilterOptimizer getFilterOptimizer(CubeQueryStep step) {
+		Map<Object, Object> transverseCache = step.getTransverseCache();
+		return (IFilterOptimizer) transverseCache.get(CubeQueryStep.KEY_FILTER_OPTIMIZER);
+	}
+
 }

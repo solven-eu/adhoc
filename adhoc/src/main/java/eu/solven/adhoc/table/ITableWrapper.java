@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.IHasColumns;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -34,7 +35,6 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.util.IHasColumns;
 import eu.solven.adhoc.util.IHasName;
 import eu.solven.pepper.core.PepperStreamHelper;
 

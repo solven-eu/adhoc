@@ -25,8 +25,6 @@ package eu.solven.adhoc.dataframe.aggregating;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -42,6 +40,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;

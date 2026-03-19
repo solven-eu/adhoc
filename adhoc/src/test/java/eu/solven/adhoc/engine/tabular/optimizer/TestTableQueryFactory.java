@@ -30,8 +30,8 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
-import eu.solven.adhoc.coordinate.CalculatedCoordinate;
+import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
+import eu.solven.adhoc.column.coordinate.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;

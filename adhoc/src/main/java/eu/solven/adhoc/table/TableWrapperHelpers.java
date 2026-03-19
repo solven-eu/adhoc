@@ -65,8 +65,7 @@ public class TableWrapperHelpers {
 
 			@Override
 			public void close() {
-				// TODO Manage exception to keep closing others
-				underlyings.forEach(ITabularRecordStream::close);
+				closeAll(underlyings);
 			}
 		};
 	}
@@ -96,10 +95,31 @@ public class TableWrapperHelpers {
 
 			@Override
 			public void close() {
-				// TODO Manage exception to keep closing others
-				underlyings.forEach(ITabularRecordStream::close);
+				closeAll(underlyings);
 			}
 		};
+	}
+
+	// Relates with Guava Closer, but needed as Closed does not handle AutoCloseable
+	// https://github.com/google/guava/issues/3068
+	protected static void closeAll(List<ITabularRecordStream> streams) {
+		Throwable firstThrown = null;
+		for (ITabularRecordStream stream : streams) {
+			try {
+				stream.close();
+			} catch (Exception e) {
+				if (firstThrown == null) {
+					firstThrown = e;
+				} else {
+					firstThrown.addSuppressed(e);
+				}
+			}
+		}
+		if (firstThrown instanceof RuntimeException re) {
+			throw re;
+		} else if (firstThrown != null) {
+			throw new RuntimeException(firstThrown);
+		}
 	}
 
 }

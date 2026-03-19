@@ -124,9 +124,8 @@ public class TableQueryV3 implements ITableQuery {
 		return CubeQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
 	}
 
-	// TODO This should not be public
 	@Deprecated(since = "V4", forRemoval = true)
-	public CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
+	protected CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {
 		// Recombine the stepFilter given the tableQuery filter and the measure filter
@@ -151,6 +150,10 @@ public class TableQueryV3 implements ITableQuery {
 			groupBysStream = groupBys.stream();
 		}
 		return groupBysStream;
+	}
+
+	public static long nbCuboids(TableQueryV3 v3) {
+		return v3.getAggregators().size() * v3.streamGroupBy().count();
 	}
 
 	public Stream<TableQueryV2> streamV2() {

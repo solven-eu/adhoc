@@ -50,6 +50,8 @@
 
 		<module>pivotable</module>
 
+		<module>bom</module>
+
 		<module>training</module>
 
 		<module>aggregate</module>
