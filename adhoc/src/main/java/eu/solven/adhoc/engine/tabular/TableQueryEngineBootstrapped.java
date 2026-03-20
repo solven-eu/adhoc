@@ -440,8 +440,18 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	}
 
 	// `InsufficientStringBufferDeclaration`: Unclear if we prefer a MagicNumber
-	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
 	protected String toPerfLog(TableQueryV4 tableQuery) {
+		// isPerfectV3() is the shared flag: JooqTableQueryFactory currently ignores it and always uses
+		// asCoveringV3() (GROUPING SETS), but the log reflects what the strategy should ideally be.
+		if (tableQuery.isPerfectV3()) {
+			return toPerfLog(tableQuery.asCoveringV3());
+		}
+
+		return tableQuery.streamV3().map(this::toPerfLog).collect(Collectors.joining(" UNION ALL "));
+	}
+
+	@SuppressWarnings("PMD.InsufficientStringBufferDeclaration")
+	protected String toPerfLog(TableQueryV3 tableQuery) {
 		String measures = tableQuery.getAggregators().stream().map(this::toPerfLog).collect(Collectors.joining(", "));
 
 		StringBuilder sb = new StringBuilder();
@@ -452,25 +462,16 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			sb.append(" WHERE ").append(tableQuery.getFilter());
 		}
 
-		IGroupBy groupBy;
 		if (tableQuery.getGroupBys().isEmpty()) {
 			sb.append(" GROUP BY ()");
 		} else if (tableQuery.getGroupBys().size() == 1) {
-			groupBy = AdhocCollectionHelpers.getFirst(tableQuery.getGroupBys());
-
-			sb.append(" GROUP BY ").append(groupBy);
+			sb.append(" GROUP BY ").append(AdhocCollectionHelpers.getFirst(tableQuery.getGroupBys()));
 		} else {
 			String groupByClause = tableQuery.getGroupBys()
 					.stream()
 					.map(IGroupBy::toString)
 					.collect(Collectors.joining(",", "(", ")"));
-			// isPerfectV3() is the shared flag: JooqTableQueryFactory currently ignores it and always
-			// uses asCoveringV3() (GROUPING SETS), but the log reflects what the strategy should ideally be.
-			if (tableQuery.isPerfectV3()) {
-				sb.append(" GROUPING SETS ").append(groupByClause);
-			} else {
-				sb.append(" UNION ALL ").append(groupByClause);
-			}
+			sb.append(" GROUPING SETS ").append(groupByClause);
 		}
 
 		return sb.toString();

@@ -72,6 +72,24 @@ Fix copy-paste errors in comments — correct obviously wrong class/method names
 
 ---
 
+### Job: Low-Coverage Tests
+
+Improve test coverage for production classes that are critically under-tested (below the 20 % floor defined in `CONVENTIONS.MD`).
+
+**Workflow:**
+
+1. Run the SonarCloud coverage script to get the current list of critical classes:
+   ```bash
+   perl scripts/check-coverage-sonar.pl
+   ```
+2. Filter out pure interfaces and Lombok-generated-only classes (they require no tests).
+3. For each remaining class, read the source and write a `Test<ClassName>` in the same module under `src/test/java/`, in the same package. Cover at least: nominal path, null/empty inputs, and the most likely edge cases.
+4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode`.
+
+**Scope**: at most 10 classes per session to keep PRs reviewable.
+
+---
+
 ### Discovering new jobs
 
 New executor jobs are proposed monthly by the Discovery Agent (see `.claude/discovery-agent.md`) and promoted into this file after human review.
