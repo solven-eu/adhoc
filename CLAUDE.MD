@@ -98,8 +98,8 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ## After every change
 
-- **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 85 % LOC / instruction coverage for new files. Test files live in the same module under `src/test/java/`.
-- **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change.
+- **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline) or `perl scripts/check-coverage-low.pl` (local JaCoCo). Test files live in the same module under `src/test/java/`.
+- **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change. Do **not** record coverage-only test additions — they carry no functional value for API users.
 - **Final pass**: Before declaring work done, review all touched files for convention violations (see `CONVENTIONS.MD`) and obvious simplifications — e.g. `ImmutableList.of(…)` instead of `new ArrayList<>(List.of(…))`, `ImmutableMap.builder()` instead of `LinkedHashMap` or multi-entry `Map.of`, unnecessary mutability, dead variables, overly verbose expressions. Note: `ImmutableMap` preserves insertion order by contract, so `LinkedHashMap` is only justified when null keys/values are required. Apply fixes in the same commit.
 
 ---
