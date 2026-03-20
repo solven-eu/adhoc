@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -64,7 +65,7 @@ public class TestTableQueryFactory_SinglePerCubeStep {
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(2)
-				.contains(CubeQueryStep.edit(tq1).measure(Aggregator.sum("m1")).build())
-				.contains(CubeQueryStep.edit(tq2).measure(Aggregator.sum("m1")).build());
+				.contains(TableQueryStep.edit(tq1).aggregator(Aggregator.sum("m1")).build())
+				.contains(TableQueryStep.edit(tq2).aggregator(Aggregator.sum("m1")).build());
 	}
 }

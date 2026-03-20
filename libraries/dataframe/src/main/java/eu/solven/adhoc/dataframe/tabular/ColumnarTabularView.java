@@ -32,8 +32,8 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import lombok.Builder.Default;
 import lombok.EqualsAndHashCode;
@@ -122,37 +122,37 @@ public class ColumnarTabularView extends AListBasedTabularView implements IReada
 	}
 
 	@Override
-	public Stream<IAdhocSlice> slices() {
+	public Stream<ISlice> slices() {
 		List<String> coordKeys = new ArrayList<>(coordinateColumns.keySet());
 		return IntStream.range(0, Ints.checkedCast(size())).mapToObj(i -> rowSlice(coordKeys, i));
 	}
 
 	@Override
-	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IColumnScanner<ISlice> rowScanner) {
 		List<String> coordKeys = new ArrayList<>(coordinateColumns.keySet());
 		List<String> aggKeys = new ArrayList<>(aggregateColumns.keySet());
 		int size = Ints.checkedCast(size());
 
 		for (int i = 0; i < size; i++) {
-			IAdhocSlice slice = rowSlice(coordKeys, i);
+			ISlice slice = rowSlice(coordKeys, i);
 			Map<String, Object> aggRow = rowAggregates(aggKeys, i);
 			rowScanner.onKey(slice).onObject(aggRow);
 		}
 	}
 
 	@Override
-	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowConverter) {
+	public <U> Stream<U> stream(ITabularRecordConverter<ISlice, U> rowConverter) {
 		List<String> coordKeys = new ArrayList<>(coordinateColumns.keySet());
 		List<String> aggKeys = new ArrayList<>(aggregateColumns.keySet());
 
 		return IntStream.range(0, Ints.checkedCast(size())).mapToObj(i -> {
-			IAdhocSlice slice = rowSlice(coordKeys, i);
+			ISlice slice = rowSlice(coordKeys, i);
 			Map<String, Object> aggRow = rowAggregates(aggKeys, i);
 			return rowConverter.prepare(slice).onMap(aggRow);
 		});
 	}
 
-	protected IAdhocSlice rowSlice(List<String> coordKeys, int rowIndex) {
+	protected ISlice rowSlice(List<String> coordKeys, int rowIndex) {
 		Map<String, Object> row = new LinkedHashMap<>(coordKeys.size());
 		for (String key : coordKeys) {
 			row.put(key, coordinateColumns.get(key).get(rowIndex));

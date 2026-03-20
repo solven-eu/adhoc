@@ -27,18 +27,18 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 
 public class TestGroupByHelpers {
 	@Test
 	public void testMask() {
-		IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
-		IMultitypeColumnFastGet<IAdhocSlice> withMask = GroupByHelpers.addConstantColumns(column, Map.of("k2", "v2"));
+		IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
+		IMultitypeColumnFastGet<ISlice> withMask = GroupByHelpers.addConstantColumns(column, Map.of("k2", "v2"));
 
 		column.append(SliceHelpers.asSlice(Map.of("k", "v"))).onLong(123L);
 

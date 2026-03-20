@@ -33,7 +33,7 @@ import org.mockito.Mockito;
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -47,7 +47,7 @@ public class TestLinearDecomposition {
 
 	private ISliceWithStep sliceWith(String column, Object value) {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
-		IAdhocSlice adhocSlice = Mockito.mock(IAdhocSlice.class);
+		ISlice adhocSlice = Mockito.mock(ISlice.class);
 		Mockito.when(slice.getSlice()).thenReturn(adhocSlice);
 		Mockito.when(adhocSlice.optGroupBy(Mockito.anyString())).thenReturn(Optional.empty());
 		Mockito.when(adhocSlice.optGroupBy(column)).thenReturn(Optional.of(value));
@@ -56,7 +56,7 @@ public class TestLinearDecomposition {
 
 	private ISliceWithStep sliceWithout(String column) {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
-		IAdhocSlice adhocSlice = Mockito.mock(IAdhocSlice.class);
+		ISlice adhocSlice = Mockito.mock(ISlice.class);
 		Mockito.when(slice.getSlice()).thenReturn(adhocSlice);
 		Mockito.when(adhocSlice.optGroupBy(column)).thenReturn(Optional.empty());
 		return slice;

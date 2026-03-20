@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.encoding.fsst;
 
-import java.util.Arrays;
-
 import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
@@ -67,14 +65,16 @@ class SymbolTableEncoder implements IFsstConstants, IFsstEncoder {
 
 		// Process with safe unaligned loads while >=8 bytes remain
 		while (pos + 8 <= inputLen) {
+			// Handle multiple words of 8 bytes, with a maximum of fsstChunkSize
 			int chunkEnd = Math.min(pos + fsstChunkSize, inputLen - tailLen);
 			outPos = encodeChunk(buf, outPos, input, pos, chunkEnd);
 			pos = chunkEnd;
 		}
 
-		// Handle tail with padded buffer
+		// Handle tail with padded buffer. In fact, we do not padded in our case as `SymbolUtil.fsstUnalignedLoad`
+		// suppose smaller array
 		if (pos < inputLen) {
-			outPos = encodeChunk(buf, outPos, input, pos, tailLen);
+			outPos = encodeChunk(buf, outPos, input, pos, inputLen);
 		}
 		return IByteSlice.wrap(buf, outPos);
 	}
@@ -88,17 +88,16 @@ class SymbolTableEncoder implements IFsstConstants, IFsstEncoder {
 
 		// Process with safe unaligned loads while >=8 bytes remain
 		while (pos + 8 <= inputLen) {
+			// Handle multiple words of 8 bytes, with a maximum of fsstChunkSize
 			int chunkEnd = Math.min(pos + fsstChunkSize, inputLen - tailLen);
 			outPos = encodeChunk(buf, outPos, input, pos, chunkEnd);
 			pos = chunkEnd;
 		}
 
-		// Handle tail with padded buffer
+		// Handle tail with padded buffer. In fact, we do not padded in our case as `SymbolUtil.fsstUnalignedLoad`
+		// suppose smaller array
 		if (pos < inputLen) {
-			// makes a new buffer with padded 0
-			// it enables fsstUnalignedLoad assuming the input always have expected size
-			byte[] encBuf = Arrays.copyOfRange(input, pos, pos + 8);
-			outPos = encodeChunk(buf, outPos, encBuf, 0, tailLen);
+			outPos = encodeChunk(buf, outPos, input, pos, inputLen);
 		}
 		return IByteSlice.wrap(buf, outPos);
 	}

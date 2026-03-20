@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
@@ -37,7 +38,7 @@ import eu.solven.adhoc.query.table.TableQueryV3;
 public class TableStepsGrouperNoGroup implements ITableStepsGrouper {
 
 	@Override
-	public CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer) {
+	public TableQueryStep tableQueryGroupBy(TableQueryStep inducer) {
 		return inducer;
 	}
 

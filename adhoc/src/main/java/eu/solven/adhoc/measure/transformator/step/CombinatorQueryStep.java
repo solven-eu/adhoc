@@ -30,9 +30,9 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -126,7 +126,7 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<IAdhocSlice> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
+		IMultitypeColumnFastGet<ISlice> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 

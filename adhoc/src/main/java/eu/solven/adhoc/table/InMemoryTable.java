@@ -49,13 +49,14 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.observability.IHasHealthDetails;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -66,7 +67,6 @@ import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -201,7 +201,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 				// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
 
 				// groupBy groupedByColumns
-				Map<IAdhocSlice, Optional<ITabularRecord>> groupedAggregatedRecord =
+				Map<ISlice, Optional<ITabularRecord>> groupedAggregatedRecord =
 						stream.collect(Collectors.groupingBy(ITabularRecord::asSlice,
 								LinkedHashMap::new,
 								// empty is legit as we query no measure

@@ -29,10 +29,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
 import eu.solven.adhoc.example.worldcup.EventsScoreCombination;
-import eu.solven.adhoc.map.SliceHelpers;
 
 public class TestEventScoreCombination {
 	EventsScoreCombination combination = new EventsScoreCombination();

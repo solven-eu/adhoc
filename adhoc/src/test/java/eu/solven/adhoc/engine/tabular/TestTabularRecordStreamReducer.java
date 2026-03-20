@@ -28,7 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -59,7 +59,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 
 		TableQueryEngineBootstrapped bootstrapped =
 				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
-		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
+		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
 		Assertions.assertThat(merged.size(k2Sum)).isEqualTo(1);
@@ -79,7 +79,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 		TableQueryEngineBootstrapped bootstrapped =
 				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
-		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
+		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
 		Assertions.assertThat(merged.size(k2Sum)).isEqualTo(1);
@@ -98,7 +98,7 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
 		TableQueryEngineBootstrapped bootstrapped =
 				(TableQueryEngineBootstrapped) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
-		IMultitypeMergeableGrid<IAdhocSlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
+		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
 		Assertions.assertThat(merged.size(k2Sum)).isEqualTo(1);

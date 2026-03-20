@@ -146,7 +146,7 @@ public class SpringImplicitOptions implements IImplicitOptions {
 		return isActiveLowerCase | env.getProperty(prefix + o.toString().toUpperCase(Locale.US), Boolean.class, false);
 	}
 
-	public String optionKey(IQueryOption option) {
+	public static String optionKey(IQueryOption option) {
 		return NAME_TO_PRIORITY.stream()
 				.filter(e -> e.getValue().contains(option))
 				.map(e -> e.getKey() + option.toString().toLowerCase(Locale.US))

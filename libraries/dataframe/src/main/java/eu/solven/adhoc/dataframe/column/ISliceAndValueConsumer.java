@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
@@ -34,7 +34,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 @FunctionalInterface
 public interface ISliceAndValueConsumer {
 	@Deprecated(since = "Should rely on `IValueConsumer putSlice(AdhocSliceAsMap slice)`")
-	default void putSlice(SliceAsMap slice, Object value) {
+	default void putSlice(Slice slice, Object value) {
 		putSlice(slice).onObject(value);
 	}
 
@@ -43,5 +43,5 @@ public interface ISliceAndValueConsumer {
 	 * @param slice
 	 * @return a {@link IValueReceiver} into which the value to write has to be pushed.
 	 */
-	IValueReceiver putSlice(IAdhocSlice slice);
+	IValueReceiver putSlice(ISlice slice);
 }

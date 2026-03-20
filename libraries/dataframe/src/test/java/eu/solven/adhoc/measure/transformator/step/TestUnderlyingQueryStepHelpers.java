@@ -29,8 +29,9 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
@@ -38,7 +39,6 @@ import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.measure.model.Aggregator;
 
 public class TestUnderlyingQueryStepHelpers {
@@ -48,7 +48,7 @@ public class TestUnderlyingQueryStepHelpers {
 		List<ICuboid> underlyings = new ArrayList<>();
 
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c2"))).onLong(234);
@@ -73,14 +73,14 @@ public class TestUnderlyingQueryStepHelpers {
 		List<ICuboid> underlyings = new ArrayList<>();
 
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c1"))).onLong(123);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c3"))).onLong(345);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c2"))).onLong(234);
 			underlyings.add(Cuboid.builder().values(column).column("c").build());
 		}
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c3"))).onLong(123);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c5"))).onLong(345);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c4"))).onLong(234);
@@ -110,7 +110,7 @@ public class TestUnderlyingQueryStepHelpers {
 
 		// unordered
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c1"))).onLong(12);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c3"))).onLong(23);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c2"))).onLong(34);
@@ -118,7 +118,7 @@ public class TestUnderlyingQueryStepHelpers {
 		}
 		// ordered
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeNavigableColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeNavigableColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c1"))).onLong(78);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c2"))).onLong(89);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c4"))).onLong(90);
@@ -126,7 +126,7 @@ public class TestUnderlyingQueryStepHelpers {
 		}
 		// unordered
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeHashColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c3"))).onLong(45);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c5"))).onLong(56);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c4"))).onLong(67);
@@ -134,7 +134,7 @@ public class TestUnderlyingQueryStepHelpers {
 		}
 		// ordered
 		{
-			IMultitypeColumnFastGet<IAdhocSlice> column = MultitypeNavigableColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> column = MultitypeNavigableColumn.<ISlice>builder().build();
 			column.append(SliceHelpers.asSlice(Map.of("c", "c2"))).onLong(21);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c3"))).onLong(32);
 			column.append(SliceHelpers.asSlice(Map.of("c", "c4"))).onLong(43);

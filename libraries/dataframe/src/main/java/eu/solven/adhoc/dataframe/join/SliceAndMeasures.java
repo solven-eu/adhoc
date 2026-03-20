@@ -24,11 +24,11 @@ package eu.solven.adhoc.dataframe.join;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.SlicedRecordFromArray;
 import eu.solven.adhoc.data.row.SlicedRecordFromSlices;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
@@ -58,16 +58,14 @@ public class SliceAndMeasures {
 	 *            underlyingStep index to a value provider
 	 * @return
 	 */
-	public static SliceAndMeasures from(CubeQueryStep queryStep,
-			IAdhocSlice slice,
-			List<IValueProvider> valueProviders) {
+	public static SliceAndMeasures from(CubeQueryStep queryStep, ISlice slice, List<IValueProvider> valueProviders) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
 				.measures(SlicedRecordFromSlices.builder().valueProviders(valueProviders).build())
 				.build();
 	}
 
-	public static SliceAndMeasures from(IAdhocSlice slice, CubeQueryStep queryStep, List<?> underlyingVs) {
+	public static SliceAndMeasures from(ISlice slice, CubeQueryStep queryStep, List<?> underlyingVs) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
 				.measures(SlicedRecordFromArray.builder().measures(underlyingVs).build())

@@ -40,6 +40,8 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
@@ -56,6 +58,7 @@ import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
@@ -96,15 +99,15 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> tableSteps) {
+	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> tableSteps) {
 		if (tableSteps.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer =
 				splitter.splitInducedAsDag(hasOptions, tableSteps);
 
-		Map<CubeQueryStep, TableQueryV4> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
+		Map<TableQueryStep, TableQueryV4> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
 
 		SplitTableQueries splitTableQueries = SplitTableQueries.builder()
 				.explicits(tableSteps)
@@ -118,23 +121,22 @@ public class TableQueryFactory extends ATableQueryFactory {
 		if (hasOptions.isDebugOrExplain()) {
 			Set<TableQueryV4> tableQueries = splitTableQueries.getTableQueries();
 
+			int nbTableInducers = splitTableQueries.getInducers().size();
 			// This represents the number of CubeQueryStep evaluated by the tableQuery, amongst which a bunch are
 			// possibly useless.
 			// BEWARE If customMarker are suppressed from tableQueries, these numbers would need additional
 			// interpretations
-			long nbOutputSteps = tableQueries.stream()
-					.flatMap(TableQueryV4::streamV3)
-					.mapToLong(v3 -> v3.getAggregators().size() * v3.streamGroupBy().count())
-					.sum();
+			long nbEvaluatedTableInducers =
+					tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
 
 			// prints percent with 1 digit.
-			String percentEfficiency = asPercent(tableSteps, nbOutputSteps);
+			String percentEfficiency = asPercent(tableSteps.size(), nbEvaluatedTableInducers);
 			log.info(
 					"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
 					tableSteps.size(),
-					splitTableQueries.getInducers().size(),
+					nbTableInducers,
 					tableQueries.size(),
-					nbOutputSteps,
+					nbEvaluatedTableInducers,
 					percentEfficiency);
 
 			forEachIndexed(tableQueries, (indexQuery, tableQuery) -> {
@@ -146,24 +148,24 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected String asPercent(Set<CubeQueryStep> tableSteps, long nbOutputSteps) {
-		return "%.1f%%".formatted(100.0 * tableSteps.size() / nbOutputSteps);
+	public static String asPercent(long nbNeededSteps, long nbEvaluatedSteps) {
+		return "%.1f%%".formatted(100.0 * nbNeededSteps / nbEvaluatedSteps);
 	}
 
-	protected Map<CubeQueryStep, TableQueryV4> makeStepToTableQuery(Set<CubeQueryStep> tableSteps,
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer) {
-		Set<CubeQueryStep> leaves = SplitTableQueries.builder()
+	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(Set<TableQueryStep> tableSteps,
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+		Set<TableQueryStep> leaves = SplitTableQueries.builder()
 				.explicits(tableSteps)
 				.inducedToInducer(inducedToInducer)
 				.build()
 				.getInducers();
 
-		Collection<? extends Collection<CubeQueryStep>> groups = grouper.groupInducers(leaves);
+		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(leaves);
 
-		Map<CubeQueryStep, TableQueryV4> stepToTableQuery = new LinkedHashMap<>();
+		Map<TableQueryStep, TableQueryV4> stepToTableQuery = new LinkedHashMap<>();
 
 		groups.forEach(group -> {
-			CubeQueryStep context = grouper.tableQueryGroupBy(group.iterator().next());
+			TableQueryStep context = grouper.tableQueryGroupBy(group.iterator().next());
 			TableQueryV4 v4 = processRelatedSteps(context, new ArrayList<>(group));
 			group.forEach(step -> stepToTableQuery.put(step, v4));
 		});
@@ -171,16 +173,12 @@ public class TableQueryFactory extends ATableQueryFactory {
 		return stepToTableQuery;
 	}
 
-	protected TableQueryV4 processRelatedSteps(CubeQueryStep context, List<CubeQueryStep> steps) {
+	protected TableQueryV4 processRelatedSteps(ICubeQueryStep context, List<TableQueryStep> steps) {
 		// BEWARE Calculated columns (where a groupBy column is not a ReferencedColumn) previously required separate
 		// queries to avoid GROUPING SET issues. With TableQueryV4, streamV3() naturally gives each groupBy with a
 		// unique aggregator set its own V3 sub-query, which resolves the conflict in most cases.
 		// TODO Verify that calculated columns with the same aggregator set as a non-calculated groupBy are handled
 		// correctly by streamV3().
-		return processSteps(context, steps);
-	}
-
-	protected TableQueryV4 processSteps(CubeQueryStep context, Collection<CubeQueryStep> steps) {
 		return makeTableQueryV4(context, steps);
 	}
 
@@ -208,11 +206,11 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	protected void sanityCheckExplicits(SplitTableQueries inducerAndInduced) {
-		Set<CubeQueryStep> stepsInducedFromTable = inducerAndInduced.getInducedToInducer().vertexSet();
+		Set<TableQueryStep> stepsInducedFromTable = inducerAndInduced.getInducedToInducer().vertexSet();
 
 		// Given all tableDag nodes, we should have all cubeDag roots
-		ImmutableSet<CubeQueryStep> requestedStepFromDag = inducerAndInduced.getExplicits();
-		Set<CubeQueryStep> missingFromTable = Sets.difference(requestedStepFromDag, stepsInducedFromTable);
+		ImmutableSet<TableQueryStep> requestedStepFromDag = inducerAndInduced.getExplicits();
+		Set<TableQueryStep> missingFromTable = Sets.difference(requestedStepFromDag, stepsInducedFromTable);
 		if (!missingFromTable.isEmpty()) {
 			int nbMissing = missingFromTable.size();
 			{
@@ -237,28 +235,28 @@ public class TableQueryFactory extends ATableQueryFactory {
 			}
 
 			// Take the shorter/simpler problematic entry
-			CubeQueryStep firstMissing =
+			TableQueryStep firstMissing =
 					missingFromTable.stream().min(Comparator.comparing(s -> s.toString().length())).get();
 			log.warn("Analyzing one missing: {}", firstMissing);
-			Set<CubeQueryStep> impliedSameMeasure = stepsInducedFromTable.stream()
+			Set<TableQueryStep> impliedSameMeasure = stepsInducedFromTable.stream()
 					.filter(s -> s.getMeasure().getName().equals(firstMissing.getMeasure().getName()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasure siblings", impliedSameMeasure.size());
 
-			Set<CubeQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
+			Set<TableQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
 					.filter(s -> s.getGroupBy()
 							.getGroupedByColumns()
 							.equals(firstMissing.getGroupBy().getGroupedByColumns()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
 
-			Set<CubeQueryStep> impliedSameMeasureSameGroupBySameFilter = impliedSameMeasureSameGroupBy.stream()
+			Set<TableQueryStep> impliedSameMeasureSameGroupBySameFilter = impliedSameMeasureSameGroupBy.stream()
 					.filter(s -> s.getFilter().equals(firstMissing.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasureSameGroupBySameFilter siblings",
 					impliedSameMeasureSameGroupBySameFilter.size());
 
-			Set<CubeQueryStep> impliedSameMeasureSameGroupByEquivalentFilter = impliedSameMeasureSameGroupBy.stream()
+			Set<TableQueryStep> impliedSameMeasureSameGroupByEquivalentFilter = impliedSameMeasureSameGroupBy.stream()
 					.filter(s -> FilterEquivalencyHelpers.areEquivalent(s.getFilter(), firstMissing.getFilter()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasureSameGroupByEquivalentFilter siblings",
@@ -274,22 +272,22 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 	protected void sanityCheckInducers(SplitTableQueries inducerAndInduced, Set<TableQueryV4> tableQueries) {
 		// Holds the querySteps evaluated from the ITableWrapper
-		Set<CubeQueryStep> receivedInducerSteps = tableQueries.stream()
+		Set<TableQueryStep> receivedInducerSteps = tableQueries.stream()
 				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterOptimizer))
 				.map(StepAndFilteredAggregator::step)
 				.collect(ImmutableSet.toImmutableSet());
 
 		// tableDag will evaluate from table querySteps to cubeDag root querySteps
-		Set<CubeQueryStep> expectedInducerSteps = inducerAndInduced.getInducers();
+		Set<TableQueryStep> expectedInducerSteps = inducerAndInduced.getInducers();
 
-		Set<CubeQueryStep> missingRootsFromTableQueries = Sets.difference(expectedInducerSteps, receivedInducerSteps);
+		Set<TableQueryStep> missingRootsFromTableQueries = Sets.difference(expectedInducerSteps, receivedInducerSteps);
 		if (!missingRootsFromTableQueries.isEmpty()) {
 			int nbMissing = missingRootsFromTableQueries.size();
 
 			{
 				log.warn("Missing {} steps from tableQueries to fill table DAG roots", nbMissing);
 				int indexMissing = 0;
-				for (CubeQueryStep missingStep : missingRootsFromTableQueries) {
+				for (TableQueryStep missingStep : missingRootsFromTableQueries) {
 					indexMissing++;
 					log.warn("Missing {}/{}: {}", indexMissing, nbMissing, missingStep);
 
@@ -307,7 +305,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 				log.warn("requested steps (from cube DAG):");
 				int indexRequested = 0;
 				int nbRequested = expectedInducerSteps.size();
-				for (CubeQueryStep availableStep : expectedInducerSteps) {
+				for (TableQueryStep availableStep : expectedInducerSteps) {
 					indexRequested++;
 					log.warn("Requested {}/{}: {}", indexRequested, nbRequested, availableStep);
 				}
@@ -317,7 +315,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 				log.warn("provided steps (from tableQueries):");
 				int indexExpected = 0;
 				int nbProvided = receivedInducerSteps.size();
-				for (CubeQueryStep availableStep : receivedInducerSteps) {
+				for (TableQueryStep availableStep : receivedInducerSteps) {
 					indexExpected++;
 					log.warn("Provided {}/{}: {}", indexExpected, nbProvided, availableStep);
 				}
@@ -330,8 +328,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 		}
 	}
 
-	protected CubeQueryStep suppressFilter(CubeQueryStep s) {
-		return CubeQueryStep.edit(s).filter(ISliceFilter.MATCH_ALL).build();
+	protected TableQueryStep suppressFilter(TableQueryStep s) {
+		return TableQueryStep.edit(s).filter(ISliceFilter.MATCH_ALL).build();
 	}
 
 	@Override

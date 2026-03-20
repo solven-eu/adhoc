@@ -26,6 +26,7 @@ module eu.solven.adhoc.meta {
 	// ── Named third-party modules ────────────────────────────────────────────
 	requires com.google.common;
 	requires tools.jackson.databind;
+	requires eu.solven.pepper;
 
 	// Runtime via Lombok @Slf4j
 	requires org.slf4j;

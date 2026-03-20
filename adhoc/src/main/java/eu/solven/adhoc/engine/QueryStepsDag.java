@@ -35,9 +35,10 @@ import org.jgrapht.graph.DirectedMultigraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -57,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder
 @Slf4j
-public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInducedToInducer {
+public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInducedToInducer<CubeQueryStep> {
 	// The DAG of a given IAdhocQuery, from queried to aggregators. It does not accept multiple times the same edge
 	// (e.g. a ratio and a filter leading to same numerator and denominator).
 	@NonNull
@@ -77,7 +78,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 
 	@NonNull
 	@Default
-	Map<CubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
+	Map<ICubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
 
 	@NonNull
 	@Singular
@@ -96,7 +97,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 	}
 
 	@Override
-	public void registerExecutionFeedback(CubeQueryStep queryStep, SizeAndDuration sizeAndDuration) {
+	public void registerExecutionFeedback(ICubeQueryStep queryStep, SizeAndDuration sizeAndDuration) {
 		stepToCost.put(queryStep, sizeAndDuration);
 	}
 

@@ -24,6 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -40,7 +41,7 @@ import lombok.With;
 @Builder
 public class QueryStepIsEvaluating implements IAdhocEvent {
 	@NonNull
-	CubeQueryStep queryStep;
+	ICubeQueryStep queryStep;
 
 	@NonNull
 	Object source;

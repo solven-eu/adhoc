@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
@@ -45,7 +45,7 @@ public class TableStepsGrouperByAggregator extends TableStepsGrouper {
 	 * @return
 	 */
 	@Override
-	public CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer) {
-		return contextOnly(inducer).toBuilder().measure(inducer.getMeasure()).build();
+	public TableQueryStep tableQueryGroupBy(TableQueryStep inducer) {
+		return contextOnly(inducer).toBuilder().aggregator(inducer.getMeasure()).build();
 	}
 }

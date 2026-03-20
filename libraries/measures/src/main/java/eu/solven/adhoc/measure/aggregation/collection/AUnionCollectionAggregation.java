@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
  * {@link IAggregation} which essentially concatenate {@link Collection}.

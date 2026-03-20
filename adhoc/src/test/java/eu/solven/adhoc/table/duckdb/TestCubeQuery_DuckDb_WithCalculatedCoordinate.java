@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
-import eu.solven.adhoc.coordinate.CalculatedCoordinate;
+import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.filter.ColumnFilter;

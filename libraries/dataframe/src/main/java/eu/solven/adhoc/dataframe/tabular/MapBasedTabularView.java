@@ -30,8 +30,8 @@ import java.util.stream.Stream;
 
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -71,7 +71,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 			return asMapBased;
 		}
 
-		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
+		IColumnScanner<ISlice> rowScanner = coordinates -> {
 			Map<String, ?> coordinatesAsMap = coordinates.getCoordinates();
 
 			return o -> {
@@ -91,7 +91,7 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 	}
 
 	@Override
-	public Stream<IAdhocSlice> slices() {
+	public Stream<ISlice> slices() {
 		return coordinatesToValues.keySet().stream().map(s -> AdhocMapHelpers.fromMap(sliceFactory, s).asSlice());
 	}
 
@@ -106,14 +106,14 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 	}
 
 	@Override
-	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IColumnScanner<ISlice> rowScanner) {
 		coordinatesToValues.forEach((k, v) -> {
 			rowScanner.onKey(AdhocMapHelpers.fromMap(sliceFactory, k).asSlice()).onObject(v);
 		});
 	}
 
 	@Override
-	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(ITabularRecordConverter<ISlice, U> rowScanner) {
 		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
 		return coordinatesToValues.entrySet()
 				.stream()
@@ -121,17 +121,17 @@ public class MapBasedTabularView extends ATabularView implements ITabularView, I
 						.onMap(e.getValue()));
 	}
 
-	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
+	public void appendSlice(ISlice slice, Map<String, ?> mToValues) {
 		log.debug("slice={} measures={}", slice, mToValues);
 		coordinatesToValues.merge(slice.asAdhocMap(), mToValues, AdhocMapHelpers::aggregateMaps);
 	}
 
-	public void appendSlice(IAdhocSlice slice, String measure, Object value) {
+	public void appendSlice(ISlice slice, String measure, Object value) {
 		coordinatesToValues.merge(slice.asAdhocMap(), Map.of(measure, value), AdhocMapHelpers::aggregateMaps);
 	}
 
 	@Override
-	public IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull) {
+	public IValueReceiver sliceFeeder(ISlice slice, String measureName, boolean materializeNull) {
 		return o -> {
 			if (o == null) {
 				// Materialize the slice. Especially useful with EmptyAggregation as defaultMeasure

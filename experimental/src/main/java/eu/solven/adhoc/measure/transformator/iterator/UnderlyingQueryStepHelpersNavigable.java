@@ -34,9 +34,9 @@ import java.util.stream.StreamSupport;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
@@ -85,7 +85,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			// sorted column.
 
 			// Merge all SliceAsMap in a Set
-			Set<IAdhocSlice> notSortedAsSet;
+			Set<ISlice> notSortedAsSet;
 			if (underlyings.isEmpty()) {
 				notSortedAsSet = ImmutableSet.of();
 			} else if (underlyings.size() == 1) {
@@ -129,7 +129,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 	 */
 	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
 			List<? extends ICuboid> sorted) {
-		List<Iterator<SliceAndMeasure<IAdhocSlice>>> sortedIterators = sorted.stream().peek(s -> {
+		List<Iterator<SliceAndMeasure<ISlice>>> sortedIterators = sorted.stream().peek(s -> {
 			if (!s.isSorted()) {
 				throw new IllegalArgumentException(
 						"This requires input Stream to be sorted. queryStep=%s".formatted(queryStep));

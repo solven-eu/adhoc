@@ -27,12 +27,12 @@ import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -83,7 +83,7 @@ public class AdhocExceptionAsMeasureValueHelper {
 		};
 	}
 
-	public static IAdhocSlice asSlice(NavigableSet<String> columns) {
+	public static ISlice asSlice(NavigableSet<String> columns) {
 		return SliceHelpers.asSlice(asMap(columns));
 	}
 

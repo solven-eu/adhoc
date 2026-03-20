@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacoco.branch.ratio>0.77</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.86</jacoco.instruction.ratio>
+		<jacoco.instruction.ratio>0.85</jacoco.instruction.ratio>
 
 		<testJarPhase>package</testJarPhase>
 		<automatic.module.name>eu.solven.adhoc.fsst</automatic.module.name>

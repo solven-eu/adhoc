@@ -26,6 +26,57 @@ All checkers are informational — they never block the build.
 - Only use comments when necessary, as they can become outdated. Strive to make the code self-explanatory.
 - When comments are used, they should add useful information not readily apparent from the code itself.
 - Properly handle errors and exceptions to ensure robustness. Use exceptions rather than error codes.
+- **Prefer positive branching**: when an `if/else` can be written with either a positive or a negated condition and both arms have the same number of lines, prefer the positive form. Negation (`!`) forces the reader to mentally invert the condition; the positive form reads more naturally.
+  ```java
+  // ✓ preferred — positive condition, happy path first
+  if (tableQuery.isPerfectV3()) {
+      return buildGroupingSets(tableQuery);
+  } else {
+      return buildUnionAll(tableQuery);
+  }
+
+  // ✗ avoid — negation makes the reader invert the condition
+  if (!tableQuery.isPerfectV3()) {
+      return buildUnionAll(tableQuery);
+  } else {
+      return buildGroupingSets(tableQuery);
+  }
+  ```
+  Exception: a **guard clause** (`if (!condition) return/throw`) is preferred over wrapping the entire body in a positive block. The positive-branch rule applies only when both arms have non-trivial bodies of similar size.
+
+- **Minimise LOC**: prefer solutions that reduce the total number of lines of code without sacrificing readability. Fewer lines mean less to read, less to maintain, and fewer places for bugs to hide. Common techniques include:
+  - Extracting an intermediate variable to avoid repeating a sub-expression.
+  - Delegating to an existing method instead of re-implementing its logic inline.
+  - Using a guard clause / early return to eliminate a whole `else` branch.
+  ```java
+  // ✗ avoid — re-implements logic already in toPerfLog(V3), adds an extra helper
+  return buildSelectPerfLog(v4.getAggregators(), v4.getFilter(), v4.getGroupBys());
+
+  // ✓ preferred — delegates to the existing overload, zero extra lines
+  return toPerfLog(v4.asCoveringV3());
+  ```
+  This is a *soft* rule: clarity always wins over line count. Do not sacrifice naming, readability, or correctness just to save lines.
+
+- **Exclusive branches**: when a chain of `if` blocks are mutually exclusive (each branch returns or throws), write them as `if / else if / … / else` rather than a sequence of independent `if` statements. The chained form communicates the exclusivity to the reader and lets the compiler/JIT skip the remaining checks once a branch is taken.
+  ```java
+  // ✓ preferred — communicates mutual exclusivity
+  if (x instanceof Foo f) {
+      return handleFoo(f);
+  } else if (x instanceof Bar b) {
+      return handleBar(b);
+  } else {
+      throw new IllegalArgumentException("unknown: " + x);
+  }
+
+  // ✗ avoid — reader must infer that the branches are exclusive
+  if (x instanceof Foo f) {
+      return handleFoo(f);
+  }
+  if (x instanceof Bar b) {
+      return handleBar(b);
+  }
+  throw new IllegalArgumentException("unknown: " + x);
+  ```
 
 ---
 
@@ -166,6 +217,14 @@ Results are written to `infer-out/`. The human-readable summary is printed at th
 A dedicated workflow (`.github/workflows/infer.yml`) runs on every push/PR to `master`. It is currently **informational only** (no build failure on findings). Once the baseline is clean, add `--fail-on-issue` to the `infer run` command in that workflow to enforce it as a gate.
 
 ---
+
+## Test Coverage
+
+- **Target**: ≥ 80% instruction coverage (per JaCoCo) for every production class.
+- **Minimum floor**: classes below 20% are considered critically under-tested and must be addressed as a priority. They are flagged automatically in CI by `scripts/check-coverage-low.pl` (post-test, reads local JaCoCo XML) and by `scripts/check-coverage-sonar.pl` (offline, queries SonarCloud API — no build required).
+- **Full SonarCloud view**: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc
+- **What to cover**: at minimum the nominal path and the most likely edge cases (null/empty input, boundary values, mixed types). Pure interfaces and Lombok-generated code (`@Value`, `@Builder`) do not need dedicated tests.
+- **Test placement**: test classes live in the same Maven module under `src/test/java/`, named `Test<ProductionClass>` in the same package.
 
 ## Comments & Documentation
 

@@ -36,11 +36,11 @@ import org.mockito.Mockito;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.util.concurrent.Futures;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -86,20 +86,20 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
 			SplitTableQueries split = SplitTableQueries.builder()
-					.inducedToInducer(new DirectedAcyclicGraph<CubeQueryStep, DefaultEdge>(DefaultEdge.class))
-					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("a")).build(),
+					.inducedToInducer(new DirectedAcyclicGraph<TableQueryStep, DefaultEdge>(DefaultEdge.class))
+					.stepToTable(TableQueryStep.builder().aggregator(Aggregator.sum("a")).build(),
 							TableQueryV4.builder()
 									.groupByToAggregators(ImmutableSetMultimap.of(IGroupBy.GRAND_TOTAL,
 											FilteredAggregator.builder().aggregator(Aggregator.sum("a")).build()))
 									.build())
-					.stepToTable(CubeQueryStep.builder().measure(Aggregator.sum("b")).build(),
+					.stepToTable(TableQueryStep.builder().aggregator(Aggregator.sum("b")).build(),
 							TableQueryV4.builder()
 									.groupByToAggregators(ImmutableSetMultimap.of(IGroupBy.GRAND_TOTAL,
 											FilteredAggregator.builder().aggregator(Aggregator.sum("b")).build()))
 									.build())
 					.build();
 
-			Map<CubeQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, sizeAndDuration) -> {
+			Map<TableQueryStep, ICuboid> views = engine.executeTableQueries((queryStep, sizeAndDuration) -> {
 			}, split);
 
 			try {

@@ -26,13 +26,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.immutable.IImmutable;
 
 /**
- * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link IAdhocSlice} given a {@link IGroupBy}.
+ * A {@link Map} dedicated to Adhoc. It is typically used to expressed a {@link ISlice} given a {@link IGroupBy}.
  * 
  * It requires {@link String} keys and {@link Object} values, as columns are always referred by their {@link String}
  * name.
@@ -48,7 +48,7 @@ import eu.solven.adhoc.util.immutable.IImmutable;
  */
 public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<IAdhocMap> {
 
-	IAdhocSlice asSlice();
+	ISlice asSlice();
 
 	ISliceFactory getFactory();
 

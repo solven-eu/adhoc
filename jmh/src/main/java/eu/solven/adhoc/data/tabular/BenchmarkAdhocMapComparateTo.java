@@ -41,9 +41,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 
 /**
@@ -69,10 +69,10 @@ public class BenchmarkAdhocMapComparateTo {
 	IAdhocMap mapC;
 	IAdhocMap mapD;
 
-	IAdhocSlice sliceMapA;
-	IAdhocSlice sliceMapB;
-	IAdhocSlice sliceMapC;
-	IAdhocSlice sliceMapD;
+	ISlice sliceMapA;
+	ISlice sliceMapB;
+	ISlice sliceMapC;
+	ISlice sliceMapD;
 
 	@Setup
 	public void setup() {

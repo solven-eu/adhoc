@@ -73,19 +73,19 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.observability.IHasHealthDetails;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
@@ -278,7 +278,9 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			if (c.getAutoCommit()) {
 				// Performance check-up
 				// BEWARE ClickHouse seems not to allow autoCommit false
-				log.warn("autoCommit should not be true. connection={}", c);
+				// TODO Switch to WARN once we have a clear strategy to set this flag. Typically, most test-cases have
+				// autoCommit=true for now
+				log.debug("autoCommit should not be true. connection={}", c);
 			}
 		});
 

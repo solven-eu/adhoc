@@ -35,17 +35,17 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSortedSet;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -58,8 +58,8 @@ public class TestTableQueryFactory_Perf {
 	int cardinalityOut = 1000;
 
 	ITableQueryInducer inducer = new TableQueryInducer(AdhocFactories.builder().build());
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
-	Map<CubeQueryStep, ICuboid> inducers = new LinkedHashMap<>();
+	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
+	Map<TableQueryStep, ICuboid> inducers = new LinkedHashMap<>();
 
 	RowSliceFactory factory = RowSliceFactory.builder().build();
 
@@ -67,16 +67,16 @@ public class TestTableQueryFactory_Perf {
 	public void testReduce() {
 		Aggregator agg = Aggregator.sum("k1");
 
-		CubeQueryStep inducerStep =
-				CubeQueryStep.builder().measure(agg).groupBy(GroupByColumns.named("c0", "c1")).build();
-		CubeQueryStep inducedStep = CubeQueryStep.edit(inducerStep).groupBy(GroupByColumns.named("c0")).build();
+		TableQueryStep inducerStep =
+				TableQueryStep.builder().aggregator(agg).groupBy(GroupByColumns.named("c0", "c1")).build();
+		TableQueryStep inducedStep = TableQueryStep.edit(inducerStep).groupBy(GroupByColumns.named("c0")).build();
 		inducedToInducer.addVertex(inducerStep);
 		inducedToInducer.addVertex(inducedStep);
 		inducedToInducer.addEdge(inducedStep, inducerStep);
 
 		SplitTableQueries split = SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
 
-		IMultitypeColumnFastGet<IAdhocSlice> inducerValues = MultitypeHashColumn.<IAdhocSlice>builder().build();
+		IMultitypeColumnFastGet<ISlice> inducerValues = MultitypeHashColumn.<ISlice>builder().build();
 
 		// BEWARE This tests demonstrates DictionaryFactoryValue is behaving badly on large cardinalities
 		RowSliceFactory sliceFactory = RowSliceFactory.builder().build();
@@ -91,7 +91,7 @@ public class TestTableQueryFactory_Perf {
 		ICuboid inducerValues2 = Cuboid.builder().columns(Set.of("c0", "c1")).values(inducerValues).build();
 		inducers.put(inducerStep, inducerValues2);
 
-		IMultitypeMergeableColumn<IAdhocSlice> induced =
+		IMultitypeMergeableColumn<ISlice> induced =
 				inducer.evaluateInduced(IHasQueryOptions.noOption(), split, inducers, inducedStep);
 
 		Assertions.assertThat(induced.size()).isEqualTo(cardinalityOut);

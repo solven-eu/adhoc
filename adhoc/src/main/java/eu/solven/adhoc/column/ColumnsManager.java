@@ -45,7 +45,7 @@ import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
 import eu.solven.adhoc.column.generated_column.EmptyColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;

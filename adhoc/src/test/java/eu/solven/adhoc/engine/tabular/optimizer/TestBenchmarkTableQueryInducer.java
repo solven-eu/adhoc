@@ -33,13 +33,13 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.base.Strings;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -72,21 +72,24 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 		// IHasQueryOptions.noOption());
 		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.factories);
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
-		Map<CubeQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
+		Map<TableQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 
-		CubeQueryStep inducedGrandTotal = CubeQueryStep.builder().measure(Aggregator.sum("v")).build();
-		CubeQueryStep inducedByA =
-				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("a")).build();
-		CubeQueryStep inducedByAB =
-				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("a", "b")).build();
-		CubeQueryStep inducedByB =
-				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("b")).build();
+		TableQueryStep inducedGrandTotal = TableQueryStep.builder().aggregator(Aggregator.sum("v")).build();
+		TableQueryStep inducedByA =
+				TableQueryStep.builder().aggregator(Aggregator.sum("v")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep inducedByAB = TableQueryStep.builder()
+				.aggregator(Aggregator.sum("v"))
+				.groupBy(GroupByColumns.named("a", "b"))
+				.build();
+		TableQueryStep inducedByB =
+				TableQueryStep.builder().aggregator(Aggregator.sum("v")).groupBy(GroupByColumns.named("b")).build();
 
 		public void setup() {
 			IGroupBy groupByABC = GroupByColumns.named("a", "b", "c");
-			CubeQueryStep inducerABC = CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(groupByABC).build();
+			TableQueryStep inducerABC =
+					TableQueryStep.builder().aggregator(Aggregator.sum("v")).groupBy(groupByABC).build();
 
 			dag.addVertex(inducerABC);
 
@@ -107,8 +110,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 			dag.addEdge(inducedByB, inducerABC);
 
 			// inducerABC is navigable as we do nice inserts
-			IMultitypeColumnFastGet<IAdhocSlice> inducerColumn =
-					MultitypeNavigableElseHashColumn.<IAdhocSlice>builder().build();
+			IMultitypeColumnFastGet<ISlice> inducerColumn = MultitypeNavigableElseHashColumn.<ISlice>builder().build();
 			ISliceFactory mapFactory =
 					AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
@@ -123,8 +125,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 					String vB = "a" + Strings.padStart(Integer.toString(iB), maxDigits, '0');
 					for (int iC = 0; iC < cardinalityPerKey; iC++) {
 						String vC = "a" + Strings.padStart(Integer.toString(iC), maxDigits, '0');
-						IAdhocSlice slice =
-								mapFactory.newMapBuilder(keys).append(vA, "b" + vB, "c" + vC).build().asSlice();
+						ISlice slice = mapFactory.newMapBuilder(keys).append(vA, "b" + vB, "c" + vC).build().asSlice();
 						inducerColumn.append(slice).onLong(iA * iB * iC);
 					}
 				}
@@ -136,7 +137,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 			log.info("inducerABC has {} slices", inducerColumn.size());
 		}
 
-		public IMultitypeMergeableColumn<IAdhocSlice> evaluateInduced(CubeQueryStep induced) {
+		public IMultitypeMergeableColumn<ISlice> evaluateInduced(TableQueryStep induced) {
 			return inducer.evaluateInduced(IHasQueryOptions.noOption(), inducerAndInduced, stepToValues, induced);
 		}
 

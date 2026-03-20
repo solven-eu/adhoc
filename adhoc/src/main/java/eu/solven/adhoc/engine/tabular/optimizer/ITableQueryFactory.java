@@ -27,6 +27,7 @@ import java.util.Set;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
@@ -53,12 +54,12 @@ public interface ITableQueryFactory {
 	 * @return an {@link SplitTableQueries} defining a {@link Set} of {@link TableQuery} from which all necessary
 	 *         {@link TableQuery} can not be induced.
 	 */
-	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> querySteps);
+	SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> querySteps);
 
 	@Deprecated(since = ".splitInduced", forRemoval = true)
 	default SplitTableQueries splitInducedLegacy(IHasQueryOptions hasOptions, Set<TableQuery> tableQueries) {
-		Set<CubeQueryStep> steps = tableQueries.stream().flatMap(tq -> {
-			return tq.getAggregators().stream().map(agg -> CubeQueryStep.edit(tq).measure(agg).build());
+		Set<TableQueryStep> steps = tableQueries.stream().flatMap(tq -> {
+			return tq.getAggregators().stream().map(agg -> TableQueryStep.edit(tq).aggregator(agg).build());
 		}).collect(ImmutableSet.toImmutableSet());
 
 		return splitInduced(hasOptions, steps);

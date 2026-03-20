@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.column;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 
 /**

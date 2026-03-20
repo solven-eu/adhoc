@@ -29,6 +29,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.With;
 
 /**
  * Couple an {@link Aggregator} with an {@link ISliceFilter}, planning for a `FILTER` sql.
@@ -50,6 +51,7 @@ public class FilteredAggregator implements IAliasedAggregator {
 	ISliceFilter filter = ISliceFilter.MATCH_ALL;
 
 	@Default
+	@With
 	long index = DEFAULT_INDEX;
 
 	// An alias to differentiate between same Aggregator with different filter in the same query

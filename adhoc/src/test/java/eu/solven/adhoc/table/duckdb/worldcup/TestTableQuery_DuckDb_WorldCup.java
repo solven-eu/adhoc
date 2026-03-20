@@ -42,7 +42,7 @@ import eu.solven.adhoc.beta.schema.RelevancyHeuristic;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.CubeRelevancy;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.MeasureRelevancy;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
-import eu.solven.adhoc.coordinate.CalculatedCoordinate;
+import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;

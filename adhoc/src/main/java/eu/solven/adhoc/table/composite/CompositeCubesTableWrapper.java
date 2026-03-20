@@ -52,13 +52,14 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.observability.IHasHealthDetails;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -82,7 +83,6 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.spring.IHasHealthDetails;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
@@ -463,10 +463,10 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 */
 	protected ITabularRecord transcodeSliceToComposite(IGroupBy groupBy,
 			ICubeWrapper cube,
-			IAdhocSlice slice,
+			ISlice slice,
 			Map<String, ?> measures,
 			Map<String, ?> missingColumnsMask) {
-		IAdhocSlice compositeSlice;
+		ISlice compositeSlice;
 		if (missingColumnsMask.isEmpty()) {
 			compositeSlice = slice;
 		} else {

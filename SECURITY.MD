@@ -5,7 +5,7 @@ Please do not submit them through issue tracking, but as a mail to [codeowners](
 
 # Sensitive features
 
-## PotentialCode Injection
+## Potential Code Injection
 
 About `JsonTypeInfo.Id.MINIMAL_CLASS`
 

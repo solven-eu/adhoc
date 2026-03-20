@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>aggregator-adhoc</artifactId>
+		<version>0.0.18-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>adhoc-bom</artifactId>
+	<packaging>pom</packaging>
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>Bill of Materials for the Adhoc query engine — covers all engine modules and their tested third-party dependency versions. Does not pull in Spring Boot or any web framework.</description>
+
+	<properties>
+		<!-- Override parent skip flags: this BOM must be deployed -->
+		<maven.install.skip>false</maven.install.skip>
+		<maven.deploy.skip>false</maven.deploy.skip>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+
+			<!-- ── Adhoc engine modules ───────────────────────────────────────── -->
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-public</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-filters</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-encoding</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-fsst</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-cell</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-measures</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-dataframe</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<!-- Core query engine -->
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-spring</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-calcite</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-experimental</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- ── Third-party: tested alongside these adhoc versions ─────────── -->
+
+			<!-- Guava -->
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>${guava.version}</version>
+			</dependency>
+
+			<!-- SLF4J -->
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>${slf4j.version}</version>
+			</dependency>
+
+			<!-- Jackson 3 (tools.jackson) -->
+			<dependency>
+				<groupId>tools.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>${jackson-bom.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>tools.jackson.core</groupId>
+				<artifactId>jackson-core</artifactId>
+				<version>${jackson-bom.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>tools.jackson.core</groupId>
+				<artifactId>jackson-annotations</artifactId>
+				<version>${jackson-bom.version}</version>
+			</dependency>
+
+			<!-- FastUtil — used by adhoc-cell and adhoc-encoding -->
+			<dependency>
+				<groupId>it.unimi.dsi</groupId>
+				<artifactId>fastutil</artifactId>
+				<version>8.5.18</version>
+			</dependency>
+
+			<!-- Pepper utilities -->
+			<dependency>
+				<groupId>io.github.solven-eu.pepper</groupId>
+				<artifactId>pepper</artifactId>
+				<version>${pepper.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>io.github.solven-eu.pepper</groupId>
+				<artifactId>pepper-mappath</artifactId>
+				<version>${pepper.version}</version>
+			</dependency>
+
+			<!-- Integer compression — used by adhoc-encoding -->
+			<dependency>
+				<groupId>me.lemire.integercompression</groupId>
+				<artifactId>JavaFastPFOR</artifactId>
+				<version>0.3.11</version>
+			</dependency>
+
+			<!-- Agrona — used by adhoc-encoding -->
+			<dependency>
+				<groupId>org.agrona</groupId>
+				<artifactId>agrona</artifactId>
+				<version>2.4.0</version>
+			</dependency>
+
+		</dependencies>
+	</dependencyManagement>
+</project>

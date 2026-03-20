@@ -23,23 +23,21 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -50,8 +48,8 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Given a set of {@link CubeQueryStep}, we determine a minimal set of {@link CubeQueryStep} which can infer (by Adhoc)
- * all the others.
+ * Given a set of {@link TableQueryStep}, we determine a minimal set of {@link TableQueryStep} which can infer (by
+ * Adhoc) all the others.
  * 
  * @author Benoit Lacelle
  */
@@ -59,16 +57,16 @@ import lombok.extern.slf4j.Slf4j;
 public class InduceByAdhoc implements ITableStepsSplitter {
 
 	@Override
-	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<CubeQueryStep> tableSteps) {
-		ListMultimap<CubeQueryStep, CubeQueryStep> aggregatorToQueries = packByAggregator(tableSteps);
+	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<TableQueryStep> tableSteps) {
+		ListMultimap<TableQueryStep, TableQueryStep> aggregatorToQueries = packByAggregator(tableSteps);
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		// for each aggregator
 		aggregatorToQueries.asMap().forEach((a, steps) -> {
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> aInducedToInducer =
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> aInducedToInducer =
 					new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 			// BEWARE step.filter must be optimized as it is inserted in a hashStructure
@@ -94,16 +92,16 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 		return inducedToInducer;
 	}
 
-	protected CubeQueryStep contextOnly(CubeQueryStep inducer) {
-		return inducer.toBuilder()
-				.measure("noMeasure")
+	protected TableQueryStep contextOnly(TableQueryStep inducer) {
+		return TableQueryStep.edit(inducer)
+				.aggregator(Aggregator.sum("noMeasure"))
 				.groupBy(IGroupBy.GRAND_TOTAL)
 				.filter(ISliceFilter.MATCH_ALL)
 				.build();
 	}
 
-	protected ListMultimap<CubeQueryStep, CubeQueryStep> packByAggregator(Set<CubeQueryStep> rootInducers) {
-		ListMultimap<CubeQueryStep, CubeQueryStep> contextualAggregateToQueries =
+	protected ListMultimap<TableQueryStep, TableQueryStep> packByAggregator(Set<TableQueryStep> rootInducers) {
+		ListMultimap<TableQueryStep, TableQueryStep> contextualAggregateToQueries =
 				MultimapBuilder.linkedHashKeys().arrayListValues().build();
 
 		rootInducers.forEach(tq -> {
@@ -114,13 +112,13 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 			}
 
 			// Typically holds options and customMarkers
-			CubeQueryStep contextOnly = contextOnly(CubeQueryStep.edit(tq).measure(agg).build());
+			TableQueryStep contextOnly = contextOnly(TableQueryStep.edit(tq).aggregator(agg).build());
 
 			// consider a single context per measure
-			CubeQueryStep singleAggregator = CubeQueryStep.edit(contextOnly).measure(agg).build();
+			TableQueryStep singleAggregator = TableQueryStep.edit(contextOnly).aggregator(agg).build();
 
-			CubeQueryStep aggregatorStep = CubeQueryStep.edit(contextOnly)
-					.measure(agg)
+			TableQueryStep aggregatorStep = TableQueryStep.edit(contextOnly)
+					.aggregator(agg)
 					.groupBy(tq.getGroupBy())
 					.filter(tq.getFilter())
 					.build();
@@ -145,8 +143,8 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 	 * @param onInducedToInducer
 	 */
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected void splitInducedDag(Collection<CubeQueryStep> steps,
-			BiConsumer<CubeQueryStep, CubeQueryStep> onInducedToInducer) {
+	protected void splitInducedDag(Collection<TableQueryStep> steps,
+			BiConsumer<TableQueryStep, TableQueryStep> onInducedToInducer) {
 		if (steps.isEmpty()) {
 			return;
 		}
@@ -154,10 +152,11 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
 		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
 		// not be inferred by a tableQUery with less groupBys.
-		Map<Integer, List<CubeQueryStep>> cardinalityToSteps = steps.stream()
-				.collect(Collectors.groupingBy(s -> s.getGroupBy().getGroupedByColumns().size(),
-						LinkedHashMap::new,
-						Collectors.toList()));
+
+		ListMultimap<Integer, TableQueryStep> cardinalityToSteps = steps.stream()
+				.collect(Multimaps.toMultimap(s -> s.getGroupBy().getGroupedByColumns().size(),
+						s -> s,
+						LinkedListMultimap::create));
 
 		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
 
@@ -167,7 +166,7 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 			// inducer must have more groupBys than induced
 			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
 			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
-				Optional<CubeQueryStep> optInducer = cardinalityToSteps.get(inducerGroupBy)
+				Optional<TableQueryStep> optInducer = cardinalityToSteps.get(inducerGroupBy)
 						.stream()
 						// No edge to itself
 						.filter(inducer -> inducer != induced)
@@ -179,7 +178,7 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 						.findFirst();
 
 				if (optInducer.isPresent()) {
-					CubeQueryStep inducer = optInducer.get();
+					TableQueryStep inducer = optInducer.get();
 					// right can be used to compute left
 					onInducedToInducer.accept(induced, inducer);
 					log.trace("Induced -> Inducer ({} -> {})", induced, inducer);
@@ -197,7 +196,7 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`
 	// BEWARE This design prevents having an induced inferred by multiple inducers
 	// (e.g. `WHERE A` and `WHERE B` can induce `WHERE A OR B`)
-	protected boolean canInduce(CubeQueryStep inducer, CubeQueryStep induced) {
+	protected boolean canInduce(TableQueryStep inducer, TableQueryStep induced) {
 		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
 			// Different measures: can not induce
 			return false;

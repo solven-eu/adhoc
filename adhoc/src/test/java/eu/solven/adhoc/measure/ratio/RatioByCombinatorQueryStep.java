@@ -25,8 +25,8 @@ package eu.solven.adhoc.measure.ratio;
 import java.util.Arrays;
 import java.util.List;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -81,7 +81,7 @@ public class RatioByCombinatorQueryStep extends AMeasureQueryStep {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<IAdhocSlice> values = makeStorage();
+		IMultitypeColumnFastGet<ISlice> values = makeStorage();
 
 		ICombination transformation = factories.getOperatorFactory().makeCombination(combinator);
 
@@ -103,8 +103,8 @@ public class RatioByCombinatorQueryStep extends AMeasureQueryStep {
 		output.putSlice(slice.getSlice().getSlice()).onObject(value);
 	}
 
-	protected IMultitypeColumnFastGet<IAdhocSlice> makeStorage() {
-		return MultitypeHashColumn.<IAdhocSlice>builder().build();
+	protected IMultitypeColumnFastGet<ISlice> makeStorage() {
+		return MultitypeHashColumn.<ISlice>builder().build();
 	}
 
 }

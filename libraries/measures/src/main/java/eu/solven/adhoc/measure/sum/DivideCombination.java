@@ -28,7 +28,7 @@ import java.util.Map;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
  * A {@link ICombination} which divide the 2 underlying measures. The first measure is used as numerator; the second

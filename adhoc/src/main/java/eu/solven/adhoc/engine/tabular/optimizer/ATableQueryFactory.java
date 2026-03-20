@@ -37,18 +37,18 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterUtility;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -94,25 +94,23 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 	 * carries the aggregators it actually needs. A shared WHERE filter is extracted from the common prefix of all step
 	 * filters; individual FILTER clauses handle the remainder per aggregator.
 	 */
-	protected TableQueryV4 makeTableQueryV4(CubeQueryStep context, Collection<CubeQueryStep> steps) {
+	protected TableQueryV4 makeTableQueryV4(ICubeQueryStep context, Collection<? extends TableQueryStep> steps) {
 		// This is the filter applicable to all aggregators: it will be applied in WHERE
-		Set<ISliceFilter> filters = steps.stream().map(CubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+		Set<ISliceFilter> filters =
+				steps.stream().map(ICubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 		ISliceFilter commonFilter = filterUtility.get().commonAnd(filters);
 		IFilterStripper stripper = factories.getFilterStripperFactory().makeFilterStripper(commonFilter);
 
 		// Group steps by their IGroupBy
-		Map<IGroupBy, List<CubeQueryStep>> byGroupBy = steps.stream()
-				.collect(Collectors.groupingBy(CubeQueryStep::getGroupBy, LinkedHashMap::new, Collectors.toList()));
+		Map<IGroupBy, List<TableQueryStep>> byGroupBy = steps.stream()
+				.collect(Collectors.groupingBy(ICubeQueryStep::getGroupBy, LinkedHashMap::new, Collectors.toList()));
 
 		ImmutableSetMultimap.Builder<IGroupBy, FilteredAggregator> multimapBuilder = ImmutableSetMultimap.builder();
 		byGroupBy.forEach((groupBy, groupBySteps) -> {
-			// Strip the WHERE from each individual FILTER
+			// Strip the WHERE from each individual FILTER — each step is guaranteed to carry an Aggregator
 			Set<FilteredAggregator> strippedAggregators = groupBySteps.stream().map(step -> {
 				ISliceFilter strippedFromWhere = stripper.strip(step.getFilter());
-				return FilteredAggregator.builder()
-						.aggregator((Aggregator) step.getMeasure())
-						.filter(strippedFromWhere)
-						.build();
+				return FilteredAggregator.builder().aggregator(step.getMeasure()).filter(strippedFromWhere).build();
 			}).collect(ImmutableSet.toImmutableSet());
 
 			Map<String, List<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
@@ -140,15 +138,15 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 				.build();
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> prepareInducedColumn(CubeQueryStep inducer,
-			CubeQueryStep induced,
+	protected IMultitypeMergeableColumn<ISlice> prepareInducedColumn(TableQueryStep inducer,
+			TableQueryStep induced,
 			ICuboid inducerValues,
 			IAggregation aggregation) {
 		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 		boolean doesBreakSorting = breakSorting(inducerColumns, inducedColumns);
 
-		IMultitypeMergeableColumn<IAdhocSlice> inducedValues;
+		IMultitypeMergeableColumn<ISlice> inducedValues;
 		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
 		IColumnFactory columnFactory = factories.getColumnFactory();
 
@@ -180,7 +178,7 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		return !inducerAsList.equals(inducedAsList);
 	}
 
-	protected IAdhocSlice inducedGroupBy(NavigableSet<String> groupedByColumns, IAdhocSlice inducer) {
+	protected ISlice inducedGroupBy(NavigableSet<String> groupedByColumns, ISlice inducer) {
 		return inducer.retainAll(groupedByColumns);
 	}
 

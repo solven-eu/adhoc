@@ -32,8 +32,8 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.primitives.Ints;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AdhocPrimitiveMapHelpers;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -96,7 +96,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 			return (T) to.getClass().cast(from);
 		}
 
-		IColumnScanner<IAdhocSlice> rowScanner = coordinates -> {
+		IColumnScanner<ISlice> rowScanner = coordinates -> {
 			Map<String, ?> coordinatesAsMap = coordinates.asAdhocMap();
 
 			return o -> {
@@ -112,7 +112,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 	}
 
 	@Override
-	public Stream<IAdhocSlice> slices() {
+	public Stream<ISlice> slices() {
 		return entries.stream()
 				.map(TabularEntry::getCoordinates)
 				.map(s -> AdhocMapHelpers.fromMap(sliceFactory, s).asSlice());
@@ -130,7 +130,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 	}
 
 	@Override
-	public void acceptScanner(IColumnScanner<IAdhocSlice> rowScanner) {
+	public void acceptScanner(IColumnScanner<ISlice> rowScanner) {
 		entries.forEach(entry -> {
 			rowScanner.onKey(AdhocMapHelpers.fromMap(sliceFactory, entry.getCoordinates()).asSlice())
 					.onObject(entry.getValues());
@@ -138,7 +138,7 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 	}
 
 	@Override
-	public <U> Stream<U> stream(ITabularRecordConverter<IAdhocSlice, U> rowScanner) {
+	public <U> Stream<U> stream(ITabularRecordConverter<ISlice, U> rowScanner) {
 		return entries.stream().map(entry -> {
 			return rowScanner.prepare(AdhocMapHelpers.fromMap(sliceFactory, entry.getCoordinates()).asSlice())
 					.onMap(entry.getValues());
@@ -149,12 +149,12 @@ public class ListMapEntryBasedTabularView extends AListBasedTabularView implemen
 		return builder().entries(Collections.emptyList()).build();
 	}
 
-	public void appendSlice(IAdhocSlice slice, Map<String, ?> mToValues) {
+	public void appendSlice(ISlice slice, Map<String, ?> mToValues) {
 		entries.add(TabularEntry.builder().coordinates(slice.asAdhocMap()).values(mToValues).build());
 	}
 
 	@Override
-	public IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull) {
+	public IValueReceiver sliceFeeder(ISlice slice, String measureName, boolean materializeNull) {
 		Map<String, ?> coordinates = slice.asAdhocMap();
 		int index = getIndexForSlice(coordinates);
 

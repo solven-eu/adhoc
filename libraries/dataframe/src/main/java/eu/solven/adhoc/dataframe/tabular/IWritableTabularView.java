@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.dataframe.tabular;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
@@ -33,5 +33,5 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 @FunctionalInterface
 public interface IWritableTabularView {
 
-	IValueReceiver sliceFeeder(IAdhocSlice slice, String measureName, boolean materializeNull);
+	IValueReceiver sliceFeeder(ISlice slice, String measureName, boolean materializeNull);
 }

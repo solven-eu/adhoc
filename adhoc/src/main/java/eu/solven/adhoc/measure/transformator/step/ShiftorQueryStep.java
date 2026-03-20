@@ -32,8 +32,8 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -106,7 +106,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 	 * @param slice
 	 * @return
 	 */
-	protected IAdhocSlice shiftSlice(ISliceWithStep slice) {
+	protected ISlice shiftSlice(ISliceWithStep slice) {
 		// BEWARE the filter from queryStep is meaningless here
 		ISliceFilter filter = slice.getSlice().asFilter();
 
@@ -138,7 +138,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 	protected void onSlice(List<? extends ICuboid> underlyings, ISliceWithStep slice, ISliceAndValueConsumer output) {
 		ICuboid whereToReadShifted = underlyings.getFirst();
 
-		IAdhocSlice shiftedSlice = shiftSlice(slice);
+		ISlice shiftedSlice = shiftSlice(slice);
 
 		// Read the value from the whereToReadShifted, on the slice recomputed from the whereToReadForWrite
 		IValueProvider shiftedValue = whereToReadShifted.onValue(shiftedSlice);
@@ -194,14 +194,14 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 			throw new IllegalArgumentException("underlyings.size() == %s".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<IAdhocSlice> values = makeColumn(underlyings);
+		IMultitypeColumnFastGet<ISlice> values = makeColumn(underlyings);
 
 		forEachDistinctSlice1(underlyings, values::append);
 
 		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeColumnFastGet<IAdhocSlice> makeColumn(List<? extends ICuboid> underlyings) {
+	protected IMultitypeColumnFastGet<ISlice> makeColumn(List<? extends ICuboid> underlyings) {
 		return factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

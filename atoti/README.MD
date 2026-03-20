@@ -109,21 +109,45 @@ ActivePivot `AggregatedMeasure` can be translated into Adhoc `IAggregator`.
 
 ## Post-processed measure
 
+The migration strategy is:
+- Turns `ILevelInfo` into a column as a `String`, typically given `LevelIdentifier.level`
+- Turns `LocationUtil.getCoordinate(location, level)` into `ISliceWithStep.sliceReader()` and `ISliceReader.extractCoordinate(level, String.class)`
+
 ## ABasicPostProcessor
 
 `ABasicPostProcessor` can generally be implemented through `Combinator`.
+
+[Javadoc](https://docs.activeviam.com/products/atoti/server/6.1/javadoc/6.1.7/com/activeviam/activepivot/core/ext/api/postprocessing/impl/BasicPostProcessor.html)
+
+The migration strategy is:
+- Turns `ABasicPostProcessor.evaluate` into `ICombination.combine`
+- Operate an `ILocation` as a `ISliceWithStep`
+- Operate `IRecordReader` as a `ISlicedRecord`
+- Operate `IWritableCell` as a `IValueProvider`
 
 ## ADynamicAggregationPostProcessorV2
 
 `ADynamicAggregationPostProcessorV2` can generally be implemented through `Partitionor`
 
+[Javadoc](https://docs.activeviam.com/products/atoti/server/6.1/javadoc/6.1.7/com/activeviam/activepivot/core/ext/api/postprocessing/fwk/ADynamicAggregationPostProcessor.html)
+
+The migration strategy is:
+- Turns `ADynamicAggregationPostProcessor.leafLevels` into `Partitionor.groupBy`
+- Turns `ADynamicAggregationPostProcessor.evaluateLeaf` into `ICombination.combine` 
+- Turns extract coordinate from `ILocation`
+
 ## AFilteringPostProcessorV2
 
 `AFilteringPostProcessorV2` can generally be implemented through `Filtrator`
 
+[Javadoc](https://docs.activeviam.com/products/atoti/server/6.1/javadoc/6.1.7/com/activeviam/activepivot/core/ext/api/postprocessing/fwk/AFilteringPostProcessor.html)
+
+The migration strategy is:
+- Turns `FilteringPostProcessor.FILTERING_MEMBERS` into `ISliceFilter`
+
 ## AAdvancedPostProcessorV2
 
-`AAdvancedPostProcessorV2` can generally be implemented through `Dispatchor`
+`AAdvancedPostProcessorV2` can often be implemented through `Dispatchor`, if the main logic is to dispatch an underlying slice into multiple ones.
 
 # Concepts
 

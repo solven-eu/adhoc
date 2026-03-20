@@ -25,10 +25,10 @@ package eu.solven.adhoc.dataframe.column;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
-import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.column.StreamStrategy;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.IColumnValueConverter;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.IValueReceiver;
 

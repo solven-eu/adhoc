@@ -29,6 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocMergingIntoSingle;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
@@ -46,7 +47,7 @@ public class TestSpringImplicitOptions {
 
 	@Test
 	public void testEnv_hasEnvOption_noQueryOption() {
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
 
 		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 		Assertions.assertThat(implicitOptions).containsExactly(InternalQueryOptions.TABLEQUERY_PER_STEPS);
@@ -54,7 +55,7 @@ public class TestSpringImplicitOptions {
 
 	@Test
 	public void testEnv_hasEnvOption_logDefault() {
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
 
 		Assertions.assertThat(implicit.logDefaultOptions()).containsExactly(InternalQueryOptions.TABLEQUERY_PER_STEPS);
 	}
@@ -69,8 +70,8 @@ public class TestSpringImplicitOptions {
 
 	@Test
 	public void testEnv_hasEnvOption_noQueryOption_multipleFalse() {
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), false);
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR), false);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), false);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR), false);
 
 		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 		Assertions.assertThat(implicitOptions).isEmpty();
@@ -78,8 +79,8 @@ public class TestSpringImplicitOptions {
 
 	@Test
 	public void testEnv_hasEnvOption_noQueryOption_multipleTrue() {
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR), true);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR), true);
 
 		Assertions.assertThatThrownBy(() -> implicit.getOptions(CubeQuery.builder().build()))
 				.isInstanceOf(IllegalStateException.class)
@@ -97,7 +98,7 @@ public class TestSpringImplicitOptions {
 
 	@Test
 	public void testEnv_hasEnvOption_hasQueryOption() {
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
 
 		Set<IQueryOption> implicitOptions =
 				implicit.getOptions(CubeQuery.builder().option(InternalQueryOptions.TABLEQUERY_PER_AGGREGATOR).build());
@@ -118,7 +119,7 @@ public class TestSpringImplicitOptions {
 		}
 
 		// with env
-		env.setProperty(implicit.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.TABLEQUERY_PER_STEPS), true);
 		{
 			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 			Assertions.assertThat(implicitOptions).containsExactly(InternalQueryOptions.TABLEQUERY_PER_STEPS);
@@ -129,8 +130,8 @@ public class TestSpringImplicitOptions {
 	public void testEnv_multipleStandardOptionFromEnv() {
 		implicit = SpringImplicitOptions.builder().env(env).build();
 
-		env.setProperty(implicit.optionKey(StandardQueryOptions.CONCURRENT), true);
-		env.setProperty(implicit.optionKey(StandardQueryOptions.EXPLAIN), true);
+		env.setProperty(SpringImplicitOptions.optionKey(StandardQueryOptions.CONCURRENT), true);
+		env.setProperty(SpringImplicitOptions.optionKey(StandardQueryOptions.EXPLAIN), true);
 		{
 			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 			Assertions.assertThat(implicitOptions)
@@ -139,12 +140,30 @@ public class TestSpringImplicitOptions {
 	}
 
 	@Test
+	public void testEnv_hasEnvOption_ClassName_notRecognized() {
+		// Users might mistakenly copy the class name (e.g. InduceByAdhocMergingIntoSingle) as the property key.
+		// Only lowercase (from optionKey) and UPPERCASE are supported; CamelCase is silently ignored.
+		env.setProperty("adhoc.query.table." + InduceByAdhocMergingIntoSingle.class.getSimpleName(), true);
+
+		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+		Assertions.assertThat(implicitOptions).doesNotContain(InternalQueryOptions.INDUCE_BY_ADHOC);
+	}
+
+	@Test
+	public void testEnv_hasEnvOption_lowercase_recognized() {
+		env.setProperty(SpringImplicitOptions.optionKey(InternalQueryOptions.INDUCE_BY_ADHOC), true);
+
+		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
+		Assertions.assertThat(implicitOptions).contains(InternalQueryOptions.INDUCE_BY_ADHOC);
+	}
+
+	@Test
 	public void testEnv_eachInternalIsKnown() {
 		Stream.of(InternalQueryOptions.values()).forEach(option -> {
 			// BEWARE Make sure each test is independent
 			MockEnvironment env = new MockEnvironment();
 			implicit = SpringImplicitOptions.builder().env(env).build();
-			env.setProperty(implicit.optionKey(option), true);
+			env.setProperty(SpringImplicitOptions.optionKey(option), true);
 
 			Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 			Assertions.assertThat(implicitOptions).containsExactly(option);

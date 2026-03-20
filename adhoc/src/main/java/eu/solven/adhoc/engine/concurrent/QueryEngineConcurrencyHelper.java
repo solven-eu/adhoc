@@ -36,11 +36,11 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.experimental.UtilityClass;
@@ -66,11 +66,11 @@ public class QueryEngineConcurrencyHelper {
 	 * @param queryStepToValues
 	 * @param queryStepConsumer
 	 */
-	public static void walkUpDag(QueryPod queryPod,
-			IHasDagFromInducedToInducer queryStepsDag,
-			Map<CubeQueryStep, ICuboid> queryStepToValues,
-			Consumer<? super CubeQueryStep> queryStepConsumer) {
-		Consumer<? super CubeQueryStep> cancellableStepConsumer = step -> {
+	public static <T extends ICubeQueryStep> void walkUpDag(QueryPod queryPod,
+			IHasDagFromInducedToInducer<T> queryStepsDag,
+			Map<T, ICuboid> queryStepToValues,
+			Consumer<? super T> queryStepConsumer) {
+		Consumer<? super T> cancellableStepConsumer = step -> {
 			if (queryPod.isCancelled()) {
 				throw new CancelledQueryException("queryPod is cancelled. Not starting step=%s".formatted(step));
 			}
@@ -86,7 +86,7 @@ public class QueryEngineConcurrencyHelper {
 		ListenableFuture<?> future = queryPod.getExecutorService().submit(() -> {
 			if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 				// multi-threaded
-				DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
+				DirectedAcyclicGraph<T, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
 
 				invokeDagFromRoots(queryPod, queryStepToValues.keySet(), cancellableStepConsumer, dag);
 			} else {
@@ -108,15 +108,15 @@ public class QueryEngineConcurrencyHelper {
 		queryPod.removeCancellationListener(cancellationListener);
 	}
 
-	private static void invokeDagFromRoots(QueryPod queryPod,
-			Set<CubeQueryStep> queryStepsDone,
-			Consumer<? super CubeQueryStep> onReadyStep,
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag) {
+	private static <T extends ICubeQueryStep> void invokeDagFromRoots(QueryPod queryPod,
+			Set<T> queryStepsDone,
+			Consumer<? super T> onReadyStep,
+			DirectedAcyclicGraph<T, DefaultEdge> dag) {
 		// list root induced
-		List<CubeQueryStep> rootSteps = dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
+		List<T> rootSteps = dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
 
 		if (RELY_ON_COMPLETIONFUTURE) {
-			DagCompletableExecutor<CubeQueryStep> executor = DagCompletableExecutor.<CubeQueryStep>builder()
+			DagCompletableExecutor<T> executor = DagCompletableExecutor.<T>builder()
 					.fromQueriedToDependencies(dag)
 					.queryStepsDone(queryStepsDone)
 					.onReadyStep(onReadyStep)
@@ -128,12 +128,11 @@ public class QueryEngineConcurrencyHelper {
 
 			root.join(); // wait for the whole DAG
 		} else {
-			DagRecursiveAction.DagRecursiveActionBuilder<CubeQueryStep> actionTemplate =
-					DagRecursiveAction.<CubeQueryStep>builder()
-							.fromQueriedToDependencies(dag)
-							.queryStepsDone(queryStepsDone)
-							.onReadyStep(onReadyStep);
-			List<DagRecursiveAction<CubeQueryStep>> rootActions =
+			DagRecursiveAction.DagRecursiveActionBuilder<T> actionTemplate = DagRecursiveAction.<T>builder()
+					.fromQueriedToDependencies(dag)
+					.queryStepsDone(queryStepsDone)
+					.onReadyStep(onReadyStep);
+			List<DagRecursiveAction<T>> rootActions =
 					rootSteps.stream().map(step -> actionTemplate.step(step).build()).toList();
 
 			List<Runnable> stepCancellationListeners = new ArrayList<>();

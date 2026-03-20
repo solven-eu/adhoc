@@ -24,7 +24,7 @@ package eu.solven.adhoc.resource;
 
 import java.util.List;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;

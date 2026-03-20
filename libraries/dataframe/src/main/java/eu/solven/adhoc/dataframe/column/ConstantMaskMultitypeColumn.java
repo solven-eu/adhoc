@@ -28,10 +28,10 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
-import eu.solven.adhoc.data.column.IColumnScanner;
-import eu.solven.adhoc.data.column.IColumnValueConverter;
-import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.IColumnScanner;
+import eu.solven.adhoc.cuboid.IColumnValueConverter;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -56,7 +56,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdhocSlice> {
+public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<ISlice> {
 
 	@NonNull
 	@Default
@@ -64,7 +64,7 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdh
 			AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 
 	@NonNull
-	final IMultitypeColumnFastGet<IAdhocSlice> masked;
+	final IMultitypeColumnFastGet<ISlice> masked;
 	@NonNull
 	@Singular
 	final ImmutableMap<String, ?> masks;
@@ -80,34 +80,34 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdh
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<IAdhocSlice> purgeAggregationCarriers() {
+	public IMultitypeColumnFastGet<ISlice> purgeAggregationCarriers() {
 		return ConstantMaskMultitypeColumn.builder().masked(masked.purgeAggregationCarriers()).masks(masks).build();
 	}
 
 	@Override
-	public void scan(IColumnScanner<IAdhocSlice> rowScanner) {
+	public void scan(IColumnScanner<ISlice> rowScanner) {
 		masked.scan(unmaskedSlice -> rowScanner.onKey(extendSlice(unmaskedSlice)));
 	}
 
-	protected IAdhocSlice extendSlice(IAdhocSlice unmaskedSlice) {
+	protected ISlice extendSlice(ISlice unmaskedSlice) {
 		return unmaskedSlice.addColumns(masks);
 	}
 
-	protected IAdhocSlice getUnmaskedSlice(IAdhocMap key) {
+	protected ISlice getUnmaskedSlice(IAdhocMap key) {
 		// TODO Should we have registered the set of masked columns at construction?
 		// BEWARE This assumes the underlying IMultitypeColumnFastGet does not express columns in the mask
 		return key.retainAll(Sets.difference(key.keySet(), masks.keySet())).asSlice();
 	}
 
 	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<IAdhocSlice, U> converter) {
+	public <U> Stream<U> stream(IColumnValueConverter<ISlice, U> converter) {
 		throw new NotYetImplementedException("TODO");
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<IAdhocSlice>> stream() {
+	public Stream<SliceAndMeasure<ISlice>> stream() {
 		return masked.stream().map(maskedSliceAndMeasure -> {
-			return SliceAndMeasure.<IAdhocSlice>builder()
+			return SliceAndMeasure.<ISlice>builder()
 					.slice(extendSlice(maskedSliceAndMeasure.getSlice()))
 					.valueProvider(maskedSliceAndMeasure.getValueProvider())
 					.build();
@@ -115,24 +115,24 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<IAdh
 	}
 
 	@Override
-	public IValueProvider onValue(IAdhocSlice key) {
+	public IValueProvider onValue(ISlice key) {
 		IAdhocMap keyAsMap = key.asAdhocMap();
 		if (!keyAsMap.entrySet().containsAll(masks.entrySet())) {
 			// This is not a compatible key
 			return vc -> vc.onObject(null);
 		}
 
-		IAdhocSlice unmaskedSlice = getUnmaskedSlice(keyAsMap);
+		ISlice unmaskedSlice = getUnmaskedSlice(keyAsMap);
 		return masked.onValue(unmaskedSlice);
 	}
 
 	@Override
-	public Stream<IAdhocSlice> keyStream() {
+	public Stream<ISlice> keyStream() {
 		return masked.keyStream().map(this::extendSlice);
 	}
 
 	@Override
-	public IValueReceiver append(IAdhocSlice slice) {
+	public IValueReceiver append(ISlice slice) {
 		throw new UnsupportedOperationException("%s is immutable".formatted(this.getClass().getName()));
 	}
 

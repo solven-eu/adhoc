@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -40,12 +41,13 @@ public interface IHasTableQueryForSteps {
 	Set<TableQueryV4> getTableQueries();
 
 	@Deprecated(since = "Useful?")
-	boolean containsStep(CubeQueryStep queryStep);
+	boolean containsStep(TableQueryStep queryStep);
 
 	/**
-	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} and the original {@link CubeQueryStep}.
+	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} with the matching
+	 * {@link TableQueryStep}.
 	 */
-	record StepAndFilteredAggregator(FilteredAggregator aggregator, CubeQueryStep step) {
+	record StepAndFilteredAggregator(FilteredAggregator aggregator, TableQueryStep step) {
 
 	}
 

@@ -27,14 +27,14 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IGroupBy;
 
 /**
- * Enable building {@link Map} and {@link IAdhocSlice} in Adhoc context.
+ * Enable building {@link Map} and {@link ISlice} in Adhoc context.
  * 
  * In Adhoc, we generate tons of {@link Map}-like for a given {@link IGroupBy}. Which means a tons of {@link Map}-like
  * for a predefined keySet. Given {@link Map} may be sorted, to enable faster merging (see

@@ -24,9 +24,9 @@ package eu.solven.adhoc.engine.tabular;
 
 import java.util.Map;
 
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.QueryStepsDag;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 
 /**
  * A tableQuery engine, prepared for a given query.
@@ -36,6 +36,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 @FunctionalInterface
 public interface ITableQueryEngineBootstrapped {
 
-	Map<CubeQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag);
+	Map<TableQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag);
 
 }

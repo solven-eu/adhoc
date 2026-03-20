@@ -32,14 +32,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**
- * Groups {@link CubeQueryStep} inducers via greedy biclique decomposition of the {@code (measure+filter, groupBy)}
+ * Groups {@link TableQueryStep} inducers via greedy biclique decomposition of the {@code (measure+filter, groupBy)}
  * bipartite graph. Each produced {@link TableQueryV3} covers exactly the required {@code (measure, groupBy)}
  * combinations, eliminating the cartesian-product waste that arises when unrelated measures and groupBys are mixed in a
  * single GROUPING SETS query.
@@ -48,7 +48,7 @@ import eu.solven.adhoc.query.table.TableQueryV3;
  * Algorithm (per mandatory context group):
  * <ol>
  * <li>Build a bipartite graph: left nodes = {@code (measure, filter)} pairs; right nodes = {@code IGroupBy} values;
- * edges = one per {@link CubeQueryStep}.</li>
+ * edges = one per {@link TableQueryStep}.</li>
  * <li>Repeatedly pick the left node with the most remaining right neighbours, expand the biclique by retaining only
  * left nodes that cover <em>all</em> of those right neighbours, emit the corresponding steps as a group, and remove the
  * covered edges.</li>
@@ -71,12 +71,12 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 	}
 
 	@Override
-	public Collection<? extends Set<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
+	public Collection<? extends Set<TableQueryStep>> groupInducers(Set<TableQueryStep> inducers) {
 		// Mandatory partition: steps with different (options, customMarker) must be in separate TableQueryV3
-		Map<CubeQueryStep, List<CubeQueryStep>> mandatoryGroups = inducers.stream()
+		Map<TableQueryStep, List<TableQueryStep>> mandatoryGroups = inducers.stream()
 				.collect(Collectors.groupingBy(this::tableQueryGroupBy, LinkedHashMap::new, Collectors.toList()));
 
-		List<Set<CubeQueryStep>> result = new ArrayList<>();
+		List<Set<TableQueryStep>> result = new ArrayList<>();
 		mandatoryGroups.values().forEach(group -> result.addAll(bicliqueCover(group)));
 		return result;
 	}
@@ -86,14 +86,14 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 	 * groupBy)} pairs form a complete bipartite subgraph, so that the resulting {@link TableQueryV3} contains no
 	 * unrequested combinations.
 	 */
-	protected List<Set<CubeQueryStep>> bicliqueCover(List<CubeQueryStep> steps) {
-		Set<CubeQueryStep> remaining = new LinkedHashSet<>(steps);
-		List<Set<CubeQueryStep>> groups = new ArrayList<>();
+	protected List<Set<TableQueryStep>> bicliqueCover(List<TableQueryStep> steps) {
+		Set<TableQueryStep> remaining = new LinkedHashSet<>(steps);
+		List<Set<TableQueryStep>> groups = new ArrayList<>();
 
 		while (!remaining.isEmpty()) {
 			// Build left-node → right-nodes adjacency for the remaining steps
 			Map<LeftKey, Set<IGroupBy>> leftNeighbors = new LinkedHashMap<>();
-			for (CubeQueryStep step : remaining) {
+			for (TableQueryStep step : remaining) {
 				leftNeighbors.computeIfAbsent(leftKey(step), k -> new LinkedHashSet<>()).add(step.getGroupBy());
 			}
 
@@ -113,8 +113,8 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 					.collect(Collectors.toCollection(LinkedHashSet::new));
 
 			// Collect the steps that belong to this biclique
-			Set<CubeQueryStep> group = new LinkedHashSet<>();
-			for (CubeQueryStep step : remaining) {
+			Set<TableQueryStep> group = new LinkedHashSet<>();
+			for (TableQueryStep step : remaining) {
 				if (compatibleLefts.contains(leftKey(step)) && bestGroupBys.contains(step.getGroupBy())) {
 					group.add(step);
 				}
@@ -127,7 +127,7 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 		return groups;
 	}
 
-	private LeftKey leftKey(CubeQueryStep step) {
+	private LeftKey leftKey(TableQueryStep step) {
 		return new LeftKey(step.getMeasure(), step.getFilter());
 	}
 

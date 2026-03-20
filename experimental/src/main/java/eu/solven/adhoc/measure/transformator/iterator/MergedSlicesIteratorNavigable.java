@@ -33,8 +33,8 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.UnmodifiableIterator;
 
-import eu.solven.adhoc.data.column.SliceAndMeasure;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -50,17 +50,17 @@ public class MergedSlicesIteratorNavigable extends UnmodifiableIterator<SliceAnd
 
 	final CubeQueryStep queryStep;
 
-	final List<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> sortedIterators;
+	final List<PeekingIterator<SliceAndMeasure<ISlice>>> sortedIterators;
 
 	// Used to get faster the next/minimum slice
-	final Queue<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> queue;
+	final Queue<PeekingIterator<SliceAndMeasure<ISlice>>> queue;
 
 	public MergedSlicesIteratorNavigable(CubeQueryStep queryStep,
-			List<? extends Iterator<SliceAndMeasure<IAdhocSlice>>> iterators) {
+			List<? extends Iterator<SliceAndMeasure<ISlice>>> iterators) {
 		this.queryStep = queryStep;
 		sortedIterators = iterators.stream().map(Iterators::peekingIterator).toList();
 
-		Comparator<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> heapComparator =
+		Comparator<PeekingIterator<SliceAndMeasure<ISlice>>> heapComparator =
 				Comparator.comparing(o -> o.peek().getSlice());
 
 		queue = new PriorityQueue<>(sortedIterators.size(), heapComparator);
@@ -79,13 +79,13 @@ public class MergedSlicesIteratorNavigable extends UnmodifiableIterator<SliceAnd
 	@Override
 	public SliceAndMeasures next() {
 		// Peek the nextIterator, i.e. one of the iterator with the minimum slice
-		PeekingIterator<SliceAndMeasure<IAdhocSlice>> nextIter = queue.peek();
+		PeekingIterator<SliceAndMeasure<ISlice>> nextIter = queue.peek();
 		if (nextIter == null) {
 			throw new IllegalStateException(
 					"`hasNext` should have returned false as only not-empty iterators are in the queue");
 		}
 
-		IAdhocSlice slice = nextIter.peek().getSlice();
+		ISlice slice = nextIter.peek().getSlice();
 
 		int size = sortedIterators.size();
 
@@ -95,11 +95,11 @@ public class MergedSlicesIteratorNavigable extends UnmodifiableIterator<SliceAnd
 		int nbMatchingSlice = 0;
 
 		for (int i = 0; i < size; i++) {
-			PeekingIterator<SliceAndMeasure<IAdhocSlice>> iterator = sortedIterators.get(i);
+			PeekingIterator<SliceAndMeasure<ISlice>> iterator = sortedIterators.get(i);
 			if (iterator.hasNext() && iterator.peek().getSlice().equals(slice)) {
 				// Given peeked elements, this slice is confirmed in this column
 				// We could assert it is equal to `slice`
-				SliceAndMeasure<IAdhocSlice> next = iterator.peek();
+				SliceAndMeasure<ISlice> next = iterator.peek();
 				valueProviders.add(next.getValueProvider());
 
 				nbMatchingSlice++;
@@ -117,11 +117,11 @@ public class MergedSlicesIteratorNavigable extends UnmodifiableIterator<SliceAnd
 		// It is relevant as the queue may hold 2 iterators on same value: we do not want to insert the first iterator
 		// on next value while the second iterator
 		// is still present with previous value
-		List<PeekingIterator<SliceAndMeasure<IAdhocSlice>>> insertBack = new ArrayList<>(nbMatchingSlice);
+		List<PeekingIterator<SliceAndMeasure<ISlice>>> insertBack = new ArrayList<>(nbMatchingSlice);
 
 		for (int i = 0; i < nbMatchingSlice; i++) {
 			// The first removal is guaranteed as the queue head led to this iteration
-			PeekingIterator<SliceAndMeasure<IAdhocSlice>> removed = queue.remove();
+			PeekingIterator<SliceAndMeasure<ISlice>> removed = queue.remove();
 			// Do the iteration (we only peeked up to now)
 			removed.next();
 

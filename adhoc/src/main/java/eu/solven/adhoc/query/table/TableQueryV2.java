@@ -28,13 +28,13 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;

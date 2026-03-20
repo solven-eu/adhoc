@@ -25,10 +25,10 @@ package eu.solven.adhoc.dataframe.filter;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Builder;

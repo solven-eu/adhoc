@@ -24,11 +24,11 @@ package eu.solven.adhoc.dataframe.tabular;
 
 import java.util.Set;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.measure.model.IMeasure;
 
 /**
- * Holds the data for a {@link Set} of {@link IAdhocSlice} and a {@link Set} of {@link IMeasure}. Typical output of an
+ * Holds the data for a {@link Set} of {@link ISlice} and a {@link Set} of {@link IMeasure}. Typical output of an
  * {@link ICubeQuery} on an {@link eu.solven.adhoc.engine.ICubeQueryEngine}.
  * 
  * {@link ITabularView} implementations are generally immutable.

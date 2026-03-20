@@ -34,14 +34,14 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.data.column.ICompactable;
+import eu.solven.adhoc.cuboid.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -125,7 +125,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<T> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
+	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator.getAlias());
 
 		if (notFinalColumn == null) {

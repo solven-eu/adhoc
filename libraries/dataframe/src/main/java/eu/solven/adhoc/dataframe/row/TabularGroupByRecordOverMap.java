@@ -29,8 +29,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
@@ -52,10 +52,10 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 
 	@NonNull
 	@With
-	final IAdhocSlice slice;
+	final ISlice slice;
 
 	@Override
-	public IAdhocSlice asSlice() {
+	public ISlice asSlice() {
 		return slice;
 	}
 

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine.step;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,115 +31,62 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.model.IHasTags;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasCustomMarker;
-import eu.solven.adhoc.query.cube.IHasMeasure;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
-import eu.solven.adhoc.util.AdhocUnsafe;
-import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
-import lombok.Builder.Default;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
-import lombok.ToString;
-import lombok.Value;
 
 /**
  * Given an {@link ICubeQuery} and a {@link MeasureForest}, we need to compute each underlying measure at a given
  * {@link IWhereGroupByQuery}.
- * 
- * @author Benoit Lacelle
  *
+ * @author Benoit Lacelle
  */
-@Value
-@Builder(toBuilder = true)
-@EqualsAndHashCode(exclude = {
-		// cache is typically used for performance improvements: it should not impact any hashStructure
-		"cache",
-		// id is used to simplify logs: but 2 functionally equivalent querySteps may have different querySteps, and they
-		// should be equals in hasIh structures
-		"id" })
-@ToString(exclude = {
-		// The cache is not relevant in logs. This may be tweaked based on `debug` flag
-		"cache" })
-// BEWARE Should we have a ref to the IAdhocCubeBuilder, which may be useful for instance in ICombination of some
-// measure
-public final class CubeQueryStep
-		implements IWhereGroupByQuery, IHasMeasure, IHasCustomMarker, IHasQueryOptions, IHasCache {
-	private static final String KEY_CACHE_TRANSVERSE = "adhoc-transverseCache";
-	public static final String KEY_FILTER_OPTIMIZER = "adhoc-filterOptimizer";
-
-	private final long id = AdhocUnsafe.nextQueryStepIndex();
+public final class CubeQueryStep extends ACubeQueryStep {
 
 	@NonNull
-	IMeasure measure;
-	@NonNull
-	@Default
-	ISliceFilter filter = ISliceFilter.MATCH_ALL;
-	@NonNull
-	@Default
-	IGroupBy groupBy = IGroupBy.GRAND_TOTAL;
+	@Getter
+	final IMeasure measure;
 
-	// This property is transported down to the DatabaseQuery, and is typically used to customize measure behaviors.
-	// It must not be an Optional
-	Object customMarker;
-
-	@NonNull
-	@Singular
-	ImmutableSet<IQueryOption> options;
-
-	// Used to store transient information, like slow-to-evaluate information
-	// Should be a threadSafe implementation
-	@NonNull
-	@Default
-	Map<Object, Object> cache = new ConcurrentHashMap<>();
-
-	/**
-	 * Lombok @Builder
-	 * 
-	 * @author Benoit Lacelle
-	 */
-	public static class CubeQueryStepBuilder {
-		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-		IMeasure measure;
-		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-		Object customMarker;
-
-		public CubeQueryStepBuilder measure(IMeasure measure) {
-			this.measure = measure;
-			return this;
-		}
-
-		public CubeQueryStepBuilder measure(String measureName) {
-			return measure(ReferencedMeasure.ref(measureName));
-		}
-
-		public CubeQueryStepBuilder customMarker(Object customMarker) {
-			if (customMarker instanceof Optional<?> optional) {
-				customMarker = optional.orElse(null);
-			}
-			this.customMarker = customMarker;
-
-			return this;
-		}
+	@Builder
+	protected CubeQueryStep(ISliceFilter filter,
+			IGroupBy groupBy,
+			Object customMarker,
+			@Singular ImmutableSet<IQueryOption> options,
+			Map<Object, Object> cache,
+			@NonNull IMeasure measure) {
+		super(filter, groupBy, customMarker, options, cache);
+		this.measure = measure;
 	}
 
+	/**
+	 * Returns a builder pre-populated with all fields of this step (cache is reset, preserving the transverse cache).
+	 */
+	public CubeQueryStepBuilder toBuilder() {
+		Map<Object, Object> newCache = new ConcurrentHashMap<>();
+		if (getCache().containsKey(KEY_CACHE_TRANSVERSE)) {
+			newCache.put(KEY_CACHE_TRANSVERSE, getTransverseCache());
+		}
+		return CubeQueryStep.builder()
+				.filter(getFilter())
+				.groupBy(getGroupBy())
+				.customMarker(getCustomMarker())
+				.options(getOptions())
+				.cache(newCache)
+				.measure(measure);
+	}
+
+	/**
+	 * @deprecated use {@link #toBuilder()}
+	 */
 	@Deprecated(since = "use .toBuilder()", forRemoval = true)
 	public static CubeQueryStepBuilder edit(CubeQueryStep step) {
-		// TODO Clearing the cache (but the transverseCache) is not preserved in `.toBuilder()`
-		Map<Object, Object> newCache = new ConcurrentHashMap<>();
-		if (step.getCache().containsKey(KEY_CACHE_TRANSVERSE)) {
-			Map<Object, Object> transverseCache = step.getTransverseCache();
-			newCache.put(KEY_CACHE_TRANSVERSE, transverseCache);
-		}
-
-		return step.toBuilder().cache(newCache);
+		return step.toBuilder();
 	}
 
 	public static CubeQueryStepBuilder edit(IWhereGroupByQuery step) {
@@ -159,33 +105,7 @@ public final class CubeQueryStep
 		return builder;
 	}
 
-	@Override
-	public boolean isDebug() {
-		return getOptions().contains(StandardQueryOptions.DEBUG) || measure.getTags().contains(IHasTags.TAG_DEBUG);
-	}
-
-	public void setCrossStepsCache(Map<Object, Object> transverseCache) {
-		getCache().put(KEY_CACHE_TRANSVERSE, transverseCache);
-	}
-
-	@Override
-	public void invalidateAll() {
-		Map<Object, Object> transverseCache = getTransverseCache();
-		cache.clear();
-		setCrossStepsCache(transverseCache);
-	}
-
-	public Map<Object, Object> getTransverseCache() {
-		Map<Object, Object> transverseCache = (Map<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
-
-		if (transverseCache == null) {
-			throw new IllegalStateException("Missing call to `setCrossStepsCache` on %s".formatted(this));
-		}
-		return transverseCache;
-	}
-
 	/**
-	 * 
 	 * @return all columns which are involved in given {@link CubeQueryStep}
 	 */
 	public static Set<String> getColumns(CubeQueryStep step) {
@@ -195,4 +115,21 @@ public final class CubeQueryStep
 				.build();
 	}
 
+	/**
+	 * Lombok @Builder — extends with a {@code measure(String)} convenience overload. Both setter variants must be
+	 * declared here because Lombok skips generating any setter whose name is already present in the custom class.
+	 */
+	public static class CubeQueryStepBuilder {
+		@SuppressWarnings({ "PMD.AvoidFieldNameMatchingMethodName", "PMD.UnusedPrivateField" })
+		private IMeasure measure;
+
+		public CubeQueryStepBuilder measure(IMeasure measure) {
+			this.measure = measure;
+			return this;
+		}
+
+		public CubeQueryStepBuilder measure(String measureName) {
+			return measure(ReferencedMeasure.ref(measureName));
+		}
+	}
 }

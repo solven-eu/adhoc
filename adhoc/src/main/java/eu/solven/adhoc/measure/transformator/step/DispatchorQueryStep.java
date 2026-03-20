@@ -33,9 +33,9 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ICalculatedColumn;
-import eu.solven.adhoc.data.column.ICuboid;
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -46,6 +46,7 @@ import eu.solven.adhoc.dataframe.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapHelpers;
@@ -61,7 +62,6 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.util.AdhocDebug;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
@@ -147,7 +147,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 
 		IAggregation agg = factories.getOperatorFactory().makeAggregation(dispatchor.getAggregationKey());
 
-		IMultitypeMergeableColumn<IAdhocSlice> values = makeColumn(agg);
+		IMultitypeMergeableColumn<ISlice> values = makeColumn(agg);
 
 		IDecomposition decomposition = makeDecomposition(underlyings);
 
@@ -156,16 +156,16 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
-	protected IMultitypeMergeableColumn<IAdhocSlice> makeColumn(IAggregation agg) {
+	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg) {
 		// Not MultitypeNavigableColumn as decomposition will prevent writing slices in order.
 		// BEWARE This should be reviewed, as some later IMeasure would expect to receive an ordered slices
-		return MultitypeHashMergeableColumn.<IAdhocSlice>builder().aggregation(agg).build();
+		return MultitypeHashMergeableColumn.<ISlice>builder().aggregation(agg).build();
 	}
 
 	protected void onSlice(List<? extends ICuboid> underlyings,
 			SliceAndMeasures slice,
 			IDecomposition decomposition,
-			IMultitypeMergeableColumn<IAdhocSlice> aggregatingView) {
+			IMultitypeMergeableColumn<ISlice> aggregatingView) {
 		Object value = IValueProvider.getValue(slice.getMeasures().read(0));
 
 		if (value == null) {
@@ -203,7 +203,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 
 			// Build the actual fragment coordinate, given the groupedBy columns (as the decomposition may have
 			// returned finer entries).
-			IAdhocSlice outputSlice = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
+			ISlice outputSlice = queryGroupBy(step.getGroupBy(), slice.getSlice(), fragmentCoordinate);
 
 			fragmentValueProvider.acceptReceiver(aggregatingView.merge(outputSlice));
 
@@ -216,9 +216,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 		});
 	}
 
-	protected IAdhocSlice queryGroupBy(@NonNull IGroupBy groupBy,
-			ISliceWithStep slice,
-			Map<String, ?> fragmentCoordinate) {
+	protected ISlice queryGroupBy(@NonNull IGroupBy groupBy, ISliceWithStep slice, Map<String, ?> fragmentCoordinate) {
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
@@ -235,7 +233,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 				if (value != null) {
 					sliceAsMap.put(groupByColumn, value);
 				}
-				IAdhocSlice preSlice = AdhocMapHelpers.fromMap(sliceFactory, sliceAsMap).asSlice();
+				ISlice preSlice = AdhocMapHelpers.fromMap(sliceFactory, sliceAsMap).asSlice();
 				ITabularGroupByRecord groupByRecord =
 						TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(preSlice).build();
 				Object calculatedCoordinate = calculatedColumn.computeCoordinate(groupByRecord);

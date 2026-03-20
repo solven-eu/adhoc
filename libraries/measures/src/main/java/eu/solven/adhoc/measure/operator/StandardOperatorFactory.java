@@ -53,7 +53,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.sum.SumNotNaNAggregation;
 import eu.solven.adhoc.util.AdhocIdentity;
-import eu.solven.adhoc.util.AdhocMapPathGet;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.Builder.Default;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;

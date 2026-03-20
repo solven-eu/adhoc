@@ -41,6 +41,7 @@ import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.IAndFilter;
@@ -53,10 +54,9 @@ import eu.solven.adhoc.measure.decomposition.DecompositionHelpers;
 import eu.solven.adhoc.measure.decomposition.IDecomposition;
 import eu.solven.adhoc.measure.decomposition.IDecompositionEntry;
 import eu.solven.adhoc.query.MeasurelessQuery;
-import eu.solven.adhoc.query.cube.IWhereGroupByQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.util.AdhocMapPathGet;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.extern.slf4j.Slf4j;
 
 /**

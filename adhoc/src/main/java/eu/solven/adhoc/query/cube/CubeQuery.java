@@ -34,6 +34,7 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.IColumnFilter;

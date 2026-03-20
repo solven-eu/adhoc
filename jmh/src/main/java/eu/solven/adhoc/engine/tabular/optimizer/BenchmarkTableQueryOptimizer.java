@@ -39,7 +39,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,22 +71,22 @@ public class BenchmarkTableQueryOptimizer {
 	}
 
 	@Benchmark
-	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toGrandTotal() {
+	public IMultitypeMergeableColumn<ISlice> fromABC_toGrandTotal() {
 		return state.evaluateInduced(state.getInducedGrandTotal());
 	}
 
 	@Benchmark
-	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toA() {
+	public IMultitypeMergeableColumn<ISlice> fromABC_toA() {
 		return state.evaluateInduced(state.getInducedByA());
 	}
 
 	@Benchmark
-	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toAB() {
+	public IMultitypeMergeableColumn<ISlice> fromABC_toAB() {
 		return state.evaluateInduced(state.getInducedByAB());
 	}
 
 	@Benchmark
-	public IMultitypeMergeableColumn<IAdhocSlice> fromABC_toB_misordered() {
+	public IMultitypeMergeableColumn<ISlice> fromABC_toB_misordered() {
 		return state.evaluateInduced(state.getInducedByB());
 	}
 

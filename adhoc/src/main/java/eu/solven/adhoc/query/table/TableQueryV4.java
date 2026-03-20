@@ -37,9 +37,9 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
@@ -161,8 +161,18 @@ public class TableQueryV4 implements ITableQuery {
 	 * @return a {@link TableQueryV3} covering this V4.
 	 */
 	public TableQueryV3 asCoveringV3() {
-		ImmutableSet<FilteredAggregator> aggregators = ImmutableSet.copyOf(groupByToAggregators.values());
-		ImmutableSet<IGroupBy> groupBys = ImmutableSet.copyOf(groupByToAggregators.keySet());
+		// Normalize index to 0, deduplicate by (aggregator, filter), then re-index name conflicts.
+		// Normalization ensures (aggregator, filter)-equivalent FAs from different groupBys collapse into one
+		// even if they carried different per-groupBy indices.
+		List<FilteredAggregator> deduped =
+				groupByToAggregators.values().stream().map(fa -> fa.withIndex(0)).distinct().toList();
+
+		AtomicLongMap<String> nameToNextIndex = AtomicLongMap.create();
+		Set<FilteredAggregator> aggregators = deduped.stream().map(fa -> {
+			long i = nameToNextIndex.getAndIncrement(fa.getAggregator().getName());
+			return fa.withIndex(i);
+		}).collect(ImmutableSet.toImmutableSet());
+		Set<IGroupBy> groupBys = ImmutableSet.copyOf(groupByToAggregators.keySet());
 
 		return TableQueryV3.builder()
 				.filter(filter)
@@ -174,12 +184,11 @@ public class TableQueryV4 implements ITableQuery {
 				.build();
 	}
 
-	protected CubeQueryStepBuilder asQueryStep() {
-		return CubeQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
+	protected TableQueryStep.TableQueryStepBuilder asQueryStep() {
+		return TableQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
 	}
 
-	// TODO This should not be public
-	public CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
+	public TableQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {
 		// Recombine the stepFilter given the tableQuery filter and the measure filter
@@ -190,7 +199,7 @@ public class TableQueryV4 implements ITableQuery {
 				FilterBuilder.and(getFilter(), filteredAggregator.getFilter()).optimize(filterOptimizer);
 
 		return asQueryStep().filter(recombinedFilter)
-				.measure(filteredAggregator.getAggregator())
+				.aggregator(filteredAggregator.getAggregator())
 				.groupBy(groupBy)
 				.build();
 	}
@@ -264,6 +273,27 @@ public class TableQueryV4 implements ITableQuery {
 	@Override
 	public Set<IGroupBy> getGroupBys() {
 		return getGroupByToAggregators().keySet();
+	}
+
+	/**
+	 * Returns {@code true} when all {@link IGroupBy}s in this query share exactly the same {@link FilteredAggregator}
+	 * set, meaning a single covering {@link TableQueryV3} (GROUPING SET SQL) computes no irrelevant combinations. When
+	 * {@code false}, a UNION ALL decomposition (via {@link #streamV3()}) avoids wasteful cartesian-product computation.
+	 *
+	 * <p>
+	 * This flag is the shared decision point between sites that choose the execution strategy (e.g.
+	 * {@code JooqTableQueryFactory.prepareQuery}) and sites that describe it in logs or metrics (e.g.
+	 * {@code TableQueryEngineBootstrapped.toPerfLog}).
+	 */
+	public boolean isPerfectV3() {
+		return groupByToAggregators.keySet()
+				.stream()
+				.map(groupBy -> groupByToAggregators.get(groupBy)
+						.stream()
+						.map(fa -> fa.withIndex(0))
+						.collect(ImmutableSet.toImmutableSet()))
+				.distinct()
+				.count() <= 1;
 	}
 
 	@Override

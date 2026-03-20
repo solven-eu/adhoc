@@ -32,8 +32,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.data.row.ITabularGroupByRecord;
-import eu.solven.adhoc.data.row.slice.SliceAsMap;
+import eu.solven.adhoc.cuboid.slice.Slice;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -144,7 +144,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		}
 
 		@Override
-		public SliceAsMap asSlice() {
+		public Slice asSlice() {
 			throw new UnsupportedOperationException("Not .keySet() else it would register all columns as underlying");
 		}
 

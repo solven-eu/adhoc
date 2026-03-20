@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -42,7 +42,7 @@ import lombok.NonNull;
 import lombok.ToString;
 
 /**
- * A simple {@link IAdhocSlice} based on a {@link Map}
+ * A simple {@link ISlice} based on a {@link Map}
  * 
  * @author Benoit Lacelle
  */

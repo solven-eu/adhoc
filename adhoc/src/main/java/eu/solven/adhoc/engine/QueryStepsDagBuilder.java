@@ -45,7 +45,7 @@ import com.google.common.collect.Lists;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.data.column.ICuboid;
+import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;

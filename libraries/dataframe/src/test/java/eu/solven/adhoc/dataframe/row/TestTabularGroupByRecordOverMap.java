@@ -30,8 +30,8 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
-import eu.solven.adhoc.map.SliceHelpers;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTabularGroupByRecordOverMap {
@@ -47,7 +47,7 @@ public class TestTabularGroupByRecordOverMap {
 
 	@Test
 	public void testRequireFilter_String() {
-		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
+		ISlice slice = SliceHelpers.asSlice(Map.of("k", "v"));
 		TabularGroupByRecordOverMap tabular =
 				TabularGroupByRecordOverMap.builder().groupBy(GroupByColumns.named("k")).slice(slice).build();
 
@@ -75,7 +75,7 @@ public class TestTabularGroupByRecordOverMap {
 	// @Disabled("AdhocSliceAsMap does not accept Collection sliced")
 	@Test
 	public void testRequireFilter_Collection() {
-		IAdhocSlice slice = SliceHelpers.asSlice(Map.of("k", Arrays.asList("v1", "v2")));
+		ISlice slice = SliceHelpers.asSlice(Map.of("k", Arrays.asList("v1", "v2")));
 		TabularGroupByRecordOverMap tabular =
 				TabularGroupByRecordOverMap.builder().groupBy(GroupByColumns.named("k")).slice(slice).build();
 

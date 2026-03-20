@@ -25,12 +25,12 @@ package eu.solven.adhoc.data.row;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.primitive.IValueProvider;
 
 /**
- * Used to provide measure values/aggregates given a {@link List} of {@link ICuboid}. The scope is an
- * {@link IAdhocSlice}.
+ * Used to provide measure values/aggregates given a {@link List} of {@link ICuboid}. The scope is an {@link ISlice}.
  * 
  * @author Benoit Lacelle
  */

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.filter.AdhocPublicJackson;
 import eu.solven.pepper.unittest.PepperJackson3TestHelper;
 import io.cucumber.core.internal.com.fasterxml.jackson.core.JsonProcessingException;

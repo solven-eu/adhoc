@@ -29,8 +29,9 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
+import eu.solven.adhoc.map.AbstractAdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.SliceHelpers;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import lombok.Builder;
 import lombok.NonNull;

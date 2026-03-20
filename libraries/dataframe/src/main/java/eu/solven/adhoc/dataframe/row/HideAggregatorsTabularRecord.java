@@ -31,7 +31,7 @@ import java.util.function.BiConsumer;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.data.row.slice.IAdhocSlice;
+import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
@@ -117,7 +117,7 @@ public class HideAggregatorsTabularRecord implements ITabularRecord {
 	}
 
 	@Override
-	public IAdhocSlice asSlice() {
+	public ISlice asSlice() {
 		return decorated.asSlice();
 	}
 

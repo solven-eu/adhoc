@@ -28,6 +28,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import lombok.extern.slf4j.Slf4j;
@@ -42,9 +43,9 @@ import lombok.extern.slf4j.Slf4j;
 public class InduceByGroupingSets implements ITableStepsSplitter {
 
 	@Override
-	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<CubeQueryStep> tableSteps) {
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer =
+	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<TableQueryStep> tableSteps) {
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer =
 				new DirectedAcyclicGraph<>(DefaultEdge.class);
 
 		tableSteps.forEach(inducedToInducer::addVertex);

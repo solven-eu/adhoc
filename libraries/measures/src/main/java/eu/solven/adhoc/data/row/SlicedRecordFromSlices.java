@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.util.AdhocDebug;
 import lombok.Builder;
