@@ -43,12 +43,12 @@ import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterUtility;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -106,11 +106,11 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 
 		ImmutableSetMultimap.Builder<IGroupBy, FilteredAggregator> multimapBuilder = ImmutableSetMultimap.builder();
 		byGroupBy.forEach((groupBy, groupBySteps) -> {
-			// Strip the WHERE from each individual FILTER
+			// Strip the WHERE from each individual FILTER — each step is guaranteed to carry an Aggregator
 			Set<FilteredAggregator> strippedAggregators = groupBySteps.stream().map(step -> {
 				ISliceFilter strippedFromWhere = stripper.strip(step.getFilter());
 				return FilteredAggregator.builder()
-						.aggregator((Aggregator) step.getMeasure())
+						.aggregator(TableQueryStep.from(step).getMeasure())
 						.filter(strippedFromWhere)
 						.build();
 			}).collect(ImmutableSet.toImmutableSet());

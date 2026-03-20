@@ -32,7 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
@@ -63,7 +63,7 @@ public class GroupingSetMergeableGrid implements IMultitypeMergeableGrid<ISlice>
 	}
 
 	@Override
-	public IMultitypeColumnFastGet<ISlice> closeColumn(CubeQueryStep queryStep, IAliasedAggregator aggregator) {
+	public IMultitypeColumnFastGet<ISlice> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		return getGroupByGrid(gridFactory, queryStep.getGroupBy().getGroupedByColumns()).closeColumn(queryStep,
 				aggregator);
 	}

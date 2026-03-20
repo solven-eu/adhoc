@@ -10,6 +10,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `InduceByAdhoc.splitInducedDag`: fixed NPE when input steps have non-contiguous groupBy cardinalities (e.g. sizes 1 and 3 with no size-2 step) — iterating through missing cardinalities now yields an empty list instead of `null`.
 
 ### Added
+- `ICubeQueryStep`: new interface grouping the contracts of `CubeQueryStep` (`IWhereGroupByQuery`, `IHasMeasure`, `IHasCustomMarker`, `IHasQueryOptions`, `IHasCache`); `CubeQueryStep` now implements it, enabling polymorphic handling of step types.
+- `TableQueryStep`: strongly-typed record wrapping a `CubeQueryStep` whose measure is guaranteed to be an `Aggregator`; replaces the raw `(Aggregator) step.getMeasure()` cast in the table-query execution path. `StepAndFilteredAggregator.step` now carries a `TableQueryStep` instead of a plain `CubeQueryStep`.
 - `scripts/check-coverage-sonar.pl`: offline Perl script that queries the SonarCloud API (no local build needed) and lists production files below a configurable coverage threshold (default 20 %). Run with `perl scripts/check-coverage-sonar.pl [--threshold N]`.
 - `scripts/check-coverage-low.pl`: local Perl script that parses JaCoCo XML reports and reports the same threshold violations; runs automatically in CI after the test step.
 - `CONVENTIONS.MD` Test Coverage section: documents the 80 % instruction-coverage target and the 20 % critical floor.

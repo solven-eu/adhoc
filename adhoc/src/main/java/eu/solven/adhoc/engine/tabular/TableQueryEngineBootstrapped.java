@@ -67,6 +67,7 @@ import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
@@ -803,7 +804,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 		return stepStream.map(r -> {
 			FilteredAggregator filteredAggregator = r.aggregator();
-			CubeQueryStep queryStep = r.step();
+			TableQueryStep queryStep = r.step();
 
 			// `.closeColumn` may be an expensive operation. e.g. it may sort slices.
 			// TODO do close only if the queryStep is actually relevant for the rest of the DAG.
@@ -811,7 +812,8 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
-			return Map.entry(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
+			CubeQueryStep cubeQueryStep = queryStep.toCubeQueryStep();
+			return Map.entry(cubeQueryStep, Cuboid.forGroupBy(cubeQueryStep).values(values).build());
 		}).collect(PepperStreamHelper.toLinkedMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 

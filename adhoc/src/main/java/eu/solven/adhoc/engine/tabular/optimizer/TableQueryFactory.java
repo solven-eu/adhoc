@@ -40,7 +40,6 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
@@ -276,7 +275,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 		// Holds the querySteps evaluated from the ITableWrapper
 		Set<CubeQueryStep> receivedInducerSteps = tableQueries.stream()
 				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterOptimizer))
-				.map(StepAndFilteredAggregator::step)
+				.map(r -> r.step().toCubeQueryStep())
 				.collect(ImmutableSet.toImmutableSet());
 
 		// tableDag will evaluate from table querySteps to cubeDag root querySteps

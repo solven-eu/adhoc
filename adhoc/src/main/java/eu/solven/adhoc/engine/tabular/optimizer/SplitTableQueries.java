@@ -37,6 +37,7 @@ import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -106,12 +107,12 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 		return query.getGroupByToAggregators().entries().stream().map(e -> {
 			FilteredAggregator filteredAggregator = e.getValue();
 			IGroupBy groupBy = e.getKey();
-			CubeQueryStep step = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
+			CubeQueryStep cubeStep = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
 
-			if (containsStep(step)) {
-				return new StepAndFilteredAggregator(filteredAggregator, step);
+			if (containsStep(cubeStep)) {
+				return new StepAndFilteredAggregator(filteredAggregator, TableQueryStep.from(cubeStep));
 			} else {
-				log.debug("Skip step as produce by table but irrelevant for cube. step={}", step);
+				log.debug("Skip step as produce by table but irrelevant for cube. step={}", cubeStep);
 				return null;
 			}
 		});

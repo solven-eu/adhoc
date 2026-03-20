@@ -20,37 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.step;
 
-import java.util.Set;
-import java.util.stream.Stream;
-
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.query.table.FilteredAggregator;
-import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.util.IHasCache;
 
 /**
- * Enables executing {@link TableQueryV4} inferring {@link CubeQueryStep}.
+ * Common interface for all query steps processed by the cube engine.
+ *
+ * <p>
+ * Both {@link CubeQueryStep} (the generic step) and specialisations such as {@code TableQueryStep} (for
+ * {@link eu.solven.adhoc.measure.model.Aggregator} measures directly executed by a table engine) implement this
+ * interface. Writing code against {@link ICubeQueryStep} rather than the concrete {@link CubeQueryStep} class allows
+ * specialised step types to be handled uniformly while preserving their distinct capabilities.
  *
  * @author Benoit Lacelle
+ * @see CubeQueryStep
  */
-public interface IHasTableQueryForSteps {
-
-	Set<TableQueryV4> getTableQueries();
-
-	@Deprecated(since = "Useful?")
-	boolean containsStep(CubeQueryStep queryStep);
-
-	/**
-	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} with the matching
-	 * {@link TableQueryStep}.
-	 */
-	record StepAndFilteredAggregator(FilteredAggregator aggregator, TableQueryStep step) {
-
-	}
-
-	Stream<StepAndFilteredAggregator> forEachCubeQuerySteps(TableQueryV4 query, IFilterOptimizer filterOptimizer);
-
+public interface ICubeQueryStep extends IWhereGroupByQuery, IHasMeasure, IHasCustomMarker, IHasQueryOptions, IHasCache {
 }
