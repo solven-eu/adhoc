@@ -102,6 +102,7 @@ public class TableWrapperHelpers {
 
 	// Relates with Guava Closer, but needed as Closed does not handle AutoCloseable
 	// https://github.com/google/guava/issues/3068
+	@SuppressWarnings("PMD.CloseResource")
 	protected static void closeAll(List<ITabularRecordStream> streams) {
 		Throwable firstThrown = null;
 		for (ITabularRecordStream stream : streams) {

@@ -297,6 +297,7 @@ public class TableQueryV4 implements ITableQuery {
 				.count() <= 1;
 	}
 
+	@Override
 	public Set<String> getGroupedByColumns() {
 		return getGroupBys().stream()
 				.flatMap(gb -> gb.getGroupedByColumns().stream())

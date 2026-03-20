@@ -20,13 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.column.coordinate;
+package eu.solven.adhoc.column;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ReferencedColumn;
+import eu.solven.adhoc.column.coordinate.ICalculatedCoordinate;
+import eu.solven.adhoc.column.coordinate.IHasCalculatedCoordinates;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -41,6 +41,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
+// STUCK INTO THIS PACKAGE UNTIL https://github.com/FasterXML/jackson-databind/issues/4983
 public class ColumnWithCalculatedCoordinates implements IAdhocColumn, IHasCalculatedCoordinates {
 
 	@NonNull
