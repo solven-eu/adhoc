@@ -28,8 +28,10 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -95,5 +97,34 @@ public final class TableQueryStep extends ACubeQueryStep {
 	 */
 	public CubeQueryStep toCubeQueryStep() {
 		return CubeQueryStep.edit(this).cache(getCache()).build();
+	}
+
+	public static TableQueryStepBuilder edit(TableQueryStep step) {
+		return TableQueryStep.builder()
+				.aggregator(step.getMeasure())
+				.customMarker(step.getCustomMarker())
+				.filter(step.getFilter())
+				.groupBy(step.getGroupBy())
+				.options(step.getOptions());
+	}
+
+	public static TableQueryStepBuilder edit(IWhereGroupByQuery step) {
+		TableQueryStepBuilder builder = TableQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
+
+		if (step instanceof IHasCustomMarker hasCustomMarker) {
+			hasCustomMarker.optCustomMarker().ifPresent(builder::customMarker);
+		}
+		if (step instanceof IHasQueryOptions hasQueryOptions) {
+			builder.options(hasQueryOptions.getOptions());
+		}
+		if (step instanceof IHasMeasure hasMeasure) {
+			builder.aggregator((@NonNull Aggregator) hasMeasure.getMeasure());
+		}
+
+		return builder;
+	}
+
+	public TableQueryStepBuilder toBuilder() {
+		return edit(this);
 	}
 }

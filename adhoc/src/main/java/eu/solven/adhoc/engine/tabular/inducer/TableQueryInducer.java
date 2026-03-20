@@ -35,7 +35,7 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.splitter.InducerHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -83,20 +83,20 @@ public class TableQueryInducer implements ITableQueryInducer {
 	@Override
 	public IMultitypeMergeableColumn<ISlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
-			Map<CubeQueryStep, ICuboid> stepToValues,
-			CubeQueryStep induced) {
+			Map<TableQueryStep, ICuboid> stepToValues,
+			TableQueryStep induced) {
 		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking
 		// the one with the less rows)
-		List<CubeQueryStep> inducers = inducerAndInduced.getInducers(induced);
+		List<TableQueryStep> inducers = inducerAndInduced.getInducers(induced);
 		if (inducers.size() != 1) {
 			throw new IllegalStateException(
 					"Induced should have a single inducer. induced=%s inducers=%s".formatted(induced, inducers));
 		}
 
-		CubeQueryStep inducer = inducers.getFirst();
+		TableQueryStep inducer = inducers.getFirst();
 		ICuboid inducerValues = stepToValues.get(inducer);
 
-		Aggregator aggregator = (Aggregator) inducer.getMeasure();
+		Aggregator aggregator = inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
 
 		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();

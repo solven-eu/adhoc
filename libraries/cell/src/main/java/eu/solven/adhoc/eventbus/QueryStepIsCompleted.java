@@ -24,7 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import java.time.Duration;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -39,7 +39,7 @@ import lombok.With;
 @Builder
 public class QueryStepIsCompleted implements IAdhocEvent {
 	@NonNull
-	CubeQueryStep querystep;
+	ICubeQueryStep querystep;
 
 	long nbCells;
 

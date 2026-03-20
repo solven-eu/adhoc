@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -44,8 +44,10 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV4;
 
 public class TestTableQueryFactory {
-	CubeQueryStep step = CubeQueryStep.builder()
-			.measure("m1")
+	Aggregator m1 = Aggregator.sum("m1");
+
+	TableQueryStep step = TableQueryStep.builder()
+			.aggregator(m1)
 			.groupBy(GroupByColumns.named("g", "h"))
 			.filter(ColumnFilter.matchEq("c", "c1"))
 			.build();
@@ -73,16 +75,16 @@ public class TestTableQueryFactory {
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(2)
-				.contains(CubeQueryStep.edit(tq1).measure(Aggregator.sum("m1")).build())
-				.contains(CubeQueryStep.edit(tq2).measure(Aggregator.sum("m1")).build());
+				.contains(TableQueryStep.edit(tq1).aggregator(Aggregator.sum("m1")).build())
+				.contains(TableQueryStep.edit(tq2).aggregator(Aggregator.sum("m1")).build());
 	}
 
 	@Test
 	public void testProcessRelatedSteps_grandTotalAndGroupBy() {
-		TableQueryV4 output = optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
-				List.of(CubeQueryStep.builder().measure(Aggregator.empty()).build(),
-						CubeQueryStep.builder()
-								.measure(Aggregator.empty())
+		TableQueryV4 output = optimizer.processRelatedSteps(TableQueryStep.builder().aggregator(m1).build(),
+				List.of(TableQueryStep.builder().aggregator(Aggregator.empty()).build(),
+						TableQueryStep.builder()
+								.aggregator(Aggregator.empty())
 								.groupBy(GroupByColumns.named("c"))
 								.build()));
 
@@ -92,9 +94,9 @@ public class TestTableQueryFactory {
 
 	@Test
 	public void testProcessRelatedSteps_oneCalculated() {
-		TableQueryV4 output = optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
-				List.of(CubeQueryStep.builder()
-						.measure(Aggregator.empty())
+		TableQueryV4 output = optimizer.processRelatedSteps(TableQueryStep.builder().aggregator(m1).build(),
+				List.of(TableQueryStep.builder()
+						.aggregator(Aggregator.empty())
 						.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
 								.column("c")
 								.calculatedCoordinate(CalculatedCoordinate.star())
@@ -107,9 +109,9 @@ public class TestTableQueryFactory {
 
 	@Test
 	public void testProcessRelatedSteps_twoCalculated() {
-		TableQueryV4 output = optimizer.processRelatedSteps(CubeQueryStep.builder().measure("m").build(),
-				List.of(CubeQueryStep.builder()
-						.measure(Aggregator.empty())
+		TableQueryV4 output = optimizer.processRelatedSteps(TableQueryStep.builder().aggregator(m1).build(),
+				List.of(TableQueryStep.builder()
+						.aggregator(Aggregator.empty())
 						.groupBy(GroupByColumns.of(
 								ColumnWithCalculatedCoordinates.builder()
 										.column("c")
@@ -130,12 +132,12 @@ public class TestTableQueryFactory {
 		TableQuery tq1 = TableQuery.edit(step)
 				.filter(ColumnFilter.matchEq("a", "a1"))
 				.groupBy(GroupByColumns.named("b"))
-				.aggregator(Aggregator.sum("m1"))
+				.aggregator(m1)
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
 				.filter(ColumnFilter.matchEq("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
-				.aggregator(Aggregator.sum("m1"))
+				.aggregator(m1)
 				.build();
 
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
@@ -145,10 +147,10 @@ public class TestTableQueryFactory {
 		// Simulate an orphan inducerStep which is not covered by tableQueries
 		{
 			// https://stackoverflow.com/questions/14938591/how-to-copy-a-graph-in-jgrapht
-			DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> copytableStepsDag =
-					(DirectedAcyclicGraph<CubeQueryStep, DefaultEdge>) split.getInducedToInducer().clone();
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> copytableStepsDag =
+					(DirectedAcyclicGraph<TableQueryStep, DefaultEdge>) split.getInducedToInducer().clone();
 
-			copytableStepsDag.addVertex(CubeQueryStep.builder().measure("m").build());
+			copytableStepsDag.addVertex(TableQueryStep.builder().aggregator(m1).build());
 
 			SplitTableQueries splitWithAdditionalExplicit =
 					split.toBuilder().inducedToInducer(copytableStepsDag).build();
@@ -160,7 +162,7 @@ public class TestTableQueryFactory {
 		// Simulate an orphan tableStep from cube DAG
 		{
 			SplitTableQueries splitWithAdditionalExplicit =
-					split.toBuilder().explicit(CubeQueryStep.builder().measure("m").build()).build();
+					split.toBuilder().explicit(TableQueryStep.builder().aggregator(m1).build()).build();
 			Assertions.assertThatThrownBy(() -> optimizer.sanityChecks(splitWithAdditionalExplicit))
 					.isInstanceOf(IllegalStateException.class)
 					.hasMessage("Missing 1 steps from tableQueries+induceProcess to fill cube DAG tableSteps");

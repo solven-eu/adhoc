@@ -28,6 +28,7 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.options.IHasQueryOptions;
 
@@ -49,6 +50,6 @@ public interface ITableQueryInducer {
 	 */
 	IMultitypeMergeableColumn<ISlice> evaluateInduced(IHasQueryOptions hasOptions,
 			SplitTableQueries inducerAndInduced,
-			Map<CubeQueryStep, ICuboid> stepToValues,
-			CubeQueryStep induced);
+			Map<TableQueryStep, ICuboid> stepToValues,
+			TableQueryStep induced);
 }

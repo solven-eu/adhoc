@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
@@ -65,7 +66,7 @@ public class DagExplainer implements IDagExplainer {
 	private static final String FAKE_ROOT_MEASURE = "$ADHOC$fakeRoot";
 
 	// Requesting the underlyings of the fakeRoot is requesting the (User) queried steps
-	static final CubeQueryStep FAKE_ROOT = CubeQueryStep.builder()
+	static final ICubeQueryStep FAKE_ROOT = CubeQueryStep.builder()
 			.measure(ReferencedMeasure.ref(FAKE_ROOT_MEASURE))
 			.filter(ISliceFilter.MATCH_ALL)
 			.groupBy(IGroupBy.GRAND_TOTAL)
@@ -82,26 +83,25 @@ public class DagExplainer implements IDagExplainer {
 	@Value
 	@RequiredArgsConstructor
 	public static class DagExplainerState {
-		final Map<CubeQueryStep, String> stepToIndentation = new LinkedHashMap<>();
-		final Map<CubeQueryStep, Integer> stepToReference = new LinkedHashMap<>();
+		final Map<ICubeQueryStep, String> stepToIndentation = new LinkedHashMap<>();
+		final Map<ICubeQueryStep, Integer> stepToReference = new LinkedHashMap<>();
 
 		AdhocQueryId queryId;
-		IHasDagFromInducedToInducer dag;
+		IHasDagFromInducedToInducer<? extends ICubeQueryStep> dag;
 
-		public List<CubeQueryStep> getUnderlyingSteps(CubeQueryStep step) {
+		public List<? extends ICubeQueryStep> getUnderlyingSteps(ICubeQueryStep step) {
 			if (step == FAKE_ROOT) {
-
 				// roots are the most abstract nodes, induced by other steps
 				// We show them first as they enable a nicer DAG representation
-				ImmutableSet<CubeQueryStep> roots = dag.getRoots();
+				ImmutableSet<? extends ICubeQueryStep> roots = dag.getRoots();
 
 				// Explicit steps may be root, or not. An explicit step which is not a root should be shown in the DAG
 				// for human readability (else it may be difficult to find explicit in the middle of the DAG). But we
 				// show them at the end as they are less interesting.
-				ImmutableSet<CubeQueryStep> explicits = dag.getExplicits();
-				ImmutableSet<CubeQueryStep> explicitsNotRoot = ImmutableSet.copyOf(Sets.difference(explicits, roots));
+				ImmutableSet<? extends ICubeQueryStep> explicits = dag.getExplicits();
+				ImmutableSet<ICubeQueryStep> explicitsNotRoot = ImmutableSet.copyOf(Sets.difference(explicits, roots));
 
-				List<CubeQueryStep> explainerRoots = new ArrayList<>();
+				List<ICubeQueryStep> explainerRoots = new ArrayList<>();
 
 				explainerRoots.addAll(roots.stream().sorted(this.orderForExplain()).toList());
 				explainerRoots.addAll(explicitsNotRoot.stream().sorted(this.orderForExplain()).toList());
@@ -109,7 +109,7 @@ public class DagExplainer implements IDagExplainer {
 				return explainerRoots;
 			} else {
 				// Return the actual underlying steps
-				return dag.getInducers(step);
+				return ((IHasDagFromInducedToInducer) dag).getInducers(step);
 			}
 		}
 
@@ -117,8 +117,8 @@ public class DagExplainer implements IDagExplainer {
 		 * 
 		 * @return a {@link Comparator} to have deterministic and human-friendly EXPLAIN.
 		 */
-		protected Comparator<CubeQueryStep> orderForExplain() {
-			return Comparator.<CubeQueryStep, String>comparing(qr -> qr.getMeasure().getName())
+		protected Comparator<ICubeQueryStep> orderForExplain() {
+			return Comparator.<ICubeQueryStep, String>comparing(qr -> qr.getMeasure().getName())
 					.thenComparing(qr -> qr.getFilter().toString())
 					.thenComparing(qr -> qr.getGroupBy().toString());
 		}
@@ -157,8 +157,8 @@ public class DagExplainer implements IDagExplainer {
 	 *            true if this step is the last amongst its siblings.
 	 */
 	protected void printStepAndUnderlyings(DagExplainerState dagState,
-			CubeQueryStep step,
-			Optional<CubeQueryStep> optParent,
+			ICubeQueryStep step,
+			Optional<ICubeQueryStep> optParent,
 			boolean isLast) {
 		boolean isReferenced;
 		{
@@ -195,10 +195,10 @@ public class DagExplainer implements IDagExplainer {
 		}
 
 		if (!isReferenced) {
-			List<CubeQueryStep> underlyings = dagState.getUnderlyingSteps(step);
+			List<? extends ICubeQueryStep> underlyings = dagState.getUnderlyingSteps(step);
 
 			for (int i = 0; i < underlyings.size(); i++) {
-				CubeQueryStep underlyingStep = underlyings.get(i);
+				ICubeQueryStep underlyingStep = underlyings.get(i);
 
 				boolean isLastUnderlying = i == underlyings.size() - 1;
 				printStepAndUnderlyings(dagState, underlyingStep, Optional.of(step), isLastUnderlying);
@@ -212,15 +212,15 @@ public class DagExplainer implements IDagExplainer {
 
 	// Typically overriden by DagExplainerForPerfs
 	protected String additionalInfo(DagExplainerState dagState,
-			CubeQueryStep step,
+			ICubeQueryStep step,
 			String indentation,
 			boolean isLast,
 			boolean isReferenced) {
 		return "";
 	}
 
-	protected String toString(DagExplainerState dagState, CubeQueryStep step) {
-		Map<CubeQueryStep, Integer> stepToReference = dagState.getStepToReference();
+	protected String toString(DagExplainerState dagState, ICubeQueryStep step) {
+		Map<ICubeQueryStep, Integer> stepToReference = dagState.getStepToReference();
 		if (stepToReference.containsKey(step)) {
 			return "!" + stepToReference.get(step);
 		} else {
@@ -231,7 +231,7 @@ public class DagExplainer implements IDagExplainer {
 	}
 
 	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveLiteralAppends" })
-	protected String toString2(DagExplainerState dagState, CubeQueryStep step) {
+	protected String toString2(DagExplainerState dagState, ICubeQueryStep step) {
 		if (step == FAKE_ROOT) {
 			AdhocQueryId queryId = dagState.getQueryId();
 			UUID parentQueryId = queryId.getParentQueryId();
@@ -277,7 +277,7 @@ public class DagExplainer implements IDagExplainer {
 		return cubeOrTable;
 	}
 
-	protected String toString(CubeQueryStep step) {
+	protected String toString(ICubeQueryStep step) {
 		if (step.getMeasure() instanceof Aggregator aggregator) {
 			// In the DAG EXPLAIN, the Aggregator state is implicit by being a leaf: showing the aggregationKey is much
 			// more helpful

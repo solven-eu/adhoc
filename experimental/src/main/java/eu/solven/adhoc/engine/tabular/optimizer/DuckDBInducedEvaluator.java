@@ -53,7 +53,7 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluator;
 import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluatorFactory;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -78,7 +78,7 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Evaluates an induced {@link CubeQueryStep} via an in-process DuckDB engine. Provides a vectorized alternative to the
+ * Evaluates an induced {@link TableQueryStep} via an in-process DuckDB engine. Provides a vectorized alternative to the
  * row-by-row Java streaming path in {@link ATableQueryFactory#evaluateInduced}.
  *
  * <p>
@@ -124,9 +124,9 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 * @param inducerValues
 	 *            the data from the inducer step
 	 * @param inducer
-	 *            the inducer {@link CubeQueryStep}
+	 *            the inducer {@link TableQueryStep}
 	 * @param induced
-	 *            the induced {@link CubeQueryStep}
+	 *            the induced {@link TableQueryStep}
 	 * @param leftoverFilter
 	 *            the additional filter to apply on top of the inducer data
 	 * @param aggregation
@@ -138,8 +138,8 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 */
 	@Override
 	public Optional<IMultitypeMergeableColumn<ISlice>> tryEvaluate(ICuboid inducerValues,
-			CubeQueryStep inducer,
-			CubeQueryStep induced,
+			TableQueryStep inducer,
+			TableQueryStep induced,
 			ISliceFilter leftoverFilter,
 			IAggregation aggregation,
 			Aggregator aggregator) {
@@ -183,8 +183,8 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 
 	protected Optional<IMultitypeMergeableColumn<ISlice>> evaluateViaDuckDB(IAdhocFactories factories,
 			ICuboid inducerValues,
-			CubeQueryStep inducer,
-			CubeQueryStep induced,
+			TableQueryStep inducer,
+			TableQueryStep induced,
 			ISliceFilter leftoverFilter,
 			IAggregation aggregation,
 			String aggKey) {

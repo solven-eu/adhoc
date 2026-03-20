@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -55,8 +55,8 @@ public class ChainedInducedEvaluator implements IInducedEvaluator {
 
 	@Override
 	public Optional<IMultitypeMergeableColumn<ISlice>> tryEvaluate(ICuboid inducerValues,
-			CubeQueryStep inducer,
-			CubeQueryStep induced,
+			TableQueryStep inducer,
+			TableQueryStep induced,
 			ISliceFilter leftoverFilter,
 			IAggregation aggregation,
 			Aggregator aggregator) {

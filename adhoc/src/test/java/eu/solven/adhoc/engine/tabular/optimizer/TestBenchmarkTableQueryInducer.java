@@ -39,7 +39,7 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -72,21 +72,24 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 		// IHasQueryOptions.noOption());
 		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.factories);
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
 		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
-		Map<CubeQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
+		Map<TableQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 
-		CubeQueryStep inducedGrandTotal = CubeQueryStep.builder().measure(Aggregator.sum("v")).build();
-		CubeQueryStep inducedByA =
-				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("a")).build();
-		CubeQueryStep inducedByAB =
-				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("a", "b")).build();
-		CubeQueryStep inducedByB =
-				CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(GroupByColumns.named("b")).build();
+		TableQueryStep inducedGrandTotal = TableQueryStep.builder().aggregator(Aggregator.sum("v")).build();
+		TableQueryStep inducedByA =
+				TableQueryStep.builder().aggregator(Aggregator.sum("v")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep inducedByAB = TableQueryStep.builder()
+				.aggregator(Aggregator.sum("v"))
+				.groupBy(GroupByColumns.named("a", "b"))
+				.build();
+		TableQueryStep inducedByB =
+				TableQueryStep.builder().aggregator(Aggregator.sum("v")).groupBy(GroupByColumns.named("b")).build();
 
 		public void setup() {
 			IGroupBy groupByABC = GroupByColumns.named("a", "b", "c");
-			CubeQueryStep inducerABC = CubeQueryStep.builder().measure(Aggregator.sum("v")).groupBy(groupByABC).build();
+			TableQueryStep inducerABC =
+					TableQueryStep.builder().aggregator(Aggregator.sum("v")).groupBy(groupByABC).build();
 
 			dag.addVertex(inducerABC);
 
@@ -134,7 +137,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 			log.info("inducerABC has {} slices", inducerColumn.size());
 		}
 
-		public IMultitypeMergeableColumn<ISlice> evaluateInduced(CubeQueryStep induced) {
+		public IMultitypeMergeableColumn<ISlice> evaluateInduced(TableQueryStep induced) {
 			return inducer.evaluateInduced(IHasQueryOptions.noOption(), inducerAndInduced, stepToValues, induced);
 		}
 

@@ -41,7 +41,7 @@ public interface IHasTableQueryForSteps {
 	Set<TableQueryV4> getTableQueries();
 
 	@Deprecated(since = "Useful?")
-	boolean containsStep(CubeQueryStep queryStep);
+	boolean containsStep(TableQueryStep queryStep);
 
 	/**
 	 * Combines a {@link FilteredAggregator} aliased in a {@link TableQueryV4} with the matching

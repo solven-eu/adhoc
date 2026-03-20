@@ -39,7 +39,7 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
@@ -79,17 +79,17 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 		TableQueryEngineBootstrapped bootstrapped =
 				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
+		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(2);
 
 		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
 
 		Assertions.assertThat(split.getInducers())
-				.contains(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build())
+				.contains(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build())
 				.hasSize(1);
 
 		Assertions.assertThat(split.getInduceds())
-				.contains(CubeQueryStep.edit(cubeQuery).measure(k1Sum).build())
+				.contains(TableQueryStep.edit(cubeQuery).aggregator(k1Sum).build())
 				.hasSize(1);
 
 		{
@@ -98,19 +98,22 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD"))).onLong(234);
 
 			ICuboid valuesFromTable = Cuboid.builder().values(columnFromTable).column("ccy").build();
-			Map<CubeQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
-			fromTable.put(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
+			Map<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
+			fromTable.put(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build(),
 					valuesFromTable);
 			bootstrapped.walkUpInducedDag(fromTable, split);
 
 			Assertions.assertThat(fromTable)
 					// inducer
 					.containsEntry(
-							CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
+							TableQueryStep.edit(cubeQuery)
+									.groupBy(GroupByColumns.named("ccy"))
+									.aggregator(k1Sum)
+									.build(),
 							valuesFromTable)
 					// induced
 					.hasEntrySatisfying(
-							CubeQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).measure(k1Sum).build(),
+							TableQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).aggregator(k1Sum).build(),
 							t -> {
 								Assertions.assertThat(t.size()).isEqualTo(1);
 								Assertions
@@ -146,21 +149,21 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 		TableQueryEngineBootstrapped bootstrapped =
 				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
-		Set<CubeQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
+		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(3);
 
 		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
 
 		Assertions.assertThat(split.getInducers())
-				.contains(CubeQueryStep.edit(cubeQuery)
+				.contains(TableQueryStep.edit(cubeQuery)
 						.groupBy(GroupByColumns.named("ccy", "country"))
-						.measure(k1Sum)
+						.aggregator(k1Sum)
 						.build())
 				.hasSize(1);
 
 		Assertions.assertThat(split.getInduceds())
-				.contains(CubeQueryStep.edit(cubeQuery).measure(k1Sum).build())
-				.contains(CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build())
+				.contains(TableQueryStep.edit(cubeQuery).aggregator(k1Sum).build())
+				.contains(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build())
 				.hasSize(2);
 
 		{
@@ -171,24 +174,27 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 			ICuboid valuesFromTable =
 					Cuboid.builder().values(columnFromTable).columns(Set.of("ccy", "country")).build();
-			Map<CubeQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
-			fromTable.put(CubeQueryStep.edit(cubeQuery)
+			Map<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
+			fromTable.put(TableQueryStep.edit(cubeQuery)
 					.groupBy(GroupByColumns.named("ccy", "country"))
-					.measure(k1Sum)
+					.aggregator(k1Sum)
 					.build(), valuesFromTable);
 			bootstrapped.walkUpInducedDag(fromTable, split);
 
 			Assertions.assertThat(fromTable)
 					// inducer
 					.containsEntry(
-							CubeQueryStep.edit(cubeQuery)
+							TableQueryStep.edit(cubeQuery)
 									.groupBy(GroupByColumns.named("ccy", "country"))
-									.measure(k1Sum)
+									.aggregator(k1Sum)
 									.build(),
 							valuesFromTable)
 					// induced by ccy
 					.hasEntrySatisfying(
-							CubeQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).measure(k1Sum).build(),
+							TableQueryStep.edit(cubeQuery)
+									.groupBy(GroupByColumns.named("ccy"))
+									.aggregator(k1Sum)
+									.build(),
 							t -> {
 								Assertions.assertThat(t.size()).isEqualTo(2);
 								Assertions
@@ -202,7 +208,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 							})
 					// induced grandTotal
 					.hasEntrySatisfying(
-							CubeQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).measure(k1Sum).build(),
+							TableQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).aggregator(k1Sum).build(),
 							t -> {
 								Assertions.assertThat(t.size()).isEqualTo(1);
 								Assertions

@@ -37,6 +37,7 @@ import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -61,29 +62,30 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Builder(toBuilder = true)
 @Slf4j
-public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTableQueryForSteps, ISinkExecutionFeedback {
+public class SplitTableQueries
+		implements IHasDagFromInducedToInducer<TableQueryStep>, IHasTableQueryForSteps, ISinkExecutionFeedback {
 	// From induced to inducer. Given the steps produced by the table, we may infer more steps.
 	@NonNull
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
+	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer;
 
 	// The nodes which are explicitly requested. Typically roots of DAG, but may also be some shared intermediate
 	// nodes (if some root is an inducer of another root).
 	@NonNull
 	@Singular
-	ImmutableSet<CubeQueryStep> explicits;
+	ImmutableSet<TableQueryStep> explicits;
 
 	// BEWARE The tableQuery may have lost some customMarker (e.g. as most customMarkers has no impact in
 	// tableWrapper and should be ignored)
 	@NonNull
 	@Singular
-	ImmutableMap<CubeQueryStep, TableQueryV4> stepToTables;
+	ImmutableMap<TableQueryStep, TableQueryV4> stepToTables;
 
 	@NonNull
 	@Default
-	Map<CubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
+	Map<ICubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
 
 	@Override
-	public void registerExecutionFeedback(CubeQueryStep queryStep, SizeAndDuration sizeAndDuration) {
+	public void registerExecutionFeedback(ICubeQueryStep queryStep, SizeAndDuration sizeAndDuration) {
 		stepToCost.put(queryStep, sizeAndDuration);
 	}
 
@@ -107,10 +109,10 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 		return query.getGroupByToAggregators().entries().stream().map(e -> {
 			FilteredAggregator filteredAggregator = e.getValue();
 			IGroupBy groupBy = e.getKey();
-			CubeQueryStep cubeStep = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
+			TableQueryStep cubeStep = query.recombineQueryStep(filterOptimizer, filteredAggregator, groupBy);
 
 			if (containsStep(cubeStep)) {
-				return new StepAndFilteredAggregator(filteredAggregator, TableQueryStep.from(cubeStep));
+				return new StepAndFilteredAggregator(filteredAggregator, cubeStep);
 			} else {
 				log.debug("Skip step as produce by table but irrelevant for cube. step={}", cubeStep);
 				return null;
@@ -119,7 +121,7 @@ public class SplitTableQueries implements IHasDagFromInducedToInducer, IHasTable
 	}
 
 	@Override
-	public boolean containsStep(CubeQueryStep queryStep) {
+	public boolean containsStep(TableQueryStep queryStep) {
 		return stepToTables.containsKey(queryStep);
 	}
 }

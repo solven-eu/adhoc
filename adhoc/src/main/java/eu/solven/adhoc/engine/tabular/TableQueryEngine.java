@@ -29,7 +29,7 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducerFactory;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducerFactory;
@@ -81,7 +81,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	final ITableQueryInducerFactory inducerFactory = new TableQueryInducerFactory();
 
 	@Override
-	public Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+	public Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
 	}
 

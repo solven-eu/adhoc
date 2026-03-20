@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**
@@ -44,7 +45,7 @@ public interface ITableStepsGrouper {
 	 * Maps a single inducer to the key that identifies its {@link TableQueryV3} group. Inducers sharing the same key
 	 * are combined into one {@link TableQueryV3}.
 	 */
-	CubeQueryStep tableQueryGroupBy(CubeQueryStep inducer);
+	TableQueryStep tableQueryGroupBy(TableQueryStep inducer);
 
 	/**
 	 * Partitions all inducers into groups that will each be compiled into a single {@link TableQueryV3}. The default
@@ -56,7 +57,7 @@ public interface ITableStepsGrouper {
 	 *            the full set of leaf {@link CubeQueryStep}s that must be evaluated by the table layer
 	 * @return a partition of {@code inducers}; every inducer must appear in exactly one group
 	 */
-	default Collection<? extends Set<CubeQueryStep>> groupInducers(Set<CubeQueryStep> inducers) {
+	default Collection<? extends Set<TableQueryStep>> groupInducers(Set<TableQueryStep> inducers) {
 		// TODO Introduce some AdhocStreams.groupingBy, with nice defaults (LinkedHashMap, ImmutableSet)
 		return inducers.stream()
 				.collect(Collectors

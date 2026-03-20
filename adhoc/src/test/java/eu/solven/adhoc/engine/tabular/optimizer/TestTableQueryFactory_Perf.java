@@ -43,7 +43,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
@@ -58,8 +58,8 @@ public class TestTableQueryFactory_Perf {
 	int cardinalityOut = 1000;
 
 	ITableQueryInducer inducer = new TableQueryInducer(AdhocFactories.builder().build());
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
-	Map<CubeQueryStep, ICuboid> inducers = new LinkedHashMap<>();
+	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
+	Map<TableQueryStep, ICuboid> inducers = new LinkedHashMap<>();
 
 	RowSliceFactory factory = RowSliceFactory.builder().build();
 
@@ -67,9 +67,9 @@ public class TestTableQueryFactory_Perf {
 	public void testReduce() {
 		Aggregator agg = Aggregator.sum("k1");
 
-		CubeQueryStep inducerStep =
-				CubeQueryStep.builder().measure(agg).groupBy(GroupByColumns.named("c0", "c1")).build();
-		CubeQueryStep inducedStep = CubeQueryStep.edit(inducerStep).groupBy(GroupByColumns.named("c0")).build();
+		TableQueryStep inducerStep =
+				TableQueryStep.builder().aggregator(agg).groupBy(GroupByColumns.named("c0", "c1")).build();
+		TableQueryStep inducedStep = TableQueryStep.edit(inducerStep).groupBy(GroupByColumns.named("c0")).build();
 		inducedToInducer.addVertex(inducerStep);
 		inducedToInducer.addVertex(inducedStep);
 		inducedToInducer.addEdge(inducedStep, inducerStep);

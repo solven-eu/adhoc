@@ -34,7 +34,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
@@ -90,10 +90,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 		IAggregation aggregation = new SumAggregation();
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
@@ -120,10 +120,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 		IAggregation aggregation = new SumAggregation();
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		// Only keep rows where country = "FR"
 		ISliceFilter leftoverFilter = ColumnFilter.matchEq("country", "FR");
@@ -148,10 +148,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build();
 		IAggregation aggregation = MaxAggregation.builder().build();
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
@@ -175,10 +175,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(MinAggregation.KEY).build();
 		IAggregation aggregation = MinAggregation.builder().build();
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
@@ -202,10 +202,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(CountAggregation.KEY).build();
 		IAggregation aggregation = new CountAggregation();
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
@@ -232,10 +232,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey("PRODUCT").build();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(inducerValues, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);
@@ -251,10 +251,10 @@ public class TestDuckDBInducedEvaluator {
 		Aggregator aggregator = Aggregator.builder().name("k1").aggregationKey(SumAggregation.KEY).build();
 		IAggregation aggregation = new SumAggregation();
 
-		CubeQueryStep inducer =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
-		CubeQueryStep induced =
-				CubeQueryStep.builder().measure(aggregator).groupBy(GroupByColumns.named("country")).build();
+		TableQueryStep inducer =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country", "id")).build();
+		TableQueryStep induced =
+				TableQueryStep.builder().aggregator(aggregator).groupBy(GroupByColumns.named("country")).build();
 
 		Optional<IMultitypeMergeableColumn<ISlice>> result =
 				evaluator.tryEvaluate(empty, inducer, induced, ISliceFilter.MATCH_ALL, aggregation, aggregator);

@@ -39,8 +39,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
@@ -185,11 +184,11 @@ public class TableQueryV4 implements ITableQuery {
 				.build();
 	}
 
-	protected CubeQueryStepBuilder asQueryStep() {
-		return CubeQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
+	protected TableQueryStep.TableQueryStepBuilder asQueryStep() {
+		return TableQueryStep.builder().customMarker(customMarker).filter(filter).options(options);
 	}
 
-	public CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
+	public TableQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {
 		// Recombine the stepFilter given the tableQuery filter and the measure filter
@@ -200,7 +199,7 @@ public class TableQueryV4 implements ITableQuery {
 				FilterBuilder.and(getFilter(), filteredAggregator.getFilter()).optimize(filterOptimizer);
 
 		return asQueryStep().filter(recombinedFilter)
-				.measure(filteredAggregator.getAggregator())
+				.aggregator(filteredAggregator.getAggregator())
 				.groupBy(groupBy)
 				.build();
 	}

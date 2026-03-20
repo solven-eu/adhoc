@@ -28,7 +28,7 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.query.table.TableQuery;
 
 /**
@@ -39,6 +39,6 @@ import eu.solven.adhoc.query.table.TableQuery;
 @FunctionalInterface
 public interface ITableQueryEngine {
 
-	Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
+	Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
 
 }

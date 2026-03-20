@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -53,46 +54,46 @@ import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 public class TestATableQueryOptimizer {
 
 	Aggregator sumK1 = Aggregator.sum("k1");
-	CubeQueryStep contextStep = CubeQueryStep.builder().measure(sumK1).build();
+	TableQueryStep contextStep = TableQueryStep.builder().aggregator(sumK1).build();
 
-	CubeQueryStep groupByA = CubeQueryStep.builder().groupBy(GroupByColumns.named("a")).measure(sumK1).build();
-	CubeQueryStep groupByB = CubeQueryStep.builder().groupBy(GroupByColumns.named("b")).measure(sumK1).build();
-	CubeQueryStep filterA1 = CubeQueryStep.builder()
+	TableQueryStep groupByA = TableQueryStep.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK1).build();
+	TableQueryStep groupByB = TableQueryStep.builder().groupBy(GroupByColumns.named("b")).aggregator(sumK1).build();
+	TableQueryStep filterA1 = TableQueryStep.builder()
 			.groupBy(GroupByColumns.named("a"))
-			.measure(sumK1)
+			.aggregator(sumK1)
 			.filter(AndFilter.and(Map.of("a", "a1")))
 			.build();
-	CubeQueryStep filterA1B1 = CubeQueryStep.builder()
+	TableQueryStep filterA1B1 = TableQueryStep.builder()
 			.groupBy(GroupByColumns.named("a"))
-			.measure(sumK1)
+			.aggregator(sumK1)
 			.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
 			.build();
-	CubeQueryStep filterA12 = CubeQueryStep.builder()
+	TableQueryStep filterA12 = TableQueryStep.builder()
 			.groupBy(GroupByColumns.named("a"))
-			.measure(sumK1)
+			.aggregator(sumK1)
 			.filter(AndFilter.and(ImmutableMap.of("a", ImmutableSet.of("a1", "a2"))))
 			.build();
 
-	CubeQueryStep filterAPrefix = CubeQueryStep.builder()
+	TableQueryStep filterAPrefix = TableQueryStep.builder()
 			.groupBy(GroupByColumns.named("a"))
-			.measure(sumK1)
+			.aggregator(sumK1)
 			.filter(AndFilter.and(ImmutableMap.of("a", LikeMatcher.matching("a%"))))
 			.build();
 
-	CubeQueryStep filterAPrefixNotAzerty = CubeQueryStep.builder()
+	TableQueryStep filterAPrefixNotAzerty = TableQueryStep.builder()
 			.groupBy(GroupByColumns.named("a"))
-			.measure(sumK1)
+			.aggregator(sumK1)
 			.filter(AndFilter.and(ImmutableMap.of("a",
 					AndMatcher.and(LikeMatcher.matching("a%"), NotMatcher.not(EqualsMatcher.matchEq("azerty"))))))
 			.build();
 
 	Aggregator sumK2 = Aggregator.sum("k2");
-	CubeQueryStep groupByA_K2 = CubeQueryStep.builder().groupBy(GroupByColumns.named("a")).measure(sumK2).build();
+	TableQueryStep groupByA_K2 = TableQueryStep.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK2).build();
 
 	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories) {
 
 		@Override
-		public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<CubeQueryStep> querySteps) {
+		public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> querySteps) {
 			throw new UnsupportedOperationException();
 		}
 	};
@@ -188,9 +189,9 @@ public class TestATableQueryOptimizer {
 	public void testNoMeasure() {
 		TableQueryV4 v2 =
 				optimizer.makeTableQueryV4(CubeQueryStep.builder().measure(EmptyMeasure.builder().build()).build(),
-						ImmutableSet.of(CubeQueryStep.builder()
+						ImmutableSet.of(TableQueryStep.builder()
 								.filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")))
-								.measure(Aggregator.empty())
+								.aggregator(Aggregator.empty())
 								.build()));
 		Assertions.assertThat(v2)
 				.isEqualTo(TableQueryV4.builder()

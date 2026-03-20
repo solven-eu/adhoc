@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine;
 
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 
 /**
  * Callback on each {@link CubeQueryStep}.
@@ -33,6 +34,6 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 @FunctionalInterface
 public interface ISinkExecutionFeedback {
 
-	void registerExecutionFeedback(CubeQueryStep queryStep, SizeAndDuration sizeAndDuration);
+	void registerExecutionFeedback(ICubeQueryStep queryStep, SizeAndDuration sizeAndDuration);
 
 }

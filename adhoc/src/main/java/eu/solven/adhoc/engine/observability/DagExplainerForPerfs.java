@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.observability;
 
 import java.util.concurrent.TimeUnit;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -49,7 +49,7 @@ public class DagExplainerForPerfs extends DagExplainer {
 
 	@Override
 	protected String additionalInfo(DagExplainerState dagState,
-			CubeQueryStep step,
+			ICubeQueryStep step,
 			String indentation,
 			boolean isLast,
 			boolean isReferenced) {

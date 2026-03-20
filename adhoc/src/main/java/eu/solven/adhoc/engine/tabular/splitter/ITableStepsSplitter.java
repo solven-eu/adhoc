@@ -28,6 +28,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -43,7 +44,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 @FunctionalInterface
 public interface ITableStepsSplitter {
 
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<CubeQueryStep> tableSteps);
+	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
+			Set<TableQueryStep> tableSteps);
 
 }

@@ -35,7 +35,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.IColumnFactory;
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -43,7 +43,7 @@ import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Evaluates an induced {@link CubeQueryStep} via a row-by-row Java stream over the inducer data. This is the universal
+ * Evaluates an induced {@link TableQueryStep} via a row-by-row Java stream over the inducer data. This is the universal
  * fallback strategy and always produces a result.
  *
  * @author Benoit Lacelle
@@ -59,8 +59,8 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 
 	@Override
 	public Optional<IMultitypeMergeableColumn<ISlice>> tryEvaluate(ICuboid inducerValues,
-			CubeQueryStep inducer,
-			CubeQueryStep induced,
+			TableQueryStep inducer,
+			TableQueryStep induced,
 			ISliceFilter leftoverFilter,
 			IAggregation aggregation,
 			Aggregator aggregator) {
@@ -93,8 +93,8 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 		return Optional.of(inducedValues);
 	}
 
-	protected IMultitypeMergeableColumn<ISlice> prepareInducedColumn(CubeQueryStep inducer,
-			CubeQueryStep induced,
+	protected IMultitypeMergeableColumn<ISlice> prepareInducedColumn(TableQueryStep inducer,
+			TableQueryStep induced,
 			ICuboid inducerValues,
 			IAggregation aggregation) {
 		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();

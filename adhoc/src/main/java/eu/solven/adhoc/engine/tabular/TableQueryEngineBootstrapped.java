@@ -153,22 +153,22 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	});
 
 	@Override
-	public Map<CubeQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag) {
+	public Map<TableQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag) {
 		ISinkExecutionFeedback executionFeedfack = prepareExecutionFeedback(queryStepsDag);
 
-		// Collect the tableQueries given the cubeQueryStep, essentially by focusing on aggregated measures
-		Set<CubeQueryStep> tableQuerySteps = prepareForTable(queryStepsDag);
+		// Collect the tableQueries given the TableQueryStep, essentially by focusing on aggregated measures
+		Set<TableQueryStep> tableQuerySteps = prepareForTable(queryStepsDag);
 
-		Map<CubeQueryStep, CubeQueryStep> calculatedToSuppressed = new LinkedHashMap<>();
+		Map<TableQueryStep, TableQueryStep> calculatedToSuppressed = new LinkedHashMap<>();
 
 		tableQuerySteps.forEach(generatedStep -> {
 			calculatedToSuppressed.put(generatedStep, suppressGeneratedColumns(generatedStep));
 		});
 
-		Set<CubeQueryStep> suppressedQuerySteps = ImmutableSet.copyOf(calculatedToSuppressed.values());
+		Set<TableQueryStep> suppressedQuerySteps = ImmutableSet.copyOf(calculatedToSuppressed.values());
 		log.debug("From {} generated to {} suppressed", calculatedToSuppressed.size(), suppressedQuerySteps.size());
 
-		Map<CubeQueryStep, ICuboid> stepToSuppressedValues =
+		Map<TableQueryStep, ICuboid> stepToSuppressedValues =
 				executeTableQueries(suppressedQuerySteps, executionFeedfack);
 
 		return restoreSuppressedGroupBy(calculatedToSuppressed, stepToSuppressedValues);
@@ -178,23 +178,23 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		// This is probably bad design
 		// Needed to transfer the explicitNodes from tableSteps into the rootNodes in cubeSteps
 		return (queryStep, sizeAndDuration) -> {
-			if (queryStepsDag.getMultigraph().containsVertex(queryStep)) {
+			if (queryStepsDag.getMultigraph().containsVertex(CubeQueryStep.edit(queryStep).build())) {
 				queryStepsDag.registerExecutionFeedback(queryStep, sizeAndDuration);
 			}
 		};
 	}
 
-	protected Map<CubeQueryStep, ICuboid> restoreSuppressedGroupBy(
-			Map<CubeQueryStep, CubeQueryStep> calculatedToSuppressed,
-			Map<CubeQueryStep, ICuboid> stepToSuppressedValues) {
-		SetMultimap<CubeQueryStep, CubeQueryStep> asMultimap = Multimaps.forMap(calculatedToSuppressed);
-		SetMultimap<CubeQueryStep, CubeQueryStep> suppressedToGenerated =
+	protected Map<TableQueryStep, ICuboid> restoreSuppressedGroupBy(
+			Map<TableQueryStep, TableQueryStep> calculatedToSuppressed,
+			Map<TableQueryStep, ICuboid> stepToSuppressedValues) {
+		SetMultimap<TableQueryStep, TableQueryStep> asMultimap = Multimaps.forMap(calculatedToSuppressed);
+		SetMultimap<TableQueryStep, TableQueryStep> suppressedToGenerated =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		Multimaps.invertFrom(asMultimap, suppressedToGenerated);
 
-		Map<CubeQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
+		Map<TableQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 		stepToSuppressedValues.forEach((suppressedStep, suppressedValue) -> {
-			Set<CubeQueryStep> generated = suppressedToGenerated.get(suppressedStep);
+			Set<TableQueryStep> generated = suppressedToGenerated.get(suppressedStep);
 
 			generated.forEach(oneGenerated -> {
 				Set<String> suppressedGroupBys =
@@ -213,13 +213,13 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return stepToValues;
 	}
 
-	protected Map<CubeQueryStep, ICuboid> executeTableQueries(Set<CubeQueryStep> steps,
+	protected Map<TableQueryStep, ICuboid> executeTableQueries(Set<TableQueryStep> steps,
 			ISinkExecutionFeedback executionFeedfack) {
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
 		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, steps);
 
 		// Execute the actual tableQueries
-		Map<CubeQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
+		Map<TableQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
@@ -271,7 +271,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
-	protected Map<CubeQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
+	protected Map<TableQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries) {
 		try {
 			return queryPod.getExecutorService().submit(() -> {
@@ -280,9 +280,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
 					tableQueriesStream = tableQueriesStream.parallel();
 				}
-				Map<CubeQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
+				Map<TableQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
-					// BEWARE Could we have multiple TableQueryV4 computing the same CubeQueryStep?
+					// BEWARE Could we have multiple TableQueryV4 computing the same TableQueryStep?
 					queryStepToValuesInner
 							.putAll(processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery));
 				});
@@ -306,14 +306,14 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return template.formatted(PepperLogHelper.humanDuration(elapsed.toMillis()), toPerfLog(tableQuery));
 	}
 
-	protected Map<CubeQueryStep, ICuboid> processOneTableQuery(ISinkExecutionFeedback sinkExecutionFeedback,
+	protected Map<TableQueryStep, ICuboid> processOneTableQuery(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
 			TableQueryV4 tableQuery) {
 		eventBus.post(TableStepIsEvaluating.builder().tableQuery(tableQuery).source(this).build());
 
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
 
-		Map<CubeQueryStep, ICuboid> stepToValues =
+		Map<TableQueryStep, ICuboid> stepToValues =
 				processOneTableQueryV4(sinkExecutionFeedback, tableQueries, tableQuery);
 
 		Duration elapsed = stopWatch.elapsed();
@@ -335,16 +335,16 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return stepToValues;
 	}
 
-	protected Map<CubeQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
+	protected Map<TableQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
 			TableQueryV4 tableQuery) {
 		List<TableQueryV4> nonAmbiguousQueries = splitForNonAmbiguousColumns(tableQuery);
 
-		Map<CubeQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
+		Map<TableQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
 
 		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
 			IStopwatch stopWatchSinking;
-			Map<CubeQueryStep, ICuboid> stepToValues;
+			Map<TableQueryStep, ICuboid> stepToValues;
 
 			IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
 			// Open the stream: the table may or may not return after the actual execution
@@ -478,8 +478,8 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return sb.toString();
 	}
 
-	protected String toPerfLog(CubeQueryStep cubeQueryStep) {
-		TableQueryV4 tableQueries = TableQueryV4.edit(TableQuery.edit(cubeQueryStep).build()).build();
+	protected String toPerfLog(TableQueryStep step) {
+		TableQueryV4 tableQueries = TableQueryV4.edit(TableQuery.edit(step).build()).build();
 		return toPerfLog(tableQueries);
 	}
 
@@ -494,7 +494,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected void reportOnTableQuery(TableQueryV4 tableQuery,
 			ISinkExecutionFeedback sinkExecutionFeedback,
 			Duration elapsed,
-			Map<CubeQueryStep, ICuboid> oneQueryStepToValues) {
+			Map<TableQueryStep, ICuboid> oneQueryStepToValues) {
 		boolean isExplain = queryPod.isDebugOrExplain();
 
 		if (isExplain) {
@@ -543,9 +543,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	/**
 	 * 
 	 * @param queryStepsDag
-	 * @return a Stream over {@link CubeQueryStep} with resolved measures, guaranteed to be an {@link Aggregator}.
+	 * @return a Stream over {@link TableQueryStep} with resolved measures, guaranteed to be an {@link Aggregator}.
 	 */
-	protected Stream<CubeQueryStep> streamMissingRoots(QueryStepsDag queryStepsDag) {
+	protected Stream<TableQueryStep> streamMissingRoots(QueryStepsDag queryStepsDag) {
 		// BEWARE We could filter for `Aggregator` but it may be relevant to behave specifically on
 		// `Transformator` with no undelryingSteps
 		return queryStepsDag.getInducers()
@@ -572,7 +572,8 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 						log.debug("step={} has been planned having no underlying step", step);
 						return false;
 					}
-				});
+				})
+				.map(cubeStep -> TableQueryStep.edit(cubeStep).build());
 	}
 
 	/**
@@ -580,12 +581,12 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * @param queryStepsDag
 	 * @return the Set of {@link TableQuery} to be executed.
 	 */
-	protected Set<CubeQueryStep> prepareForTable(QueryStepsDag queryStepsDag) {
+	protected Set<TableQueryStep> prepareForTable(QueryStepsDag queryStepsDag) {
 		return streamMissingRoots(queryStepsDag).map(step -> {
 			IMeasure measure = step.getMeasure();
 
 			if (measure instanceof Aggregator) {
-				return step;
+				return TableQueryStep.edit(step).build();
 			} else {
 				throw new IllegalStateException("%s is not an Aggregator".formatted(step));
 			}
@@ -602,7 +603,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * @param generatedStep
 	 * @return {@link TableQuery} where calculated columns has been suppressed.
 	 */
-	protected CubeQueryStep suppressGeneratedColumns(CubeQueryStep generatedStep) {
+	protected TableQueryStep suppressGeneratedColumns(TableQueryStep generatedStep) {
 		// We list the generatedColumns instead of listing the table columns as many tables has lax resolution of
 		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
 		// probably return only one of the 2).
@@ -676,7 +677,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return queryPod.getColumnsManager().openTableStream(queryPod, tableQuery);
 	}
 
-	protected Map<CubeQueryStep, ICuboid> aggregateStreamToAggregates(IHasTableQueryForSteps tableQueries,
+	protected Map<TableQueryStep, ICuboid> aggregateStreamToAggregates(IHasTableQueryForSteps tableQueries,
 			TableQueryV4 query,
 			ITabularRecordStream stream) {
 		IMultitypeMergeableGrid<ISlice> sliceToAggregates = mergeTableAggregates(query, stream);
@@ -684,12 +685,12 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return splitTableGridToCuboids(tableQueries, query, sliceToAggregates);
 	}
 
-	protected Map<CubeQueryStep, ICuboid> splitTableGridToCuboids(IHasTableQueryForSteps tableQueries,
+	protected Map<TableQueryStep, ICuboid> splitTableGridToCuboids(IHasTableQueryForSteps tableQueries,
 			TableQueryV4 query,
 			IMultitypeMergeableGrid<ISlice> sliceToAggregates) {
 		IStopwatch singToAggregatedStarted = factories.getStopwatchFactory().createStarted();
 
-		Map<CubeQueryStep, ICuboid> immutableChunks = toCuboids(tableQueries, query, sliceToAggregates);
+		Map<TableQueryStep, ICuboid> immutableChunks = toCuboids(tableQueries, query, sliceToAggregates);
 
 		// BEWARE This timing is independent of the table
 		Duration elapsed = singToAggregatedStarted.elapsed();
@@ -791,7 +792,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * @param coordinatesToAggregates
 	 * @return a {@link Map} from each {@link Aggregator} to the column of values
 	 */
-	protected Map<CubeQueryStep, ICuboid> toCuboids(IHasTableQueryForSteps tableQueries,
+	protected Map<TableQueryStep, ICuboid> toCuboids(IHasTableQueryForSteps tableQueries,
 			TableQueryV4 query,
 			IMultitypeMergeableGrid<ISlice> coordinatesToAggregates) {
 		Stream<StepAndFilteredAggregator> stepStream =
@@ -812,8 +813,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			// The aggregation step is done: the storage is supposed not to be edited: we
 			// re-use it in place, to spare a copy to an immutable container
-			CubeQueryStep cubeQueryStep = queryStep.toCubeQueryStep();
-			return Map.entry(cubeQueryStep, Cuboid.forGroupBy(cubeQueryStep).values(values).build());
+			return Map.entry(queryStep, Cuboid.forGroupBy(queryStep).values(values).build());
 		}).collect(PepperStreamHelper.toLinkedMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
@@ -831,7 +831,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * @param column
 	 * @return
 	 */
-	protected ICuboid restoreSuppressedGroupBy(CubeQueryStep queryStep, Set<String> suppressedColumns, ICuboid column) {
+	protected ICuboid restoreSuppressedGroupBy(TableQueryStep queryStep,
+			Set<String> suppressedColumns,
+			ICuboid column) {
 		Map<String, ?> constantValues = valuesForSuppressedColumns(suppressedColumns, queryStep);
 
 		boolean match = FilterMatcher.builder()
@@ -861,7 +863,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 *            the queryStep can be used to customize the suppress column values
 	 * @return
 	 */
-	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, CubeQueryStep queryStep) {
+	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, TableQueryStep queryStep) {
 		return suppressedColumns.stream()
 				.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
 						c -> IColumnGenerator.COORDINATE_GENERATED));
@@ -874,7 +876,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 *            a mutable {@link Map}. May need to be thread-safe.
 	 * @param inducerAndInduced
 	 */
-	protected void walkUpInducedDag(Map<CubeQueryStep, ICuboid> stepToValues, SplitTableQueries inducerAndInduced) {
+	protected void walkUpInducedDag(Map<TableQueryStep, ICuboid> stepToValues, SplitTableQueries inducerAndInduced) {
 		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);
@@ -884,9 +886,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		});
 	}
 
-	protected void evaluateInduced(Map<CubeQueryStep, ICuboid> stepToValues,
+	protected void evaluateInduced(Map<TableQueryStep, ICuboid> stepToValues,
 			SplitTableQueries inducerAndInduced,
-			CubeQueryStep induced) {
+			TableQueryStep induced) {
 		if (stepToValues.containsKey(induced)) {
 			// Happens typically for inducers steps
 			log.debug("step={} is already evaluated", induced);

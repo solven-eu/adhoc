@@ -65,6 +65,7 @@ import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -348,7 +349,9 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		queryStepToValues.putAll(queryStepsDag.getStepToValues());
 
 		// Add values from table
-		queryStepToValues.putAll(executeTableQueries(queryPod, queryStepsDag));
+		executeTableQueries(queryPod, queryStepsDag).forEach((tableStep, cuboid) -> {
+			queryStepToValues.put(CubeQueryStep.edit(tableStep).build(), cuboid);
+		});
 
 		// We're done with the input stream: the DB can be shutdown, we can answer the
 		// rest of the query independently of external tables.
@@ -391,7 +394,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		});
 	}
 
-	protected Map<CubeQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+	protected Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		// queryPod.with
 		// AdhocSubQuery.builder().subQuery(qu).parentQueryId(queryPod.getQueryId()).build();
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);

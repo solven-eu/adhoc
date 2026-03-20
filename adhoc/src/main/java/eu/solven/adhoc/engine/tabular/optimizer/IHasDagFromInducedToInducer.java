@@ -37,6 +37,7 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 
 /**
@@ -44,22 +45,22 @@ import eu.solven.adhoc.measure.model.Aggregator;
  * 
  * @author Benoit Lacelle
  */
-public interface IHasDagFromInducedToInducer {
+public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 	/**
 	 * 
 	 * @return the {@link CubeQueryStep} which are explicitly requested. In the DAG, some of these steps may have
 	 *         parents.
 	 */
-	ImmutableSet<CubeQueryStep> getExplicits();
+	ImmutableSet<T> getExplicits();
 
 	/**
 	 * This DAG has edges from the queried/output/induced to the underlyings/input/inducer.
 	 * 
 	 * @return
 	 */
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getInducedToInducer();
+	DirectedAcyclicGraph<T, DefaultEdge> getInducedToInducer();
 
-	Map<CubeQueryStep, SizeAndDuration> getStepToCost();
+	Map<ICubeQueryStep, SizeAndDuration> getStepToCost();
 
 	/**
 	 * 
@@ -67,22 +68,21 @@ public interface IHasDagFromInducedToInducer {
 	 *         encountered strictly after its underlyings.
 	 */
 
-	default Iterator<CubeQueryStep> iteratorFromInducerToInduced() {
+	default Iterator<T> iteratorFromInducerToInduced() {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
-		EdgeReversedGraph<CubeQueryStep, DefaultEdge> fromAggregatesToQueried =
-				new EdgeReversedGraph<>(getInducedToInducer());
+		EdgeReversedGraph<T, DefaultEdge> fromAggregatesToQueried = new EdgeReversedGraph<>(getInducedToInducer());
 
 		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
 	}
 
-	default List<CubeQueryStep> getInducers(CubeQueryStep induced) {
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = getInducedToInducer();
+	default List<T> getInducers(T induced) {
+		DirectedAcyclicGraph<T, DefaultEdge> dag = getInducedToInducer();
 		return dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
 	}
 
 	// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
-	default ImmutableSet<CubeQueryStep> getInducers() {
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = getInducedToInducer();
+	default ImmutableSet<T> getInducers() {
+		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
 
 		// relates with `Graphs.vertexHasSuccessors`
 		return inducedToInducer.vertexSet()
@@ -92,7 +92,7 @@ public interface IHasDagFromInducedToInducer {
 	}
 
 	// Holds the TableQuery which can be evaluated implicitly from underlyings
-	default ImmutableSet<CubeQueryStep> getInduceds() {
+	default ImmutableSet<T> getInduceds() {
 		return ImmutableSet.copyOf(Sets.difference(getInducedToInducer().vertexSet(), getInducers()));
 	}
 
@@ -101,8 +101,8 @@ public interface IHasDagFromInducedToInducer {
 	 * @return the {@link Set} of roots. This is a subset of explicit steps, as some additional explicit steps may be in
 	 *         the middle of the DAG, as (intermediate) inducer of other roots.
 	 */
-	default ImmutableSet<CubeQueryStep> getRoots() {
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer = getInducedToInducer();
+	default ImmutableSet<T> getRoots() {
+		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
 
 		// relates with `Graphs.vertexHasSuccessors`
 		return inducedToInducer.vertexSet()
