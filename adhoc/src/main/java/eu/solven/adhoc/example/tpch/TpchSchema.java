@@ -145,6 +145,8 @@ public class TpchSchema {
 	@SuppressFBWarnings("SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE")
 	protected void loadTpchData(Connection connection) throws SQLException {
 		try (Statement s = connection.createStatement()) {
+			// TPCH is not pre-installed on all distributions
+			s.execute("INSTALL tpch");
 			// https://duckdb.org/docs/stable/core_extensions/tpch
 			s.execute("LOAD tpch");
 			// Scale factor 0.1 produces ~600 K lineitem rows; keep small for test speed
