@@ -276,7 +276,27 @@ public class TableQueryV4 implements ITableQuery {
 		return getGroupByToAggregators().keySet();
 	}
 
-	@Override
+	/**
+	 * Returns {@code true} when all {@link IGroupBy}s in this query share exactly the same {@link FilteredAggregator}
+	 * set, meaning a single covering {@link TableQueryV3} (GROUPING SET SQL) computes no irrelevant combinations. When
+	 * {@code false}, a UNION ALL decomposition (via {@link #streamV3()}) avoids wasteful cartesian-product computation.
+	 *
+	 * <p>
+	 * This flag is the shared decision point between sites that choose the execution strategy (e.g.
+	 * {@code JooqTableQueryFactory.prepareQuery}) and sites that describe it in logs or metrics (e.g.
+	 * {@code TableQueryEngineBootstrapped.toPerfLog}).
+	 */
+	public boolean isPerfectV3() {
+		return groupByToAggregators.keySet()
+				.stream()
+				.map(groupBy -> groupByToAggregators.get(groupBy)
+						.stream()
+						.map(fa -> fa.withIndex(0))
+						.collect(ImmutableSet.toImmutableSet()))
+				.distinct()
+				.count() <= 1;
+	}
+
 	public Set<String> getGroupedByColumns() {
 		return getGroupBys().stream()
 				.flatMap(gb -> gb.getGroupedByColumns().stream())

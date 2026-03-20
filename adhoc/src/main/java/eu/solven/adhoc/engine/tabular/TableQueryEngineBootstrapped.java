@@ -460,12 +460,17 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 			sb.append(" GROUP BY ").append(groupBy);
 		} else {
-			// TODO tableQueryV3 is NOT a GROUPING SET but rather a UNION ALL
 			String groupByClause = tableQuery.getGroupBys()
 					.stream()
 					.map(IGroupBy::toString)
 					.collect(Collectors.joining(",", "(", ")"));
-			sb.append(" GROUPING SETS ").append(groupByClause);
+			// isPerfectV3() is the shared flag: JooqTableQueryFactory currently ignores it and always
+			// uses asCoveringV3() (GROUPING SETS), but the log reflects what the strategy should ideally be.
+			if (tableQuery.isPerfectV3()) {
+				sb.append(" GROUPING SETS ").append(groupByClause);
+			} else {
+				sb.append(" UNION ALL ").append(groupByClause);
+			}
 		}
 
 		return sb.toString();

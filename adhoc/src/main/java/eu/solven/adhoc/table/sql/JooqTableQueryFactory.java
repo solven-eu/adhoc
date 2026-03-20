@@ -245,15 +245,17 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 		return QueryWithLeftover.builder()
 				// TODO We may like to break `GROUPING SET` around here (see TableQueryV4.streamV3 and
-				// JooqTableWrapper.streamSlices). Three strategies worth exposing as a configurable option:
+				// JooqTableWrapper.streamSlices). TableQueryV4.isPerfectV3() is the shared flag that signals
+				// whether a covering GROUPING SET is efficient (true) or wasteful (false). Three strategies
+				// worth exposing as a configurable option:
 				//
 				// 1. GROUPING SETS (current default via asCoveringV3): one SQL query, cartesian product of all
-				// (groupBy × aggregator) pairs. Fast when groupBys share the same aggregators; wasteful when they
-				// differ, because it computes irrelevant (groupBy, aggregator) combinations.
+				// (groupBy × aggregator) pairs. Efficient when isPerfectV3() is true; wasteful otherwise,
+				// because it computes irrelevant (groupBy, aggregator) combinations.
 				//
 				// 2. UNION ALL via multiple TableQueryV3 (TableQueryV4.streamV3): one SQL per distinct aggregator
 				// set; each query covers only the (groupBy, aggregator) pairs that actually need each other.
-				// Avoids cartesian waste but adds per-query overhead. Preferable when aggregator sets diverge.
+				// Avoids cartesian waste but adds per-query overhead. Preferable when isPerfectV3() is false.
 				//
 				// 3. Literal SQL UNION ALL (not yet implemented): a single SQL statement whose branches are
 				// UNION ALL'd by the DB engine itself. Unlike option 2 (which concatenates at the Java level),

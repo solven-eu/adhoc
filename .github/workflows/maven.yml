@@ -59,6 +59,12 @@ jobs:
     #    name: pivotable-server
     #    path: server/target/*-exec.jar
 
+    - name: Report low-coverage classes
+      # Informational only — highlights production classes below 20% instruction coverage.
+      # Full list: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc
+      if: matrix.java-version == '21'
+      run: perl scripts/check-coverage-low.pl . || true
+
     - name: Upload coverage reports to Codecov
       if: matrix.java-version == '21'
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2

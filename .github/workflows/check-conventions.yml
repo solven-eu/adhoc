@@ -50,3 +50,8 @@ jobs:
         run: |
           readarray -t dirs < <(find . -type d \( -path '*/src/main/java' -o -path '*/src/test/java' \) | sort)
           perl scripts/check-convention-map-builder.pl "${dirs[@]}" || true
+
+      - name: Report low-coverage classes (SonarCloud)
+        # Queries the public SonarCloud API — no local build needed.
+        # Full view: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc
+        run: perl scripts/check-coverage-sonar.pl || true

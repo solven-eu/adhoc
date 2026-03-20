@@ -107,6 +107,36 @@ public class TestTableQueryV4 {
 		Assertions.assertThat(v3s.getFirst().streamGroupBy().toList()).containsExactly(IGroupBy.GRAND_TOTAL);
 	}
 
+	// --- isPerfectV3 ---
+
+	@Test
+	public void isPerfectV3_singleGroupBy() {
+		TableQueryV4 v4 =
+				TableQueryV4.builder().groupByToAggregators(ImmutableSetMultimap.of(gbCountry, aggSum)).build();
+
+		Assertions.assertThat(v4.isPerfectV3()).isTrue();
+	}
+
+	@Test
+	public void isPerfectV3_sameAggsOnBothGroupBys() {
+		TableQueryV4 v4 = TableQueryV4.builder()
+				.groupByToAggregator(gbCountry, aggSum)
+				.groupByToAggregator(gbCity, aggSum)
+				.build();
+
+		Assertions.assertThat(v4.isPerfectV3()).isTrue();
+	}
+
+	@Test
+	public void isPerfectV3_differentAggsOnEachGroupBy() {
+		TableQueryV4 v4 = TableQueryV4.builder()
+				.groupByToAggregator(gbCountry, aggSum)
+				.groupByToAggregator(gbCity, aggCount)
+				.build();
+
+		Assertions.assertThat(v4.isPerfectV3()).isFalse();
+	}
+
 	// --- asCoveringV3 ---
 
 	@Test
