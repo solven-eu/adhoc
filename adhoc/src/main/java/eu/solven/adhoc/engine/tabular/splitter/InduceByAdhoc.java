@@ -22,56 +22,96 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
-import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 
-import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
-import eu.solven.adhoc.filter.FilterHelpers;
-import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.IMeasure;
+import eu.solven.adhoc.engine.tabular.splitter.adder.AddSharedNodes;
+import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
+import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
+import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersStrictGroupBy;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Given a set of {@link TableQueryStep}, we determine a minimal set of {@link TableQueryStep} which can infer (by
- * Adhoc) all the others.
+ * Holds generic behavior to {@link ITableStepsSplitter} which leads to steps being induced by Adhoc.
  * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class InduceByAdhoc implements ITableStepsSplitter {
+@Builder
+public class InduceByAdhoc extends AInduceByAdhocParent {
+
+	@Default
+	@NonNull
+	protected final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	@Default
+	@NonNull
+	protected final IFilterOptimizer filterOptimizer =
+			AdhocFactoriesUnsafe.factories.getFilterOptimizerFactory().makeOptimizer();
+
+	// Holds the policy allowing one step to imply another step
+	// On very large graph, we may have an heuristic policy
+	@NonNull
+	@Default
+	protected Supplier<ITableStepsSplitter> inferenceEdgesAdderFactory = () -> InduceByAdhocComplete.builder().build();
+
+	// Holds the policy allowing to merge inducers into a different set of inducers (typically smaller in number).
+	@NonNull
+	@Default
+	protected IMergeInducers.IMergeInducersFactory mergeInducersFactory = MergeInducersStrictGroupBy.makeFactory();
+
+	// Holds the policy allowing to add nodes in the middle of the DAG, in order to share some computations
+	@NonNull
+	@Default
+	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
 
 	@Override
 	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<TableQueryStep> tableSteps) {
-		ListMultimap<TableQueryStep, TableQueryStep> aggregatorToQueries = packByAggregator(tableSteps);
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+		// 1. Add inference between existing nodes
+		// If we add such links, we tell the induced will be inferred by Adhoc and there will be less inducers for
+		// ITableWrapper.
+		// If we do not add such edges, we request the ITableWrapper to execute each TableQueryStep (e.g. as a large
+		// UNION ALL)
+		// BEWARE This should only add edges
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withInferenceNodes =
+				inferenceEdgesAdderFactory.get().splitInducedAsDag(hasOptions, inducedToInducer);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer =
-				new DirectedAcyclicGraph<>(DefaultEdge.class);
+		// 2. Given the new (and smaller) set of inducers, we may want to add additional vertices, merging inducers
+		// together.
+		ImmutableSet<TableQueryStep> tableSteps = GraphHelpers.getInducers(withInferenceNodes);
 
-		// for each aggregator
-		aggregatorToQueries.asMap().forEach((a, steps) -> {
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withMergedInducers = GraphHelpers.makeGraph();
+		// Step0: copy input graph
+		Graphs.addGraph(withMergedInducers, inducedToInducer);
+		// Step1: register the inference edges (new steps but no new vertices)
+		Graphs.addGraph(withMergedInducers, withInferenceNodes);
+
+		SetMultimap<TableQueryStep, TableQueryStep> aggregatorToQueries = groupByAggregator(tableSteps);
+
+		// Merging inducers is done a per options+custom_marker+aggregator basis
+		Multimaps.asMap(aggregatorToQueries).forEach((a, steps) -> {
 			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> aInducedToInducer =
-					new DirectedAcyclicGraph<>(DefaultEdge.class);
-
-			// BEWARE step.filter must be optimized as it is inserted in a hashStructure
-			steps.forEach(aInducedToInducer::addVertex);
-			splitInducedDag(steps, aInducedToInducer::addEdge);
+					makeMergeInducers().mergeInducers(a, steps);
 
 			if (hasOptions.isDebugOrExplain()) {
 				SplitTableQueries aTableQueries =
@@ -85,153 +125,71 @@ public class InduceByAdhoc implements ITableStepsSplitter {
 						a.getMeasure().getName());
 			}
 
-			// accumulate into the output graph
-			Graphs.addGraph(inducedToInducer, aInducedToInducer);
+			// Step2: merge some inducers together (new vertices and edges)
+			Graphs.addGraph(withMergedInducers, aInducedToInducer);
 		});
 
-		return inducedToInducer;
-	}
+		// 3. As we created some nodes, we need to re-apply the inference between existing nodes
+		// TODO Why? Need at least one example where this is relevant
 
-	protected TableQueryStep contextOnly(TableQueryStep inducer) {
-		return TableQueryStep.edit(inducer)
-				.aggregator(Aggregator.sum("noMeasure"))
-				.groupBy(IGroupBy.GRAND_TOTAL)
-				.filter(ISliceFilter.MATCH_ALL)
-				.build();
-	}
+		// 4. Now, we want to add some additional sharing nodes: these are never inducers but in the middle of the DAG.
+		// They will help computing only once elements of inference (e.g. some filter or some groupBy)
 
-	protected ListMultimap<TableQueryStep, TableQueryStep> packByAggregator(Set<TableQueryStep> rootInducers) {
-		ListMultimap<TableQueryStep, TableQueryStep> contextualAggregateToQueries =
-				MultimapBuilder.linkedHashKeys().arrayListValues().build();
-
-		rootInducers.forEach(tq -> {
-			IMeasure measure = tq.getMeasure();
-
-			if (!(measure instanceof Aggregator agg)) {
-				throw new IllegalArgumentException("TableQueryOptimizer require steps to be on Aggregator. Was " + tq);
-			}
-
-			// Typically holds options and customMarkers
-			TableQueryStep contextOnly = contextOnly(TableQueryStep.edit(tq).aggregator(agg).build());
-
-			// consider a single context per measure
-			TableQueryStep singleAggregator = TableQueryStep.edit(contextOnly).aggregator(agg).build();
-
-			TableQueryStep aggregatorStep = TableQueryStep.edit(contextOnly)
-					.aggregator(agg)
-					.groupBy(tq.getGroupBy())
-					.filter(tq.getFilter())
-					.build();
-
-			contextualAggregateToQueries.put(singleAggregator, aggregatorStep);
-		});
-		return contextualAggregateToQueries;
+		// add shared nodes over the full graph, as both explicit and other steps may benefit from shared nodes
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> sharedNodes = addSharedNodes(withMergedInducers);
+		Graphs.addGraph(withMergedInducers, sharedNodes);
+		return withMergedInducers;
 	}
 
 	/**
-	 * Given an input set of steps, callback on edge of an inducing DAG. The returned DAG looks for the edge which are
-	 * the simplest one (e.g. given `a`, `a,b` and `a,b,c`, while `a` can induce both `a,b` and `a,b,c`, we prefer to
-	 * have `a,b` as inducer of `a,b,c`).
+	 * A last-minute step typically used to add shared nodes in the middle of the DAG, to help applying some
+	 * computations only once.
 	 * 
-	 * This minimizing strategy helps minimizing the actual computations when reducing (e.g. it is easier to infer `a`
-	 * given `a,b` than given `a,b,c`).
-	 * 
-	 * TODO it may not be possible/optimal to evaluate before the best inducingEdge. Typically, we may have `a,b,d` with
-	 * only one row and `a,b,c` with 3 rows: `a,b,d` is a better candidate to infer `a`).
-	 * 
-	 * @param steps
-	 * @param onInducedToInducer
+	 * @param inducedToInducer
+	 * @return
 	 */
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected void splitInducedDag(Collection<TableQueryStep> steps,
-			BiConsumer<TableQueryStep, TableQueryStep> onInducedToInducer) {
-		if (steps.isEmpty()) {
-			return;
-		}
+	protected DirectedAcyclicGraph<TableQueryStep, DefaultEdge> addSharedNodes(
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+		return makeSharedNodesAdder().addSharedNodes(inducedToInducer);
+	}
 
-		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
-		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
-		// not be inferred by a tableQUery with less groupBys.
+	protected SetMultimap<TableQueryStep, TableQueryStep> groupByAggregator(Set<TableQueryStep> steps) {
+		return groupBy(steps, step -> {
+			// Typically holds options and customMarkers
+			TableQueryStep contextOnly = contextOnly(step);
 
-		ListMultimap<Integer, TableQueryStep> cardinalityToSteps = steps.stream()
-				.collect(Multimaps.toMultimap(s -> s.getGroupBy().getGroupedByColumns().size(),
-						s -> s,
-						LinkedListMultimap::create));
-
-		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
-
-		// BEWARE Following algorithm is quadratic: for each tableQuery, we evaluate all other tableQuery.
-		// We observed up to 1k steps.
-		steps.forEach(induced -> {
-			// inducer must have more groupBys than induced
-			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
-			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
-				Optional<TableQueryStep> optInducer = cardinalityToSteps.get(inducerGroupBy)
-						.stream()
-						// No edge to itself
-						.filter(inducer -> inducer != induced)
-						// Compatible context (i.e. laxer filter, customMarker, options)
-						.filter(inducer -> canInduce(inducer, induced))
-						// as soon as left is induced, we do not need to search for alternative inducer
-						// BEWARE As we find first, we'll spot the inducer with a minimal additional groupBy, hence
-						// probably a smaller induced, hence probably a better inducer
-						.findFirst();
-
-				if (optInducer.isPresent()) {
-					TableQueryStep inducer = optInducer.get();
-					// right can be used to compute left
-					onInducedToInducer.accept(induced, inducer);
-					log.trace("Induced -> Inducer ({} -> {})", induced, inducer);
-
-					break;
-				} else {
-					log.trace("Scan along candidates with more groupBys");
-				}
-			}
-
-			log.trace("No inducer (as it is a root inducer) for {}", induced);
+			return TableQueryStep.edit(contextOnly).aggregator(step.getMeasure()).build();
 		});
 	}
 
-	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`
-	// BEWARE This design prevents having an induced inferred by multiple inducers
-	// (e.g. `WHERE A` and `WHERE B` can induce `WHERE A OR B`)
-	protected boolean canInduce(TableQueryStep inducer, TableQueryStep induced) {
-		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
-			// Different measures: can not induce
-			return false;
-		} else if (!contextOnly(inducer).equals(contextOnly(induced))) {
-			// Different options/customMarker: can not induce
-			return false;
-		}
+	protected SetMultimap<TableQueryStep, TableQueryStep> groupBy(Set<TableQueryStep> steps,
+			Function<TableQueryStep, TableQueryStep> toGroup) {
+		return steps.stream()
+				.collect(Multimaps.toMultimap(toGroup::apply, Function.identity(), LinkedHashMultimap::create));
+	}
 
-		// BEWARE a given name may refer to a ReferencedColumn, or to a StaticCoordinateColumn (or anything else)
-		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
-		Collection<IAdhocColumn> inducedColumns = induced.getGroupBy().getNameToColumn().values();
-		if (!inducerColumns.containsAll(inducedColumns)) {
-			// Not expressing all needed columns: can not induce
-			// If right has all groupBy of left, it means right has same or more groupBy than left,
-			// hence right can be used to compute left
-			return false;
-		}
+	/**
+	 * The splitting strategy is based on:
+	 * <ul>
+	 * <li>Doing a single query per Aggregator. It will keep a low number of queries</li>
+	 * <li>For an aggregator, do a query able to induce all steps (typically by querying the union of filters), while
+	 * keeping IGroupBy separate</li>
+	 * </ul>
+	 *
+	 * From an implementation perspective, this re-use the standard optimization process, then compute a single
+	 * TableQueryStep by Aggregator given the root inducers.
+	 */
+	protected DirectedAcyclicGraph<TableQueryStep, DefaultEdge> getGroupedInducers(TableQueryStep contextualAggregator,
+			Set<TableQueryStep> steps) {
+		return makeMergeInducers().mergeInducers(contextualAggregator, steps);
+	}
 
-		ISliceFilter inducerFilter = inducer.getFilter();
-		ISliceFilter inducedFilter = induced.getFilter();
+	protected IMergeInducers makeMergeInducers() {
+		return mergeInducersFactory.makeMergeInducer(factories.getFilterStripperFactory(), filterOptimizer);
+	}
 
-		if (!FilterHelpers.isStricterThan(inducedFilter, inducerFilter)) {
-			// Induced is not covered by inducer: it can not infer it
-			return false;
-		}
-
-		Optional<ISliceFilter> leftoverFilter =
-				InducerHelpers.makeLeftoverFilter(inducerColumns, inducerFilter, inducedFilter);
-
-		if (leftoverFilter.isEmpty()) {
-			// Inducer is missing columns to reject rows not expected by induced
-			return false;
-		}
-
-		return true;
+	protected IAddSharedNodes makeSharedNodesAdder() {
+		return AddSharedNodes.builder().filterOptimizer(filterOptimizer).build();
 	}
 
 }

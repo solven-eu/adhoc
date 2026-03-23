@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.splitter;
+package eu.solven.adhoc.engine.tabular.grouper;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -101,7 +101,7 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 			LeftKey bestLeft = leftNeighbors.entrySet()
 					.stream()
 					.max(Comparator.comparingInt(e -> e.getValue().size()))
-					.get()
+					.orElseThrow()
 					.getKey();
 			Set<IGroupBy> bestGroupBys = leftNeighbors.get(bestLeft);
 

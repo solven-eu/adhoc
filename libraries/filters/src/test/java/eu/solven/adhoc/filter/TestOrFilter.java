@@ -668,4 +668,17 @@ public class TestOrFilter {
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
+	@Test
+	public void testOr_unrelatedOr_preventsMerge() {
+		ISliceFilter optimized =
+				FilterBuilder
+						.or(ColumnFilter.matchEq("d", "d1"),
+								AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")),
+								AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
+						.optimize();
+
+		// TODO We expect `d==d1|a==a1&(b==b1|c==c1)`
+		Assertions.assertThat(optimized).hasToString("d==d1|a==a1&b==b1|a==a1&c==c1");
+	}
+
 }

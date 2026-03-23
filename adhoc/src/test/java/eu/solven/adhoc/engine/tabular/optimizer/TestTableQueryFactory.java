@@ -34,8 +34,8 @@ import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -52,7 +52,7 @@ public class TestTableQueryFactory {
 			.filter(ColumnFilter.matchEq("c", "c1"))
 			.build();
 
-	InduceByAdhoc splitter = new InduceByAdhoc();
+	InduceByAdhocComplete splitter = new InduceByAdhocComplete();
 	TableStepsGrouper grouper = new TableStepsGrouper();
 	TableQueryFactory optimizer = new TableQueryFactory(AdhocFactories.builder().build(),
 			FilterOptimizer.builder().build(),

@@ -29,7 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocMergingIntoSingle;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
@@ -143,7 +143,7 @@ public class TestSpringImplicitOptions {
 	public void testEnv_hasEnvOption_ClassName_notRecognized() {
 		// Users might mistakenly copy the class name (e.g. InduceByAdhocMergingIntoSingle) as the property key.
 		// Only lowercase (from optionKey) and UPPERCASE are supported; CamelCase is silently ignored.
-		env.setProperty("adhoc.query.table." + InduceByAdhocMergingIntoSingle.class.getSimpleName(), true);
+		env.setProperty("adhoc.query.table." + InduceByAdhoc.class.getSimpleName(), true);
 
 		Set<IQueryOption> implicitOptions = implicit.getOptions(CubeQuery.builder().build());
 		Assertions.assertThat(implicitOptions).doesNotContain(InternalQueryOptions.INDUCE_BY_ADHOC);

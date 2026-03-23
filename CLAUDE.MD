@@ -40,7 +40,7 @@ This is a library designed for extensibility. Unless there is a specific reason 
 
 ### Method ordering — Stepdown Rule
 
-See `CONVENTIONS.MD`. Entry points appear first; each method is placed below its first caller. Visibility does not drive ordering.
+See `CONVENTIONS.MD`. Entry points appear first; each method is placed below its first caller. Visibility does not drive ordering. In abstract classes, `abstract` methods appear before concrete methods.
 
 ---
 

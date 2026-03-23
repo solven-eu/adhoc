@@ -33,7 +33,6 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -84,16 +83,15 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 	default ImmutableSet<T> getInducers() {
 		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
 
-		// relates with `Graphs.vertexHasSuccessors`
-		return inducedToInducer.vertexSet()
-				.stream()
-				.filter(s -> inducedToInducer.outDegreeOf(s) == 0)
-				.collect(ImmutableSet.toImmutableSet());
+		return GraphHelpers.getInducers(inducedToInducer);
 	}
 
 	// Holds the TableQuery which can be evaluated implicitly from underlyings
 	default ImmutableSet<T> getInduceds() {
-		return ImmutableSet.copyOf(Sets.difference(getInducedToInducer().vertexSet(), getInducers()));
+		// return ImmutableSet.copyOf(Sets.difference(getInducedToInducer().vertexSet(), getInducers()));
+		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
+
+		return GraphHelpers.getInduceds(inducedToInducer);
 	}
 
 	/**

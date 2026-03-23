@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.engine.tabular.grouper;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 
 /**
- * Some various unsafe constants, one should edit if he knows what he's doing.
+ * This {@link ITableStepsGrouper} will make one {@link TableQueryV3} per considered {@link Aggregator}.
+ * 
+ * This strategy will generate a limited number of {@link TableQueryV3} per {@link CubeQuery}: one per requested
+ * aggregation (i.e. column+aggregationKey).
  * 
  * @author Benoit Lacelle
  */
-@UtilityClass
-@Slf4j
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
-public class AdhocFactoriesUnsafe {
-	static {
-		resetAll();
+public class TableStepsGrouperByAggregator extends TableStepsGrouper {
+
+	/**
+	 * We want a single tableQuery per measure. May be useful to improve table performance, concurrency and readability
+	 * (by having 1 SQL per aggregated measure).
+	 * 
+	 * @param inducer
+	 * @return
+	 */
+	@Override
+	public TableQueryStep tableQueryGroupBy(TableQueryStep inducer) {
+		return contextOnly(inducer).toBuilder().aggregator(inducer.getMeasure()).build();
 	}
-
-	public static void resetProperties() {
-		log.info("Resetting {} configuration", AdhocFactoriesUnsafe.class.getName());
-
-	}
-
-	public static void resetAll() {
-		resetProperties();
-
-		factories = DEFAULT_FACTORIES;
-	}
-
-	private static final AdhocFactories DEFAULT_FACTORIES =
-			AdhocFactories.builder().filterOptimizerFactory(IFilterOptimizerFactory.standard()).build();
-	public static IAdhocFactories factories = DEFAULT_FACTORIES;
-
 }

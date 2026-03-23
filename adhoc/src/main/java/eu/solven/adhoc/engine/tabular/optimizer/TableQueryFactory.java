@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
@@ -42,15 +43,15 @@ import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.grouper.ITableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAffinity;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAggregator;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
-import eu.solven.adhoc.engine.tabular.splitter.ITableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAffinity;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByTableWrapper;
 import eu.solven.adhoc.filter.FilterEquivalencyHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
@@ -95,7 +96,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
 	public TableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		this(factories, filterOptimizer, new InduceByAdhoc(), new TableStepsGrouper());
+		this(factories, filterOptimizer, new InduceByAdhocComplete(), new TableStepsGrouper());
 	}
 
 	@Override
@@ -104,8 +105,12 @@ public class TableQueryFactory extends ATableQueryFactory {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer =
-				splitter.splitInducedAsDag(hasOptions, tableSteps);
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = GraphHelpers.makeGraph();
+		// Initialize the DAG of flat tableSteps
+		tableSteps.forEach(inducedToInducer::addVertex);
+
+		// Add the additional vertices and edges
+		Graphs.addGraph(inducedToInducer, splitter.splitInducedAsDag(hasOptions, inducedToInducer));
 
 		Map<TableQueryStep, TableQueryV4> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
 
@@ -119,32 +124,36 @@ public class TableQueryFactory extends ATableQueryFactory {
 		sanityChecks(splitTableQueries);
 
 		if (hasOptions.isDebugOrExplain()) {
-			Set<TableQueryV4> tableQueries = splitTableQueries.getTableQueries();
-
-			int nbTableInducers = splitTableQueries.getInducers().size();
-			// This represents the number of CubeQueryStep evaluated by the tableQuery, amongst which a bunch are
-			// possibly useless.
-			// BEWARE If customMarker are suppressed from tableQueries, these numbers would need additional
-			// interpretations
-			long nbEvaluatedTableInducers =
-					tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
-
-			// prints percent with 1 digit.
-			String percentEfficiency = asPercent(tableSteps.size(), nbEvaluatedTableInducers);
-			log.info(
-					"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
-					tableSteps.size(),
-					nbTableInducers,
-					tableQueries.size(),
-					nbEvaluatedTableInducers,
-					percentEfficiency);
-
-			forEachIndexed(tableQueries, (indexQuery, tableQuery) -> {
-				log.info("[EXPLAIN] TableQuery {}/{}: {}", indexQuery, tableQueries.size(), tableQuery);
-			});
+			onDebugOrExplain(tableSteps, splitTableQueries);
 		}
 
 		return splitTableQueries;
+	}
+
+	protected void onDebugOrExplain(Set<TableQueryStep> tableSteps, SplitTableQueries splitTableQueries) {
+		Set<TableQueryV4> tableQueries = splitTableQueries.getTableQueries();
+
+		int nbTableInducers = splitTableQueries.getInducers().size();
+		// This represents the number of CubeQueryStep evaluated by the tableQuery, amongst which a bunch are
+		// possibly useless.
+		// BEWARE If customMarker are suppressed from tableQueries, these numbers would need additional
+		// interpretations
+		long nbEvaluatedTableInducers =
+				tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
+
+		// prints percent with 1 digit.
+		String percentEfficiency = asPercent(tableSteps.size(), nbEvaluatedTableInducers);
+		log.info(
+				"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
+				tableSteps.size(),
+				nbTableInducers,
+				tableQueries.size(),
+				nbEvaluatedTableInducers,
+				percentEfficiency);
+
+		forEachIndexed(tableQueries, (indexQuery, tableQuery) -> {
+			log.info("[EXPLAIN] TableQuery {}/{}: {}", indexQuery, tableQueries.size(), tableQuery);
+		});
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
@@ -154,13 +163,9 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(Set<TableQueryStep> tableSteps,
 			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
-		Set<TableQueryStep> leaves = SplitTableQueries.builder()
-				.explicits(tableSteps)
-				.inducedToInducer(inducedToInducer)
-				.build()
-				.getInducers();
+		Set<TableQueryStep> inducers = GraphHelpers.getInducers(inducedToInducer);
 
-		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(leaves);
+		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(inducers);
 
 		Map<TableQueryStep, TableQueryV4> stepToTableQuery = new LinkedHashMap<>();
 
@@ -342,11 +347,11 @@ public class TableQueryFactory extends ATableQueryFactory {
 	 */
 	public static class TableQueryFactoryBuilder {
 		public TableQueryFactoryBuilder splitForAdhocInference() {
-			return this.splitter(new InduceByAdhoc());
+			return this.splitter(new InduceByAdhocComplete());
 		}
 
 		public TableQueryFactoryBuilder splitForTableGroupingSets() {
-			return this.splitter(new InduceByGroupingSets());
+			return this.splitter(new InduceByTableWrapper());
 		}
 
 		public TableQueryFactoryBuilder groupByAggregator() {

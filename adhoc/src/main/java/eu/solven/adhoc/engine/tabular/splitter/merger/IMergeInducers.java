@@ -20,49 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.splitter;
+package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 
 /**
- * Given a set of {@link CubeQueryStep}, defines a DAG of steps induced by Adhoc. The leaves of this DAG has to be
- * evaluated by the {@link ITableWrapper}.
+ * Given a set of inducers, this will generate an additional set of inducers.
  * 
- * Typically, ITableWrapper supporting `FILTER` and/or `GROUPING SET` may cover more leaves at lower cost, reducing the
- * work left to Adhoc.
+ * The point is typically to reduce the number of inducers.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface ITableStepsSplitter {
-
+public interface IMergeInducers {
 	/**
-	 * May or may not modify the input.
+	 * Creates a {@link DirectedAcyclicGraph} to be merged into the main {@link DirectedAcyclicGraph}. It will typically
+	 * extends the leaves of the DAG, to merge inducers into a smaller number of inducers.
 	 * 
-	 * @param hasOptions
-	 * @param inducedToInducer
+	 * @param contextualAggregator
+	 * @param steps
 	 * @return
 	 */
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer);
+	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> mergeInducers(TableQueryStep contextualAggregator,
+			Set<TableQueryStep> steps);
 
-	@Deprecated(since = "Unit-Tests")
-	default DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<TableQueryStep> steps) {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag = GraphHelpers.makeGraph();
-
-		steps.forEach(dag::addVertex);
-
-		return splitInducedAsDag(hasOptions, dag);
+	/**
+	 * Factory for {@link IMergeInducers}
+	 */
+	@FunctionalInterface
+	interface IMergeInducersFactory {
+		IMergeInducers makeMergeInducer(IFilterStripperFactory filterStripperFactory, IFilterOptimizer filterOptimizer);
 	}
-
 }

@@ -20,32 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.splitter;
+package eu.solven.adhoc.engine.tabular.splitter.adder;
+
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 
 /**
- * This {@link ITableStepsGrouper} will make one {@link TableQueryV3} per considered {@link Aggregator}.
- * 
- * This strategy will generate a limited number of {@link TableQueryV3} per {@link CubeQuery}: one per requested
- * aggregation (i.e. column+aggregationKey).
+ * Holds a policy to add shared/intermediate nodes into a {@link DirectedAcyclicGraph} of {@link TableQueryStep}.
  * 
  * @author Benoit Lacelle
  */
-public class TableStepsGrouperByAggregator extends TableStepsGrouper {
+@FunctionalInterface
+public interface IAddSharedNodes {
+
+	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> addSharedNodes(
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer);
 
 	/**
-	 * We want a single tableQuery per measure. May be useful to improve table performance, concurrency and readability
-	 * (by having 1 SQL per aggregated measure).
-	 * 
-	 * @param inducer
-	 * @return
+	 * Factory for {@link IAddSharedNodes}.
 	 */
-	@Override
-	public TableQueryStep tableQueryGroupBy(TableQueryStep inducer) {
-		return contextOnly(inducer).toBuilder().aggregator(inducer.getMeasure()).build();
+	@FunctionalInterface
+	interface IAddSharedNodesFactory {
+		IAddSharedNodes make(IFilterOptimizer filterOptimizer);
 	}
 }
