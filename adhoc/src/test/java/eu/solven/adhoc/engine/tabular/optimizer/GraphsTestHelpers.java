@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ThrowingConsumer;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 
-/**
- * Some various unsafe constants, one should edit if he knows what he's doing.
- * 
- * @author Benoit Lacelle
- */
-@UtilityClass
-@Slf4j
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
-public class AdhocFactoriesUnsafe {
-	static {
-		resetAll();
+import eu.solven.adhoc.engine.step.TableQueryStep;
+
+public class GraphsTestHelpers {
+
+	public static ThrowingConsumer<? super DefaultEdge> assertEdge(TableQueryStep induced,
+			TableQueryStep inducer,
+			IHasDagFromInducedToInducer<TableQueryStep> split) {
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> graph = split.getInducedToInducer();
+		return assertEdge(induced, inducer, graph);
 	}
 
-	public static void resetProperties() {
-		log.info("Resetting {} configuration", AdhocFactoriesUnsafe.class.getName());
+	public static ThrowingConsumer<? super DefaultEdge> assertEdge(TableQueryStep induced,
+			TableQueryStep inducer,
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> graph) {
+		return e -> {
+			TableQueryStep sourceStep = graph.getEdgeSource(e);
+			TableQueryStep targetStep = graph.getEdgeTarget(e);
 
+			Assertions.assertThat(sourceStep).isEqualTo(induced);
+			Assertions.assertThat(targetStep).isEqualTo(inducer);
+		};
 	}
-
-	public static void resetAll() {
-		resetProperties();
-
-		factories = DEFAULT_FACTORIES;
-	}
-
-	private static final AdhocFactories DEFAULT_FACTORIES =
-			AdhocFactories.builder().filterOptimizerFactory(IFilterOptimizerFactory.standard()).build();
-	public static IAdhocFactories factories = DEFAULT_FACTORIES;
 
 }

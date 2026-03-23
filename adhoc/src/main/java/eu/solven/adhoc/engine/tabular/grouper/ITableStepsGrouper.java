@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.splitter;
+package eu.solven.adhoc.engine.tabular.grouper;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;

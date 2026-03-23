@@ -20,49 +20,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.splitter;
-
-import java.util.Set;
+package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import com.google.common.collect.LinkedHashMultimap;
+
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.table.ITableWrapper;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Given a set of {@link CubeQueryStep}, defines a DAG of steps induced by Adhoc. The leaves of this DAG has to be
- * evaluated by the {@link ITableWrapper}.
+ * Will generate a minimal number of {@link TableQueryStep} while not merging any `GROUP BY`. Typically, `GROUP BY
+ * (a,b)` and `GROUP BY (a,c)` is not merged into `GROUP BY (a,b,c)`.
  * 
- * Typically, ITableWrapper supporting `FILTER` and/or `GROUPING SET` may cover more leaves at lower cost, reducing the
- * work left to Adhoc.
+ * However, filters can be merged as in `FILTER a1 GROUP BY (a,b)` and `GROUP BY (a)` can be merged into `GROUP BY
+ * (a,b)`.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ITableStepsSplitter {
+@Deprecated(since = "Not-Ready. Need to merge the key steps")
+@Slf4j
+public class MergeInducersLaxGroupBy extends MergeInducersStrictGroupBy {
 
-	/**
-	 * May or may not modify the input.
-	 * 
-	 * @param hasOptions
-	 * @param inducedToInducer
-	 * @return
-	 */
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer);
+	@Builder(builderMethodName = "builderLax")
+	MergeInducersLaxGroupBy(IFilterOptimizer filterOptimizer) {
+		super(filterOptimizer);
+	}
 
-	@Deprecated(since = "Unit-Tests")
-	default DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<TableQueryStep> steps) {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag = GraphHelpers.makeGraph();
+	@Override
+	protected void mergeGroups(LinkedHashMultimap<TableQueryStep, TableQueryStep> mergingToSteps) {
+		InduceByAdhoc inferrer = InduceByAdhoc.builder().build();
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag =
+				inferrer.splitInducedAsDag(IHasQueryOptions.noOption(), mergingToSteps.keySet());
 
-		steps.forEach(dag::addVertex);
+		log.warn("TODO Dispatch dag={}", dag);
 
-		return splitInducedAsDag(hasOptions, dag);
+		super.mergeGroups(mergingToSteps);
 	}
 
 }

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAggregator;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 

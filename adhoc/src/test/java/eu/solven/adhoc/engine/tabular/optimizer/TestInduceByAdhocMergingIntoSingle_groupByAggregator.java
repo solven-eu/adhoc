@@ -23,10 +23,10 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -35,22 +35,30 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocMergingIntoSingle;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
+import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersIntoSingle;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
-public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestConstants {
+public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAdhocTestConstants {
 
 	TableQueryStep step = TableQueryStep.builder().aggregator(k1Sum).build();
+	AdhocFactories factories = AdhocFactories.builder().build();
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
-			.factories(AdhocFactories.builder().build())
-			.splitter(new InduceByAdhocMergingIntoSingle(AdhocFactories.builder().build()))
+			.factories(factories)
+			.splitter(InduceByAdhoc.builder()
+					.factories(AdhocFactories.builder().build())
+					.mergeInducersFactory(MergeInducersIntoSingle.makeFactory())
+					.inferenceEdgesAdderFactory(() -> InduceByAdhocComplete.builder().build())
+					.build())
 			.groupByAggregator()
 			.build();
 
@@ -59,12 +67,12 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 		TableQuery tq1 = TableQuery.edit(step)
 				.filter(ColumnFilter.matchEq("a", "a1"))
 				.groupBy(GroupByColumns.named("b"))
-				.aggregator(k1Sum)
+
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
 				.filter(ColumnFilter.matchEq("c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
-				.aggregator(k1Sum)
+
 				.build();
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), ImmutableSet.of(tq1, tq2));
 
@@ -130,12 +138,12 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 		TableQuery tq1 = TableQuery.edit(step)
 				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
 				.groupBy(GroupByColumns.named("b"))
-				.aggregator(k1Sum)
+
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
 				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
 				.groupBy(GroupByColumns.named("d"))
-				.aggregator(k1Sum)
+
 				.build();
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
@@ -170,14 +178,14 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 		TableQuery tq1 = TableQuery.edit(step)
 				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
 				.groupBy(GroupByColumns.named("b"))
-				.aggregator(k1Sum)
+
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
 				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
 				.groupBy(GroupByColumns.named("d"))
-				.aggregator(k1Sum)
+
 				.build();
-		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and(Map.of("a", "a1"))).aggregator(k1Sum).build();
+		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and(Map.of("a", "a1"))).build();
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2, tq3));
 
 		Assertions.assertThat(split.getInducers())
@@ -202,8 +210,8 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 
 	@Test
 	public void testCanInduce_SelfAndGranular() {
-		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
-		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
+		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).build();
+		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).build();
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
@@ -217,14 +225,15 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 
 	@Test
 	public void testCanInduce_chainOfInducers() {
-		TableQuery tqABC = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "c")).aggregator(k1Sum).build();
-		TableQuery tqAB = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).aggregator(k1Sum).build();
-		TableQuery tqA = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).aggregator(k1Sum).build();
-		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tqABC, tqAB, tqA));
+		TableQueryStep tqAC = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build();
+		TableQueryStep tqAB = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build();
+		TableQueryStep tqA = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build();
+		SplitTableQueries split = optimizer.splitInduced(IHasQueryOptions.noOption(), Set.of(tqAC, tqAB, tqA));
 
-		Assertions.assertThat(split.getInducers())
-				.hasSize(1)
-				.contains(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
+		Assertions.assertThat(split.getInducedToInducer().vertexSet()).hasSize(4);
+
+		TableQueryStep merged = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build();
+		Assertions.assertThat(split.getInducers()).hasSize(1).contains(merged);
 
 		Assertions.assertThat(split.getInduceds())
 				.hasSize(3)
@@ -234,35 +243,11 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 
 		Assertions.assertThat(split.getInducedToInducer().edgeSet())
 				// `a,b,c->a,b`, `a,b,c->a,c`, `a,c->a`
-				.hasSize(3)
-				.anySatisfy(e -> {
-					TableQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
-					TableQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
-
-					Assertions.assertThat(inducer)
-							.isEqualTo(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
-					Assertions.assertThat(induced)
-							.isEqualTo(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
-				})
-				.anySatisfy(e -> {
-					TableQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
-					TableQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
-
-					Assertions.assertThat(inducer)
-							.isEqualTo(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b", "c")).build());
-					Assertions.assertThat(induced)
-							.isEqualTo(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "c")).build());
-				})
-				.anySatisfy(e -> {
-					TableQueryStep inducer = split.getInducedToInducer().getEdgeTarget(e);
-					TableQueryStep induced = split.getInducedToInducer().getEdgeSource(e);
-
-					// BEWARE `a,b` could also induce `a`, but it must not be `a,b,c`
-					NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
-					Assertions.assertThat(inducerColumns).hasSize(2).contains("a").containsAnyOf("b", "c");
-					Assertions.assertThat(induced)
-							.isEqualTo(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build());
-				});
+				.hasSize(4)
+				.anySatisfy(GraphsTestHelpers.assertEdge(tqAB, merged, split))
+				.anySatisfy(GraphsTestHelpers.assertEdge(tqAC, merged, split))
+				.anySatisfy(GraphsTestHelpers.assertEdge(tqA, tqAB, split))
+				.anySatisfy(GraphsTestHelpers.assertEdge(tqA, tqAC, split));
 	}
 
 	/**
@@ -277,17 +262,17 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 		TableQueryStep tq1 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("a", "b"))
 				.filter(ColumnFilter.matchEq("d", "d1"))
-				.aggregator(k1Sum)
+
 				.build();
 		TableQueryStep tq2 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("a", "c"))
 				.filter(ColumnFilter.matchEq("d", "d1"))
-				.aggregator(k1Sum)
+
 				.build();
 		TableQueryStep tq3 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("a"))
 				.filter(ColumnFilter.matchEq("e", "e1"))
-				.aggregator(k1Sum)
+
 				.build();
 		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3));
 
@@ -315,31 +300,31 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 		TableQueryStep tq1 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
 				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
-				.aggregator(k1Sum)
+
 				.build();
 		// second step has same filter with different groupBy
 		TableQueryStep tq2 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("y"))
 				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
-				.aggregator(k1Sum)
+
 				.build();
 		// third step has stricter filter
 		TableQueryStep tq3 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
 				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1")))
-				.aggregator(k1Sum)
+
 				.build();
 		// fourth step has intermediate filter: it may lead to ordering issues
 		TableQueryStep tq4 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
 				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
-				.aggregator(k1Sum)
+
 				.build();
 		// fifth step has unrelated filter
 		TableQueryStep tq5 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
 				.filter(AndFilter.and(ImmutableMap.of("d", "d1")))
-				.aggregator(k1Sum)
+
 				.build();
 		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3, tq4, tq5));
 
@@ -348,10 +333,8 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 				.contains(TableQueryStep.edit(step)
 						.filter(FilterBuilder
 								.or(ColumnFilter.matchEq("d", "d1"),
-										FilterBuilder
-												.and(ColumnFilter.matchEq("a", "a1"),
-														OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
-												.combine())
+										AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")),
+										AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
 								.combine())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d", "x", "y"))
 						.build());
@@ -359,6 +342,16 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 		Assertions.assertThat(split.getInduceds())
 				.hasSize(7)
 				.contains(tq1, tq2, tq3, tq4, tq5)
+
+				// Shared for the whole `a=a1` branch
+				// `d=d1` is present in the filter as it comes from the merged inducer
+				// .contains(TableQueryStep.edit(step)
+				// .filter(FilterBuilder
+				// .and(ColumnFilter.matchEq("a", "a1"),
+				// OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
+				// .combine())
+				// .groupBy(GroupByColumns.named("b", "c", "x", "y"))
+				// .build())
 
 				// intermediate to the `a|b|c` branch
 				.contains(TableQueryStep.edit(step)
@@ -376,5 +369,70 @@ public class TestTableQueryFactory_SinglePerAggregator implements IAdhocTestCons
 						// BEWARE `c` is present as groupBy as this intermediate is also used for `a&b&c` step
 						.groupBy(GroupByColumns.named("c", "x", "y"))
 						.build());
+	}
+
+	// The covers a case where `GROUP BY (a,b)` is very wide but `(a1)` and `(b1)` has only one slice `(a1,b1)`,
+	// highlighting cases where we must not do `GROUP BY (a,b)`
+	@Test
+	@Disabled("May be relevant for an alternative splitter")
+	public void testSplit_a1GroupByB_b1GroupByA() {
+		TableQueryStep b1GroupA = TableQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a"))
+				.filter(ColumnFilter.matchEq("b", "b1"))
+
+				.build();
+		TableQueryStep a1GroupB = TableQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("b"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
+
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(b1GroupA, a1GroupB));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+
+		Assertions.assertThat(split.getInduceds()).hasSize(2).contains(b1GroupA, a1GroupB);
+	}
+
+	@Test
+	public void testSplit_a1GroupByA_a2GroupByA() {
+		TableQueryStep a1GroupA = TableQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
+
+				.build();
+		TableQueryStep a2GroupA = TableQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a"))
+				.filter(ColumnFilter.matchEq("a", "a2"))
+
+				.build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(a1GroupA, a2GroupA));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(TableQueryStep.edit(step)
+						.groupBy(GroupByColumns.named("a"))
+						.filter(ColumnFilter.matchIn("a", "a1", "a2"))
+						.build());
+
+		Assertions.assertThat(split.getInduceds()).hasSize(2).contains(a1GroupA, a2GroupA);
+	}
+
+	@Test
+	public void testSplit_a1GroupByAB_GroupByA() {
+		TableQueryStep a1GroupA = TableQueryStep.edit(step)
+				.groupBy(GroupByColumns.named("a", "b"))
+				.filter(ColumnFilter.matchEq("a", "a1"))
+
+				.build();
+		TableQueryStep a2GroupA = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build();
+		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(a1GroupA, a2GroupA));
+
+		Assertions.assertThat(split.getInducers())
+				.hasSize(1)
+				.contains(TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build());
+
+		Assertions.assertThat(split.getInduceds()).hasSize(2).contains(a1GroupA, a2GroupA);
 	}
 }

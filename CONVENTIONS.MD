@@ -165,6 +165,7 @@ protected ITabularView toTabularView(...) { ... }      // (4)
 
 - Static constants and fields precede all methods, as usual.
 - Constructors follow fields and precede instance methods.
+- **Abstract methods first.** In abstract classes, `abstract` methods are placed before all concrete methods. This makes the extension contract immediately visible to readers and subclass authors without having to scan the whole file.
 - This rule applies to **new or substantially refactored classes**. Existing classes are migrated incrementally — do not reorder a whole file just to satisfy this rule unless that is the explicit goal of the current task.
 - **Quick scan**: `perl scripts/check-convention-stepdown.pl` — reports callee-above-caller violations.
 

@@ -23,14 +23,14 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.tabular.splitter.ITableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.grouper.ITableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAffinity;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAggregator;
+import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByGroupingSets;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouper;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAffinity;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperByAggregator;
-import eu.solven.adhoc.engine.tabular.splitter.TableStepsGrouperNoGroup;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByTableWrapper;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
@@ -63,7 +63,7 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 
 	/**
 	 * Selects the {@link ITableStepsGrouper} for the given query options and splitter. When the splitter is
-	 * {@link InduceByGroupingSets}, defaults to {@link TableStepsGrouperByAffinity} to avoid cartesian-product waste in
+	 * {@link InduceByTableWrapper}, defaults to {@link TableStepsGrouperByAffinity} to avoid cartesian-product waste in
 	 * GROUPING SETS queries.
 	 */
 	protected ITableStepsGrouper makeGrouper(IHasQueryOptions hasOptions, ITableStepsSplitter splitter) {
@@ -92,12 +92,12 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 	protected ITableStepsSplitter makeSplitter(IHasQueryOptions hasOptions) {
 		ITableStepsSplitter splitter;
 		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
-			splitter = new InduceByAdhoc();
+			splitter = new InduceByAdhocComplete();
 		} else if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_TABLE)) {
-			splitter = new InduceByGroupingSets();
+			splitter = new InduceByTableWrapper();
 		} else {
 			// BEWARE We're unclear about the right defaults
-			splitter = new InduceByGroupingSets();
+			splitter = new InduceByAdhocComplete();
 			log.debug("Default {} led to {}", ITableStepsSplitter.class.getName(), splitter.getClass().getName());
 		}
 		return splitter;

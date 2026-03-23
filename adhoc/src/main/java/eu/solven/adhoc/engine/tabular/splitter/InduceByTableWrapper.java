@@ -29,28 +29,30 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV3;
+import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * No {@link CubeQueryStep} is induced, leading to each of them needed to be computed by the {@link TableQueryV3}, hence
  * a large usage of `GROUPING SET`.
  * 
+ * BEWARE This is quite inefficient for now, as we turn a {@link Set} of {@link TableQueryStep} into a
+ * {@link TableQueryV4}, then a covering {@link TableQueryV3} which may produce a lot of junk (i.e. the covering v3
+ * computes a lot of irrelevant steps).
+ * 
  * @author Benoit Lacelle
  */
 @Slf4j
-public class InduceByGroupingSets implements ITableStepsSplitter {
+@Deprecated(since = "Not-Ready. May be useful once ITableWrapper supports UNION ALL")
+public class InduceByTableWrapper implements ITableStepsSplitter {
 
 	@Override
 	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<TableQueryStep> tableSteps) {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer =
-				new DirectedAcyclicGraph<>(DefaultEdge.class);
-
-		tableSteps.forEach(inducedToInducer::addVertex);
-
-		return inducedToInducer;
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+		return GraphHelpers.makeGraph();
 	}
 
 }

@@ -81,7 +81,7 @@ public class TestPivotableTokenService {
 
 		Authentication auth = authManager.authenticate(new BearerTokenAuthenticationToken(accessToken)).block();
 
-		Assertions.assertThat(auth.getPrincipal()).isOfAnyClassIn(Jwt.class);
+		Assertions.assertThat(auth.getPrincipal()).isInstanceOf(Jwt.class);
 		Jwt jwt = (Jwt) auth.getPrincipal();
 		Assertions.assertThat(jwt.getSubject()).isEqualTo(accountId.toString());
 		Assertions.assertThat(jwt.getAudience()).containsExactly("Pivotable-Server");
@@ -115,7 +115,7 @@ public class TestPivotableTokenService {
 
 		Authentication auth = authManager.authenticate(new BearerTokenAuthenticationToken(accessToken)).block();
 
-		Assertions.assertThat(auth.getPrincipal()).isOfAnyClassIn(Jwt.class);
+		Assertions.assertThat(auth.getPrincipal()).isInstanceOf(Jwt.class);
 		Jwt jwt = (Jwt) auth.getPrincipal();
 		Assertions.assertThat(jwt.getSubject()).isEqualTo(accountId.toString());
 		Assertions.assertThat(jwt.getAudience()).containsExactly("Pivotable-Server");

@@ -38,7 +38,7 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -58,7 +58,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
 			.factories(AdhocFactories.builder().build())
-			.splitter(new InduceByAdhoc())
+			.splitter(new InduceByAdhocComplete())
 			.groupByAggregator()
 			.build();
 

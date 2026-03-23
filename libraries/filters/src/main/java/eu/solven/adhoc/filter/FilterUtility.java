@@ -33,6 +33,7 @@ import com.google.common.collect.Iterables;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
  * Like {@link FilterHelpers} but enabling a custom {@link IFilterOptimizer}.
@@ -42,6 +43,7 @@ import lombok.Builder.Default;
 @Builder
 public class FilterUtility {
 	@Default
+	@NonNull
 	final IFilterOptimizer optimizer = AdhocFilterUnsafe.filterOptimizer;
 
 	public ISliceFilter commonAnd(Collection<? extends ISliceFilter> filters) {

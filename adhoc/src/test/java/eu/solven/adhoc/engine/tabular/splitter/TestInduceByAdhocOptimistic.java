@@ -23,15 +23,19 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ThrowingConsumer;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedAcyclicGraph;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -41,75 +45,68 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-public class TestInduceByAdhoc {
+public class TestInduceByAdhocOptimistic {
 	Aggregator m1 = Aggregator.sum("m1");
 	Aggregator m2 = Aggregator.sum("m2");
 
-	TableQueryStep step = TableQueryStep.builder()
-			.aggregator(m1)
-			.groupBy(GroupByColumns.named("g", "h"))
-			.filter(ColumnFilter.matchEq("c", "c1"))
-			.build();
+	TableQueryStep a = TableQueryStep.builder().aggregator(m1).build();
 
-	InduceByAdhoc splitter = new InduceByAdhoc();
+	AInduceByAdhocParent splitter = new InduceByAdhocComplete();
 
 	@Test
 	public void testCanInduce_Trivial() {
 		// Different measure by reference
-		Assertions.assertThat(splitter.canInduce(step, TableQueryStep.edit(step).aggregator(m2).build())).isFalse();
-		// Differnt measure with same name
-		Assertions.assertThat(splitter.canInduce(step, TableQueryStep.edit(step).aggregator(m1).build())).isTrue();
+		Assertions.assertThat(splitter.canInduce(a, a.toBuilder().aggregator(m2).build())).isFalse();
+		// Different measure with same name
+		Assertions.assertThat(splitter.canInduce(a, a.toBuilder().aggregator(m1).build())).isTrue();
 
 		// Less columns
-		Assertions
-				.assertThat(
-						splitter.canInduce(step, TableQueryStep.edit(step).groupBy(GroupByColumns.named("g")).build()))
-				.isTrue();
+		Assertions.assertThat(splitter.canInduce(a.toBuilder().groupBy(GroupByColumns.named("g", "h")).build(),
+				a.toBuilder().groupBy(GroupByColumns.named("g")).build())).isTrue();
 		// More columns
-		Assertions.assertThat(splitter.canInduce(step,
-				TableQueryStep.edit(step).groupBy(GroupByColumns.named("g", "h", "i")).build())).isFalse();
+		Assertions.assertThat(splitter.canInduce(a.toBuilder().groupBy(GroupByColumns.named("g", "h")).build(),
+				a.toBuilder().groupBy(GroupByColumns.named("g", "h", "i")).build())).isFalse();
 
 		// Different column same coordinate
-		Assertions
-				.assertThat(splitter.canInduce(step,
-						TableQueryStep.edit(step).filter(ColumnFilter.matchEq("d", "c1")).build()))
-				.isFalse();
+		Assertions.assertThat(splitter.canInduce(
+				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ColumnFilter.matchEq("c", "c1")).build(),
+				a.toBuilder().filter(ColumnFilter.matchEq("d", "c1")).build())).isFalse();
 	}
 
 	@Test
 	public void testCanInduce_OrDifferentColumns() {
 		Assertions.assertThat(splitter.canInduce(
 				// inducer has OR on different columns
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("c", "c1"), ColumnFilter.matchEq("d", "d1"))
 								.optimize())
 						.build(),
 				// induced has only one of filters
-				TableQueryStep.edit(step).filter(ColumnFilter.matchEq("c", "c1")).build()))
+				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).build()))
 				// false because filtered columns are not groupedBy
 				.isFalse();
 
 		Assertions.assertThat(splitter.canInduce(
 				// inducer has OR on different columns
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.groupBy(GroupByColumns.named("g", "h"))
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("g", "g1"), ColumnFilter.matchEq("h", "h1"))
 								.optimize())
 						.build(),
 				// induced has only one of filters
-				TableQueryStep.edit(step).filter(ColumnFilter.matchEq("g", "g1")).build()))
+				a.toBuilder().filter(ColumnFilter.matchEq("g", "g1")).build()))
 				// true because filtered columns are groupedBy: irrelevant `g` can be filtered.
 				.isTrue();
 
 		Assertions.assertThat(splitter.canInduce(
 				// inducer has OR on different columns
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.groupBy(GroupByColumns.named("g", "h"))
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("g", "g1"), ColumnFilter.matchEq("c", "c1"))
 								.optimize())
 						.build(),
 				// induced has only one of filters
-				TableQueryStep.edit(step).filter(ColumnFilter.matchEq("g", "g1")).build()))
+				a.toBuilder().filter(ColumnFilter.matchEq("g", "g1")).build()))
 				// true because inducer has more rows than induced, and these rows can be filtered out (based on `g`)
 				.isTrue();
 	}
@@ -118,9 +115,9 @@ public class TestInduceByAdhoc {
 	public void testCanInduce_AndDifferentColumns() {
 		Assertions.assertThat(splitter.canInduce(
 				// inducer has OR on different columns
-				TableQueryStep.edit(step).filter(ColumnFilter.matchEq("c", "c1")).build(),
+				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).build(),
 				// induced has only one of filters
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.filter(AndFilter.and(ColumnFilter.matchEq("c", "c1"), ColumnFilter.matchEq("d", "c1")))
 						.build()))
 				// false because filtered columns are not groupedBy
@@ -128,9 +125,9 @@ public class TestInduceByAdhoc {
 
 		Assertions.assertThat(splitter.canInduce(
 				// inducer has OR on different columns
-				TableQueryStep.edit(step).filter(ColumnFilter.matchEq("g", "c1")).build(),
+				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ColumnFilter.matchEq("g", "c1")).build(),
 				// induced has only one of filters
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.filter(AndFilter.and(ColumnFilter.matchEq("g", "c1"), ColumnFilter.matchEq("h", "c1")))
 						.build()))
 				// true because filtered columns are groupedBy
@@ -138,9 +135,9 @@ public class TestInduceByAdhoc {
 
 		Assertions.assertThat(splitter.canInduce(
 				// inducer has OR on different columns
-				TableQueryStep.edit(step).filter(ColumnFilter.matchEq("g", "c1")).build(),
+				a.toBuilder().filter(ColumnFilter.matchEq("g", "c1")).build(),
 				// induced has only one of filters
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.filter(AndFilter.and(ColumnFilter.matchEq("g", "c1"), ColumnFilter.matchEq("c", "c1")))
 						.build()))
 				// false because inducer lacks information to filter along c
@@ -150,14 +147,8 @@ public class TestInduceByAdhoc {
 	@Test
 	public void testCanInduce_Same() {
 		Assertions.assertThat(splitter.canInduce(
-				TableQueryStep.edit(step)
-						.filter(ColumnFilter.matchEq("c", "c1"))
-						.groupBy(GroupByColumns.named("d"))
-						.build(),
-				TableQueryStep.edit(step)
-						.filter(ColumnFilter.matchEq("c", "c1"))
-						.groupBy(GroupByColumns.named("d"))
-						.build()))
+				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).groupBy(GroupByColumns.named("d")).build(),
+				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).groupBy(GroupByColumns.named("d")).build()))
 				.isTrue();
 	}
 
@@ -165,29 +156,17 @@ public class TestInduceByAdhoc {
 	public void testCanInduce_DifferentTopology() {
 		Assertions.assertThat(splitter.canInduce(
 				// groupBy (g,h) matchAll
-				TableQueryStep.edit(step)
-						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(ISliceFilter.MATCH_ALL)
-						.build(),
+				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ISliceFilter.MATCH_ALL).build(),
 				// groupBy (g) filter (g)
-				TableQueryStep.edit(step)
-						.groupBy(GroupByColumns.named("g"))
-						.filter(ColumnFilter.matchEq("g", "someG"))
-						.build()))
+				a.toBuilder().groupBy(GroupByColumns.named("g")).filter(ColumnFilter.matchEq("g", "someG")).build()))
 				// true because if inducer has laxer filter, there is enough groupBy to infer it
 				.isTrue();
 
 		Assertions.assertThat(splitter.canInduce(
 				// groupBy (g,h) matchAll
-				TableQueryStep.edit(step)
-						.groupBy(GroupByColumns.named("g", "h"))
-						.filter(ISliceFilter.MATCH_ALL)
-						.build(),
+				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ISliceFilter.MATCH_ALL).build(),
 				// groupBy (g) filter (g)
-				TableQueryStep.edit(step)
-						.groupBy(GroupByColumns.named("c"))
-						.filter(ColumnFilter.matchEq("c", "someC"))
-						.build()))
+				a.toBuilder().groupBy(GroupByColumns.named("c")).filter(ColumnFilter.matchEq("c", "someC")).build()))
 				// false because inducer lax information about c
 				.isFalse();
 	}
@@ -196,15 +175,12 @@ public class TestInduceByAdhoc {
 	public void testCanInduce_sameFilterNotGroupedBy() {
 		Assertions.assertThat(splitter.canInduce(
 				// groupBy (g,h) filterX
-				TableQueryStep.edit(step)
+				a.toBuilder()
 						.groupBy(GroupByColumns.named("g", "h"))
 						.filter(ColumnFilter.matchEq("c", "someC"))
 						.build(),
 				// groupBy (g) filterX
-				TableQueryStep.edit(step)
-						.groupBy(GroupByColumns.named("g"))
-						.filter(ColumnFilter.matchEq("c", "someC"))
-						.build()))
+				a.toBuilder().groupBy(GroupByColumns.named("g")).filter(ColumnFilter.matchEq("c", "someC")).build()))
 				// true because filter is identical
 				.isTrue();
 	}
@@ -214,7 +190,7 @@ public class TestInduceByAdhoc {
 		Assertions
 				.assertThat(
 						splitter.canInduce(
-								TableQueryStep.edit(step)
+								a.toBuilder()
 										.groupBy(GroupByColumns.named("g", "h"))
 										.filter(FilterBuilder
 												.or(ColumnFilter.matchEq("c", "someC"),
@@ -222,7 +198,7 @@ public class TestInduceByAdhoc {
 												.optimize())
 										.build(),
 								// induced has a filter on a not groupedBy column
-								TableQueryStep.edit(step)
+								a.toBuilder()
 										.groupBy(GroupByColumns.named("g"))
 										.filter(ColumnFilter.matchEq("c", "someC"))
 										.build()))
@@ -236,7 +212,7 @@ public class TestInduceByAdhoc {
 		Assertions
 				.assertThat(
 						splitter.canInduce(
-								TableQueryStep.edit(step)
+								a.toBuilder()
 										.groupBy(GroupByColumns.named("a"))
 										.filter(FilterBuilder
 												.and(ColumnFilter.matchIn("a", "a1", "a2"),
@@ -244,7 +220,7 @@ public class TestInduceByAdhoc {
 												.combine())
 										.build(),
 								// induced has a stricter filter, based on a column which is groupedBy in the inducer
-								TableQueryStep.edit(step)
+								a.toBuilder()
 										.groupBy(GroupByColumns.grandTotal())
 										.filter(FilterBuilder
 												.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b3"))
@@ -259,7 +235,7 @@ public class TestInduceByAdhoc {
 		Assertions
 				.assertThat(
 						splitter.canInduce(
-								TableQueryStep.edit(step)
+								a.toBuilder()
 										.groupBy(GroupByColumns.named("b"))
 										.filter(FilterBuilder
 												.and(OrFilter.or(Map.of("a", "a1", "b", "b2")),
@@ -267,7 +243,7 @@ public class TestInduceByAdhoc {
 												.combine())
 										.build(),
 								// induced has a stricter filter, based on a column which is groupedBy in the inducer
-								TableQueryStep.edit(step)
+								a.toBuilder()
 										.groupBy(GroupByColumns.grandTotal())
 										.filter(FilterBuilder
 												.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c3"))
@@ -281,12 +257,12 @@ public class TestInduceByAdhoc {
 	public void testCanInduce_commonFilterIsNotGroupedBy() {
 		Assertions
 				.assertThat(splitter.canInduce(
-						TableQueryStep.edit(step)
+						a.toBuilder()
 								.groupBy(GroupByColumns.named("g", "h"))
 								.filter(ColumnFilter.matchEq("c", "someC"))
 								.build(),
 						// induced has a stricter filter, based on a column which is groupedBy in the inducer
-						TableQueryStep.edit(step)
+						a.toBuilder()
 								.groupBy(GroupByColumns.grandTotal())
 								.filter(AndFilter.and(ColumnFilter.matchEq("c", "someC"),
 										ColumnFilter.matchEq("g", "someG")))
@@ -300,14 +276,8 @@ public class TestInduceByAdhoc {
 		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> split =
 				splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
 						ImmutableSet.<TableQueryStep>builder()
-								.add(TableQueryStep.builder()
-										.aggregator(Aggregator.sum("m"))
-										.groupBy(GroupByColumns.named("a", "b"))
-										.build())
-								.add(TableQueryStep.builder()
-										.aggregator(Aggregator.sum("m"))
-										.groupBy(GroupByColumns.named("b", "c"))
-										.build())
+								.add(a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build())
+								.add(a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build())
 								.build());
 
 		Assertions.assertThat(split.edgeSet()).isEmpty();
@@ -317,12 +287,8 @@ public class TestInduceByAdhoc {
 	public void testSplitAsDag_missingIntermediateCardinality() {
 		// groupBy sizes 1 and 3 with no size-2 step: iterating inducerGroupBy from 1 to 3
 		// previously caused NPE at cardinality=2 since cardinalityToSteps.get(2) returned null
-		TableQueryStep size1 =
-				TableQueryStep.builder().aggregator(Aggregator.sum("m")).groupBy(GroupByColumns.named("a")).build();
-		TableQueryStep size3 = TableQueryStep.builder()
-				.aggregator(Aggregator.sum("m"))
-				.groupBy(GroupByColumns.named("a", "b", "c"))
-				.build();
+		TableQueryStep size1 = a.toBuilder().groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep size3 = a.toBuilder().groupBy(GroupByColumns.named("a", "b", "c")).build();
 
 		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> split =
 				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(size1, size3));
@@ -335,24 +301,106 @@ public class TestInduceByAdhoc {
 
 	@Test
 	public void testSplitAsDag_2groupByWithNonEmptyIntersection_andIntersection() {
+		@NonNull
+		TableQueryStep s1 = a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build();
+		@NonNull
+		TableQueryStep s2 = a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build();
+		@NonNull
+		TableQueryStep s3 = a.toBuilder().groupBy(GroupByColumns.named("b")).build();
 		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> split =
 				splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
-						ImmutableSet.<TableQueryStep>builder()
-								.add(TableQueryStep.builder()
-										.aggregator(Aggregator.sum("m"))
-										.groupBy(GroupByColumns.named("a", "b"))
-										.build())
-								.add(TableQueryStep.builder()
-										.aggregator(Aggregator.sum("m"))
-										.groupBy(GroupByColumns.named("b", "c"))
-										.build())
-								.add(TableQueryStep.builder()
-										.aggregator(Aggregator.sum("m"))
-										.groupBy(GroupByColumns.named("b"))
-										.build())
-								.build());
+						ImmutableSet.<TableQueryStep>builder().add(s1).add(s2).add(s3).build());
 
-		// TODO We should keep the 2 edges, so we decide later which one is optimal (e.g. based on induced actual sizes)
-		Assertions.assertThat(split.edgeSet()).hasSize(1);
+		Assertions.assertThat(split.vertexSet()).hasSize(3);
+		Assertions.assertThat(split.edgeSet())
+				.hasSize(2)
+				.anySatisfy(assertInduce(s3, s1, split))
+				.anySatisfy(assertInduce(s3, s2, split));
+	}
+
+	@Test
+	public void chainOfInducers_filters_inSameColumn() {
+		TableQueryStep s1 =
+				a.toBuilder().filter(ColumnFilter.matchIn("a", "a1")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep s2 =
+				a.toBuilder().filter(ColumnFilter.matchIn("a", "a1", "a2")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep s3 = a.toBuilder()
+				.filter(ColumnFilter.matchIn("a", "a1", "a2", "a3"))
+				.groupBy(GroupByColumns.named("a"))
+				.build();
+
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		merged.addVertex(s1);
+		merged.addVertex(s2);
+		merged.addVertex(s3);
+
+		merged.addEdge(s1, s3);
+		merged.addEdge(s2, s3);
+
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared =
+				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(s1, s2, s3));
+
+		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(2)
+				.anySatisfy(assertInduce(s1, s2, withShared))
+				.anySatisfy(assertInduce(s2, s3, withShared));
+	}
+
+	private ThrowingConsumer<? super DefaultEdge> assertInduce(TableQueryStep s1,
+			TableQueryStep s2,
+			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared) {
+		return edge -> {
+			TableQueryStep induced = withShared.getEdgeSource(edge);
+			TableQueryStep inducer = withShared.getEdgeTarget(edge);
+
+			Assertions.assertThat(induced).isEqualTo(s1);
+			Assertions.assertThat(inducer).isEqualTo(s2);
+		};
+	}
+
+	@Test
+	public void chainOfInducers_filters_differentColumns() {
+		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and(Map.of("a", "a1", "b", "b1"))).build();
+		TableQueryStep s2 =
+				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("a", "b")).build();
+		TableQueryStep s3 =
+				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
+
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		merged.addVertex(s1);
+		merged.addVertex(s2);
+		merged.addVertex(s3);
+
+		merged.addEdge(s1, s3);
+		merged.addEdge(s2, s3);
+
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared =
+				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2, s3));
+
+		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(2)
+				.anySatisfy(assertInduce(s1, s2, withShared))
+				.anySatisfy(assertInduce(s2, s3, withShared));
+	}
+
+	@Test
+	public void matchNone() {
+		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and(Map.of("a", "a1", "b", "b1"))).build();
+		TableQueryStep s2 = a.toBuilder().filter(ISliceFilter.MATCH_NONE).build();
+
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		merged.addVertex(s1);
+		merged.addVertex(s2);
+
+		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared =
+				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2));
+
+		Assertions.assertThat(withShared.vertexSet()).hasSize(2).contains(s1, s2);
+
+		Assertions.assertThat(withShared.edgeSet()).hasSize(0);
 	}
 }

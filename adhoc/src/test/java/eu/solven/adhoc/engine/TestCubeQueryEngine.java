@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.engine;
 
+import static eu.solven.adhoc.IAdhocTestConstants.k1Sum;
+
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +48,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
@@ -191,7 +193,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 			return TableQueryFactory.builder()
 					.factories(AdhocFactories.builder().build())
 					.filterOptimizer(filterOptimizer)
-					.splitter(new InduceByAdhoc())
+					.splitter(new InduceByAdhocComplete())
 					.groupByAggregator()
 					.build();
 		};

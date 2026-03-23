@@ -23,11 +23,14 @@
 package eu.solven.adhoc.engine.tabular.inducer;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -88,13 +91,17 @@ public class TableQueryInducer implements ITableQueryInducer {
 		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking
 		// the one with the less rows)
 		List<TableQueryStep> inducers = inducerAndInduced.getInducers(induced);
-		if (inducers.size() != 1) {
-			throw new IllegalStateException(
-					"Induced should have a single inducer. induced=%s inducers=%s".formatted(induced, inducers));
-		}
 
-		TableQueryStep inducer = inducers.getFirst();
-		ICuboid inducerValues = stepToValues.get(inducer);
+		Map<TableQueryStep, ICuboid> inducerToCuboid =
+				inducers.stream().collect(ImmutableMap.toImmutableMap(Function.identity(), stepToValues::get));
+
+		Map.Entry<TableQueryStep, ICuboid> smallest = inducerToCuboid.entrySet()
+				.stream()
+				.max(Comparator.comparingLong(e -> e.getValue().size()))
+				.orElseThrow(() -> new IllegalStateException("No inducer for induced=%s".formatted(induced)));
+
+		TableQueryStep inducer = smallest.getKey();
+		ICuboid inducerValues = smallest.getValue();
 
 		Aggregator aggregator = inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
