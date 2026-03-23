@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.Multimaps;
@@ -56,6 +55,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -109,8 +109,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					.sequencedKeyset(new GroupByMarker(groupBy, sequencedKeyset))
 					.build();
 		} else {
-			Map<Set<String>, GroupByMarker> columnsToMarker =
-					tableQuery.getGroupBys().stream().collect(Collectors.toMap(IGroupBy::getGroupedByColumns, gb -> {
+			Map<Set<String>, GroupByMarker> columnsToMarker = tableQuery.getGroupBys()
+					.stream()
+					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getGroupedByColumns, gb -> {
 						Set<String> groupedByColumns = gb.getGroupedByColumns();
 						SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
 						return new GroupByMarker(gb, sequencedKeyset);

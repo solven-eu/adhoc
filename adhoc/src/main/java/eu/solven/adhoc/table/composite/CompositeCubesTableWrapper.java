@@ -87,6 +87,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -426,7 +427,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 					stream = stream.parallel();
 				}
 
-				return stream.collect(Collectors.toMap(Entry::getKey, cubeAndQuery -> {
+				return stream.collect(PepperStreamHelper.toLinkedMap(Entry::getKey, cubeAndQuery -> {
 					String cubeName = cubeAndQuery.getKey();
 					ICubeWrapper subCube = nameToCube.get(cubeName);
 					ICubeQuery query = cubeAndQuery.getValue();

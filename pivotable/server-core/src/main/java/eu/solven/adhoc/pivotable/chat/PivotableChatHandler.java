@@ -35,6 +35,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
@@ -150,7 +152,7 @@ public class PivotableChatHandler {
 
 	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 	protected List<Map<String, Object>> buildTools() {
-		return List.of(Map.of("name",
+		return ImmutableList.of(Map.of("name",
 				"set_measures",
 				"description",
 				"Select the measures to display in the query result. Replaces any previously selected measures.",
@@ -166,7 +168,7 @@ public class PivotableChatHandler {
 										"description",
 										"Exact measure names from the cube schema")),
 						"required",
-						List.of("measureNames"))),
+						ImmutableList.of("measureNames"))),
 
 				Map.of("name",
 						"set_groupby",
@@ -184,7 +186,7 @@ public class PivotableChatHandler {
 												"description",
 												"Exact dimension column names from the cube schema")),
 								"required",
-								List.of("columns"))),
+								ImmutableList.of("columns"))),
 
 				Map.of("name",
 						"clear_query",

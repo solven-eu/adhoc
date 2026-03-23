@@ -42,6 +42,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
+import com.google.common.collect.ImmutableList;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -193,7 +194,7 @@ public class InjectPixarExampleCubesConfig {
 					.baseTable(DSL.table("pixar_people"))
 					.baseTableAlias("people")
 					.build()
-					.leftJoin(DSL.table("pixar_films"), "films", List.of(Map.entry("film", "film")));
+					.leftJoin(DSL.table("pixar_films"), "films", ImmutableList.of(Map.entry("film", "film")));
 
 			JooqTableWrapper peopleTable = new JooqTableWrapper("people",
 					JooqTableWrapperParameters.builder()

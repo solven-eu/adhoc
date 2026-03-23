@@ -31,6 +31,7 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -73,7 +74,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			return underlying.stream().map(slice -> {
 				Object value = IValueProvider.getValue(slice.getValueProvider());
 
-				return SliceAndMeasures.from(slice.getSlice(), queryStep, List.of(value));
+				return SliceAndMeasures.from(slice.getSlice(), queryStep, ImmutableList.of(value));
 			});
 		}
 

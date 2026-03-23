@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
@@ -247,7 +249,11 @@ public class MultitypeArray implements IMultitypeArray {
 	}
 
 	public static MultitypeArray empty() {
-		return MultitypeArray.builder().valuesD(DoubleList.of()).valuesL(LongList.of()).valuesO(List.of()).build();
+		return MultitypeArray.builder()
+				.valuesD(DoubleList.of())
+				.valuesL(LongList.of())
+				.valuesO(ImmutableList.of())
+				.build();
 	}
 
 	@Override

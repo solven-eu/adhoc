@@ -24,6 +24,8 @@ package eu.solven.adhoc.atoti.table;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.cellset.impl.EmptyCellSet;
 import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;
@@ -62,7 +64,7 @@ public class LoggingAtotiWrapper extends AAtotiWrapper implements IQueryable {
 
 	@Override
 	public Set<String> getSupportedQueries() {
-		return Set.of(GetAggregatesQuery.PLUGIN_KEY);
+		return ImmutableSet.of(GetAggregatesQuery.PLUGIN_KEY);
 	}
 
 	@Override

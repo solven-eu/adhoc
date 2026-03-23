@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.case_insensitivive;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -39,7 +39,7 @@ import com.google.errorprone.annotations.ThreadSafe;
 @ThreadSafe
 public class CaseInsensitiveContext {
 	final NavigableMap<String, String> caseToLower = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-	final Map<String, String> lowerToCase = new HashMap<>();
+	final Map<String, String> lowerToCase = new LinkedHashMap<>();
 
 	/**
 	 * 

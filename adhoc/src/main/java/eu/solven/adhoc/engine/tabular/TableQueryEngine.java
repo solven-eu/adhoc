@@ -99,15 +99,15 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return bootstrap(queryPod, optimizer, inducer);
 	}
 
+	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
+		// WithCache as this optimizer will be used for a single query
+		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
+	}
+
 	protected ITableQueryEngineBootstrapped bootstrap(QueryPod queryPod,
 			ITableQueryFactory optimizer,
 			ITableQueryInducer inducer) {
 		return new TableQueryEngineBootstrapped(factories, eventBus, queryPod, optimizer, inducer);
-	}
-
-	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
-		// WithCache as this optimizer will be used for a single query
-		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 	}
 
 }
