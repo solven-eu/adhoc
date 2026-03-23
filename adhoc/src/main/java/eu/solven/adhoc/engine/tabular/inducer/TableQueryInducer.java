@@ -88,13 +88,13 @@ public class TableQueryInducer implements ITableQueryInducer {
 			SplitTableQueries inducerAndInduced,
 			Map<TableQueryStep, ICuboid> stepToValues,
 			TableQueryStep induced) {
-		// TODO Could we have elected multiple potential inducers? It would enable picking the optimal one (e.g. picking
-		// the one with the less rows)
 		List<TableQueryStep> inducers = inducerAndInduced.getInducers(induced);
 
 		Map<TableQueryStep, ICuboid> inducerToCuboid =
 				inducers.stream().collect(ImmutableMap.toImmutableMap(Function.identity(), stepToValues::get));
 
+		// Rely on the inducer with the smaller number of rows, as it's a good heuristic of being the most processed one
+		// for our own cuboic.
 		Map.Entry<TableQueryStep, ICuboid> smallest = inducerToCuboid.entrySet()
 				.stream()
 				.max(Comparator.comparingLong(e -> e.getValue().size()))

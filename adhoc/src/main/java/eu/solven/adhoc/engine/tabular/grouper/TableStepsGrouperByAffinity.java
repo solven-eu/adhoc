@@ -101,7 +101,7 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 			LeftKey bestLeft = leftNeighbors.entrySet()
 					.stream()
 					.max(Comparator.comparingInt(e -> e.getValue().size()))
-					.get()
+					.orElseThrow()
 					.getKey();
 			Set<IGroupBy> bestGroupBys = leftNeighbors.get(bestLeft);
 
