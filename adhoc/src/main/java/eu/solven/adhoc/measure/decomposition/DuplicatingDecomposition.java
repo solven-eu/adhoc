@@ -36,6 +36,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -114,7 +115,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 			return Object.class;
 		} else {
 			// BEWARE Would be safer to scan the whole List
-			return coordinates.iterator().next().getClass();
+			return AdhocCollectionHelpers.getFirst(coordinates).getClass();
 		}
 	}
 

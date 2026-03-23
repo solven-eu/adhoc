@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
@@ -373,7 +374,8 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 				int index = value.getAggregators().indexOf(neededKey);
 
 				if (index >= 0) {
-					aliasesToKeep.add(neededKey.getTableQuery().getAggregators().iterator().next().getAlias());
+					aliasesToKeep.add(
+							AdhocCollectionHelpers.getFirst(neededKey.getTableQuery().getAggregators()).getAlias());
 
 					toRemove.add(neededKey);
 				}

@@ -290,15 +290,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 
 	@Override
 	public boolean isEmpty() {
-		if (!sliceToD.isEmpty()) {
-			return false;
-		} else if (!sliceToL.isEmpty()) {
-			return false;
-		} else if (!sliceToO.isEmpty()) {
-			return false;
-		} else {
-			return true;
-		}
+		return size() == 0;
 	}
 
 	@Override
