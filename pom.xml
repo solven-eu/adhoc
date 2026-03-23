@@ -83,7 +83,7 @@
 		<!-- Optional dependencies -->
 		<!-- Typically not optional when referred by pivotable-server-->
 		<evalex.ezylang.version>3.6.0</evalex.ezylang.version>
-		<duckdb.version>1.5.0.0</duckdb.version>
+		<duckdb.version>1.5.1.0</duckdb.version>
 		<guava.version>33.5.0-jre</guava.version>
 
 		<arrow.version>19.0.0</arrow.version>
