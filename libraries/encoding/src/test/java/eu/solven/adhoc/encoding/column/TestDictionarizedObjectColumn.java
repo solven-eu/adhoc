@@ -25,8 +25,11 @@ package eu.solven.adhoc.encoding.column;
 import java.util.List;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.encoding.column.freezer.AdhocFreezingUnsafe;
 import eu.solven.adhoc.encoding.dictionary.DictionarizedObjectColumn;
 
 public class TestDictionarizedObjectColumn {
@@ -58,5 +61,41 @@ public class TestDictionarizedObjectColumn {
 		Assertions.assertThat(c.readValue(2)).isEqualTo("a");
 		Assertions.assertThat(c.readValue(3)).isEqualTo("c");
 		Assertions.assertThat(c.readValue(4)).isEqualTo("b");
+	}
+
+	@BeforeEach
+	public void enablePostCompressionCheck() {
+		AdhocFreezingUnsafe.setCheckPostCompression(true);
+	}
+
+	@AfterEach
+	public void disablePostCompressionCheck() {
+		AdhocFreezingUnsafe.setCheckPostCompression(false);
+	}
+
+	@Test
+	public void testFromArray_withPostCompressionCheck_happyPath() {
+		IReadableColumn c = DictionarizedObjectColumn.fromArray(List.of("x", "y", "x", "z"));
+
+		Assertions.assertThat(c.readValue(0)).isEqualTo("x");
+		Assertions.assertThat(c.readValue(1)).isEqualTo("y");
+		Assertions.assertThat(c.readValue(2)).isEqualTo("x");
+		Assertions.assertThat(c.readValue(3)).isEqualTo("z");
+	}
+
+	@Test
+	public void testFromArray_withPostCompressionCheck_singleElement() {
+		IReadableColumn c = DictionarizedObjectColumn.fromArray(List.of("only"));
+
+		Assertions.assertThat(c.readValue(0)).isEqualTo("only");
+	}
+
+	@Test
+	public void testFromArray_withPostCompressionCheck_integers() {
+		IReadableColumn c = DictionarizedObjectColumn.fromArray(List.of(1, 2, 1, 3));
+
+		Assertions.assertThat(c.readValue(0)).isEqualTo(1);
+		Assertions.assertThat(c.readValue(1)).isEqualTo(2);
+		Assertions.assertThat(c.readValue(3)).isEqualTo(3);
 	}
 }

@@ -145,6 +145,92 @@ public class TestAdhocSchema {
 	}
 
 	@Test
+	public void testRegisterCube_unknownTable_throws() {
+		schema.registerForest(MeasureForest.builder().name("f").build());
+
+		Assertions.assertThatThrownBy(() -> schema.registerCube("myCube", "missingTable", "f"))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("missingTable");
+	}
+
+	@Test
+	public void testRegisterCube_unknownForest_throws() {
+		InMemoryTable table = InMemoryTable.builder().name("t").build();
+		schema.registerTable(table);
+
+		Assertions.assertThatThrownBy(() -> schema.registerCube("myCube", "t", "missingForest"))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("missingForest");
+	}
+
+	@Test
+	public void testExecute_unknownCube_throws() {
+		Assertions.assertThatThrownBy(() -> schema.execute("unknownCube", CubeQuery.builder().build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("unknownCube");
+	}
+
+	@Test
+	public void testGetSchema_onlyForest() {
+		IMeasureForest forest = MeasureForest.fromMeasures("myForest", Arrays.asList(Aggregator.countAsterisk()));
+		schema.registerForest(forest);
+
+		EndpointSchemaMetadata metadata =
+				schema.getMetadata(AdhocSchemaQuery.builder().forest(Optional.of("myForest")).build(), true);
+		Assertions.assertThat(metadata.getForests()).containsKey("myForest");
+		Assertions.assertThat(metadata.getTables()).isEmpty();
+		Assertions.assertThat(metadata.getCubes()).isEmpty();
+	}
+
+	@Test
+	public void testGetSchema_onlyTable() {
+		InMemoryTable table = InMemoryTable.builder().name("t").build();
+		schema.registerTable(table);
+
+		EndpointSchemaMetadata metadata =
+				schema.getMetadata(AdhocSchemaQuery.builder().table(Optional.of("t")).build(), true);
+		Assertions.assertThat(metadata.getTables()).containsKey("t");
+		Assertions.assertThat(metadata.getForests()).isEmpty();
+		Assertions.assertThat(metadata.getCubes()).isEmpty();
+	}
+
+	@Test
+	public void testGetCoordinates_cubeColumn() {
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.fromMeasures("f", Arrays.asList(Aggregator.countAsterisk()));
+		schema.registerTable(table);
+		schema.registerForest(forest);
+		schema.registerCube("myCube", "simpleTable", "f");
+
+		CoordinatesSample sample = schema.getCoordinates(
+				ColumnIdentifier.builder().isCubeElseTable(true).column("k").holder("myCube").build(),
+				IValueMatcher.MATCH_ALL,
+				-1);
+		Assertions.assertThat(sample.getCoordinates()).containsExactly("v");
+	}
+
+	@Test
+	public void testInvalidateAll_clearsCache() {
+		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
+		table.add(Map.of("k", "v"));
+
+		IMeasureForest forest = MeasureForest.fromMeasures("f", Arrays.asList(Aggregator.countAsterisk()));
+		schema.registerTable(table);
+		schema.registerForest(forest);
+		schema.registerCube("myCube", "simpleTable", "f");
+
+		// Populate the cache first
+		schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+
+		// Invalidating should not throw; subsequent calls should still work
+		schema.invalidateAll();
+		EndpointSchemaMetadata metadata = schema.getMetadata(AdhocSchemaQuery.builder().build(), true);
+		Assertions.assertThat(metadata.getCubes()).containsKey("myCube");
+	}
+
+	@Test
 	public void testAdditionalTags() {
 		InMemoryTable table = InMemoryTable.builder().name("simpleTable").build();
 		schema.registerTable(table);
