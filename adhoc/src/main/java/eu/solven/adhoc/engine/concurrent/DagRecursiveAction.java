@@ -32,11 +32,11 @@ import java.util.concurrent.RecursiveAction;
 import java.util.function.Consumer;
 
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 
 import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -59,7 +59,7 @@ public class DagRecursiveAction<T> extends RecursiveAction {
 
 	// BEWARE This should be immutable/not-mutated during the course of the related actions
 	@NonNull
-	final DirectedAcyclicGraph<T, DefaultEdge> fromQueriedToDependencies;
+	final IAdhocDag<T> fromQueriedToDependencies;
 
 	@NonNull
 	@With

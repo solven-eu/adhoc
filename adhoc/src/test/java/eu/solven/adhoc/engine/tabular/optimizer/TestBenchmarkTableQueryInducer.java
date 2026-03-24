@@ -26,8 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -72,7 +70,7 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 		// IHasQueryOptions.noOption());
 		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.factories);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+		IAdhocDag<TableQueryStep> dag = new AdhocDag<>();
 		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
 		Map<TableQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 

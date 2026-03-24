@@ -25,15 +25,13 @@ package eu.solven.adhoc.engine.tabular.splitter.merger;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.FilterUtility;
@@ -76,8 +74,7 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 	}
 
 	@Override
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> mergeInducers(TableQueryStep contextualAggregator,
-			Set<TableQueryStep> steps) {
+	public IAdhocDag<TableQueryStep> mergeInducers(TableQueryStep contextualAggregator, Set<TableQueryStep> steps) {
 		if (steps.size() <= 1) {
 			// Nothing to merge
 			return GraphHelpers.makeGraph();
@@ -92,7 +89,7 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 
 		TableQueryStep inducer = contextualAggregator.toBuilder().filter(combinedOr).groupBy(mergedGroupBy).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
 		if (steps.contains(inducer)) {
 			return inducedToInducer;
 		} else {

@@ -24,12 +24,10 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -52,13 +50,12 @@ public interface ITableStepsSplitter {
 	 * @param inducedToInducer
 	 * @return
 	 */
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer);
+	IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer);
 
 	@Deprecated(since = "Unit-Tests")
-	default DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			Set<TableQueryStep> steps) {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag = GraphHelpers.makeGraph();
+	default IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions, Set<TableQueryStep> steps) {
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
 
 		steps.forEach(dag::addVertex);
 

@@ -22,50 +22,22 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import org.jgrapht.Graphs;
-
-import com.google.common.collect.ImmutableSet;
-
-import lombok.experimental.UtilityClass;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultEdge;
 
 /**
- * Helps working with JGraph4T
- * 
+ * A directed acyclic graph with unlabeled ({@link DefaultEdge}) edges, representing dependency relationships between
+ * query steps. The {@link DefaultEdge} type parameter is an implementation detail of JGraphT; this interface hides it
+ * so call sites only need to know the vertex type {@code T}.
+ *
+ * <p>
+ * The full {@link Graph} contract (add/remove vertices and edges, degree queries, neighbour traversal, etc.) is
+ * inherited. Implementations must guarantee acyclicity: {@link Graph#addEdge} must throw
+ * {@link IllegalArgumentException} when the new edge would introduce a cycle.
+ *
+ * @param <T>
+ *            the vertex type
  * @author Benoit Lacelle
  */
-@UtilityClass
-public class GraphHelpers {
-
-	public static <T> IAdhocDag<T> makeGraph() {
-		return new AdhocDag<>();
-	}
-
-	/**
-	 * 
-	 * @param <T>
-	 * @param graph
-	 * @return the set of inducers, i.e. nodes which has no children
-	 */
-	// relates with `Graphs.vertexHasSuccessors`
-	public static <T> ImmutableSet<T> getInducers(IAdhocDag<T> graph) {
-		return graph.vertexSet().stream().filter(s -> graph.outDegreeOf(s) == 0).collect(ImmutableSet.toImmutableSet());
-	}
-
-	public static <T> ImmutableSet<T> getInduceds(IAdhocDag<T> graph) {
-		return graph.vertexSet().stream().filter(s -> graph.outDegreeOf(s) != 0).collect(ImmutableSet.toImmutableSet());
-	}
-
-	public static <T> ImmutableSet<T> getInduced(IAdhocDag<T> graph, T step) {
-		return graph.incomingEdgesOf(step).stream().map(graph::getEdgeSource).collect(ImmutableSet.toImmutableSet());
-	}
-
-	public static <T> IAdhocDag<T> copy(IAdhocDag<T> graph) {
-		IAdhocDag<T> copied = makeGraph();
-
-		Graphs.addGraph(copied, graph);
-
-		return copied;
-
-	}
-
+public interface IAdhocDag<T> extends Graph<T, DefaultEdge> {
 }

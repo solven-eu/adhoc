@@ -30,8 +30,6 @@ import java.util.Set;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
@@ -42,6 +40,7 @@ import com.google.common.util.concurrent.AtomicLongMap;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -86,14 +85,13 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 * @return
 	 */
 	@Override
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> addSharedNodes(
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> input) {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> before = input;
+	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> input) {
+		IAdhocDag<TableQueryStep> before = input;
 
 		// One may may need to process multiple times. Indeed, given an inducer, inducing 5 nodes, a
 		// first pass may cover 2 nodes, and we may need another pass to process 2 other nodes.
 		while (true) {
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> after = GraphHelpers.copy(before);
+			IAdhocDag<TableQueryStep> after = GraphHelpers.copy(before);
 
 			// Iterate along before as after will be modified in-place
 			before.vertexSet().stream().forEach(inducer -> {
@@ -109,8 +107,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 		}
 	}
 
-	protected void addSharedNode(DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withFinalInducers,
-			TableQueryStep inducer) {
+	protected void addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
 		ImmutableSet<TableQueryStep> inducedSteps = GraphHelpers.getInduced(withFinalInducers, inducer);
 
 		if (inducedSteps.size() < 2) {
@@ -193,7 +190,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 			if (reforgedStep.equals(inducer)) {
 				log.debug("We constructed the same inducer as being processed: nothing to refine");
 			} else if (!relatedSteps.contains(reforgedStep)) {
-				DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = GraphHelpers.makeGraph();
+				IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
 
 				inducedToInducer.addVertex(reforgedStep);
 				log.info("Added a shared node: {} for {}", reforgedStep, relatedSteps);

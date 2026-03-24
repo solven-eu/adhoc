@@ -31,8 +31,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -105,7 +103,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
 		// Initialize the DAG of flat tableSteps
 		tableSteps.forEach(inducedToInducer::addVertex);
 
@@ -162,7 +160,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(Set<TableQueryStep> tableSteps,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> inducers = GraphHelpers.getInducers(inducedToInducer);
 
 		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(inducers);

@@ -28,8 +28,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -41,6 +39,7 @@ import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -65,10 +64,10 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 		QueryPod queryPod =
 				QueryPod.forTable(tableWrapper, CubeQuery.builder().option(StandardQueryOptions.CONCURRENT).build());
 
-		TableQueryEngineBootstrapped engine = TableQueryEngineBootstrapped.builder()
-				.queryPod(queryPod)
-				.optimizer(new TableQueryFactory(factories, factories.getFilterOptimizerFactory().makeOptimizer()))
-				.build();
+		TableQueryFactory tableQueryFactory =
+				new TableQueryFactory(factories, factories.getFilterOptimizerFactory().makeOptimizer());
+		TableQueryEngineBootstrapped engine =
+				TableQueryEngineBootstrapped.builder().queryPod(queryPod).tableQueryFactory(tableQueryFactory).build();
 
 		CountDownLatch cdl = new CountDownLatch(2);
 
@@ -86,7 +85,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 		Future<?> future = AdhocUnsafe.adhocCommonPool.submit(() -> {
 
 			SplitTableQueries split = SplitTableQueries.builder()
-					.inducedToInducer(new DirectedAcyclicGraph<TableQueryStep, DefaultEdge>(DefaultEdge.class))
+					.inducedToInducer(new AdhocDag<>())
 					.stepToTable(TableQueryStep.builder().aggregator(Aggregator.sum("a")).build(),
 							TableQueryV4.builder()
 									.groupByToAggregators(ImmutableSetMultimap.of(IGroupBy.GRAND_TOTAL,

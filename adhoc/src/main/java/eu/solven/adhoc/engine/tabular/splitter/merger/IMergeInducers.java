@@ -24,10 +24,8 @@ package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 
@@ -41,15 +39,14 @@ import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 @FunctionalInterface
 public interface IMergeInducers {
 	/**
-	 * Creates a {@link DirectedAcyclicGraph} to be merged into the main {@link DirectedAcyclicGraph}. It will typically
-	 * extends the leaves of the DAG, to merge inducers into a smaller number of inducers.
+	 * Creates a {@link IAdhocDag} to be merged into the main {@link IAdhocDag}. It will typically extends the leaves of
+	 * the DAG, to merge inducers into a smaller number of inducers.
 	 * 
 	 * @param contextualAggregator
 	 * @param steps
 	 * @return
 	 */
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> mergeInducers(TableQueryStep contextualAggregator,
-			Set<TableQueryStep> steps);
+	IAdhocDag<TableQueryStep> mergeInducers(TableQueryStep contextualAggregator, Set<TableQueryStep> steps);
 
 	/**
 	 * Factory for {@link IMergeInducers}

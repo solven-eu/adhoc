@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -57,7 +56,7 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 	 * 
 	 * @return
 	 */
-	DirectedAcyclicGraph<T, DefaultEdge> getInducedToInducer();
+	IAdhocDag<T> getInducedToInducer();
 
 	Map<ICubeQueryStep, SizeAndDuration> getStepToCost();
 
@@ -69,19 +68,20 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 
 	default Iterator<T> iteratorFromInducerToInduced() {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
-		EdgeReversedGraph<T, DefaultEdge> fromAggregatesToQueried = new EdgeReversedGraph<>(getInducedToInducer());
+		EdgeReversedGraph<T, DefaultEdge> fromAggregatesToQueried =
+				new EdgeReversedGraph<T, DefaultEdge>(getInducedToInducer());
 
 		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
 	}
 
 	default List<T> getInducers(T induced) {
-		DirectedAcyclicGraph<T, DefaultEdge> dag = getInducedToInducer();
+		IAdhocDag<T> dag = getInducedToInducer();
 		return dag.outgoingEdgesOf(induced).stream().map(dag::getEdgeTarget).toList();
 	}
 
 	// Holds the TableQuery which can not be implicitly evaluated, and needs to be executed directly
 	default ImmutableSet<T> getInducers() {
-		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
+		IAdhocDag<T> inducedToInducer = getInducedToInducer();
 
 		return GraphHelpers.getInducers(inducedToInducer);
 	}
@@ -89,7 +89,7 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 	// Holds the TableQuery which can be evaluated implicitly from underlyings
 	default ImmutableSet<T> getInduceds() {
 		// return ImmutableSet.copyOf(Sets.difference(getInducedToInducer().vertexSet(), getInducers()));
-		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
+		IAdhocDag<T> inducedToInducer = getInducedToInducer();
 
 		return GraphHelpers.getInduceds(inducedToInducer);
 	}
@@ -100,7 +100,7 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 	 *         the middle of the DAG, as (intermediate) inducer of other roots.
 	 */
 	default ImmutableSet<T> getRoots() {
-		DirectedAcyclicGraph<T, DefaultEdge> inducedToInducer = getInducedToInducer();
+		IAdhocDag<T> inducedToInducer = getInducedToInducer();
 
 		// relates with `Graphs.vertexHasSuccessors`
 		return inducedToInducer.vertexSet()

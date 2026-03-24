@@ -26,13 +26,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphsTestHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.splitter.adder.AddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
 import eu.solven.adhoc.filter.AndFilter;
@@ -56,7 +55,7 @@ public class TestAddSharedNodes {
 		TableQueryStep s3 =
 				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 		merged.addVertex(s3);
@@ -64,7 +63,7 @@ public class TestAddSharedNodes {
 		merged.addEdge(s1, s3);
 		merged.addEdge(s2, s3);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared = sharedNodes.addSharedNodes(merged);
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
 		TableQueryStep shared =
 				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("a", "b")).build();
@@ -101,14 +100,14 @@ public class TestAddSharedNodes {
 
 		TableQueryStep globalInducer = a.toBuilder().groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(globalInducer);
 		Stream.of(s1, s2, s3).forEach(s -> {
 			merged.addVertex(s);
 			merged.addEdge(s, globalInducer);
 		});
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared = sharedNodes.addSharedNodes(merged);
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(4).contains(s1, s2, s3).contains(globalInducer);
 
@@ -146,7 +145,7 @@ public class TestAddSharedNodes {
 				.groupBy(GroupByColumns.named("a"))
 				.build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 		merged.addVertex(s3);
@@ -154,7 +153,7 @@ public class TestAddSharedNodes {
 		merged.addEdge(s1, s3);
 		merged.addEdge(s2, s3);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared = sharedNodes.addSharedNodes(merged);
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
@@ -181,7 +180,7 @@ public class TestAddSharedNodes {
 		TableQueryStep s3 =
 				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 		merged.addVertex(s3);
@@ -189,7 +188,7 @@ public class TestAddSharedNodes {
 		merged.addEdge(s1, s3);
 		merged.addEdge(s2, s3);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared = sharedNodes.addSharedNodes(merged);
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
@@ -231,7 +230,7 @@ public class TestAddSharedNodes {
 				.groupBy(GroupByColumns.named("a", "b", "c"))
 				.build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 		merged.addVertex(s3);
@@ -241,7 +240,7 @@ public class TestAddSharedNodes {
 		merged.addEdge(s2, s4);
 		merged.addEdge(s3, s4);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared = sharedNodes.addSharedNodes(merged);
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
 		// Helps computing the 3 nodes
 		TableQueryStep shared = a.toBuilder()

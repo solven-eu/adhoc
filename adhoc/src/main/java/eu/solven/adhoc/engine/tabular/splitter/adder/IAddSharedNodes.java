@@ -22,22 +22,19 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.adder;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 
 /**
- * Holds a policy to add shared/intermediate nodes into a {@link DirectedAcyclicGraph} of {@link TableQueryStep}.
+ * Holds a policy to add shared/intermediate nodes into a {@link IAdhocDag} of {@link TableQueryStep}.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface IAddSharedNodes {
 
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> addSharedNodes(
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer);
+	IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> inducedToInducer);
 
 	/**
 	 * Factory for {@link IAddSharedNodes}.

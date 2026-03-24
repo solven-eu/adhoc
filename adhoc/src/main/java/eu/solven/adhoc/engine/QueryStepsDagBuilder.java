@@ -35,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.collect.ImmutableList;
@@ -49,6 +48,8 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -84,7 +85,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 	final Set<CubeQueryStep> roots = new LinkedHashSet<>();
 
 	// The DAG maintain the actual query nodes, as it enable topological ordering
-	final DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+	final IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
 	// The multigraph enables a queryStep to refer multiple times to the same underlying queryStep
 	final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph = new DirectedMultigraph<>(DefaultEdge.class);
 

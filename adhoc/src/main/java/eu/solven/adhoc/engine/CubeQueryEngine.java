@@ -39,7 +39,6 @@ import java.util.stream.IntStream;
 import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -68,6 +67,8 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
 import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.AdhocQueryPhaseIsCompleted;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
@@ -280,7 +281,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// Inducers are tableQueries
 			ImmutableSet<CubeQueryStep> inducers = queryDag.getInducers();
 
-			final DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> dag = new DirectedAcyclicGraph<>(DefaultEdge.class);
+			final IAdhocDag<CubeQueryStep> dag = new AdhocDag<>();
 			final DirectedMultigraph<CubeQueryStep, DefaultEdge> multigraph =
 					new DirectedMultigraph<>(DefaultEdge.class);
 
@@ -614,7 +615,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		describeStep.append("    (steps) step=%s given %s".formatted(dense(queryStep),
 				underlyingSteps.stream().map(this::dense).toList())).append(System.lineSeparator());
 
-		DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducers = queryStepsDag.getInducedToInducer();
+		IAdhocDag<CubeQueryStep> inducedToInducers = queryStepsDag.getInducedToInducer();
 		if (inducedToInducers.edgeSet().size() > 1024) {
 			// `shortestPaths.getPaths` may consume a lot of RAM: we skip this step if the DAG is too big
 			describeStep.append("#steps=").append(inducedToInducers.edgeSet().size());

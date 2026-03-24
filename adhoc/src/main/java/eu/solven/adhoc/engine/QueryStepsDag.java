@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.google.common.collect.ImmutableMap;
@@ -39,6 +38,7 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -62,7 +62,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 	// The DAG of a given IAdhocQuery, from queried to aggregators. It does not accept multiple times the same edge
 	// (e.g. a ratio and a filter leading to same numerator and denominator).
 	@NonNull
-	DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> inducedToInducer;
+	IAdhocDag<CubeQueryStep> inducedToInducer;
 
 	// The multigraph of a given IAdhocQuery, from queried to aggregators, accepting a queriedStep to query multiple
 	// times the same underlyingStep
@@ -102,7 +102,7 @@ public class QueryStepsDag implements ISinkExecutionFeedback, IHasDagFromInduced
 	}
 
 	@Override
-	public DirectedAcyclicGraph<CubeQueryStep, DefaultEdge> getInducedToInducer() {
+	public IAdhocDag<CubeQueryStep> getInducedToInducer() {
 		return inducedToInducer;
 	}
 

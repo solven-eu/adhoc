@@ -25,8 +25,6 @@ package eu.solven.adhoc.engine.tabular.splitter;
 import java.util.Set;
 
 import org.jgrapht.alg.TransitiveReduction;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -34,6 +32,7 @@ import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -67,8 +66,8 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 */
 	@Override
 	@SuppressWarnings({ "PMD.CompareObjectsWithEquals", "checkstyle:AvoidInlineConditionals" })
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> steps = inducedToInducer.vertexSet();
 		if (steps.isEmpty()) {
 			return GraphHelpers.makeGraph();
@@ -85,7 +84,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> induceByAdhoc = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> induceByAdhoc = GraphHelpers.makeGraph();
 
 		// BEWARE Following algorithm is quadratic: for each step, we evaluate all other steps.
 		// We observed up to 1k steps.

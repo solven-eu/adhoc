@@ -139,12 +139,14 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 	@NonNull
 	@Getter(AccessLevel.PRIVATE)
-	final ITableQueryFactory optimizer;
+	final ITableQueryFactory tableQueryFactory;
 
 	final ITableQueryInducer inducer;
 
+	final Supplier<Set<String>> generatedColumnsSupplier = Suppliers.memoize(this::computeGeneratedColumns);
+
 	final Supplier<IFilterOptimizer> filterOptimizerSupplier = Suppliers.memoize(() -> {
-		if (getOptimizer() instanceof IHasFilterOptimizer hasFilterOptimizer) {
+		if (getTableQueryFactory() instanceof IHasFilterOptimizer hasFilterOptimizer) {
 			// Most ITableQueryOptimizer has a filterOptimizerWithCache
 			return hasFilterOptimizer.getFilterOptimizer();
 		} else {
@@ -216,7 +218,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(Set<TableQueryStep> steps,
 			ISinkExecutionFeedback executionFeedfack) {
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
-		SplitTableQueries inducerAndInduced = optimizer.splitInduced(queryPod, steps);
+		SplitTableQueries inducerAndInduced = tableQueryFactory.splitInduced(queryPod, steps);
 
 		// Execute the actual tableQueries
 		Map<TableQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
@@ -594,26 +596,32 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	}
 
 	/**
-	 * This step handles columns which are not relevant for the tables, but has not been suppressed by the measure tree.
-	 * It typically happens when a column is introduced by some {@link Dispatchor} measure, but the actually requested
-	 * measure is unrelated (which itself happens when selecting multiple measures, like `many2many+count(*)`).
-	 * 
-	 * 
-	 * 
-	 * @param generatedStep
-	 * @return {@link TableQuery} where calculated columns has been suppressed.
+	 * @return the set of column names that are generated (e.g. by {@link IColumnGenerator} measures), constant for the
+	 *         lifetime of this bootstrapped execution.
 	 */
-	protected TableQueryStep suppressGeneratedColumns(TableQueryStep generatedStep) {
+	protected Set<String> computeGeneratedColumns() {
 		// We list the generatedColumns instead of listing the table columns as many tables has lax resolution of
 		// columns (e.g. given a joined `tableName.fieldName`, `fieldName` is a valid columnName. `.getColumns` would
 		// probably return only one of the 2).
-		Set<String> generatedColumns = queryPod.getColumnsManager()
+		return queryPod.getColumnsManager()
 				.getGeneratedColumns(factories.getOperatorFactory(),
 						queryPod.getForest().getMeasures(),
 						IValueMatcher.MATCH_ALL)
 				.stream()
 				.flatMap(cg -> cg.getColumnTypes().keySet().stream())
 				.collect(ImmutableSet.toImmutableSet());
+	}
+
+	/**
+	 * This step handles columns which are not relevant for the tables, but has not been suppressed by the measure tree.
+	 * It typically happens when a column is introduced by some {@link Dispatchor} measure, but the actually requested
+	 * measure is unrelated (which itself happens when selecting multiple measures, like `many2many+count(*)`).
+	 *
+	 * @param generatedStep
+	 * @return {@link TableQuery} where calculated columns has been suppressed.
+	 */
+	protected TableQueryStep suppressGeneratedColumns(TableQueryStep generatedStep) {
+		Set<String> generatedColumns = generatedColumnsSupplier.get();
 
 		Set<String> groupedByCubeColumns = generatedStep.getGroupBy().getGroupedByColumns();
 

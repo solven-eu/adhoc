@@ -30,9 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -41,6 +38,7 @@ import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.experimental.UtilityClass;
@@ -86,7 +84,7 @@ public class QueryEngineConcurrencyHelper {
 		ListenableFuture<?> future = queryPod.getExecutorService().submit(() -> {
 			if (queryPod.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
 				// multi-threaded
-				DirectedAcyclicGraph<T, DefaultEdge> dag = queryStepsDag.getInducedToInducer();
+				IAdhocDag<T> dag = queryStepsDag.getInducedToInducer();
 
 				invokeDagFromRoots(queryPod, queryStepToValues.keySet(), cancellableStepConsumer, dag);
 			} else {
@@ -111,7 +109,7 @@ public class QueryEngineConcurrencyHelper {
 	private static <T extends ICubeQueryStep> void invokeDagFromRoots(QueryPod queryPod,
 			Set<T> queryStepsDone,
 			Consumer<? super T> onReadyStep,
-			DirectedAcyclicGraph<T, DefaultEdge> dag) {
+			IAdhocDag<T> dag) {
 		// list root induced
 		List<T> rootSteps = dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
 
