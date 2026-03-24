@@ -1,194 +1,183 @@
-# AI Quality Discoveries — 2026-03-09
+# AI Quality Discoveries
 
-This file records every code-quality pattern encountered during this run.
-Each entry includes a representative location, occurrence count, and resolution status.
-
----
-
-## 1. `List.of(…)` → `ImmutableList.of(…)`
-
-**Description**: JDK `List.of()` used instead of Guava `ImmutableList.of()` for literal or single-return-value list construction.
-
-**Example**: `adhoc/src/main/java/eu/solven/adhoc/measure/decomposition/many2many/ManyToMany1DDecomposition.java:225`
-
-```java
-// Before
-return List.of(MeasurelessQuery.edit(step)…build());
-// After
-return ImmutableList.of(MeasurelessQuery.edit(step)…build());
-```
-
-**Occurrences**: ~30 across 15+ files
-
-**Status**: applied
-
-**Files changed**:
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/decomposition/LinearDecomposition.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/util/AdhocIdentity.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/model/Filtrator.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/model/Dispatchor.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/model/Shiftor.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/model/Unfiltrator.java`
-- `adhoc/src/main/java/eu/solven/adhoc/measure/decomposition/many2many/ManyToMany1DDecomposition.java`
-- `adhoc/src/main/java/eu/solven/adhoc/measure/decomposition/many2many/ManyToManyNDDecomposition.java`
-- `adhoc/src/main/java/eu/solven/adhoc/measure/transformator/step/FiltratorQueryStep.java`
-- `adhoc/src/main/java/eu/solven/adhoc/measure/transformator/step/UnfiltratorQueryStep.java`
-- `adhoc/src/main/java/eu/solven/adhoc/example/worldcup/WorldCupPlayersSchema.java`
-- `adhoc/src/main/java/eu/solven/adhoc/engine/QueryStepsDagBuilder.java`
+Run date: 2026-03-23
+Branch: `ai-quality-agent/nightly-23421980413`
+Scope: all `src/main/java` files (non-test), Pass 1 (grep-detectable patterns) + Pass 2 (Stepdown Rule on 10 most-recently-modified files).
 
 ---
 
-## 2. `Map.of(…)` → `ImmutableMap.of(…)`
+## Pass 1 — Grep-Detectable Anti-Patterns
 
-**Description**: JDK `Map.of()` used instead of Guava `ImmutableMap.of()`. Not explicitly listed in CONVENTIONS.MD but consistent with the stated principle "prefer Guava immutable collections over JDK factories".
+### 1. JDK `List.of(...)` instead of `ImmutableList.of(...)`
 
-**Example**: `libraries/measures/src/main/java/eu/solven/adhoc/util/AdhocIdentity.java:76`
+|         Field         |                                 Value                                 |
+|-----------------------|-----------------------------------------------------------------------|
+| **Pattern**           | `[^a-zA-Z]List\.of\(`                                                 |
+| **Convention**        | CONVENTIONS.MD §Guava immutable collections                           |
+| **Example**           | `StandardDSLSupplier.java:53` — `.addAll(List.of(existingProviders))` |
+| **Occurrences found** | ~10 across main sources (JMH benchmarks excluded from fix scope)      |
+| **Status**            | applied                                                               |
 
-```java
-// Before
-return Map.of();
-// After
-return ImmutableMap.of();
-```
+**Files fixed:**
+- `adhoc/…/StandardDSLSupplier.java` — `.addAll(ImmutableList.copyOf(existingProviders))`
+- `pivotable/…/PivotableChatHandler.java` — 3 occurrences in `buildTools()`
+- `adhoc/…/TableQueryEngineBootstrapped.java` — `ImmutableList.of(tableQuery)` in `splitForNonAmbiguousColumns`
+- `pivotable/…/InjectPixarExampleCubesConfig.java` — `.leftJoin(…, ImmutableList.of(Map.entry(…)))`
+- `libraries/dataframe/…/MultitypeArray.java` — `ImmutableList.of()` in `empty()`
+- `libraries/dataframe/…/UnderlyingQueryStepHelpersNavigableElseHash.java` — `ImmutableList.of(value)` in fast-track path
+- `experimental/…/UnderlyingQueryStepHelpersNavigable.java` — same pattern as above
 
-**Occurrences**: ~25 across 12 files
-
-**Status**: applied
-
-**Files changed**:
-- `libraries/measures/src/main/java/eu/solven/adhoc/util/AdhocIdentity.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/model/Shiftor.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/aggregation/comparable/RankAggregation.java`
-- `libraries/measures/src/main/java/eu/solven/adhoc/measure/decomposition/LinearDecomposition.java`
-- `adhoc/src/main/java/eu/solven/adhoc/measure/decomposition/many2many/ManyToMany1DDecomposition.java`
-- `adhoc/src/main/java/eu/solven/adhoc/measure/decomposition/many2many/ManyToManyNDDecomposition.java`
-- `adhoc/src/main/java/eu/solven/adhoc/example/worldcup/WorldCupPlayersSchema.java`
-- `adhoc/src/main/java/eu/solven/adhoc/example/worldcup/DispatchedEvents.java`
-- `libraries/filters/src/main/java/eu/solven/adhoc/query/filter/FilterHelpers.java`
+**Skipped (needs human review):**
+- `jmh/…/BenchmarkInFilter.java`, `BenchmarkColumnarSliceFactory.java`, `BenchmarkPerfectHashing.java`, `BenchmarkAdhocMapFactory.java` — JMH benchmark classes; JDK `List.of` is fine for benchmark setup data that is not part of production logic
 
 ---
 
-## 3. `Set.of(array)` → `ImmutableSet.copyOf(array)`
+### 2. JDK `Set.of(...)` instead of `ImmutableSet.of(...)`
 
-**Description**: `Set.of(varargs)` used where `ImmutableSet.copyOf(array)` is both correct and consistent with the Guava-first convention. The existing usage created a new Set on each stream-predicate invocation.
+|         Field         |                                     Value                                      |
+|-----------------------|--------------------------------------------------------------------------------|
+| **Pattern**           | `[^a-zA-Z]Set\.of\(`                                                           |
+| **Convention**        | CONVENTIONS.MD §Guava immutable collections                                    |
+| **Example**           | `LoggingAtotiWrapper.java:67` — `return Set.of(GetAggregatesQuery.PLUGIN_KEY)` |
+| **Occurrences found** | ~6 across main sources                                                         |
+| **Status**            | partially applied — 1 applied, 4 skipped (intentional), 2 in JMH               |
 
-**Example**: `atoti/src/main/java/eu/solven/adhoc/atoti/translation/AtotiMeasureToAdhoc.java:619`
+**Files fixed:**
+- `atoti/…/LoggingAtotiWrapper.java` — `ImmutableSet.of(GetAggregatesQuery.PLUGIN_KEY)`
 
-```java
-// Before
-.filter(k -> !Set.of(excludedProperties).contains(k))
-// After
-.filter(k -> !ImmutableSet.copyOf(excludedProperties).contains(k))
-```
+**Skipped (intentional — do NOT change):**
+- `libraries/cell/…/ASliceFactory.java` — 4 occurrences register `Set.of` class references in `NOT_SEQUENCED_CLASSES` sentinel set to detect non-deterministically-ordered sets at runtime. Replacing these with `ImmutableSet.of` would break the sentinel logic.
 
-**Occurrences**: 2 (both in `AtotiMeasureToAdhoc.java`)
-
-**Status**: applied
-
----
-
-## 4. `new ArrayList<>(N)` for fixed-size immutable lists → `ImmutableList.of(…)` / stream+`toImmutableList()`
-
-**Description**: `new ArrayList<>()` populated with a fixed set of entries then returned. Can be replaced with `ImmutableList.of(…)` for clarity and safety.
-
-**Example**: `libraries/measures/src/main/java/eu/solven/adhoc/measure/decomposition/LinearDecomposition.java:92–97`
-
-```java
-// Before
-List<IDecompositionEntry> output = new ArrayList<>(2);
-output.add(IDecompositionEntry.of(Map.of(outputColumn, min), scale(…)));
-output.add(IDecompositionEntry.of(Map.of(outputColumn, max), scaleComplement(…)));
-return output;
-// After
-return ImmutableList.of(
-	IDecompositionEntry.of(ImmutableMap.of(outputColumn, min), scale(…)),
-	IDecompositionEntry.of(ImmutableMap.of(outputColumn, max), scaleComplement(…)));
-```
-
-**Occurrences**: ~3 clear cases applied; ~50 `new ArrayList<>` calls across the codebase remain where mutation is genuinely needed
-
-**Status**: applied (where clearly constructing a fixed-size list for immediate return)
+**Skipped (needs human review):**
+- `jmh/…/BenchmarkAdhocMapVsHashMap.java`, `BenchmarkAdhocMapComparateTo.java` — JMH benchmarks
 
 ---
 
-## 5. `forEach` + `List.add` → `stream().map(…).collect(ImmutableList.toImmutableList())`
+### 3. `new HashMap<>()` instead of `new LinkedHashMap<>()`
 
-**Description**: Mutable `ArrayList` built via `forEach` then returned. The stream-based equivalent is more idiomatic and produces an immutable result.
+|         Field         |                                            Value                                             |
+|-----------------------|----------------------------------------------------------------------------------------------|
+| **Pattern**           | `new HashMap[^(]*\(\)`                                                                       |
+| **Convention**        | CONVENTIONS.MD §Ordered mutability                                                           |
+| **Example**           | `CaseInsensitiveContext.java:42` — `final Map<String, String> lowerToCase = new HashMap<>()` |
+| **Occurrences found** | 2 (1 in main sources, 1 in JMH benchmark)                                                    |
+| **Status**            | partially applied                                                                            |
 
-**Example**: `adhoc/src/main/java/eu/solven/adhoc/measure/decomposition/many2many/ManyToManyNDDecomposition.java:153–159`
+**Files fixed:**
+- `adhoc/…/CaseInsensitiveContext.java` — `new LinkedHashMap<>()`
 
-```java
-// Before
-List<IDecompositionEntry> output = new ArrayList<>(groups.size());
-groups.forEach(group -> {
-	output.add(IDecompositionEntry.of(Map.of(groupColumn, group), scale(element, value)));
-});
-return output;
-// After
-return groups.stream()
-	.map(group -> IDecompositionEntry.of(ImmutableMap.of(groupColumn, group), scale(element, value)))
-	.collect(ImmutableList.toImmutableList());
-```
-
-**Occurrences**: 2 (ManyToManyNDDecomposition, ManyToMany1DDecomposition)
-
-**Status**: applied
+**Skipped (needs human review):**
+- `jmh/…/BenchmarkAdhocMapVsHashMap.java` — JMH benchmark comparing map implementations; `HashMap` is intentional here as part of the benchmark subject
 
 ---
 
-## 6. `Map.of(…)` → `ImmutableMap.of(…)` — not listed in CONVENTIONS.MD
+### 4. `new HashSet<>()` instead of `new LinkedHashSet<>()`
 
-**Description**: CONVENTIONS.MD lists `Set.of` and `List.of` as explicit replacements, but does not mention `Map.of`. The "Guava over JDK" principle applies equally to `Map`. Recommend adding `ImmutableMap.of(…) instead of Map.of(…)` to CONVENTIONS.MD.
-
-**Example**: Multiple files throughout the codebase.
-
-**Occurrences**: ~25
-
-**Status**: applied — consider promoting to CONVENTIONS.MD
-
----
-
-## 7. `new ArrayList<>` accumulator for nested forEach — skipped
-
-**Description**: `adhoc/src/main/java/eu/solven/adhoc/example/worldcup/DispatchedEvents.java:79` builds a list via nested `forEach` (two-level iteration over a `Map<String, Map<Integer, Long>>`). Converting to streams would require a `flatMap` which increases complexity without clear benefit for readability.
-
-**Example**: `DispatchedEvents.java:79`
-
-```java
-List<IDecompositionEntry> decompositions = new ArrayList<>();
-playerEvents.getTypeToMinuteToCount().forEach((eventCode, minuteToCount) -> {
-	minuteToCount.forEach((minute, count) -> {
-		decompositions.add(…);
-	});
-});
-```
-
-**Occurrences**: 1
-
-**Status**: skipped — needs human review; nested forEach pattern with captured mutable list; stream refactor adds indirection for limited gain
+|         Field         |                           Value                           |
+|-----------------------|-----------------------------------------------------------|
+| **Pattern**           | `new HashSet[^(]*\(\)`                                    |
+| **Convention**        | CONVENTIONS.MD §Ordered mutability                        |
+| **Occurrences found** | 0 in main sources                                         |
+| **Status**            | known (already in CONVENTIONS.MD) — no occurrences to fix |
 
 ---
 
-## 8. `Collectors.toList()` / `Collectors.toSet()` — none found in main sources
+### 5. `Collectors.toMap(kFn, vFn)` (2-arg) instead of `PepperStreamHelper.toLinkedMap`
 
-**Description**: The grep for `.collect(Collectors.toList())` and `.collect(Collectors.toSet())` in main sources returned only 5 hits in pivotable/server-core and calcite modules; not in the core adhoc module. Each appears inside registry-style classes where the list is immediately consumed or passed to a mutable builder.
+|         Field         |                                                             Value                                                             |
+|-----------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| **Pattern**           | `Collectors\.toMap\(`                                                                                                         |
+| **Convention**        | CONVENTIONS.MD §PepperStreamHelper.toLinkedMap                                                                                |
+| **Example**           | `FunctionCalculatedColumn.java:~76` — `columns.stream().collect(Collectors.toMap(Function.identity(), c -> RECORDING_VALUE))` |
+| **Occurrences found** | 5 (3 applied, 2 already compliant — using 4-arg form)                                                                         |
+| **Status**            | partially applied                                                                                                             |
 
-**Occurrences**: 5 (not applied this run; target for a follow-up run)
+**Files fixed:**
+- `adhoc/…/FunctionCalculatedColumn.java` — `PepperStreamHelper.toLinkedMap(Function.identity(), c -> RECORDING_VALUE)`
+- `adhoc/…/TabularRecordStreamReducer.java` — `PepperStreamHelper.toLinkedMap(IGroupBy::getGroupedByColumns, gb -> {...})`
+- `adhoc/…/CompositeCubesTableWrapper.java` — `PepperStreamHelper.toLinkedMap(Entry::getKey, cubeAndQuery -> {...})`
 
-**Status**: skipped — needs human review; the collections may be consumed immediately by mutable contexts; lower confidence than pure `List.of` replacements
+**Already compliant (no change):**
+- `IHasColumns.java` — uses 4-arg `Collectors.toMap` with merge function
+- `TableQueryV3.java` — uses 4-arg `Collectors.toMap` with merge function
 
 ---
 
-## 9. Remaining `\bList.of\(` / `\bSet.of\(` / `\bMap.of\(` after this run
+### 6. `Collectors.groupingBy(...)` without `LinkedHashMap::new`
 
-After applying changes, the following files still have JDK factory usage that was not edited (due to the 20-file-per-run cap or low confidence):
+|         Field         |                                 Value                                  |
+|-----------------------|------------------------------------------------------------------------|
+| **Pattern**           | `Collectors\.groupingBy\(`                                             |
+| **Convention**        | CONVENTIONS.MD §groupingBy ordering                                    |
+| **Occurrences found** | 4 (all already compliant — using 3-arg form with `LinkedHashMap::new`) |
+| **Status**            | known (already in CONVENTIONS.MD) — all occurrences compliant          |
 
-- `adhoc/src/main/java/eu/solven/adhoc/table/sql/duckdb/DuckDBHelper.java` (2× `Map.of`)
-- `adhoc/src/main/java/eu/solven/adhoc/table/composite/CompositeCubesTableWrapper.java` (2× `Map.of`)
-- `libraries/cell/src/main/java/eu/solven/adhoc/map/MaskedAdhocMap.java` (2× `Map.of`)
-- `libraries/dataframe/src/main/java/eu/solven/adhoc/data/tabular/MapBasedTabularView.java` (3× `Map.of`)
-- `pivotable/server/src/main/java/eu/solven/adhoc/pivotable/webflux/api/PivotableLoginController.java` (6× `Map.of`)
-- `libraries/dataframe/src/main/java/eu/solven/adhoc/data/row/TabularRecordOverMaps.java` (1× `Map.of`)
-- `libraries/dataframe/src/main/java/eu/solven/adhoc/table/transcoder/value/StandardCustomTypeManager.java` (1× `Map.of`)
+**Already compliant:**
+- `FilterOptimizer.java`, `ATableQueryFactory.java`, `InMemoryTable.java`, `TableStepsGrouperByAffinity.java`
 
-**Status**: skipped — cap reached; target for next run
+---
+
+### 7. SLF4J log string concatenation (instead of `{}` placeholders)
+
+|         Field         |                                     Value                                      |
+|-----------------------|--------------------------------------------------------------------------------|
+| **Pattern**           | `log\.(info|warn|error|debug)\(.*\+`                                           |
+| **Convention**        | CONVENTIONS.MD §SLF4J placeholders                                             |
+| **Occurrences found** | 1 grep hit (false positive)                                                    |
+| **Status**            | known (already in CONVENTIONS.MD) — false positive; no actual violations found |
+
+**Notes:** One grep hit in `SumAggregation.java` was a false positive — the `+` was inside a string literal format argument, not string concatenation in the log call.
+
+---
+
+## Pass 2 — Stepdown Rule (10 most-recently-modified files)
+
+### 8. Stepdown Rule violation — callee defined before caller
+
+|     Field      |                                           Value                                            |
+|----------------|--------------------------------------------------------------------------------------------|
+| **Convention** | CONVENTIONS.MD §Stepdown Rule (Clean Code)                                                 |
+| **Rule**       | Every callee should appear directly below its first caller; entry-point methods at the top |
+| **Status**     | applied (5 method-pair violations fixed across 3 files)                                    |
+
+**Files fixed:**
+
+**`adhoc/…/TableQueryEngine.java`**
+- `makeFilterOptimizer` was defined before `bootstrap(3-arg)`, but `bootstrap(3-arg)` is the first caller of `makeFilterOptimizer`. Fixed by placing `makeFilterOptimizer` directly after `bootstrap(3-arg)`.
+
+**`adhoc/…/DagExplainer.java`**
+- `holderType(AdhocQueryId)` was at line ~270; its first caller `explain()` is the entry-point at the top of the class. Fixed by moving `holderType` to immediately after `explain()`.
+
+**`adhoc/…/CubeQueryEngine.java`**
+- `makeDagExplainer` appeared before `explainDagSteps` which calls it — violation.
+- `makeDagExplainerForPerfs` appeared before `explainDagPerfs` which calls it — violation.
+- Fixed by reordering to: `explainDagSteps` → `makeDagExplainer` → `explainDagPerfs` → `makeDagExplainerForPerfs`.
+
+**No violations found in:**
+- `TableQueryEngineBootstrapped.java`, `TableQueryFactory.java`, `TableStepsGrouperByAffinity.java`, `ATableQueryFactory.java`, `QueryStepsDag.java`, `ChainedInducedEvaluator.java`, `JavaStreamInducedEvaluator.java`
+
+---
+
+## Summary Table
+
+| # |                  Pattern                  | Convention source |       Occurrences        |                     Status                      |
+|---|-------------------------------------------|-------------------|--------------------------|-------------------------------------------------|
+| 1 | JDK `List.of(...)`                        | CONVENTIONS.MD    | ~10                      | applied (7 files fixed, 4 JMH skipped)          |
+| 2 | JDK `Set.of(...)`                         | CONVENTIONS.MD    | ~6                       | applied (1 fixed), 4 intentional, 2 JMH skipped |
+| 3 | `new HashMap<>()`                         | CONVENTIONS.MD    | 2                        | applied (1 fixed, 1 JMH skipped)                |
+| 4 | `new HashSet<>()`                         | CONVENTIONS.MD    | 0                        | no violations                                   |
+| 5 | `Collectors.toMap` 2-arg                  | CONVENTIONS.MD    | 5                        | applied (3 fixed, 2 already 4-arg)              |
+| 6 | `groupingBy` without `LinkedHashMap::new` | CONVENTIONS.MD    | 4                        | no violations (all already compliant)           |
+| 7 | SLF4J log concatenation                   | CONVENTIONS.MD    | 0 (1 false positive)     | no violations                                   |
+| 8 | Stepdown Rule                             | CONVENTIONS.MD    | 5 method-pair violations | applied (3 files fixed)                         |
+
+---
+
+## Notable False Positives / Edge Cases
+
+- `[^a-zA-Z]List\.of\(` is needed (not `List\.of\(`) to avoid matching `ImmutableList.of(`
+- `[^a-zA-Z]Set\.of\(` is needed to avoid matching `ImmutableSet.of(`
+- `ASliceFactory.java` `Set.of(` calls are intentional class-reference registrations — **never auto-apply** this file
+- JMH benchmark files under `jmh/src/main/java` may legitimately use JDK collections as benchmark subjects
+- `PepperStreamHelper.toLinkedMap` is the correct helper (not `PepperStreamHelperHacked.toLinkedMap` as an older CONVENTIONS.MD draft suggested); confirmed by existing usage throughout the codebase
+

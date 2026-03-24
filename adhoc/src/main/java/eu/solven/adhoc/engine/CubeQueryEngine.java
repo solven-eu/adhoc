@@ -231,20 +231,20 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 				.build());
 	}
 
-	protected DagExplainer makeDagExplainer() {
-		return DagExplainer.builder().eventBus(eventBus).build();
-	}
-
 	protected void explainDagSteps(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		makeDagExplainer().explain(queryPod.getQueryId(), queryStepsDag);
 	}
 
-	protected DagExplainerForPerfs makeDagExplainerForPerfs() {
-		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
+	protected DagExplainer makeDagExplainer() {
+		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
 	protected void explainDagPerfs(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		makeDagExplainerForPerfs().explain(queryPod.getQueryId(), queryStepsDag);
+	}
+
+	protected DagExplainerForPerfs makeDagExplainerForPerfs() {
+		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
 	}
 
 	@VisibleForTesting

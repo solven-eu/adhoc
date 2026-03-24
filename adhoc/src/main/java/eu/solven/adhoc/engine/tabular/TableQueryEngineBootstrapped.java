@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
@@ -390,7 +391,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 		if (nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1)) {
 			// Not a single conflicting column
-			return List.of(tableQuery);
+			return ImmutableList.of(tableQuery);
 		}
 
 		// TODO We have to reason to believe we may end in this case in, sometimes, not legitimate case

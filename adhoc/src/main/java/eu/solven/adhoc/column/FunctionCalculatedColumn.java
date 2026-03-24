@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
@@ -41,6 +40,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -135,7 +135,7 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 		public Map<String, ?> optGroupBy(Set<String> columns) {
 			usedColumn.addAll(columns);
 
-			return columns.stream().collect(Collectors.toMap(Function.identity(), c -> RECORDING_VALUE));
+			return columns.stream().collect(PepperStreamHelper.toLinkedMap(Function.identity(), c -> RECORDING_VALUE));
 		}
 
 		@Override

@@ -76,7 +76,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 			return underlying.stream().map(slice -> {
 				Object value = IValueProvider.getValue(slice.getValueProvider());
 
-				return SliceAndMeasures.from(slice.getSlice(), queryStep, List.of(value));
+				return SliceAndMeasures.from(slice.getSlice(), queryStep, ImmutableList.of(value));
 			});
 		}
 

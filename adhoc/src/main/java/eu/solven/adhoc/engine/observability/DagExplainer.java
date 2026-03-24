@@ -143,6 +143,16 @@ public class DagExplainer implements IDagExplainer {
 		printStepAndUnderlyings(state, FAKE_ROOT, Optional.empty(), true);
 	}
 
+	private String holderType(AdhocQueryId queryId) {
+		String cubeOrTable;
+		if (queryId.isCubeElseTable()) {
+			cubeOrTable = "c";
+		} else {
+			cubeOrTable = "t";
+		}
+		return cubeOrTable;
+	}
+
 	protected DagExplainerState newDagExplainerState(AdhocQueryId queryId, IHasDagFromInducedToInducer dag) {
 		return new DagExplainerState(queryId, dag);
 	}
@@ -265,16 +275,6 @@ public class DagExplainer implements IDagExplainer {
 		optCustomMarker.ifPresent(customMarker -> sb.append(" customMarker=").append(customMarker));
 
 		return sb.toString();
-	}
-
-	private String holderType(AdhocQueryId queryId) {
-		String cubeOrTable;
-		if (queryId.isCubeElseTable()) {
-			cubeOrTable = "c";
-		} else {
-			cubeOrTable = "t";
-		}
-		return cubeOrTable;
 	}
 
 	protected String toString(ICubeQueryStep step) {

@@ -120,7 +120,7 @@ public class StandardDSLSupplier implements IDSLSupplier {
 			ExecuteListenerProvider[] existingProviders = configuration.executeListenerProviders();
 
 			List<ExecuteListenerProvider> updatedProviders = ImmutableList.<ExecuteListenerProvider>builder()
-					.addAll(List.of(existingProviders))
+					.addAll(ImmutableList.copyOf(existingProviders))
 					.add(new ExecuteListenerProvider() {
 
 						@Override
