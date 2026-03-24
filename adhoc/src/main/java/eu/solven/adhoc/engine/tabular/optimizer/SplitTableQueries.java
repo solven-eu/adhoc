@@ -23,6 +23,7 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -114,7 +115,7 @@ public class SplitTableQueries
 				log.debug("Skip step as produce by table but irrelevant for cube. step={}", cubeStep);
 				return null;
 			}
-		});
+		}).filter(Objects::nonNull);
 	}
 
 	@Override

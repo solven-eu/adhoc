@@ -31,6 +31,12 @@ import org.jgrapht.graph.DefaultEdge;
  * so call sites only need to know the vertex type {@code T}.
  *
  * <p>
+ * <b>Edge direction convention</b>: an edge goes from the <em>dependant</em> (the induced node) to its
+ * <em>dependency</em> (the inducer). In other words, if node A depends on node B, there is an edge {@code A → B}.
+ * Execution order is therefore the reverse topological order: inducers (dependencies) are computed before the nodes
+ * that depend on them.
+ *
+ * <p>
  * The full {@link Graph} contract (add/remove vertices and edges, degree queries, neighbour traversal, etc.) is
  * inherited. Implementations must guarantee acyclicity: {@link Graph#addEdge} must throw
  * {@link IllegalArgumentException} when the new edge would introduce a cycle.

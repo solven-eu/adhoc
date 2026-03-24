@@ -164,4 +164,31 @@ public class AndFilter implements IAndFilter {
 		return FilterBuilder.not(this).combine();
 	}
 
+	/**
+	 * Cross-type equality: returns {@code true} when compared to any {@link IAndFilter} with the same operand set.
+	 * Overrides the Lombok {@code @Value} generated equals (which only accepts {@link AndFilter} instances) so that
+	 * {@link SimpleAndFilter} and {@link AndFilter} instances representing the same filter compare equal regardless of
+	 * which side is {@code actual} or {@code expected}.
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		} else if (o instanceof IAndFilter other) {
+			return ands.equals(other.getOperands());
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Hash based on the operand set, following the standard {@link java.util.Set} contract (sum of element hash codes).
+	 * Overrides the Lombok {@code @Value} default so that {@link SimpleAndFilter} can use the same formula and remain
+	 * hash-compatible with {@link AndFilter}.
+	 */
+	@Override
+	public int hashCode() {
+		return ands.hashCode();
+	}
+
 }

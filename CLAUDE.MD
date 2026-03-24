@@ -100,7 +100,16 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 - **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline) or `perl scripts/check-coverage-low.pl` (local JaCoCo). Test files live in the same module under `src/test/java/`.
 - **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change. Do **not** record coverage-only test additions — they carry no functional value for API users.
-- **Final pass**: Before declaring work done, review all touched files for convention violations (see `CONVENTIONS.MD`) and obvious simplifications — e.g. `ImmutableList.of(…)` instead of `new ArrayList<>(List.of(…))`, `ImmutableMap.builder()` instead of `LinkedHashMap` or multi-entry `Map.of`, unnecessary mutability, dead variables, overly verbose expressions. Note: `ImmutableMap` preserves insertion order by contract, so `LinkedHashMap` is only justified when null keys/values are required. Apply fixes in the same commit.
+- **Final pass**: Before declaring work done, run through this checklist — do not skip any item even if the task felt simple:
+  1. For every **new production class** introduced, confirm a `Test<ClassName>` exists in the same module. If it does not, write it now before responding to the user.
+  2. For every **new method containing non-trivial logic** added to an existing class, confirm the existing test class covers it; add a test if not.
+  3. **Code quality review** — re-read every touched file and ask: "would a reviewer push back on this?" Fix anything that is clearly suboptimal before responding. Applies to both production code and test code. Common signals of poor quality (not exhaustive):
+     - Redundant casts (if the declared return type already satisfies the target type, drop the cast)
+     - Sequence of independent `if` blocks where branches are mutually exclusive — use `if / else if / else` instead (see `CONVENTIONS.MD` Exclusive branches rule)
+     - Unnecessary mutability (`ArrayList` where `ImmutableList.of(…)` suffices, `LinkedHashMap` where `ImmutableMap.builder()` suffices)
+     - Dead variables, unused imports, overly verbose expressions
+     - Any convention violation listed in `CONVENTIONS.MD`
+     Apply all fixes in the same commit — never leave known quality issues for a follow-up.
 
 ---
 

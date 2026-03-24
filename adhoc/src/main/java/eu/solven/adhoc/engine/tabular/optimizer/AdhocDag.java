@@ -36,6 +36,7 @@ import org.jgrapht.graph.DirectedAcyclicGraph;
  * @author Benoit Lacelle
  */
 public class AdhocDag<T> extends DirectedAcyclicGraph<T, DefaultEdge> implements IAdhocDag<T> {
+	private static final long serialVersionUID = -249972253876618809L;
 
 	public AdhocDag() {
 		super(DefaultEdge.class);

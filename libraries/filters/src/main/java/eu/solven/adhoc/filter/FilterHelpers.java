@@ -287,6 +287,13 @@ public class FilterHelpers {
 		return asSet;
 	}
 
+	/**
+	 * 
+	 * @param filter
+	 * @param downstream
+	 * @param splitMatchers
+	 *            if true, {@link IValueMatcher} are also considered for being split by AND logic.
+	 */
 	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
 	// OPTIMIZTION: mapMulti is faster (but more cumbersome) than flatMap
 	protected static void emitAndOperands(ISliceFilter filter,

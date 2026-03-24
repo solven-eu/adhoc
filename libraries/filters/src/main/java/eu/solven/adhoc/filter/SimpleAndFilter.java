@@ -46,10 +46,12 @@ import lombok.RequiredArgsConstructor;
  * for tight loops that start from a slice and immediately call {@link FilterHelpers#splitAnd(java.util.Collection)}.
  *
  * <p>
- * <b>Equality</b>: {@link #equals(Object)} is intentionally cross-type — a {@code SimpleAndFilter} compares equal to
- * any {@link IAndFilter} whose operands are all single-column {@link EqualsMatcher} filters that cover exactly the same
- * column→value pairs. The reverse ({@link AndFilter#equals(Object)} accepting a {@code SimpleAndFilter}) is
- * <em>not</em> guaranteed; avoid placing mixed types in the same hash-based collection.
+ * <b>Equality and hashing</b>: {@link #equals(Object)} is intentionally cross-type — a {@code SimpleAndFilter} compares
+ * equal to any {@link IAndFilter} whose operands are all single-column {@link EqualsMatcher} filters that cover exactly
+ * the same column→value pairs. {@link #hashCode()} follows the same {@link java.util.Set}-based contract as
+ * {@link AndFilter}, so semantically equivalent instances hash to the same bucket. Note: the reverse direction of
+ * {@code equals} ({@link AndFilter#equals(Object)} accepting a {@code SimpleAndFilter}) is <em>not</em> guaranteed
+ * because {@link AndFilter} uses a Lombok-generated {@code @Value} equals.
  *
  * <p>
  * <b>JSON</b>: serialised identically to an {@link AndFilter} so existing consumers see no change.
@@ -60,18 +62,32 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class SimpleAndFilter implements IAndFilter {
 
+	// BEWARE rejects null value
 	final ImmutableMap<String, Object> columnToValue;
 
 	/**
-	 * Creates a {@link SimpleAndFilter} from a column→value map. Values must already be normalised equality operands
-	 * (no {@link eu.solven.adhoc.filter.value.IValueMatcher}, no {@link java.util.Collection}, no {@code null}).
+	 * Smart factory: returns the most specific {@link ISliceFilter} for the given column→value map.
+	 * <ul>
+	 * <li>Empty map → {@link ISliceFilter#MATCH_ALL}</li>
+	 * <li>Single entry → {@link ColumnFilter#matchEq(String, Object)}</li>
+	 * <li>Two or more entries → a {@link SimpleAndFilter}</li>
+	 * </ul>
+	 * Values must already be normalised equality operands (no {@link eu.solven.adhoc.filter.value.IValueMatcher}, no
+	 * {@link java.util.Collection}, no {@code null}).
 	 *
 	 * @param columnToValue
 	 *            the equality conditions, keyed by column name
-	 * @return a {@link SimpleAndFilter}
+	 * @return the most specific {@link ISliceFilter} for the given map
 	 */
-	public static SimpleAndFilter of(Map<String, ?> columnToValue) {
-		return new SimpleAndFilter(ImmutableMap.copyOf(columnToValue));
+	public static ISliceFilter of(Map<String, ?> columnToValue) {
+		if (columnToValue.isEmpty()) {
+			return ISliceFilter.MATCH_ALL;
+		} else if (columnToValue.size() == 1) {
+			Map.Entry<String, ?> entry = columnToValue.entrySet().iterator().next();
+			return ColumnFilter.matchEq(entry.getKey(), entry.getValue());
+		} else {
+			return new SimpleAndFilter(ImmutableMap.copyOf(columnToValue));
+		}
 	}
 
 	@Override
@@ -97,12 +113,13 @@ public class SimpleAndFilter implements IAndFilter {
 	public Set<ISliceFilter> getOperands() {
 		return columnToValue.entrySet()
 				.stream()
-				.map(e -> (ISliceFilter) ColumnFilter.builder().column(e.getKey()).matchEquals(e.getValue()).build())
+				.map(e -> ColumnFilter.builder().column(e.getKey()).matchEquals(e.getValue()).build())
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override
 	public ISliceFilter negate() {
+		// A simple `NOT` to prevent having to `.negate` all operands
 		return FilterBuilder.not(this).combine();
 	}
 
@@ -123,11 +140,9 @@ public class SimpleAndFilter implements IAndFilter {
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		}
-		if (o instanceof SimpleAndFilter other) {
+		} else if (o instanceof SimpleAndFilter other) {
 			return columnToValue.equals(other.columnToValue);
-		}
-		if (o instanceof IAndFilter andFilter) {
+		} else if (o instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();
 			if (operands.size() != columnToValue.size()) {
 				return false;
@@ -135,16 +150,16 @@ public class SimpleAndFilter implements IAndFilter {
 			for (ISliceFilter operand : operands) {
 				if (!(operand instanceof IColumnFilter columnFilter)) {
 					return false;
-				}
-				if (!(columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher)) {
+				} else if (!(columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher)) {
 					return false;
-				}
-				if (!columnToValue.containsKey(columnFilter.getColumn())) {
-					return false;
-				}
-				// Use .match() to respect EqualsMatcher's numeric-normalisation rules
-				if (!equalsMatcher.match(columnToValue.get(columnFilter.getColumn()))) {
-					return false;
+				} else {
+					Object thisValue = columnToValue.get(columnFilter.getColumn());
+					if (thisValue == null) {
+						return false;
+					} else if (!equalsMatcher.match(thisValue)) {
+						// Use .match() to respect EqualsMatcher's numeric-normalisation rules
+						return false;
+					}
 				}
 			}
 			return true;
@@ -153,16 +168,12 @@ public class SimpleAndFilter implements IAndFilter {
 	}
 
 	/**
-	 * Hash based on the backing map.
-	 *
-	 * <p>
-	 * NOTE: not cross-compatible with {@link AndFilter#hashCode()} for semantically equivalent instances. Avoid placing
-	 * {@code SimpleAndFilter} and {@code AndFilter} instances representing the same filter in the same hash-based
-	 * collection.
+	 * Hash compatible with {@link AndFilter#hashCode()}: delegates to {@link #getOperands()}{@code .hashCode()}, which
+	 * follows the standard {@link java.util.Set} contract (sum of element hash codes).
 	 */
 	@Override
 	public int hashCode() {
-		return columnToValue.hashCode();
+		return getOperands().hashCode();
 	}
 
 	// -------------------------------------------------------------------------

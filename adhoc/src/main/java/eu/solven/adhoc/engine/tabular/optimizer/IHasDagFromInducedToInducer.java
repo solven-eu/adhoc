@@ -68,8 +68,7 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 
 	default Iterator<T> iteratorFromInducerToInduced() {
 		// https://stackoverflow.com/questions/69183360/traversal-of-edgereversedgraph
-		EdgeReversedGraph<T, DefaultEdge> fromAggregatesToQueried =
-				new EdgeReversedGraph<T, DefaultEdge>(getInducedToInducer());
+		EdgeReversedGraph<T, DefaultEdge> fromAggregatesToQueried = new EdgeReversedGraph<>(getInducedToInducer());
 
 		return new TopologicalOrderIterator<>(fromAggregatesToQueried);
 	}
