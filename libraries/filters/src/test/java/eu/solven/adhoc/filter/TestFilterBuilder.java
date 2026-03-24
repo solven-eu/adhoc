@@ -25,6 +25,8 @@ package eu.solven.adhoc.filter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 public class TestFilterBuilder {
 	@Test
 	public void testAnd_combine_filterMatchAll() {
@@ -38,6 +40,17 @@ public class TestFilterBuilder {
 	public void testAnd_combine_filterMatchNone() {
 		Assertions.assertThat(FilterBuilder.and(ISliceFilter.MATCH_NONE, ColumnFilter.matchEq("c", "v")).combine())
 				.isEqualTo(ISliceFilter.MATCH_NONE);
+	}
+
+	@Test
+	public void testAnd_combine_andOperand() {
+		Assertions
+				.assertThat(
+						FilterBuilder
+								.and(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")),
+										AndFilter.and(ImmutableMap.of("c", "c1", "d", "d1")))
+								.combine())
+				.isEqualTo(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1", "d", "d1")));
 	}
 
 	@Test

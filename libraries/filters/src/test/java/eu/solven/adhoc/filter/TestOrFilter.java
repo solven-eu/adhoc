@@ -681,4 +681,18 @@ public class TestOrFilter {
 		Assertions.assertThat(optimized).hasToString("d==d1|a==a1&b==b1|a==a1&c==c1");
 	}
 
+	@Test
+	public void testOr_inGivenFirstColumn() {
+		ISliceFilter orA1B1B1_A2B1C1 =
+				FilterBuilder
+						.or(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1")),
+								AndFilter.and(Map.of("a", "a2", "b", "b1", "c", "c1")))
+						.optimize();
+
+		Assertions.assertThat(orA1B1B1_A2B1C1).hasToString("c==c1&b==b1&a=in=(a1,a2)");
+		Assertions.assertThat(orA1B1B1_A2B1C1).isInstanceOfSatisfying(AndFilter.class, and -> {
+			Assertions.assertThat(and.getOperands()).hasSize(3);
+		});
+	}
+
 }

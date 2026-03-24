@@ -810,6 +810,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			return notOrCandidate;
 		}
 
+		// Do not `.optimize` else we will get into a recursive loop
+		// This may require `.combine` holds minimal optimizations (like basic flattening)
 		return FilterBuilder.and(and).combine();
 	}
 

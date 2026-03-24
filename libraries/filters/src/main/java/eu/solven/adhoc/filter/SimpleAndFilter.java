@@ -81,7 +81,7 @@ public class SimpleAndFilter implements IAndFilter {
 	 */
 	public static ISliceFilter of(Map<String, ?> columnToValue) {
 		if (columnToValue.isEmpty()) {
-			return ISliceFilter.MATCH_ALL;
+			return MATCH_ALL;
 		} else if (columnToValue.size() == 1) {
 			Map.Entry<String, ?> entry = columnToValue.entrySet().iterator().next();
 			return ColumnFilter.matchEq(entry.getKey(), entry.getValue());

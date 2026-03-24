@@ -26,7 +26,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
@@ -82,14 +84,41 @@ public class FilterBuilder {
 	}
 
 	public FilterBuilder filters(Collection<? extends ISliceFilter> filters) {
-		this.filters.addAll(filters);
+		this.filters.addAll(flatten(filters));
 
 		return this;
 	}
 
+	// Flatten simple AND, but do not try to flatten everything
+	// This is a very simple optimization-like operation applying also to `.combine`
+	protected Set<ISliceFilter> flatten(Collection<? extends ISliceFilter> filters) {
+		Set<ISliceFilter> flatOperands;
+
+		if (andElseOr == Type.AND) {
+			flatOperands = filters.stream().flatMap(sliceFilter -> {
+				if (sliceFilter instanceof IAndFilter andFilter) {
+					return andFilter.getOperands().stream();
+				} else {
+					return Stream.of(sliceFilter);
+				}
+			}).collect(ImmutableSet.toImmutableSet());
+		} else if (andElseOr == Type.OR) {
+			flatOperands = filters.stream().flatMap(sliceFilter -> {
+				if (sliceFilter instanceof IOrFilter orFilter) {
+					return orFilter.getOperands().stream();
+				} else {
+					return Stream.of(sliceFilter);
+				}
+			}).collect(ImmutableSet.toImmutableSet());
+		} else {
+			flatOperands = ImmutableSet.copyOf(filters);
+		}
+		return flatOperands;
+	}
+
 	public FilterBuilder filter(ISliceFilter first, ISliceFilter... more) {
-		this.filters.add(first);
-		this.filters.addAll(Arrays.asList(more));
+		this.filters.addAll(flatten(ImmutableSet.of(first)));
+		this.filters.addAll(flatten(Arrays.asList(more)));
 
 		return this;
 	}
