@@ -165,4 +165,39 @@ public class TestCubeWrapper {
 								.build())
 				.hasSize(1);
 	}
+
+	@Test
+	public void testMakeDetails() {
+		InMemoryTable table = InMemoryTable.builder().build();
+		table.add(Map.of("k", "v"));
+
+		CubeWrapper cube = CubeWrapper.builder()
+				.name(this.getClass().getSimpleName())
+				.forest(MeasureForest.empty())
+				.table(table)
+				.build();
+
+		Map<String, Object> details = CubeWrapper.makeDetails(cube);
+
+		Assertions.assertThat(details).containsKey("columns").containsKey("measures");
+	}
+
+	@Test
+	public void testExecuteAsync_blockingQuery_throws() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		CubeWrapper cube = CubeWrapper.builder()
+				.name(this.getClass().getSimpleName())
+				.forest(MeasureForest.empty())
+				.table(table)
+				.build();
+
+		eu.solven.adhoc.query.cube.CubeQuery blockingQuery = eu.solven.adhoc.query.cube.CubeQuery.builder()
+				.option(eu.solven.adhoc.options.StandardQueryOptions.BLOCKING)
+				.build();
+
+		Assertions.assertThatThrownBy(() -> cube.executeAsync(blockingQuery))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("BLOCKING");
+	}
 }

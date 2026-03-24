@@ -104,4 +104,112 @@ public class TestByteSlice {
 		Assertions.assertThat(byteSlice.crop()).isSameAs(byteSlice.buffer());
 	}
 
+	@Test
+	public void testSub_tooLargeLength_throws() {
+		IByteSlice byteSlice = new ByteSlice("abc".getBytes(StandardCharsets.UTF_8), 0, 3);
+
+		Assertions.assertThatThrownBy(() -> byteSlice.sub(0, 4))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("4");
+	}
+
+	@Test
+	public void testEquals_sameInstance() {
+		ByteSlice s = new ByteSlice("hi".getBytes(StandardCharsets.UTF_8), 0, 2);
+
+		Assertions.assertThat(s.equals(s)).isTrue();
+	}
+
+	@Test
+	public void testEquals_null() {
+		ByteSlice s = new ByteSlice("hi".getBytes(StandardCharsets.UTF_8), 0, 2);
+
+		Assertions.assertThat(s.equals(null)).isFalse();
+	}
+
+	@Test
+	public void testEquals_nonByteSliceType() {
+		ByteSlice s = new ByteSlice("hi".getBytes(StandardCharsets.UTF_8), 0, 2);
+
+		Assertions.assertThat("hi".equals(s)).isFalse();
+	}
+
+	@Test
+	public void testEquals_differentLength() {
+		byte[] buf = "hello".getBytes(StandardCharsets.UTF_8);
+		ByteSlice s1 = new ByteSlice(buf, 0, 3);
+		ByteSlice s2 = new ByteSlice(buf, 0, 4);
+
+		Assertions.assertThat(s1.equals(s2)).isFalse();
+	}
+
+	@Test
+	public void testEquals_differentBytes() {
+		ByteSlice s1 = new ByteSlice("abc".getBytes(StandardCharsets.UTF_8), 0, 3);
+		ByteSlice s2 = new ByteSlice("abd".getBytes(StandardCharsets.UTF_8), 0, 3);
+
+		Assertions.assertThat(s1.equals(s2)).isFalse();
+	}
+
+	@Test
+	public void testIsFastCrop_trueWhenExactMatch() {
+		byte[] buf = "xyz".getBytes(StandardCharsets.UTF_8);
+		ByteSlice s = new ByteSlice(buf, 0, buf.length);
+
+		Assertions.assertThat(s.isFastCrop()).isTrue();
+	}
+
+	@Test
+	public void testIsFastCrop_falseWithOffset() {
+		byte[] buf = "xyz".getBytes(StandardCharsets.UTF_8);
+		ByteSlice s = new ByteSlice(buf, 1, buf.length - 1);
+
+		Assertions.assertThat(s.isFastCrop()).isFalse();
+	}
+
+	@Test
+	public void testIsFastCrop_falseWhenLengthShorterThanBuffer() {
+		byte[] buf = "xyz".getBytes(StandardCharsets.UTF_8);
+		ByteSlice s = new ByteSlice(buf, 0, buf.length - 1);
+
+		Assertions.assertThat(s.isFastCrop()).isFalse();
+	}
+
+	@Test
+	public void testStaticHashCode_emptyArray() {
+		int h = ByteSlice.hashCode(new byte[0], 0, 0);
+
+		Assertions.assertThat(h).isEqualTo(1);
+	}
+
+	@Test
+	public void testStaticHashCode_subRange() {
+		byte[] buf = "abcde".getBytes(StandardCharsets.UTF_8);
+		int h = ByteSlice.hashCode(buf, 1, 3);
+		int expected = ByteSlice.hashCode("bcd".getBytes(StandardCharsets.UTF_8), 0, 3);
+
+		Assertions.assertThat(h).isEqualTo(expected);
+	}
+
+	@Test
+	public void testBuilder_withOffset_noLength_usesBufferLength() {
+		byte[] buf = "abcde".getBytes(StandardCharsets.UTF_8);
+
+		IByteSlice byteSlice = ByteSlice.builder().buffer(buf).offset(2).build();
+
+		Assertions.assertThat(byteSlice).isInstanceOf(ByteSlice.class);
+		Assertions.assertThat(byteSlice.offset()).isEqualTo(2);
+		Assertions.assertThat(byteSlice.length()).isEqualTo(buf.length);
+	}
+
+	@Test
+	public void testBuilder_offsetZero_withLength_createsNoOffsetVariant() {
+		byte[] buf = "abcde".getBytes(StandardCharsets.UTF_8);
+
+		IByteSlice byteSlice = ByteSlice.builder().buffer(buf).offset(0).length(3).build();
+
+		Assertions.assertThat(byteSlice).isInstanceOf(ByteSliceNoOffset.class);
+		Assertions.assertThat(byteSlice.length()).isEqualTo(3);
+	}
+
 }
