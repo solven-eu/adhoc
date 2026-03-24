@@ -116,10 +116,12 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 						SplitTableQueries.builder().inducedToInducer(aInducedToInducer).build();
 
 				// TODO This log lacks options and customMarkers if any
-				log.info("[EXPLAIN] inducers={} induceds={} roots={} for agg={}",
-						aTableQueries.getInducers().size(),
-						aTableQueries.getInduceds().size(),
+				log.info("[EXPLAIN] explicits={} roots={} vertices={} induceds={} inducers={} for agg={}",
+						aTableQueries.getExplicits().size(),
 						aTableQueries.getRoots().size(),
+						aTableQueries.getInducedToInducer().vertexSet().size(),
+						aTableQueries.getInduceds().size(),
+						aTableQueries.getInducers().size(),
 						a.getMeasure().getName());
 			}
 

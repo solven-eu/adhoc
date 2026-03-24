@@ -50,15 +50,11 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 	public ITableQueryFactory makeOptimizer(IAdhocFactories factories,
 			IFilterOptimizer filterOptimizer,
 			IHasQueryOptions hasOptions) {
-		ITableStepsSplitter splitter = makeSplitter(hasOptions);
+		ITableStepsSplitter splitter = makeSplitter(hasOptions, filterOptimizer);
 
 		ITableStepsGrouper grouper = makeGrouper(hasOptions, splitter);
 
 		return new TableQueryFactory(factories, filterOptimizer, splitter, grouper);
-	}
-
-	protected ITableStepsGrouper makeGrouper(IHasQueryOptions hasOptions) {
-		return makeGrouper(hasOptions, null);
 	}
 
 	/**
@@ -89,7 +85,7 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 		return grouper;
 	}
 
-	protected ITableStepsSplitter makeSplitter(IHasQueryOptions hasOptions) {
+	protected ITableStepsSplitter makeSplitter(IHasQueryOptions hasOptions, IFilterOptimizer filterOptimizer) {
 		ITableStepsSplitter splitter;
 		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
 			splitter = new InduceByAdhocComplete();

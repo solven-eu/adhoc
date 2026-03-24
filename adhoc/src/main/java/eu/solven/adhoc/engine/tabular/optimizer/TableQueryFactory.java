@@ -140,7 +140,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 				tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
 
 		// prints percent with 1 digit.
-		String percentEfficiency = asPercent(tableSteps.size(), nbEvaluatedTableInducers);
+		// TODO May we have some steps which are irrelevant for inducers, but actually useful for induced?
+		String percentEfficiency = asPercent(nbTableInducers, nbEvaluatedTableInducers);
 		log.info(
 				"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
 				tableSteps.size(),

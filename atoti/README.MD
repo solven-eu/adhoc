@@ -151,6 +151,14 @@ The migration strategy is:
 
 # Concepts
 
+## IContextValue
+
+- IContextValue is a value defined dynamically (e.g. it can be customized on a per-query basis by the User), used to customize the behavior of measures.
+- In Adhoc:
+  - equivalent behavior can be implemented with a `CubeQueryBuilder.customMarker()` and `CubeQueryStep.getCustomMarker()`
+  - Any `Object` (but `Optional`) can be a customMarker.
+  - A typical `customMarker` is a plain `Map` or any POJO.
+
 ## IQueryCache
 
 [Atoti Javadoc](https://docs.activeviam.com/products/atoti/server/javadoc/6.1.4/com/activeviam/activepivot/core/intf/api/query/IQueryCache.html)
