@@ -31,6 +31,7 @@ import org.springframework.util.ClassUtils;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.measure.model.IHasTags;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 import eu.solven.adhoc.util.IHasName;
@@ -94,7 +95,7 @@ public class ColumnMetadata implements IHasName, IHasTags {
 		Set<String> unionTags =
 				columns.stream().<Set<String>>map(ColumnMetadata::getTags).reduce(ImmutableSet.of(), Sets::union);
 
-		ColumnMetadata first = columns.iterator().next();
+		ColumnMetadata first = AdhocCollectionHelpers.getFirst(columns);
 
 		return first.toBuilder()
 				.type(commonType.get())

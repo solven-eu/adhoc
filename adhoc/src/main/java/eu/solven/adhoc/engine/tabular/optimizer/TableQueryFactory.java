@@ -38,6 +38,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -170,7 +171,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 		Map<TableQueryStep, TableQueryV4> stepToTableQuery = new LinkedHashMap<>();
 
 		groups.forEach(group -> {
-			TableQueryStep context = grouper.tableQueryGroupBy(group.iterator().next());
+			TableQueryStep context = grouper.tableQueryGroupBy(AdhocCollectionHelpers.getFirst(group));
 			TableQueryV4 v4 = processRelatedSteps(context, new ArrayList<>(group));
 			group.forEach(step -> stepToTableQuery.put(step, v4));
 		});

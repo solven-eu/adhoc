@@ -62,9 +62,9 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 		} else if (r == null) {
 			return l;
 		} else if (AdhocPrimitiveHelpers.isLongLike(l) && AdhocPrimitiveHelpers.isLongLike(r)) {
-			return aggregateLongs(asLong(l), asLong(r));
+			return aggregateLongs(AdhocPrimitiveHelpers.asLong(l), AdhocPrimitiveHelpers.asLong(r));
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(l) && AdhocPrimitiveHelpers.isDoubleLike(r)) {
-			return aggregateDoubles(asDouble(l), asDouble(r));
+			return aggregateDoubles(AdhocPrimitiveHelpers.asDouble(l), AdhocPrimitiveHelpers.asDouble(r));
 		} else {
 			throw new IllegalArgumentException("Can not %s on (`%s`, `%s`)"
 					.formatted(KEY, PepperLogHelper.getObjectAndClass(l), PepperLogHelper.getObjectAndClass(r)));
@@ -79,14 +79,6 @@ public class ProductAggregation implements IAggregation, IDoubleAggregation, ILo
 	@Override
 	public long aggregateLongs(long left, long right) {
 		return left * right;
-	}
-
-	public static long asLong(Object o) {
-		return AdhocPrimitiveHelpers.asLong(o);
-	}
-
-	public static double asDouble(Object o) {
-		return AdhocPrimitiveHelpers.asDouble(o);
 	}
 
 	@Override
