@@ -152,7 +152,10 @@ public class FilterHelpers {
 	}
 
 	public static Map<String, Object> asMap(ISliceFilter slice) {
-		if (slice.isMatchAll()) {
+		if (slice instanceof SimpleAndFilter simpleAnd) {
+			// Fast-path: the backing map is already column→value with no wrapping needed
+			return simpleAnd.columnToValue;
+		} else if (slice.isMatchAll()) {
 			return ImmutableMap.of();
 		} else if (slice.isColumnFilter() && slice instanceof IColumnFilter columnFilter) {
 			IValueMatcher valueMatcher = columnFilter.getValueMatcher();
@@ -290,7 +293,13 @@ public class FilterHelpers {
 			Consumer<ISliceFilter> downstream,
 			boolean splitMatchers) {
 		boolean emitted;
-		if (filter instanceof IAndFilter andFilter) {
+		if (filter instanceof SimpleAndFilter simpleAnd) {
+			// Fast-path: iterate the backing map directly, emitting ColumnFilter wrappers per entry.
+			// Avoids the instanceof chain that the generic IAndFilter branch would run per operand.
+			simpleAnd.columnToValue.forEach(
+					(col, val) -> downstream.accept(ColumnFilter.builder().column(col).matchEquals(val).build()));
+			emitted = true;
+		} else if (filter instanceof IAndFilter andFilter) {
 			andFilter.getOperands().forEach(o -> emitAndOperands(o, downstream, splitMatchers));
 			emitted = true;
 		} else if (filter instanceof INotFilter notFilter) {

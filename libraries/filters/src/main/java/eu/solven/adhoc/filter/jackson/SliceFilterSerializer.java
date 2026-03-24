@@ -27,7 +27,9 @@ import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 
 import eu.solven.adhoc.filter.AdhocPublicJackson.SliceFilterSerializerModifier;
+import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.SimpleAndFilter;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
 import tools.jackson.databind.ValueSerializer;
@@ -65,6 +67,9 @@ public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
 			gen.writeString("matchAll");
 		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
+		} else if (value instanceof SimpleAndFilter simpleAnd) {
+			// Serialise as a plain AndFilter so the wire format is identical ("type":"and")
+			base.serializeWithType(AndFilter.copyOf(simpleAnd.getOperands()), gen, ctxt, typeSer);
 		} else {
 			base.serializeWithType(value, gen, ctxt, typeSer);
 		}
@@ -76,6 +81,9 @@ public class SliceFilterSerializer extends StdSerializer<ISliceFilter> {
 			gen.writeString("matchAll");
 		} else if (ISliceFilter.MATCH_NONE.equals(value)) {
 			gen.writeString("matchNone");
+		} else if (value instanceof SimpleAndFilter simpleAnd) {
+			// Serialise as a plain AndFilter so the wire format is identical ("type":"and")
+			base.serialize(AndFilter.copyOf(simpleAnd.getOperands()), gen, ctxt);
 		} else {
 			base.serialize(value, gen, ctxt);
 		}
