@@ -95,7 +95,7 @@ public class QueryWithLeftover {
 		Set<String> groupByColumns = tableQuery.getGroupedByColumns();
 
 		// Multiple `GROUP BY` -> `GROUPING SET`
-		// TODO We could minimize the relevant `grouping` to columns which are not always present
+		// We minimize the relevant `grouping` to columns which are not always present
 		// https://github.com/jOOQ/jOOQ/issues/16465
 		ImmutableSet<String> groupingColumns;
 		if (tableQuery.singleGroupBy().isPresent()) {

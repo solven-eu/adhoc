@@ -121,6 +121,13 @@ public class TestGroupByColumns {
 	}
 
 	@Test
+	public void mergeNonAmbiguous_misOrdered() {
+		IGroupBy merged = GroupByColumns
+				.mergeNonAmbiguous(ImmutableSet.of(GroupByColumns.named("b", "a"), GroupByColumns.named("c", "a")));
+		Assertions.assertThat(merged).isEqualTo(GroupByColumns.named("b", "a", "c"));
+	}
+
+	@Test
 	public void mergeNonAmbiguous_ambiguous() {
 		Assertions
 				.assertThatThrownBy(
@@ -128,6 +135,16 @@ public class TestGroupByColumns {
 								GroupByColumns.of(CustomTestColumn.builder().name("someC").build()))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Ambiguous", "someC", CustomTestColumn.class.getName());
+	}
+
+	@Test
+	public void misOrdered() {
+		IGroupBy groupBy = GroupByColumns.named("b", "a");
+
+		Assertions.assertThat(groupBy).hasToString("(b, a)");
+		Assertions.assertThat(groupBy.getColumns())
+				.containsExactly(ReferencedColumn.ref("b"), ReferencedColumn.ref("a"));
+		Assertions.assertThat(groupBy.getNameToColumn().keySet()).containsExactly("a", "b");
 	}
 
 }

@@ -28,6 +28,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -46,7 +47,7 @@ public interface IGroupBy {
 	/**
 	 * If true, there is not a single groupBy
 	 * 
-	 * @return
+	 * @return true if this has no {@link IAdhocColumn}.
 	 */
 	@JsonIgnore
 	default boolean isGrandTotal() {
@@ -64,6 +65,11 @@ public interface IGroupBy {
 		return getNameToColumn().navigableKeySet();
 	}
 
+	@JsonIgnore
+	default Set<IAdhocColumn> getColumns() {
+		return ImmutableSet.copyOf(getNameToColumn().values());
+	}
+
 	/**
 	 * 
 	 * @return the mapping from the groupedBy column to the definition of given column.
@@ -71,6 +77,10 @@ public interface IGroupBy {
 	// @JsonIgnore as only the columns would be serialized. (name->column) is syntactic sugar.
 	@JsonIgnore
 	NavigableMap<String, IAdhocColumn> getNameToColumn();
+
+	default IAdhocColumn getColumn(String column) {
+		return getNameToColumn().get(column);
+	}
 
 	IGroupBy retainAll(Set<String> columns);
 }

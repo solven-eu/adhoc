@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import lombok.AccessLevel;
@@ -62,7 +63,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class SimpleAndFilter implements IAndFilter {
 
-	// BEWARE rejects null value
+	// null values are not stored here: of() redirects null-containing maps to AndFilter.and()
 	final ImmutableMap<String, Object> columnToValue;
 
 	/**
@@ -85,6 +86,9 @@ public class SimpleAndFilter implements IAndFilter {
 		} else if (columnToValue.size() == 1) {
 			Map.Entry<String, ?> entry = columnToValue.entrySet().iterator().next();
 			return ColumnFilter.matchEq(entry.getKey(), entry.getValue());
+		} else if (Iterables.contains(columnToValue.values(), null)) {
+			// Null values cannot be represented as EqualsMatcher; delegate to AndFilter which maps null → NullMatcher
+			return AndFilter.and(columnToValue);
 		} else {
 			return new SimpleAndFilter(ImmutableMap.copyOf(columnToValue));
 		}

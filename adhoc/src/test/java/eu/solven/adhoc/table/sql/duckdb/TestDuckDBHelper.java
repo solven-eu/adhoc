@@ -43,6 +43,7 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.LikeMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.filter.value.StringMatcher;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
@@ -145,6 +146,24 @@ public class TestDuckDBHelper {
 				.isEqualTo(
 						"""
 								select approx_count_distinct("pre post") "approx_count_distinct_7", approx_top_k("pre post", 123) "approx_top_k_7" from someTable group by ALL""");
+	}
+
+	@Test
+	public void test_prepareQuery_misOrderedColumns() {
+		TableQuery.TableQueryBuilder tableQueryBuilder = TableQuery.builder();
+
+		JooqTableQueryFactory queryFactory = JooqTableQueryFactory.builder()
+				.table(DSL.table("someTable"))
+				.dslContext(DSL.using(SQLDialect.DUCKDB))
+				.build();
+
+		QueryWithLeftover queryWithLeftover =
+				queryFactory.prepareQuery(tableQueryBuilder.groupBy(GroupByColumns.named("b", "a")).build());
+
+		Assertions.assertThat(queryWithLeftover.getLeftover())
+				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
+		Assertions.assertThat(queryWithLeftover.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select "b", "a" from someTable group by ALL""");
 	}
 
 	@Test

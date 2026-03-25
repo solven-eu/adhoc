@@ -29,6 +29,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestSimpleAndFilter {
 
@@ -229,6 +230,40 @@ public class TestSimpleAndFilter {
 		IAndFilter and = AndFilter.copyOf(Set.of(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")));
 
 		Assertions.assertThat(simple.hashCode()).isEqualTo(and.hashCode());
+	}
+
+	// -------------------------------------------------------------------------
+	// null-value handling (e.g. slice from a failed JOIN)
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testOf_nullValue_doesNotThrow() {
+		// null from a failed JOIN: of() must not throw but delegate to AndFilter
+		Map<String, Object> mapWithNull =
+				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
+		ISliceFilter filter = SimpleAndFilter.of(mapWithNull);
+
+		Assertions.assertThat(filter).isNotNull();
+		Assertions.assertThat(filter.isAnd()).isTrue();
+		Assertions.assertThat(filter.isMatchAll()).isFalse();
+		Assertions.assertThat(filter.isMatchNone()).isFalse();
+	}
+
+	@Test
+	public void testOf_nullValue_equalsAndFilter() {
+		Map<String, Object> mapWithNull =
+				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
+
+		Assertions.assertThat(SimpleAndFilter.of(mapWithNull)).isEqualTo(AndFilter.and(mapWithNull));
+	}
+
+	@Test
+	public void testOf_nullValue_hashCode_compatibleWithAndFilter() {
+		Map<String, Object> mapWithNull =
+				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
+
+		Assertions.assertThat(SimpleAndFilter.of(mapWithNull).hashCode())
+				.isEqualTo(AndFilter.and(mapWithNull).hashCode());
 	}
 
 	// -------------------------------------------------------------------------

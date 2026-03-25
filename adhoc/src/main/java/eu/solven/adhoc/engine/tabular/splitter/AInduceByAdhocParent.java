@@ -62,8 +62,8 @@ public abstract class AInduceByAdhocParent implements ITableStepsSplitter {
 		}
 
 		// BEWARE a given name may refer to a ReferencedColumn, or to a StaticCoordinateColumn (or anything else)
-		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
-		Collection<IAdhocColumn> inducedColumns = induced.getGroupBy().getNameToColumn().values();
+		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getColumns();
+		Collection<IAdhocColumn> inducedColumns = induced.getGroupBy().getColumns();
 		if (!inducerColumns.containsAll(inducedColumns)) {
 			// Not expressing all needed columns: can not induce
 			// If right has all groupBy of left, it means right has same or more groupBy than left,

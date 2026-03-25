@@ -91,7 +91,7 @@ public class TableQueryV3 implements ITableQuery {
 	public Map<String, IAdhocColumn> getColumns() {
 		// https://stackoverflow.com/questions/23699371/distinct-by-property
 		return getGroupBys().stream()
-				.flatMap(gb -> gb.getNameToColumn().values().stream())
+				.flatMap(gb -> gb.getColumns().stream())
 				.collect(Collectors.toMap(IAdhocColumn::getName, p -> p, (p, q) -> {
 					if (!Objects.equals(p, q)) {
 						throw new IllegalArgumentException("%s!=%s".formatted(p, q));

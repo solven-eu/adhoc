@@ -37,3 +37,24 @@ Note that `-Pfast` on cli applies only to `prepare`, not to `perform`.
 # Coverage
 
 [![Codecov](https://codecov.io/gh/solven-eu/adhoc/graphs/tree.svg?token=GFYB51WRFC)](https://codecov.io/gh/solven-eu/adhoc/)
+
+
+# Paperwork
+
+The CLA helps protecting your own contributions, as some corporation may believe `Adhoc` infringes they own copyright.
+
+*Follows [Jackson own policy](https://github.com/FasterXML/jackson/blob/main/CONTRIBUTING.md#paperwork)*
+
+There is not a lot of paperwork related to code changes: Pull Requests are almost all it takes.
+
+But there is one thing that is needed before development team can accept a code change (exception: test code changes do not require one): Contributor License Agreement (CLA). This is needed before your very first code contribution, but covers all Adhoc projects and will NOT be needed for other future contributions.
+
+All you need to do is to download the CLA document, print it, fill and sign, scan (or take photo on your phone) and email that copy to `benoit` at `solven` dot `eu`.
+
+As to document to download, you have 2 choices:
+
+- [Standard Adhoc Contributor License Agreement (CLA)](CONTRIBUTOR-ICLA.MD) is a one-page document we need from every contributor of code (we will request it for pull requests), used mostly by individual contributors. *Follows [Jackson](https://github.com/FasterXML/jackson/tree/main) own [CLA](https://github.com/FasterXML/jackson/blob/main/CLA-jackson-2026.md) as a template.*
+- [Corporate CLA](CONTRIBUTOR-CCLA.MD) is used by Corporations to avoid individual employees from having to send separate CLAs; it is also favored by some corporate IP lawyers.
+of which the first option is more commonly used (by over 90% of contributors).
+
+Note that the first option is available for corporations as well, but most companies have opted to use the second option instead. Core team has no preference over which one gets used: both work; we care more about actual contributions.

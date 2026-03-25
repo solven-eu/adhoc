@@ -221,7 +221,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		SplitTableQueries inducerAndInduced = tableQueryFactory.splitInduced(queryPod, steps);
 
 		// Execute the actual tableQueries
-		Map<TableQueryStep, ICuboid> stepToSuppressedValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
+		Map<TableQueryStep, ICuboid> stepToValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
@@ -231,7 +231,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			}
 
 			// Evaluated the induced tableQueries
-			walkUpInducedDag(stepToSuppressedValues, inducerAndInduced);
+			walkUpInducedDag(stepToValues, inducerAndInduced);
 
 			if (queryPod.isDebugOrExplain()) {
 				explainDagPerfs(tableQueryPod, inducerAndInduced);
@@ -239,7 +239,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		}
 
 		transferSizeAndCost(inducerAndInduced, executionFeedfack);
-		return stepToSuppressedValues;
+		return stepToValues;
 	}
 
 	protected Set<String> getSuppressedGroupBy(IGroupBy generated, IGroupBy suppressed) {
@@ -285,8 +285,9 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 				Map<TableQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
 				tableQueriesStream.forEach(tableQuery -> {
 					// BEWARE Could we have multiple TableQueryV4 computing the same TableQueryStep?
-					queryStepToValuesInner
-							.putAll(processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery));
+					Map<TableQueryStep, ICuboid> cuboids =
+							processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery);
+					queryStepToValuesInner.putAll(cuboids);
 				});
 
 				return queryStepToValuesInner;

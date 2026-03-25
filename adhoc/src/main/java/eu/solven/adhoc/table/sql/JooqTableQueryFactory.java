@@ -311,15 +311,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.filter(Objects::nonNull)
 				.forEach(selectedFields::add);
 
-		tableQuery.getGroupBys()
-				.stream()
-				.flatMap(gb -> gb.getNameToColumn().values().stream())
-				// Distinct as `GROUPING SET` typically leads to a column to appear multiple times
-				.distinct()
-				.forEach(column -> {
-					Field<Object> field = columnAsField(column);
-					selectedFields.add(field);
-				});
+		// Distinct as `GROUPING SET` typically leads to a column to appear multiple times
+		Map<String, IAdhocColumn> distinctColumns = tableQuery.getColumns();
+
+		fields.getColumns().stream().map(column -> distinctColumns.get(column)).forEach(column -> {
+			Field<Object> field = columnAsField(column);
+			selectedFields.add(field);
+		});
 
 		// TODO Should the leftover be also added in `.makeGroupingFields`?
 		fields.getLeftovers().forEach(leftover -> {
@@ -365,8 +363,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.map(FilteredAggregator::getAlias)
 				.toList();
 
-		List<String> groupByColumns =
-				tableQuery.getGroupBy().getNameToColumn().values().stream().map(IHasName::getName).toList();
+		List<String> groupByColumns = tableQuery.getGroupBy().getColumns().stream().map(IHasName::getName).toList();
 
 		List<String> leftoversColumns = new ArrayList<>(
 				leftovers.stream().flatMap(leftover -> FilterHelpers.getFilteredColumns(leftover).stream()).toList());
@@ -453,7 +450,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			// At least 2 groupingSets
 
 			List<? extends List<? extends Field<?>>> fields2 = tableQuery.streamGroupBy().map(gb -> {
-				return gb.getNameToColumn().values().stream().map(this::columnAsField).toList();
+				return gb.getColumns().stream().map(this::columnAsField).toList();
 			}).toList();
 
 			Collection<? extends Field<?>>[] fieldSets = fields2.toArray(List[]::new);

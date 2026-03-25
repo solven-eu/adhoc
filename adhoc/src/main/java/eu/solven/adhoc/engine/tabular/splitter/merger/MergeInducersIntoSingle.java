@@ -130,7 +130,7 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 				.collect(ImmutableSet.toImmutableSet());
 		Set<String> missingColumns = Sets.difference(columnsToDifferenciate, originalGroupBy.getGroupedByColumns());
 		return GroupByColumns.builder()
-				.columns(originalGroupBy.getNameToColumn().values())
+				.columns(originalGroupBy.getColumns())
 				.columns(missingColumns.stream().map(ReferencedColumn::ref).toList())
 				.build();
 	}

@@ -241,7 +241,7 @@ public class ColumnsManager implements IColumnsManager {
 		query.getGroupByToAggregators()
 				.keySet()
 				.stream()
-				.flatMap(gb -> gb.getNameToColumn().values().stream())
+				.flatMap(gb -> gb.getColumns().stream())
 				.filter(c -> c instanceof ICalculatedColumn
 						&& !(c instanceof FunctionCalculatedColumn f && f.isSkipFiltering()))
 				.map(IHasName::getName)
@@ -345,8 +345,7 @@ public class ColumnsManager implements IColumnsManager {
 
 		Map<String, Object> computed = new LinkedHashMap<>();
 
-		GroupByColumnsBuilder groupByWithCalculated =
-				GroupByColumns.builder().columns(row.getGroupBy().getNameToColumn().values());
+		GroupByColumnsBuilder groupByWithCalculated = GroupByColumns.builder().columns(row.getGroupBy().getColumns());
 		columns.forEach((columnName, column) -> {
 			// TODO handle recursive formulas (e.g. a formula relying on another formula)
 			computed.put(columnName, column.computeCoordinate(row));

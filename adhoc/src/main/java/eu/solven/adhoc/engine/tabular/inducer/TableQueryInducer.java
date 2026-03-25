@@ -106,7 +106,7 @@ public class TableQueryInducer implements ITableQueryInducer {
 		Aggregator aggregator = inducer.getMeasure();
 		IAggregation aggregation = factories.getOperatorFactory().makeAggregation(aggregator);
 
-		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getNameToColumn().values();
+		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getColumns();
 		Optional<ISliceFilter> optSliceFilter =
 				InducerHelpers.makeLeftoverFilter(inducerColumns, inducer.getFilter(), induced.getFilter());
 		if (optSliceFilter.isEmpty()) {

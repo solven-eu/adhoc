@@ -22,9 +22,12 @@
  */
 package eu.solven.adhoc.filter;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +39,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.filter.value.AndMatcher;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
@@ -456,4 +461,81 @@ public class FilterHelpers {
 	public static Comparator<? super ISliceFilter> filterComparator() {
 		return (l, r) -> l.toString().compareTo(r.toString());
 	}
+
+	/**
+	 * Partitions {@code filters} into independent column clusters.
+	 *
+	 * <p>
+	 * Two filters belong to the same cluster when their column sets (as returned by {@link #getFilteredColumns}) are
+	 * not disjoint — i.e. they share at least one column. Filters in different clusters have fully disjoint column sets
+	 * and therefore cannot interact logically; each cluster can be optimised independently.
+	 *
+	 * <p>
+	 * The grouping is performed by a Union-Find over the distinct column-sets. Since the number of distinct column-sets
+	 * is typically very small (low keySet cardinality), the O(k²) union step is acceptable.
+	 *
+	 * <p>
+	 * When all filters share at least one column (single cluster), the method returns a singleton set containing the
+	 * original input, without allocating any intermediate collection.
+	 *
+	 * @param filters
+	 *            the filters to partition; must not be {@code null}
+	 * @return a set of clusters, where each cluster is a non-empty set of filters whose column sets are connected;
+	 *         never empty (a single-element result means no split was possible)
+	 */
+	public static Set<Set<? extends ISliceFilter>> clusterFilters(ImmutableSet<? extends ISliceFilter> filters) {
+		// Group by column-set. We expect very few distinct column-sets (low cardinality), so the
+		// Multimap key-set is tiny. Filters that touch exactly the same columns share one bucket.
+		SetMultimap<Set<String>, ISliceFilter> byColumnSet =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		for (ISliceFilter f : filters) {
+			byColumnSet.put(getFilteredColumns(f), f);
+		}
+
+		int keySetCardinality = byColumnSet.keySet().size();
+		if (keySetCardinality <= 1) {
+			// fast-path for many cases
+			return ImmutableSet.of(filters);
+		}
+
+		List<Set<String>> keys = new ArrayList<>(byColumnSet.keySet());
+
+		// Union-Find over the k distinct column-sets (k is small, O(k²) is acceptable).
+		int[] parent = new int[keySetCardinality];
+		for (int i = 0; i < keySetCardinality; i++) {
+			parent[i] = i;
+		}
+		// Evaluate each keySet against all other keySet: O(n*2)/2
+		for (int i = 0; i < keySetCardinality; i++) {
+			Set<String> ki = keys.get(i);
+
+			for (int j = i + 1; j < keySetCardinality; j++) {
+				if (!Collections.disjoint(ki, keys.get(j))) {
+					int ri = findRoot(parent, i);
+					int rj = findRoot(parent, j);
+					if (ri != rj) {
+						parent[ri] = rj;
+					}
+				}
+			}
+		}
+
+		// Collect filters into their cluster, preserving the original per-key order.
+		Map<Integer, Set<ISliceFilter>> clusters = new LinkedHashMap<>();
+		for (int i = 0; i < keySetCardinality; i++) {
+			clusters.computeIfAbsent(findRoot(parent, i), x -> new LinkedHashSet<>())
+					.addAll(byColumnSet.get(keys.get(i)));
+		}
+
+		return ImmutableSet.copyOf(clusters.values());
+	}
+
+	protected static int findRoot(int[] parent, int i) {
+		while (parent[i] != i) {
+			parent[i] = parent[parent[i]]; // Path compression (two-step)
+			i = parent[i];
+		}
+		return i;
+	}
+
 }

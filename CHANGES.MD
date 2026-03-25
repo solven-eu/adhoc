@@ -9,7 +9,11 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `TableWrapperHelpers.closeAll`: when closing multiple `ITabularRecordStream`s, exceptions from one stream no longer prevent the others from being closed; subsequent exceptions are attached as suppressed causes on the first.
 - `InduceByAdhoc.splitInducedDag`: fixed NPE when input steps have non-contiguous groupBy cardinalities (e.g. sizes 1 and 3 with no size-2 step) — iterating through missing cardinalities now yields an empty list instead of `null`.
 
+### Changed
+- `InduceByAdhocComplete.splitInducedAsDag`: replaced O(n²) pairwise scan with three pre-computed indices — (1) grouping by measure+context to avoid cross-measure evaluation, (2) a groupBy containment index (O(g²) for g distinct groupBys), and (3) a filter strictness index (O(f²) for f distinct filters). Only `makeLeftoverFilter` is still checked per step pair, reached only when both indices agree.
+
 ### Added
+- `FilterOptimizer`: the AND optimizer now clusters operands by independent column sets before optimising. Operands whose column sets are fully disjoint are optimised independently and then AND-ed, enabling the distributive-law folding `(A&B)|(A&C) → A&(B|C)` to fire correctly. `FilterHelpers.clusterFilters` exposes the clustering logic.
 - `ICubeQueryStep`: new interface grouping the contracts of `CubeQueryStep` (`IWhereGroupByQuery`, `IHasMeasure`, `IHasCustomMarker`, `IHasQueryOptions`, `IHasCache`); `CubeQueryStep` now implements it, enabling polymorphic handling of step types.
 - `TableQueryStep`: strongly-typed record wrapping a `CubeQueryStep` whose measure is guaranteed to be an `Aggregator`; replaces the raw `(Aggregator) step.getMeasure()` cast in the table-query execution path. `StepAndFilteredAggregator.step` now carries a `TableQueryStep` instead of a plain `CubeQueryStep`.
 - `SimpleAndFilter`: compact `IAndFilter` backed by `ImmutableMap<String, Object>` for AND-of-equality conditions; avoids per-entry `ColumnFilter`/`EqualsMatcher` allocation on construction. `ISlice.asFilter()` now returns a `SimpleAndFilter`, and `FilterHelpers.emitAndOperands` / `FilterHelpers.asMap` have dedicated fast-paths for it. `SliceFilterSerializer` serialises it as the canonical `"type":"and"` form.

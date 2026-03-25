@@ -183,7 +183,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		public CubeQueryBuilder groupByAlso(Collection<? extends IAdhocColumn> groupBys) {
 			// https://stackoverflow.com/questions/66260030/get-value-of-field-with-lombok-builder
 			ImmutableSet<IAdhocColumn> allGroupByColumns =
-					AdhocCollectionHelpers.copyOfSets(this.build().getGroupBy().getNameToColumn().values(), groupBys);
+					AdhocCollectionHelpers.copyOfSets(this.build().getGroupBy().getColumns(), groupBys);
 
 			groupBy(GroupByColumns.of(allGroupByColumns));
 
@@ -203,7 +203,7 @@ public class CubeQuery implements ICubeQuery, IHasCustomMarker, IHasQueryOptions
 		// Leads to Jackson issues
 		@JsonIgnore
 		public CubeQueryBuilder groupByAlso(IGroupBy groupBy) {
-			groupByAlso(groupBy.getNameToColumn().values());
+			groupByAlso(groupBy.getColumns());
 
 			return this;
 		}

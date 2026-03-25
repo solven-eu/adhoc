@@ -343,7 +343,9 @@ public class TestOrFilter {
 				// BEWARE Order is changed by some optimization (here
 				// `FilterOptimizer.partitionByPotentialInteraction`)
 				// .hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)")
-				.hasToString("a==a1&c=in=(c1,c2,c3)&b=in=(b1,b2,b3)&(d==d1|b==b1)");
+				// .hasToString("a==a1&c=in=(c1,c2,c3)&b=in=(b1,b2,b3)&(d==d1|b==b1)")
+				// BEWARE There is an alternative and equivalent representation
+				.hasToString("a==a1&c=in=(c1,c2,c3)&(b==b1|b=in=(b2,b3)&d==d1)");
 	}
 
 	@Test
@@ -677,19 +679,18 @@ public class TestOrFilter {
 								AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
 						.optimize();
 
-		// TODO We expect `d==d1|a==a1&(b==b1|c==c1)`
-		Assertions.assertThat(optimized).hasToString("d==d1|a==a1&b==b1|a==a1&c==c1");
+		Assertions.assertThat(optimized).hasToString("d==d1|a==a1&(b==b1|c==c1)");
 	}
 
 	@Test
 	public void testOr_inGivenFirstColumn() {
 		ISliceFilter orA1B1B1_A2B1C1 =
 				FilterBuilder
-						.or(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1")),
-								AndFilter.and(Map.of("a", "a2", "b", "b1", "c", "c1")))
+						.or(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1")),
+								AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1", "c", "c1")))
 						.optimize();
 
-		Assertions.assertThat(orA1B1B1_A2B1C1).hasToString("c==c1&b==b1&a=in=(a1,a2)");
+		Assertions.assertThat(orA1B1B1_A2B1C1).hasToString("b==b1&c==c1&a=in=(a1,a2)");
 		Assertions.assertThat(orA1B1B1_A2B1C1).isInstanceOfSatisfying(AndFilter.class, and -> {
 			Assertions.assertThat(and.getOperands()).hasSize(3);
 		});
