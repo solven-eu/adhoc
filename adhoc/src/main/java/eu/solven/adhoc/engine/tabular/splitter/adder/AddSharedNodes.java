@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.adder;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,32 +88,31 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 */
 	@Override
 	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> input) {
-		IAdhocDag<TableQueryStep> before = input;
+		// Work on a copy so we never mutate the caller's graph
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.copy(input);
 
-		// One may may need to process multiple times. Indeed, given an inducer, inducing 5 nodes, a
-		// first pass may cover 2 nodes, and we may need another pass to process 2 other nodes.
-		while (true) {
-			IAdhocDag<TableQueryStep> after = GraphHelpers.copy(before);
+		// All vertices start dirty: each must be evaluated as a potential inducer at least once.
+		// When a shared node is inserted, only the affected inducers are re-queued, not the whole graph.
+		Deque<TableQueryStep> toProcess = new ArrayDeque<>(dag.vertexSet());
 
-			// Iterate along before as after will be modified in-place
-			before.vertexSet().stream().forEach(inducer -> {
-				addSharedNode(after, inducer);
-			});
-
-			if (before.equals(after)) {
-				// No more shared nodes
-				return after;
+		while (!toProcess.isEmpty()) {
+			TableQueryStep inducer = toProcess.poll();
+			if (!dag.containsVertex(inducer)) {
+				// Defensive: skip vertices that no longer exist (e.g. removed by a subclass override)
+				continue;
 			}
-
-			before = after;
+			Set<TableQueryStep> dirty = addSharedNode(dag, inducer);
+			toProcess.addAll(dirty);
 		}
+
+		return dag;
 	}
 
-	protected void addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
+	protected Set<TableQueryStep> addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
 		ImmutableSet<TableQueryStep> inducedSteps = GraphHelpers.getInduced(withFinalInducers, inducer);
 
 		if (inducedSteps.size() < 2) {
-			return;
+			return ImmutableSet.of();
 		}
 
 		// `a&b|a&b|a&c|d` should lead to `a&(b|c)|d` to the tableQuery
@@ -212,9 +213,13 @@ public class AddSharedNodes implements IAddSharedNodes {
 				// Add new edges
 				Graphs.addGraph(withFinalInducers, inducedToInducer);
 
-				break;
+				// reforgedStep is new and must be evaluated as an inducer.
+				// inducer's induced set changed and may benefit from another pass.
+				return ImmutableSet.of(reforgedStep, inducer);
 			}
 		}
+
+		return ImmutableSet.of();
 	}
 
 	protected TableQueryStep filter(ISliceFilter commonFilter, TableQueryStep step) {

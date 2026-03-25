@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.filter.value.IColumnToString;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -194,8 +193,8 @@ public class FlatAndFilter implements IAndFilter {
 		}
 		return columnToMatcher.entrySet()
 				.stream()
-				.map(e -> e.getValue() instanceof IColumnToString cts ? cts.toString(e.getKey(), false)
-						: "%s matches `%s`".formatted(e.getKey(), e.getValue()))
+				.map(e -> ColumnFilter.match(e.getKey(), e.getValue()))
+				.map(ISliceFilter::toString)
 				.collect(Collectors.joining("&"));
 	}
 
