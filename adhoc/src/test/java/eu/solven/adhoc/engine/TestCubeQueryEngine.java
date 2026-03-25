@@ -193,7 +193,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 			return TableQueryFactory.builder()
 					.factories(AdhocFactories.builder().build())
 					.filterOptimizer(filterOptimizer)
-					.splitter(new InduceByAdhocComplete())
+					.splitter(InduceByAdhocComplete.builder().build())
 					.groupByAggregator()
 					.build();
 		};

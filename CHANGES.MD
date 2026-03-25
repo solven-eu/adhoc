@@ -10,6 +10,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `InduceByAdhoc.splitInducedDag`: fixed NPE when input steps have non-contiguous groupBy cardinalities (e.g. sizes 1 and 3 with no size-2 step) — iterating through missing cardinalities now yields an empty list instead of `null`.
 
 ### Changed
+- `InduceByAdhocComplete`: concurrent execution of `buildEdgesForContextGroup` is now supported — when `StandardQueryOptions.CONCURRENT` is active, each measure×context group is processed in an isolated local DAG on the injected `ListeningExecutorService`, then all local DAGs are merged before the transitive-reduction step. The default executor is `MoreExecutors.newDirectExecutorService()` (sequential, as before). Inject a thread-pool via `InduceByAdhocComplete.builder().executorService(...).build()`.
 - `InduceByAdhocComplete.splitInducedAsDag`: replaced O(n²) pairwise scan with three pre-computed indices — (1) grouping by measure+context to avoid cross-measure evaluation, (2) a groupBy containment index (O(g²) for g distinct groupBys), and (3) a filter strictness index (O(f²) for f distinct filters). Only `makeLeftoverFilter` is still checked per step pair, reached only when both indices agree.
 
 ### Added

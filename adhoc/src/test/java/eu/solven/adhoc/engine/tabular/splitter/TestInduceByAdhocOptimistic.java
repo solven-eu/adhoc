@@ -51,7 +51,7 @@ public class TestInduceByAdhocOptimistic {
 
 	TableQueryStep a = TableQueryStep.builder().aggregator(m1).build();
 
-	AInduceByAdhocParent splitter = new InduceByAdhocComplete();
+	AInduceByAdhocParent splitter = InduceByAdhocComplete.builder().build();
 
 	@Test
 	public void testCanInduce_Trivial() {

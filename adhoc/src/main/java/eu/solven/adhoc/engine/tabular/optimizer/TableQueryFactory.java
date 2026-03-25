@@ -94,7 +94,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
 	public TableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		this(factories, filterOptimizer, new InduceByAdhocComplete(), new TableStepsGrouper());
+		this(factories, filterOptimizer, InduceByAdhocComplete.builder().build(), new TableStepsGrouper());
 	}
 
 	@Override
@@ -346,7 +346,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	 */
 	public static class TableQueryFactoryBuilder {
 		public TableQueryFactoryBuilder splitForAdhocInference() {
-			return this.splitter(new InduceByAdhocComplete());
+			return this.splitter(InduceByAdhocComplete.builder().build());
 		}
 
 		public TableQueryFactoryBuilder splitForTableGroupingSets() {

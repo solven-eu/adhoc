@@ -50,7 +50,7 @@ public class TestTableQueryFactory {
 			.filter(ColumnFilter.matchEq("c", "c1"))
 			.build();
 
-	InduceByAdhocComplete splitter = new InduceByAdhocComplete();
+	InduceByAdhocComplete splitter = InduceByAdhocComplete.builder().build();
 	TableStepsGrouper grouper = new TableStepsGrouper();
 	TableQueryFactory optimizer = new TableQueryFactory(AdhocFactories.builder().build(),
 			FilterOptimizer.builder().build(),

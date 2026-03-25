@@ -29,17 +29,26 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.alg.TransitiveReduction;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -64,9 +73,6 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 * This minimizing strategy helps minimizing the actual computations when reducing (e.g. it is easier to infer `a`
 	 * given `a,b` than given `a,b,c`).
 	 *
-	 * TODO it may not be possible/optimal to evaluate before the best inducingEdge. Typically, we may have `a,b,d` with
-	 * only one row and `a,b,c` with 3 rows: `a,b,d` is a better candidate to infer `a`).
-	 *
 	 * @param hasOptions
 	 * @param inducedToInducer
 	 * @return
@@ -86,12 +92,20 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		Map<String, List<TableQueryStep>> byMeasure =
 				steps.stream().collect(Collectors.groupingBy(s -> s.getMeasure().getName()));
 
-		byMeasure.forEach((measureName, measureSteps) -> {
+		ListeningExecutorService les = getExecutorService(hasOptions);
+
+		// Concurrent path: each context group is processed in its own local DAG, then merged.
+		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures = new ArrayList<>();
+		byMeasure.values().forEach(measureSteps -> {
 			Map<TableQueryStep, List<TableQueryStep>> byContext =
 					measureSteps.stream().collect(Collectors.groupingBy(this::contextOnly));
-
-			byContext.forEach((ctx, contextSteps) -> buildEdgesForContextGroup(induceByAdhoc, contextSteps));
+			byContext.values()
+					.stream()
+					.map(contextSteps -> les.submit(() -> buildEdgesForContextGroupLocal(contextSteps)))
+					.forEach(futures::add);
 		});
+		List<IAdhocDag<TableQueryStep>> localDags = Futures.getUnchecked(Futures.allAsList(futures));
+		localDags.forEach(localDag -> Graphs.addGraph(induceByAdhoc, localDag));
 
 		// Remove transitive edges: e.g. given a->b->c, the a->c edge is redundant
 		TransitiveReduction.INSTANCE.reduce(induceByAdhoc);
@@ -99,9 +113,37 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		return induceByAdhoc;
 	}
 
+	protected ListeningExecutorService getExecutorService(IHasQueryOptions hasOptions) {
+		ListeningExecutorService les;
+		if (hasOptions.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+			if (hasOptions instanceof QueryPod queryPod) {
+				les = queryPod.getExecutorService();
+			} else {
+				log.warn("Concurrency in default ForkJoinPool due {} not being a {}",
+						hasOptions.getClass(),
+						QueryPod.class);
+				les = MoreExecutors.listeningDecorator(ForkJoinPool.commonPool());
+			}
+		} else {
+			les = MoreExecutors.newDirectExecutorService();
+		}
+		return les;
+	}
+
 	/**
-	 * Builds all inducing edges for a group of steps sharing the same measure and context. Uses two pre-computed
-	 * indices to avoid the O(n²) cross-product of expensive filter and groupBy comparisons:
+	 * Builds all inducing edges for a group of steps sharing the same measure and context, writing directly into
+	 * {@code induceByAdhoc}. Delegates to {@link #buildEdgesForContextGroupLocal(List)} and merges the result.
+	 */
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected void buildEdgesForContextGroup(IAdhocDag<TableQueryStep> induceByAdhoc,
+			List<TableQueryStep> contextSteps) {
+		Graphs.addGraph(induceByAdhoc, buildEdgesForContextGroupLocal(contextSteps));
+	}
+
+	/**
+	 * Builds all inducing edges for a group of steps sharing the same measure and context into a fresh local
+	 * {@link IAdhocDag}. Uses two pre-computed indices to avoid the O(n²) cross-product of expensive filter and groupBy
+	 * comparisons:
 	 * <ul>
 	 * <li>GroupBy containment index: for each distinct induced {@link IGroupBy}, the distinct inducer {@link IGroupBy}s
 	 * whose columns are a superset — computed once per distinct groupBy pair (O(g²)).</li>
@@ -110,10 +152,14 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 * </ul>
 	 * Only {@link InducerHelpers#makeLeftoverFilter} must still be checked per step pair (it depends on both the
 	 * inducer groupBy columns and the filter pair simultaneously), but it is reached only when both indices agree.
+	 *
+	 * <p>
+	 * This method is thread-safe: it operates exclusively on a new local graph and its inputs are read-only.
 	 */
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected void buildEdgesForContextGroup(IAdhocDag<TableQueryStep> induceByAdhoc,
-			List<TableQueryStep> contextSteps) {
+	protected IAdhocDag<TableQueryStep> buildEdgesForContextGroupLocal(List<TableQueryStep> contextSteps) {
+		IAdhocDag<TableQueryStep> localDag = GraphHelpers.makeGraph();
+
 		// Phase 2: groupBy containment index — O(g²) for g distinct groupBys in this context group.
 		// For each distinct induced groupBy, collect all distinct groupBys that are supersets (valid inducers).
 		List<IGroupBy> distinctGroupBys =
@@ -157,7 +203,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		// Phase 5: for each induced step, use the indices to enumerate only valid inducer candidates
 		contextSteps.forEach(induced -> {
-			induceByAdhoc.addVertex(induced);
+			localDag.addVertex(induced);
 
 			ISliceFilter inducedFilter = induced.getFilter();
 			if (ISliceFilter.MATCH_NONE.equals(inducedFilter)) {
@@ -181,12 +227,14 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 								.makeLeftoverFilter(inducerColumns, inducer.getFilter(), inducedFilter)
 								.isPresent())
 						.forEach(inducer -> {
-							induceByAdhoc.addVertex(inducer);
-							induceByAdhoc.addEdge(induced, inducer);
+							localDag.addVertex(inducer);
+							localDag.addEdge(induced, inducer);
 							log.debug("Induced -> Inducer ({} -> {})", induced, inducer);
 						});
 			});
 		});
+
+		return localDag;
 	}
 
 }
