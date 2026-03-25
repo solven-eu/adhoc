@@ -22,19 +22,34 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
 
+import org.jgrapht.Graphs;
 import org.jgrapht.alg.TransitiveReduction;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
+import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
+import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Relates with {@link InduceByAdhocOptimistic} by registering all inducing options from one step to another (and not
  * picking one which may be the best a priori),
- * 
+ *
  * @author Benoit Lacelle
  */
 @Slf4j
@@ -54,71 +69,172 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 * Given an input set of steps, callback on edge of an inducing DAG. The returned DAG looks for the edge which are
 	 * the simplest one (e.g. given `a`, `a,b` and `a,b,c`, while `a` can induce both `a,b` and `a,b,c`, we prefer to
 	 * have `a,b` as inducer of `a,b,c`).
-	 * 
+	 *
 	 * This minimizing strategy helps minimizing the actual computations when reducing (e.g. it is easier to infer `a`
 	 * given `a,b` than given `a,b,c`).
-	 * 
-	 * TODO it may not be possible/optimal to evaluate before the best inducingEdge. Typically, we may have `a,b,d` with
-	 * only one row and `a,b,c` with 3 rows: `a,b,d` is a better candidate to infer `a`).
-	 * 
+	 *
 	 * @param hasOptions
 	 * @param inducedToInducer
 	 * @return
 	 */
 	@Override
-	@SuppressWarnings({ "PMD.CompareObjectsWithEquals", "checkstyle:AvoidInlineConditionals" })
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+	@SuppressWarnings("PMD.CloseResource")
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> steps = inducedToInducer.vertexSet();
 		if (steps.isEmpty()) {
 			return GraphHelpers.makeGraph();
 		}
 
-		// groupBy number of groupedBy columns, in order to filter the candidate tableQueries
-		// GroupBy tableQueries by groupBy cardinality, as we're guaranteed that a tableQuery with more groupBy can
-		// not be inferred by a tableQUery with less groupBys.
+		IAdhocDag<TableQueryStep> induceByAdhoc = GraphHelpers.makeGraph();
 
-		ListMultimap<Integer, TableQueryStep> cardinalityToSteps = steps.stream()
-				.collect(Multimaps.toMultimap(s -> s.getGroupBy().getGroupedByColumns().size(),
-						s -> s,
-						ArrayListMultimap::create));
+		// Phase 1: group by measure name, then by context (options + customMarker).
+		// Steps from different measures or contexts can never induce each other, so we avoid evaluating those pairs.
+		Map<String, List<TableQueryStep>> byMeasure =
+				steps.stream().collect(Collectors.groupingBy(s -> s.getMeasure().getName()));
 
-		int maxGroupBy = cardinalityToSteps.keySet().stream().mapToInt(i -> i).max().getAsInt();
+		ListeningExecutorService les = getExecutorService(hasOptions);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> induceByAdhoc = GraphHelpers.makeGraph();
-
-		// BEWARE Following algorithm is quadratic: for each step, we evaluate all other steps.
-		// We observed up to 1k steps.
-		// TODO SHould build inducing DAG for groupBy and filter independently, to help building faster
-		steps.forEach(induced -> {
-			induceByAdhoc.addVertex(induced);
-
-			// inducer must have more groupBys than induced
-			int smallestGroupBy = induced.getGroupBy().getGroupedByColumns().size();
-			for (int inducerGroupBy = smallestGroupBy; inducerGroupBy <= maxGroupBy; inducerGroupBy++) {
-				cardinalityToSteps.get(inducerGroupBy)
-						.stream()
-						// No edge to itself
-						.filter(inducer -> inducer != induced)
-						// Compatible context (i.e. laxer filter, customMarker, options)
-						.filter(inducer -> canInduce(inducer, induced))
-						// Consider all nodes: hence, at runtime, we will wait to fetch all possible inducers and
-						// decide
-						// for the optimal one
-						.forEach(inducer -> {
-							// right can be used to compute left
-							induceByAdhoc.addVertex(inducer);
-							induceByAdhoc.addEdge(induced, inducer);
-							log.debug("Induced -> Inducer ({} -> {})", induced, inducer);
-						});
-			}
-
+		// Concurrent path: each context group is processed in its own local DAG, then merged.
+		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures = new ArrayList<>();
+		byMeasure.values().forEach(measureSteps -> {
+			Map<TableQueryStep, List<TableQueryStep>> byContext =
+					measureSteps.stream().collect(Collectors.groupingBy(this::contextOnly));
+			byContext.values()
+					.stream()
+					.map(contextSteps -> les.submit(() -> buildEdgesForContextGroupLocal(contextSteps)))
+					.forEach(futures::add);
 		});
+		List<IAdhocDag<TableQueryStep>> localDags = Futures.getUnchecked(Futures.allAsList(futures));
+		localDags.forEach(localDag -> Graphs.addGraph(induceByAdhoc, localDag));
 
-		// TODO Improve the steps generation to prevent adding too many edges to later remove
+		// Remove transitive edges: e.g. given a->b->c, the a->c edge is redundant
 		TransitiveReduction.INSTANCE.reduce(induceByAdhoc);
 
 		return induceByAdhoc;
+	}
+
+	protected ListeningExecutorService getExecutorService(IHasQueryOptions hasOptions) {
+		ListeningExecutorService les;
+		if (hasOptions.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
+			if (hasOptions instanceof QueryPod queryPod) {
+				les = queryPod.getExecutorService();
+			} else {
+				log.warn("Concurrency in default ForkJoinPool due {} not being a {}",
+						hasOptions.getClass(),
+						QueryPod.class);
+				les = MoreExecutors.listeningDecorator(ForkJoinPool.commonPool());
+			}
+		} else {
+			les = MoreExecutors.newDirectExecutorService();
+		}
+		return les;
+	}
+
+	/**
+	 * Builds all inducing edges for a group of steps sharing the same measure and context, writing directly into
+	 * {@code induceByAdhoc}. Delegates to {@link #buildEdgesForContextGroupLocal(List)} and merges the result.
+	 */
+	protected void buildEdgesForContextGroup(IAdhocDag<TableQueryStep> induceByAdhoc,
+			List<TableQueryStep> contextSteps) {
+		Graphs.addGraph(induceByAdhoc, buildEdgesForContextGroupLocal(contextSteps));
+	}
+
+	/**
+	 * Builds all inducing edges for a group of steps sharing the same measure and context into a fresh local
+	 * {@link IAdhocDag}. Uses two pre-computed indices to avoid the O(n²) cross-product of expensive filter and groupBy
+	 * comparisons:
+	 * <ul>
+	 * <li>GroupBy containment index: for each distinct induced {@link IGroupBy}, the distinct inducer {@link IGroupBy}s
+	 * whose columns are a superset — computed once per distinct groupBy pair (O(g²)).</li>
+	 * <li>Filter strictness index: for each distinct induced filter, the set of inducer filters that are laxer —
+	 * computed once per distinct filter pair (O(f²)).</li>
+	 * </ul>
+	 * Only {@link InducerHelpers#makeLeftoverFilter} must still be checked per step pair (it depends on both the
+	 * inducer groupBy columns and the filter pair simultaneously), but it is reached only when both indices agree.
+	 *
+	 * <p>
+	 * This method is thread-safe: it operates exclusively on a new local graph and its inputs are read-only.
+	 */
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	protected IAdhocDag<TableQueryStep> buildEdgesForContextGroupLocal(List<TableQueryStep> contextSteps) {
+		IAdhocDag<TableQueryStep> localDag = GraphHelpers.makeGraph();
+
+		// Phase 2: groupBy containment index — O(g²) for g distinct groupBys in this context group.
+		// For each distinct induced groupBy, collect all distinct groupBys that are supersets (valid inducers).
+		List<IGroupBy> distinctGroupBys =
+				contextSteps.stream().map(TableQueryStep::getGroupBy).distinct().collect(Collectors.toList());
+
+		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys = new HashMap<>();
+		for (IGroupBy gbInduced : distinctGroupBys) {
+			Collection<IAdhocColumn> inducedCols = gbInduced.getColumns();
+			List<IGroupBy> inducerGroupBys = new ArrayList<>();
+			for (IGroupBy gbInducer : distinctGroupBys) {
+				if (gbInducer.getColumns().containsAll(inducedCols)) {
+					inducerGroupBys.add(gbInducer);
+				}
+			}
+			inducedGroupByToInducerGroupBys.put(gbInduced, inducerGroupBys);
+		}
+
+		// Phase 3: filter strictness index — O(f²) for f distinct filters in this context group.
+		// For each distinct induced filter, pre-compute the set of inducer filters that are laxer.
+		List<ISliceFilter> distinctFilters =
+				contextSteps.stream().map(TableQueryStep::getFilter).distinct().collect(Collectors.toList());
+
+		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters = new HashMap<>();
+		for (ISliceFilter fInduced : distinctFilters) {
+			if (ISliceFilter.MATCH_NONE.equals(fInduced)) {
+				// MATCH_NONE steps are independent: no inducer can serve them
+				continue;
+			}
+			Set<ISliceFilter> laxer = new HashSet<>();
+			for (ISliceFilter fInducer : distinctFilters) {
+				if (FilterHelpers.isStricterThan(fInduced, fInducer)) {
+					laxer.add(fInducer);
+				}
+			}
+			inducedFilterToLaxerInducerFilters.put(fInduced, laxer);
+		}
+
+		// Phase 4: index steps by groupBy for O(1) candidate lookup
+		Map<IGroupBy, List<TableQueryStep>> groupByToSteps =
+				contextSteps.stream().collect(Collectors.groupingBy(TableQueryStep::getGroupBy));
+
+		// Phase 5: for each induced step, use the indices to enumerate only valid inducer candidates
+		contextSteps.forEach(induced -> {
+			localDag.addVertex(induced);
+
+			ISliceFilter inducedFilter = induced.getFilter();
+			if (ISliceFilter.MATCH_NONE.equals(inducedFilter)) {
+				// MATCH_NONE steps are independent: they do not wait for any inducer
+				return;
+			}
+
+			Set<ISliceFilter> validInducerFilters = inducedFilterToLaxerInducerFilters.get(inducedFilter);
+			List<IGroupBy> validInducerGroupBys = inducedGroupByToInducerGroupBys.get(induced.getGroupBy());
+
+			validInducerGroupBys.forEach(inducerGroupBy -> {
+				Collection<IAdhocColumn> inducerColumns = inducerGroupBy.getColumns();
+				groupByToSteps.get(inducerGroupBy)
+						.stream()
+						// No edge from a step to itself
+						.filter(inducer -> inducer != induced)
+						// Inducer filter must be laxer (pre-computed per distinct filter pair)
+						.filter(inducer -> validInducerFilters.contains(inducer.getFilter()))
+						// Leftover filter must be expressible using only inducer groupBy columns
+						.filter(inducer -> InducerHelpers
+								.makeLeftoverFilter(inducerColumns, inducer.getFilter(), inducedFilter)
+								.isPresent())
+						.forEach(inducer -> {
+							localDag.addVertex(inducer);
+							localDag.addEdge(induced, inducer);
+							log.debug("Induced -> Inducer ({} -> {})", induced, inducer);
+						});
+			});
+		});
+
+		return localDag;
 	}
 
 }

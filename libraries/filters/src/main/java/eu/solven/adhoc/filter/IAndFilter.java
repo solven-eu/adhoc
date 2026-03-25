@@ -36,5 +36,5 @@ public interface IAndFilter extends ISliceFilter, IHasOperands<ISliceFilter> {
 	@Override
 	// This is a logical field, but not a constraint at serialization as some IAndFilter may compute these operands
 	@JsonIgnore
-	Set<ISliceFilter> getOperands();
+	Set<? extends ISliceFilter> getOperands();
 }

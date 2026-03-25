@@ -33,13 +33,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -48,6 +48,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasName;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.Value;
@@ -56,6 +57,8 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link IGroupBy} based on a {@link Set} of {@link IAdhocColumn}.
+ * 
+ * It has similar semantic with ImmutableSet (e.g. SequencedSet) even if some methods returned Ordered information.
  *
  * @author Benoit Lacelle
  *
@@ -66,9 +69,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @EqualsAndHashCode(exclude = { "cachedNameToColumn", "retainedToGroupBy" })
 public class GroupByColumns implements IGroupBy {
-	// Set as not ordered
+
 	@Singular
 	@NonNull
+	@Getter
+	@JsonProperty
 	final ImmutableSet<IAdhocColumn> columns;
 
 	// Cached to spare memory allocation as this may be read once per aggregate
@@ -86,18 +91,17 @@ public class GroupByColumns implements IGroupBy {
 			return "grandTotal";
 		}
 
-		// Order columns by name to have `.toString()` consistent with `.equals()`
-		NavigableMap<String, IAdhocColumn> nameToColumn = getNameToColumn();
+		// However, this is similar to SequencedSet: `.toString` can be different for equals instances
+		ImmutableSet<IAdhocColumn> columnForToString = getColumns();
 
-		if (nameToColumn.values().stream().allMatch(c -> c instanceof ReferencedColumn)) {
-			return nameToColumn.values()
-					.stream()
+		if (columnForToString.stream().allMatch(c -> c instanceof ReferencedColumn)) {
+			return columnForToString.stream()
 					.map(c -> ((ReferencedColumn) c).getName())
 					.map(this::escape)
 					.collect(Collectors.joining(", ", "(", ")"));
 		}
 
-		return nameToColumn.values().stream().map(filter -> {
+		return columnForToString.stream().map(filter -> {
 			if (filter instanceof ReferencedColumn ref) {
 				return ref.getName();
 			} else {
@@ -131,7 +135,7 @@ public class GroupByColumns implements IGroupBy {
 		// `namedColumns` is useful to check the consistency of names
 		namedColumns(columns);
 
-		return GroupByColumns.builder().columns(List.copyOf(columns)).build();
+		return GroupByColumns.builder().columns(columns).build();
 	}
 
 	public static IGroupBy of(IAdhocColumn wildcard, IAdhocColumn... wildcards) {
@@ -174,7 +178,7 @@ public class GroupByColumns implements IGroupBy {
 
 		return retainedToGroupBy.computeIfAbsent(columns, ks -> {
 			List<IAdhocColumn> retainedColumns =
-					getNameToColumn().values().stream().filter(c -> columns.contains(c.getName())).toList();
+					getColumns().stream().filter(c -> columns.contains(c.getName())).toList();
 
 			if (retainedColumns.size() == this.columns.size()) {
 				return this;
@@ -188,7 +192,7 @@ public class GroupByColumns implements IGroupBy {
 		SetMultimap<String, IAdhocColumn> nameToColumns =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		groupBys.forEach(gb -> {
-			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+			gb.getColumns().forEach(c -> nameToColumns.put(c.getName(), c));
 		});
 
 		Optional<Map.Entry<String, Collection<IAdhocColumn>>> optFaultyEntry =

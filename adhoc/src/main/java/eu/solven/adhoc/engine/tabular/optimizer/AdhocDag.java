@@ -22,50 +22,24 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import org.jgrapht.Graphs;
-
-import com.google.common.collect.ImmutableSet;
-
-import lombok.experimental.UtilityClass;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 
 /**
- * Helps working with JGraph4T
- * 
+ * Default implementation of {@link IAdhocDag}, backed by {@link DirectedAcyclicGraph}.
+ *
+ * <p>
+ * Prefer obtaining instances via {@link GraphHelpers#makeGraph()} rather than constructing directly.
+ *
+ * @param <T>
+ *            the vertex type
  * @author Benoit Lacelle
  */
-@UtilityClass
-public class GraphHelpers {
+public class AdhocDag<T> extends DirectedAcyclicGraph<T, DefaultEdge> implements IAdhocDag<T> {
+	private static final long serialVersionUID = -249972253876618809L;
 
-	public static <T> IAdhocDag<T> makeGraph() {
-		return new AdhocDag<>();
-	}
-
-	/**
-	 * 
-	 * @param <T>
-	 * @param graph
-	 * @return the set of inducers, i.e. nodes which has no children
-	 */
-	// relates with `Graphs.vertexHasSuccessors`
-	public static <T> ImmutableSet<T> getInducers(IAdhocDag<T> graph) {
-		return graph.vertexSet().stream().filter(s -> graph.outDegreeOf(s) == 0).collect(ImmutableSet.toImmutableSet());
-	}
-
-	public static <T> ImmutableSet<T> getInduceds(IAdhocDag<T> graph) {
-		return graph.vertexSet().stream().filter(s -> graph.outDegreeOf(s) != 0).collect(ImmutableSet.toImmutableSet());
-	}
-
-	public static <T> ImmutableSet<T> getInduced(IAdhocDag<T> graph, T step) {
-		return graph.incomingEdgesOf(step).stream().map(graph::getEdgeSource).collect(ImmutableSet.toImmutableSet());
-	}
-
-	public static <T> IAdhocDag<T> copy(IAdhocDag<T> graph) {
-		IAdhocDag<T> copied = makeGraph();
-
-		Graphs.addGraph(copied, graph);
-
-		return copied;
-
+	public AdhocDag() {
+		super(DefaultEdge.class);
 	}
 
 }

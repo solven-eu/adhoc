@@ -46,13 +46,16 @@ import lombok.Value;
 public class AggregatedRecordFields {
 	@NonNull
 	@Singular
+	// List as more useful for consumer, but it has to be a distinct List
 	ImmutableList<String> aggregates;
 	@NonNull
 	@Singular
+	// List as more useful for consumer, but it has to be a distinct List
 	ImmutableList<String> columns;
 	// Additional columns needed for the leftover filters
 	@NonNull
 	@Singular
+	// List as more useful for consumer, but it has to be a distinct List
 	ImmutableList<String> leftovers;
 
 	@NonNull

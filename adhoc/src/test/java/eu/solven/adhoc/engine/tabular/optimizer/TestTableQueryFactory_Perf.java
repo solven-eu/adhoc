@@ -29,8 +29,6 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSortedSet;
@@ -58,7 +56,7 @@ public class TestTableQueryFactory_Perf {
 	int cardinalityOut = 1000;
 
 	ITableQueryInducer inducer = new TableQueryInducer(AdhocFactories.builder().build());
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = new DirectedAcyclicGraph<>(DefaultEdge.class);
+	IAdhocDag<TableQueryStep> inducedToInducer = new AdhocDag<>();
 	Map<TableQueryStep, ICuboid> inducers = new LinkedHashMap<>();
 
 	RowSliceFactory factory = RowSliceFactory.builder().build();

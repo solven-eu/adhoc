@@ -32,10 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -43,7 +43,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Enables processing a {@link DirectedAcyclicGraph}, with shared nodes, through a CompletionFuture.
+ * Enables processing a {@link IAdhocDag}, with shared nodes, through a CompletionFuture.
  * 
  * @param <T>
  * @author Benoit Lacelle
@@ -54,7 +54,7 @@ public class DagCompletableExecutor<T> {
 
 	// BEWARE This should be immutable/not-mutated during the course of the related actions
 	@NonNull
-	final DirectedAcyclicGraph<T, DefaultEdge> fromQueriedToDependencies;
+	final IAdhocDag<T> fromQueriedToDependencies;
 
 	// @NonNull
 	// @With

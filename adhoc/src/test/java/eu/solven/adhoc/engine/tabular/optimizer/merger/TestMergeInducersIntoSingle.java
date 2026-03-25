@@ -23,13 +23,12 @@
 package eu.solven.adhoc.engine.tabular.optimizer.merger;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersIntoSingle;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -47,7 +46,7 @@ public class TestMergeInducersIntoSingle {
 		TableQueryStep s1 = a.toBuilder().filter(ColumnFilter.matchEq("a", "a1")).build();
 		TableQueryStep s2 = a.toBuilder().filter(ColumnFilter.matchEq("a", "a2")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
+		IAdhocDag<TableQueryStep> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
 
 		Assertions.assertThat(merged.vertexSet())
 				.hasSize(3)
@@ -67,7 +66,7 @@ public class TestMergeInducersIntoSingle {
 		TableQueryStep s2 =
 				a.toBuilder().groupBy(GroupByColumns.named("c")).filter(ColumnFilter.matchEq("d", "d1")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
+		IAdhocDag<TableQueryStep> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
 
 		Assertions.assertThat(merged.vertexSet())
 				.hasSize(3)
@@ -88,7 +87,7 @@ public class TestMergeInducersIntoSingle {
 		TableQueryStep s2 =
 				a.toBuilder().groupBy(GroupByColumns.named("c")).filter(ColumnFilter.matchEq("b", "b1")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
+		IAdhocDag<TableQueryStep> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
 
 		Assertions.assertThat(merged.vertexSet())
 				.hasSize(3)
@@ -107,7 +106,7 @@ public class TestMergeInducersIntoSingle {
 		TableQueryStep s2 = a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build();
 		TableQueryStep s3 = a.toBuilder().groupBy(GroupByColumns.named("a", "c")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2, s3));
+		IAdhocDag<TableQueryStep> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2, s3));
 
 		TableQueryStep globalInducer = a.toBuilder().groupBy(GroupByColumns.named("a", "b", "c")).build();
 		Assertions.assertThat(merged.vertexSet()).hasSize(4).contains(s1, s2, s3).contains(globalInducer);
@@ -138,7 +137,7 @@ public class TestMergeInducersIntoSingle {
 		TableQueryStep s1 = a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build();
 		TableQueryStep s2 = a.toBuilder().groupBy(GroupByColumns.named("a")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
+		IAdhocDag<TableQueryStep> merged = merger.mergeInducers(a, ImmutableSet.of(s1, s2));
 
 		Assertions.assertThat(merged.vertexSet()).isEmpty();
 	}

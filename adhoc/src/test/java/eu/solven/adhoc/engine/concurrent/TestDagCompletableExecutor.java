@@ -29,15 +29,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 
+import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
+
 public class TestDagCompletableExecutor {
 
-	private void execute(DirectedAcyclicGraph<String, DefaultEdge> dag,
+	private void execute(IAdhocDag<String> dag,
 			AtomicLongMap<String> taskToCount,
 			Map<String, Object> queryStepToValues,
 			AtomicInteger nbExecution) {
@@ -68,8 +69,7 @@ public class TestDagCompletableExecutor {
 
 	@Test
 	public void testConcurrentQuerySteps_sharedAreReUsed() {
-		DirectedAcyclicGraph<String, DefaultEdge> dag =
-				new DirectedAcyclicGraph<String, DefaultEdge>(DefaultEdge.class);
+		IAdhocDag<String> dag = new AdhocDag<>();
 
 		dag.addVertex("a");
 		dag.addVertex("c");
@@ -105,8 +105,7 @@ public class TestDagCompletableExecutor {
 	// @Disabled("Demonstrate fragility with complex DAG in FJP")
 	@Test
 	public void testConcurrentQuerySteps_sharedAreReUsed_2layers() {
-		DirectedAcyclicGraph<String, DefaultEdge> dag =
-				new DirectedAcyclicGraph<String, DefaultEdge>(DefaultEdge.class);
+		IAdhocDag<String> dag = new AdhocDag<>();
 
 		dag.addVertex("a");
 		dag.addVertex("c");

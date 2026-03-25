@@ -24,12 +24,10 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -50,8 +48,8 @@ import lombok.extern.slf4j.Slf4j;
 public class InduceByTableWrapper implements ITableStepsSplitter {
 
 	@Override
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		return GraphHelpers.makeGraph();
 	}
 

@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
@@ -52,7 +50,7 @@ public class TestTableQueryFactory {
 			.filter(ColumnFilter.matchEq("c", "c1"))
 			.build();
 
-	InduceByAdhocComplete splitter = new InduceByAdhocComplete();
+	InduceByAdhocComplete splitter = InduceByAdhocComplete.builder().build();
 	TableStepsGrouper grouper = new TableStepsGrouper();
 	TableQueryFactory optimizer = new TableQueryFactory(AdhocFactories.builder().build(),
 			FilterOptimizer.builder().build(),
@@ -147,8 +145,7 @@ public class TestTableQueryFactory {
 		// Simulate an orphan inducerStep which is not covered by tableQueries
 		{
 			// https://stackoverflow.com/questions/14938591/how-to-copy-a-graph-in-jgrapht
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> copytableStepsDag =
-					(DirectedAcyclicGraph<TableQueryStep, DefaultEdge>) split.getInducedToInducer().clone();
+			IAdhocDag<TableQueryStep> copytableStepsDag = GraphHelpers.copy(split.getInducedToInducer());
 
 			copytableStepsDag.addVertex(TableQueryStep.builder().aggregator(m1).build());
 

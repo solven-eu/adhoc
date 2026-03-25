@@ -258,7 +258,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		} else {
 			Optional<IAdhocColumn> optInvalidColumn = tableQuery.getGroupBys()
 					.stream()
-					.flatMap(gb -> gb.getNameToColumn().values().stream())
+					.flatMap(gb -> gb.getColumns().stream())
 					.filter(c -> c instanceof ICalculatedColumn)
 					.findAny();
 			if (optInvalidColumn.isPresent()) {

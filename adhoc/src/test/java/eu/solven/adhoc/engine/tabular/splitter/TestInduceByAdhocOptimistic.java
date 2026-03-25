@@ -28,7 +28,6 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowingConsumer;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +35,7 @@ import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -51,7 +51,7 @@ public class TestInduceByAdhocOptimistic {
 
 	TableQueryStep a = TableQueryStep.builder().aggregator(m1).build();
 
-	AInduceByAdhocParent splitter = new InduceByAdhocComplete();
+	AInduceByAdhocParent splitter = InduceByAdhocComplete.builder().build();
 
 	@Test
 	public void testCanInduce_Trivial() {
@@ -273,12 +273,11 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testSplitAsDag_2groupByWithNonEmptyIntersection() {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> split =
-				splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
-						ImmutableSet.<TableQueryStep>builder()
-								.add(a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build())
-								.add(a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build())
-								.build());
+		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
+				ImmutableSet.<TableQueryStep>builder()
+						.add(a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build())
+						.add(a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build())
+						.build());
 
 		Assertions.assertThat(split.edgeSet()).isEmpty();
 	}
@@ -290,7 +289,7 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep size1 = a.toBuilder().groupBy(GroupByColumns.named("a")).build();
 		TableQueryStep size3 = a.toBuilder().groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> split =
+		IAdhocDag<TableQueryStep> split =
 				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(size1, size3));
 
 		// size3 can induce size1 (it contains column "a")
@@ -307,9 +306,8 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep s2 = a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build();
 		@NonNull
 		TableQueryStep s3 = a.toBuilder().groupBy(GroupByColumns.named("b")).build();
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> split =
-				splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
-						ImmutableSet.<TableQueryStep>builder().add(s1).add(s2).add(s3).build());
+		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
+				ImmutableSet.<TableQueryStep>builder().add(s1).add(s2).add(s3).build());
 
 		Assertions.assertThat(split.vertexSet()).hasSize(3);
 		Assertions.assertThat(split.edgeSet())
@@ -329,7 +327,7 @@ public class TestInduceByAdhocOptimistic {
 				.groupBy(GroupByColumns.named("a"))
 				.build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 		merged.addVertex(s3);
@@ -337,7 +335,7 @@ public class TestInduceByAdhocOptimistic {
 		merged.addEdge(s1, s3);
 		merged.addEdge(s2, s3);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared =
+		IAdhocDag<TableQueryStep> withShared =
 				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(s1, s2, s3));
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
@@ -350,7 +348,7 @@ public class TestInduceByAdhocOptimistic {
 
 	private ThrowingConsumer<? super DefaultEdge> assertInduce(TableQueryStep s1,
 			TableQueryStep s2,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared) {
+			IAdhocDag<TableQueryStep> withShared) {
 		return edge -> {
 			TableQueryStep induced = withShared.getEdgeSource(edge);
 			TableQueryStep inducer = withShared.getEdgeTarget(edge);
@@ -368,7 +366,7 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep s3 =
 				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 		merged.addVertex(s3);
@@ -376,7 +374,7 @@ public class TestInduceByAdhocOptimistic {
 		merged.addEdge(s1, s3);
 		merged.addEdge(s2, s3);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared =
+		IAdhocDag<TableQueryStep> withShared =
 				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2, s3));
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
@@ -392,12 +390,11 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and(Map.of("a", "a1", "b", "b1"))).build();
 		TableQueryStep s2 = a.toBuilder().filter(ISliceFilter.MATCH_NONE).build();
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> merged = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withShared =
-				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2));
+		IAdhocDag<TableQueryStep> withShared = splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2));
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(2).contains(s1, s2);
 

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapUnsafe;
 import eu.solven.adhoc.map.IAdhocMap;
 
@@ -129,6 +130,36 @@ public class TestColumnSliceFactory {
 					.isEqualTo(ImmutableMap.of("a", "a1"))
 					.hasSameHashCodeAs(ImmutableMap.of("a", "a1"));
 		}
+	}
+
+	// -------------------------------------------------------------------------
+	// containsValue
+	// -------------------------------------------------------------------------
+
+	@Test
+	public void testContainsValue_existing() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+
+		Assertions.assertThat(aAndB.containsValue("a1")).isTrue();
+		Assertions.assertThat(aAndB.containsValue("b1")).isTrue();
+	}
+
+	@Test
+	public void testContainsValue_missing() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+
+		Assertions.assertThat(aAndB.containsValue("z")).isFalse();
+	}
+
+	@Test
+	public void testContainsValue_null_fromFailedJoin() {
+		// null is normalized to NullMatcher.NULL_HOLDER at storage time, then unwrapped back to null on read.
+		// containsValue(null) must return true (not NPE) — Objects.equals handles the null-vs-null comparison.
+		IAdhocMap map = factory.newMapBuilder(List.of("a", "b")).append("a1").append(null).build();
+
+		Assertions.assertThat(map.containsValue(null)).isTrue();
+		// NULL_HOLDER is an internal sentinel; it is never exposed to callers
+		Assertions.assertThat(map.containsValue(NullMatcher.NULL_HOLDER)).isFalse();
 	}
 
 	@Test

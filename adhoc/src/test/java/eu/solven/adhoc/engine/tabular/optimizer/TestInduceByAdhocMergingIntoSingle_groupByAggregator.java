@@ -331,10 +331,9 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(TableQueryStep.edit(step)
-						.filter(FilterBuilder
-								.or(ColumnFilter.matchEq("d", "d1"),
-										AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")),
-										AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
+						.filter(FilterBuilder.or(ColumnFilter.matchEq("d", "d1"),
+								AndFilter.and(ColumnFilter.matchEq("a", "a1"),
+										OrFilter.or(ImmutableMap.of("c", "c1", "b", "b1"))))
 								.combine())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d", "x", "y"))
 						.build());

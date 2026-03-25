@@ -20,39 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.splitter.merger;
+package eu.solven.adhoc.dataframe.filter;
 
-import java.util.Set;
+import java.util.Map;
 
-import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
-/**
- * Given a set of inducers, this will generate an additional set of inducers.
- * 
- * The point is typically to reduce the number of inducers.
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface IMergeInducers {
-	/**
-	 * Creates a {@link IAdhocDag} to be merged into the main {@link IAdhocDag}. It will typically extends the leaves of
-	 * the DAG, to merge inducers into a smaller number of inducers.
-	 * 
-	 * @param contextualAggregator
-	 * @param steps
-	 * @return
-	 */
-	IAdhocDag<TableQueryStep> mergeInducers(TableQueryStep contextualAggregator, Set<TableQueryStep> steps);
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 
-	/**
-	 * Factory for {@link IMergeInducers}
-	 */
-	@FunctionalInterface
-	interface IMergeInducersFactory {
-		IMergeInducers makeMergeInducer(IFilterStripperFactory filterStripperFactory, IFilterOptimizer filterOptimizer);
+public class TestFilterMatcher {
+	@Test
+	public void match_differentFactory() {
+		ColumnSliceFactory f1 = Mockito.spy(ColumnSliceFactory.builder().build());
+		ColumnSliceFactory f2 = ColumnSliceFactory.builder().build();
+
+		FilterMatcher filterMatcher =
+				FilterMatcher.builder().sliceFactory(f1).filter(ColumnFilter.matchEq("a", "a1")).build();
+
+		Map<String, ?> okFromF2 = f2.newMapBuilder("a").append("a1").build();
+		Map<String, ?> koFromF2 = f2.newMapBuilder("a").append("a2").build();
+
+		Assertions.assertThat(filterMatcher.match(okFromF2)).isTrue();
+		Assertions.assertThat(filterMatcher.match(koFromF2)).isFalse();
+
+		// Make sure we did not relied on f1 to create an AdhocMap given AdhocMap from f2
+		Mockito.verifyNoInteractions(f1);
 	}
 }

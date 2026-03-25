@@ -25,7 +25,6 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowingConsumer;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 
@@ -34,13 +33,13 @@ public class GraphsTestHelpers {
 	public static ThrowingConsumer<? super DefaultEdge> assertEdge(TableQueryStep induced,
 			TableQueryStep inducer,
 			IHasDagFromInducedToInducer<TableQueryStep> split) {
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> graph = split.getInducedToInducer();
+		IAdhocDag<TableQueryStep> graph = split.getInducedToInducer();
 		return assertEdge(induced, inducer, graph);
 	}
 
 	public static ThrowingConsumer<? super DefaultEdge> assertEdge(TableQueryStep induced,
 			TableQueryStep inducer,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> graph) {
+			IAdhocDag<TableQueryStep> graph) {
 		return e -> {
 			TableQueryStep sourceStep = graph.getEdgeSource(e);
 			TableQueryStep targetStep = graph.getEdgeTarget(e);

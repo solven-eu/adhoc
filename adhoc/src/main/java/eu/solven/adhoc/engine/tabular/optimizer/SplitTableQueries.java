@@ -23,12 +23,10 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -66,7 +64,7 @@ public class SplitTableQueries
 		implements IHasDagFromInducedToInducer<TableQueryStep>, IHasTableQueryForSteps, ISinkExecutionFeedback {
 	// From induced to inducer. Given the steps produced by the table, we may infer more steps.
 	@NonNull
-	DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer;
+	IAdhocDag<TableQueryStep> inducedToInducer;
 
 	// The nodes which are explicitly requested. Typically roots of DAG, but may also be some shared intermediate
 	// nodes (if some root is an inducer of another root).
@@ -90,7 +88,7 @@ public class SplitTableQueries
 	}
 
 	public static SplitTableQueries empty() {
-		return SplitTableQueries.builder().inducedToInducer(new DirectedAcyclicGraph<>(DefaultEdge.class)).build();
+		return SplitTableQueries.builder().inducedToInducer(GraphHelpers.makeGraph()).build();
 	}
 
 	@Override
@@ -117,7 +115,7 @@ public class SplitTableQueries
 				log.debug("Skip step as produce by table but irrelevant for cube. step={}", cubeStep);
 				return null;
 			}
-		});
+		}).filter(Objects::nonNull);
 	}
 
 	@Override

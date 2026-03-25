@@ -128,7 +128,7 @@ public class SimpleFilterEditor implements IFilterEditor {
 				return filter;
 			}
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<ISliceFilter> operands = andFilter.getOperands();
+			Set<? extends ISliceFilter> operands = andFilter.getOperands();
 
 			if (filterMode == FilterMode.alwaysShift) {
 				// OPTIMIZATION Switch from `FilterMode.alwaysShift` to to build many AND of 2 columnFilters given an

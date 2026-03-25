@@ -33,7 +33,7 @@ public interface IColumnToString {
 	 *
 	 * @param column
 	 * @param negated
-	 *            true if this {@link IValueMatcher} is wrapper in a {@link NotMatcher}
+	 *            true if this {@link IValueMatcher} is wrapped in a {@link NotMatcher}
 	 * @return
 	 */
 	String toString(String column, boolean negated);

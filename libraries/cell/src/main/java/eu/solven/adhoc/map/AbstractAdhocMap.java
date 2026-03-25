@@ -206,7 +206,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	@Override
 	public boolean containsValue(Object value) {
 		// DESIGN This is a slow method in most cases
-		return IntStream.range(0, size()).anyMatch(index -> getSequencedValue(index).equals(value));
+		return IntStream.range(0, size()).anyMatch(index -> Objects.equals(getSequencedValue(index), value));
 	}
 
 	/**

@@ -46,8 +46,7 @@ import lombok.experimental.UtilityClass;
 public class GroupByHelpers {
 
 	public static IGroupBy union(IGroupBy left, @NonNull IGroupBy right) {
-		ImmutableSet<IAdhocColumn> union =
-				AdhocCollectionHelpers.copyOfSets(left.getNameToColumn().values(), right.getNameToColumn().values());
+		ImmutableSet<IAdhocColumn> union = AdhocCollectionHelpers.copyOfSets(left.getColumns(), right.getColumns());
 
 		if (union.isEmpty()) {
 			return GroupByColumns.GRAND_TOTAL;

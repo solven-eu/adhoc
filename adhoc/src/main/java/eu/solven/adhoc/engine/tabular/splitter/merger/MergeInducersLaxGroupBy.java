@@ -22,12 +22,10 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.merger;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import com.google.common.collect.LinkedHashMultimap;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
@@ -55,7 +53,7 @@ public class MergeInducersLaxGroupBy extends MergeInducersStrictGroupBy {
 	@Override
 	protected void mergeGroups(LinkedHashMultimap<TableQueryStep, TableQueryStep> mergingToSteps) {
 		InduceByAdhoc inferrer = InduceByAdhoc.builder().build();
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> dag =
+		IAdhocDag<TableQueryStep> dag =
 				inferrer.splitInducedAsDag(IHasQueryOptions.noOption(), mergingToSteps.keySet());
 
 		log.warn("TODO Dispatch dag={}", dag);

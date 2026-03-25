@@ -27,9 +27,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
@@ -38,6 +37,7 @@ import com.google.common.collect.SetMultimap;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.splitter.adder.AddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
@@ -85,22 +85,22 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
 
 	@Override
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> splitInducedAsDag(IHasQueryOptions hasOptions,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		// 1. Add inference between existing nodes
 		// If we add such links, we tell the induced will be inferred by Adhoc and there will be less inducers for
 		// ITableWrapper.
 		// If we do not add such edges, we request the ITableWrapper to execute each TableQueryStep (e.g. as a large
 		// UNION ALL)
 		// BEWARE This should only add edges
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withInferenceNodes =
+		IAdhocDag<TableQueryStep> withInferenceNodes =
 				inferenceEdgesAdderFactory.get().splitInducedAsDag(hasOptions, inducedToInducer);
 
 		// 2. Given the new (and smaller) set of inducers, we may want to add additional vertices, merging inducers
 		// together.
 		ImmutableSet<TableQueryStep> tableSteps = GraphHelpers.getInducers(withInferenceNodes);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> withMergedInducers = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> withMergedInducers = GraphHelpers.makeGraph();
 		// Step0: copy input graph
 		Graphs.addGraph(withMergedInducers, inducedToInducer);
 		// Step1: register the inference edges (new steps but no new vertices)
@@ -110,18 +110,19 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 		// Merging inducers is done a per options+custom_marker+aggregator basis
 		Multimaps.asMap(aggregatorToQueries).forEach((a, steps) -> {
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> aInducedToInducer =
-					makeMergeInducers().mergeInducers(a, steps);
+			IAdhocDag<TableQueryStep> aInducedToInducer = makeMergeInducers().mergeInducers(a, steps);
 
 			if (hasOptions.isDebugOrExplain()) {
 				SplitTableQueries aTableQueries =
 						SplitTableQueries.builder().inducedToInducer(aInducedToInducer).build();
 
 				// TODO This log lacks options and customMarkers if any
-				log.info("[EXPLAIN] inducers={} induceds={} roots={} for agg={}",
-						aTableQueries.getInducers().size(),
-						aTableQueries.getInduceds().size(),
+				log.info("[EXPLAIN] explicits={} roots={} vertices={} induceds={} inducers={} for agg={}",
+						steps.size(),
 						aTableQueries.getRoots().size(),
+						aTableQueries.getInducedToInducer().vertexSet().size(),
+						aTableQueries.getInduceds().size(),
+						aTableQueries.getInducers().size(),
 						a.getMeasure().getName());
 			}
 
@@ -136,7 +137,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 		// They will help computing only once elements of inference (e.g. some filter or some groupBy)
 
 		// add shared nodes over the full graph, as both explicit and other steps may benefit from shared nodes
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> sharedNodes = addSharedNodes(withMergedInducers);
+		IAdhocDag<TableQueryStep> sharedNodes = addSharedNodes(withMergedInducers);
 		Graphs.addGraph(withMergedInducers, sharedNodes);
 		return withMergedInducers;
 	}
@@ -148,8 +149,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 * @param inducedToInducer
 	 * @return
 	 */
-	protected DirectedAcyclicGraph<TableQueryStep, DefaultEdge> addSharedNodes(
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+	protected IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> inducedToInducer) {
 		return makeSharedNodesAdder().addSharedNodes(inducedToInducer);
 	}
 
@@ -179,7 +179,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 * From an implementation perspective, this re-use the standard optimization process, then compute a single
 	 * TableQueryStep by Aggregator given the root inducers.
 	 */
-	protected DirectedAcyclicGraph<TableQueryStep, DefaultEdge> getGroupedInducers(TableQueryStep contextualAggregator,
+	protected IAdhocDag<TableQueryStep> getGroupedInducers(TableQueryStep contextualAggregator,
 			Set<TableQueryStep> steps) {
 		return makeMergeInducers().mergeInducers(contextualAggregator, steps);
 	}
@@ -192,4 +192,12 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 		return AddSharedNodes.builder().filterOptimizer(filterOptimizer).build();
 	}
 
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("inferenceEdgesAdder", inferenceEdgesAdderFactory.get())
+				.add("mergeInducersFactory", mergeInducersFactory)
+				.add("sharedNodesAdderFactory", sharedNodesAdderFactory)
+				.toString();
+	}
 }

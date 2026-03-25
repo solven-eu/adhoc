@@ -31,8 +31,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jgrapht.Graphs;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
@@ -97,7 +95,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
 	public TableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		this(factories, filterOptimizer, new InduceByAdhocComplete(), new TableStepsGrouper());
+		this(factories, filterOptimizer, InduceByAdhocComplete.builder().build(), new TableStepsGrouper());
 	}
 
 	@Override
@@ -106,7 +104,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 			return SplitTableQueries.empty();
 		}
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
 		// Initialize the DAG of flat tableSteps
 		tableSteps.forEach(inducedToInducer::addVertex);
 
@@ -143,7 +141,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 				tableQueries.stream().map(TableQueryV4::asCoveringV3).mapToLong(TableQueryV3::nbCuboids).sum();
 
 		// prints percent with 1 digit.
-		String percentEfficiency = asPercent(tableSteps.size(), nbEvaluatedTableInducers);
+		// TODO May we have some steps which are irrelevant for inducers, but actually useful for induced?
+		String percentEfficiency = asPercent(nbTableInducers, nbEvaluatedTableInducers);
 		log.info(
 				"[EXPLAIN] {} steps led to {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
 				tableSteps.size(),
@@ -163,7 +162,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(Set<TableQueryStep> tableSteps,
-			DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer) {
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> inducers = GraphHelpers.getInducers(inducedToInducer);
 
 		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(inducers);
@@ -348,7 +347,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	 */
 	public static class TableQueryFactoryBuilder {
 		public TableQueryFactoryBuilder splitForAdhocInference() {
-			return this.splitter(new InduceByAdhocComplete());
+			return this.splitter(InduceByAdhocComplete.builder().build());
 		}
 
 		public TableQueryFactoryBuilder splitForTableGroupingSets() {

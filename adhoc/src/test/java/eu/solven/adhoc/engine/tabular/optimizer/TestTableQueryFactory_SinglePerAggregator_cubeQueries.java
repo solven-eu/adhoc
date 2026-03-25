@@ -58,7 +58,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
 			.factories(AdhocFactories.builder().build())
-			.splitter(new InduceByAdhocComplete())
+			.splitter(InduceByAdhocComplete.builder().build())
 			.groupByAggregator()
 			.build();
 

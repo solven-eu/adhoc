@@ -68,13 +68,16 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 		IMultitypeMergeableColumn<ISlice> inducedValues =
 				prepareInducedColumn(inducer, induced, inducerValues, aggregation);
 
-		FilterMatcher filterMatcher =
-				FilterMatcher.builder().filter(leftoverFilter).onMissingColumn(FilterMatcher.failOnMissing()).build();
+		FilterMatcher filterMatcher = FilterMatcher.builder()
+				.sliceFactory(factories.getSliceFactory())
+				.filter(leftoverFilter)
+				.onMissingColumn(FilterMatcher.failOnMissing())
+				.build();
 
 		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
 		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
 
-		inducerValues.stream().filter(s -> filterMatcher.match(s.getSlice().asAdhocMap())).forEach(inducerSlice -> {
+		inducerValues.stream().filter(s -> filterMatcher.match(s.getSlice())).forEach(inducerSlice -> {
 			ISlice inducedSlice;
 			if (sameColumns) {
 				inducedSlice = inducerSlice.getSlice();

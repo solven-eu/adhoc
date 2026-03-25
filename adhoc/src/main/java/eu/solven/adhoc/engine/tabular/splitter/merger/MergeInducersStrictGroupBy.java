@@ -24,9 +24,6 @@ package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import java.util.Set;
 
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
@@ -34,6 +31,7 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
@@ -54,6 +52,8 @@ import lombok.NonNull;
  * 
  * @author Benoit Lacelle
  */
+@Deprecated(
+		since = "This looks inefficient. May do better job one `UNION ALL` is fully supported (by JootTableQueryFactory)")
 @Builder
 public class MergeInducersStrictGroupBy implements IMergeInducers {
 	@Default
@@ -79,8 +79,7 @@ public class MergeInducersStrictGroupBy implements IMergeInducers {
 	// `FILTER a1&b1 GROUP BY (b)` and `FILTER a1&b2 GROUP BY (b)` and `FILTER e1` should not prevent the first 2 steps
 	// to be merged
 	@Override
-	public DirectedAcyclicGraph<TableQueryStep, DefaultEdge> mergeInducers(TableQueryStep contextualAggregator,
-			Set<TableQueryStep> steps) {
+	public IAdhocDag<TableQueryStep> mergeInducers(TableQueryStep contextualAggregator, Set<TableQueryStep> steps) {
 		// induceWithOr: we may receive steps which can efficiently be merged together (e.g. `FILTER a1` and `FILTER a1`
 		// can be merged into `FILTER a1 OR a2`)
 
@@ -89,7 +88,7 @@ public class MergeInducersStrictGroupBy implements IMergeInducers {
 
 		mergeGroups(mergingToSteps);
 
-		DirectedAcyclicGraph<TableQueryStep, DefaultEdge> inducedToInducer = GraphHelpers.makeGraph();
+		IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
 
 		Multimaps.asMap(mergingToSteps).forEach((group, mergeableSteps) -> {
 			if (mergeableSteps.size() < 2) {
