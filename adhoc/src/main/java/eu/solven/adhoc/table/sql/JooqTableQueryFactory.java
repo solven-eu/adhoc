@@ -314,7 +314,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// Distinct as `GROUPING SET` typically leads to a column to appear multiple times
 		Map<String, IAdhocColumn> distinctColumns = tableQuery.getColumns();
 
-		fields.getColumns().stream().map(column -> distinctColumns.get(column)).forEach(column -> {
+		fields.getColumns().stream().map(distinctColumns::get).forEach(column -> {
 			Field<Object> field = columnAsField(column);
 			selectedFields.add(field);
 		});

@@ -181,8 +181,7 @@ public class TableQueryV3 implements ITableQuery {
 	@Override
 	public Set<String> getGroupedByColumns() {
 		return getGroupBys().stream()
-				.flatMap(gb -> gb.getGroupedByColumns().stream())
-				.distinct()
+				.flatMap(gb -> gb.getColumns().stream().map(IAdhocColumn::getName))
 				.collect(ImmutableSet.toImmutableSet());
 	}
 

@@ -241,11 +241,11 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 						"""
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color==red groupBy=(letter) customMarker=JPY
-								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(ccyFrom, letter) customMarker=JPY
-								/-- 1 inducers from SELECT k1:SUM(k1) WHERE color==red GROUP BY (ccyFrom, letter)
-								\\-- step SELECT k1:SUM(k1) WHERE color==red GROUP BY (ccyFrom, letter)
+								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(letter, ccyFrom) customMarker=JPY
+								/-- 1 inducers from SELECT k1:SUM(k1) WHERE color==red GROUP BY (letter, ccyFrom)
+								\\-- step SELECT k1:SUM(k1) WHERE color==red GROUP BY (letter, ccyFrom)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
-								\\-- #1 m=k1(SUM) filter=color==red groupBy=(ccyFrom, letter) customMarker=JPY""")
+								\\-- #1 m=k1(SUM) filter=color==red groupBy=(letter, ccyFrom) customMarker=JPY""")
 				.hasLineCount(3 + 2 + 2);
 	}
 
@@ -270,16 +270,16 @@ public class TestCubeQueryFx extends ADagTest implements IAdhocTestConstants {
 								/-- time=3ms for openingStream
 								|/- time=5ms for mergingAggregates
 								|/- time=6ms sizes=[2] for toCuboids
-								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE color==red GROUP BY (ccyFrom, letter)
+								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE color==red GROUP BY (letter, ccyFrom)
 								/-- #0 t=inMemory id=00000000-0000-0000-0000-000000000001 (parentId=00000000-0000-0000-0000-000000000000)
 								|      No cost info
-								\\-- #1 m=k1(SUM) filter=color==red groupBy=(ccyFrom, letter) customMarker=JPY
+								\\-- #1 m=k1(SUM) filter=color==red groupBy=(letter, ccyFrom) customMarker=JPY
 								    \\  size=2 duration=15ms
 								/-- #0 c=inMemory id=00000000-0000-0000-0000-000000000000
 								|      No cost info
 								\\-- #1 m=k1.CCY(Partitionor[FX][eu.solven.adhoc.measure.sum.SumElseSetAggregation]) filter=color==red groupBy=(letter) customMarker=JPY
 								    |  size=2 duration=7ms
-								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(ccyFrom, letter) customMarker=JPY
+								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(letter, ccyFrom) customMarker=JPY
 								        \\  size=2 duration=15ms
 								Executed status=OK duration=28ms on table=inMemory forest=TestCubeQueryFx-filtered query=CubeQuery(filter=color==red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""")
 				.hasLineCount(4 + 4 + 6 + 1);
