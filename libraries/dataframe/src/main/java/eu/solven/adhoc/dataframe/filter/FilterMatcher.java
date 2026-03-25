@@ -26,9 +26,10 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
-import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
+import eu.solven.adhoc.cuboid.tabular.ITabularGroupBySlice;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import lombok.Builder;
@@ -77,10 +78,15 @@ public class FilterMatcher {
 	ISliceFactory sliceFactory = MoreFilterHelpers.SLICE_FACTORY;
 
 	public boolean match(Map<String, ?> map) {
-		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, SliceHelpers.asSlice(sliceFactory, map));
+		if (map instanceof IAdhocMap adhocMap) {
+			// BEWARE if map is an IAdhocMap, we should use the ISlice whatever its factory
+			return match(adhocMap.asSlice());
+		} else {
+			return match(SliceHelpers.asSlice(sliceFactory, map));
+		}
 	}
 
-	public boolean match(ITabularGroupByRecord tabularRecord) {
+	public boolean match(ITabularGroupBySlice tabularRecord) {
 		return MoreFilterHelpers.match(transcoder, filter, onMissingColumn, tabularRecord);
 	}
 
