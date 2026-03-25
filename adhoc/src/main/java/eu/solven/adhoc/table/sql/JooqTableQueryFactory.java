@@ -181,11 +181,12 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 			// prints percent with 1 digit.
 			String percentEfficiency = TableQueryFactory.asPercent(tableStepsCount, nbEvaluatedTableInducers);
-			log.info("[EXPLAIN] {} inducers evaluated by {} tableQueries (evaluating {} steps). Efficiency={}",
+			log.info("[EXPLAIN] {} inducers evaluated by {} tableQuery (evaluating {} steps). Efficiency={} v3={}",
 					tableStepsCount,
 					1,
 					nbEvaluatedTableInducers,
-					percentEfficiency);
+					percentEfficiency,
+					v3);
 		}
 		return prepareQuery(v3);
 	}

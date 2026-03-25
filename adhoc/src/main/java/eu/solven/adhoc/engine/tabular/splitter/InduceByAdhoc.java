@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.jgrapht.Graphs;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
@@ -117,7 +118,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 				// TODO This log lacks options and customMarkers if any
 				log.info("[EXPLAIN] explicits={} roots={} vertices={} induceds={} inducers={} for agg={}",
-						aTableQueries.getExplicits().size(),
+						steps.size(),
 						aTableQueries.getRoots().size(),
 						aTableQueries.getInducedToInducer().vertexSet().size(),
 						aTableQueries.getInduceds().size(),
@@ -191,4 +192,12 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 		return AddSharedNodes.builder().filterOptimizer(filterOptimizer).build();
 	}
 
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this)
+				.add("inferenceEdgesAdder", inferenceEdgesAdderFactory.get())
+				.add("mergeInducersFactory", mergeInducersFactory)
+				.add("sharedNodesAdderFactory", sharedNodesAdderFactory)
+				.toString();
+	}
 }

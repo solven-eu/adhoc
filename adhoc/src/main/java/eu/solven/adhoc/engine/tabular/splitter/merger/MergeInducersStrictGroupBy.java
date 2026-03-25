@@ -52,6 +52,8 @@ import lombok.NonNull;
  * 
  * @author Benoit Lacelle
  */
+@Deprecated(
+		since = "This looks inefficient. May do better job one `UNION ALL` is fully supported (by JootTableQueryFactory)")
 @Builder
 public class MergeInducersStrictGroupBy implements IMergeInducers {
 	@Default
