@@ -33,5 +33,5 @@ import java.util.Set;
  */
 @FunctionalInterface
 public interface IHasOperands<T> {
-	Set<T> getOperands();
+	Set<? extends T> getOperands();
 }

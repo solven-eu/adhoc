@@ -129,7 +129,7 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 
 			return ConditionWithFilter.builder().leftover(negatedPostFilter).condition(negatedCondition).build();
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<ISliceFilter> operands = andFilter.getOperands();
+			Set<? extends ISliceFilter> operands = andFilter.getOperands();
 			// TODO Detect and report if multiple conditions hits the same column
 			// It would be the symptom of conflicting transcoding
 			List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();

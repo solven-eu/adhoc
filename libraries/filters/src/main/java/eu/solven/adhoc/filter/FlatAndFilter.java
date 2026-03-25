@@ -122,7 +122,7 @@ public class FlatAndFilter implements IAndFilter {
 	 * iterating, which avoids this allocation.
 	 */
 	@Override
-	public Set<ISliceFilter> getOperands() {
+	public Set<ColumnFilter> getOperands() {
 		return columnToMatcher.entrySet()
 				.stream()
 				.map(e -> ColumnFilter.builder().column(e.getKey()).valueMatcher(e.getValue()).build())
@@ -155,7 +155,7 @@ public class FlatAndFilter implements IAndFilter {
 		} else if (o instanceof FlatAndFilter other) {
 			return columnToMatcher.equals(other.columnToMatcher);
 		} else if (o instanceof IAndFilter andFilter) {
-			Set<ISliceFilter> operands = andFilter.getOperands();
+			Set<? extends ISliceFilter> operands = andFilter.getOperands();
 			if (operands.size() != columnToMatcher.size()) {
 				return false;
 			}

@@ -224,6 +224,8 @@ public class FilterHelpers {
 	private static void emitFilteredColumns(ISliceFilter filter, Consumer<String> downstream) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
 			downstream.accept(columnFilter.getColumn());
+		} else if (filter instanceof FlatAndFilter flat) {
+			flat.columnToMatcher.keySet().forEach(downstream);
 		} else if (filter instanceof IHasOperands<?> hasOperands) {
 			hasOperands.getOperands().forEach(operand -> emitFilteredColumns((ISliceFilter) operand, downstream));
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
@@ -328,11 +330,10 @@ public class FilterHelpers {
 			Consumer<ISliceFilter> downstream,
 			boolean splitMatchers) {
 		boolean emitted;
-		if (filter instanceof FlatAndFilter simpleAnd) {
+		if (filter instanceof FlatAndFilter flatAnd) {
 			// Fast-path: iterate the backing column→matcher map directly, emitting ColumnFilter wrappers per entry.
 			// Avoids the instanceof chain that the generic IAndFilter branch would run per operand.
-			simpleAnd.columnToMatcher.forEach((col, matcher) -> downstream
-					.accept(ColumnFilter.builder().column(col).valueMatcher(matcher).build()));
+			flatAnd.getOperands().forEach(downstream);
 			emitted = true;
 		} else if (filter instanceof IAndFilter andFilter) {
 			andFilter.getOperands().forEach(o -> emitAndOperands(o, downstream, splitMatchers));

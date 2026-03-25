@@ -108,9 +108,9 @@ public class TestFlatAndFilter {
 	public void testTwoEntries_getOperands() {
 		FlatAndFilter filter = (FlatAndFilter) FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 
-		Set<ISliceFilter> operands = filter.getOperands();
+		Set<ColumnFilter> operands = filter.getOperands();
 		Assertions.assertThat(operands).hasSize(2);
-		Assertions.assertThat(operands)
+		Assertions.assertThat((Set) operands)
 				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2"));
 	}
 
@@ -306,9 +306,9 @@ public class TestFlatAndFilter {
 		Map<String, Object> mapWithNull =
 				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
 
-		Set<ISliceFilter> operands = ((IAndFilter) FlatAndFilter.of(mapWithNull)).getOperands();
+		Set<? extends ISliceFilter> operands = ((IAndFilter) FlatAndFilter.of(mapWithNull)).getOperands();
 
-		Assertions.assertThat(operands)
+		Assertions.assertThat((Set) operands)
 				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c1", "v1"),
 						ColumnFilter.builder().column("c2").matchNull().build());
 	}

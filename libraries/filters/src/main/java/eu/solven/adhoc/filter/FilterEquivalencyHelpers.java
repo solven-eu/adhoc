@@ -85,7 +85,7 @@ public class FilterEquivalencyHelpers {
 				return ImmutableSet.of(column);
 			}
 		} else if (filter instanceof IAndFilter and) {
-			Set<ISliceFilter> operands = and.getOperands();
+			Set<? extends ISliceFilter> operands = and.getOperands();
 
 			// Each AND operand is turned into an OR of DNFs
 			List<Set<ISliceFilter>> operandDnfs = operands.stream().map(FilterEquivalencyHelpers::dnf).toList();
