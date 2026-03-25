@@ -78,6 +78,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 * @return
 	 */
 	@Override
+	@SuppressWarnings("PMD.CloseResource")
 	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> steps = inducedToInducer.vertexSet();
@@ -134,7 +135,6 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 * Builds all inducing edges for a group of steps sharing the same measure and context, writing directly into
 	 * {@code induceByAdhoc}. Delegates to {@link #buildEdgesForContextGroupLocal(List)} and merges the result.
 	 */
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	protected void buildEdgesForContextGroup(IAdhocDag<TableQueryStep> induceByAdhoc,
 			List<TableQueryStep> contextSteps) {
 		Graphs.addGraph(induceByAdhoc, buildEdgesForContextGroupLocal(contextSteps));
