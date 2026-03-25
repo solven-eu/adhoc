@@ -30,8 +30,8 @@ import java.util.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.filter.FlatAndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.filter.SimpleAndFilter;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
@@ -105,7 +105,7 @@ public final class Slice implements ISlice {
 
 	@Override
 	public ISliceFilter asFilter() {
-		return SimpleAndFilter.of(asMap);
+		return FlatAndFilter.of(asMap);
 	}
 
 	@Override

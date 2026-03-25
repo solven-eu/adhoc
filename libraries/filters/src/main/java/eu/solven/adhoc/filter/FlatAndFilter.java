@@ -28,56 +28,65 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
-import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IColumnToString;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 /**
- * A compact {@link IAndFilter} restricted to an AND of per-column {@link EqualsMatcher} conditions.
+ * A compact {@link IAndFilter} backed by an {@link ImmutableMap} from column name to {@link IValueMatcher}.
  *
  * <p>
- * Backed by an {@link ImmutableMap} rather than a {@link Set} of {@link ColumnFilter} wrappers, so construction from a
- * slice or a plain {@link Map} allocates no per-entry objects. {@link #getOperands()} materialises {@link ColumnFilter}
- * instances lazily, on first call.
+ * Each column condition may be any {@link IValueMatcher} — equality, null, in-set, etc. The factory {@link #of(Map)}
+ * normalises raw values via {@link IValueMatcher#matching(Object)}, so callers can pass plain values, {@code null},
+ * {@link java.util.Collection}s, or ready-made matchers interchangeably.
+ *
+ * <p>
+ * Unlike {@link AndFilter}, operands are guaranteed to be flat per-column {@link IValueMatcher} conditions — there are
+ * no recursive {@link ISliceFilter} children. This makes it the natural representation for slice-derived filters.
+ *
+ * <p>
+ * {@link #getOperands()} materialises {@link ColumnFilter} wrappers on demand from the backing map.
  *
  * <p>
  * This is the type returned by {@link eu.solven.adhoc.cuboid.slice.ISlice#asFilter()}, making it the natural fast-path
  * for tight loops that start from a slice and immediately call {@link FilterHelpers#splitAnd(java.util.Collection)}.
  *
  * <p>
- * <b>Equality and hashing</b>: {@link #equals(Object)} is intentionally cross-type — a {@code SimpleAndFilter} compares
- * equal to any {@link IAndFilter} whose operands are all single-column {@link EqualsMatcher} filters that cover exactly
- * the same column→value pairs. {@link #hashCode()} follows the same {@link java.util.Set}-based contract as
+ * <b>Equality and hashing</b>: {@link #equals(Object)} is intentionally cross-type — a {@code FlatAndFilter} compares
+ * equal to any {@link IAndFilter} whose operands are all single-column {@link IValueMatcher} filters whose
+ * column→matcher pairs match exactly. {@link #hashCode()} follows the same {@link java.util.Set}-based contract as
  * {@link AndFilter}, so semantically equivalent instances hash to the same bucket. Note: the reverse direction of
- * {@code equals} ({@link AndFilter#equals(Object)} accepting a {@code SimpleAndFilter}) is <em>not</em> guaranteed
+ * {@code equals} ({@link AndFilter#equals(Object)} accepting a {@code FlatAndFilter}) is <em>not</em> guaranteed
  * because {@link AndFilter} uses a Lombok-generated {@code @Value} equals.
  *
  * <p>
  * <b>JSON</b>: serialised identically to an {@link AndFilter} so existing consumers see no change.
  *
  * @author Benoit Lacelle
- * @see AndFilter#and(Map) for the general-purpose factory that handles non-equality matchers
+ * @see AndFilter#and(Map) for the general-purpose factory that handles arbitrary
+ *      {@link eu.solven.adhoc.filter.value.IValueMatcher}s
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-public class SimpleAndFilter implements IAndFilter {
+public class FlatAndFilter implements IAndFilter {
 
-	// null values are not stored here: of() redirects null-containing maps to AndFilter.and()
-	final ImmutableMap<String, Object> columnToValue;
+	final ImmutableMap<String, IValueMatcher> columnToMatcher;
 
 	/**
 	 * Smart factory: returns the most specific {@link ISliceFilter} for the given column→value map.
 	 * <ul>
 	 * <li>Empty map → {@link ISliceFilter#MATCH_ALL}</li>
-	 * <li>Single entry → {@link ColumnFilter#matchEq(String, Object)}</li>
-	 * <li>Two or more entries → a {@link SimpleAndFilter}</li>
+	 * <li>Single entry → {@link ColumnFilter#matchLax(String, Object)}</li>
+	 * <li>Two or more entries → a {@link FlatAndFilter}</li>
 	 * </ul>
-	 * Values must already be normalised equality operands (no {@link eu.solven.adhoc.filter.value.IValueMatcher}, no
-	 * {@link java.util.Collection}, no {@code null}).
+	 * Values are normalised via {@link IValueMatcher#matching(Object)}: {@code null} becomes
+	 * {@link eu.solven.adhoc.filter.value.NullMatcher}, a {@link java.util.Collection} becomes
+	 * {@link eu.solven.adhoc.filter.value.InMatcher}, a ready-made {@link IValueMatcher} is used as-is, and any other
+	 * value becomes an {@link eu.solven.adhoc.filter.value.EqualsMatcher}.
 	 *
 	 * @param columnToValue
-	 *            the equality conditions, keyed by column name
+	 *            the conditions, keyed by column name
 	 * @return the most specific {@link ISliceFilter} for the given map
 	 */
 	public static ISliceFilter of(Map<String, ?> columnToValue) {
@@ -85,18 +94,18 @@ public class SimpleAndFilter implements IAndFilter {
 			return MATCH_ALL;
 		} else if (columnToValue.size() == 1) {
 			Map.Entry<String, ?> entry = columnToValue.entrySet().iterator().next();
-			return ColumnFilter.matchEq(entry.getKey(), entry.getValue());
-		} else if (Iterables.contains(columnToValue.values(), null)) {
-			// Null values cannot be represented as EqualsMatcher; delegate to AndFilter which maps null → NullMatcher
-			return AndFilter.and(columnToValue);
+			return ColumnFilter.matchLax(entry.getKey(), entry.getValue());
 		} else {
-			return new SimpleAndFilter(ImmutableMap.copyOf(columnToValue));
+			ImmutableMap.Builder<String, IValueMatcher> builder =
+					ImmutableMap.builderWithExpectedSize(columnToValue.size());
+			columnToValue.forEach((k, v) -> builder.put(k, IValueMatcher.matching(v)));
+			return new FlatAndFilter(builder.build());
 		}
 	}
 
 	@Override
 	public boolean isMatchAll() {
-		return columnToValue.isEmpty();
+		return columnToMatcher.isEmpty();
 	}
 
 	@Override
@@ -115,9 +124,9 @@ public class SimpleAndFilter implements IAndFilter {
 	 */
 	@Override
 	public Set<ISliceFilter> getOperands() {
-		return columnToValue.entrySet()
+		return columnToMatcher.entrySet()
 				.stream()
-				.map(e -> ColumnFilter.builder().column(e.getKey()).matchEquals(e.getValue()).build())
+				.map(e -> ColumnFilter.builder().column(e.getKey()).valueMatcher(e.getValue()).build())
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
@@ -136,34 +145,28 @@ public class SimpleAndFilter implements IAndFilter {
 	 * same column = value constraints.
 	 *
 	 * <p>
-	 * NOTE: {@link AndFilter#equals(Object)} does not reciprocate for {@code SimpleAndFilter} arguments (it is
-	 * generated by {@code @Value}). Assertions where this instance is the {@code actual} value work correctly;
-	 * assertions where it is the {@code expected} value against an {@link AndFilter} actual may not.
+	 * NOTE: {@link AndFilter#equals(Object)} does not reciprocate for {@code FlatAndFilter} arguments (it is generated
+	 * by {@code @Value}). Assertions where this instance is the {@code actual} value work correctly; assertions where
+	 * it is the {@code expected} value against an {@link AndFilter} actual may not.
 	 */
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
-		} else if (o instanceof SimpleAndFilter other) {
-			return columnToValue.equals(other.columnToValue);
+		} else if (o instanceof FlatAndFilter other) {
+			return columnToMatcher.equals(other.columnToMatcher);
 		} else if (o instanceof IAndFilter andFilter) {
 			Set<ISliceFilter> operands = andFilter.getOperands();
-			if (operands.size() != columnToValue.size()) {
+			if (operands.size() != columnToMatcher.size()) {
 				return false;
 			}
 			for (ISliceFilter operand : operands) {
 				if (!(operand instanceof IColumnFilter columnFilter)) {
 					return false;
-				} else if (!(columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher)) {
+				}
+				IValueMatcher thisMatcher = columnToMatcher.get(columnFilter.getColumn());
+				if (thisMatcher == null || !thisMatcher.equals(columnFilter.getValueMatcher())) {
 					return false;
-				} else {
-					Object thisValue = columnToValue.get(columnFilter.getColumn());
-					if (thisValue == null) {
-						return false;
-					} else if (!equalsMatcher.match(thisValue)) {
-						// Use .match() to respect EqualsMatcher's numeric-normalisation rules
-						return false;
-					}
 				}
 			}
 			return true;
@@ -189,9 +192,10 @@ public class SimpleAndFilter implements IAndFilter {
 		if (isMatchAll()) {
 			return "matchAll";
 		}
-		return columnToValue.entrySet()
+		return columnToMatcher.entrySet()
 				.stream()
-				.map(e -> "%s==%s".formatted(e.getKey(), e.getValue()))
+				.map(e -> e.getValue() instanceof IColumnToString cts ? cts.toString(e.getKey(), false)
+						: "%s matches `%s`".formatted(e.getKey(), e.getValue()))
 				.collect(Collectors.joining("&"));
 	}
 

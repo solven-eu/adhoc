@@ -29,9 +29,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
 import eu.solven.pepper.collection.MapWithNulls;
 
-public class TestSimpleAndFilter {
+public class TestFlatAndFilter {
 
 	// -------------------------------------------------------------------------
 	// isMatchAll / isMatchNone / isAnd
@@ -39,7 +40,7 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testEmpty_isMatchAll() {
-		ISliceFilter filter = SimpleAndFilter.of(Map.of());
+		ISliceFilter filter = FlatAndFilter.of(Map.of());
 
 		Assertions.assertThat(filter.isMatchAll()).isTrue();
 		Assertions.assertThat(filter.isMatchNone()).isFalse();
@@ -49,7 +50,7 @@ public class TestSimpleAndFilter {
 	@Test
 	public void testOneEntry_flags() {
 		// of(1-entry) returns a ColumnFilter, which is not an AND node
-		ISliceFilter filter = SimpleAndFilter.of(Map.of("c1", "v1"));
+		ISliceFilter filter = FlatAndFilter.of(Map.of("c1", "v1"));
 
 		Assertions.assertThat(filter.isMatchAll()).isFalse();
 		Assertions.assertThat(filter.isMatchNone()).isFalse();
@@ -58,7 +59,7 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testTwoEntries_flags() {
-		SimpleAndFilter filter = (SimpleAndFilter) SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		FlatAndFilter filter = (FlatAndFilter) FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 
 		Assertions.assertThat(filter.isMatchAll()).isFalse();
 		Assertions.assertThat(filter.isMatchNone()).isFalse();
@@ -71,7 +72,7 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testEmpty_getOperands() {
-		IAndFilter filter = (IAndFilter) SimpleAndFilter.of(Map.of());
+		IAndFilter filter = (IAndFilter) FlatAndFilter.of(Map.of());
 
 		Assertions.assertThat(filter.getOperands()).isEmpty();
 	}
@@ -79,14 +80,33 @@ public class TestSimpleAndFilter {
 	@Test
 	public void testOneEntry_getOperands() {
 		// of(1-entry) returns the raw ColumnFilter — no AND wrapper
-		ISliceFilter filter = SimpleAndFilter.of(Map.of("c1", "v1"));
+		ISliceFilter filter = FlatAndFilter.of(Map.of("c1", "v1"));
 
 		Assertions.assertThat(filter).isEqualTo(ColumnFilter.matchEq("c1", "v1"));
 	}
 
 	@Test
+	public void testOneEntry_nullValue() {
+		Map<String, Object> mapWithNull = MapWithNulls.<String, Object>builder().put("c1", null).build();
+		ISliceFilter filter = FlatAndFilter.of(mapWithNull);
+
+		Assertions.assertThat(filter).isEqualTo(ColumnFilter.builder().column("c1").matchNull().build());
+	}
+
+	@Test
+	public void testOneEntry_valueMatcher_isUsedAsIs() {
+		// When the value is already an IValueMatcher, of() must pass it through rather than wrapping it in an
+		// EqualsMatcher — Map.of rejects null so we use a concrete non-equality matcher.
+		IValueMatcher inMatcher = InMatcher.matchIn(java.util.List.of("v1", "v2"));
+		ISliceFilter filter = FlatAndFilter.of(Map.of("c1", inMatcher));
+
+		Assertions.assertThat(filter).isInstanceOf(ColumnFilter.class);
+		Assertions.assertThat(((ColumnFilter) filter).getValueMatcher()).isSameAs(inMatcher);
+	}
+
+	@Test
 	public void testTwoEntries_getOperands() {
-		SimpleAndFilter filter = (SimpleAndFilter) SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		FlatAndFilter filter = (FlatAndFilter) FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 
 		Set<ISliceFilter> operands = filter.getOperands();
 		Assertions.assertThat(operands).hasSize(2);
@@ -100,18 +120,18 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testEmpty_toString() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of()).toString()).isEqualTo("matchAll");
+		Assertions.assertThat(FlatAndFilter.of(Map.of()).toString()).isEqualTo("matchAll");
 	}
 
 	@Test
 	public void testOneEntry_toString() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1")).toString()).isEqualTo("c1==v1");
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1")).toString()).isEqualTo("c1==v1");
 	}
 
 	@Test
 	public void testTwoEntries_toString() {
 		// ImmutableMap preserves insertion order
-		SimpleAndFilter filter = (SimpleAndFilter) SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		FlatAndFilter filter = (FlatAndFilter) FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 		// Both orderings are valid; just check both columns appear
 		Assertions.assertThat(filter.toString()).contains("c1==v1").contains("c2==v2").contains("&");
 	}
@@ -122,8 +142,8 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testNegate() {
-		// SimpleAndFilter.negate() wraps in a NOT node; use 2-entry to get a SimpleAndFilter
-		SimpleAndFilter filter = (SimpleAndFilter) SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		// FlatAndFilter.negate() wraps in a NOT node; use 2-entry to get a FlatAndFilter
+		FlatAndFilter filter = (FlatAndFilter) FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 		ISliceFilter negated = filter.negate();
 
 		Assertions.assertThat(negated.isNot()).isTrue();
@@ -135,30 +155,28 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testEquals_sameType_empty() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of())).isEqualTo(SimpleAndFilter.of(Map.of()));
+		Assertions.assertThat(FlatAndFilter.of(Map.of())).isEqualTo(FlatAndFilter.of(Map.of()));
 	}
 
 	@Test
 	public void testEquals_sameType_oneEntry() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1"))).isEqualTo(SimpleAndFilter.of(Map.of("c1", "v1")));
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1"))).isEqualTo(FlatAndFilter.of(Map.of("c1", "v1")));
 	}
 
 	@Test
 	public void testEquals_sameType_twoEntries() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2")))
-				.isEqualTo(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2")))
+				.isEqualTo(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
 	}
 
 	@Test
 	public void testNotEquals_sameType_differentValue() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1")))
-				.isNotEqualTo(SimpleAndFilter.of(Map.of("c1", "v2")));
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1"))).isNotEqualTo(FlatAndFilter.of(Map.of("c1", "v2")));
 	}
 
 	@Test
 	public void testNotEquals_sameType_differentColumn() {
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1")))
-				.isNotEqualTo(SimpleAndFilter.of(Map.of("c2", "v1")));
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1"))).isNotEqualTo(FlatAndFilter.of(Map.of("c2", "v1")));
 	}
 
 	// -------------------------------------------------------------------------
@@ -168,14 +186,14 @@ public class TestSimpleAndFilter {
 	@Test
 	public void testEquals_crossType_empty_vsMatchAll() {
 		// of(empty) returns MATCH_ALL directly
-		Assertions.assertThat(SimpleAndFilter.of(Map.of())).isSameAs(ISliceFilter.MATCH_ALL);
-		Assertions.assertThat(SimpleAndFilter.of(Map.of()).isMatchAll()).isTrue();
+		Assertions.assertThat(FlatAndFilter.of(Map.of())).isSameAs(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(FlatAndFilter.of(Map.of()).isMatchAll()).isTrue();
 	}
 
 	@Test
 	public void testEquals_crossType_oneEntry_vsColumnFilter() {
 		// of(1-entry) returns the ColumnFilter directly — no AND wrapper
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1"))).isEqualTo(ColumnFilter.matchEq("c1", "v1"));
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1"))).isEqualTo(ColumnFilter.matchEq("c1", "v1"));
 	}
 
 	@Test
@@ -183,16 +201,16 @@ public class TestSimpleAndFilter {
 		IAndFilter andFilter =
 				AndFilter.copyOf(Set.of(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")));
 
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"))).isEqualTo(andFilter);
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"))).isEqualTo(andFilter);
 	}
 
 	@Test
 	public void testNotEquals_crossType_differentValue() {
-		// 2-entry SimpleAndFilter vs AndFilter with a different value
+		// 2-entry FlatAndFilter vs AndFilter with a different value
 		IAndFilter andFilter =
 				AndFilter.copyOf(Set.of(ColumnFilter.matchEq("c1", "v2"), ColumnFilter.matchEq("c2", "v2")));
 
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"))).isNotEqualTo(andFilter);
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"))).isNotEqualTo(andFilter);
 	}
 
 	@Test
@@ -200,16 +218,16 @@ public class TestSimpleAndFilter {
 		IAndFilter andFilter =
 				AndFilter.copyOf(Set.of(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")));
 
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2", "c3", "v3"))).isNotEqualTo(andFilter);
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2", "c3", "v3"))).isNotEqualTo(andFilter);
 	}
 
 	@Test
 	public void testNotEquals_crossType_nonEqualsMatcher() {
-		// AndFilter with a non-EqualsMatcher operand — should not be equal to a SimpleAndFilter
+		// AndFilter with a non-EqualsMatcher operand — should not be equal to a FlatAndFilter
 		IAndFilter andFilter = AndFilter
 				.copyOf(Set.of(ColumnFilter.match("c1", IValueMatcher.MATCH_ALL), ColumnFilter.matchEq("c2", "v2")));
 
-		Assertions.assertThat(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"))).isNotEqualTo(andFilter);
+		Assertions.assertThat(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"))).isNotEqualTo(andFilter);
 	}
 
 	// -------------------------------------------------------------------------
@@ -218,15 +236,15 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testHashCode_consistent_sameType() {
-		ISliceFilter f1 = SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
-		ISliceFilter f2 = SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter f1 = FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter f2 = FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 
 		Assertions.assertThat(f1.hashCode()).isEqualTo(f2.hashCode());
 	}
 
 	@Test
 	public void testHashCode_compatible_withAndFilter() {
-		ISliceFilter simple = SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+		ISliceFilter simple = FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 		IAndFilter and = AndFilter.copyOf(Set.of(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2")));
 
 		Assertions.assertThat(simple.hashCode()).isEqualTo(and.hashCode());
@@ -241,7 +259,7 @@ public class TestSimpleAndFilter {
 		// null from a failed JOIN: of() must not throw but delegate to AndFilter
 		Map<String, Object> mapWithNull =
 				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
-		ISliceFilter filter = SimpleAndFilter.of(mapWithNull);
+		ISliceFilter filter = FlatAndFilter.of(mapWithNull);
 
 		Assertions.assertThat(filter).isNotNull();
 		Assertions.assertThat(filter.isAnd()).isTrue();
@@ -254,7 +272,7 @@ public class TestSimpleAndFilter {
 		Map<String, Object> mapWithNull =
 				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
 
-		Assertions.assertThat(SimpleAndFilter.of(mapWithNull)).isEqualTo(AndFilter.and(mapWithNull));
+		Assertions.assertThat(FlatAndFilter.of(mapWithNull)).isEqualTo(AndFilter.and(mapWithNull));
 	}
 
 	@Test
@@ -262,8 +280,37 @@ public class TestSimpleAndFilter {
 		Map<String, Object> mapWithNull =
 				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
 
-		Assertions.assertThat(SimpleAndFilter.of(mapWithNull).hashCode())
+		Assertions.assertThat(FlatAndFilter.of(mapWithNull).hashCode())
 				.isEqualTo(AndFilter.and(mapWithNull).hashCode());
+	}
+
+	@Test
+	public void testOf_nullValue_isFlatAndFilter() {
+		Map<String, Object> mapWithNull =
+				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
+
+		Assertions.assertThat(FlatAndFilter.of(mapWithNull)).isInstanceOf(FlatAndFilter.class);
+	}
+
+	@Test
+	public void testOf_nullValue_toString() {
+		// ImmutableMap preserves insertion order; use a builder to control it
+		Map<String, Object> mapWithNull =
+				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
+
+		Assertions.assertThat(FlatAndFilter.of(mapWithNull).toString()).contains("c1==v1").contains("c2 IS NULL");
+	}
+
+	@Test
+	public void testOf_nullValue_getOperands() {
+		Map<String, Object> mapWithNull =
+				MapWithNulls.<String, Object>builder().put("c1", "v1").put("c2", null).build();
+
+		Set<ISliceFilter> operands = ((IAndFilter) FlatAndFilter.of(mapWithNull)).getOperands();
+
+		Assertions.assertThat(operands)
+				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c1", "v1"),
+						ColumnFilter.builder().column("c2").matchNull().build());
 	}
 
 	// -------------------------------------------------------------------------
@@ -272,19 +319,19 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testSplitAnd_empty() {
-		Assertions.assertThat(FilterHelpers.splitAnd(SimpleAndFilter.of(Map.of()))).isEmpty();
+		Assertions.assertThat(FilterHelpers.splitAnd(FlatAndFilter.of(Map.of()))).isEmpty();
 	}
 
 	@Test
 	public void testSplitAnd_oneEntry() {
-		Set<ISliceFilter> split = FilterHelpers.splitAnd(SimpleAndFilter.of(Map.of("c1", "v1")));
+		Set<ISliceFilter> split = FilterHelpers.splitAnd(FlatAndFilter.of(Map.of("c1", "v1")));
 
 		Assertions.assertThat(split).containsExactly(ColumnFilter.matchEq("c1", "v1"));
 	}
 
 	@Test
 	public void testSplitAnd_twoEntries() {
-		Set<ISliceFilter> split = FilterHelpers.splitAnd(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
+		Set<ISliceFilter> split = FilterHelpers.splitAnd(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
 
 		Assertions.assertThat(split)
 				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2"));
@@ -292,12 +339,12 @@ public class TestSimpleAndFilter {
 
 	@Test
 	public void testAsMap_empty() {
-		Assertions.assertThat(FilterHelpers.asMap(SimpleAndFilter.of(Map.of()))).isEmpty();
+		Assertions.assertThat(FilterHelpers.asMap(FlatAndFilter.of(Map.of()))).isEmpty();
 	}
 
 	@Test
 	public void testAsMap_twoEntries() {
-		Map<String, Object> result = FilterHelpers.asMap(SimpleAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
+		Map<String, Object> result = FilterHelpers.asMap(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
 
 		Assertions.assertThat(result).containsEntry("c1", "v1").containsEntry("c2", "v2").hasSize(2);
 	}
