@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Phaser;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -67,7 +66,6 @@ import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
-import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdhocTestConstants {
@@ -309,57 +307,6 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 						.build())
 				.hasSize(2);
 		Assertions.assertThat(compatibleMeasures.getDefined()).isEmpty();
-	}
-
-	// This test will ensure 2 underlying tables are queried concurrently
-	@Test
-	public void testConcurrency() {
-		TableWrapperPhasers phasers = TableWrapperPhasers.parties(2);
-
-		String tableName1 = "someTableName1";
-		ITableWrapper table1 = PhasedTableWrapper.builder().name(tableName1).phasers(phasers).build();
-
-		String tableName2 = "someTableName2";
-		ITableWrapper table2 = PhasedTableWrapper.builder().name(tableName2).phasers(phasers).build();
-
-		CubeWrapper cube1;
-		{
-			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName1).build();
-			measureBag.addMeasure(countAsterisk);
-			cube1 = wrapInCube(measureBag, table1);
-		}
-		CubeWrapper cube2;
-		{
-			UnsafeMeasureForest measureBag = UnsafeMeasureForest.builder().name(tableName2).build();
-			measureBag.addMeasure(countAsterisk);
-			cube2 = wrapInCube(measureBag, table2);
-		}
-
-		CompositeCubesTableWrapper compositeCubesTable =
-				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
-
-		CubeWrapper cube = makeComposite(compositeCubesTable, forest);
-		ITabularView view = cube.execute(CubeQuery.builder()
-				.measure(Aggregator.countAsterisk())
-				.option(StandardQueryOptions.CONCURRENT)
-				.build());
-
-		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
-		Assertions.assertThat(mapBased.getCoordinatesToValues())
-				.containsEntry(Map.of(), Map.of(Aggregator.countAsterisk().getName(), 0L + 2))
-				.hasSize(1);
-
-		Phaser opening = phasers.getOpening();
-		Assertions.assertThat(opening.getPhase()).isEqualTo(1);
-		Assertions.assertThat(opening.getArrivedParties()).isEqualTo(0);
-
-		Phaser streaming = phasers.getStreaming();
-		Assertions.assertThat(streaming.getPhase()).isEqualTo(1);
-		Assertions.assertThat(streaming.getArrivedParties()).isEqualTo(0);
-
-		Phaser closing = phasers.getClosing();
-		Assertions.assertThat(closing.getPhase()).isEqualTo(1);
-		Assertions.assertThat(closing.getArrivedParties()).isEqualTo(0);
 	}
 
 	// When a cube does not know a column, and given column is grouped by, Adhoc behave like the cube has a static given

@@ -47,6 +47,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.top.AdhocTopClause;
 import eu.solven.adhoc.table.google.bigquery.BigQueryTableWrapper;
 import eu.solven.adhoc.table.google.bigquery.BigQueryTableWrapperParameters;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.pepper.unittest.PepperTestHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,10 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TestTableGoogleBigQuery {
 
 	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
+		AdhocJooqHelper.disableBanners();
 	}
 
 	@BeforeAll

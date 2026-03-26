@@ -73,6 +73,22 @@ public class AdhocTableUnsafe {
 	@Getter
 	private static int dbParallelism;
 
+	@SuppressWarnings({ "PMD.AvoidSynchronizedAtMethodLevel", "PMD.CloseResource" })
+	public static synchronized void setDbParallelism(int dbParallelism) {
+		if (AdhocTableUnsafe.dbParallelism != dbParallelism) {
+			AdhocTableUnsafe.dbParallelism = dbParallelism;
+
+			ListeningExecutorService oldPool = adhocDbPool;
+			adhocDbPool = MoreExecutors.listeningDecorator(newDbPool("adhoc-db-"));
+
+			AdhocUnsafe.maintenancePool.execute(() -> {
+				log.info("Closing adhocDbPool={}", oldPool);
+				MoreExecutors.shutdownAndAwaitTermination(oldPool, KEEP_ALIVE);
+				log.info("Closed adhocDbPool={}", oldPool);
+			});
+		}
+	}
+
 	@Deprecated(since = "VERY WRONG as this should be defined on a per-table basis")
 	private static final int DEFAULT_DB_PARALLELISM = 2;
 

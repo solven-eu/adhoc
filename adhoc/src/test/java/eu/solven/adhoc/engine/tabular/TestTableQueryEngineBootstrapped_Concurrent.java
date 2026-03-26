@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -48,6 +50,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.table.AdhocTableUnsafe;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
@@ -56,8 +59,20 @@ import lombok.extern.slf4j.Slf4j;
 public class TestTableQueryEngineBootstrapped_Concurrent {
 	AdhocFactories factories = AdhocFactories.builder().build();
 
+	@BeforeEach
+	public void setConcurrency() {
+		// Ensure these tests are fine with only 2 threads
+		AdhocTableUnsafe.setDbParallelism(2);
+	}
+
+	@AfterEach
+	public void resetConcurrency() {
+		AdhocTableUnsafe.resetAll();
+	}
+
 	@Test
 	public void testConcurrentTableQueries() throws InterruptedException {
+
 		ITableWrapper tableWrapper = Mockito.mock(ITableWrapper.class);
 		Mockito.when(tableWrapper.getName()).thenReturn("someTableName");
 

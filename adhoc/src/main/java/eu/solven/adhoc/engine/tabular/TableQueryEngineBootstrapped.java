@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -44,7 +45,6 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
@@ -278,29 +278,28 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps hasTableQueries) {
 		try {
+			Set<TableQueryV4> tableQueries = hasTableQueries.getTableQueries();
+
+			List<Map<TableQueryStep, ICuboid>> listStepsToCuboids;
 			// Submit to the DB pool so table queries (I/O-bound) do not block the CPU-bound common pool.
 			// We avoid .parallel() streams here because they would fall back to ForkJoinPool.commonPool()
 			// when the calling thread is not a ForkJoinPool worker.
 			ListeningExecutorService dbExecutorService = queryPod.getDbExecutorService();
-
-			List<Map<TableQueryStep, ICuboid>> listStepsToCuboids;
-			Set<TableQueryV4> tableQueries = hasTableQueries.getTableQueries();
 			if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
-
-				// Submit each table query individually to the DB pool
-				var futures = tableQueries.stream()
-						.map(tableQuery -> dbExecutorService
-								.submit(() -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery)))
+				List<CompletableFuture<Map<TableQueryStep, ICuboid>>> futures = tableQueries.stream()
+						.map(tableQuery -> CompletableFuture.supplyAsync(
+								() -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery),
+								dbExecutorService))
 						.toList();
-
-				listStepsToCuboids = Futures.getUnchecked(Futures.allAsList(futures));
+				// join() on each future blocks until it completes (or propagates a failure)
+				listStepsToCuboids =
+						futures.stream().map(CompletableFuture::join).collect(ImmutableList.toImmutableList());
 			} else {
-				var task = dbExecutorService.submit(() -> {
-					return tableQueries.stream()
-							.map(tableQuery -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery))
-							.collect(ImmutableList.toImmutableList());
-				});
-				listStepsToCuboids = Futures.getUnchecked(task);
+				// Sequential path: run every table query on the calling thread — no executor needed
+				var completable = CompletableFuture.supplyAsync(() -> tableQueries.stream()
+						.map(tableQuery -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery))
+						.collect(ImmutableList.toImmutableList()), dbExecutorService);
+				listStepsToCuboids = completable.join();
 			}
 
 			Map<TableQueryStep, ICuboid> stepsToCuboid = new LinkedHashMap<>();

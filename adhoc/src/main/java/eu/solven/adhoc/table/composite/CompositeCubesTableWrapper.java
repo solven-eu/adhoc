@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -34,8 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,6 +43,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MultimapBuilder.SetMultimapBuilder;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
@@ -60,6 +60,7 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
+import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -87,7 +88,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
-import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -291,7 +291,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			}
 
 			ITabularView subView = e.getValue();
-			return subView.stream((slice) -> {
+			return subView.stream(slice -> {
 				return oAsMap -> {
 					return transcodeSliceToComposite(compositeQuery
 							.getGroupBy(), subCube, slice, oAsMap, missingColumnsAsmask);
@@ -414,36 +414,54 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		return ICountMeasuresConstants.ASTERISK.equals(subColumn) || isSubColumn.test(subColumn);
 	}
 
-	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
+	/**
+	 * Executes all sub-queries and returns their results keyed by cube name in insertion order.
+	 * <p>
+	 * {@link CompositeCubesTableWrapper} is a CPU-bound in-process fan-out, not an I/O-bound database call. It
+	 * therefore uses {@link QueryPod#getExecutorService()} (the CPU pool) rather than
+	 * {@link QueryPod#getDbExecutorService()} (the I/O pool). This is important to avoid deadlock: the caller
+	 * ({@link eu.solven.adhoc.engine.tabular.TableQueryEngineBootstrapped}) submits table queries on the
+	 * {@code dbExecutorService}; submitting sub-queries to a separate CPU pool ensures the two pools never block each
+	 * other.
+	 */
+	@SuppressWarnings({ "PMD.CloseResource", "PMD.ExceptionAsFlowControl" })
 	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		try {
-			// https://stackoverflow.com/questions/21163108/custom-thread-pool-in-java-8-parallel-stream
-			return queryPod.getExecutorService().submit(() -> {
-				Stream<Entry<String, ICubeQuery>> stream = cubeToQuery.entrySet().stream();
-
-				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
-					stream = stream.parallel();
-				}
-
-				return stream.collect(PepperStreamHelper.toLinkedMap(Entry::getKey, cubeAndQuery -> {
-					String cubeName = cubeAndQuery.getKey();
+			if (!StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
+				// Sequential path: run every sub-query on the calling thread
+				Map<String, ITabularView> result = new LinkedHashMap<>();
+				cubeToQuery.forEach((cubeName, query) -> {
 					ICubeWrapper subCube = nameToCube.get(cubeName);
-					ICubeQuery query = cubeAndQuery.getValue();
 					try {
-						return executeSubQuery(subCube, query);
+						result.put(cubeName, executeSubQuery(subCube, query));
 					} catch (RuntimeException e) {
 						throw new IllegalArgumentException("Issue querying %s with %s".formatted(cubeName, query), e);
 					}
-				}));
-
-			}).get();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted on cube=%s".formatted(queryPod.getTable().getName()), e);
-		} catch (ExecutionException e) {
-			throw new IllegalStateException("Failed on cube=%s".formatted(queryPod.getTable().getName()), e);
+				});
+				return result;
+			} else {
+				// Concurrent path: submit to the CPU pool (not the DB/I-O pool) to avoid pool re-entrancy deadlock
+				ListeningExecutorService cpuPool = queryPod.getExecutorService();
+				Map<String, CompletableFuture<ITabularView>> futures = new LinkedHashMap<>();
+				cubeToQuery.forEach((cubeName, query) -> {
+					ICubeWrapper subCube = nameToCube.get(cubeName);
+					futures.put(cubeName, CompletableFuture.supplyAsync(() -> {
+						try {
+							return executeSubQuery(subCube, query);
+						} catch (RuntimeException e) {
+							throw new IllegalArgumentException("Issue querying %s with %s".formatted(cubeName, query),
+									e);
+						}
+					}, cpuPool));
+				});
+				Map<String, ITabularView> result = new LinkedHashMap<>();
+				futures.forEach((cubeName, future) -> result.put(cubeName, future.join()));
+				return result;
+			}
+		} catch (RuntimeException e) {
+			throw AdhocExceptionHelpers.wrap("Issue querying table=%s".formatted(queryPod.getTable().getName()), e);
 		}
 	}
 
