@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -42,9 +43,11 @@ import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Given a set of inducers, this will generate an additional set of inducers.
@@ -54,6 +57,7 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 @Builder
+@Slf4j
 public class MergeInducersIntoSingle implements IMergeInducers {
 
 	@Default
@@ -89,6 +93,12 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 
 		TableQueryStep inducer = contextualAggregator.toBuilder().filter(combinedOr).groupBy(mergedGroupBy).build();
 
+		if (contextualAggregator.isDebugOrExplain()) {
+			log.info("[EXPLAIN] MergeInducersIntoSingle merged={} steps, groupBy column coverage: [{}]",
+					steps.size(),
+					PepperLogHelper.lazyToString(() -> buildGroupByCoverageString(steps, mergedGroupBy)));
+		}
+
 		IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
 		if (steps.contains(inducer)) {
 			return inducedToInducer;
@@ -101,6 +111,22 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 			return inducedToInducer;
 		}
 
+	}
+
+	/**
+	 * Builds a human-readable coverage string for EXPLAIN output. For each column in {@code mergedGroupBy}, reports
+	 * what percentage of the input {@code steps} already carried that column in their own groupBy. A column at 100 %
+	 * was native to every step; a column below 100 % was added by the merger to support row-splitting.
+	 *
+	 * @return a comma-separated list of {@code col=P%(count/total)} entries, one per grouped-by column
+	 */
+	@SuppressWarnings("checkstyle:MagicNumber")
+	protected String buildGroupByCoverageString(Set<TableQueryStep> steps, IGroupBy mergedGroupBy) {
+		int total = steps.size();
+		return mergedGroupBy.getGroupedByColumns().stream().map(col -> {
+			long count = steps.stream().filter(s -> s.getGroupBy().getGroupedByColumns().contains(col)).count();
+			return "%s=%d%%(%d/%d)".formatted(col, count * 100 / total, count, total);
+		}).collect(Collectors.joining(", "));
 	}
 
 	protected IGroupBy mergeGroupBy(Set<TableQueryStep> steps) {

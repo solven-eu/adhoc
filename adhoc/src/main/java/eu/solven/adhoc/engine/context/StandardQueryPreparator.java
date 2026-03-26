@@ -25,6 +25,8 @@ package eu.solven.adhoc.engine.context;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.jooq.SQLDialect;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -51,13 +53,13 @@ import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.AdhocTableUnsafe;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.jooq.SQLDialect;
 
 /**
  * Default implementation of {@link IQueryPreparator}.
@@ -81,10 +83,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	@Default
 	final ListeningExecutorService concurrentExecutorService = AdhocUnsafe.adhocCommonPool;
 
-	// If not-concurrent, we want the simpler execution plan as possible
-	// it is especially important to simplify thread-jumping lowering readability of stack-traces
-	// TODO Should we anyway execute queries in some Adhoc-thread ? It may help monitoring CPU-activity and
-	// RAM-allocations
+	// Typically customized into a named-pool so that even sequential queries run in specific thread
 	@NonNull
 	@Default
 	final ListeningExecutorService nonConcurrentExecutorService = MoreExecutors.newDirectExecutorService();
@@ -93,7 +92,12 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	// Configurable per CubeWrapper to allow different tables to use different DB pools.
 	@NonNull
 	@Default
-	final ListeningExecutorService dbExecutorService = MoreExecutors.newDirectExecutorService();
+	final ListeningExecutorService concurrentDBExecutorService = AdhocTableUnsafe.adhocDbPool;
+
+	// Typically customized into a named-pool so that even sequential queries run in specific thread
+	@NonNull
+	@Default
+	final ListeningExecutorService nonConcurrentDBExecutorService = MoreExecutors.newDirectExecutorService();
 
 	@NonNull
 	@Default
@@ -125,16 +129,6 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				filterForest(fullQueryPod, preparedQuery).name(forest.getName() + "-filtered").build();
 
 		return fullQueryPod.toBuilder().forest(relevantForest).build();
-	}
-
-	protected ListeningExecutorService getDBExecutorService(ITableWrapper table, ICubeQuery preparedQuery) {
-		if (table instanceof JooqTableWrapper jooqTableWrapper && jooqTableWrapper.getTableParameters().getDslSupplier().getDSLContext().dialect() == SQLDialect.DUCKDB) {
-			// DuckDB is very efficient at parallelization: we should not submit many queries concurrently to it
-			return AdhocTableUnsafe.adhocDbPool;
-		} else {
-			// By default, we rely on the configured pool, which is by default a directExecutor
-			return dbExecutorService;
-		}
 	}
 
 	protected IQueryStepCache getQueryStepCache(ICubeQuery preparedQuery) {
@@ -213,6 +207,33 @@ public class StandardQueryPreparator implements IQueryPreparator {
 			// Not concurrent query: rely on current thread
 			return nonConcurrentExecutorService;
 		}
+	}
+
+	protected ListeningExecutorService getDBExecutorService(ITableWrapper table, ICubeQuery preparedQuery) {
+		if (StandardQueryOptions.CONCURRENT.isActive(preparedQuery.getOptions())
+				|| StandardQueryOptions.NON_BLOCKING.isActive(preparedQuery.getOptions())) {
+			// Concurrent query: execute in a dedicated pool
+			// return concurrentExecutorService;
+
+			if (isDuckDB(table)) {
+				// DuckDB is very efficient at parallelization: we should not submit many queries concurrently to it
+				return AdhocDuckDBUnsafe.adhocDuckDBPool;
+			} else {
+				// By default, we rely on the configured pool, which is by default a directExecutor
+				return concurrentDBExecutorService;
+			}
+		} else {
+			// Not concurrent query: rely on current thread
+			return nonConcurrentExecutorService;
+		}
+	}
+
+	@Deprecated(since = "API should not be DuckDB specific")
+	protected boolean isDuckDB(ITableWrapper table) {
+		return table instanceof JooqTableWrapper jooqTableWrapper && jooqTableWrapper.getTableParameters()
+				.getDslSupplier()
+				.getDSLContext()
+				.dialect() == SQLDialect.DUCKDB;
 	}
 
 	protected ICubeQuery combineWithImplicit(ICubeQuery rawQuery) {

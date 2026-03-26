@@ -687,7 +687,7 @@ public class TestAndFilter {
 										.combine())
 						.optimize(optimizer);
 
-		Assertions.assertThat(combined).hasToString("a=in=(a1,a2,a3)&b=in=(b1,b2,b3)&(a=in=(a1,a2)|b=in=(b1,b2))");
+		Assertions.assertThat(combined).hasToString("b=in=(b1,b2,b3)&(a=in=(a1,a2)|a==a3&b=in=(b1,b2))");
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
@@ -786,5 +786,17 @@ public class TestAndFilter {
 				FilterBuilder.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.match("b", IValueMatcher.MATCH_ALL))
 						.combine();
 		Assertions.assertThat(filter).hasToString("a==a1");
+	}
+
+	@Test
+	public void testAnd_complexOr() {
+		ISliceFilter filter = FilterBuilder.or()
+				.filter(AndFilter.and(ImmutableMap.of("c", "c1", "d", "d1")),
+						AndFilter.and(ImmutableMap.of("c", "c1", "d", "d2")),
+						AndFilter.and(ImmutableMap.of("c", "c1", "e", "e1")),
+						AndFilter.and(ImmutableMap.of("f", "f1", "d", "d1")))
+				.optimize();
+		// c==c1 is factored out of 3 of the 4 OR terms; d==d1|d==d2 is further packed to d=in=(d1,d2)
+		Assertions.assertThat(filter).hasToString("f==f1&d==d1|c==c1&(e==e1|d=in=(d1,d2))");
 	}
 }

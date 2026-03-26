@@ -26,10 +26,12 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -84,6 +86,9 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("PMD.GodClass")
 @SuperBuilder
 public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFactory {
+	private static final int KERNEL_WARN_ITERATIONS = 1024;
+	private static int kernelMaxIterations = 0;
+
 	@Default
 	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
@@ -194,6 +199,10 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	}
 
 	protected ImmutableSet<? extends ISliceFilter> normalizeOperands(Set<? extends ISliceFilter> operands) {
+		if (operands.size() <= 1) {
+			return ImmutableSet.copyOf(operands);
+		}
+
 		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(operands);
 
 		ImmutableSet<ISliceFilter> toIgnore = ignorableToOperands.get(true);
@@ -343,19 +352,99 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		// is to reduce the cartesian product as much as possible.
 		ImmutableSet<ISliceFilter> strippedOrFiltersAsAnd = splitAndStripOrs(hasSimplified, where, orOperands);
 
+		// Factor out common sub-expressions (kernels) across the OR operands before the cartesian product.
+		// E.g. `(K|A) & (K|B) & (K|C) & D` → `(K|(A&B&C)) & D`, reducing the cartesian product size.
+		ImmutableSet<ISliceFilter> kernelExtracted = extractKernels(strippedOrFiltersAsAnd);
+
 		// Consider skipping the cartesianProduct given other optimizations
 		if (!withCartesianProductsAndOr) {
 			if (ISliceFilter.MATCH_ALL.equals(where)) {
-				return strippedOrFiltersAsAnd;
+				return kernelExtracted;
 			} else {
-				return ImmutableSet.<ISliceFilter>builder().add(where).addAll(strippedOrFiltersAsAnd).build();
+				return ImmutableSet.<ISliceFilter>builder().add(where).addAll(kernelExtracted).build();
 			}
 		}
 
-		List<List<ISliceFilter>> strippedOrFilters = strippedOrFiltersAsAnd.stream()
-				.map(this::getOrOperands)
-				.<List<ISliceFilter>>map(ImmutableList::copyOf)
-				.toList();
+		return optimizeAndOrCartesianProduct(where, kernelExtracted);
+	}
+
+	/**
+	 * Factors out common sub-expressions (kernels) shared by multiple OR operands in an AND-of-ORs expression.
+	 * <p>
+	 * Applies the Boolean identity {@code (K|A) & (K|B) & ... & (K|An) = K | (A&B&...&An)} greedily: at each iteration
+	 * the kernel (non-OR sub-operand) that appears in the greatest number of OR operands is extracted, replacing those
+	 * n OR operands with the single combined OR operand {@code K | AND(remainders)}. This shrinks the cartesian product
+	 * computed by the subsequent step.
+	 * <p>
+	 * Only non-OR sub-operands are considered as kernel candidates to keep the cost of detection low.
+	 *
+	 * @param orAndOperands
+	 *            the OR filters that are being AND-ed together
+	 * @return an equivalent but potentially smaller set of OR filters
+	 */
+	@SuppressWarnings("PMD.AssignmentInOperand")
+	protected ImmutableSet<ISliceFilter> extractKernels(ImmutableSet<ISliceFilter> orAndOperands) {
+		List<ISliceFilter> mutableList = new ArrayList<>(orAndOperands);
+
+		int tryIndex = 0;
+
+		do {
+			if (tryIndex > KERNEL_WARN_ITERATIONS && tryIndex > kernelMaxIterations
+					&& Integer.bitCount(tryIndex) == 1) {
+				// Some log, helping to report slowness, and potentially live-lock
+				log.warn("Kernel extraction is going deep. tryIndex={}", tryIndex);
+			}
+
+			// Map each non-OR sub-operand (kernel candidate) to the indices of OR operands that contain it
+			Map<ISliceFilter, List<Integer>> kernelToIndices = new LinkedHashMap<>();
+			for (int i = 0; i < mutableList.size(); i++) {
+				for (ISliceFilter subOp : getOrOperands(mutableList.get(i))) {
+					if (!hasOrOperands(subOp)) {
+						kernelToIndices.computeIfAbsent(subOp, k -> new ArrayList<>()).add(i);
+					}
+				}
+			}
+
+			// Greedily pick the kernel appearing in the most OR operands (minimum 2 to make extraction worthwhile)
+			Optional<Map.Entry<ISliceFilter, List<Integer>>> bestEntry = kernelToIndices.entrySet()
+					.stream()
+					.filter(e -> e.getValue().size() >= 2)
+					.max(Comparator.comparingInt(e -> e.getValue().size()));
+
+			if (bestEntry.isEmpty()) {
+				break;
+			}
+
+			ISliceFilter kernel = bestEntry.get().getKey();
+			List<Integer> indices = bestEntry.get().getValue();
+
+			// Build the AND of remainders: each matching OR operand with the kernel removed
+			List<ISliceFilter> remainders = indices.stream().map(i -> {
+				Set<ISliceFilter> subOps = new LinkedHashSet<>(getOrOperands(mutableList.get(i)));
+				subOps.remove(kernel);
+				return or(subOps);
+			}).toList();
+
+			ISliceFilter andOfRemainders = and(remainders, false);
+			ISliceFilter newOrOperand = or(ImmutableList.of(kernel, andOfRemainders));
+
+			// Remove the original OR operands in reverse index order to preserve correct positions
+			List<Integer> sortedIndices = new ArrayList<>(indices);
+			sortedIndices.sort(Comparator.reverseOrder());
+			sortedIndices.forEach(i -> mutableList.remove((int) i));
+			mutableList.add(newOrOperand);
+
+		} while (tryIndex++ >= 0);
+
+		kernelMaxIterations = tryIndex;
+
+		return ImmutableSet.copyOf(mutableList);
+	}
+
+	protected ImmutableSet<? extends ISliceFilter> optimizeAndOrCartesianProduct(ISliceFilter where,
+			ImmutableSet<ISliceFilter> andOperands) {
+		List<List<ISliceFilter>> strippedOrFilters =
+				andOperands.stream().map(this::getOrOperands).<List<ISliceFilter>>map(ImmutableList::copyOf).toList();
 
 		// This method prevents `Lists.cartesianProduct` to throw if the cartesianProduct is larger than
 		// Integer.MAX_VALUE

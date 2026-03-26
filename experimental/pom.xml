@@ -158,6 +158,14 @@
 			<artifactId>arrow-c-data</artifactId>
 			<scope>compile</scope>
 		</dependency>
+		
+		<dependency>
+			<!-- Evaluate 3rd-party boolean refactoring library -->
+		  <groupId>org.logicng</groupId>
+		  <artifactId>logicng</artifactId>
+		  <version>2.6.0</version>
+			<optional>true</optional>
+		</dependency>
 
 		<dependency>
 			<!-- Used by TestTableQuery_DuckDb_Arrow -->

@@ -535,7 +535,6 @@ public class TestOrFilter {
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
-	// TODO We do not manage noise yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_line_withNoise() {
 		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
@@ -544,11 +543,9 @@ public class TestOrFilter {
 		ISliceFilter a2b4 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b4"));
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3, a2b4).optimize())
-				// .hasToString("a==a1&b=in=(b1,b2,b3)|a==a2&b==b4")
-				.hasToString("a==a1&b==b1|a==a1&b==b2|a==a1&b==b3|a==a2&b==b4");
+				.hasToString("a==a2&b==b4|a==a1&b=in=(b1,b2,b3)");
 	}
 
-	// TODO We do not guess cartesianProducts yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_square() {
 		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
@@ -557,12 +554,9 @@ public class TestOrFilter {
 		ISliceFilter a2b2 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b2"));
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a2b1, a2b2).optimize())
-				.hasToString("a==a1&b==b1|a==a1&b==b2|a==a2&b==b1|a==a2&b==b2")
-		// .hasToString("a=in=(a1,a2)&b=in=(b1,b2)")
-		;
+				.hasToString("b=in=(b1,b2)&a=in=(a1,a2)");
 	}
 
-	// TODO We do not guess cartesianProducts yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_square_withHole() {
 		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
@@ -575,10 +569,9 @@ public class TestOrFilter {
 		ISliceFilter a3b2 = AndFilter.and(ImmutableMap.of("a", "a3", "b", "b2"));
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3, a2b1, a2b2, a2b3, a3b1, a3b2).optimize())
-				.hasToString(
-						"a==a1&b==b1|a==a1&b==b2|a==a1&b==b3|a==a2&b==b1|a==a2&b==b2|a==a2&b==b3|a==a3&b==b1|a==a3&b==b2")
-		// .hasToString("a=in=(a1,a2,3)&b=in=(b1,b2,3)&!(a==a3&b==b3)")
-		;
+				// .hasToString("a=in=(a1,a2,3)&b=in=(b1,b2,3)&!(a==a3&b==b3)")
+				.hasToString("a==a3&b=in=(b1,b2)|b=in=(b1,b2,b3)&a=in=(a1,a2)");
+
 	}
 
 	// Turns `a|a&b|a&b&c|...` into `a`, without failing on a cartesianProductLimit

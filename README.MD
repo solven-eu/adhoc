@@ -600,6 +600,13 @@ Thanks [EJ Technologies for kindly providing an OpenSource license for JProfiler
 
 # Research
 
-- Logic optimization https://en.m.wikipedia.org/wiki/Logic_optimization
+- Boolean Algebra / Logic optimization https://en.m.wikipedia.org/wiki/Logic_optimization
   - https://en.m.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
   - https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
+  - Algebraic factoring / Logic Synthesis / Kernel Extraction / Common Subexpression Extraction (CSE): merging table steps leads to large OR, which should be simplied before being submitted to `ITableWrapper`.
+- Task dependencies (as DAG) optimization (context: ICuboid execution and inference)
+  - Dependancy construction: all table steps may be inferred by a smaller set of input steps.
+  - Merging of leaves into new leaves (e.g. leading to less queries to ITableWrapper)
+  - Generating intermediate nodes computing shared computation (e.g. applying `a=a1` once even if needed by multiple steps)
+- Columnar Random-Access Compression
+  - FSST enables random-access over compressed `List` of `String`
