@@ -149,6 +149,10 @@ public class AndFilter implements IAndFilter {
 		return FilterBuilder.and(columnFilters).combine();
 	}
 
+	public static ISliceFilter and(String k1, Object v1) {
+		return and(ImmutableMap.of(k1, v1));
+	}
+
 	public static ISliceFilter and(String k1, Object v1, String k2, Object v2) {
 		return and(ImmutableMap.of(k1, v1, k2, v2));
 	}

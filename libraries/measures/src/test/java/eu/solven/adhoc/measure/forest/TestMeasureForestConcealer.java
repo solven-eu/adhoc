@@ -161,7 +161,7 @@ public class TestMeasureForestConcealer {
 	@Test
 	public void testFiltrator_compositeFilter_allColumnsConcealed() {
 		ISliceFilter compositeFilter = AndFilter.and(ColumnFilter.matchEq("col1", "v1"),
-				OrFilter.or(Map.of("col2", "v2")),
+				OrFilter.or("col2", "v2"),
 				NotFilter.builder().negated(ColumnFilter.matchEq("col3", "v3")).build());
 		Filtrator secret = Filtrator.builder().name("filtered").underlying("base").filter(compositeFilter).build();
 		IMeasureForest forest =

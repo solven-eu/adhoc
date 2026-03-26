@@ -221,7 +221,7 @@ public class TestMoreFilterHelpers {
 		Function<Object, Object> shiftPreviousYear =
 				rawYear -> rawYear instanceof Number year ? year.longValue() - 1 : rawYear;
 
-		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", 123));
+		ISliceFilter filter = OrFilter.or("a", "a1", "b", 123);
 		ISliceFilter shiftedFilter = SimpleFilterEditor.shiftIfPresent(filter, "b", shiftPreviousYear);
 		Assertions.assertThat(shiftedFilter).isInstanceOf(OrFilter.class);
 

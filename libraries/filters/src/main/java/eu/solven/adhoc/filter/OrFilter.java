@@ -143,6 +143,10 @@ public class OrFilter implements IOrFilter {
 		return FilterBuilder.or(asList).combine();
 	}
 
+	public static ISliceFilter or(String k1, Object v1) {
+		return or(ImmutableMap.of(k1, v1));
+	}
+
 	public static ISliceFilter or(String k1, Object v1, String k2, Object v2) {
 		return or(ImmutableMap.of(k1, v1, k2, v2));
 	}

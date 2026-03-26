@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -60,8 +59,8 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 @Measurement(iterations = 2, time = 2, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkSliceAsMapWithStep {
 
-	final ISliceFilter filterAB = AndFilter.and(Map.of("a", "a1", "b", "b1"));
-	final ISliceFilter filterBC = AndFilter.and(Map.of("b", "b1", "c", "c1"));
+	final ISliceFilter filterAB = AndFilter.and("a", "a1", "b", "b1");
+	final ISliceFilter filterBC = AndFilter.and("b", "b1", "c", "c1");
 
 	final ISliceFilter filterA_optimized = FilterBuilder.and(filterAB, filterBC).combine();
 	final ISliceFilter filterA_notOptimized = AndFilter.builder().and(filterAB).and(filterBC).build();

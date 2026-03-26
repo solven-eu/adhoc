@@ -48,10 +48,8 @@ public class TestAddSharedNodes {
 
 	@Test
 	public void sharedFilter_sharedWithLessGroupBy() {
-		TableQueryStep s1 =
-				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("a")).build();
-		TableQueryStep s2 =
-				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("b")).build();
+		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and("a", "a1")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep s2 = a.toBuilder().filter(AndFilter.and("a", "a1")).groupBy(GroupByColumns.named("b")).build();
 		TableQueryStep s3 =
 				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
 
@@ -66,7 +64,7 @@ public class TestAddSharedNodes {
 		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
 		TableQueryStep shared =
-				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("a", "b")).build();
+				a.toBuilder().filter(AndFilter.and("a", "a1")).groupBy(GroupByColumns.named("a", "b")).build();
 		Assertions.assertThat(withShared.vertexSet()).hasSize(4).contains(s1, s2, s3).contains(shared);
 
 		Assertions.assertThat(withShared.edgeSet()).hasSize(3).anySatisfy(edge -> {
@@ -174,9 +172,9 @@ public class TestAddSharedNodes {
 
 	@Test
 	public void chainOfInducers_filters_differentColumns() {
-		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and(Map.of("a", "a1", "b", "b1"))).build();
+		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).build();
 		TableQueryStep s2 =
-				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("a", "b")).build();
+				a.toBuilder().filter(AndFilter.and("a", "a1")).groupBy(GroupByColumns.named("a", "b")).build();
 		TableQueryStep s3 =
 				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
 
@@ -209,18 +207,12 @@ public class TestAddSharedNodes {
 
 	@Test
 	public void sharedFilter_parentHasIrrelevantFilterToChildren() {
-		TableQueryStep s1 = a.toBuilder()
-				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
-				.groupBy(GroupByColumns.named("a"))
-				.build();
-		TableQueryStep s2 = a.toBuilder()
-				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
-				.groupBy(GroupByColumns.named("b"))
-				.build();
-		TableQueryStep s3 = a.toBuilder()
-				.filter(AndFilter.and(Map.of("a", "a1", "b", "b2")))
-				.groupBy(GroupByColumns.named("b"))
-				.build();
+		TableQueryStep s1 =
+				a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep s2 =
+				a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).groupBy(GroupByColumns.named("b")).build();
+		TableQueryStep s3 =
+				a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b2")).groupBy(GroupByColumns.named("b")).build();
 		TableQueryStep s4 = a.toBuilder()
 				.filter(FilterBuilder
 						.or(ColumnFilter.matchEq("c", "c1"),
@@ -244,12 +236,12 @@ public class TestAddSharedNodes {
 
 		// Helps computing the 3 nodes
 		TableQueryStep shared = a.toBuilder()
-				.filter(AndFilter.and(Map.of("a", "a1", "b", InMatcher.matchIn("b1", "b2"))))
+				.filter(AndFilter.and("a", "a1", "b", InMatcher.matchIn("b1", "b2")))
 				.groupBy(GroupByColumns.named("a", "b"))
 				.build();
 		// Helps computing the 2 nodes on `b1`
 		TableQueryStep shared2 = a.toBuilder()
-				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.filter(AndFilter.and("a", "a1", "b", "b1"))
 				.groupBy(GroupByColumns.named("a", "b"))
 				.build();
 		Assertions.assertThat(withShared.vertexSet())

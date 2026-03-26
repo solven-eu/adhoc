@@ -62,27 +62,27 @@ public class TestDispatchorQueryStep {
 
 	@Test
 	public void testMatchDecompositionEntry_exactMatch() {
-		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and(Map.of("c", "v")))).isTrue();
+		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and("c", "v"))).isTrue();
 	}
 
 	@Test
 	public void testMatchDecompositionEntry_exactMatch_decompositeMoreColumns() {
-		Assertions.assertThat(isRelevant(Map.of("c", "v", "c2", "v2"), AndFilter.and(Map.of("c", "v")))).isTrue();
+		Assertions.assertThat(isRelevant(Map.of("c", "v", "c2", "v2"), AndFilter.and("c", "v"))).isTrue();
 	}
 
 	@Test
 	public void testMatchDecompositionEntry_filterMore() {
-		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and(Map.of("c", "v", "c2", "v2")))).isTrue();
+		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and("c", "v", "c2", "v2"))).isTrue();
 	}
 
 	@Test
 	public void testMatchDecompositionEntry_notRelevant() {
-		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and(Map.of("c", "v2")))).isFalse();
+		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and("c", "v2"))).isFalse();
 	}
 
 	@Test
 	public void testMatchDecompositionEntry_in() {
-		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and(Map.of("c", Set.of("v", "v2"))))).isTrue();
+		Assertions.assertThat(isRelevant(Map.of("c", "v"), AndFilter.and("c", Set.of("v", "v2")))).isTrue();
 	}
 
 	@Test

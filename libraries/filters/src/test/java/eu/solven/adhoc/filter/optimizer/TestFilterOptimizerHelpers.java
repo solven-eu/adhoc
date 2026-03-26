@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.filter.optimizer;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,7 +29,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.AndFilter;
@@ -48,79 +45,72 @@ public class TestFilterOptimizerHelpers {
 
 	@Test
 	public void testStripOr_orHasCommon() {
-		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
-				AndFilter.and(Map.of("a", "a1")),
-				Set.of(OrFilter.or(Map.of("a", "a1", "b", "b2"))));
+		Set<ISliceFilter> output = optimizer
+				.splitThenStripOrs(hasSimplified, AndFilter.and("a", "a1"), Set.of(OrFilter.or("a", "a1", "b", "b2")));
 
 		Assertions.assertThat(output).hasSize(1).contains(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testStripOr() {
-		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
-				AndFilter.and(Map.of("a", "a1")),
-				Set.of(OrFilter.or(Map.of("b", "b2", "c", "c3"))));
+		Set<ISliceFilter> output = optimizer
+				.splitThenStripOrs(hasSimplified, AndFilter.and("a", "a1"), Set.of(OrFilter.or("b", "b2", "c", "c3")));
 
-		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or(Map.of("b", "b2", "c", "c3")));
+		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or("b", "b2", "c", "c3"));
 	}
 
 	@Test
 	public void testStripOr_matchNone() {
 		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
-				AndFilter.and(Map.of("a", "a1")),
+				AndFilter.and("a", "a1"),
 				Set.of(FilterBuilder
 						.or(ColumnFilter.match("a", LikeMatcher.matching("a%")).negate(),
 								ColumnFilter.matchEq("b", "b2"))
 						.combine()));
 
-		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or(Map.of("b", "b2")));
+		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or("b", "b2"));
 	}
 
 	@Test
 	public void testRemoverLaxerInAnd() {
-		List<ISliceFilter> fromLaxToStrict =
-				List.of(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("a", "a1", "b", "b2")));
+		Set<ISliceFilter> fromLaxToStrict =
+				ImmutableSet.of(AndFilter.and("a", "a1"), AndFilter.and("a", "a1", "b", "b2"));
 
 		Set<ISliceFilter> strippedAnd = optimizer.removeLaxerInAnd(fromLaxToStrict);
-		Assertions.assertThat(strippedAnd).containsExactly(AndFilter.and(Map.of("a", "a1", "b", "b2")));
+		Assertions.assertThat(strippedAnd).containsExactly(AndFilter.and("a", "a1", "b", "b2"));
 
 		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
-		Assertions.assertThat(strippedOr).containsExactly(AndFilter.and(Map.of("a", "a1")));
+		Assertions.assertThat(strippedOr).containsExactly(AndFilter.and("a", "a1"));
 	}
 
 	@Test
 	public void testRemoveLaxerInAnd_compareWithAll() {
 		// a&b&(c|a&b) -> a&b
-		List<ISliceFilter> fromLaxToStrict = List.of(AndFilter.and(Map.of("a", "a1")),
-				AndFilter.and(Map.of("b", "b1")),
-				FilterBuilder.or(AndFilter.and(Map.of("c", "c1")), AndFilter.and(Map.of("a", "a1", "b", "b1")))
-						.combine());
+		Set<ISliceFilter> fromLaxToStrict = ImmutableSet.of(AndFilter.and("a", "a1"),
+				AndFilter.and("b", "b1"),
+				FilterBuilder.or(AndFilter.and("c", "c1"), AndFilter.and("a", "a1", "b", "b1")).combine());
 
 		Set<ISliceFilter> strippedAnd = optimizer.removeLaxerInAnd(fromLaxToStrict);
-		Assertions.assertThat(strippedAnd)
-				.containsExactly(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1")));
+		Assertions.assertThat(strippedAnd).containsExactly(AndFilter.and("a", "a1"), AndFilter.and("b", "b1"));
 	}
 
 	@Disabled("TODO This test is false. The principle is interesting but we need first to craft a relevant case")
 	@Test
 	public void testRemoveStricterInOr_compareWithAll() {
 		// a|b|(a|c)&(b|d) -> a|b
-		List<ISliceFilter> fromLaxToStrict = List.of(AndFilter.and(Map.of("a", "a1")),
-				AndFilter.and(Map.of("b", "b1")),
-				FilterBuilder
-						.and(OrFilter.or(ImmutableMap.of("a", "a1", "c", "c1")),
-								OrFilter.or(ImmutableMap.of("b", "b1", "d", "d1")))
-						.combine());
+		Set<ISliceFilter> fromLaxToStrict = ImmutableSet.of(AndFilter.and("a", "a1"),
+				AndFilter.and("b", "b1"),
+				FilterBuilder.and(OrFilter.or("a", "a1", "c", "c1"), OrFilter.or("b", "b1", "d", "d1")).combine());
 
 		Set<ISliceFilter> strippedOr = optimizer.removeStricterInOr(fromLaxToStrict);
-		Assertions.assertThat(strippedOr)
-				.containsExactly(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b1")));
+		Assertions.assertThat(strippedOr).containsExactly(AndFilter.and("a", "a1"), AndFilter.and("b", "b1"));
 	}
 
 	@Test
 	public void testPack_InAndOutIsEmpty() {
 		FilterOptimizer helper = FilterOptimizer.builder().build();
-		ImmutableSet<? extends ISliceFilter> packed = helper.packColumnFilters(
+		ColumnPacker packer = new ColumnPacker(helper);
+		ImmutableSet<? extends ISliceFilter> packed = packer.packColumnFilters(
 				ImmutableSet.of(ColumnFilter.notEq("d", "d1"), ColumnFilter.matchIn("d", "d1", "d2", "d3")));
 
 		Assertions.assertThat((Set) packed).hasSize(1).containsExactly(ColumnFilter.matchIn("d", "d2", "d3"));

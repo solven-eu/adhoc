@@ -22,28 +22,23 @@
  */
 package eu.solven.adhoc.filter.optimizer;
 
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.math.LongMath;
-import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
@@ -53,7 +48,6 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.FilterUtility;
 import eu.solven.adhoc.filter.IAndFilter;
-import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.INotFilter;
 import eu.solven.adhoc.filter.IOrFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -61,12 +55,9 @@ import eu.solven.adhoc.filter.NotFilter;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
-import eu.solven.adhoc.filter.value.EqualsMatcher;
-import eu.solven.adhoc.filter.value.InMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.util.AdhocTime;
 import eu.solven.adhoc.util.AdhocUnsafe;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.experimental.SuperBuilder;
@@ -86,9 +77,6 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("PMD.GodClass")
 @SuperBuilder
 public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFactory {
-	private static final int KERNEL_WARN_ITERATIONS = 1024;
-	private static int kernelMaxIterations = 0;
-
 	@Default
 	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
@@ -101,7 +89,12 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	@Getter
 	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
 
-	final boolean withCartesianProductsAndOr;
+	@Default
+	Function<FilterOptimizer, KernelFactorizer> kernelFactorizerFactory = fo -> new KernelFactorizer(fo);
+
+	@Deprecated(since = "CartesianProduct seems useless since Kernel Factorization")
+	@Default
+	final boolean withCartesianProductsAndOr = false;
 
 	@Override
 	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
@@ -162,13 +155,10 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		// preferNotOrOverAndNot handle subsets that share columns without being distracted by
 		// unrelated filters.
 		ImmutableSet<? extends ISliceFilter> clusterResults = optimizeByClusters(flatten, willBeNegated);
-		{
-			if (clusterResults.contains(ISliceFilter.MATCH_NONE)) {
-				return ISliceFilter.MATCH_NONE;
-			}
-		}
 
-		if (clusterResults.isEmpty()) {
+		if (clusterResults.contains(ISliceFilter.MATCH_NONE)) {
+			return ISliceFilter.MATCH_NONE;
+		} else if (clusterResults.isEmpty()) {
 			return ISliceFilter.MATCH_ALL;
 		}
 
@@ -189,7 +179,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
 		// So we need to optimize `(c=c1) AND (c=c1 OR d=d1)`
-		ImmutableSet<? extends ISliceFilter> postCartesianProduct = optimizeAndOfOr(stripRedundancyPre);
+		ImmutableSet<? extends ISliceFilter> postCartesianProduct =
+				kernelFactorizerFactory.apply(this).optimizeAndOfOr(stripRedundancyPre);
 
 		// Normalize again after the cartesianProduct
 		// TODO Skip if cartesianProduct had no effect
@@ -211,7 +202,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		ImmutableSet<? extends ISliceFilter> simplifiedGivenOthers = simplifyEachGivenOthers(toProcess);
 
 		// Then, we simplify given columnFilters (e.g. `a=a1&a=a2` to `matchNone`)
-		ImmutableSet<? extends ISliceFilter> packedColumns = packColumnFilters(splitAnd(simplifiedGivenOthers));
+		ImmutableSet<? extends ISliceFilter> packedColumns =
+				new ColumnPacker(this).packColumnFilters(splitAnd(simplifiedGivenOthers));
 
 		if (packedColumns.contains(ISliceFilter.MATCH_NONE)) {
 			return ImmutableSet.of(ISliceFilter.MATCH_NONE);
@@ -295,227 +287,6 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	}
 
 	/**
-	 * Dedicated to turn `(a==a1|b==b1)&(a==a1)` to `(a==a1)`.
-	 * 
-	 * TODO turn `!(a==a1&b==b1)&(a!=a1)` to `(a!=a1)`.
-	 * 
-	 * @param andOperands
-	 *            the input, consisting in a Collection of operands being `AND` together.
-	 * @return
-	 */
-	// https://en.m.wikipedia.org/wiki/Logic_optimization
-	// https://en.m.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
-	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
-	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
-	// One may contribute a finer implementation.
-	protected ImmutableSet<? extends ISliceFilter> optimizeAndOfOr(ImmutableSet<? extends ISliceFilter> andOperands) {
-		// 1- Segment filters between OR-like filters and others
-		// OR-like filters will be combined with a cartesian product, in the hope of rejecting many irrelevant
-		// combinations. The others are combined as a single AND.
-
-		// Group by operand which may interact with others, as an OR can not be simplified if its column does not appear
-		// anywhere else
-		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(andOperands);
-
-		// Group by operands which are splitable by OR, as we hope to detect combinations which are useless
-		Map<Boolean, List<ISliceFilter>> orNotOr = andOperands.stream()
-				.collect(
-						Collectors.partitioningBy(f -> hasOrOperands(f) && ignorableToOperands.get(false).contains(f)));
-
-		List<ISliceFilter> orOperands = orNotOr.get(true);
-		if (orOperands.isEmpty()) {
-			// There is no OR : this is a plain AND.
-			return andOperands;
-		} else if (orOperands.size() == 1) {
-			// There is no cartesian product: this is a plain AND.
-			return andOperands;
-		}
-
-		// Holds all AND operands which are not splittable as ORs.
-		ISliceFilter where = optimizeOperand(FilterBuilder.and(orNotOr.get(false)).combine());
-
-		if (where.isMatchNone()) {
-			// For some reason, this was not detected earlier
-			return ImmutableSet.of(ISliceFilter.MATCH_NONE);
-		}
-
-		// Given `a&b|c&d`, it may be turned into `!(a&b)&!(c&d)` then into `(!a|!b)&(!c|!d)`
-		// It means we turned a simple OR into a 4-entries cartesianProduct. It indicates a simple large OR
-		// would be turned into a huge cartesianProduct
-
-		// Register if at least one simplification occurred. If false, this is useful not to later call `Or.or`
-		// which would lead to a cycle as `Or.or` is based on `And.and` which is based on current method.
-		AtomicBoolean hasSimplified = new AtomicBoolean();
-
-		// Each OR-like is split into OR operands, and they are stripped individually given the common `AND` operand.
-		// OR operands will be combined (through cartesian product) and cross-stripped in a later step, as the goal here
-		// is to reduce the cartesian product as much as possible.
-		ImmutableSet<ISliceFilter> strippedOrFiltersAsAnd = splitAndStripOrs(hasSimplified, where, orOperands);
-
-		// Factor out common sub-expressions (kernels) across the OR operands before the cartesian product.
-		// E.g. `(K|A) & (K|B) & (K|C) & D` → `(K|(A&B&C)) & D`, reducing the cartesian product size.
-		ImmutableSet<ISliceFilter> kernelExtracted = kernelsRefactoring(strippedOrFiltersAsAnd);
-
-		// Consider skipping the cartesianProduct given other optimizations
-		if (!withCartesianProductsAndOr) {
-			if (ISliceFilter.MATCH_ALL.equals(where)) {
-				return kernelExtracted;
-			} else {
-				return ImmutableSet.<ISliceFilter>builder().add(where).addAll(kernelExtracted).build();
-			}
-		}
-
-		return optimizeAndOrCartesianProduct(where, kernelExtracted);
-	}
-
-	/**
-	 * Factors out common sub-expressions (kernels) shared by multiple OR operands in an AND-of-ORs expression.
-	 * <p>
-	 * Applies the Boolean identity {@code (K|A) & (K|B) & ... & (K|An) = K | (A&B&...&An)} greedily: at each iteration
-	 * the kernel (non-OR sub-operand) that appears in the greatest number of OR operands is extracted, replacing those
-	 * n OR operands with the single combined OR operand {@code K | AND(remainders)}. This shrinks the cartesian product
-	 * computed by the subsequent step.
-	 * <p>
-	 * Only non-OR sub-operands are considered as kernel candidates to keep the cost of detection low.
-	 *
-	 * @param orAndOperands
-	 *            the OR filters that are being AND-ed together
-	 * @return an equivalent but potentially smaller set of OR filters
-	 */
-	@SuppressWarnings("PMD.AssignmentInOperand")
-	protected ImmutableSet<ISliceFilter> kernelsRefactoring(ImmutableSet<ISliceFilter> orAndOperands) {
-		List<ISliceFilter> mutableList = new ArrayList<>(orAndOperands);
-
-		int tryIndex = 0;
-
-		do {
-			if (tryIndex > KERNEL_WARN_ITERATIONS && tryIndex > kernelMaxIterations
-					&& Integer.bitCount(tryIndex) == 1) {
-				// Some log, helping to report slowness, and potentially live-lock
-				log.warn("Kernel extraction is going deep. tryIndex={}", tryIndex);
-			}
-
-			// Map each non-OR sub-operand (kernel candidate) to the indices of OR operands that contain it
-			Map<ISliceFilter, List<Integer>> kernelToIndices = new LinkedHashMap<>();
-			for (int i = 0; i < mutableList.size(); i++) {
-				for (ISliceFilter subOp : getOrOperands(mutableList.get(i))) {
-					// if (!hasOrOperands(subOp)) {
-					kernelToIndices.computeIfAbsent(subOp, k -> new ArrayList<>()).add(i);
-					// }
-				}
-			}
-
-			// Greedily pick the kernel appearing in the most OR operands (minimum 2 to make extraction worthwhile)
-			Optional<Map.Entry<ISliceFilter, List<Integer>>> bestEntry = kernelToIndices.entrySet()
-					.stream()
-					.filter(e -> e.getValue().size() >= 2)
-					.max(Comparator.comparingInt(e -> e.getValue().size()));
-
-			if (bestEntry.isEmpty()) {
-				break;
-			}
-
-			ISliceFilter kernel = bestEntry.get().getKey();
-			List<Integer> indices = bestEntry.get().getValue();
-
-			// Build the AND of remainders: each matching OR operand with the kernel removed
-			ImmutableSet<ISliceFilter> remainders = indices.stream().map(i -> {
-				ISliceFilter originalOperand = mutableList.get(i);
-				return FilterHelpers.simplifyOrGivenContribution(filterStripperFactory, kernel, originalOperand);
-			}).collect(ImmutableSet.toImmutableSet());
-
-			ISliceFilter andOfRemainders = FilterBuilder.and(remainders).combine();
-			// No need to optimize as we will `splitOr` right away
-			ISliceFilter newOrOperand = FilterBuilder.or(kernel, andOfRemainders).combine();
-
-			// Remove the original OR operands in reverse index order to preserve correct positions
-			List<Integer> sortedIndices = new ArrayList<>(indices);
-			sortedIndices.sort(Comparator.reverseOrder());
-			sortedIndices.forEach(i -> mutableList.remove((int) i));
-			mutableList.add(newOrOperand);
-
-		} while (tryIndex++ >= 0);
-
-		synchronized (this.getClass()) {
-			kernelMaxIterations = Math.max(tryIndex, kernelMaxIterations);
-		}
-
-		return ImmutableSet.copyOf(mutableList);
-	}
-
-	protected ImmutableSet<? extends ISliceFilter> optimizeAndOrCartesianProduct(ISliceFilter where,
-			ImmutableSet<ISliceFilter> andOperands) {
-		List<List<ISliceFilter>> strippedOrFilters =
-				andOperands.stream().map(this::getOrOperands).<List<ISliceFilter>>map(ImmutableList::copyOf).toList();
-
-		// This method prevents `Lists.cartesianProduct` to throw if the cartesianProduct is larger than
-		// Integer.MAX_VALUE
-		BigInteger cartesianProductSize = AdhocCollectionHelpers.cartesianProductSize(strippedOrFilters);
-
-		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
-		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
-		if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) > 0) {
-			listener.onSkip(AndFilter.builder().ands(andOperands).build());
-			log.warn("Skip .optimizeAndOfOr due to {} > {} (input={})",
-					cartesianProductSize,
-					AdhocUnsafe.cartesianProductLimit,
-					andOperands);
-			// throw new NotYetImplementedException("Faulty optimization on %s".formatted(operands));
-			return andOperands;
-		}
-
-		// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
-		// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
-		List<List<ISliceFilter>> cartesianProduct = Lists.cartesianProduct(strippedOrFilters);
-
-		Set<ISliceFilter> ors = cartedianProductAndStripOrs(where, cartesianProduct);
-		if (ors.size() < cartesianProductSize.intValueExact()) {
-			// At least one simplification occurred: it is relevant to build and optimize an OR over the leftover
-			// operands
-
-			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
-			// better/simpler/faster. Generally speaking, we prefer AND over OR.
-			// BEWARE We go into another batch of optimization for OR, which is safe as this is strictly simpler than
-			// current input
-			ISliceFilter orCandidate = and(ImmutableList.of(where, OrFilter.copyOf(ors)), false);
-			long costSimplifiedOr = costFunction.cost(orCandidate);
-			long costInputAnd = costFunction.cost(andOperands);
-
-			if (costSimplifiedOr < costInputAnd) {
-				return ImmutableSet.copyOf(splitAnd(ImmutableSet.of(orCandidate)));
-			}
-		}
-
-		// raw AND as we do not want to call optimizations recursively
-		return andOperands;
-	}
-
-	protected Set<ISliceFilter> cartedianProductAndStripOrs(ISliceFilter commonAnd,
-			List<List<ISliceFilter>> cartesianProduct) {
-		return cartesianProduct.stream()
-				.map(t -> and(t, false))
-				.filter(sf -> !sf.isMatchNone())
-				// Combine the simple AND (based on not OR operands) with the orEntry.
-				// Keep the simple AND on the left, as they are common to all entries, hence easier to be read
-				// if first
-				// Some entries would be filtered out
-				// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
-				.filter(sf -> {
-					// TODO if `commonAnd` is matchAll, we can skip `.optimize`
-					ISliceFilter combinedOrOperand = and(ImmutableList.of(commonAnd, sf), false);
-
-					if (combinedOrOperand.isMatchNone()) {
-						// Reject this OR which is irrelevant
-						// (e.g. flattening `AND(OR(...))`, it generated a filter like `a&!a`)
-						return false;
-					} else {
-						return true;
-					}
-				})
-				.collect(Collectors.toCollection(LinkedHashSet::new));
-	}
-
-	/**
 	 * 
 	 * @param where
 	 *            a common AND operand
@@ -529,12 +300,12 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	protected ImmutableSet<ISliceFilter> splitAndStripOrs(AtomicBoolean hasSimplified,
 			ISliceFilter where,
 			List<ISliceFilter> andOperands) {
-		Collection<ISliceFilter> outputOperands = andOperands.stream()
+		Set<ISliceFilter> outputOperands = andOperands.stream()
 				.map(this::getOrOperands)
 				// Simplify orOperands given `WHERE`
 				.map(orOperands -> splitThenStripOrs(hasSimplified, where, orOperands))
 				.map(this::or)
-				.collect(Collectors.toCollection(ArrayList::new));
+				.collect(ImmutableSet.toImmutableSet());
 
 		return removeLaxerInAnd(outputOperands);
 	}
@@ -549,10 +320,9 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	protected Set<ISliceFilter> splitThenStripOrs(AtomicBoolean hasSimplified,
 			ISliceFilter where,
 			Set<ISliceFilter> orOperands) {
-
 		IFilterStripper filterStripper = filterStripperFactory.makeFilterStripper(where);
 
-		List<ISliceFilter> strippedWhere = orOperands.stream()
+		Set<ISliceFilter> strippedWhere = orOperands.stream()
 				.map(filterStripper::strip)
 				// Filter the combinations which are simplified into matchNone
 				.filter(orOperand -> {
@@ -566,7 +336,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 					return !matchNone;
 				})
-				.collect(Collectors.toCollection(ArrayList::new));
+				.collect(ImmutableSet.toImmutableSet());
 
 		// Simplify the OR before doing the cartesian product
 		int sizeBefore = strippedWhere.size();
@@ -578,7 +348,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		return strippedStricter;
 	}
 
-	protected ImmutableSet<ISliceFilter> removeLaxerInAnd(Collection<? extends ISliceFilter> operands) {
+	protected ImmutableSet<ISliceFilter> removeLaxerInAnd(Set<? extends ISliceFilter> operands) {
 		return removeLaxerOrStricter(operands, true);
 	}
 
@@ -588,7 +358,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 * @param operands
 	 *            operands which are ORed.
 	 */
-	protected Set<ISliceFilter> removeStricterInOr(Collection<? extends ISliceFilter> operands) {
+	protected Set<ISliceFilter> removeStricterInOr(Set<? extends ISliceFilter> operands) {
 		return removeLaxerOrStricter(operands, false);
 	}
 
@@ -599,7 +369,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 * @param removeLaxerElseStricter
 	 * @return
 	 */
-	protected ImmutableSet<ISliceFilter> removeLaxerOrStricter(Collection<? extends ISliceFilter> operands,
+	protected ImmutableSet<ISliceFilter> removeLaxerOrStricter(Set<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(operands);
 
@@ -616,25 +386,17 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	}
 
 	protected Map<Boolean, ImmutableSet<ISliceFilter>> partitionByPotentialInteraction(
-			Collection<? extends ISliceFilter> operands) {
-		AtomicLongMap<String> columnToNbOperands = AtomicLongMap.create();
+			Set<? extends ISliceFilter> operands) {
+		Set<Set<? extends ISliceFilter>> clusters = FilterHelpers.clusterFilters(operands);
 
-		operands.forEach(filter -> {
-			FilterHelpers.getFilteredColumns(filter).forEach(columnToNbOperands::incrementAndGet);
-		});
+		// Cluster with a single element can not interact with any other filter
+		Map<Boolean, List<Set<? extends ISliceFilter>>> partitionedClusters =
+				clusters.stream().collect(Collectors.partitioningBy(cluster -> cluster.size() == 1));
 
-		return operands.stream().collect(Collectors.partitioningBy(operand -> {
-			Set<String> columns = FilterHelpers.getFilteredColumns(operand);
-
-			for (String column : columns) {
-				if (columnToNbOperands.get(column) != 1L) {
-					// This operand may interact with another operand
-					return false;
-				}
-			}
-
-			return true;
-		}, ImmutableSet.toImmutableSet()));
+		return partitionedClusters.entrySet()
+				.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey,
+						e -> e.getValue().stream().flatMap(ee -> ee.stream()).collect(ImmutableSet.toImmutableSet())));
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
@@ -970,238 +732,6 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			}
 
 			return results.build();
-		}
-	}
-
-	@Builder
-	protected static class PackingColumns {
-		final IFilterOptimizer optimizer;
-
-		// If there is not a single valueMatcher with explicit values, we should add all as not managed
-		final AtomicBoolean hadSomeAllowedValues = new AtomicBoolean();
-		// allowedValues is meaningful only if hadSomeAllowedValues is true
-		final Set<Object> allowedValues = new LinkedHashSet<>();
-
-		// If there is not a single valueMatcher with explicit values, we should add all as not managed
-		final AtomicBoolean hadSomeDisallowedValues = new AtomicBoolean();
-		// allowedValues is meaningful only if hadSomeAllowedValues is true
-		final Set<Object> disallowedValues = new LinkedHashSet<>();
-
-		// Do no collect IValueMatcher until managing `nullIfAbsent`
-		final List<IColumnFilter> implicitFilters = new ArrayList<>();
-
-		// This flag is used to prevent re-ordering if the filter is not actually simplified
-		final AtomicBoolean hasSimplified = new AtomicBoolean();
-
-		protected void registerPackedColumn(AtomicBoolean isMatchNone, IColumnFilter columnFilter) {
-			if (columnFilter.getValueMatcher() instanceof EqualsMatcher equalsMatcher) {
-				hadSomeAllowedValues.set(true);
-				Object operand = equalsMatcher.getWrapped();
-
-				addOperandInSet(isMatchNone, operand);
-			} else if (columnFilter.getValueMatcher() instanceof InMatcher inMatcher) {
-				hadSomeAllowedValues.set(true);
-				Set<?> operands = inMatcher.getOperands();
-
-				addOperandInSet(isMatchNone, operands);
-			} else if (columnFilter.getValueMatcher() instanceof NotMatcher notMatcher) {
-				if (notMatcher.getNegated() instanceof EqualsMatcher equalsMatcher) {
-					hadSomeDisallowedValues.set(true);
-					Object operand = equalsMatcher.getWrapped();
-
-					disallowedValues.add(operand);
-				} else if (notMatcher.getNegated() instanceof InMatcher inMatcher) {
-					hadSomeDisallowedValues.set(true);
-					Set<?> operands = inMatcher.getOperands();
-
-					disallowedValues.addAll(operands);
-				} else if (implicitFilters.contains(columnFilter.negate())) {
-					isMatchNone.set(true);
-				} else {
-					implicitFilters.add(columnFilter);
-				}
-			} else if (implicitFilters.contains(columnFilter.negate())) {
-				isMatchNone.set(true);
-			} else {
-				implicitFilters.add(columnFilter);
-			}
-		}
-
-		protected void addOperandInSet(AtomicBoolean isMatchNone, Set<?> operands) {
-			if (allowedValues.isEmpty()) {
-				// This is the first accepted values
-				allowedValues.addAll(operands);
-			} else {
-				allowedValues.retainAll(operands);
-				if (allowedValues.isEmpty()) {
-					// There is 2 incompatible set
-					isMatchNone.set(true);
-				}
-			}
-		}
-
-		protected void addOperandInSet(AtomicBoolean isMatchNone, Object operand) {
-			if (allowedValues.isEmpty()) {
-				// This is the first accepted values
-				allowedValues.add(operand);
-			} else {
-				if (allowedValues.contains(operand)) {
-					if (allowedValues.size() == 1) {
-						// Keep the allowed value
-						// Happens if we have multiple EqualsMatcher on the same operand
-						log.trace("Keep the allowed value");
-					} else {
-						// This is equivalent to a `.retain`
-						allowedValues.clear();
-						allowedValues.add(operand);
-					}
-				} else {
-					// There is 2 incompatible set
-					isMatchNone.set(true);
-				}
-			}
-		}
-
-		protected void collectPacks(AtomicBoolean isMatchNone,
-				String column,
-				ImmutableList.Builder<ISliceFilter> packedFiltersBuilder,
-				List<ISliceFilter> notManaged) {
-
-			if (hadSomeAllowedValues.get()) {
-				// We have a list of explicit values
-				if (!implicitFilters.isEmpty()) {
-					// Reject the values given the implicitFilters (e.g. regex filters)
-					allowedValues.removeIf(allowedValue -> {
-						// Remove any value which is not accepted by all (given AND) implicitFilters
-						boolean doRemove =
-								implicitFilters.stream().anyMatch(f -> !f.getValueMatcher().match(allowedValue));
-
-						if (doRemove) {
-							hasSimplified.set(true);
-						}
-
-						return doRemove;
-					});
-				}
-
-				// Remove explicitly disallowed values
-				if (allowedValues.removeAll(disallowedValues)) {
-					hasSimplified.set(true);
-				}
-
-				if (allowedValues.isEmpty()) {
-					// May happen only if implicitFilters or disallowedValues rejected all allowed values
-					isMatchNone.set(true);
-				} else {
-					// Consider a Set of explicit values
-					// implicitFilters are dropped as we checked they matched the values
-					packedFiltersBuilder.add(ColumnFilter.matchIn(column, allowedValues));
-				}
-			} else if (hadSomeDisallowedValues.get()) {
-				// Some disallowedValues but no allowedValues
-
-				if (!implicitFilters.isEmpty()) {
-					// Reject the values given the implicitFilters (e.g. regex filters)
-
-					// No need to reject explicitly w value rejected by implicit filters
-					// (e.g. `az*` would reject `qwerty` so `out(qwerty)` is irrelevant)
-					disallowedValues.removeIf(disallowedValue -> {
-						// If empty, return false, hence do not remove the allowed value
-						boolean doRemove =
-								implicitFilters.stream().noneMatch(f -> f.getValueMatcher().match(disallowedValue));
-
-						if (doRemove) {
-							hasSimplified.set(true);
-						}
-
-						return doRemove;
-					});
-				}
-
-				if (!disallowedValues.isEmpty()) {
-					// We have a list of explicit disallowed values but no explicit values
-					packedFiltersBuilder.add(optimizer.not(ColumnFilter.matchIn(column, disallowedValues)));
-				}
-
-				notManaged.addAll(implicitFilters);
-			} else {
-				// neither allowed or disallowed values
-				notManaged.addAll(implicitFilters);
-			}
-		}
-
-	}
-
-	/**
-	 * Optimize input filters if they cover same columns. Typically, `a=a1&a=a2` can be simplified into `matchNone`.
-	 * 
-	 * @param filters
-	 *            which are considered AND together.
-	 * @return a simpler list of filters, where filters are simplified on a per-column basis.
-	 */
-	protected ImmutableSet<? extends ISliceFilter> packColumnFilters(ImmutableSet<? extends ISliceFilter> filters) {
-		if (filters.size() <= 1) {
-			return filters;
-		}
-
-		@SuppressWarnings("PMD.LinguisticNaming")
-		Map<Boolean, List<ISliceFilter>> isColumnToFilters =
-				filters.stream().collect(Collectors.partitioningBy(f -> f instanceof IColumnFilter));
-
-		if (isColumnToFilters.get(true).isEmpty()) {
-			// Not a single columnFilter
-			return filters;
-		} else {
-			// isMatchNone is cross column as a single column not matching anything reject the whole filter
-			AtomicBoolean isMatchNone = new AtomicBoolean();
-
-			List<ISliceFilter> notManaged = new ArrayList<>();
-			if (isColumnToFilters.containsKey(false)) {
-				notManaged.addAll(isColumnToFilters.get(false));
-			}
-
-			// TODO This breaks ordering by pushing implicit filters to the end
-			// A solution is not trivial: iterate through filters, adding in the output if implicit, else scanning the
-			// rest for same column
-			Map<String, List<IColumnFilter>> columnToFilters = isColumnToFilters.get(true)
-					.stream()
-					.map(f -> (IColumnFilter) f)
-					// https://stackoverflow.com/questions/44675454/how-to-get-ordered-type-of-map-from-method-collectors-groupingby
-					// LinkedHashMap to maintain as much as possible the initial order
-					.collect(Collectors.groupingBy(IColumnFilter::getColumn, LinkedHashMap::new, Collectors.toList()));
-
-			ImmutableList.Builder<ISliceFilter> packedFiltersBuilder = ImmutableList.<ISliceFilter>builder();
-			columnToFilters.forEach((column, columnFilters) -> {
-				if (isMatchNone.get()) {
-					// Fail-fast
-					return;
-				}
-
-				PackingColumns packingColumns = new PackingColumns(this);
-
-				// Collect filter by allowedValue, disallowedValues and implicitFilters
-				columnFilters.stream().forEach(columnFilter -> {
-					if (isMatchNone.get()) {
-						// Fail-fast
-						return;
-					}
-
-					packingColumns.registerPackedColumn(isMatchNone, columnFilter);
-				});
-
-				packingColumns.collectPacks(isMatchNone, column, packedFiltersBuilder, notManaged);
-
-			});
-
-			if (isMatchNone.get()) {
-				// Typically happens if we have incompatible equals/in constraints
-				return ImmutableSet.of(IAndFilter.MATCH_NONE);
-			} else {
-				return ImmutableSet.copyOf(packedFiltersBuilder
-						// Add not managed at the end for readability, as they are generally more complex
-						.addAll(notManaged)
-						.build());
-			}
 		}
 	}
 

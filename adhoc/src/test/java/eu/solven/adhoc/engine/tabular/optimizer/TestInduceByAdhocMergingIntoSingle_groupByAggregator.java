@@ -22,14 +22,12 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.IAdhocTestConstants;
@@ -136,12 +134,12 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 	@Test
 	public void testCanInduce_AndDifferentColumns() {
 		TableQuery tq1 = TableQuery.edit(step)
-				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.filter(AndFilter.and("a", "a1", "b", "b1"))
 				.groupBy(GroupByColumns.named("b"))
 
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
-				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+				.filter(AndFilter.and("a", "a1", "c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
 
 				.build();
@@ -152,7 +150,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.contains(
 						TableQueryStep.edit(step)
 								.filter(FilterBuilder
-										.and(AndFilter.and(Map.of("a", "a1")),
+										.and(AndFilter.and("a", "a1"),
 												FilterBuilder
 														.or(ColumnFilter.matchEq("b", "b1"),
 																ColumnFilter.matchEq("c", "c1"))
@@ -164,11 +162,11 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 		Assertions.assertThat(split.getInduceds())
 				.hasSize(2)
 				.contains(TableQueryStep.edit(step)
-						.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.filter(AndFilter.and("a", "a1", "b", "b1"))
 						.groupBy(GroupByColumns.named("b"))
 						.build())
 				.contains(TableQueryStep.edit(step)
-						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+						.filter(AndFilter.and("a", "a1", "c", "c1"))
 						.groupBy(GroupByColumns.named("d"))
 						.build());
 	}
@@ -176,33 +174,33 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 	@Test
 	public void testCanInduce_AndDifferentColumns_andThirdOnlyCommonFilter() {
 		TableQuery tq1 = TableQuery.edit(step)
-				.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+				.filter(AndFilter.and("a", "a1", "b", "b1"))
 				.groupBy(GroupByColumns.named("b"))
 
 				.build();
 		TableQuery tq2 = TableQuery.edit(step)
-				.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+				.filter(AndFilter.and("a", "a1", "c", "c1"))
 				.groupBy(GroupByColumns.named("d"))
 
 				.build();
-		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and(Map.of("a", "a1"))).build();
+		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and("a", "a1")).build();
 		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2, tq3));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(TableQueryStep.edit(step)
-						.filter(AndFilter.and(Map.of("a", "a1")))
+						.filter(AndFilter.and("a", "a1"))
 						.groupBy(GroupByColumns.named("b", "c", "d"))
 						.build());
 
 		Assertions.assertThat(split.getInduceds())
 				.hasSize(3)
 				.contains(TableQueryStep.edit(step)
-						.filter(AndFilter.and(Map.of("a", "a1", "b", "b1")))
+						.filter(AndFilter.and("a", "a1", "b", "b1"))
 						.groupBy(GroupByColumns.named("b"))
 						.build())
 				.contains(TableQueryStep.edit(step)
-						.filter(AndFilter.and(Map.of("a", "a1", "c", "c1")))
+						.filter(AndFilter.and("a", "a1", "c", "c1"))
 						.groupBy(GroupByColumns.named("d"))
 						.build())
 				.contains(TableQueryStep.edit(step).filter(ColumnFilter.matchEq("a", "a1")).build());
@@ -299,31 +297,31 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 	public void testCanInduce_IntermediateNodeForFilterSharing_deep() {
 		TableQueryStep tq1 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
-				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+				.filter(AndFilter.and("a", "a1", "b", "b1"))
 
 				.build();
 		// second step has same filter with different groupBy
 		TableQueryStep tq2 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("y"))
-				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+				.filter(AndFilter.and("a", "a1", "b", "b1"))
 
 				.build();
 		// third step has stricter filter
 		TableQueryStep tq3 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
-				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1")))
+				.filter(AndFilter.and("a", "a1", "b", "b1", "c", "c1"))
 
 				.build();
 		// fourth step has intermediate filter: it may lead to ordering issues
 		TableQueryStep tq4 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
-				.filter(AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
+				.filter(AndFilter.and("a", "a1", "c", "c1"))
 
 				.build();
 		// fifth step has unrelated filter
 		TableQueryStep tq5 = TableQueryStep.edit(step)
 				.groupBy(GroupByColumns.named("x"))
-				.filter(AndFilter.and(ImmutableMap.of("d", "d1")))
+				.filter(AndFilter.and("d", "d1"))
 
 				.build();
 		SplitTableQueries split = optimizer.splitInduced(() -> Set.of(), Set.of(tq1, tq2, tq3, tq4, tq5));
@@ -331,9 +329,10 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
 				.contains(TableQueryStep.edit(step)
-						.filter(FilterBuilder.or(ColumnFilter.matchEq("d", "d1"),
-								AndFilter.and(ColumnFilter.matchEq("a", "a1"),
-										OrFilter.or(ImmutableMap.of("c", "c1", "b", "b1"))))
+						.filter(FilterBuilder
+								.or(ColumnFilter.matchEq("d", "d1"),
+										AndFilter.and(ColumnFilter.matchEq("a", "a1"),
+												OrFilter.or("c", "c1", "b", "b1")))
 								.combine())
 						.groupBy(GroupByColumns.named("a", "b", "c", "d", "x", "y"))
 						.build());
@@ -354,9 +353,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				// intermediate to the `a|b|c` branch
 				.contains(TableQueryStep.edit(step)
-						.filter(FilterBuilder
-								.and(ColumnFilter.matchEq("a", "a1"),
-										OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1")))
+						.filter(FilterBuilder.and(ColumnFilter.matchEq("a", "a1"), OrFilter.or("b", "b1", "c", "c1"))
 								.combine())
 						// `a` is not groupedBy as it is common to all
 						.groupBy(GroupByColumns.named("b", "c", "x", "y"))
@@ -364,7 +361,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				// intermediate for the 2 `a|b` steps
 				.contains(TableQueryStep.edit(step)
-						.filter(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")))
+						.filter(AndFilter.and("a", "a1", "b", "b1"))
 						// BEWARE `c` is present as groupBy as this intermediate is also used for `a&b&c` step
 						.groupBy(GroupByColumns.named("c", "x", "y"))
 						.build());

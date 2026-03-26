@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.filter;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -36,18 +35,17 @@ public class TestFilterUtility {
 	@Test
 	public void testCommonOr() {
 		Set<ISliceFilter> filters =
-				ImmutableSet.of(OrFilter.or(Map.of("a", "a1", "b", "b1")), OrFilter.or(Map.of("a", "a1", "b", "b2")));
+				ImmutableSet.of(OrFilter.or("a", "a1", "b", "b1"), OrFilter.or("a", "a1", "b", "b2"));
 
 		ISliceFilter commonOr = filterUtility.commonOr(filters);
 
-		Assertions.assertThat(commonOr).isEqualTo(OrFilter.or(Map.of("a", "a1")));
+		Assertions.assertThat(commonOr).isEqualTo(OrFilter.or("a", "a1"));
 	}
 
 	@Test
 	public void testCommonOr_matchAll() {
-		Set<ISliceFilter> filters = ImmutableSet.of(ISliceFilter.MATCH_ALL,
-				OrFilter.or(Map.of("a", "a1", "b", "b1")),
-				OrFilter.or(Map.of("a", "a1", "b", "b2")));
+		Set<ISliceFilter> filters = ImmutableSet
+				.of(ISliceFilter.MATCH_ALL, OrFilter.or("a", "a1", "b", "b1"), OrFilter.or("a", "a1", "b", "b2"));
 
 		ISliceFilter commonOr = filterUtility.commonOr(filters);
 

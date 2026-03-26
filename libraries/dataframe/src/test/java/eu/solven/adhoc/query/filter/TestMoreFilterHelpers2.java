@@ -165,7 +165,7 @@ public class TestMoreFilterHelpers2 {
 
 	@Test
 	public void transcodeFilter_andFilter() {
-		ISliceFilter filter = AndFilter.and(Map.of("a", "va", "b", "vb"));
+		ISliceFilter filter = AndFilter.and("a", "va", "b", "vb");
 		ISliceFilter result = MoreFilterHelpers.transcodeFilter(UPPERCASE_MANAGER, ITableAliaser.identity(), filter);
 		Assertions.assertThat(FilterHelpers.getFilteredColumns(result)).containsExactlyInAnyOrder("a", "b");
 		Assertions.assertThat(FilterHelpers.getValueMatcher(result, "a")).isEqualTo(EqualsMatcher.matchEq("VA"));
@@ -174,7 +174,7 @@ public class TestMoreFilterHelpers2 {
 
 	@Test
 	public void transcodeFilter_orFilter() {
-		ISliceFilter filter = OrFilter.or(Map.of("a", "va", "b", "vb"));
+		ISliceFilter filter = OrFilter.or("a", "va", "b", "vb");
 		ISliceFilter result = MoreFilterHelpers.transcodeFilter(UPPERCASE_MANAGER, ITableAliaser.identity(), filter);
 		Assertions.assertThat(result.isOr()).isTrue();
 	}

@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.filter;
 
-import java.util.Map;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -45,10 +43,10 @@ public class TestFilterEquivalencyHelpers {
 		ISliceFilter inB = ColumnFilter.matchIn("b", "b1", "b2");
 		ISliceFilter and = AndFilter.builder().and(inA).and(inB).build();
 		ISliceFilter or = OrFilter.builder()
-				.or(AndFilter.and(Map.of("a", "a1", "b", "b1")))
-				.or(AndFilter.and(Map.of("a", "a1", "b", "b2")))
-				.or(AndFilter.and(Map.of("a", "a2", "b", "b1")))
-				.or(AndFilter.and(Map.of("a", "a2", "b", "b2")))
+				.or(AndFilter.and("a", "a1", "b", "b1"))
+				.or(AndFilter.and("a", "a1", "b", "b2"))
+				.or(AndFilter.and("a", "a2", "b", "b1"))
+				.or(AndFilter.and("a", "a2", "b", "b2"))
 				.build();
 
 		Assertions.assertThat(and).isNotEqualTo(or);

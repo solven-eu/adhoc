@@ -178,10 +178,10 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 		Assertions.assertThat(tableEvaluating).hasSize(1).anySatisfy(e -> {
 			Assertions.assertThat(e.getTableQuery().getAggregators()).hasSize(2).anySatisfy(fa -> {
 				Assertions.assertThat(fa.getAggregator().getName()).isEqualTo("k1");
-				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and(Map.of("a", "a1")));
+				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and("a", "a1"));
 			}).anySatisfy(fa -> {
 				Assertions.assertThat(fa.getAggregator().getName()).isEqualTo("k1");
-				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and(Map.of("b", "b1")));
+				Assertions.assertThat(fa.getFilter()).isEqualTo(AndFilter.and("b", "b1"));
 			});
 			Assertions.assertThat(e.getTableQuery().getGroupedByColumns()).containsExactly("a", "b");
 			Assertions.assertThat(e.getTableQuery().getFilter()).isEqualTo(ISliceFilter.MATCH_ALL);

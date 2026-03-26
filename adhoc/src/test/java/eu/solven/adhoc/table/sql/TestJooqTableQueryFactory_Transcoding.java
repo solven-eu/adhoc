@@ -27,8 +27,6 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -60,7 +58,7 @@ public class TestJooqTableQueryFactory_Transcoding {
 	@Test
 	public void testToCondition_transcodingLeadsToMatchNone() {
 		JooqTableQueryFactory.ConditionWithFilter condition =
-				conditionFactory.toConditionSplitLeftover(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2")));
+				conditionFactory.toConditionSplitLeftover(AndFilter.and("k1", "v1", "k2", "v2"));
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getCondition().toString()).isEqualTo("""
@@ -73,8 +71,8 @@ public class TestJooqTableQueryFactory_Transcoding {
 	@Test
 	public void testToTableQuery_transcodingLeadsToMatchNone() {
 		// BEWARE We expect a WARN. It should be turned into an Event at some point
-		QueryWithLeftover condition = queryFactory.prepareQuery(
-				TableQuery.builder().filter(AndFilter.and(ImmutableMap.of("k1", "v1", "k2", "v2"))).build());
+		QueryWithLeftover condition =
+				queryFactory.prepareQuery(TableQuery.builder().filter(AndFilter.and("k1", "v1", "k2", "v2")).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().toString()).isEqualTo("""

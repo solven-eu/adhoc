@@ -479,7 +479,7 @@ public class FilterHelpers {
 	 */
 	public static ISliceFilter simplifyOrGivenContribution(ISliceFilter contribution, ISliceFilter filter) {
 		// Given `WHERE:a`, turns `FILTER:a|b|c&d` into `FILTER:b|c&d`
-		return simplifyOrGivenContribution(contribution, filter);
+		return simplifyOrGivenContribution(AdhocFilterUnsafe.filterStripperFactory, contribution, filter);
 	}
 
 	public static ISliceFilter simplifyOrGivenContribution(IFilterStripperFactory filterStripperFactory,
@@ -520,7 +520,7 @@ public class FilterHelpers {
 	 * @return a set of clusters, where each cluster is a non-empty set of filters whose column sets are connected;
 	 *         never empty (a single-element result means no split was possible)
 	 */
-	public static Set<Set<? extends ISliceFilter>> clusterFilters(ImmutableSet<? extends ISliceFilter> filters) {
+	public static Set<Set<? extends ISliceFilter>> clusterFilters(Set<? extends ISliceFilter> filters) {
 		// Group by column-set. We expect very few distinct column-sets (low cardinality), so the
 		// Multimap key-set is tiny. Filters that touch exactly the same columns share one bucket.
 		SetMultimap<Set<String>, ISliceFilter> byColumnSet =
