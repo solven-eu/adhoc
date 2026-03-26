@@ -105,10 +105,8 @@ public class TestAndFilter {
 
 	@Test
 	public void testAndOr_onlyOr() {
-		Assertions
-				.assertThat(AndFilter.and(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1")),
-						OrFilter.or(ImmutableMap.of("a", "a1", "b", "b2"))))
-				.isEqualTo(AndFilter.and(Map.of("a", "a1")));
+		Assertions.assertThat(AndFilter.and(OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1")),
+				OrFilter.or(ImmutableMap.of("a", "a1", "b", "b2")))).hasToString("a==a1|b==b1&b==b2");
 	}
 
 	@Test

@@ -354,7 +354,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		// Factor out common sub-expressions (kernels) across the OR operands before the cartesian product.
 		// E.g. `(K|A) & (K|B) & (K|C) & D` → `(K|(A&B&C)) & D`, reducing the cartesian product size.
-		ImmutableSet<ISliceFilter> kernelExtracted = extractKernels(strippedOrFiltersAsAnd);
+		ImmutableSet<ISliceFilter> kernelExtracted = kernelsRefactoring(strippedOrFiltersAsAnd);
 
 		// Consider skipping the cartesianProduct given other optimizations
 		if (!withCartesianProductsAndOr) {
@@ -383,7 +383,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 * @return an equivalent but potentially smaller set of OR filters
 	 */
 	@SuppressWarnings("PMD.AssignmentInOperand")
-	protected ImmutableSet<ISliceFilter> extractKernels(ImmutableSet<ISliceFilter> orAndOperands) {
+	protected ImmutableSet<ISliceFilter> kernelsRefactoring(ImmutableSet<ISliceFilter> orAndOperands) {
 		List<ISliceFilter> mutableList = new ArrayList<>(orAndOperands);
 
 		int tryIndex = 0;
@@ -399,9 +399,9 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			Map<ISliceFilter, List<Integer>> kernelToIndices = new LinkedHashMap<>();
 			for (int i = 0; i < mutableList.size(); i++) {
 				for (ISliceFilter subOp : getOrOperands(mutableList.get(i))) {
-					if (!hasOrOperands(subOp)) {
-						kernelToIndices.computeIfAbsent(subOp, k -> new ArrayList<>()).add(i);
-					}
+					// if (!hasOrOperands(subOp)) {
+					kernelToIndices.computeIfAbsent(subOp, k -> new ArrayList<>()).add(i);
+					// }
 				}
 			}
 
@@ -419,14 +419,14 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			List<Integer> indices = bestEntry.get().getValue();
 
 			// Build the AND of remainders: each matching OR operand with the kernel removed
-			List<ISliceFilter> remainders = indices.stream().map(i -> {
-				Set<ISliceFilter> subOps = new LinkedHashSet<>(getOrOperands(mutableList.get(i)));
-				subOps.remove(kernel);
-				return or(subOps);
-			}).toList();
+			ImmutableSet<ISliceFilter> remainders = indices.stream().map(i -> {
+				ISliceFilter originalOperand = mutableList.get(i);
+				return FilterHelpers.simplifyOrGivenContribution(filterStripperFactory, kernel, originalOperand);
+			}).collect(ImmutableSet.toImmutableSet());
 
-			ISliceFilter andOfRemainders = and(remainders, false);
-			ISliceFilter newOrOperand = or(ImmutableList.of(kernel, andOfRemainders));
+			ISliceFilter andOfRemainders = FilterBuilder.and(remainders).combine();
+			// No need to optimize as we will `splitOr` right away
+			ISliceFilter newOrOperand = FilterBuilder.or(kernel, andOfRemainders).combine();
 
 			// Remove the original OR operands in reverse index order to preserve correct positions
 			List<Integer> sortedIndices = new ArrayList<>(indices);
@@ -436,7 +436,9 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		} while (tryIndex++ >= 0);
 
-		kernelMaxIterations = tryIndex;
+		synchronized (this.getClass()) {
+			kernelMaxIterations = Math.max(tryIndex, kernelMaxIterations);
+		}
 
 		return ImmutableSet.copyOf(mutableList);
 	}

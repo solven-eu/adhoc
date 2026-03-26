@@ -42,6 +42,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.filter.value.AndMatcher;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -460,7 +461,13 @@ public class FilterHelpers {
 	 *         clauses are combined with`AND`. `WHERE` may or may not be laxer than `FILTER`. `output&where=filter`
 	 */
 	public static ISliceFilter stripWhereFromFilter(ISliceFilter where, ISliceFilter filter) {
-		return AdhocFilterUnsafe.filterStripperFactory.makeFilterStripper(where).strip(filter);
+		return stripWhereFromFilter(AdhocFilterUnsafe.filterStripperFactory, where, filter);
+	}
+
+	public static ISliceFilter stripWhereFromFilter(IFilterStripperFactory filterStripperFactory,
+			ISliceFilter where,
+			ISliceFilter filter) {
+		return filterStripperFactory.makeFilterStripper(where).strip(filter);
 	}
 
 	/**
@@ -472,7 +479,13 @@ public class FilterHelpers {
 	 */
 	public static ISliceFilter simplifyOrGivenContribution(ISliceFilter contribution, ISliceFilter filter) {
 		// Given `WHERE:a`, turns `FILTER:a|b|c&d` into `FILTER:b|c&d`
-		return stripWhereFromFilter(contribution.negate(), filter.negate()).negate();
+		return simplifyOrGivenContribution(contribution, filter);
+	}
+
+	public static ISliceFilter simplifyOrGivenContribution(IFilterStripperFactory filterStripperFactory,
+			ISliceFilter contribution,
+			ISliceFilter filter) {
+		return stripWhereFromFilter(filterStripperFactory, contribution.negate(), filter.negate()).negate();
 	}
 
 	/**

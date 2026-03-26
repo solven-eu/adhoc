@@ -450,41 +450,41 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected void onQueryStep(QueryPod queryPod,
 			QueryStepsDag queryStepsDag,
 			Map<CubeQueryStep, ICuboid> queryStepToValues,
-			CubeQueryStep queryStep) {
-		if (queryStepToValues.containsKey(queryStep)) {
+			CubeQueryStep step) {
+		if (queryStepToValues.containsKey(step)) {
 			// This typically happens on aggregator measures, as they are fed in a previous
 			// step. Here, we want to process a measure once its underlying steps are completed
 			return;
-		} else if (queryStep.getMeasure() instanceof Aggregator a) {
-			throw new IllegalStateException("Missing values for %s".formatted(a));
+		} else if (step.getMeasure() instanceof Aggregator a) {
+			throw new IllegalStateException("Missing a={} cuboid for %s".formatted(a, step));
 		}
 
-		eventBus.post(QueryStepIsEvaluating.builder().queryStep(queryStep).source(this).build());
+		eventBus.post(QueryStepIsEvaluating.builder().queryStep(step).source(this).build());
 
-		IMeasure measure = queryPod.resolveIfRef(queryStep.getMeasure());
+		IMeasure measure = queryPod.resolveIfRef(step.getMeasure());
 
 		IStopwatch stopWatch = factories.getStopwatchFactory().createStarted();
-		Optional<ICuboid> optFromCache = Optional.ofNullable(queryStepsDag.getStepToValues().get(queryStep));
+		Optional<ICuboid> optFromCache = Optional.ofNullable(queryStepsDag.getStepToValues().get(step));
 		ICuboid outputColumn = optFromCache.orElseGet(() -> {
-			List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(queryStep);
+			List<CubeQueryStep> underlyingSteps = queryStepsDag.underlyingSteps(step);
 			try {
-				return processDagStep(queryStepToValues, queryStep, underlyingSteps, measure);
+				return processDagStep(queryStepToValues, step, underlyingSteps, measure);
 			} catch (RuntimeException e) {
-				throw rethrowWithDetails(queryStep, queryStepsDag, e);
+				throw rethrowWithDetails(step, queryStepsDag, e);
 			}
 		});
 
 		Duration elapsed = stopWatch.elapsed();
 		eventBus.post(QueryStepIsCompleted.builder()
-				.querystep(queryStep)
+				.querystep(step)
 				.nbCells(outputColumn.size())
 				.source(this)
 				.duration(elapsed)
 				.build());
-		queryStepsDag.registerExecutionFeedback(queryStep,
+		queryStepsDag.registerExecutionFeedback(step,
 				SizeAndDuration.builder().size(outputColumn.size()).duration(elapsed).build());
 
-		ICuboid alreadyIn = queryStepToValues.putIfAbsent(queryStep, outputColumn);
+		ICuboid alreadyIn = queryStepToValues.putIfAbsent(step, outputColumn);
 		if (null != alreadyIn) {
 			// This may happen only if CONCURRENT options is on, as a queryStep may be requested concurrently by
 			// dependents.
