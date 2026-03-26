@@ -67,12 +67,12 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 				    }
 
 				    %% ─── Concrete classes ──────────────────────────────────────────
+				    class SimpleEngine {
+				        ISubEngine subEngine
+				    }
 				    class SimpleRoot {
 				        ISimpleEngine engine
 				        ISimpleWidget widget
-				    }
-				    class SimpleEngine {
-				        ISubEngine subEngine
 				    }
 				    class SimpleSubEngine {
 				    }
@@ -87,8 +87,8 @@ public class TestClassHierarchyAsJavaParserMermaidSimple {
 
 				    %% ─── Composition ───────────────────────────────────────────────
 				    SimpleRoot *-- SimpleEngine : engine
-				    SimpleRoot *-- ISimpleWidget : widget
 				    SimpleEngine *-- SimpleSubEngine : subEngine
-								""");
+				    SimpleRoot *-- ISimpleWidget : widget
+				""");
 	}
 }

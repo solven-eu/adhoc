@@ -356,7 +356,7 @@ public class ClassHierarchyAsJavaParserMermaid {
 
 		Set<String> implementsRels = new LinkedHashSet<>();
 		Set<String> compositionRels = new LinkedHashSet<>();
-		graph.edgeSet().stream().sorted(Comparator.comparing(e -> e.toString())).forEach(edge -> {
+		graph.edgeSet().stream().sorted(Comparator.comparing(ClassEdge::toString)).forEach(edge -> {
 			ClassNode source = graph.getEdgeSource(edge);
 			ClassNode target = graph.getEdgeTarget(edge);
 			EdgeKind kind = edge.getKind();
