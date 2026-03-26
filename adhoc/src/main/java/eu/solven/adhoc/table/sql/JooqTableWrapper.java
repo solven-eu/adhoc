@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import lombok.Getter;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
@@ -108,6 +109,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	final String name;
 
 	@NonNull
+	@Getter
 	final JooqTableWrapperParameters tableParameters;
 
 	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()

@@ -27,6 +27,9 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
@@ -125,6 +128,10 @@ public class AdhocUnsafe {
 	@Getter
 	private static boolean failFast;
 
+	/**
+	 * @return the default parallelism when calling Executors#newWorkStealingPool
+	 */
+	@Getter
 	private static int parallelism;
 
 	/**
@@ -186,13 +193,6 @@ public class AdhocUnsafe {
 	 */
 	private static ForkJoinPool newWorkStealingPool() {
 		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
-	}
-
-	/**
-	 * @return the default parallelism when calling Executors#newWorkStealingPool
-	 */
-	public static int getParallelism() {
-		return parallelism;
 	}
 
 	// Typically used as limit to prevent iterating over large cartesian products

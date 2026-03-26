@@ -47,6 +47,8 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
@@ -275,34 +277,37 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
-			IHasTableQueryForSteps tableQueries) {
+			IHasTableQueryForSteps hasTableQueries) {
 		try {
-			return queryPod.getExecutorService().submit(() -> {
-				Stream<TableQueryV4> tableQueriesStream = tableQueries.getTableQueries().stream();
+			// Submit to the DB pool so table queries (I/O-bound) do not block the CPU-bound common pool.
+			// We avoid .parallel() streams here because they would fall back to ForkJoinPool.commonPool()
+			// when the calling thread is not a ForkJoinPool worker.
+			ListeningExecutorService dbExecutorService = queryPod.getDbExecutorService();
+			return Futures.getUnchecked(dbExecutorService.submit(() -> {
+				Map<TableQueryStep, ICuboid> queryStepToValuesInner = new LinkedHashMap<>();
 
+				Set<TableQueryV4> tableQueries = hasTableQueries.getTableQueries();
 				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
-					tableQueriesStream = tableQueriesStream.parallel();
+					// Submit each table query individually to the DB pool
+					var futures = tableQueries.stream()
+							.map(tableQuery -> dbExecutorService.submit(
+									() -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery)))
+							.toList();
+
+					Futures.allAsList(futures).get().forEach(queryStepToValuesInner::putAll);
+				} else {
+					tableQueries.forEach(tableQuery -> {
+						// BEWARE Could we have multiple TableQueryV4 computing the same TableQueryStep?
+						Map<TableQueryStep, ICuboid> cuboids =
+								processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery);
+						queryStepToValuesInner.putAll(cuboids);
+					});
 				}
-				Map<TableQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
-				tableQueriesStream.forEach(tableQuery -> {
-					// BEWARE Could we have multiple TableQueryV4 computing the same TableQueryStep?
-					Map<TableQueryStep, ICuboid> cuboids =
-							processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery);
-					queryStepToValuesInner.putAll(cuboids);
-				});
 
 				return queryStepToValuesInner;
-			}).get();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted", e);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof IllegalStateException) {
-				throw new IllegalStateException("Failed query on table=%s".formatted(queryPod.getTable().getName()), e);
-			} else {
-				throw new IllegalArgumentException("Failed query on table=%s".formatted(queryPod.getTable().getName()),
-						e);
-			}
+			}));
+		} catch (RuntimeException e) {
+			throw AdhocExceptionHelpers.wrap("Failed query on table=%s".formatted(queryPod.getTable().getName()), e);
 		}
 	}
 

@@ -4,6 +4,11 @@ Various inner parameters can be customized through static variables.
 
 ## AdhocUnsafe
 
+Enables:
+- Custom `adhocCommonPool` for CPU-bound work
+- Custom `adhocDbPool` for external database queries (e.g. DuckDB) — bounded pool with backpressure to prevent overwhelming external databases
+- Custom `maintenancePool` for background maintenance tasks
+
 ## AdhocUnsafeMap
 
 Enables:

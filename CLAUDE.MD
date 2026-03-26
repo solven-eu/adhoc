@@ -119,9 +119,8 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
 - Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
 - Do **NOT** modify anything under `pivotable/js/` (JS/TS handled by Prettier separately).
-- Do **NOT** change method or constructor **signatures**.
-- Do **NOT** rename classes, methods, fields, or variables.
-- Do **NOT** alter business logic or algorithm behaviour.
+- **Simple tasks** (Javadoc, comments, coverage tests, formatting): do **NOT** change method/constructor signatures, rename classes/methods/fields/variables, or alter business logic.
+- **Complex tasks** (new features, refactoring requested by the user): signature changes, renames, and logic changes are allowed when they are part of the requested work. Prefer adding new methods/fields over modifying existing signatures; when an existing signature must change, confirm with the user first.
 - Do **NOT** reorder imports (Spotless handles that).
 - Do **NOT** add or remove `@Override`, `@SuppressWarnings`, or other annotations unless fixing a clear error.
 - Do **NOT** commit directly to `master`. Always work on a dedicated feature branch (e.g. `git checkout -b chore/my-task`). The CI workflow handles merging and PRs.
