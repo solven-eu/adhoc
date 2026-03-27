@@ -227,14 +227,22 @@ public class FilterStripper implements IFilterStripper {
 	}
 
 	/**
-	 * `isStricterThan` comparing the operands following a `splitAnd` operations. `WHERE` is stricter than `FILTER` if
-	 * all `FILTER` operand is covered by one `WHERE` operand.
-	 * 
-	 * Typical example is `WHERE:a=a1&b=7&c=c3` versus `FILTER:a=in=(a1,a2)&b>=5`
-	 * 
+	 * `isStricterThan` comparing the operands following a `splitAnd` operation. `WHERE` is stricter than `FILTER` if
+	 * every `FILTER` AND-operand is covered by at least one `WHERE` AND-operand.
+	 *
+	 * <p>
+	 * Typical example: {@code WHERE:a=a1&b=7&c=c3} versus {@code FILTER:a=in=(a1,a2)&b>=5}.
+	 *
+	 * <p>
+	 * The outer loop iterates over {@code WHERE} operands so that each {@link FilterStripper} is built (and cached) at
+	 * most once per stricter, regardless of how many laxer operands remain. An uncovered-laxers working set is used to
+	 * short-circuit as soon as all laxers have been matched.
+	 *
 	 * @param laxer
+	 *            the filter being tested as the less-restrictive side
 	 * @param laxerStripper
-	 * @return
+	 *            a {@link FilterStripper} whose {@code where} is {@code laxer}, used for column-set checks
+	 * @return {@code true} if {@code WHERE} is strictly at least as selective as {@code laxer}
 	 */
 	protected boolean isStricerThanSplitAnd(ISliceFilter laxer, FilterStripper laxerStripper) {
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
@@ -257,28 +265,32 @@ public class FilterStripper implements IFilterStripper {
 			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1`
 			return true;
 		}
-		// true if `WHERE:a==a1&b==b1&c==c1` and `FILTER:a=in=(a1,a2)&b=in=(b1,b2)`.
-		boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
-			if (allStricters.contains(oneLaxer)) {
-				// Fast track for `a==a1` in `WHERE:a==a1&b==b1&c==c1` and `FILTER:a==a1&b=in=(b1,b2)`
-				return true;
-			}
 
-			return allStricters.stream().anyMatch(oneStricter -> {
-				if (oneStricter.equals(where) && oneLaxer.equals(laxer)) {
+		// Build the working set of laxers not yet covered by an exact match in WHERE.
+		// true if `WHERE:a==a1&b==b1&c==c1` and `FILTER:a=in=(a1,a2)&b=in=(b1,b2)`.
+		Set<ISliceFilter> uncoveredLaxers = new LinkedHashSet<>(allLaxers);
+
+		// Fast track for `a==a1` in `WHERE:a==a1&b==b1&c==c1` and `FILTER:a==a1&b=in=(b1,b2)`
+		uncoveredLaxers.removeAll(allStricters);
+
+		// Outer loop over stricters: each FilterStripper is created at most once per stricter.
+		for (ISliceFilter oneStricter : allStricters) {
+			if (uncoveredLaxers.isEmpty()) {
+				break;
+			}
+			FilterStripper stricterStripper = makeStripper(oneStricter);
+			boolean oneStricterisWhere = oneStricter.equals(where);
+			uncoveredLaxers.removeIf(oneLaxer -> {
+				if (oneStricterisWhere && oneLaxer.equals(laxer)) {
 					// break cycle in recursivity
 					return false;
 				}
-
 				// true if `WHERE:a==a1` and `FILTER:a=in=(a1,a2)`.
-				return makeStripper(oneStricter).isStricterThan(oneLaxer);
+				return stricterStripper.isStricterThan(oneLaxer);
 			});
-		});
-		if (allLaxersHasStricter) {
-			return true;
 		}
 
-		return false;
+		return uncoveredLaxers.isEmpty();
 	}
 
 	/**
