@@ -349,6 +349,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// Add values from cache
 		queryStepToValues.putAll(queryStepsDag.getStepToValues());
 
+		if (queryPod.isDebugOrExplain()) {
+			log.info("[EXPLAIN] stepDag loaded {} steps from cache", queryStepToValues.size());
+		}
+
 		// Add values from table
 		executeTableQueries(queryPod, queryStepsDag).forEach((tableStep, cuboid) -> {
 			CubeQueryStep cubeStep = CubeQueryStep.edit(tableStep).build();
@@ -362,6 +366,10 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 						cuboid.size());
 			}
 		});
+
+		if (queryPod.isDebugOrExplain()) {
+			log.info("[EXPLAIN] stepDag has {} steps post tableStep", queryStepToValues.size());
+		}
 
 		// We're done with the input stream: the DB can be shutdown, we can answer the
 		// rest of the query independently of external tables.

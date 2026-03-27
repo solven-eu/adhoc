@@ -432,7 +432,8 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				boolean orIsImplied = orMayBeDiscarded.getOperands()
 						.stream()
 						// `a&b&e` is stricter than `a&b` so `(c|a&b)` is matchAll
-						.anyMatch(orOperand -> FilterHelpers.isStricterThan(otherAsAnd, orOperand));
+						.anyMatch(orOperand -> filterStripperFactory.makeFilterStripper(otherAsAnd)
+								.isStricterThan(orOperand));
 
 				if (orIsImplied) {
 					log.trace("Discarded {} in {}", mayBeDiscarded, stripped1By1);
@@ -483,7 +484,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 			for (ISliceFilter candidate : operandsAsList) {
 				if (candidate != notFinalHarder) {
-					if (removeLaxerElseStricter && FilterHelpers.isStricterThan(candidate, notFinalHarder)) {
+					if (removeLaxerElseStricter && isStricterThan(notFinalHarder, candidate)) {
 						// removeLaxer, so we searcher for stricter
 						notFinalHarder = candidate;
 					} else if (!removeLaxerElseStricter && FilterHelpers.isLaxerThan(candidate, notFinalHarder)) {
@@ -499,7 +500,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			if (removeLaxerElseStricter) {
 				isSofter = sf -> FilterHelpers.isLaxerThan(sf, harder);
 			} else {
-				isSofter = sf -> FilterHelpers.isStricterThan(sf, harder);
+				isSofter = sf -> isStricterThan(harder, sf);
 			}
 			int sizeBefore = operandsAsList.size();
 			operandsAsList.removeIf(candidate -> candidate != harder && isSofter.test(candidate));
@@ -549,7 +550,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				ISliceFilter laxer = operandsAsList.get(stricterJ);
 
 				// filter induced is stricter than inducer
-				if (FilterHelpers.isStricterThan(stricter, laxer)) {
+				if (isStricterThan(laxer, stricter)) {
 					// BEWARE a laxer may have multiple stricter
 					ISliceFilter hard;
 					ISliceFilter soft;
@@ -573,6 +574,10 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		stripped.removeAll(ImmutableSet.copyOf(hardToSoft.values()));
 
 		return ImmutableSet.copyOf(stripped);
+	}
+
+	protected boolean isStricterThan(ISliceFilter where, ISliceFilter filter) {
+		return filterStripperFactory.makeFilterStripper(where).isStricterThan(filter);
 	}
 
 	/**
@@ -649,8 +654,9 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			ISliceFilter commonOr = filterUtility.commonOr(and);
 
 			if (!ISliceFilter.MATCH_NONE.equals(commonOr)) {
-				List<ISliceFilter> toAnd =
-						and.stream().map(f -> FilterHelpers.simplifyOrGivenContribution(commonOr, f)).toList();
+				List<ISliceFilter> toAnd = and.stream()
+						.map(f -> FilterHelpers.simplifyOrGivenContribution(filterStripperFactory, commonOr, f))
+						.toList();
 
 				ISliceFilter others = and(toAnd, willBeNegated);
 				if (ISliceFilter.MATCH_NONE.equals(others)) {

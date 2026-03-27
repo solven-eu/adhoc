@@ -216,6 +216,10 @@ public class FilterHelpers {
 	}
 
 	public static Set<String> getFilteredColumns(ISliceFilter filter) {
+		if (filter instanceof IColumnFilter columnFilter) {
+			// Fast-path to skip `Stream`
+			return ImmutableSet.of(columnFilter.getColumn());
+		}
 		// Implementation rely on `.mapMulti` for better performance, not needed to create a `Stream.of` on
 		// IColumnFilter
 		return Stream.of(filter).mapMulti(FilterHelpers::emitFilteredColumns).collect(ImmutableSet.toImmutableSet());
