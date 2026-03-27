@@ -162,7 +162,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			return ISliceFilter.MATCH_ALL;
 		}
 
-		return preferNotOrOverAndNot(willBeNegated, clusterResults);
+		return preferNotOrOverAndNot(clusterResults, willBeNegated);
 	}
 
 	protected ImmutableSet<? extends ISliceFilter> andOneCluster(Set<? extends ISliceFilter> operands,
@@ -174,7 +174,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			// matchAll
 			return ImmutableSet.of();
 		} else if (stripRedundancyPre.size() == 1) {
-			return ImmutableSet.of(preferNotOrOverAndNot(willBeNegated, stripRedundancyPre));
+			return ImmutableSet.of(preferNotOrOverAndNot(stripRedundancyPre, willBeNegated));
 		}
 
 		// TableQueryOptimizer.canInduce would typically do an `AND` over an `OR`
@@ -186,7 +186,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		// TODO Skip if cartesianProduct had no effect
 		ImmutableSet<? extends ISliceFilter> normalized = normalizeOperands(postCartesianProduct);
 
-		return ImmutableSet.of(preferNotOrOverAndNot(willBeNegated, normalized));
+		return ImmutableSet.of(preferNotOrOverAndNot(normalized, willBeNegated));
 	}
 
 	protected ImmutableSet<? extends ISliceFilter> normalizeOperands(Set<? extends ISliceFilter> operands) {
@@ -610,14 +610,16 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 	protected ISliceFilter negatePreferNotOrOverAndNot(ISliceFilter filter) {
 		if (filter instanceof IOrFilter orFilter) {
-			return preferNotOrOverAndNot(false,
+			return preferNotOrOverAndNot(
 					orFilter.getOperands()
 							.stream()
 							.map(this::negatePreferNotOrOverAndNot)
-							.collect(ImmutableSet.toImmutableSet()));
+							.collect(ImmutableSet.toImmutableSet()),
+					false);
 		} else if (filter instanceof IAndFilter andFilter) {
-			return NotFilter.simpleNot(preferNotOrOverAndNot(true,
-					andFilter.getOperands().stream().collect(ImmutableSet.toImmutableSet())));
+			return NotFilter.simpleNot(
+					preferNotOrOverAndNot(andFilter.getOperands().stream().collect(ImmutableSet.toImmutableSet()),
+							true));
 		} else {
 			return filter.negate();
 		}
@@ -638,8 +640,10 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 */
 	// BEWARE This should not to any `.optimize` as it should receive an optimized expression, and choose between 2
 	// equivalent representations.
-	protected ISliceFilter preferNotOrOverAndNot(boolean willBeNegated, Set<? extends ISliceFilter> and) {
+	protected ISliceFilter preferNotOrOverAndNot(Set<? extends ISliceFilter> and, boolean willBeNegated) {
 		if (and.size() >= 2) {
+			// TODO Is this still useful since we introduced Kernel factorization?
+
 			// `!(a==a1&b==b1)&!(a==a1&b==b2)&!(a==a1&b==b3)` can be turned into `a!=a1|b=out=(b1,b2,b3)`
 			FilterUtility filterUtility = FilterUtility.builder().optimizer(this).build();
 			ISliceFilter commonOr = filterUtility.commonOr(and);
@@ -656,11 +660,17 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				} else {
 					// Ensure this path also go through the `preferNotOrOverAndNot`
 					// return FilterBuilder.or(commonOr, others).combine();
-					ISliceFilter orToNegate = preferNotOrOverAndNot(!willBeNegated,
-							ImmutableSet.of(NotFilter.simpleNot(commonOr), NotFilter.simpleNot(others)));
+					ISliceFilter orToNegate = preferNotOrOverAndNot(
+							ImmutableSet.of(NotFilter.simpleNot(commonOr), NotFilter.simpleNot(others)),
+							!willBeNegated);
 					return NotFilter.simpleNot(orToNegate);
 				}
 			}
+		} else if (and.size() == 1 && AdhocCollectionHelpers.getFirst(and) instanceof ColumnFilter columnFilter) {
+			// Skip optimization if already a trivial
+			// BEWARE This may be faulty if the costFunction varies on IValueMatcher (i.e. come IColumnFilter may
+			// deserve being negated)
+			return columnFilter;
 		}
 
 		// Consider returning a `!(a|b)` instead of `!a&!b`
