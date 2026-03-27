@@ -232,6 +232,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			}
 
 			// Evaluated the induced tableQueries
+			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the DAG of size-cost
 			walkUpInducedDag(stepToValues, inducerAndInduced);
 
 			if (queryPod.isDebugOrExplain()) {
@@ -261,7 +262,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
-	protected void explainDagSteps(QueryPod tableQueryPod, IHasDagFromInducedToInducer queryStepsDag) {
+	protected void explainDagSteps(QueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
 		makeDagExplainer().explain(tableQueryPod.getQueryId(), queryStepsDag);
 	}
 
@@ -269,7 +270,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
 	}
 
-	protected void explainDagPerfs(QueryPod tableQueryPod, IHasDagFromInducedToInducer queryStepsDag) {
+	protected void explainDagPerfs(QueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
 		makeDagExplainerForPerfs().explain(tableQueryPod.getQueryId(), queryStepsDag);
 	}
 
@@ -295,7 +296,8 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 				listStepsToCuboids =
 						futures.stream().map(CompletableFuture::join).collect(ImmutableList.toImmutableList());
 			} else {
-				// Sequential path: run every table query on the calling thread — no executor needed
+				// Sequential path: run every table query sequentially, on the thread of the IO pool
+				// TODO Split this part into an IO part and a CPU part? Or use VirtualThreads?
 				var completable = CompletableFuture.supplyAsync(() -> tableQueries.stream()
 						.map(tableQuery -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery))
 						.collect(ImmutableList.toImmutableList()), dbExecutorService);

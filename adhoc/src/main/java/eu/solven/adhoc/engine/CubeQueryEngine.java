@@ -351,7 +351,16 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 
 		// Add values from table
 		executeTableQueries(queryPod, queryStepsDag).forEach((tableStep, cuboid) -> {
-			queryStepToValues.put(CubeQueryStep.edit(tableStep).build(), cuboid);
+			CubeQueryStep cubeStep = CubeQueryStep.edit(tableStep).build();
+			ICuboid previousCuboid = queryStepToValues.put(cubeStep, cuboid);
+			if (previousCuboid != null) {
+				log.warn(
+						"conflict on cubeStep from tableStep={} to cubeStep={} led to cuboid previous.size=%s vs new.size=%s",
+						tableStep,
+						cubeStep,
+						previousCuboid.size(),
+						cuboid.size());
+			}
 		});
 
 		// We're done with the input stream: the DB can be shutdown, we can answer the
