@@ -36,6 +36,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
@@ -152,48 +153,50 @@ public class PivotableChatHandler {
 
 	@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 	protected List<Map<String, Object>> buildTools() {
-		return ImmutableList.of(Map.of("name",
-				"set_measures",
-				"description",
-				"Select the measures to display in the query result. Replaces any previously selected measures.",
-				"input_schema",
-				Map.of("type",
-						"object",
-						"properties",
-						Map.of("measureNames",
-								Map.of("type",
-										"array",
-										"items",
-										Map.of("type", "string"),
-										"description",
-										"Exact measure names from the cube schema")),
-						"required",
-						ImmutableList.of("measureNames"))),
-
-				Map.of("name",
-						"set_groupby",
-						"description",
-						"Set the groupBy dimensions (columns to aggregate by). Order matters — first column is the primary grouping.",
-						"input_schema",
+		return ImmutableList.of(ImmutableMap.<String, Object>builder()
+				.put("name", "set_measures")
+				.put("description",
+						"Select the measures to display in the query result. Replaces any previously selected measures.")
+				.put("input_schema",
 						Map.of("type",
 								"object",
 								"properties",
-								Map.of("columns",
+								Map.of("measureNames",
 										Map.of("type",
 												"array",
 												"items",
 												Map.of("type", "string"),
 												"description",
-												"Exact dimension column names from the cube schema")),
+												"Exact measure names from the cube schema")),
 								"required",
-								ImmutableList.of("columns"))),
+								ImmutableList.of("measureNames")))
+				.build(),
 
-				Map.of("name",
-						"clear_query",
-						"description",
-						"Reset all selections (measures and groupBy columns) to start a fresh query.",
-						"input_schema",
-						Map.of("type", "object", "properties", Map.of())));
+				ImmutableMap.<String, Object>builder()
+						.put("name", "set_groupby")
+						.put("description",
+								"Set the groupBy dimensions (columns to aggregate by). Order matters — first column is the primary grouping.")
+						.put("input_schema",
+								Map.of("type",
+										"object",
+										"properties",
+										Map.of("columns",
+												Map.of("type",
+														"array",
+														"items",
+														Map.of("type", "string"),
+														"description",
+														"Exact dimension column names from the cube schema")),
+										"required",
+										ImmutableList.of("columns")))
+						.build(),
+
+				ImmutableMap.<String, Object>builder()
+						.put("name", "clear_query")
+						.put("description",
+								"Reset all selections (measures and groupBy columns) to start a fresh query.")
+						.put("input_schema", Map.of("type", "object", "properties", Map.of()))
+						.build());
 	}
 
 	protected Flux<String> callAnthropic(Map<String, Object> body) {

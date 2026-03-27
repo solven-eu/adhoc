@@ -9,6 +9,9 @@
 # Nested violations are fixed on subsequent runs (outer call is fixed first,
 # leaving any inner violation for the next pass).
 #
+# NOTE: the emitted type witness <String, Object> covers most cases in this
+# codebase.  Where the actual key/value types differ, adjust it manually.
+#
 # Usage:  perl scripts/fix-convention-map-builder.pl [--dry-run] [file|dir ...]
 #         Directories are searched recursively for *.java.
 #         --dry-run / -n  Report what would change without writing files.
@@ -124,7 +127,9 @@ sub fix_content {
 # that is always syntactically valid.
 sub build_repl {
     my ($args) = @_;
-    my $s = 'ImmutableMap.builder()';
+    # <String, Object> covers the vast majority of cases in this codebase.
+    # When the key or value type differs, adjust the witness manually.
+    my $s = 'ImmutableMap.<String, Object>builder()';
     for (my $i = 0; $i < @$args; $i += 2) {
         $s .= '.put(' . trim($args->[$i]) . ', ' . trim($args->[$i + 1]) . ')';
     }

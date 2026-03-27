@@ -29,6 +29,8 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
@@ -163,14 +165,12 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 
 			Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
 					.containsEntry(Map.of(),
-							Map.of(k1Sum.getName(),
-									0L + 234,
-									k2Sum.getName(),
-									0L + 345,
-									k3Sum.getName(),
-									0L + 456,
-									k4Sum.getName(),
-									0L + 123));
+							ImmutableMap.<String, Object>builder()
+									.put(k1Sum.getName(), 0L + 234)
+									.put(k2Sum.getName(), 0L + 345)
+									.put(k3Sum.getName(), 0L + 456)
+									.put(k4Sum.getName(), 0L + 123)
+									.build());
 		}
 	}
 

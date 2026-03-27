@@ -54,9 +54,10 @@ public class TestManyToMany1DDecomposition {
 
 	@BeforeEach
 	public void setUp() {
-		decomposition = new ManyToMany1DDecomposition(ImmutableMap
-				.of(ManyToMany1DDecomposition.K_INPUT, ELEMENT_COL, ManyToMany1DDecomposition.K_OUTPUT, GROUP_COL),
-				definition);
+		decomposition = new ManyToMany1DDecomposition(ImmutableMap.<String, Object>builder()
+				.put(ManyToMany1DDecomposition.K_INPUT, ELEMENT_COL)
+				.put(ManyToMany1DDecomposition.K_OUTPUT, GROUP_COL)
+				.build(), definition);
 
 		definition.putElementToGroup("FR", "G8");
 		definition.putElementToGroup("FR", "G20");

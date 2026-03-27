@@ -34,6 +34,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 
 public class TestReversePolishCombination {
@@ -67,12 +69,11 @@ public class TestReversePolishCombination {
 	public void testComplexCase() {
 		String[] array = new String[] { "10", "6", "9", "3", "+", "-11", "*", "/", "*", "17", "+", "5", "+" };
 		String joined = String.join(",", array);
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				joined,
-				"twoOperandsPerOperator",
-				true,
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, joined)
+				.put("twoOperandsPerOperator", true)
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat((double) c.combine(slice, Arrays.asList(34.56))).isCloseTo(21.54, offset(0.01));
@@ -95,10 +96,10 @@ public class TestReversePolishCombination {
 
 	@Test
 	public void testSumWithConstant_NotNullIfNotASingleUnderlying() {
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				"underlyings[someMeasureName],int[234],+",
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, "underlyings[someMeasureName],int[234],+")
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList(123))).isEqualTo(0L + 123 + 234);
@@ -119,10 +120,10 @@ public class TestReversePolishCombination {
 
 	@Test
 	public void testSubFormulas() {
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				"((123,234,+),(345,456,+),*)",
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, "((123,234,+),(345,456,+),*)")
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0L + (123 + 234) * (345 + 456));
@@ -130,10 +131,10 @@ public class TestReversePolishCombination {
 
 	@Test
 	public void testSubFormulas_null() {
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				"((null,234,*),(null,null,*),*)",
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, "((null,234,*),(null,null,*),*)")
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isNull();
@@ -173,10 +174,10 @@ public class TestReversePolishCombination {
 
 	@Test
 	public void testPollutingWhitespaces() {
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				" 12.34	,\t23.45 , -\t",
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, " 12.34	,\t23.45 , -\t")
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(0D + 12.34 - 23.45);
@@ -184,10 +185,10 @@ public class TestReversePolishCombination {
 
 	@Test
 	public void testScientificNotation_Max() {
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				Double.toString(Double.MAX_VALUE),
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, Double.toString(Double.MAX_VALUE))
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MAX_VALUE);
@@ -195,10 +196,10 @@ public class TestReversePolishCombination {
 
 	@Test
 	public void testScientificNotation_MinNormal() {
-		ReversePolishCombination c = new ReversePolishCombination(Map.of(ReversePolishCombination.K_NOTATION,
-				Double.toString(Double.MIN_NORMAL),
-				"nullIfNotASingleUnderlying",
-				false));
+		ReversePolishCombination c = new ReversePolishCombination(ImmutableMap.<String, Object>builder()
+				.put(ReversePolishCombination.K_NOTATION, Double.toString(Double.MIN_NORMAL))
+				.put("nullIfNotASingleUnderlying", false)
+				.build());
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 
 		Assertions.assertThat(c.combine(slice, Arrays.asList())).isEqualTo(Double.MIN_NORMAL);
