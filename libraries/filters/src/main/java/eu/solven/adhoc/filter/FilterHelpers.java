@@ -331,9 +331,7 @@ public class FilterHelpers {
 	 */
 	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
 	// OPTIMIZTION: mapMulti is faster (but more cumbersome) than flatMap
-	protected static void emitAndOperands(ISliceFilter filter,
-			Consumer<ISliceFilter> downstream,
-			boolean splitMatchers) {
+	public static void emitAndOperands(ISliceFilter filter, Consumer<ISliceFilter> downstream, boolean splitMatchers) {
 		boolean emitted;
 		if (filter instanceof FlatAndFilter flatAnd) {
 			// Fast-path: iterate the backing column→matcher map directly, emitting ColumnFilter wrappers per entry.

@@ -489,7 +489,9 @@ public class TestAndFilter {
 						.negate())
 				.optimize();
 
-		Assertions.assertThat(output).hasToString("c=out=(c1,c2)&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'");
+		Assertions.assertThat(output)
+				// .hasToString("c=out=(c1,c2)&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'")
+				.hasToString("b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'&c=out=(c1,c2)");
 	}
 
 	@Test
@@ -787,6 +789,8 @@ public class TestAndFilter {
 						AndFilter.and("f", "f1", "d", "d1"))
 				.optimize();
 		// c==c1 is factored out of 3 of the 4 OR terms; d==d1|d==d2 is further packed to d=in=(d1,d2)
-		Assertions.assertThat(filter).hasToString("f==f1&d==d1|c==c1&(e==e1|d=in=(d1,d2))");
+		Assertions.assertThat(filter)
+				// .hasToString("f==f1&d==d1|c==c1&(e==e1|d=in=(d1,d2))")
+				.hasToString("f==f1&d==d1|c==c1&(d=in=(d1,d2)|e==e1)");
 	}
 }

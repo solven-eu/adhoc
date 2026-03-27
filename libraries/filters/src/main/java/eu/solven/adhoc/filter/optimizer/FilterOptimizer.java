@@ -601,18 +601,22 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 * @return `splitAnd` input filters, excluding filters which would not interact with others
 	 */
 	protected ImmutableSet<? extends ISliceFilter> splitAnd(ImmutableSet<? extends ISliceFilter> filters) {
-		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(filters);
+		Set<Set<? extends ISliceFilter>> clusters = FilterHelpers.clusterFilters(filters);
 
-		ImmutableSet<ISliceFilter> toIgnore = ignorableToOperands.get(true);
-		ImmutableSet<ISliceFilter> toProcess = ignorableToOperands.get(false);
+		return clusters.stream().flatMap(cluster -> {
+			// TODO This switch on splitMatchers needs to be explained, or removed
+			// SplitAnd to flatten imbricated `AND`, but keep matchers (e.g. `Not(In(...))`) as this split is
+			// typically used to detect future interactions
+			// filters which may interact are fully split.
+			boolean splitMatchers = cluster.size() >= 2;
 
-		return ImmutableSet.<ISliceFilter>builder()
-				// SplitAnd to flatten imbricated `AND`, but keep matchers (e.g. `Not(In(...))`) as this split is
-				// typically used to detect future interactions
-				.addAll(FilterHelpers.splitAnd(toIgnore, false))
-				// filters which may interact are fully split.
-				.addAll(FilterHelpers.splitAnd(toProcess))
-				.build();
+			return cluster.stream()
+					.<ISliceFilter>mapMulti(
+							(f, downstream) -> FilterHelpers.emitAndOperands(f, downstream, splitMatchers))
+					// Skipping matchAll is useful on `.edit`
+					.filter(f -> !f.isMatchAll());
+		}).collect(ImmutableSet.toImmutableSet());
+
 	}
 
 	protected ISliceFilter negatePreferNotOrOverAndNot(ISliceFilter filter) {
