@@ -28,7 +28,9 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestFilterOptimizerCache {
 	FilterOptimizer optimizer = FilterOptimizer.builder().build();
 	FilterOptimizerWithCache optimizerWithCache = FilterOptimizerWithCache.builder().build();
@@ -47,7 +49,14 @@ public class TestFilterOptimizerCache {
 
 		// FilterOptimizer.extractKernels(ImmutableSet<ISliceFilter>) will push entries entries into cache
 		Assertions.assertThat(optimizerWithCache.optimizedAndNegated.asMap()).hasSize(13);
-		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(13);
+		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(7);
+
+		optimizerWithCache.optimizedAndNegated.asMap().forEach((filters, optimized) -> {
+			log.info("AND {} -> {}", filters, optimized);
+		});
+		optimizerWithCache.optimizedAndNotNegated.asMap().forEach((filters, optimized) -> {
+			log.info("!AND {} -> {}", filters, optimized);
+		});
 
 		Assertions.assertThat(combined).hasToString("b=in=(b1,b2,b3)&(a=in=(a1,a2)|a==a3&b=in=(b1,b2))");
 	}

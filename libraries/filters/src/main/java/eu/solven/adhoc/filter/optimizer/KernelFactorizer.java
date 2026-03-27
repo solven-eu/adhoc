@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
@@ -93,11 +92,12 @@ public class KernelFactorizer {
 				filterOptimizer.partitionByPotentialInteraction(andOperands);
 
 		// Group by operands which are splitable by OR, as we hope to detect combinations which are useless
-		Map<Boolean, List<ISliceFilter>> orNotOr = andOperands.stream()
+		Map<Boolean, ? extends Set<? extends ISliceFilter>> orNotOr = andOperands.stream()
 				.collect(Collectors.partitioningBy(
-						f -> filterOptimizer.hasOrOperands(f) && ignorableToOperands.get(false).contains(f)));
+						f -> filterOptimizer.hasOrOperands(f) && ignorableToOperands.get(false).contains(f),
+						ImmutableSet.toImmutableSet()));
 
-		List<ISliceFilter> orOperands = orNotOr.get(true);
+		Set<? extends ISliceFilter> orOperands = orNotOr.get(true);
 		if (orOperands.isEmpty()) {
 			// There is no OR : this is a plain AND.
 			return andOperands;
@@ -118,15 +118,12 @@ public class KernelFactorizer {
 		// It means we turned a simple OR into a 4-entries cartesianProduct. It indicates a simple large OR
 		// would be turned into a huge cartesianProduct
 
-		// Register if at least one simplification occurred. If false, this is useful not to later call `Or.or`
-		// which would lead to a cycle as `Or.or` is based on `And.and` which is based on current method.
-		AtomicBoolean hasSimplified = new AtomicBoolean();
-
-		// Each OR-like is split into OR operands, and they are stripped individually given the common `AND` operand.
-		// OR operands will be combined (through cartesian product) and cross-stripped in a later step, as the goal here
+		// Each OR-like is split into OR operands, and they are stripped individually given the common `AND`
+		// operand.
+		// OR operands will be combined (through cartesian product) and cross-stripped in a later step, as the goal
+		// here
 		// is to reduce the cartesian product as much as possible.
-		ImmutableSet<ISliceFilter> strippedOrFiltersAsAnd =
-				filterOptimizer.splitAndStripOrs(hasSimplified, where, orOperands);
+		Set<? extends ISliceFilter> strippedOrFiltersAsAnd = filterOptimizer.splitAndStripOrs(where, orOperands);
 
 		// Factor out common sub-expressions (kernels) across the OR operands before the cartesian product.
 		// E.g. `(K|A) & (K|B) & (K|C) & D` → `(K|(A&B&C)) & D`, reducing the cartesian product size.
@@ -159,7 +156,7 @@ public class KernelFactorizer {
 	 * @return an equivalent but potentially smaller set of OR filters
 	 */
 	@SuppressWarnings("PMD.AssignmentInOperand")
-	protected ImmutableSet<ISliceFilter> kernelsRefactoring(ImmutableSet<ISliceFilter> orAndOperands) {
+	protected ImmutableSet<ISliceFilter> kernelsRefactoring(Set<? extends ISliceFilter> orAndOperands) {
 		List<ISliceFilter> mutableList = new ArrayList<>(orAndOperands);
 
 		int tryIndex = 0;

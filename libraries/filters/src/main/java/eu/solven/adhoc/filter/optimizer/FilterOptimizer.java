@@ -29,7 +29,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -116,7 +115,17 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		Instant start = Instant.now(AdhocTime.unsafeClock);
 		try {
-			return notCachedOr(filters);
+			if (filters.contains(ISliceFilter.MATCH_ALL)) {
+				return ISliceFilter.MATCH_ALL;
+			} else if (filters.isEmpty()) {
+				// Prevent caching trivial case
+				return ISliceFilter.MATCH_NONE;
+			} else if (filters.size() == 1) {
+				// Prevent caching in OR what is trivial AND.
+				return notCachedAnd(filters, false);
+			} else {
+				return notCachedOr(filters);
+			}
 		} finally {
 			listener.onOptimizationDone(filterForEvent, AdhocTime.untilNow(start));
 		}
@@ -293,34 +302,32 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 *            a common AND operand
 	 * @param andOperands
 	 *            an additional {@link List} of `AND`operands which should be splittable into a bunch of OR operands.
-	 * @param hasSimplified
-	 *            a flag to raise when any stripping actually occurred. The goal is to detect if this methodology is
-	 *            triggering or not, to prevent cycles.
 	 * @return a {@link List} of AND operands
 	 */
-	protected ImmutableSet<ISliceFilter> splitAndStripOrs(AtomicBoolean hasSimplified,
-			ISliceFilter where,
-			List<ISliceFilter> andOperands) {
-		Set<ISliceFilter> outputOperands = andOperands.stream()
-				.map(this::getOrOperands)
-				// Simplify orOperands given `WHERE`
-				.map(orOperands -> splitThenStripOrs(hasSimplified, where, orOperands))
-				.map(this::or)
-				.collect(ImmutableSet.toImmutableSet());
+	protected ImmutableSet<ISliceFilter> splitAndStripOrs(ISliceFilter where, Set<? extends ISliceFilter> andOperands) {
+		Set<? extends ISliceFilter> outputOperands;
+
+		if (where.isMatchAll()) {
+			outputOperands = andOperands;
+		} else {
+			outputOperands = andOperands.stream()
+					.map(this::getOrOperands)
+					// Simplify orOperands given `WHERE`
+					.map(orOperands -> splitThenStripOrs(where, orOperands))
+					.map(this::or)
+					.collect(ImmutableSet.toImmutableSet());
+		}
 
 		return removeLaxerInAnd(outputOperands);
 	}
 
 	/**
 	 * 
-	 * @param hasSimplified
 	 * @param where
 	 * @param orOperands
 	 * @return a {@link List} of operands to OR, equivalent to the input {@link List}
 	 */
-	protected Set<ISliceFilter> splitThenStripOrs(AtomicBoolean hasSimplified,
-			ISliceFilter where,
-			Set<ISliceFilter> orOperands) {
+	protected Set<ISliceFilter> splitThenStripOrs(ISliceFilter where, Set<ISliceFilter> orOperands) {
 		IFilterStripper filterStripper = filterStripperFactory.makeFilterStripper(where);
 
 		Set<ISliceFilter> strippedWhere = orOperands.stream()
@@ -330,23 +337,13 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 					ISliceFilter combinedOrOperand = and(ImmutableList.of(where, orOperand), false);
 
 					boolean matchNone = combinedOrOperand.isMatchNone();
-					if (matchNone) {
-						// Reject this operand which is irrelevant
-						hasSimplified.set(true);
-					}
 
 					return !matchNone;
 				})
 				.collect(ImmutableSet.toImmutableSet());
 
 		// Simplify the OR before doing the cartesian product
-		int sizeBefore = strippedWhere.size();
-		Set<ISliceFilter> strippedStricter = removeStricterInOr(strippedWhere);
-		if (strippedWhere.size() < sizeBefore) {
-			hasSimplified.set(true);
-		}
-
-		return strippedStricter;
+		return removeStricterInOr(strippedWhere);
 	}
 
 	protected ImmutableSet<ISliceFilter> removeLaxerInAnd(Set<? extends ISliceFilter> operands) {

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.filter.optimizer;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -41,28 +40,25 @@ import eu.solven.adhoc.filter.value.LikeMatcher;
 public class TestFilterOptimizerHelpers {
 	FilterOptimizer optimizer = FilterOptimizer.builder().build();
 
-	AtomicBoolean hasSimplified = new AtomicBoolean();
-
 	@Test
 	public void testStripOr_orHasCommon() {
-		Set<ISliceFilter> output = optimizer
-				.splitThenStripOrs(hasSimplified, AndFilter.and("a", "a1"), Set.of(OrFilter.or("a", "a1", "b", "b2")));
+		Set<ISliceFilter> output =
+				optimizer.splitThenStripOrs(AndFilter.and("a", "a1"), Set.of(OrFilter.or("a", "a1", "b", "b2")));
 
 		Assertions.assertThat(output).hasSize(1).contains(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testStripOr() {
-		Set<ISliceFilter> output = optimizer
-				.splitThenStripOrs(hasSimplified, AndFilter.and("a", "a1"), Set.of(OrFilter.or("b", "b2", "c", "c3")));
+		Set<ISliceFilter> output =
+				optimizer.splitThenStripOrs(AndFilter.and("a", "a1"), Set.of(OrFilter.or("b", "b2", "c", "c3")));
 
 		Assertions.assertThat(output).hasSize(1).contains(OrFilter.or("b", "b2", "c", "c3"));
 	}
 
 	@Test
 	public void testStripOr_matchNone() {
-		Set<ISliceFilter> output = optimizer.splitThenStripOrs(hasSimplified,
-				AndFilter.and("a", "a1"),
+		Set<ISliceFilter> output = optimizer.splitThenStripOrs(AndFilter.and("a", "a1"),
 				Set.of(FilterBuilder
 						.or(ColumnFilter.match("a", LikeMatcher.matching("a%")).negate(),
 								ColumnFilter.matchEq("b", "b2"))

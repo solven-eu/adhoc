@@ -88,6 +88,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MeasureForestConcealer {
 
+	private static final int BITS_PER_HEXDIGIT = 4;
+
 	/**
 	 * Number of hex digits in each concealed token. Defaults to {@code 8} (32-bit hash, e.g. {@code m_a3f1c09e}).
 	 * Shorter values reduce output verbosity at the cost of higher collision probability; longer values increase
@@ -250,7 +252,7 @@ public class MeasureForestConcealer {
 	protected Map<String, String> buildMapping(String prefix, Set<String> names) {
 		Map<String, String> oldToNew = new LinkedHashMap<>();
 		Map<String, Integer> baseCount = new LinkedHashMap<>();
-		long mask = (1L << (hashLength * 4)) - 1;
+		long mask = (1L << (hashLength * BITS_PER_HEXDIGIT)) - 1;
 		String fmt = "%0" + hashLength + "x";
 
 		for (String name : names) {

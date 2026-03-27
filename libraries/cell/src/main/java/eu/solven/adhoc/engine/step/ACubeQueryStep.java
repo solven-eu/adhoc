@@ -28,6 +28,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -108,6 +110,7 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 		setCrossStepsCache(transverseCache);
 	}
 
+	@Override
 	public Map<Object, Object> getTransverseCache() {
 		Map<Object, Object> transverseCache = (Map<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
 
@@ -119,8 +122,10 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 
 	/**
 	 * Returns all columns referenced by the given step (groupBy columns + filter columns).
+	 * 
+	 * @return all columns which are involved in given {@link CubeQueryStep}
 	 */
-	public static Set<String> getColumns(ACubeQueryStep step) {
+	public static Set<String> getColumns(ICubeQueryStep step) {
 		return ImmutableSet.<String>builder()
 				.addAll(step.getGroupBy().getGroupedByColumns())
 				.addAll(FilterHelpers.getFilteredColumns(step.getFilter()))
@@ -148,18 +153,23 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "(id="
-				+ id
-				+ ", measure="
-				+ getMeasure()
-				+ ", filter="
-				+ filter
-				+ ", groupBy="
-				+ groupBy
-				+ ", customMarker="
-				+ customMarker
-				+ ", options="
-				+ options
-				+ ")";
+		ToStringHelper helper = MoreObjects.toStringHelper(this);
+
+		helper.add("id", id);
+		helper.add("measure", getMeasure());
+		if (!filter.isMatchAll()) {
+			helper.add("filter", filter);
+		}
+		if (!groupBy.isGrandTotal()) {
+			helper.add("groupBy", groupBy);
+		}
+		if (customMarker != null) {
+			helper.add("customMarker", customMarker);
+		}
+		if (!options.isEmpty()) {
+			helper.add("options", options);
+		}
+
+		return helper.toString();
 	}
 }

@@ -34,7 +34,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 /**
- * Unit-tests for {@link MergeInducersIntoSingle#buildGroupByCoverageString} in isolation, without touching the logging
+ * Unit-tests for {@link MergeInducersIntoSingle#buildColumnCoverageString} in isolation, without touching the logging
  * framework.
  */
 public class TestMergeInducersIntoSingleCoverageString {
@@ -45,7 +45,8 @@ public class TestMergeInducersIntoSingleCoverageString {
 
 	/**
 	 * Two steps both group by {@code country} (100 % coverage), only one also groups by {@code currency} (50 %
-	 * coverage). {@code region} was added to the merged groupBy solely to support row-splitting (0 % native coverage).
+	 * coverage). {@code region} is in neither groupBy, but both steps filter on it — so it counts as 100 % covered
+	 * (filter coverage).
 	 */
 	@Test
 	public void coverageString_100and50and0percent() {
@@ -62,13 +63,37 @@ public class TestMergeInducersIntoSingleCoverageString {
 
 		IGroupBy mergedGroupBy = GroupByColumns.named("country", "currency", "region");
 
-		String coverage = merger.buildGroupByCoverageString(ImmutableSet.of(s1, s2), mergedGroupBy);
+		String coverage = merger.buildColumnCoverageString(ImmutableSet.of(s1, s2), mergedGroupBy);
 
 		// country was in both steps' groupBy → 100 %
 		Assertions.assertThat(coverage).contains("country=100%(2/2)");
 		// currency was only in s1's groupBy → 50 %
 		Assertions.assertThat(coverage).contains("currency=50%(1/2)");
-		// region was in neither step's groupBy (added for splitting) → 0 %
-		Assertions.assertThat(coverage).contains("region=0%(0/2)");
+		// region was in neither step's groupBy, but both filter on it → 100 % (filter coverage)
+		Assertions.assertThat(coverage).contains("region=100%(2/2)");
+	}
+
+	/**
+	 * {@code status} is added to the merged groupBy for splitting, but only one step filters on it (50 % filter-only
+	 * coverage). {@code country} is a groupBy column present in both steps (100 %).
+	 */
+	@Test
+	public void coverageString_filterOnly_50percent() {
+		// s1 groups by country, restricted to status==active
+		TableQueryStep s1 = a.toBuilder()
+				.groupBy(GroupByColumns.named("country"))
+				.filter(ColumnFilter.matchEq("status", "active"))
+				.build();
+		// s2 groups by country only, no filter on status
+		TableQueryStep s2 = a.toBuilder().groupBy(GroupByColumns.named("country")).build();
+
+		IGroupBy mergedGroupBy = GroupByColumns.named("country", "status");
+
+		String coverage = merger.buildColumnCoverageString(ImmutableSet.of(s1, s2), mergedGroupBy);
+
+		// country was in both steps' groupBy → 100 %
+		Assertions.assertThat(coverage).contains("country=100%(2/2)");
+		// status is in neither groupBy; only s1 filters on it → 50 %
+		Assertions.assertThat(coverage).contains("status=50%(1/2)");
 	}
 }

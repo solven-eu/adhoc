@@ -232,7 +232,8 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 			}
 
 			// Evaluated the induced tableQueries
-			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the DAG of size-cost
+			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the
+			// DAG of size-cost
 			walkUpInducedDag(stepToValues, inducerAndInduced);
 
 			if (queryPod.isDebugOrExplain()) {

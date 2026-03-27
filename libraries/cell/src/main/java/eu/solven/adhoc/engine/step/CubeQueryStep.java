@@ -106,16 +106,6 @@ public final class CubeQueryStep extends ACubeQueryStep {
 	}
 
 	/**
-	 * @return all columns which are involved in given {@link CubeQueryStep}
-	 */
-	public static Set<String> getColumns(CubeQueryStep step) {
-		return ImmutableSet.<String>builder()
-				.addAll(step.getGroupBy().getGroupedByColumns())
-				.addAll(FilterHelpers.getFilteredColumns(step.getFilter()))
-				.build();
-	}
-
-	/**
 	 * Lombok @Builder — extends with a {@code measure(String)} convenience overload. Both setter variants must be
 	 * declared here because Lombok skips generating any setter whose name is already present in the custom class.
 	 */

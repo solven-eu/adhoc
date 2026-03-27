@@ -64,7 +64,6 @@ import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.AdhocDebug;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -222,7 +221,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
 		ISliceReader sliceReader = slice.sliceReader();
-		
+
 		ISliceFactory sliceFactory = factories.getSliceFactory();
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
