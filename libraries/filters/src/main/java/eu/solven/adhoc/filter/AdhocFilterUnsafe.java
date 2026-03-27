@@ -37,21 +37,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @UtilityClass
 @Slf4j
-@SuppressWarnings({ "checkstyle:MagicNumber", "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
 public class AdhocFilterUnsafe {
 
 	public static void resetAll() {
-		filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 		filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
+		filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 		KernelFactorizer.resetUnsafe();
 	}
-
-	/**
-	 * Default {@link IFilterOptimizer}, used by static methods. As this one is maintained in the long-run, it should
-	 * have no persistent cache, or with a proper expiring policy.
-	 */
-	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
-	public static IFilterOptimizer filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 
 	/**
 	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it
@@ -60,5 +53,12 @@ public class AdhocFilterUnsafe {
 	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY =
 			FilterStripperFactory.builder().build();
 	public static IFilterStripperFactory filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
+
+	/**
+	 * Default {@link IFilterOptimizer}, used by static methods. As this one is maintained in the long-run, it should
+	 * have no persistent cache, or with a proper expiring policy.
+	 */
+	private static final IFilterOptimizer DEFAULT_FILTER_OPTIMIZER = FilterOptimizerIntraCache.builder().build();
+	public static IFilterOptimizer filterOptimizer = DEFAULT_FILTER_OPTIMIZER;
 
 }

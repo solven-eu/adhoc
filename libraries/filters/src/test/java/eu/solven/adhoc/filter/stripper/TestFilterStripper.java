@@ -42,7 +42,8 @@ public class TestFilterStripper {
 
 		FilterStripper relatedStripper = stripper.withWhere(ColumnFilter.matchEq("e", "e3"));
 		// Ensure the cache unrelated to current WHERE is shared
-		Assertions.assertThat(relatedStripper.filterToStripper.asMap()).hasSize(1);
+		Assertions.assertThat(stripper.filterToStripper.asMap()).hasSize(2);
+		Assertions.assertThat(relatedStripper.filterToStripper.asMap()).hasSize(2);
 		// Ensure the cache related to current WHERE is not-shared
 		Assertions.assertThat(relatedStripper.knownAsStricter.asMap()).isEmpty();
 	}

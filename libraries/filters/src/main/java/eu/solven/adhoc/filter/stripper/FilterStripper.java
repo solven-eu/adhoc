@@ -47,7 +47,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -60,7 +59,6 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 public class FilterStripper implements IFilterStripper {
 	@Getter(AccessLevel.PROTECTED)
-	@With
 	@NonNull
 	protected final ISliceFilter where;
 
@@ -87,6 +85,7 @@ public class FilterStripper implements IFilterStripper {
 
 	// BEWARE This design leads to sharing `filterToStripper` through multiple filterStrippers
 	@SneakyThrows(ExecutionException.class)
+	@Override
 	public FilterStripper withWhere(ISliceFilter newWhere) {
 		return filterToStripper.get(newWhere, () -> this.toBuilder().where(newWhere).build());
 	}

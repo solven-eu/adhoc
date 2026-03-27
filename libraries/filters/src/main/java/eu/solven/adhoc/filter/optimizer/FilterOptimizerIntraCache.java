@@ -30,6 +30,7 @@ import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import lombok.Builder.Default;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,12 +44,14 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 public class FilterOptimizerIntraCache implements IFilterOptimizer {
 	@Default
+	@NonNull
 	final IOptimizerEventListener listener = new IOptimizerEventListener() {
 
 	};
 
 	@Default
 	@Getter
+	@NonNull
 	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
 
 	protected FilterOptimizerWithCache makeWithCache() {
