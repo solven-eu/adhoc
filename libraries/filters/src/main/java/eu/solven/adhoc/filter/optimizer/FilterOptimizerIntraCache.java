@@ -58,7 +58,7 @@ public class FilterOptimizerIntraCache implements IFilterOptimizer {
 	}
 
 	@Override
-	public ISliceFilter not(ISliceFilter filter) {
-		return makeWithCache().not(filter);
+	public ISliceFilter not(ISliceFilter filter, boolean willBeNegated) {
+		return makeWithCache().not(filter, willBeNegated);
 	}
 }

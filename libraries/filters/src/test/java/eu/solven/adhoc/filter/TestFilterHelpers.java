@@ -446,7 +446,7 @@ public class TestFilterHelpers {
 		}
 
 		@Override
-		public ISliceFilter not(ISliceFilter first) {
+		public ISliceFilter not(ISliceFilter first, boolean willBeNegated) {
 			throw new UnsupportedOperationException("Forbidden");
 		}
 

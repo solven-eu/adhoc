@@ -45,7 +45,7 @@ public interface IFilterOptimizer {
 
 	ISliceFilter or(Collection<? extends ISliceFilter> filters);
 
-	ISliceFilter not(ISliceFilter first);
+	ISliceFilter not(ISliceFilter first, boolean willBeNegated);
 
 	/**
 	 * Enable receiving event related to the optimization process.

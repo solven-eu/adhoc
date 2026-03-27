@@ -107,7 +107,7 @@ public class KernelFactorizer {
 		}
 
 		// Holds all AND operands which are not splittable as ORs.
-		ISliceFilter where = filterOptimizer.optimizeOperand(FilterBuilder.and(orNotOr.get(false)).combine());
+		ISliceFilter where = filterOptimizer.optimizeOperand(FilterBuilder.and(orNotOr.get(false)).combine(), false);
 
 		if (where.isMatchNone()) {
 			// For some reason, this was not detected earlier

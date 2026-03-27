@@ -203,7 +203,7 @@ public class ColumnPacker {
 
 				if (!disallowedValues.isEmpty()) {
 					// We have a list of explicit disallowed values but no explicit values
-					packedFiltersBuilder.add(optimizer.not(ColumnFilter.matchIn(column, disallowedValues)));
+					packedFiltersBuilder.add(optimizer.not(ColumnFilter.matchIn(column, disallowedValues), false));
 				}
 
 				notManaged.addAll(implicitFilters);

@@ -141,7 +141,7 @@ public class FilterBuilder {
 			if (filters.size() != 1) {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
-			return optimizer.not(Iterables.getOnlyElement(filters));
+			return optimizer.not(Iterables.getOnlyElement(filters), false);
 		}
 	}
 

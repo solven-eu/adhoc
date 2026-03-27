@@ -747,15 +747,13 @@ public class TestAndFilter {
 				.filter(NotFilter.builder()
 						.negated(AndFilter.builder()
 								.and(ColumnFilter.notIn("b", "b1", "b2"))
-								.and(
-
-										NotFilter.builder()
-												.negated(AndFilter.builder()
-														.and(ColumnFilter.matchEq("c", "c1"))
-														.and(ColumnFilter.matchEq("d", "d1"))
-														.and(ColumnFilter.matchEq("e", "e1"))
-														.build())
+								.and(NotFilter.builder()
+										.negated(AndFilter.builder()
+												.and(ColumnFilter.matchEq("c", "c1"))
+												.and(ColumnFilter.matchEq("d", "d1"))
+												.and(ColumnFilter.matchEq("e", "e1"))
 												.build())
+										.build())
 								.build()
 
 						)
@@ -766,7 +764,9 @@ public class TestAndFilter {
 
 		ISliceFilter optimized = FilterBuilder.and(raw).optimize(optimizer);
 
-		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2,a3)&(b=in=(b1,b2)|c==c1&d==d1&e==e1)");
+		Assertions.assertThat(optimized)
+				// .hasToString("a=in=(a1,a2,a3)&(b=in=(b1,b2)|c==c1&d==d1&e==e1)")
+				.hasToString("a=in=(a1,a2,a3)&!(b=out=(b1,b2)&!(c==c1&d==d1&e==e1))");
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 

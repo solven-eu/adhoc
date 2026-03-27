@@ -123,13 +123,13 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	}
 
 	@Override
-	public ISliceFilter not(ISliceFilter filter) {
+	public ISliceFilter not(ISliceFilter filter, boolean willBeNegated) {
 		NotFilter filterForEvent = NotFilter.builder().negated(filter).build();
 		listener.onOptimize(filterForEvent);
 
 		Instant start = Instant.now(AdhocTime.unsafeClock);
 		try {
-			return notCachedNot(filter);
+			return notCachedNot(filter, willBeNegated);
 		} finally {
 			listener.onOptimizationDone(filterForEvent, AdhocTime.untilNow(start));
 		}
@@ -145,7 +145,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 		// First, we ensure operands are themselves optimized. This may lead to duplicate work, as later step may
 		// themselves optimize. But it is useful to ensure consistency of equivalent inputs.
-		ImmutableSet<? extends ISliceFilter> optimizedOperands = optimizeOperands(filters);
+		ImmutableSet<? extends ISliceFilter> optimizedOperands = optimizeOperands(filters, willBeNegated);
 
 		// We need to start by flattening the input (e.g. `AND(AND(a=a1,b=b2)&a=a2)` to `AND(a=a1,b=b2,a=a2)`)
 		ImmutableSet<? extends ISliceFilter> flatten = splitAnd(optimizedOperands);
@@ -241,7 +241,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			// Typically, `a=in=(a1,a2,a4)|b=in=(b1,b2,b4)` would be turned into `a==a1|a==a2|b==b1|b==b2` if a4 and b4
 			// are not relevant.
 			// It will help following `.stripWhereFromFilter`
-			simpler = optimizeOperand(simpler);
+			simpler = optimizeOperand(simpler, false);
 
 			// `simpler` is simpler or same to the original expression: let's register it without trying it to compare
 			// with the original expression.
@@ -257,17 +257,18 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	 * @param filters
 	 * @return a {@link Set} of operands, guaranteed to be optimized.
 	 */
-	protected ImmutableSet<? extends ISliceFilter> optimizeOperands(Collection<? extends ISliceFilter> filters) {
-		return filters.stream().map(this::optimizeOperand).collect(ImmutableSet.toImmutableSet());
+	protected ImmutableSet<? extends ISliceFilter> optimizeOperands(Collection<? extends ISliceFilter> filters,
+			boolean willBeNegated) {
+		return filters.stream().map(f -> optimizeOperand(f, willBeNegated)).collect(ImmutableSet.toImmutableSet());
 	}
 
-	protected ISliceFilter optimizeOperand(ISliceFilter f) {
+	protected ISliceFilter optimizeOperand(ISliceFilter f, boolean willBeNegated) {
 		if (f instanceof IAndFilter andFilter) {
-			return and(andFilter.getOperands(), false);
+			return and(andFilter.getOperands(), willBeNegated);
 		} else if (f instanceof IOrFilter orFilter) {
 			return or(orFilter.getOperands());
 		} else if (f instanceof INotFilter notFilter) {
-			return not(notFilter.getNegated());
+			return not(notFilter.getNegated(), willBeNegated);
 		} else {
 			// BEWARE Should we have optimizations for IColumnFilter/IValueMatchers?
 			return f;
@@ -480,11 +481,12 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		{
 			List<ISliceFilter> operandsAsList = new ArrayList<>(operands);
 
+			// if removeLaxerElseStricter is true, this is the stricter operand
 			ISliceFilter notFinalHarder = operandsAsList.getFirst();
 
 			for (ISliceFilter candidate : operandsAsList) {
 				if (candidate != notFinalHarder) {
-					if (removeLaxerElseStricter && isStricterThan(notFinalHarder, candidate)) {
+					if (removeLaxerElseStricter && isStricterThan(candidate, notFinalHarder)) {
 						// removeLaxer, so we searcher for stricter
 						notFinalHarder = candidate;
 					} else if (!removeLaxerElseStricter && FilterHelpers.isLaxerThan(candidate, notFinalHarder)) {
@@ -500,7 +502,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			if (removeLaxerElseStricter) {
 				isSofter = sf -> FilterHelpers.isLaxerThan(sf, harder);
 			} else {
-				isSofter = sf -> isStricterThan(harder, sf);
+				isSofter = sf -> isStricterThan(sf, harder);
 			}
 			int sizeBefore = operandsAsList.size();
 			operandsAsList.removeIf(candidate -> candidate != harder && isSofter.test(candidate));
@@ -751,15 +753,15 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		}
 	}
 
-	protected ISliceFilter notCachedNot(ISliceFilter filter) {
+	protected ISliceFilter notCachedNot(ISliceFilter filter, boolean willBeNegated) {
 		if (filter instanceof IAndFilter andFilter) {
-			ISliceFilter negated = and(andFilter.getOperands(), true);
+			ISliceFilter negated = and(andFilter.getOperands(), willBeNegated);
 
 			return NotFilter.simpleNot(negated);
 		} else if (filter instanceof IOrFilter orFilter) {
 			// Plays optimizations given an `AND` of `NOT`s.
 			// We may prefer `c!=c1&d==d2` over `!(c==c1|d!=d2)`
-			return and(orFilter.getOperands().stream().map(ISliceFilter::negate).toList(), false);
+			return and(orFilter.getOperands().stream().map(ISliceFilter::negate).toList(), !willBeNegated);
 			// ISliceFilter negated = or(orFilter.getOperands());
 
 			// return NotFilter.simpleNot(negated);
