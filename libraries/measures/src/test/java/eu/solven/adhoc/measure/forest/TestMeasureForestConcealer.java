@@ -47,7 +47,7 @@ import eu.solven.adhoc.measure.model.Shiftor;
 
 public class TestMeasureForestConcealer {
 
-	final MeasureForestConcealer concealer = new MeasureForestConcealer();
+	final MeasureForestConcealer concealer = MeasureForestConcealer.builder().build();
 
 	// ── helpers ──────────────────────────────────────────────────────────────
 
@@ -268,10 +268,18 @@ public class TestMeasureForestConcealer {
 		names.add("Aa");
 		names.add("BB");
 
-		Map<String, String> mapping = MeasureForestConcealer.buildMapping("m_", names);
+		Map<String, String> mapping = MeasureForestConcealer.builder().build().buildMapping("m_", names);
 
 		Assertions.assertThat(mapping.get("Aa")).isEqualTo("m_00000840");
 		Assertions.assertThat(mapping.get("BB")).isEqualTo("m_00000840_2");
+	}
+
+	@Test
+	public void testHashLength_4digits() {
+		// hashCode of "hello" = 99162322 = 0x05e918d2; truncated to 4 hex digits → 0x18d2
+		MeasureForestConcealer short4 = MeasureForestConcealer.builder().hashLength(4).build();
+		Map<String, String> mapping = short4.buildMapping("m_", Set.of("hello"));
+		Assertions.assertThat(mapping.get("hello")).isEqualTo("m_18d2");
 	}
 
 	// ── Original forest is not mutated ────────────────────────────────────────
