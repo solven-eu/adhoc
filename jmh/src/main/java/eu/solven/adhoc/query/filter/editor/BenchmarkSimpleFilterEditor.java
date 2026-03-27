@@ -38,8 +38,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
@@ -58,7 +56,7 @@ import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkSimpleFilterEditor {
 
-	ISliceFilter input = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
+	ISliceFilter input = AndFilter.and("a", "a1", "b", "b2");
 
 	public static void main(String[] args) throws RunnerException {
 		Options opt = new OptionsBuilder().include(BenchmarkSimpleFilterEditor.class.getSimpleName()).forks(1).build();

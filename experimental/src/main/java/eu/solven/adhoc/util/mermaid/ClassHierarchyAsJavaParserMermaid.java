@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -332,12 +333,14 @@ public class ClassHierarchyAsJavaParserMermaid {
 				"classDiagram\n    direction TB\n\n    %% ─── Interfaces ────────────────────────────────────────────────\n");
 		graph.vertexSet()
 				.stream()
+				.sorted(Comparator.comparing(ClassNode::getSimpleName))
 				.filter(ClassNode::isInterface)
 				.forEach(node -> appendNodeDeclaration(sb, node, graph));
 
 		sb.append("\n    %% ─── Concrete classes ──────────────────────────────────────────\n");
 		graph.vertexSet()
 				.stream()
+				.sorted(Comparator.comparing(ClassNode::getSimpleName))
 				.filter(n -> !n.isInterface() && !n.isAbstract())
 				.forEach(node -> appendNodeDeclaration(sb, node, graph));
 
@@ -346,13 +349,14 @@ public class ClassHierarchyAsJavaParserMermaid {
 			sb.append("\n    %% ─── Abstract classes ──────────────────────────────────────────\n");
 			graph.vertexSet()
 					.stream()
+					.sorted(Comparator.comparing(ClassNode::getSimpleName))
 					.filter(n -> !n.isInterface() && n.isAbstract())
 					.forEach(node -> appendNodeDeclaration(sb, node, graph));
 		}
 
 		Set<String> implementsRels = new LinkedHashSet<>();
 		Set<String> compositionRels = new LinkedHashSet<>();
-		for (ClassEdge edge : graph.edgeSet()) {
+		graph.edgeSet().stream().sorted(Comparator.comparing(ClassEdge::toString)).forEach(edge -> {
 			ClassNode source = graph.getEdgeSource(edge);
 			ClassNode target = graph.getEdgeTarget(edge);
 			EdgeKind kind = edge.getKind();
@@ -364,7 +368,7 @@ public class ClassHierarchyAsJavaParserMermaid {
 				compositionRels
 						.add(source.getSimpleName() + " *-- " + target.getSimpleName() + " : " + edge.getFieldName());
 			}
-		}
+		});
 
 		if (!implementsRels.isEmpty()) {
 			sb.append("\n    %% ─── Implements / Extends ──────────────────────────────────────\n");

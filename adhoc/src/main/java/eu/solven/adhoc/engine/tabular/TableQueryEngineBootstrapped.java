@@ -31,8 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -46,6 +47,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -222,16 +224,21 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		SplitTableQueries inducerAndInduced = tableQueryFactory.splitInduced(queryPod, steps);
 
 		// Execute the actual tableQueries
-		Map<TableQueryStep, ICuboid> stepToValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
+		Map<TableQueryStep, ICuboid> stepToValuesFromtableWrapper =
+				executeTableQueries(inducerAndInduced, inducerAndInduced);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
+		// Switch to a ConcurrentMap as `walkUpInducedDag` may be concurrent
+		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);
 		{
 			if (queryPod.isDebugOrExplain()) {
 				explainDagSteps(tableQueryPod, inducerAndInduced);
 			}
 
 			// Evaluated the induced tableQueries
+			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the
+			// DAG of size-cost
 			walkUpInducedDag(stepToValues, inducerAndInduced);
 
 			if (queryPod.isDebugOrExplain()) {
@@ -261,7 +268,7 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
-	protected void explainDagSteps(QueryPod tableQueryPod, IHasDagFromInducedToInducer queryStepsDag) {
+	protected void explainDagSteps(QueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
 		makeDagExplainer().explain(tableQueryPod.getQueryId(), queryStepsDag);
 	}
 
@@ -269,40 +276,48 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
 	}
 
-	protected void explainDagPerfs(QueryPod tableQueryPod, IHasDagFromInducedToInducer queryStepsDag) {
+	protected void explainDagPerfs(QueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
 		makeDagExplainerForPerfs().explain(tableQueryPod.getQueryId(), queryStepsDag);
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
+	@SuppressWarnings("PMD.CloseResource")
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
-			IHasTableQueryForSteps tableQueries) {
+			IHasTableQueryForSteps hasTableQueries) {
 		try {
-			return queryPod.getExecutorService().submit(() -> {
-				Stream<TableQueryV4> tableQueriesStream = tableQueries.getTableQueries().stream();
+			Set<TableQueryV4> tableQueries = hasTableQueries.getTableQueries();
 
-				if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
-					tableQueriesStream = tableQueriesStream.parallel();
-				}
-				Map<TableQueryStep, ICuboid> queryStepToValuesInner = new ConcurrentHashMap<>();
-				tableQueriesStream.forEach(tableQuery -> {
-					// BEWARE Could we have multiple TableQueryV4 computing the same TableQueryStep?
-					Map<TableQueryStep, ICuboid> cuboids =
-							processOneTableQuery(sinkExecutionFeedback, tableQueries, tableQuery);
-					queryStepToValuesInner.putAll(cuboids);
-				});
-
-				return queryStepToValuesInner;
-			}).get();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IllegalStateException("Interrupted", e);
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof IllegalStateException) {
-				throw new IllegalStateException("Failed query on table=%s".formatted(queryPod.getTable().getName()), e);
+			List<Map<TableQueryStep, ICuboid>> listStepsToCuboids;
+			// Submit to the DB pool so table queries (I/O-bound) do not block the CPU-bound common pool.
+			// We avoid .parallel() streams here because they would fall back to ForkJoinPool.commonPool()
+			// when the calling thread is not a ForkJoinPool worker.
+			ListeningExecutorService dbExecutorService = queryPod.getDbExecutorService();
+			if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
+				List<CompletableFuture<Map<TableQueryStep, ICuboid>>> futures = tableQueries.stream()
+						.map(tableQuery -> CompletableFuture.supplyAsync(
+								() -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery),
+								dbExecutorService))
+						.toList();
+				// join() on each future blocks until it completes (or propagates a failure)
+				listStepsToCuboids =
+						futures.stream().map(CompletableFuture::join).collect(ImmutableList.toImmutableList());
 			} else {
-				throw new IllegalArgumentException("Failed query on table=%s".formatted(queryPod.getTable().getName()),
-						e);
+				// Sequential path: run every table query sequentially, on the thread of the IO pool
+				// TODO Split this part into an IO part and a CPU part? Or use VirtualThreads?
+				var completable = CompletableFuture.supplyAsync(() -> tableQueries.stream()
+						.map(tableQuery -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery))
+						.collect(ImmutableList.toImmutableList()), dbExecutorService);
+				listStepsToCuboids = completable.join();
 			}
+
+			Map<TableQueryStep, ICuboid> stepsToCuboid = new LinkedHashMap<>();
+
+			// BEWARE Could we have multiple TableQueryV4 computing the same TableQueryStep?
+			listStepsToCuboids.forEach(stepsToCuboid::putAll);
+
+			return stepsToCuboid;
+		} catch (RuntimeException e) {
+			throw AdhocExceptionHelpers.wrap("Failed query on table=%s".formatted(queryPod.getTable().getName()), e);
 		}
 	}
 
@@ -883,10 +898,11 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * 
 	 * 
 	 * @param stepToValues
-	 *            a mutable {@link Map}. May need to be thread-safe.
+	 *            a mutable {@link ConcurrentMap}.
 	 * @param inducerAndInduced
 	 */
-	protected void walkUpInducedDag(Map<TableQueryStep, ICuboid> stepToValues, SplitTableQueries inducerAndInduced) {
+	protected void walkUpInducedDag(ConcurrentMap<TableQueryStep, ICuboid> stepToValues,
+			SplitTableQueries inducerAndInduced) {
 		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);

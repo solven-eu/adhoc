@@ -46,8 +46,10 @@ import eu.solven.adhoc.column.FunctionCalculatedColumn;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.IHasTransverseCache;
 import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
@@ -75,7 +77,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
+public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransverseCache {
 	final IAdhocFactories factories;
 	final String table;
 	final ICubeQuery query;
@@ -122,6 +124,11 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 		// Rely on cache as this will be used only through a single query
 		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 		crossStepsCache.put(CubeQueryStep.KEY_FILTER_OPTIMIZER, filterOptimizer);
+	}
+
+	@Override
+	public Map<Object, Object> getTransverseCache() {
+		return crossStepsCache;
 	}
 
 	protected void addRoot(IMeasure queriedMeasure) {
@@ -186,12 +193,15 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder {
 			}
 		});
 
+		IFilterOptimizer filterOptimizer = TransverseCacheHelper.getFilterOptimizer(this);
+
 		return Lists.cartesianProduct(indexToGroupBys).stream().map(columns -> {
 			IGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
-			ISliceFilter andFilter = FilterBuilder.and(columns.stream().map(Map.Entry::getValue).toList()).optimize();
+			ISliceFilter andFilter =
+					FilterBuilder.and(columns.stream().map(Map.Entry::getValue).toList()).optimize(filterOptimizer);
 			return MeasurelessQuery.edit(query)
 					.groupBy(groupBy)
-					.filter(FilterBuilder.and(query.getFilter(), andFilter).optimize())
+					.filter(FilterBuilder.and(query.getFilter(), andFilter).optimize(filterOptimizer))
 					.build();
 		}).collect(ImmutableSet.toImmutableSet());
 	}

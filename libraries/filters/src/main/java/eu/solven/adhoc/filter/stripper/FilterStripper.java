@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -46,7 +47,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.With;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -56,10 +56,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class FilterStripper implements IFilterStripper {
 	@Getter(AccessLevel.PROTECTED)
-	@With
 	@NonNull
 	protected final ISliceFilter where;
 
@@ -84,9 +83,11 @@ public class FilterStripper implements IFilterStripper {
 		return FilterHelpers.splitAnd(where);
 	}
 
+	// BEWARE This design leads to sharing `filterToStripper` through multiple filterStrippers
 	@SneakyThrows(ExecutionException.class)
-	protected FilterStripper makeStripper(ISliceFilter subWhere) {
-		return filterToStripper.get(subWhere, () -> this.withWhere(subWhere));
+	@Override
+	public FilterStripper withWhere(ISliceFilter newWhere) {
+		return filterToStripper.get(newWhere, () -> this.toBuilder().where(newWhere).build());
 	}
 
 	@Override
@@ -200,7 +201,7 @@ public class FilterStripper implements IFilterStripper {
 
 	protected boolean noCacheIsStricterThan(ISliceFilter filter) {
 		if (where instanceof INotFilter notStricter && filter instanceof INotFilter notLaxer) {
-			return makeStripper(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
+			return withWhere(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
 		} else if (where instanceof IColumnFilter stricterColumn && filter instanceof IColumnFilter laxerFilter) {
 			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
 			if (!isSameColumn) {
@@ -209,7 +210,7 @@ public class FilterStripper implements IFilterStripper {
 			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
 		}
 
-		FilterStripper filterStripper = makeStripper(filter.negate());
+		FilterStripper filterStripper = withWhere(filter.negate());
 
 		boolean isStricterThanAnd = isStricerThanSplitAnd(filter, filterStripper);
 		if (isStricterThanAnd) {
@@ -227,14 +228,22 @@ public class FilterStripper implements IFilterStripper {
 	}
 
 	/**
-	 * `isStricterThan` comparing the operands following a `splitAnd` operations. `WHERE` is stricter than `FILTER` if
-	 * all `FILTER` operand is covered by one `WHERE` operand.
-	 * 
-	 * Typical example is `WHERE:a=a1&b=7&c=c3` versus `FILTER:a=in=(a1,a2)&b>=5`
-	 * 
+	 * `isStricterThan` comparing the operands following a `splitAnd` operation. `WHERE` is stricter than `FILTER` if
+	 * every `FILTER` AND-operand is covered by at least one `WHERE` AND-operand.
+	 *
+	 * <p>
+	 * Typical example: {@code WHERE:a=a1&b=7&c=c3} versus {@code FILTER:a=in=(a1,a2)&b>=5}.
+	 *
+	 * <p>
+	 * The outer loop iterates over {@code WHERE} operands so that each {@link FilterStripper} is built (and cached) at
+	 * most once per stricter, regardless of how many laxer operands remain. An uncovered-laxers working set is used to
+	 * short-circuit as soon as all laxers have been matched.
+	 *
 	 * @param laxer
+	 *            the filter being tested as the less-restrictive side
 	 * @param laxerStripper
-	 * @return
+	 *            a {@link FilterStripper} whose {@code where} is {@code laxer}, used for column-set checks
+	 * @return {@code true} if {@code WHERE} is strictly at least as selective as {@code laxer}
 	 */
 	protected boolean isStricerThanSplitAnd(ISliceFilter laxer, FilterStripper laxerStripper) {
 		// BEWARE Do not rely on `OrFilter` as this method is called by `AndFilter` optimizations and `OrFilter` also
@@ -243,7 +252,7 @@ public class FilterStripper implements IFilterStripper {
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
 		Set<String> filterColumns = laxerStripper.getColumns();
-		if (!whereColumns.get().containsAll(filterColumns)) {
+		if (!getColumns().containsAll(filterColumns)) {
 			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1&c=c3` due to `c`
 			// BEWARE if laxer is a ColumnFilter with a `matchAll` matcher
 			log.trace("Some filter in laxer are necessarily not present in WHERE");
@@ -257,28 +266,32 @@ public class FilterStripper implements IFilterStripper {
 			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1`
 			return true;
 		}
-		// true if `WHERE:a==a1&b==b1&c==c1` and `FILTER:a=in=(a1,a2)&b=in=(b1,b2)`.
-		boolean allLaxersHasStricter = allLaxers.stream().allMatch(oneLaxer -> {
-			if (allStricters.contains(oneLaxer)) {
-				// Fast track for `a==a1` in `WHERE:a==a1&b==b1&c==c1` and `FILTER:a==a1&b=in=(b1,b2)`
-				return true;
-			}
 
-			return allStricters.stream().anyMatch(oneStricter -> {
-				if (oneStricter.equals(where) && oneLaxer.equals(laxer)) {
+		// Build the working set of laxers not yet covered by an exact match in WHERE.
+		// true if `WHERE:a==a1&b==b1&c==c1` and `FILTER:a=in=(a1,a2)&b=in=(b1,b2)`.
+		Set<ISliceFilter> uncoveredLaxers = new LinkedHashSet<>(allLaxers);
+
+		// Fast track for `a==a1` in `WHERE:a==a1&b==b1&c==c1` and `FILTER:a==a1&b=in=(b1,b2)`
+		uncoveredLaxers.removeAll(allStricters);
+
+		// Outer loop over stricters: each FilterStripper is created at most once per stricter.
+		for (ISliceFilter oneStricter : allStricters) {
+			if (uncoveredLaxers.isEmpty()) {
+				break;
+			}
+			IFilterStripper stricterStripper = withWhere(oneStricter);
+			boolean oneStricterisWhere = oneStricter.equals(where);
+			uncoveredLaxers.removeIf(oneLaxer -> {
+				if (oneStricterisWhere && oneLaxer.equals(laxer)) {
 					// break cycle in recursivity
 					return false;
 				}
-
 				// true if `WHERE:a==a1` and `FILTER:a=in=(a1,a2)`.
-				return makeStripper(oneStricter).isStricterThan(oneLaxer);
+				return stricterStripper.isStricterThan(oneLaxer);
 			});
-		});
-		if (allLaxersHasStricter) {
-			return true;
 		}
 
-		return false;
+		return uncoveredLaxers.isEmpty();
 	}
 
 	/**
@@ -289,5 +302,10 @@ public class FilterStripper implements IFilterStripper {
 	 */
 	protected boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
 		return AndMatcher.and(stricter, laxer).equals(stricter);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this).add("where", where).toString();
 	}
 }

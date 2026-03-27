@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.cache;
 import java.util.Map;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.IHasTransverseCache;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.experimental.UtilityClass;
 
@@ -35,7 +36,7 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class TransverseCacheHelper {
-	public static IFilterOptimizer getFilterOptimizer(CubeQueryStep step) {
+	public static IFilterOptimizer getFilterOptimizer(IHasTransverseCache step) {
 		Map<Object, Object> transverseCache = step.getTransverseCache();
 		return (IFilterOptimizer) transverseCache.get(CubeQueryStep.KEY_FILTER_OPTIMIZER);
 	}

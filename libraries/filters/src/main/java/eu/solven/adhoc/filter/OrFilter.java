@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -140,5 +141,17 @@ public class OrFilter implements IOrFilter {
 				.collect(Collectors.toCollection(ArrayList::new));
 
 		return FilterBuilder.or(asList).combine();
+	}
+
+	public static ISliceFilter or(String k1, Object v1) {
+		return or(ImmutableMap.of(k1, v1));
+	}
+
+	public static ISliceFilter or(String k1, Object v1, String k2, Object v2) {
+		return or(ImmutableMap.of(k1, v1, k2, v2));
+	}
+
+	public static ISliceFilter or(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
+		return or(ImmutableMap.of(k1, v1, k2, v2, k3, v3));
 	}
 }

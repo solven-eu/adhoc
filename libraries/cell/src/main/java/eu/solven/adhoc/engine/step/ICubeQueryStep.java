@@ -38,5 +38,6 @@ import eu.solven.adhoc.util.IHasCache;
  * @author Benoit Lacelle
  * @see CubeQueryStep
  */
-public interface ICubeQueryStep extends IWhereGroupByQuery, IHasMeasure, IHasCustomMarker, IHasQueryOptions, IHasCache {
+public interface ICubeQueryStep
+		extends IWhereGroupByQuery, IHasMeasure, IHasCustomMarker, IHasQueryOptions, IHasCache, IHasTransverseCache {
 }

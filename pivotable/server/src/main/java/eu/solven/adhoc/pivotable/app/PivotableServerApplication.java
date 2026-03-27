@@ -44,6 +44,7 @@ import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
 import eu.solven.adhoc.pivotable.security.PivotableSecuritySpringConfig;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
 import eu.solven.adhoc.pivotable.webflux.actuator.AdhocSchemaHealthIndicator;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.tools.GitPropertySourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,10 +71,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PivotableServerApplication {
 
 	public static void main(String[] args) {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
+		AdhocJooqHelper.disableBanners();
 
 		SpringApplication springApp = new SpringApplicationBuilder(PivotableServerApplication.class)
 				// A real-project should set this in its application.yml

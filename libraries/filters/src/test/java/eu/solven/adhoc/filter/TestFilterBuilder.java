@@ -45,11 +45,8 @@ public class TestFilterBuilder {
 	@Test
 	public void testAnd_combine_andOperand() {
 		Assertions
-				.assertThat(
-						FilterBuilder
-								.and(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")),
-										AndFilter.and(ImmutableMap.of("c", "c1", "d", "d1")))
-								.combine())
+				.assertThat(FilterBuilder.and(AndFilter.and("a", "a1", "b", "b1"), AndFilter.and("c", "c1", "d", "d1"))
+						.combine())
 				.isEqualTo(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1", "d", "d1")));
 	}
 

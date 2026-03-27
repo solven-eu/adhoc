@@ -53,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
  * 
  * @author Benoit Lacelle
  */
+// TODO toString should be explicit, and skip `combinationOptions` if empty
 @Value
 @Builder(toBuilder = true)
 @Jacksonized

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,38 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.filter;
+package eu.solven.adhoc.engine.step;
 
-import java.util.Set;
+import java.util.Map;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+/**
+ * Gives access to a transverse cache. It is transverse in the sense it is shared through a whole CubeQuery.
+ * 
+ * @author Benoit Lacelle
+ */
+@FunctionalInterface
+public interface IHasTransverseCache {
 
-import com.google.common.collect.ImmutableSet;
+	Map<Object, Object> getTransverseCache();
 
-public class TestFilterUtility {
-	FilterUtility filterUtility = FilterUtility.builder().build();
-
-	@Test
-	public void testCommonOr() {
-		Set<ISliceFilter> filters =
-				ImmutableSet.of(OrFilter.or("a", "a1", "b", "b1"), OrFilter.or("a", "a1", "b", "b2"));
-
-		ISliceFilter commonOr = filterUtility.commonOr(filters);
-
-		Assertions.assertThat(commonOr).isEqualTo(OrFilter.or("a", "a1"));
-	}
-
-	@Test
-	public void testCommonOr_matchAll() {
-		Set<ISliceFilter> filters = ImmutableSet
-				.of(ISliceFilter.MATCH_ALL, OrFilter.or("a", "a1", "b", "b1"), OrFilter.or("a", "a1", "b", "b2"));
-
-		ISliceFilter commonOr = filterUtility.commonOr(filters);
-
-		Assertions.assertThat(commonOr)
-				// TODO Should we treat `.matchAll` as some wildcard regarding parts?
-				// .isEqualTo(OrFilter.or(Map.of("a", "a1")))
-				.isEqualTo(ISliceFilter.MATCH_NONE);
-	}
 }

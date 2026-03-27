@@ -35,8 +35,8 @@ public class TestSliceReader {
 	@Test
 	public void testRead() {
 		SliceReader reader = SliceReader.builder()
-				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
-				.stepFilter(AndFilter.and(Map.of("b", "b2")))
+				.sliceFilter(AndFilter.and("a", "a1"))
+				.stepFilter(AndFilter.and("b", "b2"))
 				.build();
 
 		Assertions.assertThat(reader.getValueMatcher("a")).isEqualTo(EqualsMatcher.matchEq("a1"));
@@ -48,10 +48,8 @@ public class TestSliceReader {
 	// Nominal: column is present with an EqualsMatcher — typed value is returned.
 	@Test
 	public void testExtractCoordinate_present() {
-		SliceReader reader = SliceReader.builder()
-				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
-				.stepFilter(AndFilter.and(Map.of()))
-				.build();
+		SliceReader reader =
+				SliceReader.builder().sliceFilter(AndFilter.and("a", "a1")).stepFilter(AndFilter.and(Map.of())).build();
 
 		String value = reader.extractCoordinate("a", String.class);
 		Assertions.assertThat(value).isEqualTo("a1");
@@ -60,10 +58,8 @@ public class TestSliceReader {
 	// Column is present but the caller asks for an incompatible type — extractOperand returns empty → ISE.
 	@Test
 	public void testExtractCoordinate_wrongType() {
-		SliceReader reader = SliceReader.builder()
-				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
-				.stepFilter(AndFilter.and(Map.of()))
-				.build();
+		SliceReader reader =
+				SliceReader.builder().sliceFilter(AndFilter.and("a", "a1")).stepFilter(AndFilter.and(Map.of())).build();
 
 		Assertions.assertThatThrownBy(() -> reader.extractCoordinate("a", Integer.class))
 				.isInstanceOf(IllegalStateException.class)
@@ -84,8 +80,8 @@ public class TestSliceReader {
 	@Test
 	public void testIncompatible() {
 		SliceReader reader = SliceReader.builder()
-				.sliceFilter(AndFilter.and(Map.of("a", "a1")))
-				.stepFilter(AndFilter.and(Map.of("a", "a2")))
+				.sliceFilter(AndFilter.and("a", "a1"))
+				.stepFilter(AndFilter.and("a", "a2"))
 				.build();
 
 		Assertions.assertThat(reader.getValueMatcher("unknown")).isEqualTo(IValueMatcher.MATCH_ALL);

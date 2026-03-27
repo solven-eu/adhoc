@@ -53,6 +53,7 @@ import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.model.Unfiltrator;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import lombok.Builder;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,8 +63,8 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * Each measure keeps its original type and all standard properties. Only identifiers are replaced:
  * <ul>
- * <li><b>Measure names</b> — replaced by {@code m_<8-hex-digit hash>}. All cross-references (underlyings) are rewritten
- * consistently.</li>
+ * <li><b>Measure names</b> — replaced by {@code m_<hash>} (hex, length controlled by {@link #hashLength}). All
+ * cross-references (underlyings) are rewritten consistently.</li>
  * <li><b>Aggregator.columnName</b> — replaced by {@code c_<hash>}.</li>
  * <li><b>Filtrator.filter</b> — column names inside the filter tree are replaced by {@code c_<hash>}.</li>
  * <li><b>Tags</b> — replaced by {@code t_<hash>}.</li>
@@ -83,11 +84,19 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
+@Builder
 @Slf4j
 public class MeasureForestConcealer {
 
-	/** Mask applied to {@link String#hashCode()} to produce an unsigned 32-bit hex token. */
-	private static final long HASH_MASK = 0xFFFFFFFFL;
+	private static final int BITS_PER_HEXDIGIT = 4;
+
+	/**
+	 * Number of hex digits in each concealed token. Defaults to {@code 8} (32-bit hash, e.g. {@code m_a3f1c09e}).
+	 * Shorter values reduce output verbosity at the cost of higher collision probability; longer values increase
+	 * uniqueness (up to the 8-digit limit imposed by {@link String#hashCode()}'s 32-bit range).
+	 */
+	@Builder.Default
+	protected final int hashLength = 8;
 
 	/**
 	 * Holds all mapping tables produced during a concealment pass. A safe party can use this together with
@@ -228,13 +237,10 @@ public class MeasureForestConcealer {
 	 * Builds a deterministic {@code original → concealed} mapping over the given name set.
 	 *
 	 * <p>
-	 * Each name is mapped to {@code <prefix><8-hex-digit hash>} (unsigned lower-case hex of {@link String#hashCode()}).
-	 * When two names produce the same base hash the second receives a {@code _2} suffix, the third {@code _3}, and so
-	 * on. Iteration order of {@code names} determines which name wins the un-suffixed slot.
-	 *
-	 * <p>
-	 * This method is intentionally {@code static}: it is a pure transformation with no dependency on instance state,
-	 * and keeping it static makes that guarantee explicit.
+	 * Each name is mapped to {@code <prefix><hashLength-hex-digit hash>} (unsigned lower-case hex of
+	 * {@link String#hashCode()}, truncated to {@link #hashLength} hex digits). When two names produce the same base
+	 * hash the second receives a {@code _2} suffix, the third {@code _3}, and so on. Iteration order of {@code names}
+	 * determines which name wins the un-suffixed slot.
 	 *
 	 * @param prefix
 	 *            the token prepended to the hex hash: {@code "m_"} for measure names, {@code "c_"} for column names,
@@ -243,12 +249,14 @@ public class MeasureForestConcealer {
 	 *            the original names in a stable iteration order
 	 * @return an unmodifiable map from every original name to its concealed replacement
 	 */
-	static Map<String, String> buildMapping(String prefix, Set<String> names) {
+	protected Map<String, String> buildMapping(String prefix, Set<String> names) {
 		Map<String, String> oldToNew = new LinkedHashMap<>();
 		Map<String, Integer> baseCount = new LinkedHashMap<>();
+		long mask = (1L << (hashLength * BITS_PER_HEXDIGIT)) - 1;
+		String fmt = "%0" + hashLength + "x";
 
 		for (String name : names) {
-			String base = prefix + String.format("%08x", name.hashCode() & HASH_MASK);
+			String base = prefix + String.format(fmt, name.hashCode() & mask);
 			int count = baseCount.merge(base, 1, Integer::sum);
 			String mapped;
 			if (count == 1) {

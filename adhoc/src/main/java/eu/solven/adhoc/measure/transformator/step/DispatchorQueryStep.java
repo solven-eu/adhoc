@@ -45,6 +45,7 @@ import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.dataframe.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -63,7 +64,6 @@ import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.AdhocDebug;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -220,7 +220,9 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
-		ISliceFactory sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactory();
+		ISliceReader sliceReader = slice.sliceReader();
+
+		ISliceFactory sliceFactory = factories.getSliceFactory();
 		groupByColumns.forEach(groupByColumn -> {
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
@@ -241,7 +243,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 			} else {
 				if (value == null) {
 					// Happens on groupBy along not-generated columns
-					value = slice.sliceReader().extractCoordinateLax(groupByColumn, Object.class).orElse(null);
+					value = sliceReader.extractCoordinateLax(groupByColumn, Object.class).orElse(null);
 				}
 
 				if (value == null) {

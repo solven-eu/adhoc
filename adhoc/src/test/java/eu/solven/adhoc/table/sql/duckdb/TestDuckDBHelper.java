@@ -45,6 +45,7 @@ import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -55,10 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TestDuckDBHelper {
 	static {
-		// https://stackoverflow.com/questions/28272284/how-to-disable-jooqs-self-ad-message-in-3-4
-		System.setProperty("org.jooq.no-logo", "true");
-		// https://stackoverflow.com/questions/71461168/disable-jooq-tip-of-the-day
-		System.setProperty("org.jooq.no-tips", "true");
+		AdhocJooqHelper.disableBanners();
 	}
 
 	@Test

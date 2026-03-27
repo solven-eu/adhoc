@@ -232,23 +232,18 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testCanInduce_inducedIsStricterOnGroupBy_OrDifferentColumns_groupByLaxerColumn() {
-		Assertions
-				.assertThat(
-						splitter.canInduce(
-								a.toBuilder()
-										.groupBy(GroupByColumns.named("b"))
-										.filter(FilterBuilder
-												.and(OrFilter.or(Map.of("a", "a1", "b", "b2")),
-														ColumnFilter.matchEq("c", "c3"))
-												.combine())
-										.build(),
-								// induced has a stricter filter, based on a column which is groupedBy in the inducer
-								a.toBuilder()
-										.groupBy(GroupByColumns.grandTotal())
-										.filter(FilterBuilder
-												.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c3"))
-												.combine())
-										.build()))
+		Assertions.assertThat(splitter.canInduce(
+				a.toBuilder()
+						.groupBy(GroupByColumns.named("b"))
+						.filter(FilterBuilder.and(OrFilter.or("a", "a1", "b", "b2"), ColumnFilter.matchEq("c", "c3"))
+								.combine())
+						.build(),
+				// induced has a stricter filter, based on a column which is groupedBy in the inducer
+				a.toBuilder()
+						.groupBy(GroupByColumns.grandTotal())
+						.filter(FilterBuilder.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c3"))
+								.combine())
+						.build()))
 				// false as the removed column from the filter is not enough to check the induced filter
 				.isFalse();
 	}
@@ -360,9 +355,9 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void chainOfInducers_filters_differentColumns() {
-		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and(Map.of("a", "a1", "b", "b1"))).build();
+		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).build();
 		TableQueryStep s2 =
-				a.toBuilder().filter(AndFilter.and(Map.of("a", "a1"))).groupBy(GroupByColumns.named("a", "b")).build();
+				a.toBuilder().filter(AndFilter.and("a", "a1")).groupBy(GroupByColumns.named("a", "b")).build();
 		TableQueryStep s3 =
 				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c")).build();
 
@@ -387,7 +382,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void matchNone() {
-		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and(Map.of("a", "a1", "b", "b1"))).build();
+		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).build();
 		TableQueryStep s2 = a.toBuilder().filter(ISliceFilter.MATCH_NONE).build();
 
 		IAdhocDag<TableQueryStep> merged = GraphHelpers.makeGraph();

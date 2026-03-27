@@ -105,6 +105,13 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 
 	@NonNull
 	@Default
+	// By default, we do not jump into a separate thread/executorService
+	// Dedicated pool for external database queries (e.g. DuckDB), to avoid blocking CPU threads on I/O
+	// Even if the query is CONCURRENT or SEQUENTIAL, DB operations are executed by given executorService
+	ListeningExecutorService dbExecutorService = MoreExecutors.newDirectExecutorService();
+
+	@NonNull
+	@Default
 	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
 
 	/**
@@ -238,7 +245,10 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 		// executorService is problematic as it has @Default
 		ListeningExecutorService executorService;
 
-		// executorService is problematic as it has @Default
+		// dbExecutorService is problematic as it has @Default
+		ListeningExecutorService dbExecutorService;
+
+		// queryStepCache is problematic as it has @Default
 		IQueryStepCache queryStepCache;
 
 		public QueryPodBuilder columnsManager(IColumnsManager columnsManager) {
@@ -249,6 +259,12 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 
 		public QueryPodBuilder executorService(ListeningExecutorService executorService) {
 			this.executorService = executorService;
+
+			return this;
+		}
+
+		public QueryPodBuilder dbExecutorService(ListeningExecutorService dbExecutorService) {
+			this.dbExecutorService = dbExecutorService;
 
 			return this;
 		}
@@ -280,6 +296,9 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 				// AdhocUnsafe.adhocCommonPool
 				executorService = MoreExecutors.newDirectExecutorService();
 			}
+			if (dbExecutorService == null) {
+				dbExecutorService = MoreExecutors.newDirectExecutorService();
+			}
 			if (queryStepCache == null) {
 				queryStepCache = GuavaQueryStepCache.withSize(1);
 			}
@@ -291,6 +310,7 @@ public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasure
 					sliceFactory,
 					columnsManager,
 					executorService,
+					dbExecutorService,
 					queryStepCache);
 		}
 	}

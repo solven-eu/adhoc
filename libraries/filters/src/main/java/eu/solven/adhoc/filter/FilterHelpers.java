@@ -42,6 +42,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
 
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.filter.value.AndMatcher;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -102,6 +103,7 @@ public class FilterHelpers {
 	 *            not a `AND`).
 	 * @return
 	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static IValueMatcher getValueMatcherLax(ISliceFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
@@ -114,6 +116,8 @@ public class FilterHelpers {
 				// column is not filtered
 				return IValueMatcher.MATCH_ALL;
 			}
+		} else if (filter instanceof FlatAndFilter flatAndFilter) {
+			return flatAndFilter.columnToMatcher.getOrDefault(column, IValueMatcher.MATCH_ALL);
 		} else {
 			Set<ISliceFilter> splitAnds = splitAnd(filter);
 
@@ -215,6 +219,10 @@ public class FilterHelpers {
 	}
 
 	public static Set<String> getFilteredColumns(ISliceFilter filter) {
+		if (filter instanceof IColumnFilter columnFilter) {
+			// Fast-path to skip `Stream`
+			return ImmutableSet.of(columnFilter.getColumn());
+		}
 		// Implementation rely on `.mapMulti` for better performance, not needed to create a `Stream.of` on
 		// IColumnFilter
 		return Stream.of(filter).mapMulti(FilterHelpers::emitFilteredColumns).collect(ImmutableSet.toImmutableSet());
@@ -326,14 +334,12 @@ public class FilterHelpers {
 	 */
 	// OPTIMIZATION: Flatten the whole input into a single Stream before collecting into a Set
 	// OPTIMIZTION: mapMulti is faster (but more cumbersome) than flatMap
-	protected static void emitAndOperands(ISliceFilter filter,
-			Consumer<ISliceFilter> downstream,
-			boolean splitMatchers) {
+	public static void emitAndOperands(ISliceFilter filter, Consumer<ISliceFilter> downstream, boolean splitMatchers) {
 		boolean emitted;
 		if (filter instanceof FlatAndFilter flatAnd) {
 			// Fast-path: iterate the backing column→matcher map directly, emitting ColumnFilter wrappers per entry.
 			// Avoids the instanceof chain that the generic IAndFilter branch would run per operand.
-			flatAnd.getOperands().forEach(downstream);
+			flatAnd.forEachOperand(downstream);
 			emitted = true;
 		} else if (filter instanceof IAndFilter andFilter) {
 			andFilter.getOperands().forEach(o -> emitAndOperands(o, downstream, splitMatchers));
@@ -460,7 +466,13 @@ public class FilterHelpers {
 	 *         clauses are combined with`AND`. `WHERE` may or may not be laxer than `FILTER`. `output&where=filter`
 	 */
 	public static ISliceFilter stripWhereFromFilter(ISliceFilter where, ISliceFilter filter) {
-		return AdhocFilterUnsafe.filterStripperFactory.makeFilterStripper(where).strip(filter);
+		return stripWhereFromFilter(AdhocFilterUnsafe.filterStripperFactory, where, filter);
+	}
+
+	public static ISliceFilter stripWhereFromFilter(IFilterStripperFactory filterStripperFactory,
+			ISliceFilter where,
+			ISliceFilter filter) {
+		return filterStripperFactory.makeFilterStripper(where).strip(filter);
 	}
 
 	/**
@@ -472,7 +484,13 @@ public class FilterHelpers {
 	 */
 	public static ISliceFilter simplifyOrGivenContribution(ISliceFilter contribution, ISliceFilter filter) {
 		// Given `WHERE:a`, turns `FILTER:a|b|c&d` into `FILTER:b|c&d`
-		return stripWhereFromFilter(contribution.negate(), filter.negate()).negate();
+		return simplifyOrGivenContribution(AdhocFilterUnsafe.filterStripperFactory, contribution, filter);
+	}
+
+	public static ISliceFilter simplifyOrGivenContribution(IFilterStripperFactory filterStripperFactory,
+			ISliceFilter contribution,
+			ISliceFilter filter) {
+		return stripWhereFromFilter(filterStripperFactory, contribution.negate(), filter.negate()).negate();
 	}
 
 	/**
@@ -507,7 +525,7 @@ public class FilterHelpers {
 	 * @return a set of clusters, where each cluster is a non-empty set of filters whose column sets are connected;
 	 *         never empty (a single-element result means no split was possible)
 	 */
-	public static Set<Set<? extends ISliceFilter>> clusterFilters(ImmutableSet<? extends ISliceFilter> filters) {
+	public static Set<Set<? extends ISliceFilter>> clusterFilters(Set<? extends ISliceFilter> filters) {
 		// Group by column-set. We expect very few distinct column-sets (low cardinality), so the
 		// Multimap key-set is tiny. Filters that touch exactly the same columns share one bucket.
 		SetMultimap<Set<String>, ISliceFilter> byColumnSet =

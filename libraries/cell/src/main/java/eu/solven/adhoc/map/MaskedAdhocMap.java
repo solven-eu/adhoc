@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
@@ -103,6 +104,17 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 	@Override
 	public boolean containsKey(Object key) {
 		return decorated.containsKey(key) || mask.containsKey(key);
+	}
+
+	/**
+	 * Iterates the decorated map first (leveraging its specialized index-based {@link IAdhocMap#forEach} if it is an
+	 * {@link AbstractAdhocMap}), then iterates the mask entries — without allocating intermediate
+	 * {@link java.util.Map.Entry} objects.
+	 */
+	@Override
+	public void forEach(BiConsumer<? super String, ? super Object> action) {
+		decorated.forEach(action);
+		mask.forEach(action);
 	}
 
 	@Override

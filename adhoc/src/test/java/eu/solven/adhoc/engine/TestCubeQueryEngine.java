@@ -180,10 +180,10 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 								    (measures) m=m_D given [count(*)]
 								    (steps) step=m=m_D filter=matchAll groupBy=grandTotal custom=null given [m=count(*) filter=matchAll groupBy=grandTotal custom=null]
 								Path from root:
-								\\-CubeQueryStep(id=0, measure=Combinator(name=m_A, tags=[], underlyings=[m_B], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
-									\\-CubeQueryStep(id=2, measure=Combinator(name=m_B, tags=[], underlyings=[m_C], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
-										\\-CubeQueryStep(id=4, measure=Combinator(name=m_C, tags=[], underlyings=[m_D], combinationKey=COALESCE, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])
-											\\-CubeQueryStep(id=6, measure=Combinator(name=m_D, tags=[], underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination, combinationOptions={}), filter=matchAll, groupBy=grandTotal, customMarker=null, options=[])""");
+								\\-CubeQueryStep{id=0, measure=Combinator(name=m_A, tags=[], underlyings=[m_B], combinationKey=COALESCE, combinationOptions={})}
+									\\-CubeQueryStep{id=2, measure=Combinator(name=m_B, tags=[], underlyings=[m_C], combinationKey=COALESCE, combinationOptions={})}
+										\\-CubeQueryStep{id=4, measure=Combinator(name=m_C, tags=[], underlyings=[m_D], combinationKey=COALESCE, combinationOptions={})}
+											\\-CubeQueryStep{id=6, measure=Combinator(name=m_D, tags=[], underlyings=[count(*)], combinationKey=eu.solven.adhoc.measure.ThrowingCombination, combinationOptions={})}""");
 	}
 
 	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.

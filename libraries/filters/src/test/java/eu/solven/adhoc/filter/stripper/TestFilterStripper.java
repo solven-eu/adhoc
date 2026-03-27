@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.filter.stripper;
 
-import java.util.Map;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +34,7 @@ import eu.solven.adhoc.filter.OrFilter;
 public class TestFilterStripper {
 	@Test
 	public void testSharedCache() {
-		FilterStripper stripper = FilterStripper.builder().where(AndFilter.and(Map.of("c", "c1", "d", "d2"))).build();
+		FilterStripper stripper = FilterStripper.builder().where(AndFilter.and("c", "c1", "d", "d2")).build();
 		Assertions.assertThat(stripper.filterToStripper.asMap()).isEmpty();
 
 		Assertions.assertThat(stripper.isStricterThan(ColumnFilter.matchEq("c", "c1"))).isTrue();
@@ -44,16 +42,17 @@ public class TestFilterStripper {
 
 		FilterStripper relatedStripper = stripper.withWhere(ColumnFilter.matchEq("e", "e3"));
 		// Ensure the cache unrelated to current WHERE is shared
-		Assertions.assertThat(relatedStripper.filterToStripper.asMap()).hasSize(1);
+		Assertions.assertThat(stripper.filterToStripper.asMap()).hasSize(2);
+		Assertions.assertThat(relatedStripper.filterToStripper.asMap()).hasSize(2);
 		// Ensure the cache related to current WHERE is not-shared
 		Assertions.assertThat(relatedStripper.knownAsStricter.asMap()).isEmpty();
 	}
 
 	@Test
 	public void testOrMatchAll() {
-		FilterStripper stripper = FilterStripper.builder().where(AndFilter.and(Map.of("a", "a1"))).build();
+		FilterStripper stripper = FilterStripper.builder().where(AndFilter.and("a", "a1")).build();
 
-		ISliceFilter laxerWithOr = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		ISliceFilter laxerWithOr = OrFilter.or("a", "a1", "b", "b1");
 		Assertions.assertThat(stripper.isStricterThan(laxerWithOr)).isTrue();
 		Assertions.assertThat(stripper.strip(laxerWithOr)).isEqualTo(ISliceFilter.MATCH_ALL);
 	}

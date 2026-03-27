@@ -27,8 +27,6 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.filter.optimizer.StandardFilterCostFunction;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
@@ -41,26 +39,20 @@ public class TestStandardCostFunction {
 		Assertions.assertThat(costFunction.cost(ColumnFilter.matchEq("a", "a1"))).isEqualTo(3);
 
 		Assertions
-				.assertThat(
-						FilterBuilder
-								.or(AndFilter.and(ImmutableMap.of("a", "a1")),
-										AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
-								.optimize())
+				.assertThat(FilterBuilder.or(AndFilter.and("a", "a1"), AndFilter.and("b", "b1", "c", "c1")).optimize())
 				.hasToString("a==a1|b==b1&c==c1")
 				.satisfies(f -> {
 					Assertions.assertThat(costFunction.cost(f)).isEqualTo(3 + 5 + 3 + 3);
 				});
 
-		Assertions
-				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
-						OrFilter.or(ImmutableMap.of("b", "b1", "c", "c1"))))
+		Assertions.assertThat(AndFilter.and(AndFilter.and("a", "a1"), OrFilter.or("b", "b1", "c", "c1")))
 				.hasToString("a==a1&(b==b1|c==c1)")
 				.satisfies(f -> {
 					Assertions.assertThat(costFunction.cost(f)).isEqualTo(3 + 5 + 3 + 3);
 				});
 
 		Assertions
-				.assertThat(AndFilter.and(AndFilter.and(ImmutableMap.of("a", "a1")),
+				.assertThat(AndFilter.and(AndFilter.and("a", "a1"),
 						FilterBuilder.or(ColumnFilter.matchLike("b", "b%").negate(), ColumnFilter.matchLike("c", "c%"))
 								.optimize()))
 				// .hasToString("a==a1&(b does NOT match `LikeMatcher(pattern=b%)`|c matches

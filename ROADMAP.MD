@@ -10,6 +10,8 @@
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Composite] `getCoordinates` should be executed once per underlying cube
+- [Concurrency][DuckDB] DuckDB serializes concurrent writes and has limited benefit from highly parallel reads on a single connection. Consider wrapping the `dbExecutorService` (or the DuckDB `ITableWrapper`) with a `Semaphore` to cap the number of in-flight DuckDB queries, preventing thread-pile-up and reducing lock contention inside DuckDB itself.
+- [Concurrency] Review the two-pool model (`executorService` for CPU-bound work, `dbExecutorService` for I/O-bound work). `CompositeCubesTableWrapper` currently fans out to `executorService` to avoid re-entering `dbExecutorService` and deadlocking; this split requires callers to know which pool to use. Consider replacing both pools with a single virtual-thread executor (`Executors.newVirtualThreadPerTaskExecutor()`): virtual threads are unbounded, block safely, and remove the need to classify work as CPU- vs I/O-bound.
 - [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Break rowspan on right columns
@@ -36,3 +38,4 @@
 - [Performance] Table queries should be automatically partitioned table-side on some access. Typically, if one know the underlying data is partitioned by `c`, we should be able to query from `WHERE c % 8 = 0` to `WHERE c % 8 = 7`
 - [Performance] Investigate [scala-polars](https://github.com/chitralverma/scala-polars) (JVM bindings for the Polars DataFrame library) as a backend for `ITabularRecordStream` reduction. Polars operates natively on Arrow record batches, so the Arrow IPC stream from DuckDB could be piped directly into a Polars `DataFrame` for GROUP BY / aggregation, avoiding the row-by-row Java accumulation loop in `TabularRecordStreamReducer`.
 - [Feature] `ICalculatedCoordinate` should enable custom `customMarker`
+- [Feature] Enable `ICombination` to declare their required levels (e.g. `getRequiredGroupBys()`). The query engine could then automatically infer the necessary `GroupBy`/`Partitionor` clauses when building sub-queries, removing the need for callers to specify them manually in most cases.

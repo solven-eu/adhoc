@@ -24,15 +24,12 @@ package eu.solven.adhoc.filter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.filter.FilterBuilder.Type;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
@@ -211,17 +208,14 @@ public class TestOrFilter {
 	@Test
 	public void testIncluded() {
 		Assertions
-				.assertThat(
-						FilterBuilder.or(AndFilter.and(Map.of("a", "a1", "b", "b1")), AndFilter.and(Map.of("b", "b1")))
-								.optimize())
-				.isEqualTo(AndFilter.and(Map.of("b", "b1")));
+				.assertThat(FilterBuilder.or(AndFilter.and("a", "a1", "b", "b1"), AndFilter.and("b", "b1")).optimize())
+				.isEqualTo(AndFilter.and("b", "b1"));
 	}
 
 	@Test
 	public void testOr_oneCommonColumn() {
-		Assertions.assertThat(
-				FilterBuilder.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1")))
-						.optimize())
+		Assertions
+				.assertThat(FilterBuilder.or(AndFilter.and("a", "a1"), AndFilter.and("a", "a2", "b", "b1")).optimize())
 				.hasToString("a==a1|a==a2&b==b1");
 	}
 
@@ -231,9 +225,8 @@ public class TestOrFilter {
 	// queries
 	@Test
 	public void testOr_Large_onlyOrs() {
-		List<ISliceFilter> operands = IntStream.range(0, 16)
-				.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
-				.toList();
+		List<ISliceFilter> operands =
+				IntStream.range(0, 16).mapToObj(i -> AndFilter.and("a", "a" + i, "b", "b" + i)).toList();
 
 		Assertions.assertThat(FilterBuilder.or(operands).optimize())
 				.hasToString(
@@ -244,20 +237,20 @@ public class TestOrFilter {
 	public void testOr_Large_andMatchOnlyOne() {
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 4)
-					.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.mapToObj(i -> AndFilter.and("a", "a" + i, "b", "b" + i))
 					.collect(Collectors.toCollection(ArrayList::new));
 
-			operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+			operands.add(AndFilter.and("a", "a" + 0));
 
 			Assertions.assertThat(FilterBuilder.or(operands).optimize())
 					.hasToString("a==a0|a==a1&b==b1|a==a2&b==b2|a==a3&b==b3");
 		}
 		{
 			List<ISliceFilter> operands = IntStream.range(0, 16)
-					.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+					.mapToObj(i -> AndFilter.and("a", "a" + i, "b", "b" + i))
 					.collect(Collectors.toCollection(ArrayList::new));
 
-			operands.add(AndFilter.and(ImmutableMap.of("a", "a" + 0)));
+			operands.add(AndFilter.and("a", "a" + 0));
 
 			Assertions.assertThat(FilterBuilder.or(operands).optimize())
 					.hasToString(
@@ -268,7 +261,7 @@ public class TestOrFilter {
 	@Test
 	public void testOr_Huge() {
 		List<ISliceFilter> operands = IntStream.range(0, 128)
-				.mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a" + i, "b", "b" + i)))
+				.mapToObj(i -> AndFilter.and("a", "a" + i, "b", "b" + i))
 				.collect(Collectors.toCollection(ArrayList::new));
 
 		Assertions.assertThat(FilterBuilder.or(operands).optimize())
@@ -287,10 +280,8 @@ public class TestOrFilter {
 		operands.add(inC);
 
 		// This is always true given previous operands
-		operands.add(OrFilter.builder()
-				.or(ColumnFilter.matchEq("d", "d1"))
-				.or(AndFilter.and(ImmutableMap.of("b", "b1", "c", "c1")))
-				.build());
+		operands.add(
+				OrFilter.builder().or(ColumnFilter.matchEq("d", "d1")).or(AndFilter.and("b", "b1", "c", "c1")).build());
 
 		Assertions.assertThat(FilterBuilder.and(operands).optimize())
 				.hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1&c==c1)");
@@ -345,7 +336,9 @@ public class TestOrFilter {
 				// .hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)")
 				// .hasToString("a==a1&c=in=(c1,c2,c3)&b=in=(b1,b2,b3)&(d==d1|b==b1)")
 				// BEWARE There is an alternative and equivalent representation
-				.hasToString("a==a1&c=in=(c1,c2,c3)&(b==b1|b=in=(b2,b3)&d==d1)");
+				// .hasToString("a==a1&c=in=(c1,c2,c3)&(b==b1|b=in=(b2,b3)&d==d1)")
+				.hasToString("a==a1&(b==b1|b=in=(b2,b3)&d==d1)&c=in=(c1,c2,c3)");
+
 	}
 
 	@Test
@@ -447,7 +440,8 @@ public class TestOrFilter {
 				.optimize();
 
 		Assertions.assertThat(output)
-				.hasToString("c=out=(c1,c2)&e!=e1&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'");
+				// .hasToString("c=out=(c1,c2)&e!=e1&b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&a NOT LIKE 'a1'")
+				.hasToString("b=out=(b1,b2,b3,b4)&d=out=(d1,d2)&e!=e1&a NOT LIKE 'a1'&c=out=(c1,c2)");
 	}
 
 	@Test
@@ -484,19 +478,19 @@ public class TestOrFilter {
 						.negate())
 				.optimize();
 
-		Assertions.assertThat(output).hasToString("b==b1&d==d2&c=out=(c1,c2)");
+		Assertions.assertThat(output)
+				// .hasToString("b==b1&d==d2&c=out=(c1,c2)")
+				.hasToString("b==b1&c=out=(c1,c2)&d==d2");
 	}
 
 	@Test
 	public void testOrFilter_fromMap_matchAll() {
-		Assertions.assertThat(OrFilter.or(Map.of("c", IValueMatcher.MATCH_ALL))).hasToString("matchAll");
+		Assertions.assertThat(OrFilter.or("c", IValueMatcher.MATCH_ALL)).hasToString("matchAll");
 
-		Assertions.assertThat(OrFilter.or(Map.of("c", IValueMatcher.MATCH_ALL, "d", "d1"))).hasToString("matchAll");
+		Assertions.assertThat(OrFilter.or("c", IValueMatcher.MATCH_ALL, "d", "d1")).hasToString("matchAll");
 
-		Assertions.assertThat(OrFilter.or(Map.of("d", "d1", "e", IValueMatcher.MATCH_NONE))).hasToString("d==d1");
-		Assertions
-				.assertThat(
-						OrFilter.or(Map.of("d", "d1", "e", IValueMatcher.MATCH_NONE, "f", IValueMatcher.MATCH_NONE)))
+		Assertions.assertThat(OrFilter.or("d", "d1", "e", IValueMatcher.MATCH_NONE)).hasToString("d==d1");
+		Assertions.assertThat(OrFilter.or("d", "d1", "e", IValueMatcher.MATCH_NONE, "f", IValueMatcher.MATCH_NONE))
 				.hasToString("d==d1");
 	}
 
@@ -505,7 +499,7 @@ public class TestOrFilter {
 		ISliceFilter a_b =
 				FilterBuilder.and(ColumnFilter.matchIn("a", "a1", "a2"), ColumnFilter.matchIn("b", "b1", "b2"))
 						.optimize();
-		ISliceFilter abc = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter abc = AndFilter.and("a", "a1", "b", "b1", "c", "c1");
 
 		// the `abc` constrains is swallowed by the `ab` contains given the OR
 		// The output must still be an AND or IN, and not an expanded cartesianProduct
@@ -514,9 +508,9 @@ public class TestOrFilter {
 
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_line() {
-		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
-		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
-		ISliceFilter a1b3 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b3"));
+		ISliceFilter a1b1 = AndFilter.and("a", "a1", "b", "b1");
+		ISliceFilter a1b2 = AndFilter.and("a", "a1", "b", "b2");
+		ISliceFilter a1b3 = AndFilter.and("a", "a1", "b", "b3");
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3).optimize()).hasToString("a==a1&b=in=(b1,b2,b3)");
 	}
@@ -524,7 +518,7 @@ public class TestOrFilter {
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_line_huge() {
 		List<ISliceFilter> ands =
-				IntStream.range(0, 128).mapToObj(i -> AndFilter.and(ImmutableMap.of("a", "a1", "b", "b" + i))).toList();
+				IntStream.range(0, 128).mapToObj(i -> AndFilter.and("a", "a1", "b", "b" + i)).toList();
 
 		FilterBuilder combined = FilterBuilder.builder().andElseOr(Type.OR).build();
 
@@ -535,50 +529,43 @@ public class TestOrFilter {
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 
-	// TODO We do not manage noise yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_line_withNoise() {
-		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
-		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
-		ISliceFilter a1b3 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b3"));
-		ISliceFilter a2b4 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b4"));
+		ISliceFilter a1b1 = AndFilter.and("a", "a1", "b", "b1");
+		ISliceFilter a1b2 = AndFilter.and("a", "a1", "b", "b2");
+		ISliceFilter a1b3 = AndFilter.and("a", "a1", "b", "b3");
+		ISliceFilter a2b4 = AndFilter.and("a", "a2", "b", "b4");
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3, a2b4).optimize())
-				// .hasToString("a==a1&b=in=(b1,b2,b3)|a==a2&b==b4")
-				.hasToString("a==a1&b==b1|a==a1&b==b2|a==a1&b==b3|a==a2&b==b4");
+				.hasToString("a==a2&b==b4|a==a1&b=in=(b1,b2,b3)");
 	}
 
-	// TODO We do not guess cartesianProducts yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_square() {
-		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
-		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
-		ISliceFilter a2b1 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1"));
-		ISliceFilter a2b2 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b2"));
+		ISliceFilter a1b1 = AndFilter.and("a", "a1", "b", "b1");
+		ISliceFilter a1b2 = AndFilter.and("a", "a1", "b", "b2");
+		ISliceFilter a2b1 = AndFilter.and("a", "a2", "b", "b1");
+		ISliceFilter a2b2 = AndFilter.and("a", "a2", "b", "b2");
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a2b1, a2b2).optimize())
-				.hasToString("a==a1&b==b1|a==a1&b==b2|a==a2&b==b1|a==a2&b==b2")
-		// .hasToString("a=in=(a1,a2)&b=in=(b1,b2)")
-		;
+				.hasToString("b=in=(b1,b2)&a=in=(a1,a2)");
 	}
 
-	// TODO We do not guess cartesianProducts yet
 	@Test
 	public void testOrFilter_cartesianProductToAndIn_square_withHole() {
-		ISliceFilter a1b1 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1"));
-		ISliceFilter a1b2 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b2"));
-		ISliceFilter a1b3 = AndFilter.and(ImmutableMap.of("a", "a1", "b", "b3"));
-		ISliceFilter a2b1 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1"));
-		ISliceFilter a2b2 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b2"));
-		ISliceFilter a2b3 = AndFilter.and(ImmutableMap.of("a", "a2", "b", "b3"));
-		ISliceFilter a3b1 = AndFilter.and(ImmutableMap.of("a", "a3", "b", "b1"));
-		ISliceFilter a3b2 = AndFilter.and(ImmutableMap.of("a", "a3", "b", "b2"));
+		ISliceFilter a1b1 = AndFilter.and("a", "a1", "b", "b1");
+		ISliceFilter a1b2 = AndFilter.and("a", "a1", "b", "b2");
+		ISliceFilter a1b3 = AndFilter.and("a", "a1", "b", "b3");
+		ISliceFilter a2b1 = AndFilter.and("a", "a2", "b", "b1");
+		ISliceFilter a2b2 = AndFilter.and("a", "a2", "b", "b2");
+		ISliceFilter a2b3 = AndFilter.and("a", "a2", "b", "b3");
+		ISliceFilter a3b1 = AndFilter.and("a", "a3", "b", "b1");
+		ISliceFilter a3b2 = AndFilter.and("a", "a3", "b", "b2");
 
 		Assertions.assertThat(FilterBuilder.or(a1b1, a1b2, a1b3, a2b1, a2b2, a2b3, a3b1, a3b2).optimize())
-				.hasToString(
-						"a==a1&b==b1|a==a1&b==b2|a==a1&b==b3|a==a2&b==b1|a==a2&b==b2|a==a2&b==b3|a==a3&b==b1|a==a3&b==b2")
-		// .hasToString("a=in=(a1,a2,3)&b=in=(b1,b2,3)&!(a==a3&b==b3)")
-		;
+				// .hasToString("a=in=(a1,a2,3)&b=in=(b1,b2,3)&!(a==a3&b==b3)")
+				.hasToString("a==a3&b=in=(b1,b2)|b=in=(b1,b2,b3)&a=in=(a1,a2)");
+
 	}
 
 	// Turns `a|a&b|a&b&c|...` into `a`, without failing on a cartesianProductLimit
@@ -598,7 +585,7 @@ public class TestOrFilter {
 
 	@Test
 	public void testNegate() {
-		ISliceFilter a1orb2 = OrFilter.or(ImmutableMap.of("a", "a1", "b", "b1"));
+		ISliceFilter a1orb2 = OrFilter.or("a", "a1", "b", "b1");
 
 		Assertions.assertThat(a1orb2.negate()).hasToString("!(a==a1|b==b1)");
 	}
@@ -607,7 +594,7 @@ public class TestOrFilter {
 	public void testOr_simpleAndWithOrOperand() {
 		ISliceFilter inputFilter =
 				FilterBuilder
-						.and(AndFilter.and(Map.of("a", "a1")),
+						.and(AndFilter.and("a", "a1"),
 								FilterBuilder.or(ColumnFilter.matchEq("b", "b1"), ColumnFilter.matchEq("c", "c1"))
 										.combine())
 						.combine();
@@ -675,8 +662,8 @@ public class TestOrFilter {
 		ISliceFilter optimized =
 				FilterBuilder
 						.or(ColumnFilter.matchEq("d", "d1"),
-								AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1")),
-								AndFilter.and(ImmutableMap.of("a", "a1", "c", "c1")))
+								AndFilter.and("a", "a1", "b", "b1"),
+								AndFilter.and("a", "a1", "c", "c1"))
 						.optimize();
 
 		Assertions.assertThat(optimized).hasToString("d==d1|a==a1&(b==b1|c==c1)");
@@ -684,11 +671,9 @@ public class TestOrFilter {
 
 	@Test
 	public void testOr_inGivenFirstColumn() {
-		ISliceFilter orA1B1B1_A2B1C1 =
-				FilterBuilder
-						.or(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1")),
-								AndFilter.and(ImmutableMap.of("a", "a2", "b", "b1", "c", "c1")))
-						.optimize();
+		ISliceFilter orA1B1B1_A2B1C1 = FilterBuilder
+				.or(AndFilter.and("a", "a1", "b", "b1", "c", "c1"), AndFilter.and("a", "a2", "b", "b1", "c", "c1"))
+				.optimize();
 
 		Assertions.assertThat(orA1B1B1_A2B1C1).hasToString("b==b1&c==c1&a=in=(a1,a2)");
 		Assertions.assertThat(orA1B1B1_A2B1C1).isInstanceOfSatisfying(AndFilter.class, and -> {

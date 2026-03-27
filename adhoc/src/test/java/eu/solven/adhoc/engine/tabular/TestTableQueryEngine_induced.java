@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -98,7 +99,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD"))).onLong(234);
 
 			ICuboid valuesFromTable = Cuboid.builder().values(columnFromTable).column("ccy").build();
-			Map<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
+			ConcurrentMap<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build(),
 					valuesFromTable);
 			bootstrapped.walkUpInducedDag(fromTable, split);
@@ -174,7 +175,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 			ICuboid valuesFromTable =
 					Cuboid.builder().values(columnFromTable).columns(Set.of("ccy", "country")).build();
-			Map<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
+			ConcurrentMap<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
 			fromTable.put(TableQueryStep.edit(cubeQuery)
 					.groupBy(GroupByColumns.named("ccy", "country"))
 					.aggregator(k1Sum)

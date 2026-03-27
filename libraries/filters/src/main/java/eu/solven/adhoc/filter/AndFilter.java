@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -146,6 +147,18 @@ public class AndFilter implements IAndFilter {
 		// BEWARE Do not call `.optimize` due to most optimizations/checks are irrelevant
 		// And this is a performance bottleneck in Shiftor
 		return FilterBuilder.and(columnFilters).combine();
+	}
+
+	public static ISliceFilter and(String k1, Object v1) {
+		return and(ImmutableMap.of(k1, v1));
+	}
+
+	public static ISliceFilter and(String k1, Object v1, String k2, Object v2) {
+		return and(ImmutableMap.of(k1, v1, k2, v2));
+	}
+
+	public static ISliceFilter and(String k1, Object v1, String k2, Object v2, String k3, Object v3) {
+		return and(ImmutableMap.of(k1, v1, k2, v2, k3, v3));
 	}
 
 	@Deprecated(since = "FilterBuilder.and")

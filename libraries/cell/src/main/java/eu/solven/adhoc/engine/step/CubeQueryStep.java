@@ -23,12 +23,10 @@
 package eu.solven.adhoc.engine.step;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -103,16 +101,6 @@ public final class CubeQueryStep extends ACubeQueryStep {
 		}
 
 		return builder;
-	}
-
-	/**
-	 * @return all columns which are involved in given {@link CubeQueryStep}
-	 */
-	public static Set<String> getColumns(CubeQueryStep step) {
-		return ImmutableSet.<String>builder()
-				.addAll(step.getGroupBy().getGroupedByColumns())
-				.addAll(FilterHelpers.getFilteredColumns(step.getFilter()))
-				.build();
 	}
 
 	/**

@@ -125,6 +125,10 @@ public class AdhocUnsafe {
 	@Getter
 	private static boolean failFast;
 
+	/**
+	 * @return the default parallelism when calling Executors#newWorkStealingPool
+	 */
+	@Getter
 	private static int parallelism;
 
 	/**
@@ -186,13 +190,6 @@ public class AdhocUnsafe {
 	 */
 	private static ForkJoinPool newWorkStealingPool() {
 		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
-	}
-
-	/**
-	 * @return the default parallelism when calling Executors#newWorkStealingPool
-	 */
-	public static int getParallelism() {
-		return parallelism;
 	}
 
 	// Typically used as limit to prevent iterating over large cartesian products

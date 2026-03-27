@@ -168,37 +168,7 @@ public class ColumnsManager implements IColumnsManager {
 			});
 		}
 
-		TableQueryV4 transcodedQuery;
-
-		{
-			TableQueryV4.TableQueryV4Builder transcodedQueryBuilder =
-					query.toBuilder().filter(transcodedFilter).clearGroupByToAggregators();
-
-			Multimaps.asMap(query.getGroupByToAggregators()).forEach((groupBy, aggregators) -> {
-				IGroupBy groupByIncludingPostFilterColumns;
-
-				{
-					Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
-
-					columnToDetails.putAll(groupBy.getNameToColumn());
-
-					for (String postFilterColumn : postFilterColumns) {
-						if (!columnToDetails.containsKey(postFilterColumn)) {
-							columnToDetails.put(postFilterColumn, ReferencedColumn.ref(postFilterColumn));
-						}
-					}
-
-					groupByIncludingPostFilterColumns = GroupByColumns.of(columnToDetails.values());
-				}
-
-				IGroupBy transcodedGroupBuy = transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns);
-				Collection<? extends FilteredAggregator> transcodedAggregators =
-						transcodeAggregators(transcodingContext, aggregators);
-				transcodedQueryBuilder.groupByToAggregators(transcodedGroupBuy, transcodedAggregators);
-			});
-
-			transcodedQuery = transcodedQueryBuilder.build();
-		}
+		TableQueryV4 transcodedQuery = transcodeQuery(query, transcodingContext, transcodedFilter, postFilterColumns);
 
 		if (queryPod.isDebug()) {
 			eventBus.post(AdhocLogEvent.builder()
@@ -232,6 +202,39 @@ public class ColumnsManager implements IColumnsManager {
 		return transcodeRows(transcodingContext, tabularRecordStream, postFilter);
 	}
 
+	protected TableQueryV4 transcodeQuery(TableQueryV4 query,
+			AliasingContext transcodingContext,
+			ISliceFilter transcodedFilter,
+			Set<String> postFilterColumns) {
+		TableQueryV4.TableQueryV4Builder transcodedQueryBuilder =
+				query.toBuilder().filter(transcodedFilter).clearGroupByToAggregators();
+
+		Multimaps.asMap(query.getGroupByToAggregators()).forEach((groupBy, aggregators) -> {
+			IGroupBy groupByIncludingPostFilterColumns;
+
+			{
+				Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
+
+				columnToDetails.putAll(groupBy.getNameToColumn());
+
+				for (String postFilterColumn : postFilterColumns) {
+					if (!columnToDetails.containsKey(postFilterColumn)) {
+						columnToDetails.put(postFilterColumn, ReferencedColumn.ref(postFilterColumn));
+					}
+				}
+
+				groupByIncludingPostFilterColumns = GroupByColumns.of(columnToDetails.values());
+			}
+
+			IGroupBy transcodedGroupBuy = transcodeGroupBy(transcodingContext, groupByIncludingPostFilterColumns);
+			Collection<? extends FilteredAggregator> transcodedAggregators =
+					transcodeAggregators(transcodingContext, aggregators);
+			transcodedQueryBuilder.groupByToAggregators(transcodedGroupBuy, transcodedAggregators);
+		});
+
+		return transcodedQueryBuilder.build();
+	}
+
 	protected Set<String> getFiltrableCalculatedColumns(TableQueryV4 query) {
 		// Calculated columns from ColumnsManager (static definitions)
 		Set<String> calculatedColumns = this.calculatedColumns.stream()
@@ -254,7 +257,8 @@ public class ColumnsManager implements IColumnsManager {
 	 * @param transcodingContext
 	 * @param tabularRecordStream
 	 * @param postFilter
-	 *            a filter to apply over the table rows. Typically used for filter over {@link ICalculatedColumn}.
+	 *            a filter to apply over the table rows. Typically used for filter over {@link ICalculatedColumn}. When
+	 *            we were not able to predicate pushdown.
 	 * @return
 	 */
 	protected ITabularRecordStream transcodeRows(AliasingContext transcodingContext,

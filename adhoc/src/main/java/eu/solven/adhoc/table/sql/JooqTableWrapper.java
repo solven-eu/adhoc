@@ -88,6 +88,7 @@ import eu.solven.adhoc.util.IHasCache;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -108,6 +109,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	final String name;
 
 	@NonNull
+	@Getter
 	final JooqTableWrapperParameters tableParameters;
 
 	final LoadingCache<Object, List<Field<?>>> fieldsCache = CacheBuilder.newBuilder()

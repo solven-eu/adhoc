@@ -142,8 +142,7 @@ public class TestCubeQuery_DuplicatingDecomposition extends ADagTest implements 
 		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(dispatchedMeasure)
 				// `l=A&d1=a1|l=B&d2=a2`
-				.filter(FilterBuilder
-						.or(AndFilter.and(Map.of("l", "A", "d1", "a1")), AndFilter.and(Map.of("l", "B", "d2", "a2")))
+				.filter(FilterBuilder.or(AndFilter.and("l", "A", "d1", "a1"), AndFilter.and("l", "B", "d2", "a2"))
 						.optimize())
 				.build());
 

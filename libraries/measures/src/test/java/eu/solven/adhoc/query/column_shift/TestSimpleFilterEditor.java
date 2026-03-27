@@ -22,13 +22,10 @@
  */
 package eu.solven.adhoc.query.column_shift;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -49,7 +46,7 @@ public class TestSimpleFilterEditor {
 	public void testShiftColumn() {
 		ISliceFilter filter = ColumnFilter.matchEq("a", "a1");
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "v1"))
-				.isEqualTo(AndFilter.and(Map.of("a", "a1", "c", "v1")));
+				.isEqualTo(AndFilter.and("a", "a1", "c", "v1"));
 	}
 
 	@Test
@@ -66,45 +63,42 @@ public class TestSimpleFilterEditor {
 
 	@Test
 	public void testShift_And() {
-		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = AndFilter.and("a", "a1", "b", "b1", "c", "c1");
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "c", "c2"))
-				.isEqualTo(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c2")));
+				.isEqualTo(AndFilter.and("a", "a1", "b", "b1", "c", "c2"));
 	}
 
 	@Test
 	public void testShift_Or() {
-		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		ISliceFilter filter = OrFilter.or("a", "a1", "b", "b1");
 		Assertions.assertThat(SimpleFilterEditor.shift(filter, "b", "b2"))
-				.isEqualTo(
-						FilterBuilder.or(AndFilter.and(Map.of("a", "a1", "b", "b2")), AndFilter.and(Map.of("b", "b2")))
-								.optimize());
+				.isEqualTo(FilterBuilder.or(AndFilter.and("a", "a1", "b", "b2"), AndFilter.and("b", "b2")).optimize());
 	}
 
 	@Test
 	public void testShiftIfPresent_Or() {
-		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1"));
+		ISliceFilter filter = OrFilter.or("a", "a1", "b", "b1");
 		Assertions.assertThat(SimpleFilterEditor.shiftIfPresent(filter, "b", "b2"))
-				.isEqualTo(FilterBuilder.or(AndFilter.and(Map.of("a", "a1")), AndFilter.and(Map.of("b", "b2")))
-						.optimize());
+				.isEqualTo(FilterBuilder.or(AndFilter.and("a", "a1"), AndFilter.and("b", "b2")).optimize());
 	}
 
 	@Test
 	public void testSuppressColumns_and() {
-		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = AndFilter.and("a", "a1", "b", "b1", "c", "c1");
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c")))
 				.isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
 
 	@Test
 	public void testSuppressColumns_and_allSuppressed() {
-		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = AndFilter.and("a", "a1", "b", "b1", "c", "c1");
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testSuppressColumns_or() {
-		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = OrFilter.or("a", "a1", "b", "b1", "c", "c1");
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("b", "c")))
 				.isEqualTo(ColumnFilter.matchEq("a", "a1"));
 	}
@@ -131,15 +125,14 @@ public class TestSimpleFilterEditor {
 
 	@Test
 	public void testSuppressColumns_or_allSuppressed() {
-		ISliceFilter filter = OrFilter.or(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = OrFilter.or("a", "a1", "b", "b1", "c", "c1");
 		Assertions.assertThat(SimpleFilterEditor.suppressColumn(filter, Set.of("a", "b", "c")))
 				.isEqualTo(ISliceFilter.MATCH_ALL);
 	}
 
 	@Test
 	public void testSuppressColumns_not() {
-		ISliceFilter filter =
-				NotFilter.builder().negated(AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"))).build();
+		ISliceFilter filter = NotFilter.builder().negated(AndFilter.and("a", "a1", "b", "b1", "c", "c1")).build();
 		// Make sur this is really a NotFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).isInstanceOf(NotFilter.class);
 
@@ -149,8 +142,7 @@ public class TestSimpleFilterEditor {
 
 	@Test
 	public void testSuppressColumns_not_allSuppressed() {
-		ISliceFilter filter =
-				NotFilter.builder().negated(AndFilter.and(ImmutableMap.of("a", "a1", "b", "b1", "c", "c1"))).build();
+		ISliceFilter filter = NotFilter.builder().negated(AndFilter.and("a", "a1", "b", "b1", "c", "c1")).build();
 		// Make sure this is really a NotFilter, i.e. it has not been optimized into something else
 		Assertions.assertThat(filter).hasToString("!(a==a1&b==b1&c==c1)");
 
@@ -172,16 +164,16 @@ public class TestSimpleFilterEditor {
 	public void testEdit() {
 		SimpleFilterEditor editor = SimpleFilterEditor.builder().columnToValue("a", "a2").build();
 
-		Assertions.assertThat(editor.editFilter(AndFilter.and(Map.of("a", "a1", "b", "b1"))))
-				.isEqualTo(AndFilter.and(Map.of("a", "a2", "b", "b1")));
-		Assertions.assertThat(editor.editFilter(OrFilter.or(Map.of("a", "a1", "b", "b1"))))
-				.isEqualTo(OrFilter.or(Map.of("a", "a2", "b", "b1")));
+		Assertions.assertThat(editor.editFilter(AndFilter.and("a", "a1", "b", "b1")))
+				.isEqualTo(AndFilter.and("a", "a2", "b", "b1"));
+		Assertions.assertThat(editor.editFilter(OrFilter.or("a", "a1", "b", "b1")))
+				.isEqualTo(OrFilter.or("a", "a2", "b", "b1"));
 	}
 
 	@Test
 	public void testRetainsColumns_and() {
-		ISliceFilter filter = AndFilter.and(Map.of("a", "a1", "b", "b1", "c", "c1"));
+		ISliceFilter filter = AndFilter.and("a", "a1", "b", "b1", "c", "c1");
 		Assertions.assertThat(SimpleFilterEditor.retainsColumns(filter, Set.of("b", "c")))
-				.isEqualTo(AndFilter.and(Map.of("b", "b1", "c", "c1")));
+				.isEqualTo(AndFilter.and("b", "b1", "c", "c1"));
 	}
 }
