@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -222,10 +224,13 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 		SplitTableQueries inducerAndInduced = tableQueryFactory.splitInduced(queryPod, steps);
 
 		// Execute the actual tableQueries
-		Map<TableQueryStep, ICuboid> stepToValues = executeTableQueries(inducerAndInduced, inducerAndInduced);
+		Map<TableQueryStep, ICuboid> stepToValuesFromtableWrapper =
+				executeTableQueries(inducerAndInduced, inducerAndInduced);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
+		// Switch to a ConcurrentMap as `walkUpInducedDag` may be concurrent
+		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);
 		{
 			if (queryPod.isDebugOrExplain()) {
 				explainDagSteps(tableQueryPod, inducerAndInduced);
@@ -893,10 +898,11 @@ public class TableQueryEngineBootstrapped implements ITableQueryEngineBootstrapp
 	 * 
 	 * 
 	 * @param stepToValues
-	 *            a mutable {@link Map}. May need to be thread-safe.
+	 *            a mutable {@link ConcurrentMap}.
 	 * @param inducerAndInduced
 	 */
-	protected void walkUpInducedDag(Map<TableQueryStep, ICuboid> stepToValues, SplitTableQueries inducerAndInduced) {
+	protected void walkUpInducedDag(ConcurrentMap<TableQueryStep, ICuboid> stepToValues,
+			SplitTableQueries inducerAndInduced) {
 		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);
