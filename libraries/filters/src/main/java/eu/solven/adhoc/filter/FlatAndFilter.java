@@ -24,6 +24,7 @@ package eu.solven.adhoc.filter;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
@@ -122,11 +123,16 @@ public class FlatAndFilter implements IAndFilter {
 	 * iterating, which avoids this allocation.
 	 */
 	@Override
-	public Set<ColumnFilter> getOperands() {
+	public Set<IColumnFilter> getOperands() {
 		return columnToMatcher.entrySet()
 				.stream()
 				.map(e -> ColumnFilter.builder().column(e.getKey()).valueMatcher(e.getValue()).build())
 				.collect(ImmutableSet.toImmutableSet());
+	}
+
+	public void forEachOperand(Consumer<? super IColumnFilter> consumer) {
+		columnToMatcher.forEach(
+				(column, value) -> consumer.accept(ColumnFilter.builder().column(column).valueMatcher(value).build()));
 	}
 
 	@Override

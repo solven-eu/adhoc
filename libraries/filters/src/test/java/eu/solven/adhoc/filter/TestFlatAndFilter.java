@@ -28,6 +28,7 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.filter.value.InMatcher;
 import eu.solven.pepper.collection.MapWithNulls;
@@ -108,7 +109,7 @@ public class TestFlatAndFilter {
 	public void testTwoEntries_getOperands() {
 		FlatAndFilter filter = (FlatAndFilter) FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
 
-		Set<ColumnFilter> operands = filter.getOperands();
+		Set<IColumnFilter> operands = filter.getOperands();
 		Assertions.assertThat(operands).hasSize(2);
 		Assertions.assertThat((Set) operands)
 				.containsExactlyInAnyOrder(ColumnFilter.matchEq("c1", "v1"), ColumnFilter.matchEq("c2", "v2"));
@@ -347,5 +348,14 @@ public class TestFlatAndFilter {
 		Map<String, Object> result = FilterHelpers.asMap(FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2")));
 
 		Assertions.assertThat(result).containsEntry("c1", "v1").containsEntry("c2", "v2").hasSize(2);
+	}
+
+	@Test
+	public void getValueMatcherLax() {
+		ISliceFilter filter = FlatAndFilter.of(Map.of("c1", "v1", "c2", "v2"));
+
+		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c1")).isEqualTo(EqualsMatcher.matchEq("v1"));
+		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c2")).isEqualTo(EqualsMatcher.matchEq("v2"));
+		Assertions.assertThat(FilterHelpers.getValueMatcherLax(filter, "c3")).isEqualTo(IValueMatcher.MATCH_ALL);
 	}
 }

@@ -24,8 +24,12 @@ package eu.solven.adhoc.filter.optimizer;
 
 import java.util.Collection;
 
+import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.stripper.IFilterStripper;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,8 +47,20 @@ public class FilterOptimizerIntraCache implements IFilterOptimizer {
 
 	};
 
+	@Default
+	@Getter
+	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
+
 	protected FilterOptimizerWithCache makeWithCache() {
-		return FilterOptimizerWithCache.builder().listener(listener).build();
+		// We make a `matchAll` filterStripper as it enables being re-used through the process, and sharing its cache
+		// with each other filterStripper
+		// see `eu.solven.adhoc.filter.stripper.FilterStripper.filterToStripper`
+		IFilterStripper filterStripper = filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
+
+		return FilterOptimizerWithCache.builder()
+				.listener(listener)
+				.filterStripperFactory(filterStripper::withWhere)
+				.build();
 	}
 
 	@Override

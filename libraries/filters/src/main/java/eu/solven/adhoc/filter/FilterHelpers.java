@@ -103,6 +103,7 @@ public class FilterHelpers {
 	 *            not a `AND`).
 	 * @return
 	 */
+	@SuppressWarnings("PMD.CognitiveComplexity")
 	private static IValueMatcher getValueMatcherLax(ISliceFilter filter, String column, boolean throwOnOr) {
 		if (filter.isMatchAll()) {
 			return IValueMatcher.MATCH_ALL;
@@ -115,6 +116,8 @@ public class FilterHelpers {
 				// column is not filtered
 				return IValueMatcher.MATCH_ALL;
 			}
+		} else if (filter instanceof FlatAndFilter flatAndFilter) {
+			return flatAndFilter.columnToMatcher.getOrDefault(column, IValueMatcher.MATCH_ALL);
 		} else {
 			Set<ISliceFilter> splitAnds = splitAnd(filter);
 
@@ -336,7 +339,7 @@ public class FilterHelpers {
 		if (filter instanceof FlatAndFilter flatAnd) {
 			// Fast-path: iterate the backing column→matcher map directly, emitting ColumnFilter wrappers per entry.
 			// Avoids the instanceof chain that the generic IAndFilter branch would run per operand.
-			flatAnd.getOperands().forEach(downstream);
+			flatAnd.forEachOperand(downstream);
 			emitted = true;
 		} else if (filter instanceof IAndFilter andFilter) {
 			andFilter.getOperands().forEach(o -> emitAndOperands(o, downstream, splitMatchers));

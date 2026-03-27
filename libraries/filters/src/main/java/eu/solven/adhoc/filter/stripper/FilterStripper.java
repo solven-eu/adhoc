@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Suppliers;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -56,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RequiredArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class FilterStripper implements IFilterStripper {
 	@Getter(AccessLevel.PROTECTED)
 	@With
@@ -84,9 +85,10 @@ public class FilterStripper implements IFilterStripper {
 		return FilterHelpers.splitAnd(where);
 	}
 
+	// BEWARE This design leads to sharing `filterToStripper` through multiple filterStrippers
 	@SneakyThrows(ExecutionException.class)
-	protected FilterStripper makeStripper(ISliceFilter subWhere) {
-		return filterToStripper.get(subWhere, () -> this.withWhere(subWhere));
+	public FilterStripper withWhere(ISliceFilter newWhere) {
+		return filterToStripper.get(newWhere, () -> this.toBuilder().where(newWhere).build());
 	}
 
 	@Override
@@ -200,7 +202,7 @@ public class FilterStripper implements IFilterStripper {
 
 	protected boolean noCacheIsStricterThan(ISliceFilter filter) {
 		if (where instanceof INotFilter notStricter && filter instanceof INotFilter notLaxer) {
-			return makeStripper(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
+			return withWhere(notLaxer.getNegated()).isStricterThan(notStricter.getNegated());
 		} else if (where instanceof IColumnFilter stricterColumn && filter instanceof IColumnFilter laxerFilter) {
 			boolean isSameColumn = stricterColumn.getColumn().equals(laxerFilter.getColumn());
 			if (!isSameColumn) {
@@ -209,7 +211,7 @@ public class FilterStripper implements IFilterStripper {
 			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
 		}
 
-		FilterStripper filterStripper = makeStripper(filter.negate());
+		FilterStripper filterStripper = withWhere(filter.negate());
 
 		boolean isStricterThanAnd = isStricerThanSplitAnd(filter, filterStripper);
 		if (isStricterThanAnd) {
@@ -251,7 +253,7 @@ public class FilterStripper implements IFilterStripper {
 		// return FilterOptimizerHelpers.and(stricter, laxer).equals(stricter);
 
 		Set<String> filterColumns = laxerStripper.getColumns();
-		if (!whereColumns.get().containsAll(filterColumns)) {
+		if (!getColumns().containsAll(filterColumns)) {
 			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1&c=c3` due to `c`
 			// BEWARE if laxer is a ColumnFilter with a `matchAll` matcher
 			log.trace("Some filter in laxer are necessarily not present in WHERE");
@@ -278,7 +280,7 @@ public class FilterStripper implements IFilterStripper {
 			if (uncoveredLaxers.isEmpty()) {
 				break;
 			}
-			FilterStripper stricterStripper = makeStripper(oneStricter);
+			IFilterStripper stricterStripper = withWhere(oneStricter);
 			boolean oneStricterisWhere = oneStricter.equals(where);
 			uncoveredLaxers.removeIf(oneLaxer -> {
 				if (oneStricterisWhere && oneLaxer.equals(laxer)) {
@@ -301,5 +303,10 @@ public class FilterStripper implements IFilterStripper {
 	 */
 	protected boolean isStricterThan(IValueMatcher stricter, IValueMatcher laxer) {
 		return AndMatcher.and(stricter, laxer).equals(stricter);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(this).add("where", where).toString();
 	}
 }
