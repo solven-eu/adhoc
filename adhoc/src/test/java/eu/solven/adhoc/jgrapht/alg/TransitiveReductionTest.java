@@ -1,0 +1,304 @@
+/**
+ * The MIT License
+ * Copyright (c) 2015-2026 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.jgrapht.alg;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.Set;
+
+import org.jgrapht.Graph;
+import org.jgrapht.alg.TransitiveReduction;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+import org.junit.jupiter.api.Test;
+
+// https://github.com/solven-eu/jgrapht/blob/master/jgrapht-core/src/test/java/org/jgrapht/alg/TransitiveReductionTest.java
+public class TransitiveReductionTest {
+
+	// @formatter:off
+	static final int[][] MATRIX = new int[][] { { 0, 1, 1, 0, 0 },
+			{ 0, 0, 0, 0, 0 },
+			{ 0, 0, 0, 1, 1 },
+			{ 0, 0, 0, 0, 1 },
+			{ 0, 1, 0, 0, 0 } };
+
+	static final int[][] EXPECTED_TRANSITIVELY_REDUCED_MATRIX = new int[][] { { 0, 0, 1, 0, 0 },
+			{ 0, 0, 0, 0, 0 },
+			{ 0, 0, 0, 1, 0 },
+			{ 0, 0, 0, 0, 1 },
+			{ 0, 1, 0, 0, 0 } };
+	// @formatter:on
+
+	@Test
+	public void testInternals() {
+
+		// @formatter:off
+		final int[][] expectedPathMatrix = new int[][] { { 0, 1, 1, 1, 1 },
+				{ 0, 0, 0, 0, 0 },
+				{ 0, 1, 0, 1, 1 },
+				{ 0, 1, 0, 0, 1 },
+				{ 0, 1, 0, 0, 0 } };
+
+		// @formatter:on
+
+		// System.out.println(Arrays.deepToString(matrix) + " original matrix");
+
+		final int n = MATRIX.length;
+
+		// calc pathMatrix
+		int[][] pathMatrix = new int[n][n];
+		{
+			{
+				System.arraycopy(MATRIX, 0, pathMatrix, 0, MATRIX.length);
+
+				final BitSet[] pathMatrixAsBitSetArray = asBitSetArray(pathMatrix);
+
+				TransitiveReductionV2.transformToPathMatrix(pathMatrixAsBitSetArray);
+
+				pathMatrix = asIntArray(pathMatrixAsBitSetArray);
+			}
+			// System.out.println(Arrays.deepToString(path_matrix) + " path
+			// matrix");
+
+			assertArrayEquals(expectedPathMatrix, pathMatrix);
+		}
+
+		// calc transitive reduction
+		{
+			int[][] transitivelyReducedMatrix = new int[n][n];
+			{
+				System.arraycopy(pathMatrix, 0, transitivelyReducedMatrix, 0, pathMatrix.length);
+
+				final BitSet[] transitivelyReducedMatrixAsBitSetArray = asBitSetArray(transitivelyReducedMatrix);
+
+				TransitiveReductionV2.transitiveReduction(transitivelyReducedMatrixAsBitSetArray);
+
+				transitivelyReducedMatrix = asIntArray(transitivelyReducedMatrixAsBitSetArray);
+			}
+
+			// System.out.println(Arrays.deepToString(transitively_reduced_matrix)
+			// + " transitive reduction");
+
+			assertArrayEquals(EXPECTED_TRANSITIVELY_REDUCED_MATRIX, transitivelyReducedMatrix);
+		}
+	}
+
+	private static BitSet[] asBitSetArray(final int[][] intArray) {
+		final BitSet[] ret = new BitSet[intArray.length];
+		for (int i = 0; i < ret.length; i++) {
+			ret[i] = new BitSet(intArray[i].length);
+			for (int j = 0; j < intArray[i].length; j++) {
+				ret[i].set(j, intArray[i][j] == 1);
+			}
+		}
+		return ret;
+	}
+
+	private static int[][] asIntArray(final BitSet[] bitsetArray) {
+		final int[][] ret = new int[bitsetArray.length][bitsetArray.length];
+		for (int i = 0; i < ret.length; i++) {
+			for (int j = 0; j < ret.length; j++) {
+				ret[i][j] = bitsetArray[i].get(j) ? 1 : 0;
+			}
+		}
+		return ret;
+
+	}
+
+	@Test
+	public void testReduceNull() {
+		assertThrows(NullPointerException.class, () -> TransitiveReduction.INSTANCE.reduce(null));
+	}
+
+	@Test
+	public void testReduceNoVertexNoEdge() {
+		SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+		TransitiveReduction.INSTANCE.reduce(graph);
+		assertEquals(0, graph.vertexSet().size());
+		assertEquals(0, graph.edgeSet().size());
+	}
+
+	@Test
+	public void testReduceSomeVerticesNoEdge() {
+		SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+		graph.addVertex("x");
+		graph.addVertex("y");
+		graph.addVertex("z");
+		TransitiveReduction.INSTANCE.reduce(graph);
+		assertEquals(3, graph.vertexSet().size());
+		assertEquals(0, graph.edgeSet().size());
+	}
+
+	@Test
+	public void testReduceAlreadyReduced() {
+		SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+		graph.addVertex("x");
+		graph.addVertex("y");
+		graph.addVertex("z");
+		graph.addEdge("x", "y");
+		graph.addEdge("y", "z");
+
+		assertEquals(3, graph.vertexSet().size());
+		assertEquals(2, graph.edgeSet().size());
+
+		// reduce !
+		TransitiveReduction.INSTANCE.reduce(graph);
+
+		assertEquals(3, graph.vertexSet().size());
+		assertEquals(2, graph.edgeSet().size());
+
+		assertTrue(graph.containsEdge("x", "y"));
+		assertTrue(graph.containsEdge("y", "z"));
+		assertFalse(graph.containsEdge("x", "z"));
+	}
+
+	@Test
+	public void testReduceBasic() {
+		SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+		graph.addVertex("x");
+		graph.addVertex("y");
+		graph.addVertex("z");
+		graph.addEdge("x", "y");
+		graph.addEdge("y", "z");
+		graph.addEdge("x", "z"); // <-- reduce me, please
+
+		assertEquals(3, graph.vertexSet().size());
+		assertEquals(3, graph.edgeSet().size());
+
+		// reduce !
+		TransitiveReduction.INSTANCE.reduce(graph);
+
+		assertEquals(3, graph.vertexSet().size());
+		assertEquals(2, graph.edgeSet().size());
+
+		assertTrue(graph.containsEdge("x", "y"));
+		assertTrue(graph.containsEdge("y", "z"));
+		assertFalse(graph.containsEdge("x", "z"));
+	}
+
+	@Test
+	public void testReduceFarAway() {
+		SimpleDirectedGraph<String, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+		graph.addVertex("a");
+		graph.addVertex("b");
+		graph.addVertex("c");
+		graph.addVertex("x");
+		graph.addVertex("y");
+		graph.addVertex("z");
+		graph.addEdge("a", "b");
+		graph.addEdge("b", "c");
+		graph.addEdge("c", "x");
+		graph.addEdge("x", "y");
+		graph.addEdge("y", "z");
+		graph.addEdge("a", "z"); // <-- reduce me, please
+
+		assertEquals(6, graph.vertexSet().size());
+		assertEquals(6, graph.edgeSet().size());
+
+		// reduce !
+		TransitiveReduction.INSTANCE.reduce(graph);
+
+		assertEquals(6, graph.vertexSet().size());
+		assertEquals(5, graph.edgeSet().size());
+
+		assertTrue(graph.containsEdge("a", "b"));
+		assertTrue(graph.containsEdge("b", "c"));
+		assertTrue(graph.containsEdge("c", "x"));
+		assertTrue(graph.containsEdge("x", "y"));
+		assertTrue(graph.containsEdge("y", "z"));
+		assertFalse(graph.containsEdge("a", "z"));
+	}
+
+	@Test
+	public void testReduceCanonicalGraph() {
+		Graph<Integer, DefaultEdge> graph = fromMatrixToDirectedGraph(MATRIX);
+
+		// a few spot tests to verify the graph looks like it should
+		assertFalse(graph.containsEdge(0, 0));
+		assertTrue(graph.containsEdge(0, 1));
+		assertTrue(graph.containsEdge(2, 4));
+		assertTrue(graph.containsEdge(4, 1));
+
+		assertEquals(5, graph.vertexSet().size());
+		assertEquals(6, graph.edgeSet().size());
+
+		// reduce !
+		TransitiveReduction.INSTANCE.reduce(graph);
+
+		assertEquals(5, graph.vertexSet().size());
+		assertEquals(4, graph.edgeSet().size());
+
+		// equivalent spot tests on the reduced graph
+		assertFalse(graph.containsEdge(0, 0));
+		assertFalse(graph.containsEdge(0, 1));
+		assertFalse(graph.containsEdge(2, 4));
+		assertTrue(graph.containsEdge(4, 1));
+
+		// the full verification; less readable, but somewhat more complete :)
+		int[][] actualTransitivelyReducedMatrix = fromDirectedGraphToMatrix(graph);
+		assertArrayEquals(EXPECTED_TRANSITIVELY_REDUCED_MATRIX, actualTransitivelyReducedMatrix);
+	}
+
+	private static Graph<Integer, DefaultEdge> fromMatrixToDirectedGraph(final int[][] matrix) {
+		final SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
+		for (int i = 0; i < matrix.length; i++) {
+			graph.addVertex(i);
+		}
+		for (int i = 0; i < matrix.length; i++) {
+			for (int j = 0; j < matrix[i].length; j++) {
+				if (matrix[i][j] == 1) {
+					graph.addEdge(i, j);
+				}
+			}
+		}
+
+		return graph;
+	}
+
+	private int[][] fromDirectedGraphToMatrix(final Graph<Integer, DefaultEdge> directedGraph) {
+		final List<Integer> vertices = new ArrayList<>(directedGraph.vertexSet());
+		final int n = vertices.size();
+		final int[][] matrix = new int[n][n];
+
+		final Set<DefaultEdge> edges = directedGraph.edgeSet();
+		for (final DefaultEdge edge : edges) {
+			final Integer v1 = directedGraph.getEdgeSource(edge);
+			final Integer v2 = directedGraph.getEdgeTarget(edge);
+
+			final int i1 = vertices.indexOf(v1);
+			final int i2 = vertices.indexOf(v2);
+
+			matrix[i1][i2] = 1;
+		}
+		return matrix;
+
+	}
+
+}

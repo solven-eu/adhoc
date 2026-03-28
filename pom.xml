@@ -574,6 +574,7 @@
 								<!-- TestCases needs to remains not formatted/cleaned -->
 								<exclude>**/do_not_format_me/**</exclude>
 								<exclude>**/me/lemire/integercompression/**</exclude>
+								<exclude>**/TransitiveReductionV2.java</exclude>
 
 								<!-- As there is no Javadoc, it would lead to a dangling Javadoc according to PMD-->
 								<exclude>**/module-info.java</exclude>
