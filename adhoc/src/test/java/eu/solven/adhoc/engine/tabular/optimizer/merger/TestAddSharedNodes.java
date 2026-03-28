@@ -67,25 +67,11 @@ public class TestAddSharedNodes {
 				a.toBuilder().filter(AndFilter.and("a", "a1")).groupBy(GroupByColumns.named("a", "b")).build();
 		Assertions.assertThat(withShared.vertexSet()).hasSize(4).contains(s1, s2, s3).contains(shared);
 
-		Assertions.assertThat(withShared.edgeSet()).hasSize(3).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s1);
-			Assertions.assertThat(inducer).isEqualTo(shared);
-		}).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s2);
-			Assertions.assertThat(inducer).isEqualTo(shared);
-		}).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(shared);
-			Assertions.assertThat(inducer).isEqualTo(s3);
-		});
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(3)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, shared, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, shared, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(shared, s3, withShared));
 	}
 
 	// Given `a->a,b,c`, `a,b->a,b,c`, `a,c->a,b,c`
@@ -109,25 +95,11 @@ public class TestAddSharedNodes {
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(4).contains(s1, s2, s3).contains(globalInducer);
 
-		Assertions.assertThat(withShared.edgeSet()).hasSize(3).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s1);
-			Assertions.assertThat(inducer).isEqualTo(globalInducer);
-		}).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s2);
-			Assertions.assertThat(inducer).isEqualTo(globalInducer);
-		}).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s3);
-			Assertions.assertThat(inducer).isEqualTo(globalInducer);
-		});
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(3)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, globalInducer, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, globalInducer, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s3, globalInducer, withShared));
 	}
 
 	// Given `FILTER a1`, `FILTER a1 OR a2`, `FILTER a1 OR a2 OR a3`
@@ -155,19 +127,10 @@ public class TestAddSharedNodes {
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
-		Assertions.assertThat(withShared.edgeSet()).hasSize(2).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s1);
-			Assertions.assertThat(inducer).isEqualTo(s3);
-		}).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s2);
-			Assertions.assertThat(inducer).isEqualTo(s3);
-		});
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(2)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, s3, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, s3, withShared));
 	}
 
 	@Test
@@ -190,21 +153,288 @@ public class TestAddSharedNodes {
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
-		Assertions.assertThat(withShared.edgeSet()).hasSize(2).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s1);
-			Assertions.assertThat(inducer).isEqualTo(s3);
-		}).anySatisfy(edge -> {
-			TableQueryStep induced = withShared.getEdgeSource(edge);
-			TableQueryStep inducer = withShared.getEdgeTarget(edge);
-
-			Assertions.assertThat(induced).isEqualTo(s2);
-			Assertions.assertThat(inducer).isEqualTo(s3);
-		});
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(2)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, s3, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, s3, withShared));
 	}
 
+	/**
+	 * Motivating example for the topological-order initialisation in {@code AddSharedNodes.addSharedNodes}.
+	 *
+	 * <p>
+	 * Three leaves under root: {@code A} and {@code B} share {@code country=FR}; {@code C} has {@code country=DE} and
+	 * is unrelated. The algorithm must insert exactly one shared node for {@code {A, B}} and leave {@code C} pointing
+	 * directly to root.
+	 *
+	 * <p>
+	 * With <em>arbitrary</em> vertex ordering, root can appear in the processing queue before its leaves. Root is then
+	 * re-queued after the shared node is inserted, and the three leaves ({@code A}, {@code B}, {@code C}) are processed
+	 * as pointless skip-checks between root's first and second visits. Topological order (leaves first) avoids this
+	 * interleaving: root's two visits happen consecutively with no wasted iterations in between.
+	 */
+	@Test
+	public void sharedFilter_topologicalOrderAvoidsRedundantSkipChecks() {
+		TableQueryStep stepA = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "category", "X"))
+				.groupBy(GroupByColumns.named("country", "category"))
+				.build();
+		TableQueryStep stepB = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "category", "Y"))
+				.groupBy(GroupByColumns.named("country", "category"))
+				.build();
+		TableQueryStep stepC = a.toBuilder()
+				.filter(ColumnFilter.matchEq("country", "DE"))
+				.groupBy(GroupByColumns.named("country"))
+				.build();
+		TableQueryStep root = a.toBuilder()
+				.filter(AndFilter.and(Map.of()))
+				.groupBy(GroupByColumns.named("country", "category"))
+				.build();
+
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
+		dag.addVertex(root);
+		Stream.of(stepA, stepB, stepC).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, root);
+		});
+
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(dag);
+
+		// stepA and stepB are consolidated under a shared node; stepC stays directly under root
+		TableQueryStep sharedFR = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "category", InMatcher.matchIn("X", "Y")))
+				.groupBy(GroupByColumns.named("country", "category"))
+				.build();
+
+		Assertions.assertThat(withShared.vertexSet()).hasSize(5).containsAll(dag.vertexSet()).contains(sharedFR);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(4)
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepA, sharedFR, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepB, sharedFR, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedFR, root, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepC, root, withShared));
+	}
+
+	/**
+	 * Two-level input DAG: root has two intermediate nodes {@code P} and {@code Q}, each with two leaf children that
+	 * share a filter part. Shared nodes must be created at both intermediate levels independently; root itself has
+	 * nothing to share between {@code P} and {@code Q}.
+	 *
+	 * <p>
+	 * This is the structural scenario described in the topological-order comment of
+	 * {@code AddSharedNodes.addSharedNodes}: with leaves-first processing, each intermediate node's children are
+	 * already evaluated before the intermediate node itself is visited, so shared-node insertions at the lower level
+	 * are made without being interleaved with higher-level work.
+	 */
+	@Test
+	public void sharedFilter_twoLevelDag_intermediateNodesConsolidateChildren() {
+		// P ← { A(country=FR, type=web), B(country=FR, type=app) }
+		// Q ← { C(country=DE, type=web), D(country=DE, type=app) }
+		// root ← { P, Q }
+		TableQueryStep stepA = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "type", "web"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep stepB = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "type", "app"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep stepC = a.toBuilder()
+				.filter(AndFilter.and("country", "DE", "type", "web"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep stepD = a.toBuilder()
+				.filter(AndFilter.and("country", "DE", "type", "app"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+
+		TableQueryStep nodeP = a.toBuilder()
+				.filter(ColumnFilter.matchEq("country", "FR"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep nodeQ = a.toBuilder()
+				.filter(ColumnFilter.matchEq("country", "DE"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep root =
+				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("country", "type")).build();
+
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
+		dag.addVertex(root);
+		dag.addVertex(nodeP);
+		dag.addEdge(nodeP, root);
+		dag.addVertex(nodeQ);
+		dag.addEdge(nodeQ, root);
+		Stream.of(stepA, stepB).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, nodeP);
+		});
+		Stream.of(stepC, stepD).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, nodeQ);
+		});
+
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(dag);
+
+		// One shared node under P for {A, B}, one under Q for {C, D}; root keeps {P, Q} unchanged
+		TableQueryStep sharedFR = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "type", InMatcher.matchIn("web", "app")))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep sharedDE = a.toBuilder()
+				.filter(AndFilter.and("country", "DE", "type", InMatcher.matchIn("web", "app")))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+
+		Assertions.assertThat(withShared.vertexSet())
+				.hasSize(dag.vertexSet().size() + 2)
+				.containsAll(dag.vertexSet())
+				.contains(sharedFR, sharedDE);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(dag.edgeSet().size() + 2)
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepA, sharedFR, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepB, sharedFR, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedFR, nodeP, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepC, sharedDE, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(stepD, sharedDE, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedDE, nodeQ, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(nodeP, root, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(nodeQ, root, withShared));
+	}
+
+	/**
+	 * Three leaves under a single flat inducer, where two of the three form a sub-group:
+	 * <ul>
+	 * <li>{@code s1}, {@code s2}, {@code s3} all share {@code a==a1} → {@code sharedA} is created for all three;</li>
+	 * <li>{@code s1} and {@code s2} additionally share {@code b==b1} → {@code sharedB} is then created under
+	 * {@code sharedA} for those two.</li>
+	 * </ul>
+	 * The resulting chain is {@code s1 → sharedB → sharedA → inducer} (with {@code s2 → sharedB} and
+	 * {@code s3 → sharedA}). {@code sharedB}'s direct inducer is {@code sharedA} — a node that was itself freshly
+	 * inserted in the same pass. This verifies the recursive {@link AddSharedNodes#addSharedNode} call that eagerly
+	 * stabilises each newly created shared node before returning.
+	 */
+	@Test
+	public void sharedFilter_nestedSharedNodes_secondSharedNodeInducedByFirst() {
+		TableQueryStep s1 =
+				a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).groupBy(GroupByColumns.named("a")).build();
+		TableQueryStep s2 =
+				a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).groupBy(GroupByColumns.named("b")).build();
+		TableQueryStep s3 =
+				a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b2")).groupBy(GroupByColumns.named("b")).build();
+		TableQueryStep inducer =
+				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b")).build();
+
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
+		dag.addVertex(inducer);
+		Stream.of(s1, s2, s3).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, inducer);
+		});
+
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(dag);
+
+		// Groups all three: a==a1 is the widest common part
+		TableQueryStep sharedA = a.toBuilder()
+				.filter(AndFilter.and("a", "a1", "b", InMatcher.matchIn("b1", "b2")))
+				.groupBy(GroupByColumns.named("a", "b"))
+				.build();
+		// Groups s1 and s2 only: both carry b==b1 on top of a==a1
+		TableQueryStep sharedB = a.toBuilder()
+				.filter(AndFilter.and("a", "a1", "b", "b1"))
+				.groupBy(GroupByColumns.named("a", "b"))
+				.build();
+
+		Assertions.assertThat(withShared.vertexSet())
+				.hasSize(dag.vertexSet().size() + 2)
+				.containsAll(dag.vertexSet())
+				.contains(sharedA, sharedB);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(5)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, sharedB, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, sharedB, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedB, sharedA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s3, sharedA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedA, inducer, withShared));
+	}
+
+	/**
+	 * Two completely disjoint groups of leaves under the same flat inducer:
+	 * <ul>
+	 * <li>{@code s1} and {@code s2} share {@code a==a1};</li>
+	 * <li>{@code s3} and {@code s4} share {@code b==b1}.</li>
+	 * </ul>
+	 * After the first call to {@link AddSharedNodes#tryInsertSharedNode} creates {@code sharedA} for {@code {s1, s2}},
+	 * the inducer's induced set becomes {@code {sharedA, s3, s4}} — still size&nbsp;3 — so the {@code while} loop in
+	 * {@link AddSharedNodes#addSharedNode} iterates a second time and creates {@code sharedB} for {@code {s3, s4}}.
+	 * This is the minimal scenario (4 leaves + 1 inducer) that exercises two consecutive successful
+	 * {@code tryInsertSharedNode} calls on the same node.
+	 */
+	@Test
+	public void sharedFilter_twoDisjointGroups_inducesTwoConsecutiveSharedNodes() {
+		TableQueryStep s1 = a.toBuilder()
+				.filter(AndFilter.and("a", "a1", "c", "c1"))
+				.groupBy(GroupByColumns.named("a", "c"))
+				.build();
+		TableQueryStep s2 = a.toBuilder()
+				.filter(AndFilter.and("a", "a1", "c", "c2"))
+				.groupBy(GroupByColumns.named("a", "c"))
+				.build();
+		TableQueryStep s3 = a.toBuilder()
+				.filter(AndFilter.and("b", "b1", "d", "d1"))
+				.groupBy(GroupByColumns.named("b", "d"))
+				.build();
+		TableQueryStep s4 = a.toBuilder()
+				.filter(AndFilter.and("b", "b1", "d", "d2"))
+				.groupBy(GroupByColumns.named("b", "d"))
+				.build();
+		TableQueryStep inducer =
+				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("a", "b", "c", "d")).build();
+
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
+		dag.addVertex(inducer);
+		Stream.of(s1, s2, s3, s4).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, inducer);
+		});
+
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(dag);
+
+		TableQueryStep sharedA = a.toBuilder()
+				.filter(AndFilter.and("a", "a1", "c", InMatcher.matchIn("c1", "c2")))
+				.groupBy(GroupByColumns.named("a", "c"))
+				.build();
+		TableQueryStep sharedB = a.toBuilder()
+				.filter(AndFilter.and("b", "b1", "d", InMatcher.matchIn("d1", "d2")))
+				.groupBy(GroupByColumns.named("b", "d"))
+				.build();
+
+		Assertions.assertThat(withShared.vertexSet())
+				.hasSize(dag.vertexSet().size() + 2)
+				.containsAll(dag.vertexSet())
+				.contains(sharedA, sharedB);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(6)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, sharedA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, sharedA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedA, inducer, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s3, sharedB, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s4, sharedB, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedB, inducer, withShared));
+	}
+
+	/**
+	 * The inducer {@code s4} carries a filter column ({@code c}) that none of the leaves reference. The shared-node
+	 * computation must therefore strip {@code c} from the inducer's groupBy when building the intermediate nodes. The
+	 * leaves form the same nested structure as {@link #sharedFilter_nestedSharedNodes_secondSharedNodeInducedByFirst}:
+	 * {@code shared} groups all three leaves and {@code shared2} groups the two leaves that additionally share
+	 * {@code b==b1}.
+	 */
 	@Test
 	public void sharedFilter_parentHasIrrelevantFilterToChildren() {
 		TableQueryStep s1 =

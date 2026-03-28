@@ -22,17 +22,18 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.adder;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -60,7 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * A policy to add shared nodes, to reduce the workload of {@link InduceByAdhoc}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Builder
@@ -79,46 +80,106 @@ public class AddSharedNodes implements IAddSharedNodes {
 	}
 
 	/**
-	 * Given a {@link Graph}, we add some intermediate nodes to help doing once some shared computations. Typically, if
-	 * 2 nodes depends on the same inducer, and apply similar {@link ISliceFilter}, we may add an intermediate node
-	 * applying the common {@link ISliceFilter}.
-	 * 
+	 * Given a {@link Graph}, adds intermediate nodes to share repeated computations. For example, if two nodes depend
+	 * on the same inducer and apply overlapping {@link ISliceFilter}s, an intermediate node is inserted that applies
+	 * the common filter, letting both dependants reuse the result.
+	 *
+	 * <p>
+	 * <b>Single linear pass.</b> The traversal order is fixed upfront from a snapshot of the DAG taken before any
+	 * mutation. {@link TopologicalOrderIterator} must not be used while the graph is being mutated (JGraphT contract),
+	 * so its output is captured into an {@link ImmutableList} before the first insertion.
+	 *
+	 * <p>
+	 * Two properties justify why one forward pass over this list is sufficient:
+	 * <ol>
+	 * <li><b>Newly inserted shared nodes are absent from the list, but are processed eagerly.</b>
+	 * {@link #tryInsertSharedNode} returns the newly created node, and {@link #addSharedNode} immediately recurses into
+	 * it before continuing its own loop. This ensures every new node is fully stabilised (all sub-sharing opportunities
+	 * among its children are exhausted) before control returns to the outer iteration.</li>
+	 * <li><b>The parent of each newly inserted shared node is already present later in the list</b> at a higher
+	 * topological position (closer to the root). It will be processed in the natural forward iteration, finding the
+	 * already-inserted shared node as part of its updated induced set — no explicit re-queuing is needed.</li>
+	 * </ol>
+	 *
 	 * @param input
-	 * @return
+	 *            the original DAG; never mutated
+	 * @return a new DAG that may contain additional shared nodes
 	 */
 	@Override
 	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> input) {
 		// Work on a copy so we never mutate the caller's graph
 		IAdhocDag<TableQueryStep> dag = GraphHelpers.copy(input);
 
-		// All vertices start dirty: each must be evaluated as a potential inducer at least once.
-		// When a shared node is inserted, only the affected inducers are re-queued, not the whole graph.
-		Deque<TableQueryStep> toProcess = new ArrayDeque<>(dag.vertexSet());
+		// Snapshot the traversal order before any DAG mutations.
+		// Topological order (inDegree=0 leaves first, outDegree=0 roots last) ensures each
+		// node is encountered only after all of its induced children have been fully processed.
+		List<TableQueryStep> toProcess = ImmutableList.copyOf(new TopologicalOrderIterator<>(dag));
 
-		while (!toProcess.isEmpty()) {
-			TableQueryStep inducer = toProcess.poll();
+		for (TableQueryStep inducer : toProcess) {
 			if (!dag.containsVertex(inducer)) {
-				// Defensive: skip vertices that no longer exist (e.g. removed by a subclass override)
+				// Defensive: vertex removed during a prior iteration (e.g. subclass override).
 				continue;
 			}
-			Set<TableQueryStep> dirty = addSharedNode(dag, inducer);
-			toProcess.addAll(dirty);
+			addSharedNode(dag, inducer);
 		}
 
 		return dag;
 	}
 
-	protected Set<TableQueryStep> addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
+	/**
+	 * Exhaustively inserts shared nodes for {@code inducer} until the graph stabilises for that node. Delegates each
+	 * single-insertion attempt to {@link #tryInsertSharedNode}; after each successful insertion it recurses into the
+	 * newly created shared node to stabilise it before continuing, then re-examines {@code inducer}'s updated induced
+	 * set.
+	 *
+	 * <p>
+	 * Each successful call to {@link #tryInsertSharedNode} reduces the number of direct induced steps of
+	 * {@code inducer} by at least one. The recursion therefore terminates in at most
+	 * {@code (initial-induced-count − 1)} calls.
+	 *
+	 * @param withFinalInducers
+	 *            the live DAG being built; mutated in place
+	 * @param inducer
+	 *            the node whose induced set is being consolidated
+	 */
+	protected void addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
+		while (true) {
+			// Re-apply on inducer until there is no more shared node to add
+			Optional<TableQueryStep> newNode = tryInsertSharedNode(withFinalInducers, inducer);
+			if (newNode.isEmpty()) {
+				break;
+			}
+			// Stabilise the newly created shared node before re-examining inducer's updated induced set.
+			newNode.ifPresent(n -> addSharedNode(withFinalInducers, n));
+		}
+	}
+
+	/**
+	 * Single-insertion attempt: scans the current induced steps of {@code inducer} for a filter part shared by at least
+	 * two of them, constructs a shared node whose filter is the OR of those steps' filters, and rewires the graph.
+	 *
+	 * <p>
+	 * Only one shared node is inserted per call. The caller ({@link #addSharedNode}) is responsible for looping and for
+	 * recursively stabilising the returned node.
+	 *
+	 * @param withFinalInducers
+	 *            the live DAG; mutated when a shared node is inserted
+	 * @param inducer
+	 *            node whose induced set is being examined
+	 * @return the newly inserted shared node, or {@link Optional#empty()} if the induced set is already optimal
+	 */
+	protected Optional<TableQueryStep> tryInsertSharedNode(IAdhocDag<TableQueryStep> withFinalInducers,
+			TableQueryStep inducer) {
 		ImmutableSet<TableQueryStep> inducedSteps = GraphHelpers.getInduced(withFinalInducers, inducer);
 
 		if (inducedSteps.size() < 2) {
-			return ImmutableSet.of();
+			return Optional.empty();
 		}
 
 		// `a&b|a&b|a&c|d` should lead to `a&(b|c)|d` to the tableQuery
 		// and `a&(b|c)` as intermediate step, useful to prepare both `a&b` and `a&c` steps
 		// and `a` as intermediate step, useful to prepare `a&b` and `a&c`
-		// BEWARE AtomicLongMap is not ordered by we later orderBY some comparator
+		// BEWARE AtomicLongMap is not ordered but we later sort by a comparator
 		AtomicLongMap<ISliceFilter> filterPartToCount = AtomicLongMap.create();
 		SetMultimap<TableQueryStep, ISliceFilter> filterToAnds =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
@@ -142,6 +203,8 @@ public class AddSharedNodes implements IAddSharedNodes {
 						.reversed())
 				.toList();
 
+		FilterUtility filterUtility = FilterUtility.builder().optimizer(filterOptimizer).build();
+
 		// Iterate along the most present parts, as typically, the first part may be very common, and lead to generating
 		// as shared node the current inducer
 		for (Map.Entry<ISliceFilter, Long> mostPresentPart : orderedMostPresentPart) {
@@ -153,40 +216,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 					.map(Map.Entry::getKey)
 					.collect(ImmutableSet.toImmutableSet());
 
-			FilterUtility filterUtility = FilterUtility.builder().optimizer(filterOptimizer).build();
-
-			Set<? extends ISliceFilter> filters =
-					relatedSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
-
-			// Evaluate the `WHERE` common to all steps of given aggregate
-			ISliceFilter rawCommonFilter = filterUtility.commonAnd(filters);
-			ISliceFilter commonFilter = FilterBuilder.and(rawCommonFilter).optimize(filterOptimizer);
-
-			IFilterStripper stripper = filterStripperFactory.makeFilterStripper(commonFilter);
-
-			ImmutableSet<String> columnsForFilters = relatedSteps.stream()
-					.map(TableQueryStep::getFilter)
-					.map(stripper::strip)
-					.flatMap(strippedFilter -> FilterHelpers.getFilteredColumns(strippedFilter).stream())
-					.collect(ImmutableSet.toImmutableSet());
-			Set<String> columnsForGroupBy = relatedSteps.stream()
-					.flatMap(s -> s.getGroupBy().getGroupedByColumns().stream())
-					.collect(ImmutableSet.toImmutableSet());
-
-			Map<String, IAdhocColumn> inducerGroupedByColumns = new LinkedHashMap<>();
-			inducerGroupedByColumns.putAll(inducer.getGroupBy().getNameToColumn());
-
-			Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
-
-			assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
-					: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
-			inducerGroupedByColumns.keySet().retainAll(sharedColumns);
-
-			TableQueryStep reforgedStep = inducer.toBuilder()
-					// BEWARE the shared node should be as restrictive as possible to infer the induced
-					.filter(filterOptimizer.or(filters))
-					.groupBy(GroupByColumns.of(inducerGroupedByColumns.values()))
-					.build();
+			TableQueryStep reforgedStep = makeSharedStep(inducer, relatedSteps, filterUtility);
 
 			if (reforgedStep.equals(inducer)) {
 				log.debug("We constructed the same inducer as being processed: nothing to refine");
@@ -213,15 +243,61 @@ public class AddSharedNodes implements IAddSharedNodes {
 				// Add new edges
 				Graphs.addGraph(withFinalInducers, inducedToInducer);
 
-				// reforgedStep is new and must be evaluated as an inducer.
-				// inducer's induced set changed and may benefit from another pass.
-				return ImmutableSet.of(reforgedStep, inducer);
+				return Optional.of(reforgedStep);
 			}
 		}
 
-		return ImmutableSet.of();
+		return Optional.empty();
 	}
 
+	protected TableQueryStep makeSharedStep(TableQueryStep inducer,
+			ImmutableSet<TableQueryStep> relatedSteps,
+			FilterUtility filterUtility) {
+		Set<? extends ISliceFilter> filters =
+				relatedSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+
+		// Evaluate the `WHERE` common to all steps of given aggregate
+		ISliceFilter rawCommonFilter = filterUtility.commonAnd(filters);
+		ISliceFilter commonFilter = FilterBuilder.and(rawCommonFilter).optimize(filterOptimizer);
+
+		IFilterStripper stripper = filterStripperFactory.makeFilterStripper(commonFilter);
+
+		ImmutableSet<String> columnsForFilters = relatedSteps.stream()
+				.map(TableQueryStep::getFilter)
+				.map(stripper::strip)
+				.flatMap(strippedFilter -> FilterHelpers.getFilteredColumns(strippedFilter).stream())
+				.collect(ImmutableSet.toImmutableSet());
+		Set<String> columnsForGroupBy = relatedSteps.stream()
+				.flatMap(s -> s.getGroupBy().getGroupedByColumns().stream())
+				.collect(ImmutableSet.toImmutableSet());
+
+		Map<String, IAdhocColumn> inducerGroupedByColumns = new LinkedHashMap<>();
+		inducerGroupedByColumns.putAll(inducer.getGroupBy().getNameToColumn());
+
+		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
+
+		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
+				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
+		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
+
+		TableQueryStep reforgedStep = inducer.toBuilder()
+				// BEWARE the shared node should be as restrictive as possible to infer the induced
+				.filter(filterOptimizer.or(filters))
+				.groupBy(GroupByColumns.of(inducerGroupedByColumns.values()))
+				.build();
+		return reforgedStep;
+	}
+
+	/**
+	 * Combines {@code commonFilter} with the filter of {@code step} and returns a new step carrying the resulting
+	 * AND-filter. Exposed as a protected hook for subclasses that need to customise how filters are merged.
+	 *
+	 * @param commonFilter
+	 *            the filter part to AND into {@code step}
+	 * @param step
+	 *            the step whose filter is being narrowed
+	 * @return a copy of {@code step} with the combined filter
+	 */
 	protected TableQueryStep filter(ISliceFilter commonFilter, TableQueryStep step) {
 		ISliceFilter combinedFilter = FilterBuilder.and(commonFilter, step.getFilter()).optimize(filterOptimizer);
 		return step.toBuilder().filter(combinedFilter).build();

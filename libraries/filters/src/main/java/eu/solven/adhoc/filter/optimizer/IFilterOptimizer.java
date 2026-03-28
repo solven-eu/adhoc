@@ -49,7 +49,7 @@ public interface IFilterOptimizer {
 
 	/**
 	 * Enable receiving event related to the optimization process.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
 	// Methods are defaulted to prevent breaking code when adding events
