@@ -215,39 +215,59 @@ public class AddSharedNodes implements IAddSharedNodes {
 					.filter(e -> e.getValue().contains(mostPresentPart.getKey()))
 					.map(Map.Entry::getKey)
 					.collect(ImmutableSet.toImmutableSet());
+			assert relatedSteps.size() == mostPresentPart.getValue();
 
 			TableQueryStep reforgedStep = makeSharedStep(inducer, relatedSteps, filterUtility);
 
 			if (reforgedStep.equals(inducer)) {
-				log.debug("We constructed the same inducer as being processed: nothing to refine");
-			} else if (!relatedSteps.contains(reforgedStep)) {
-				IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
-
-				inducedToInducer.addVertex(reforgedStep);
-				log.info("Added a shared node: {} for {}", reforgedStep, relatedSteps);
-
-				inducedToInducer.addVertex(inducer);
-				// Register the new shared node to the existing induced
-				inducedToInducer.addEdge(reforgedStep, inducer);
-				// Register the induced to the new shared node
-				relatedSteps.forEach(relatedStep -> {
-					inducedToInducer.addVertex(relatedStep);
-					inducedToInducer.addEdge(relatedStep, reforgedStep);
-				});
-
-				// Remove old edges
-				relatedSteps.forEach(relatedStep -> {
-					withFinalInducers.removeEdge(relatedStep, inducer);
-				});
-
-				// Add new edges
-				Graphs.addGraph(withFinalInducers, inducedToInducer);
+				log.debug("We constructed the same inducer as being processed: already optimal parent");
+			} else if (relatedSteps.contains(reforgedStep)) {
+				// reforgedStep already exists as one of the induced steps and its filter equals
+				// OR(all related filters): it is the broadest step in the group. Promote it to
+				// shared-node role by rewiring the other related steps through it; its own edge
+				// to inducer stays unchanged.
+				ImmutableSet<TableQueryStep> otherSteps = relatedSteps.stream()
+						.filter(s -> !s.equals(reforgedStep))
+						.collect(ImmutableSet.toImmutableSet());
+				log.debug("Promoting existing induced step {} as shared node for {}", reforgedStep, otherSteps);
+				otherSteps.forEach(s -> withFinalInducers.removeEdge(s, inducer));
+				otherSteps.forEach(s -> withFinalInducers.addEdge(s, reforgedStep));
+				return Optional.of(reforgedStep);
+			} else {
+				registerSharedInDag(withFinalInducers, inducer, relatedSteps, reforgedStep);
 
 				return Optional.of(reforgedStep);
 			}
 		}
 
 		return Optional.empty();
+	}
+
+	protected void registerSharedInDag(IAdhocDag<TableQueryStep> withFinalInducers,
+			TableQueryStep inducer,
+			ImmutableSet<TableQueryStep> relatedSteps,
+			TableQueryStep reforgedStep) {
+		IAdhocDag<TableQueryStep> inducedToInducer = GraphHelpers.makeGraph();
+
+		inducedToInducer.addVertex(reforgedStep);
+		log.info("Added a shared node: {} for {}", reforgedStep, relatedSteps);
+
+		inducedToInducer.addVertex(inducer);
+		// Register the new shared node to the existing induced
+		inducedToInducer.addEdge(reforgedStep, inducer);
+		// Register the induced to the new shared node
+		relatedSteps.forEach(relatedStep -> {
+			inducedToInducer.addVertex(relatedStep);
+			inducedToInducer.addEdge(relatedStep, reforgedStep);
+		});
+
+		// Remove old edges
+		relatedSteps.forEach(relatedStep -> {
+			withFinalInducers.removeEdge(relatedStep, inducer);
+		});
+
+		// Add new edges
+		Graphs.addGraph(withFinalInducers, inducedToInducer);
 	}
 
 	protected TableQueryStep makeSharedStep(TableQueryStep inducer,
@@ -276,8 +296,9 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 
-		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
-				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
+		assert inducerGroupedByColumns.keySet()
+				.containsAll(sharedColumns) : "InducedToInducer graph issue around inducer=%s and induced=%s"
+						.formatted(inducer, relatedSteps);
 		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
 
 		TableQueryStep reforgedStep = inducer.toBuilder()

@@ -133,6 +133,12 @@ public class TestAddSharedNodes {
 				.anySatisfy(GraphsTestHelpers.assertEdge(s2, s3, withShared));
 	}
 
+	/**
+	 * {@code s2} has a broader filter than {@code s1} ({@code a==a1} vs {@code a==a1&b==b1}). When processing
+	 * {@code s3}, the computed shared step equals {@code s2} — it is already an induced step and is the broadest of the
+	 * two. Rather than inserting a new node, {@code s2} is promoted to shared-node role: {@code s1} is rewired through
+	 * it, yielding {@code s1 → s2 → s3}.
+	 */
 	@Test
 	public void chainOfInducers_filters_differentColumns() {
 		TableQueryStep s1 = a.toBuilder().filter(AndFilter.and("a", "a1", "b", "b1")).build();
@@ -151,11 +157,12 @@ public class TestAddSharedNodes {
 
 		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(merged);
 
+		// s2 is promoted to shared node: s1 is rewired through it; no new vertex is added
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
 		Assertions.assertThat(withShared.edgeSet())
 				.hasSize(2)
-				.anySatisfy(GraphsTestHelpers.assertEdge(s1, s3, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, s2, withShared))
 				.anySatisfy(GraphsTestHelpers.assertEdge(s2, s3, withShared));
 	}
 
