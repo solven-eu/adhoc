@@ -23,7 +23,7 @@
 package eu.solven.adhoc.filter.optimizer;
 
 import java.time.Duration;
-import java.util.Collection;
+import java.util.Set;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 
@@ -41,9 +41,9 @@ public interface IFilterOptimizer {
 	 *            true if this expression will be negated (e.g. when being called by `OR`)
 	 * @return
 	 */
-	ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated);
+	ISliceFilter and(Set<? extends ISliceFilter> filters, boolean willBeNegated);
 
-	ISliceFilter or(Collection<? extends ISliceFilter> filters);
+	ISliceFilter or(Set<? extends ISliceFilter> filters, boolean willBeNegated);
 
 	ISliceFilter not(ISliceFilter first, boolean willBeNegated);
 

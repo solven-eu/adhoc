@@ -25,7 +25,6 @@ package eu.solven.adhoc.engine.tabular.splitter;
 import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;
 
-import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 import org.jgrapht.alg.TransitiveReduction;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -40,16 +39,18 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 
 /**
  * Benchmarks {@link TransitiveReductionV2} on a simple linear chain a₀ → a₁ → … → aₙ.
  *
  * <p>
- * A chain is the worst case for the naïve O(n²) removal loop: after path-matrix expansion every
- * node can reach every later node, so the reduced matrix has exactly n-1 set bits while the naïve
- * loop calls {@code getEdge} for O(n²) pairs. The optimised loop iterates only the original edges
- * and therefore does O(n) work here.
+ * A chain is the worst case for the naïve O(n²) removal loop: after path-matrix expansion every node can reach every
+ * later node, so the reduced matrix has exactly n-1 set bits while the naïve loop calls {@code getEdge} for O(n²)
+ * pairs. The optimised loop iterates only the original edges and therefore does O(n) work here.
  * </p>
+ *
+ * @author Benoit Lacelle
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -57,18 +58,17 @@ import org.openjdk.jmh.annotations.Warmup;
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 3, time = 2)
 @Fork(1)
+@SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkTransitiveReduction {
 
 	@Param({ "100", "500", "1000" })
 	int nodeCount;
 
 	/**
-	 * Builds a fresh linear-chain graph for each invocation so that each benchmark call starts from
-	 * the same state.
+	 * Builds a fresh linear-chain graph for each invocation so that each benchmark call starts from the same state.
 	 */
 	private SimpleDirectedGraph<Integer, DefaultEdge> buildChain() {
-		SimpleDirectedGraph<Integer, DefaultEdge> graph =
-				new SimpleDirectedGraph<>(DefaultEdge.class);
+		SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 		for (int i = 0; i < nodeCount; i++) {
 			graph.addVertex(i);
 		}
@@ -79,22 +79,20 @@ public class BenchmarkTransitiveReduction {
 	}
 
 	private SimpleDirectedGraph<LocalDate, DefaultEdge> buildChain_LocalDate() {
-		SimpleDirectedGraph<LocalDate, DefaultEdge> graph =
-				new SimpleDirectedGraph<>(DefaultEdge.class);
+		SimpleDirectedGraph<LocalDate, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 		for (int i = 0; i < nodeCount; i++) {
-			graph.addVertex(LocalDate.of(i,1,1));
+			graph.addVertex(LocalDate.of(i, 1, 1));
 		}
 		for (int i = 0; i < nodeCount - 1; i++) {
-			graph.addEdge(LocalDate.of(i,1,1), LocalDate.of(i+1,1,1));
+			graph.addEdge(LocalDate.of(i, 1, 1), LocalDate.of(i + 1, 1, 1));
 		}
 		return graph;
 	}
 
 	/**
-	 * Measures end-to-end {@link TransitiveReductionV2#reduce} time on a linear chain. The chain has
-	 * n-1 edges; after reduction it still has n-1 edges (every hop is necessary), so the benchmark
-	 * exercises the full algorithm without removing a single edge — stressing the removal-loop scan
-	 * cost rather than actual graph mutations.
+	 * Measures end-to-end {@link TransitiveReductionV2#reduce} time on a linear chain. The chain has n-1 edges; after
+	 * reduction it still has n-1 edges (every hop is necessary), so the benchmark exercises the full algorithm without
+	 * removing a single edge — stressing the removal-loop scan cost rather than actual graph mutations.
 	 */
 	@Benchmark
 	public int reduceChain_v2() {
@@ -111,8 +109,8 @@ public class BenchmarkTransitiveReduction {
 	}
 
 	/**
-	 * Same scenario using the original {@link TransitiveReduction} implementation, as a baseline for
-	 * comparison against {@link #reduceChain_v2()}.
+	 * Same scenario using the original {@link TransitiveReduction} implementation, as a baseline for comparison against
+	 * {@link #reduceChain_v2()}.
 	 */
 	@Benchmark
 	public int reduceChain_original() {

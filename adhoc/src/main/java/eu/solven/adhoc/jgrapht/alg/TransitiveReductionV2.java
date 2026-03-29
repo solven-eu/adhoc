@@ -17,9 +17,12 @@
  */
 package eu.solven.adhoc.jgrapht.alg;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 
-import org.jgrapht.*;
+import org.jgrapht.Graph;
+import org.jgrapht.GraphTests;
 
 /**
  * An implementation of Harry Hsu's <a href="https://en.wikipedia.org/wiki/Transitive_reduction">transitive reduction
@@ -40,17 +43,12 @@ import org.jgrapht.*;
  */
 // https://github.com/jgrapht/jgrapht/blob/master/jgrapht-core/src/main/java/org/jgrapht/alg/TransitiveReduction.java
 // https://github.com/jgrapht/jgrapht/pull/1313
-public class TransitiveReductionV2 {
+@SuppressWarnings({ "PMD.UseVarargs", "PMD.ForLoopCanBeForeach" })
+public final class TransitiveReductionV2 {
 	/**
 	 * Singleton instance.
 	 */
 	public static final TransitiveReductionV2 INSTANCE = new TransitiveReductionV2();
-
-	/**
-	 * Private Constructor.
-	 */
-	private TransitiveReductionV2() {
-	}
 
 	/**
 	 * The matrix passed as input parameter will be transformed into a path matrix.

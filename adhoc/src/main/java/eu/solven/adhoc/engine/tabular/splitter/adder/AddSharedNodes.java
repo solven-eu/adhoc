@@ -296,17 +296,15 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 
-		assert inducerGroupedByColumns.keySet()
-				.containsAll(sharedColumns) : "InducedToInducer graph issue around inducer=%s and induced=%s"
-						.formatted(inducer, relatedSteps);
+		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
+				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
 		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
 
-		TableQueryStep reforgedStep = inducer.toBuilder()
+		return inducer.toBuilder()
 				// BEWARE the shared node should be as restrictive as possible to infer the induced
-				.filter(filterOptimizer.or(filters))
+				.filter(filterOptimizer.or(filters, false))
 				.groupBy(GroupByColumns.of(inducerGroupedByColumns.values()))
 				.build();
-		return reforgedStep;
 	}
 
 	/**

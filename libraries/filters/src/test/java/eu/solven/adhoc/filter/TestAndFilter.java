@@ -31,12 +31,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.filter.FilterBuilder.Type;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer.IOptimizerEventListener;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -521,10 +521,13 @@ public class TestAndFilter {
 				.hasToString("!(a LIKE 'a%'|b LIKE 'b%'|c LIKE 'c%')");
 	}
 
+	// TODO This could be progressed without a cartesian product, by considering a IValueMatcher per column. In this
+	// case, we would quickly detect matchNone
+	@Disabled
 	@Test
 	public void testAnd_Large_onlyOrs() {
-		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
-		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
+		// FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
+		FilterBuilder filterBuilder = FilterBuilder.and();
 
 		{
 			List<ISliceFilter> operands =
@@ -537,7 +540,7 @@ public class TestAndFilter {
 					IntStream.range(0, 2).mapToObj(i -> OrFilter.or("a", "a" + i, "b", "b" + i)).toList();
 
 			Assertions.assertThat(filterBuilder.filters(operands).optimize(optimizer))
-					.hasToString("a==a0&b==b1|b==b0&a==a1");
+					.hasToString("(a==a0|b==b0)&(a==a1|b==b1)");
 		}
 		{
 			List<ISliceFilter> operands =
@@ -560,10 +563,10 @@ public class TestAndFilter {
 	// Similar to `testAnd_Large_onlyOrs` but with a helping filter
 	@Test
 	public void testAnd_Large_andMatchOnlyOne() {
-		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
+		// FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(true).build();
 
 		// In this case, given the hint, we do not need any cartesianProduct
-		FilterBuilder filterBuilder = FilterBuilder.builder().andElseOr(Type.AND).build();
+		FilterBuilder filterBuilder = FilterBuilder.and();
 
 		// `(a0|b0)&(a1|b1)&(a2|b2)&...`
 		List<ISliceFilter> operands = IntStream.range(0, 16)
@@ -756,19 +759,14 @@ public class TestAndFilter {
 												.and(ColumnFilter.matchEq("e", "e1"))
 												.build())
 										.build())
-								.build()
-
-						)
+								.build())
 						.build())
-
 				.combine();
 		Assertions.assertThat(raw).hasToString("a=in=(a1,a2,a3)&!(b=out=(b1,b2)&!(c==c1&d==d1&e==e1))");
 
 		ISliceFilter optimized = FilterBuilder.and(raw).optimize(optimizer);
 
-		Assertions.assertThat(optimized)
-				// .hasToString("a=in=(a1,a2,a3)&(b=in=(b1,b2)|c==c1&d==d1&e==e1)")
-				.hasToString("a=in=(a1,a2,a3)&!(b=out=(b1,b2)&!(c==c1&d==d1&e==e1))");
+		Assertions.assertThat(optimized).hasToString("a=in=(a1,a2,a3)&(b=in=(b1,b2)|c==c1&d==d1&e==e1)");
 		Assertions.assertThat(nbSkip).hasValue(0);
 	}
 

@@ -40,15 +40,15 @@ import eu.solven.adhoc.query.table.TableQuery;
  */
 @FunctionalInterface
 public interface ITableQueryFactoryFactory {
-	ITableQueryFactory makeOptimizer(IAdhocFactories factories,
+	ITableQueryFactory makeQueryFactory(IAdhocFactories factories,
 			IFilterOptimizer filterOptimizer,
 			IHasQueryOptions hasOptions);
 
 	@Deprecated
-	default ITableQueryFactory makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+	default ITableQueryFactory makeQueryFactory(IAdhocFactories factories, IHasQueryOptions hasOptions) {
 		// WithCache as this optimizer will be used for a single query
 		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 
-		return makeOptimizer(factories, filterOptimizer, hasOptions);
+		return makeQueryFactory(factories, filterOptimizer, hasOptions);
 	}
 }

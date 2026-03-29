@@ -92,4 +92,5 @@ public class TestFilterStripper {
 		// Still, `.strip` is everything is the constrain on `a` reject all rows
 		Assertions.assertThat(stripper.strip(notInLessColumns)).isEqualTo(ISliceFilter.MATCH_ALL);
 	}
+
 }

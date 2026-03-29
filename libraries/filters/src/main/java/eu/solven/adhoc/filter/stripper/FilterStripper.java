@@ -79,6 +79,7 @@ public class FilterStripper implements IFilterStripper {
 		return whereColumns.get();
 	}
 
+	// BEWARE This method enables overriding. Its results should be get from `this.whereAnds`
 	protected Set<ISliceFilter> splitWhereAnd() {
 		return FilterHelpers.splitAnd(where);
 	}
@@ -92,10 +93,10 @@ public class FilterStripper implements IFilterStripper {
 
 	@Override
 	public ISliceFilter strip(ISliceFilter filter) {
-		if (where.isMatchAll()) {
+		if (ISliceFilter.MATCH_ALL.equals(where)) {
 			// `WHERE` has no clause: `FILTER` has to keep all clauses
 			return filter;
-		} else if (where.isMatchNone()) {
+		} else if (ISliceFilter.MATCH_NONE.equals(where)) {
 			return ISliceFilter.MATCH_ALL;
 		}
 
@@ -210,7 +211,7 @@ public class FilterStripper implements IFilterStripper {
 			return isStricterThan(stricterColumn.getValueMatcher(), laxerFilter.getValueMatcher());
 		}
 
-		FilterStripper filterStripper = withWhere(filter.negate());
+		FilterStripper filterStripper = withWhere(filter);
 
 		boolean isStricterThanAnd = isStricerThanSplitAnd(filter, filterStripper);
 		if (isStricterThanAnd) {
@@ -219,12 +220,16 @@ public class FilterStripper implements IFilterStripper {
 
 		// `WHERE isStricterThan FILTER` is equivalent with `!FILTER isStricterThan !WHERE`
 		// `!` turns `OR into `AND`, which enables reusing previous block, and implementing only `AND`
-		boolean isStricterThanOr = filterStripper.isStricerThanSplitAnd(where.negate(), this);
+		boolean isStricterThanOr = filterStripper.negate().isStricerThanSplitAnd(where.negate(), this.negate());
 		if (isStricterThanOr) {
 			return true;
 		}
 
 		return false;
+	}
+
+	protected FilterStripper negate() {
+		return this.withWhere(where.negate());
 	}
 
 	/**
@@ -260,7 +265,7 @@ public class FilterStripper implements IFilterStripper {
 		}
 
 		Set<ISliceFilter> allStricters = whereAnds.get();
-		Set<ISliceFilter> allLaxers = FilterHelpers.splitAnd(laxer);
+		Set<ISliceFilter> allLaxers = laxerStripper.whereAnds.get();
 
 		if (allStricters.containsAll(allLaxers)) {
 			// true if `WHERE:a=a1&b=b1` and `FILTER:b=b1`
@@ -280,9 +285,9 @@ public class FilterStripper implements IFilterStripper {
 				break;
 			}
 			IFilterStripper stricterStripper = withWhere(oneStricter);
-			boolean oneStricterisWhere = oneStricter.equals(where);
+			boolean oneStricterIsWhere = oneStricter.equals(where);
 			uncoveredLaxers.removeIf(oneLaxer -> {
-				if (oneStricterisWhere && oneLaxer.equals(laxer)) {
+				if (oneStricterIsWhere && oneLaxer.equals(laxer)) {
 					// break cycle in recursivity
 					return false;
 				}

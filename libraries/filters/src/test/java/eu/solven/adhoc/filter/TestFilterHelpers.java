@@ -23,7 +23,6 @@
 package eu.solven.adhoc.filter;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -436,12 +435,12 @@ public class TestFilterHelpers {
 	final IFilterOptimizer forbidOptimizations = new IFilterOptimizer() {
 
 		@Override
-		public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+		public ISliceFilter and(Set<? extends ISliceFilter> filters, boolean willBeNegated) {
 			throw new UnsupportedOperationException("Forbidden");
 		}
 
 		@Override
-		public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
+		public ISliceFilter or(Set<? extends ISliceFilter> filters, boolean willBeNegated) {
 			throw new UnsupportedOperationException("Forbidden");
 		}
 

@@ -55,6 +55,12 @@ public class NotFilter implements INotFilter {
 		return negated;
 	}
 
+	/**
+	 * The simpler way to express `NOT`. Only by wrapping with `!(...)` except if already wrapped.
+	 * 
+	 * @param filter
+	 * @return
+	 */
 	public static ISliceFilter simpleNot(ISliceFilter filter) {
 		if (MATCH_ALL.equals(filter)) {
 			return MATCH_NONE;
