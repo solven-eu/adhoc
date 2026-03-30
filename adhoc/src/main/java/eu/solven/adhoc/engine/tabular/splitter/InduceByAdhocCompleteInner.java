@@ -38,6 +38,7 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
+import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
@@ -63,64 +64,83 @@ public class InduceByAdhocCompleteInner {
 	 * {@link IAdhocDag}. Uses two pre-computed indices to avoid the O(n²) cross-product of expensive filter and groupBy
 	 * comparisons:
 	 * <ul>
-	 * <li>GroupBy containment index: for each distinct induced {@link IGroupBy}, the distinct inducer {@link IGroupBy}s
-	 * whose columns are a superset — computed once per distinct groupBy pair (O(g²)).</li>
-	 * <li>Filter strictness index: for each distinct induced filter, the set of inducer filters that are laxer —
-	 * computed once per distinct filter pair (O(f²)).</li>
+	 * <li>GroupBy containment index: for each distinct inducer {@link IGroupBy}, the distinct induced {@link IGroupBy}s
+	 * whose columns are a subset — computed once per distinct groupBy pair (O(g²)).</li>
+	 * <li>Filter strictness index: for each distinct inducer filter, the set of induced filters that are stricter —
+	 * computed once per distinct filter pair (O(f²)) using a shared per-filter {@link IFilterStripper}.</li>
 	 * </ul>
-	 * Only {@link InducerHelpers#makeLeftoverFilter} must still be checked per step pair (it depends on both the
-	 * inducer groupBy columns and the filter pair simultaneously), but it is reached only when both indices agree.
+	 * The leftover-filter check (whether the extra filtering imposed by the induced step is expressible using only the
+	 * inducer groupBy columns) is inlined in the inner loop and reuses the {@link IFilterStripper} already built for
+	 * the outer inducer step, avoiding any additional {@code makeFilterStripper} calls.
 	 *
 	 * <p>
 	 * This method is thread-safe: it operates exclusively on a new local graph and its inputs are read-only.
-	 * 
-	 * @param sharedStripper
 	 */
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	public IAdhocDag<TableQueryStep> buildEdgesForContextGroupLocal(List<TableQueryStep> contextSteps) {
 		IAdhocDag<TableQueryStep> localDag = GraphHelpers.makeGraph();
 
 		// Phase 2: groupBy containment index — O(g²) for g distinct groupBys in this context group.
-		// For each distinct induced groupBy, collect all distinct groupBys that are supersets (valid inducers).
-		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys =
-				makeInducedGroupByToInducerGroupBys(contextSteps);
+		// For each distinct inducer groupBy, collect all distinct groupBys that are subsets (valid induceds).
+		Map<IGroupBy, List<IGroupBy>> inducerGroupByToInducedGroupBys =
+				makeInducerGroupByToInducedGroupBys(contextSteps);
 
-		// Phase 3: filter strictness index — O(f²) for f distinct filters in this context group.
-		// For each distinct induced filter, pre-compute the set of inducer filters that are laxer.
-		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters =
-				makeInducedFilterToLaxerInducedFilters(contextSteps);
+		// Phase 3: one IFilterStripper per distinct filter, shared across both the strictness index and
+		// the per-pair leftover check — no redundant makeFilterStripper calls.
+		ImmutableSet<ISliceFilter> distinctFilters =
+				contextSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+		Map<ISliceFilter, IFilterStripper> filterToStripper = makeFilterToStripper(distinctFilters);
+
+		// Phase 3b: filter strictness index — O(f²) for f distinct filters in this context group.
+		// For each distinct inducer filter, pre-compute the set of induced filters that are stricter.
+		Map<ISliceFilter, Set<ISliceFilter>> inducerFilterToStricterInducedFilters =
+				makeInducerFilterToStricterInducedFilters(distinctFilters, filterToStripper);
 
 		// Phase 4: index steps by groupBy for O(1) candidate lookup
 		Map<IGroupBy, List<TableQueryStep>> groupByToSteps =
 				contextSteps.stream().collect(Collectors.groupingBy(TableQueryStep::getGroupBy));
 
-		// Phase 5: for each induced step, use the indices to enumerate only valid inducer candidates
-		contextSteps.forEach(induced -> {
-			localDag.addVertex(induced);
+		// Phase 5: for each inducer step, use the indices to enumerate only valid induced candidates.
+		// The inducer is the OUTER loop so its IFilterStripper (built in Phase 3) is fetched once and
+		// reused for all induced candidates in the inner loop.
+		contextSteps.forEach(inducer -> {
+			localDag.addVertex(inducer);
 
-			ISliceFilter inducedFilter = induced.getFilter();
-			if (ISliceFilter.MATCH_NONE.equals(inducedFilter)) {
-				// MATCH_NONE steps are independent: they do not wait for any inducer
+			ISliceFilter inducerFilter = inducer.getFilter();
+			if (ISliceFilter.MATCH_NONE.equals(inducerFilter)) {
+				// MATCH_NONE steps produce no rows and cannot serve as inducer for any induced step
 				return;
 			}
 
-			Set<ISliceFilter> validInducerFilters = inducedFilterToLaxerInducerFilters.get(inducedFilter);
-			List<IGroupBy> validInducerGroupBys = inducedGroupByToInducerGroupBys.get(induced.getGroupBy());
+			Set<ISliceFilter> validInducedFilters =
+					inducerFilterToStricterInducedFilters.getOrDefault(inducerFilter, ImmutableSet.of());
+			List<IGroupBy> validInducedGroupBys = inducerGroupByToInducedGroupBys.get(inducer.getGroupBy());
 
-			validInducerGroupBys.forEach(inducerGroupBy -> {
-				Collection<IAdhocColumn> inducerColumns = inducerGroupBy.getColumns();
-				groupByToSteps.get(inducerGroupBy)
+			// Fetched once per inducer — reused for all induced candidates below
+			IFilterStripper inducerStripper = filterToStripper.get(inducerFilter);
+			// Column-name set is also invariant across the inner loop
+			ImmutableSet<String> inducerColumnNames = inducer.getGroupBy()
+					.getColumns()
+					.stream()
+					.map(IAdhocColumn::getName)
+					.collect(ImmutableSet.toImmutableSet());
+
+			validInducedGroupBys.forEach(inducedGroupBy -> {
+				groupByToSteps.get(inducedGroupBy)
 						.stream()
 						// No edge from a step to itself
-						.filter(inducer -> inducer != induced)
-						// Inducer filter must be laxer (pre-computed per distinct filter pair)
-						.filter(inducer -> validInducerFilters.contains(inducer.getFilter()))
-						// Leftover filter must be expressible using only inducer groupBy columns
-						.filter(inducer -> InducerHelpers
-								.makeLeftoverFilter(inducerColumns, inducer.getFilter(), inducedFilter)
-								.isPresent())
-						.forEach(inducer -> {
-							localDag.addVertex(inducer);
+						.filter(induced -> induced != inducer)
+						// Induced filter must be stricter (pre-computed per distinct filter pair)
+						.filter(induced -> validInducedFilters.contains(induced.getFilter()))
+						// Leftover filter must be expressible using only inducer groupBy columns.
+						// Inlined from InducerHelpers.makeLeftoverFilter, reusing inducerStripper
+						// from the outer loop instead of creating a fresh one per pair.
+						.filter(induced -> {
+							ISliceFilter leftover = inducerStripper.strip(induced.getFilter());
+							return inducerColumnNames.containsAll(FilterHelpers.getFilteredColumns(leftover));
+						})
+						.forEach(induced -> {
+							localDag.addVertex(induced);
 							localDag.addEdge(induced, inducer);
 							log.debug("Induced -> Inducer ({} -> {})", induced, inducer);
 						});
@@ -130,44 +150,80 @@ public class InduceByAdhocCompleteInner {
 		return localDag;
 	}
 
-	protected Map<IGroupBy, List<IGroupBy>> makeInducedGroupByToInducerGroupBys(List<TableQueryStep> contextSteps) {
+	/**
+	 * Builds the groupBy containment index: for each distinct inducer {@link IGroupBy}, the list of distinct
+	 * {@link IGroupBy}s whose column set is a subset (valid induced groupBys).
+	 *
+	 * @param contextSteps
+	 *            all steps in the current context group
+	 * @return map from inducer groupBy to the list of compatible induced groupBys
+	 */
+	protected Map<IGroupBy, List<IGroupBy>> makeInducerGroupByToInducedGroupBys(List<TableQueryStep> contextSteps) {
 		List<IGroupBy> distinctGroupBys =
 				contextSteps.stream().map(TableQueryStep::getGroupBy).distinct().collect(Collectors.toList());
 
-		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys = new HashMap<>();
-		for (IGroupBy gbInduced : distinctGroupBys) {
-			Collection<IAdhocColumn> inducedCols = gbInduced.getColumns();
-			List<IGroupBy> inducerGroupBys = new ArrayList<>();
-			for (IGroupBy gbInducer : distinctGroupBys) {
-				if (gbInducer.getColumns().containsAll(inducedCols)) {
-					inducerGroupBys.add(gbInducer);
+		Map<IGroupBy, List<IGroupBy>> inducerGroupByToInducedGroupBys = new HashMap<>();
+		for (IGroupBy gbInducer : distinctGroupBys) {
+			Collection<IAdhocColumn> inducerCols = gbInducer.getColumns();
+			List<IGroupBy> inducedGroupBys = new ArrayList<>();
+			for (IGroupBy gbInduced : distinctGroupBys) {
+				if (inducerCols.containsAll(gbInduced.getColumns())) {
+					inducedGroupBys.add(gbInduced);
 				}
 			}
-			inducedGroupByToInducerGroupBys.put(gbInduced, inducerGroupBys);
+			inducerGroupByToInducedGroupBys.put(gbInducer, inducedGroupBys);
 		}
-		return inducedGroupByToInducerGroupBys;
+		return inducerGroupByToInducedGroupBys;
 	}
 
-	protected Map<ISliceFilter, Set<ISliceFilter>> makeInducedFilterToLaxerInducedFilters(
-			List<TableQueryStep> contextSteps) {
-		ImmutableSet<ISliceFilter> distinctFilters =
-				contextSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+	/**
+	 * Builds one {@link IFilterStripper} per distinct filter (excluding {@link ISliceFilter#MATCH_NONE}), keyed by the
+	 * filter itself. The same stripper instance is reused for both the filter-strictness index and the per-pair
+	 * leftover check, avoiding redundant {@code makeFilterStripper} calls.
+	 *
+	 * @param distinctFilters
+	 *            all distinct filters present in the context group
+	 * @return map from filter to its pre-built stripper
+	 */
+	protected Map<ISliceFilter, IFilterStripper> makeFilterToStripper(ImmutableSet<ISliceFilter> distinctFilters) {
+		Map<ISliceFilter, IFilterStripper> filterToStripper = new LinkedHashMap<>();
+		for (ISliceFilter f : distinctFilters) {
+			if (!ISliceFilter.MATCH_NONE.equals(f)) {
+				filterToStripper.put(f, stripperFactory.makeFilterStripper(f));
+			}
+		}
+		return filterToStripper;
+	}
 
-		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters = new LinkedHashMap<>();
+	/**
+	 * Builds the filter strictness index: for each distinct inducer filter, the set of induced filters that are
+	 * strictly stricter (i.e., the inducer filter is laxer). Uses the pre-built stripper map to avoid additional
+	 * {@code makeFilterStripper} calls.
+	 *
+	 * @param distinctFilters
+	 *            all distinct filters present in the context group
+	 * @param filterToStripper
+	 *            pre-built strippers, one per distinct non-MATCH_NONE filter
+	 * @return map from inducer filter to the set of valid (stricter) induced filters
+	 */
+	protected Map<ISliceFilter, Set<ISliceFilter>> makeInducerFilterToStricterInducedFilters(
+			ImmutableSet<ISliceFilter> distinctFilters,
+			Map<ISliceFilter, IFilterStripper> filterToStripper) {
+		Map<ISliceFilter, Set<ISliceFilter>> inducerFilterToStricterInducedFilters = new LinkedHashMap<>();
 		for (ISliceFilter fInduced : distinctFilters) {
 			if (ISliceFilter.MATCH_NONE.equals(fInduced)) {
 				// MATCH_NONE steps are independent: no inducer can serve them
 				continue;
 			}
-			IFilterStripper stripper = stripperFactory.makeFilterStripper(fInduced);
-			Set<ISliceFilter> laxer = new LinkedHashSet<>();
+			IFilterStripper inducedStripper = filterToStripper.get(fInduced);
 			for (ISliceFilter fInducer : distinctFilters) {
-				if (stripper.isStricterThan(fInducer)) {
-					laxer.add(fInducer);
+				if (inducedStripper.isStricterThan(fInducer)) {
+					// fInducer is laxer than fInduced → fInducer can serve fInduced
+					inducerFilterToStricterInducedFilters.computeIfAbsent(fInducer, k -> new LinkedHashSet<>())
+							.add(fInduced);
 				}
 			}
-			inducedFilterToLaxerInducerFilters.put(fInduced, laxer);
 		}
-		return inducedFilterToLaxerInducerFilters;
+		return inducerFilterToStricterInducedFilters;
 	}
 }
