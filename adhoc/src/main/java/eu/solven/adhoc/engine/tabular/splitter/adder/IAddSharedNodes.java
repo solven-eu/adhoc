@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.tabular.splitter.adder;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 
 /**
  * Holds a policy to add shared/intermediate nodes into a {@link IAdhocDag} of {@link TableQueryStep}.
@@ -41,6 +42,6 @@ public interface IAddSharedNodes {
 	 */
 	@FunctionalInterface
 	interface IAddSharedNodesFactory {
-		IAddSharedNodes make(IFilterOptimizer filterOptimizer);
+		IAddSharedNodes make(IFilterStripperFactory filterStripperFactory, IFilterOptimizer filterOptimizer);
 	}
 }

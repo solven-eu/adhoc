@@ -27,10 +27,11 @@ import java.util.Optional;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IGroupBy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -39,7 +40,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
+@RequiredArgsConstructor
 public abstract class AInduceByAdhocParent implements ITableStepsSplitter {
+
+	abstract IFilterStripperFactory getFilterStripperFactory();
 
 	protected TableQueryStep contextOnly(TableQueryStep inducer) {
 		return TableQueryStep.edit(inducer)
@@ -79,7 +83,7 @@ public abstract class AInduceByAdhocParent implements ITableStepsSplitter {
 
 		ISliceFilter inducerFilter = inducer.getFilter();
 
-		if (!FilterHelpers.isStricterThan(inducedFilter, inducerFilter)) {
+		if (!getFilterStripperFactory().makeFilterStripper(inducedFilter).isStricterThan(inducerFilter)) {
 			// Induced is not covered by inducer: it can not infer it
 			return false;
 		}

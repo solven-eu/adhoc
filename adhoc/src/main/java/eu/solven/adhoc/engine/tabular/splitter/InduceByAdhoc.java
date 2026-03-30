@@ -44,6 +44,7 @@ import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersStrictGroupBy;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
@@ -83,6 +84,11 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	@NonNull
 	@Default
 	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
+
+	@Override
+	IFilterStripperFactory getFilterStripperFactory() {
+		return factories.getFilterStripperFactory();
+	}
 
 	@Override
 	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
@@ -185,14 +191,11 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	}
 
 	protected IMergeInducers makeMergeInducers() {
-		return mergeInducersFactory.makeMergeInducer(factories.getFilterStripperFactory(), filterOptimizer);
+		return mergeInducersFactory.makeMergeInducer(getFilterStripperFactory(), filterOptimizer);
 	}
 
 	protected IAddSharedNodes makeSharedNodesAdder() {
-		return AddSharedNodes.builder()
-				.filterStripperFactory(factories.getFilterStripperFactory())
-				.filterOptimizer(filterOptimizer)
-				.build();
+		return sharedNodesAdderFactory.make(getFilterStripperFactory(), filterOptimizer);
 	}
 
 	@Override
