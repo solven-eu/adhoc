@@ -23,10 +23,6 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,25 +31,21 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -110,7 +102,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		// Enables cache sharing
 		IFilterStripper sharedStripper = filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
-		InduceByAdhocComplete2 complete2 = new InduceByAdhocComplete2(sharedStripper::withWhere);
+		InduceByAdhocCompleteInner complete2 = new InduceByAdhocCompleteInner(sharedStripper::withWhere);
 
 		// Concurrent path: each context group is processed in its own local DAG, then merged.
 		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures = new ArrayList<>();
@@ -148,4 +140,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		return les;
 	}
 
+	public static ITableStepsSplitterFactory makeFactory() {
+		 return (filterStripperFactory, filterOptimizer) -> InduceByAdhocComplete.builder().filterStripperFactory(filterStripperFactory).build();
+	}
 }

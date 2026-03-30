@@ -44,4 +44,8 @@ public class FilterStripperUnsafe {
 	public Cache<ISliceFilter, FilterStripper> getCache(FilterStripper filterStripper) {
 		return filterStripper.filterToStripper;
 	}
+
+	public long getNbMake(FilterStripperFactory filterStripperFactory) {
+		return filterStripperFactory.nbMake.get();
+	}
 }

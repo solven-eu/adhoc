@@ -38,6 +38,10 @@ public class FilterStripperFactory implements IFilterStripperFactory {
 	// `IFilterStripper.withWhere(...)`
 	final AtomicLong nbMake = new AtomicLong();
 
+	public void resetStatistics() {
+		nbMake.set(0);
+	}
+
 	@Override
 	public IFilterStripper makeFilterStripper(ISliceFilter where) {
 		nbMake.incrementAndGet();

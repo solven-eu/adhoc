@@ -24,7 +24,6 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.jgrapht.Graphs;
 
@@ -34,7 +33,6 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
@@ -43,7 +41,9 @@ import eu.solven.adhoc.engine.tabular.splitter.adder.AddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersStrictGroupBy;
+import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
@@ -63,17 +63,18 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 	@Default
 	@NonNull
-	protected final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	protected final IFilterStripperFactory filterStripperFactory =
+			AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
 	@Default
 	@NonNull
-	protected final IFilterOptimizer filterOptimizer =
-			AdhocFactoriesUnsafe.factories.getFilterOptimizerFactory().makeOptimizer();
+	protected final IFilterOptimizerFactory filterOptimizerFactory =
+			AdhocFactoriesUnsafe.factories.getFilterOptimizerFactory();
 
 	// Holds the policy allowing one step to imply another step
 	// On very large graph, we may have an heuristic policy
 	@NonNull
 	@Default
-	protected Supplier<ITableStepsSplitter> inferenceEdgesAdderFactory = () -> InduceByAdhocComplete.builder().build();
+	protected ITableStepsSplitterFactory inferenceEdgesAdderFactory = InduceByAdhocComplete.makeFactory();
 
 	// Holds the policy allowing to merge inducers into a different set of inducers (typically smaller in number).
 	@NonNull
@@ -86,21 +87,20 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
 
 	@Override
-	IFilterStripperFactory getFilterStripperFactory() {
-		return factories.getFilterStripperFactory();
-	}
-
-	@Override
 	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
+		IFilterStripperFactory queryFactory =
+				filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL)::withWhere;
+		IFilterOptimizer filterOptimizer = filterOptimizerFactory.makeOptimizerWithCache();
+
 		// 1. Add inference between existing nodes
 		// If we add such links, we tell the induced will be inferred by Adhoc and there will be less inducers for
 		// ITableWrapper.
 		// If we do not add such edges, we request the ITableWrapper to execute each TableQueryStep (e.g. as a large
 		// UNION ALL)
 		// BEWARE This should only add edges
-		IAdhocDag<TableQueryStep> withInferenceNodes =
-				inferenceEdgesAdderFactory.get().splitInducedAsDag(hasOptions, inducedToInducer);
+		IAdhocDag<TableQueryStep> withInferenceNodes = inferenceEdgesAdderFactory.make(queryFactory, filterOptimizer)
+				.splitInducedAsDag(hasOptions, inducedToInducer);
 
 		// 2. Given the new (and smaller) set of inducers, we may want to add additional vertices, merging inducers
 		// together.
@@ -116,7 +116,8 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 		// Merging inducers is done a per options+custom_marker+aggregator basis
 		Multimaps.asMap(aggregatorToQueries).forEach((a, steps) -> {
-			IAdhocDag<TableQueryStep> aInducedToInducer = makeMergeInducers().mergeInducers(a, steps);
+			IAdhocDag<TableQueryStep> aInducedToInducer =
+					makeMergeInducers(queryFactory, filterOptimizer).mergeInducers(a, steps);
 
 			if (hasOptions.isDebugOrExplain()) {
 				SplitTableQueries aTableQueries =
@@ -143,7 +144,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 		// They will help computing only once elements of inference (e.g. some filter or some groupBy)
 
 		// add shared nodes over the full graph, as both explicit and other steps may benefit from shared nodes
-		IAdhocDag<TableQueryStep> sharedNodes = addSharedNodes(withMergedInducers);
+		IAdhocDag<TableQueryStep> sharedNodes = addSharedNodes(queryFactory, filterOptimizer, withMergedInducers);
 		Graphs.addGraph(withMergedInducers, sharedNodes);
 		return withMergedInducers;
 	}
@@ -155,8 +156,10 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 * @param inducedToInducer
 	 * @return
 	 */
-	protected IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> inducedToInducer) {
-		return makeSharedNodesAdder().addSharedNodes(inducedToInducer);
+	protected IAdhocDag<TableQueryStep> addSharedNodes(IFilterStripperFactory queryFactory,
+			IFilterOptimizer filterOptimizer,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
+		return makeSharedNodesAdder(queryFactory, filterOptimizer).addSharedNodes(inducedToInducer);
 	}
 
 	protected SetMultimap<TableQueryStep, TableQueryStep> groupByAggregator(Set<TableQueryStep> steps) {
@@ -174,34 +177,19 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 				.collect(Multimaps.toMultimap(toGroup::apply, Function.identity(), LinkedHashMultimap::create));
 	}
 
-	/**
-	 * The splitting strategy is based on:
-	 * <ul>
-	 * <li>Doing a single query per Aggregator. It will keep a low number of queries</li>
-	 * <li>For an aggregator, do a query able to induce all steps (typically by querying the union of filters), while
-	 * keeping IGroupBy separate</li>
-	 * </ul>
-	 *
-	 * From an implementation perspective, this re-use the standard optimization process, then compute a single
-	 * TableQueryStep by Aggregator given the root inducers.
-	 */
-	protected IAdhocDag<TableQueryStep> getGroupedInducers(TableQueryStep contextualAggregator,
-			Set<TableQueryStep> steps) {
-		return makeMergeInducers().mergeInducers(contextualAggregator, steps);
+	protected IMergeInducers makeMergeInducers(IFilterStripperFactory queryFactory, IFilterOptimizer filterOptimizer) {
+		return mergeInducersFactory.makeMergeInducer(queryFactory, filterOptimizer);
 	}
 
-	protected IMergeInducers makeMergeInducers() {
-		return mergeInducersFactory.makeMergeInducer(getFilterStripperFactory(), filterOptimizer);
-	}
-
-	protected IAddSharedNodes makeSharedNodesAdder() {
-		return sharedNodesAdderFactory.make(getFilterStripperFactory(), filterOptimizer);
+	protected IAddSharedNodes makeSharedNodesAdder(IFilterStripperFactory queryFactory,
+			IFilterOptimizer filterOptimizer) {
+		return sharedNodesAdderFactory.make(queryFactory, filterOptimizer);
 	}
 
 	@Override
 	public String toString() {
 		return MoreObjects.toStringHelper(this)
-				.add("inferenceEdgesAdder", inferenceEdgesAdderFactory.get())
+				.add("inferenceEdgesAdderFactory", inferenceEdgesAdderFactory)
 				.add("mergeInducersFactory", mergeInducersFactory)
 				.add("sharedNodesAdderFactory", sharedNodesAdderFactory)
 				.toString();
