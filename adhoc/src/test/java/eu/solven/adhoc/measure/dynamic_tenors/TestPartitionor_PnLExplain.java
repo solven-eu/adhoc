@@ -31,6 +31,8 @@ import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic;
 import eu.solven.adhoc.beta.schema.RelevancyHeuristic.CubeRelevancy;
@@ -65,23 +67,27 @@ public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLE
 	@BeforeEach
 	@Override
 	public void feedTable() {
-		table().add(Map.of("color",
-				"blue",
-				"sensitivities",
-				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "1Y", K_MATURITY, "2Y"), 12.34D)));
-		table().add(Map.of("color",
-				"red",
-				"sensitivities",
-				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "1Y", K_MATURITY, "2Y"), 23.45D)));
+		table().add(ImmutableMap.<String, Object>builder()
+				.put("color", "blue")
+				.put("sensitivities",
+						MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "1Y", K_MATURITY, "2Y"), 12.34D))
+				.build());
+		table().add(ImmutableMap.<String, Object>builder()
+				.put("color", "red")
+				.put("sensitivities",
+						MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "1Y", K_MATURITY, "2Y"), 23.45D))
+				.build());
 
-		table().add(Map.of("color",
-				"blue",
-				"sensitivities",
-				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "3M", K_MATURITY, "1Y"), 34.56D)));
-		table().add(Map.of("color",
-				"red",
-				"sensitivities",
-				MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "3M", K_MATURITY, "2Y"), 45.67D)));
+		table().add(ImmutableMap.<String, Object>builder()
+				.put("color", "blue")
+				.put("sensitivities",
+						MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "3M", K_MATURITY, "1Y"), 34.56D))
+				.build());
+		table().add(ImmutableMap.<String, Object>builder()
+				.put("color", "red")
+				.put("sensitivities",
+						MarketRiskSensitivity.empty().addDelta(Map.of(K_TENOR, "3M", K_MATURITY, "2Y"), 45.67D))
+				.build());
 	}
 
 	@BeforeEach
@@ -142,11 +148,11 @@ public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLE
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(),
-						Map.of("pnl_explain",
-								(12.34D + 23.45) * 2.7 + 34.56D * 4.6 + 45.67D * 7.7,
-								"count",
-								// 3 instead of 4 as the pre-aggregation did not count
-								0L + 3))
+						ImmutableMap.<String, Object>builder()
+								.put("pnl_explain", (12.34D + 23.45) * 2.7 + 34.56D * 4.6 + 45.67D * 7.7)
+								.put("count", // 3 instead of 4 as the pre-aggregation did not count
+										0L + 3)
+								.build())
 				.hasSize(1);
 	}
 
@@ -179,15 +185,17 @@ public class TestPartitionor_PnLExplain extends ADagTest implements IExamplePnLE
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.containsEntry(Map.of(K_TENOR, "1Y"),
-						Map.of("pnl_explain",
-								BigDecimal.valueOf(12.34D).multiply(BigDecimal.valueOf(2.7)).doubleValue(),
-								"count",
-								1L))
+						ImmutableMap.<String, Object>builder()
+								.put("pnl_explain",
+										BigDecimal.valueOf(12.34D).multiply(BigDecimal.valueOf(2.7)).doubleValue())
+								.put("count", 1L)
+								.build())
 				.containsEntry(Map.of(K_TENOR, "3M"),
-						Map.of("pnl_explain",
-								BigDecimal.valueOf(34.56).multiply(BigDecimal.valueOf(4.6)).doubleValue(),
-								"count",
-								1L))
+						ImmutableMap.<String, Object>builder()
+								.put("pnl_explain",
+										BigDecimal.valueOf(34.56).multiply(BigDecimal.valueOf(4.6)).doubleValue())
+								.put("count", 1L)
+								.build())
 				.hasSize(2);
 	}
 

@@ -47,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 
 	@Override
-	public ITableQueryFactory makeOptimizer(IAdhocFactories factories,
+	public ITableQueryFactory makeQueryFactory(IAdhocFactories factories,
 			IFilterOptimizer filterOptimizer,
 			IHasQueryOptions hasOptions) {
 		ITableStepsSplitter splitter = makeSplitter(hasOptions, filterOptimizer);

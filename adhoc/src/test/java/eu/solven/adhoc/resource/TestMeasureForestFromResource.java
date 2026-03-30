@@ -197,12 +197,11 @@ public class TestMeasureForestFromResource {
 				.put("name", "k1_c=V")
 				.put("type", ".Filtrator")
 				.put("filter",
-						Map.of("type",
-								"column",
-								"column",
-								"c",
-								"valueMatcher",
-								Map.of("type", "equals", "operand", "someString")))
+						ImmutableMap.<String, Object>builder()
+								.put("type", "column")
+								.put("column", "c")
+								.put("valueMatcher", Map.of("type", "equals", "operand", "someString"))
+								.build())
 				.put("underlying", "k1")
 				.build();
 

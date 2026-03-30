@@ -336,8 +336,9 @@ public class TestOrFilter {
 				// .hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&(d==d1|b==b1)")
 				// .hasToString("a==a1&c=in=(c1,c2,c3)&b=in=(b1,b2,b3)&(d==d1|b==b1)")
 				// BEWARE There is an alternative and equivalent representation
-				// .hasToString("a==a1&c=in=(c1,c2,c3)&(b==b1|b=in=(b2,b3)&d==d1)")
-				.hasToString("a==a1&(b==b1|b=in=(b2,b3)&d==d1)&c=in=(c1,c2,c3)");
+				.hasToString("a==a1&c=in=(c1,c2,c3)&(b==b1|b=in=(b2,b3)&d==d1)")
+		// .hasToString("a==a1&(b==b1|b=in=(b2,b3)&d==d1)&c=in=(c1,c2,c3)")
+		;
 
 	}
 
@@ -372,14 +373,15 @@ public class TestOrFilter {
 
 		ISliceFilter cubeQueryStep = FilterBuilder.and(operandsSlice).combine();
 		ISliceFilter tableQueryStep = FilterBuilder.and(tableWhere)
-				.filter(
-						// This combines, as it may be very wide and prone to cartesianProduct explosion
-						FilterBuilder.or(tableOr).combine())
+				// This combines, as it may be very wide and prone to cartesianProduct explosion
+				.filter(FilterBuilder.or(tableOr).combine())
 				.combine();
 
 		// Check AND between the wide tableQuery and the cubeQueryStep gives
 		ISliceFilter combined = FilterBuilder.and(tableQueryStep, cubeQueryStep).optimize();
 
+		Assertions.assertThat(tableQueryStep).hasToString("a==a1&(d==d1|b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1)");
+		Assertions.assertThat(cubeQueryStep).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1");
 		Assertions.assertThat(combined).hasToString("a==a1&b=in=(b1,b2,b3)&c=in=(c1,c2,c3)&e==e1");
 	}
 
@@ -407,12 +409,10 @@ public class TestOrFilter {
 	@Test
 	public void testOr_AndNotOr_22() {
 		// make sure this case is optimized without cartesianProductAndOr
-		FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(false).build();
+		// FilterOptimizer optimizer = FilterOptimizer.builder().withCartesianProductsAndOr(false).build();
 
 		// `d!=d1&(d==d1|e!=e1)`
-		ISliceFilter output = FilterBuilder.builder()
-				.andElseOr(Type.AND)
-				.build()
+		ISliceFilter output = FilterBuilder.and()
 				.filter(FilterBuilder.and(ColumnFilter.matchEq("d", "d1")).combine().negate())
 				.filter(FilterBuilder.and(ColumnFilter.notEq("d", "d1"), ColumnFilter.matchEq("e", "e1"))
 						.combine()
@@ -676,6 +676,19 @@ public class TestOrFilter {
 				.optimize();
 
 		Assertions.assertThat(orA1B1B1_A2B1C1).hasToString("b==b1&c==c1&a=in=(a1,a2)");
+		Assertions.assertThat(orA1B1B1_A2B1C1).isInstanceOfSatisfying(AndFilter.class, and -> {
+			Assertions.assertThat(and.getOperands()).hasSize(3);
+		});
+	}
+
+	@Test
+	public void testOr_largeCommonAnd() {
+		ISliceFilter orA1B1B1_A2B1C1 = FilterBuilder.or()
+				.filter(AndFilter.and("a", "a1", "b", "b1", "c", "c1"))
+				.filter(AndFilter.and("a", "a1", "b", "b1", "c", "c2"))
+				.optimize();
+
+		Assertions.assertThat(orA1B1B1_A2B1C1).hasToString("a==a1&b==b1&c=in=(c1,c2)");
 		Assertions.assertThat(orA1B1B1_A2B1C1).isInstanceOfSatisfying(AndFilter.class, and -> {
 			Assertions.assertThat(and.getOperands()).hasSize(3);
 		});

@@ -22,7 +22,8 @@
  */
 package eu.solven.adhoc.filter.optimizer;
 
-import java.util.Collection;
+import java.util.Set;
+import java.util.function.Function;
 
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -50,9 +51,16 @@ public class FilterOptimizerIntraCache implements IFilterOptimizer {
 	};
 
 	@Default
+	final IFilterCostFunction costFunction = new StandardFilterCostFunction();
+
+	@Default
 	@Getter
 	@NonNull
 	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
+
+	@Default
+	@NonNull
+	Function<FilterOptimizer, KernelFactorizer> kernelFactorizerFactory = fo -> new KernelFactorizer(fo);
 
 	protected FilterOptimizerWithCache makeWithCache() {
 		// We make a `matchAll` filterStripper as it enables being re-used through the process, and sharing its cache
@@ -62,18 +70,20 @@ public class FilterOptimizerIntraCache implements IFilterOptimizer {
 
 		return FilterOptimizerWithCache.builder()
 				.listener(listener)
+				.costFunction(costFunction)
 				.filterStripperFactory(filterStripper::withWhere)
+				.kernelFactorizerFactory(kernelFactorizerFactory)
 				.build();
 	}
 
 	@Override
-	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+	public ISliceFilter and(Set<? extends ISliceFilter> filters, boolean willBeNegated) {
 		return makeWithCache().and(filters, willBeNegated);
 	}
 
 	@Override
-	public ISliceFilter or(Collection<? extends ISliceFilter> filters) {
-		return makeWithCache().or(filters);
+	public ISliceFilter or(Set<? extends ISliceFilter> filters, boolean willBeNegated) {
+		return makeWithCache().or(filters, willBeNegated);
 	}
 
 	@Override

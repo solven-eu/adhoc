@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.filter.optimizer;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -57,8 +56,9 @@ public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCac
 		optimizedAndNotNegated.invalidateAll();
 	}
 
+	// Cache the notTrivial branch of the default FilterOptimizer
 	@Override
-	public ISliceFilter and(Collection<? extends ISliceFilter> filters, boolean willBeNegated) {
+	public ISliceFilter notTrivialAnd(Set<? extends ISliceFilter> filters, boolean willBeNegated) {
 		Cache<Set<ISliceFilter>, ISliceFilter> cache;
 		if (willBeNegated) {
 			cache = optimizedAndNegated;
@@ -67,9 +67,7 @@ public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCac
 		}
 
 		try {
-			return cache.get(ImmutableSet.copyOf(filters), () -> {
-				return notCachedAnd(filters, willBeNegated);
-			});
+			return cache.get(ImmutableSet.copyOf(filters), () -> super.notTrivialAnd(filters, willBeNegated));
 		} catch (ExecutionException e) {
 			throw new IllegalArgumentException("Issue on AND over %s".formatted(filters), e);
 		}

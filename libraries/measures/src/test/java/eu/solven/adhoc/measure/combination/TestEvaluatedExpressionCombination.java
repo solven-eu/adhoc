@@ -30,6 +30,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 
@@ -108,10 +110,10 @@ public class TestEvaluatedExpressionCombination {
 	@Test
 	public void testParse() {
 		EvaluatedExpressionCombination combination =
-				EvaluatedExpressionCombination.parse(Map.of(EvaluatedExpressionCombination.K_EXPRESSION,
-						"a + b",
-						IHasCombinationKey.KEY_UNDERLYING_NAMES,
-						List.of("a", "b")));
+				EvaluatedExpressionCombination.parse(ImmutableMap.<String, Object>builder()
+						.put(EvaluatedExpressionCombination.K_EXPRESSION, "a + b")
+						.put(IHasCombinationKey.KEY_UNDERLYING_NAMES, List.of("a", "b"))
+						.build());
 
 		Assertions.assertThat(combination.combine(slice, Arrays.asList(3, 4))).isEqualTo(7L);
 	}

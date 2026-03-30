@@ -99,7 +99,7 @@ public class MergeInducersStrictGroupBy implements IMergeInducers {
 			ImmutableSet<ISliceFilter> filters =
 					mergeableSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 
-			TableQueryStep merged = TableQueryStep.edit(group).filter(filterOptimizer.or(filters)).build();
+			TableQueryStep merged = TableQueryStep.edit(group).filter(filterOptimizer.or(filters, false)).build();
 
 			inducedToInducer.addVertex(merged);
 

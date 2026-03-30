@@ -40,8 +40,12 @@ import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestLinearDecomposition {
 
-	final Map<String, Object> options = ImmutableMap
-			.of(LinearDecomposition.K_INPUT, "input", LinearDecomposition.K_OUTPUT, "output", "min", 0, "max", 100);
+	final Map<String, Object> options = ImmutableMap.<String, Object>builder()
+			.put(LinearDecomposition.K_INPUT, "input")
+			.put(LinearDecomposition.K_OUTPUT, "output")
+			.put("min", 0)
+			.put("max", 100)
+			.build();
 
 	final LinearDecomposition decomposition = new LinearDecomposition(options);
 

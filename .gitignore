@@ -56,3 +56,6 @@ node_modules
 # Claude Code local settings (user-specific overrides, should not be shared)
 # https://docs.anthropic.com/en/docs/claude-code/settings#git-ignored-settings
 settings.local.json
+
+# Claude Code agent worktrees (temporary isolated repo copies, not source)
+.claude/worktrees/

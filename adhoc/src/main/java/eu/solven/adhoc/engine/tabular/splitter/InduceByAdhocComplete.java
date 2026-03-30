@@ -33,7 +33,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
-import org.jgrapht.alg.TransitiveReduction;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,6 +46,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -109,7 +109,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		localDags.forEach(localDag -> Graphs.addGraph(induceByAdhoc, localDag));
 
 		// Remove transitive edges: e.g. given a->b->c, the a->c edge is redundant
-		TransitiveReduction.INSTANCE.reduce(induceByAdhoc);
+		TransitiveReductionV2.INSTANCE.reduce(induceByAdhoc);
 
 		return induceByAdhoc;
 	}

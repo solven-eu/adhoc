@@ -123,10 +123,11 @@ All checkers are informational — they never block the build.
   - `ImmutableList.of(…)` instead of `List.of(…)`
   - `ImmutableSet.of(…)` instead of `Set.of(…)`
   - **Quick scan**: `perl scripts/check-convention-guava.pl` — detects `Set.of`, `List.of`, `Map.of`, `Collectors.toSet()`, `Collectors.toList()`.
-- **Map literals with 2+ entries**: `Map.of(` and `ImmutableMap.of(` are permitted only for 0 or 1 entry. For 2 or more entries, use `ImmutableMap.builder().put(…).put(…).build()` for readability.
-  - `ImmutableMap.of("k", v)` — OK (1 entry)
-  - `ImmutableMap.builder().put("k1", v1).put("k2", v2).build()` — required for 2+ entries
-  - **Quick scan**: `perl scripts/check-convention-map-builder.pl` — detects multi-entry `Map.of`/`ImmutableMap.of` calls.
+- **Multi-line Map literals with 2+ entries**: `Map.of(` and `ImmutableMap.of(` that span **multiple lines** and carry 2 or more entries must be rewritten as `ImmutableMap.builder().put(…).put(…).build()` for readability. Single-line calls are acceptable regardless of entry count.
+  - `ImmutableMap.of("k1", v1, "k2", v2)` — OK (single line)
+  - `ImmutableMap.of("k", v)` — OK (1 entry, any layout)
+  - Multi-line `Map.of(\n  "k1", v1,\n  "k2", v2\n)` — use `ImmutableMap.builder()` instead
+  - **Quick scan / auto-fix**: `perl scripts/check-convention-map-builder.pl` (detect) and `perl scripts/fix-convention-map-builder.pl` (rewrite) — both operate only on multi-line calls with 2+ entries.
 
 ---
 

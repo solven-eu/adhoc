@@ -91,7 +91,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 	public void testCanInduce_groupByDifferentColumns() {
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryFactoryFactory() {
 			@Override
-			public ITableQueryFactory makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+			public ITableQueryFactory makeQueryFactory(IAdhocFactories factories, IHasQueryOptions hasOptions) {
 				return optimizer;
 			}
 		}).build();
@@ -146,7 +146,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryFactoryFactory() {
 			@Override
-			public ITableQueryFactory makeOptimizer(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+			public ITableQueryFactory makeQueryFactory(IAdhocFactories factories, IHasQueryOptions hasOptions) {
 				return optimizer;
 			}
 		}).build();

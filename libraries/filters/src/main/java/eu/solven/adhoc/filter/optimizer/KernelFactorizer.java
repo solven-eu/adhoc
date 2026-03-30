@@ -22,29 +22,22 @@
  */
 package eu.solven.adhoc.filter.optimizer;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.FilterUtility;
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.filter.OrFilter;
-import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -81,7 +74,8 @@ public class KernelFactorizer {
 	// https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
 	// BEWARE This algorithm is not smart at all, as it catches only a very limited number of cases.
 	// One may contribute a finer implementation.
-	protected ImmutableSet<? extends ISliceFilter> optimizeAndOfOr(ImmutableSet<? extends ISliceFilter> andOperands) {
+	protected ImmutableSet<? extends ISliceFilter> optimizeAndOfOr(ImmutableSet<? extends ISliceFilter> andOperands,
+			boolean willBeNegated) {
 		// 1- Segment filters between OR-like filters and others
 		// OR-like filters will be combined with a cartesian product, in the hope of rejecting many irrelevant
 		// combinations. The others are combined as a single AND.
@@ -94,7 +88,7 @@ public class KernelFactorizer {
 		// Group by operands which are splitable by OR, as we hope to detect combinations which are useless
 		Map<Boolean, ? extends Set<? extends ISliceFilter>> orNotOr = andOperands.stream()
 				.collect(Collectors.partitioningBy(
-						f -> filterOptimizer.hasOrOperands(f) && ignorableToOperands.get(false).contains(f),
+						f -> this.hasOrOperands(f) && ignorableToOperands.get(false).contains(f),
 						ImmutableSet.toImmutableSet()));
 
 		Set<? extends ISliceFilter> orOperands = orNotOr.get(true);
@@ -123,22 +117,18 @@ public class KernelFactorizer {
 		// OR operands will be combined (through cartesian product) and cross-stripped in a later step, as the goal
 		// here
 		// is to reduce the cartesian product as much as possible.
-		Set<? extends ISliceFilter> strippedOrFiltersAsAnd = filterOptimizer.splitAndStripOrs(where, orOperands);
+		Set<? extends ISliceFilter> strippedOrFiltersAsAnd = splitAndStripOrs(where, orOperands, willBeNegated);
 
 		// Factor out common sub-expressions (kernels) across the OR operands before the cartesian product.
 		// E.g. `(K|A) & (K|B) & (K|C) & D` → `(K|(A&B&C)) & D`, reducing the cartesian product size.
-		ImmutableSet<ISliceFilter> kernelExtracted = kernelsRefactoring(strippedOrFiltersAsAnd);
+		ImmutableSet<ISliceFilter> kernelExtracted = kernelsRefactoring(strippedOrFiltersAsAnd, willBeNegated);
 
 		// Consider skipping the cartesianProduct given other optimizations
-		if (!filterOptimizer.withCartesianProductsAndOr) {
-			if (ISliceFilter.MATCH_ALL.equals(where)) {
-				return kernelExtracted;
-			} else {
-				return ImmutableSet.<ISliceFilter>builder().add(where).addAll(kernelExtracted).build();
-			}
+		if (ISliceFilter.MATCH_ALL.equals(where)) {
+			return kernelExtracted;
+		} else {
+			return ImmutableSet.<ISliceFilter>builder().add(where).addAll(kernelExtracted).build();
 		}
-
-		return optimizeAndOrCartesianProduct(where, kernelExtracted);
 	}
 
 	/**
@@ -156,7 +146,8 @@ public class KernelFactorizer {
 	 * @return an equivalent but potentially smaller set of OR filters
 	 */
 	@SuppressWarnings("PMD.AssignmentInOperand")
-	protected ImmutableSet<ISliceFilter> kernelsRefactoring(Set<? extends ISliceFilter> orAndOperands) {
+	protected ImmutableSet<ISliceFilter> kernelsRefactoring(Set<? extends ISliceFilter> orAndOperands,
+			boolean willBeNegated) {
 		List<ISliceFilter> mutableList = new ArrayList<>(orAndOperands);
 
 		int tryIndex = 0;
@@ -172,7 +163,7 @@ public class KernelFactorizer {
 			// Map each non-OR sub-operand (kernel candidate) to the indices of OR operands that contain it
 			Map<ISliceFilter, List<Integer>> kernelToIndices = new LinkedHashMap<>();
 			for (int i = 0; i < mutableList.size(); i++) {
-				for (ISliceFilter subOp : filterOptimizer.getOrOperands(mutableList.get(i))) {
+				for (ISliceFilter subOp : this.getOrOperands(mutableList.get(i))) {
 					kernelToIndices.computeIfAbsent(subOp, k -> new ArrayList<>()).add(i);
 				}
 			}
@@ -204,7 +195,7 @@ public class KernelFactorizer {
 			}).collect(ImmutableSet.toImmutableSet());
 
 			// Needs to be optimize as it may be a matchNone
-			ISliceFilter andOfRemainders = filterOptimizer.and(remainders, false);
+			ISliceFilter andOfRemainders = filterOptimizer.and(remainders, willBeNegated);
 
 			// No need to optimize as we will `splitOr` right away
 			ISliceFilter newOrOperand = FilterBuilder.or(commonOr, andOfRemainders).combine();
@@ -229,79 +220,70 @@ public class KernelFactorizer {
 		}
 	}
 
-	@Deprecated(since = "CartesianProduct seems useless since Kernel Factorization")
-	protected ImmutableSet<? extends ISliceFilter> optimizeAndOrCartesianProduct(ISliceFilter where,
-			ImmutableSet<ISliceFilter> andOperands) {
-		List<List<ISliceFilter>> strippedOrFilters = andOperands.stream()
-				.map(filterOptimizer::getOrOperands)
-				.<List<ISliceFilter>>map(ImmutableList::copyOf)
-				.toList();
+	/**
+	 * 
+	 * @param where
+	 *            a common AND operand
+	 * @param andOperands
+	 *            an additional {@link List} of `AND`operands which should be splittable into a bunch of OR operands.
+	 * @param willBeNegated
+	 * @return a {@link List} of AND operands
+	 */
+	protected ImmutableSet<ISliceFilter> splitAndStripOrs(ISliceFilter where,
+			Set<? extends ISliceFilter> andOperands,
+			boolean willBeNegated) {
+		Set<? extends ISliceFilter> outputOperands;
 
-		// This method prevents `Lists.cartesianProduct` to throw if the cartesianProduct is larger than
-		// Integer.MAX_VALUE
-		BigInteger cartesianProductSize = AdhocCollectionHelpers.cartesianProductSize(strippedOrFilters);
-
-		// If the cartesian product is too large, it is unclear if we prefer to fail, or to skip the optimization
-		// Skipping the optimization might lead to later issue, preventing recombination of CubeQueryStep
-		if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) > 0) {
-			filterOptimizer.listener.onSkip(AndFilter.builder().ands(andOperands).build());
-			log.warn("Skip .optimizeAndOfOr due to {} > {} (input={})",
-					cartesianProductSize,
-					AdhocUnsafe.cartesianProductLimit,
-					andOperands);
-			// throw new NotYetImplementedException("Faulty optimization on %s".formatted(operands));
-			return andOperands;
+		if (where.isMatchAll()) {
+			outputOperands = andOperands;
+		} else {
+			outputOperands = andOperands.stream()
+					.map(this::getOrOperands)
+					// Simplify orOperands given `WHERE`
+					.map(orOperands -> splitThenStripOrs(where, orOperands))
+					.map(f -> filterOptimizer.or(f, willBeNegated))
+					.collect(ImmutableSet.toImmutableSet());
 		}
 
-		// Holds the set of flatten entries (e.g. given `(a|b)&(c|d)`, it holds `a&c`, `a&d`, `b&c` and `b&d`).
-		// BEWARE Do we rely want to do a cartesianProduct if case of an `IN` with a large number of operands?
-		List<List<ISliceFilter>> cartesianProduct = Lists.cartesianProduct(strippedOrFilters);
-
-		Set<ISliceFilter> ors = cartedianProductAndStripOrs(where, cartesianProduct);
-		if (ors.size() < cartesianProductSize.intValueExact()) {
-			// At least one simplification occurred: it is relevant to build and optimize an OR over the leftover
-			// operands
-
-			// BEWARE This heuristic is very weak. We should have a clearer score to define which expressions is
-			// better/simpler/faster. Generally speaking, we prefer AND over OR.
-			// BEWARE We go into another batch of optimization for OR, which is safe as this is strictly simpler than
-			// current input
-			ISliceFilter orCandidate = filterOptimizer.and(ImmutableList.of(where, OrFilter.copyOf(ors)), false);
-			long costSimplifiedOr = filterOptimizer.costFunction.cost(orCandidate);
-			long costInputAnd = filterOptimizer.costFunction.cost(andOperands);
-
-			if (costSimplifiedOr < costInputAnd) {
-				return ImmutableSet.copyOf(filterOptimizer.splitAnd(ImmutableSet.of(orCandidate)));
-			}
-		}
-
-		// raw AND as we do not want to call optimizations recursively
-		return andOperands;
+		return filterOptimizer.removeLaxerInAnd(outputOperands);
 	}
 
-	@Deprecated(since = "CartesianProduct seems useless since Kernel Factorization")
-	protected Set<ISliceFilter> cartedianProductAndStripOrs(ISliceFilter commonAnd,
-			List<List<ISliceFilter>> cartesianProduct) {
-		return cartesianProduct.stream()
-				.map(t -> filterOptimizer.and(t, false))
-				.filter(sf -> !sf.isMatchNone())
-				// Combine the simple AND (based on not OR operands) with the orEntry.
-				// Keep the simple AND on the left, as they are common to all entries, hence easier to be read
-				// if first
-				// Some entries would be filtered out
-				// e.g. given `(a|b)&(!a|c)`, the entry `a&!a` isMatchNone
-				.filter(sf -> {
-					// TODO if `commonAnd` is matchAll, we can skip `.optimize`
-					ISliceFilter combinedOrOperand = filterOptimizer.and(ImmutableList.of(commonAnd, sf), false);
+	/**
+	 * 
+	 * @param f
+	 * @return true if this can be expressed as a OR with at least 2 operands.
+	 */
+	protected boolean hasOrOperands(ISliceFilter f) {
+		return FilterHelpers.splitOr(f).size() >= 2;
+	}
 
-					if (combinedOrOperand.isMatchNone()) {
-						// Reject this OR which is irrelevant
-						// (e.g. flattening `AND(OR(...))`, it generated a filter like `a&!a`)
-						return false;
-					} else {
-						return true;
-					}
+	protected Set<ISliceFilter> getOrOperands(ISliceFilter f) {
+		return FilterHelpers.splitOr(f);
+	}
+
+	/**
+	 * 
+	 * @param where
+	 * @param orOperands
+	 * @return a {@link List} of operands to OR, equivalent to the input {@link List}
+	 */
+	protected Set<ISliceFilter> splitThenStripOrs(ISliceFilter where, Set<ISliceFilter> orOperands) {
+		IFilterStripper filterStripper = filterOptimizer.filterStripperFactory.makeFilterStripper(where);
+
+		Set<ISliceFilter> strippedWhere = orOperands.stream()
+				.map(filterStripper::strip)
+				// Filter the combinations which are simplified into matchNone
+				.filter(orOperand -> {
+					ISliceFilter combinedOrOperand = filterOptimizer.and(ImmutableSet.of(where, orOperand), false);
+
+					boolean matchNone = combinedOrOperand.isMatchNone();
+
+					return !matchNone;
 				})
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+				.collect(ImmutableSet.toImmutableSet());
+
+		// Simplify the OR before doing the cartesian product
+		return filterOptimizer.removeStricterInOr(strippedWhere);
 	}
+
 }

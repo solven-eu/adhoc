@@ -56,7 +56,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 
 	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
 	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
-	ITableQueryFactory optimizer = engine.queryFactoryFactory.makeOptimizer(engine().getFactories(),
+	ITableQueryFactory optimizer = engine.queryFactoryFactory.makeQueryFactory(engine().getFactories(),
 			() -> Set.of(InternalQueryOptions.INDUCE_BY_ADHOC));
 
 	@Override

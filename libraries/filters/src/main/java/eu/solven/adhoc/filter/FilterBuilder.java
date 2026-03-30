@@ -135,7 +135,7 @@ public class FilterBuilder {
 		if (andElseOr == Type.AND) {
 			return optimizer.and(filters, false);
 		} else if (andElseOr == Type.OR) {
-			return optimizer.or(filters);
+			return optimizer.or(filters, false);
 		} else {
 			// if (andElseOr == Type.NOT)
 			if (filters.size() != 1) {

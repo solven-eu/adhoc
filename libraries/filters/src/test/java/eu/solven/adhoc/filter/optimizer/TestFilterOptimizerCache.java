@@ -48,8 +48,8 @@ public class TestFilterOptimizerCache {
 						.optimize(optimizerWithCache);
 
 		// FilterOptimizer.extractKernels(ImmutableSet<ISliceFilter>) will push entries entries into cache
-		Assertions.assertThat(optimizerWithCache.optimizedAndNegated.asMap()).hasSize(13);
-		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(7);
+		Assertions.assertThat(optimizerWithCache.optimizedAndNegated.asMap()).hasSize(6);
+		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(4);
 
 		optimizerWithCache.optimizedAndNegated.asMap().forEach((filters, optimized) -> {
 			log.info("AND {} -> {}", filters, optimized);
