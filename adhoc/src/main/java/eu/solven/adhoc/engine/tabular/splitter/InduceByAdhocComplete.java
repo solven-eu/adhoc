@@ -25,7 +25,8 @@ package eu.solven.adhoc.engine.tabular.splitter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -44,8 +46,9 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.filter.FilterHelpers;
+import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -162,40 +165,13 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		// Phase 2: groupBy containment index — O(g²) for g distinct groupBys in this context group.
 		// For each distinct induced groupBy, collect all distinct groupBys that are supersets (valid inducers).
-		List<IGroupBy> distinctGroupBys =
-				contextSteps.stream().map(TableQueryStep::getGroupBy).distinct().collect(Collectors.toList());
-
-		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys = new HashMap<>();
-		for (IGroupBy gbInduced : distinctGroupBys) {
-			Collection<IAdhocColumn> inducedCols = gbInduced.getColumns();
-			List<IGroupBy> inducerGroupBys = new ArrayList<>();
-			for (IGroupBy gbInducer : distinctGroupBys) {
-				if (gbInducer.getColumns().containsAll(inducedCols)) {
-					inducerGroupBys.add(gbInducer);
-				}
-			}
-			inducedGroupByToInducerGroupBys.put(gbInduced, inducerGroupBys);
-		}
+		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys =
+				makeInducedGroupByToInducerGroupBys(contextSteps);
 
 		// Phase 3: filter strictness index — O(f²) for f distinct filters in this context group.
 		// For each distinct induced filter, pre-compute the set of inducer filters that are laxer.
-		List<ISliceFilter> distinctFilters =
-				contextSteps.stream().map(TableQueryStep::getFilter).distinct().collect(Collectors.toList());
-
-		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters = new HashMap<>();
-		for (ISliceFilter fInduced : distinctFilters) {
-			if (ISliceFilter.MATCH_NONE.equals(fInduced)) {
-				// MATCH_NONE steps are independent: no inducer can serve them
-				continue;
-			}
-			Set<ISliceFilter> laxer = new HashSet<>();
-			for (ISliceFilter fInducer : distinctFilters) {
-				if (FilterHelpers.isStricterThan(fInduced, fInducer)) {
-					laxer.add(fInducer);
-				}
-			}
-			inducedFilterToLaxerInducerFilters.put(fInduced, laxer);
-		}
+		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters =
+				makeInducedFilterToLaxerInducedFilters(contextSteps);
 
 		// Phase 4: index steps by groupBy for O(1) candidate lookup
 		Map<IGroupBy, List<TableQueryStep>> groupByToSteps =
@@ -235,6 +211,51 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		});
 
 		return localDag;
+	}
+
+	protected Map<IGroupBy, List<IGroupBy>> makeInducedGroupByToInducerGroupBys(List<TableQueryStep> contextSteps) {
+		List<IGroupBy> distinctGroupBys =
+				contextSteps.stream().map(TableQueryStep::getGroupBy).distinct().collect(Collectors.toList());
+
+		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys = new HashMap<>();
+		for (IGroupBy gbInduced : distinctGroupBys) {
+			Collection<IAdhocColumn> inducedCols = gbInduced.getColumns();
+			List<IGroupBy> inducerGroupBys = new ArrayList<>();
+			for (IGroupBy gbInducer : distinctGroupBys) {
+				if (gbInducer.getColumns().containsAll(inducedCols)) {
+					inducerGroupBys.add(gbInducer);
+				}
+			}
+			inducedGroupByToInducerGroupBys.put(gbInduced, inducerGroupBys);
+		}
+		return inducedGroupByToInducerGroupBys;
+	}
+
+	protected Map<ISliceFilter, Set<ISliceFilter>> makeInducedFilterToLaxerInducedFilters(
+			List<TableQueryStep> contextSteps) {
+		ImmutableSet<ISliceFilter> distinctFilters =
+				contextSteps.stream().map(TableQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
+
+		// Enables cache sharing
+		IFilterStripper sharedStripper =
+				AdhocFilterUnsafe.filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
+
+		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters = new LinkedHashMap<>();
+		for (ISliceFilter fInduced : distinctFilters) {
+			if (ISliceFilter.MATCH_NONE.equals(fInduced)) {
+				// MATCH_NONE steps are independent: no inducer can serve them
+				continue;
+			}
+			IFilterStripper stripper = sharedStripper.withWhere(fInduced);
+			Set<ISliceFilter> laxer = new LinkedHashSet<>();
+			for (ISliceFilter fInducer : distinctFilters) {
+				if (stripper.isStricterThan(fInducer)) {
+					laxer.add(fInducer);
+				}
+			}
+			inducedFilterToLaxerInducerFilters.put(fInduced, laxer);
+		}
+		return inducedFilterToLaxerInducerFilters;
 	}
 
 }
