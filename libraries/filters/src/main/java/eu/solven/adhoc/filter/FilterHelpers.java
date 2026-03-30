@@ -228,6 +228,12 @@ public class FilterHelpers {
 		return Stream.of(filter).mapMulti(FilterHelpers::emitFilteredColumns).collect(ImmutableSet.toImmutableSet());
 	}
 
+	public static Stream<String> streamFilteredColumns(ISliceFilter filter) {
+		// Implementation rely on `.mapMulti` for better performance, not needed to create a `Stream.of` on
+		// IColumnFilter
+		return Stream.of(filter).mapMulti(FilterHelpers::emitFilteredColumns);
+	}
+
 	// This has been coded with the help of ChatGPT...
 	private static void emitFilteredColumns(ISliceFilter filter, Consumer<String> downstream) {
 		if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {

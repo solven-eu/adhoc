@@ -25,13 +25,19 @@ package eu.solven.adhoc.filter.optimizer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.cache.Cache;
+
+import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.stripper.FilterStripper;
+import eu.solven.adhoc.filter.stripper.FilterStripperUnsafe;
+import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestFilterOptimizerCache {
+public class TestFilterOptimizerWithCache {
 	FilterOptimizer optimizer = FilterOptimizer.builder().build();
 	FilterOptimizerWithCache optimizerWithCache = FilterOptimizerWithCache.builder().build();
 
@@ -50,6 +56,9 @@ public class TestFilterOptimizerCache {
 		// FilterOptimizer.extractKernels(ImmutableSet<ISliceFilter>) will push entries entries into cache
 		Assertions.assertThat(optimizerWithCache.optimizedAndNegated.asMap()).hasSize(6);
 		Assertions.assertThat(optimizerWithCache.optimizedAndNotNegated.asMap()).hasSize(4);
+		Cache<ISliceFilter, FilterStripper> filterStripperCache = FilterStripperUnsafe.getCache(
+				(FilterStripper) optimizerWithCache.filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL));
+		Assertions.assertThat(filterStripperCache.size()).isEqualTo(54);
 
 		optimizerWithCache.optimizedAndNegated.asMap().forEach((filters, optimized) -> {
 			log.info("AND {} -> {}", filters, optimized);
@@ -57,8 +66,28 @@ public class TestFilterOptimizerCache {
 		optimizerWithCache.optimizedAndNotNegated.asMap().forEach((filters, optimized) -> {
 			log.info("!AND {} -> {}", filters, optimized);
 		});
+		filterStripperCache.asMap().keySet().forEach((filters) -> {
+			log.info("filterStripper {}", filters);
+		});
 
 		Assertions.assertThat(combined).hasToString("b=in=(b1,b2,b3)&(a=in=(a1,a2)|a==a3&b=in=(b1,b2))");
 	}
 
+	@Test
+	public void testNoCache_StripperFactoryIsShared() {
+		IFilterStripper first = optimizer.filterStripperFactory.makeFilterStripper(AndFilter.and("a", "a1"));
+		IFilterStripper second = optimizer.filterStripperFactory.makeFilterStripper(AndFilter.and("a", "a1"));
+
+		// ensure filterStrippers are not shared in a FilterOptimizer
+		Assertions.assertThat(first).isNotSameAs(second);
+	}
+
+	@Test
+	public void testWithCache_StripperFactoryIsShared() {
+		IFilterStripper first = optimizerWithCache.filterStripperFactory.makeFilterStripper(AndFilter.and("a", "a1"));
+		IFilterStripper second = optimizerWithCache.filterStripperFactory.makeFilterStripper(AndFilter.and("a", "a1"));
+
+		// ensure filterStrippers are shared in a FilterOptimizerWithCache
+		Assertions.assertThat(first).isSameAs(second);
+	}
 }

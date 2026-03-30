@@ -285,7 +285,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 		ImmutableSet<String> columnsForFilters = relatedSteps.stream()
 				.map(TableQueryStep::getFilter)
 				.map(stripper::strip)
-				.flatMap(strippedFilter -> FilterHelpers.getFilteredColumns(strippedFilter).stream())
+				.flatMap(FilterHelpers::streamFilteredColumns)
 				.collect(ImmutableSet.toImmutableSet());
 		Set<String> columnsForGroupBy = relatedSteps.stream()
 				.flatMap(s -> s.getGroupBy().getGroupedByColumns().stream())

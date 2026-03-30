@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.FilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +54,7 @@ public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCac
 
 	public static FilterOptimizerWithCache.FilterOptimizerWithCacheBuilder<?, ?> builder() {
 		// Create an empty shared stripper
-		IFilterStripper sharedStripper = FilterStripper.builder().build();
+		IFilterStripper sharedStripper = FilterStripper.builder().where(ISliceFilter.MATCH_ALL).build();
 
 		// Each further stripper should share cache
 		return new FilterOptimizerWithCacheBuilderImpl().filterStripperFactory(sharedStripper::withWhere);

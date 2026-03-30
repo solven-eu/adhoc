@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,28 +22,26 @@
  */
 package eu.solven.adhoc.filter.stripper;
 
-import java.util.concurrent.atomic.AtomicLong;
+import com.google.common.cache.Cache;
 
 import eu.solven.adhoc.filter.ISliceFilter;
-import lombok.Builder;
+import lombok.experimental.UtilityClass;
 
 /**
- * Standard {@link IFilterStripperFactory}
+ * Gives access to internal data-structures from {@link FilterStripper}.
+ * 
+ * BEWARE, this is not standard API. It may break/change/remove at any time.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class FilterStripperFactory implements IFilterStripperFactory {
-	// Count the number of new instance. Useful to detect improper cache sharing through
-	// `IFilterStripper.withWhere(...)`
-	final AtomicLong nbMake = new AtomicLong();
-
-	@Override
-	public IFilterStripper makeFilterStripper(ISliceFilter where) {
-		nbMake.incrementAndGet();
-
-		// BEWARE Do not rely on a shared filterToStripper it it would introduce a memory leak
-		return FilterStripper.builder().where(where).build();
+@UtilityClass
+public class FilterStripperUnsafe {
+	/**
+	 * 
+	 * @param filterStripper
+	 * @return the Cache of FilterStripper in a {@link FilterStripper}.
+	 */
+	public Cache<ISliceFilter, FilterStripper> getCache(FilterStripper filterStripper) {
+		return filterStripper.filterToStripper;
 	}
-
 }

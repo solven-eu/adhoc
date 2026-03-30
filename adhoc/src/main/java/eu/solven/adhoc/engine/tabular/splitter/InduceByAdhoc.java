@@ -189,7 +189,10 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	}
 
 	protected IAddSharedNodes makeSharedNodesAdder() {
-		return AddSharedNodes.builder().filterOptimizer(filterOptimizer).build();
+		return AddSharedNodes.builder()
+				.filterStripperFactory(factories.getFilterStripperFactory())
+				.filterOptimizer(filterOptimizer)
+				.build();
 	}
 
 	@Override

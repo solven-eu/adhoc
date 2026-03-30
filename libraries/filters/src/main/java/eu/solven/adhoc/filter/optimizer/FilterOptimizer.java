@@ -92,6 +92,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 	@Default
 	@Getter
+	@NonNull
 	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
 
 	@Default
