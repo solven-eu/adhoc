@@ -54,8 +54,10 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
+import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.MinAggregation;
 import eu.solven.adhoc.measure.aggregation.comparable.RankAggregation;
@@ -116,6 +118,14 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@Builder.Default
 	final SliceToJooqConditionFactory sliceToCondition = new SliceToJooqConditionFactory();
 
+	/**
+	 * Query-scoped optimizer forwarded to every {@link SliceToJooqCondition} instance produced by
+	 * {@link #makeToCondition()}. Defaults to {@link AdhocFilterUnsafe#filterOptimizer}.
+	 */
+	@NonNull
+	@Builder.Default
+	IFilterOptimizer filterOptimizer = AdhocFilterUnsafe.filterOptimizer;
+
 	@NonNull
 	@Default
 	final IQueryPartitionor queryPartitionor = IQueryPartitionor.SINGLE_PARTITION;
@@ -144,6 +154,11 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			this.queryPartitionor = b.queryPartitionor$value;
 		} else {
 			this.queryPartitionor = $default$queryPartitionor();
+		}
+		if (b.filterOptimizer$set) {
+			this.filterOptimizer = b.filterOptimizer$value;
+		} else {
+			this.filterOptimizer = $default$filterOptimizer();
 		}
 	}
 
@@ -273,7 +288,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	protected ISliceToJooqCondition makeToCondition() {
-		return sliceToCondition.with(this::name);
+		return sliceToCondition.with(this::name, filterOptimizer);
 	}
 
 	protected List<ResultQuery<Record>> partitionQuery(ResultQuery<Record> resultQuery) {

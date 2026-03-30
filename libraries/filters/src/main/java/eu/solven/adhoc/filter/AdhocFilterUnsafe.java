@@ -50,8 +50,7 @@ public class AdhocFilterUnsafe {
 	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it
 	 * should have no persistent cache, or with a proper expiring policy.
 	 */
-	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY =
-			FilterStripperFactory.builder().build();
+	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY = IFilterStripperFactory.noCache();
 	public static IFilterStripperFactory filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
 
 	/**

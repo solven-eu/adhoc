@@ -26,6 +26,7 @@ import org.jooq.Name;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import lombok.Builder;
@@ -47,6 +48,10 @@ public class JooqTableWrapperParameters {
 	@NonNull
 	@Default
 	IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+
+	@NonNull
+	@Default
+	IFilterOptimizerFactory filterOptimizerFactory = IFilterOptimizerFactory.standard();
 
 	@NonNull
 	IDSLSupplier dslSupplier;

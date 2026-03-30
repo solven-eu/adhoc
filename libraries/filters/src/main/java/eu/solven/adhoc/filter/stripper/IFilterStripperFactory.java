@@ -32,4 +32,16 @@ import eu.solven.adhoc.filter.ISliceFilter;
 @FunctionalInterface
 public interface IFilterStripperFactory {
 	IFilterStripper makeFilterStripper(ISliceFilter where);
+
+	static IFilterStripperFactory noCache() {
+		return FilterStripperFactory.builder().build();
+	}
+
+	static IFilterStripperFactory withCache() {
+		// Create an empty shared stripper
+		IFilterStripper sharedStripper = FilterStripper.builder().where(ISliceFilter.MATCH_ALL).build();
+
+		// Each further stripper should share cache
+		return sharedStripper::withWhere;
+	}
 }

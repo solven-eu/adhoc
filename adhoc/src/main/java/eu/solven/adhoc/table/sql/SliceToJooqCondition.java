@@ -36,6 +36,7 @@ import org.jooq.Name;
 import org.jooq.True;
 import org.jooq.impl.DSL;
 
+import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -45,6 +46,7 @@ import eu.solven.adhoc.filter.IHasOperands;
 import eu.solven.adhoc.filter.INotFilter;
 import eu.solven.adhoc.filter.IOrFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.value.AndMatcher;
 import eu.solven.adhoc.filter.value.ComparingMatcher;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
@@ -59,7 +61,9 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory.ConditionWithFilter;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.RequiredArgsConstructor;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -68,10 +72,20 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@RequiredArgsConstructor
+@Builder
 public class SliceToJooqCondition implements ISliceToJooqCondition {
 
+	@NonNull
 	final Function<String, Name> toName;
+
+	/**
+	 * Query-scoped optimizer used for all {@link FilterBuilder#optimize(IFilterOptimizer)} calls inside this instance.
+	 * Defaults to {@link AdhocFilterUnsafe#filterOptimizer} so that callers that do not supply an optimizer get
+	 * identical behaviour to before this field was introduced.
+	 */
+	@NonNull
+	@Default
+	IFilterOptimizer filterOptimizer = AdhocFilterUnsafe.filterOptimizer;
 
 	protected ConditionWithFilter toCondition(ISliceFilter filter) {
 		return toCondition(filter, false);
@@ -168,7 +182,7 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 	public ConditionWithFilter and(Collection<Condition> sqlConditions, Collection<ISliceFilter> leftoversConditions) {
 		return ConditionWithFilter.builder()
 				.condition(andSql(sqlConditions))
-				.leftover(FilterBuilder.and(leftoversConditions).optimize())
+				.leftover(FilterBuilder.and(leftoversConditions).optimize(filterOptimizer))
 				.build();
 	}
 
@@ -321,8 +335,8 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		Map<Boolean, List<ISliceFilter>> conditionAndFilters =
 				ands.stream().collect(Collectors.partitioningBy(f -> toCondition(f).getLeftover().isMatchAll()));
 
-		ISliceFilter withoutPostFilter = FilterBuilder.and(conditionAndFilters.get(true)).optimize();
-		ISliceFilter withPostFilter = FilterBuilder.and(conditionAndFilters.get(false)).optimize();
+		ISliceFilter withoutPostFilter = FilterBuilder.and(conditionAndFilters.get(true)).optimize(filterOptimizer);
+		ISliceFilter withPostFilter = FilterBuilder.and(conditionAndFilters.get(false)).optimize(filterOptimizer);
 
 		if (ISliceFilter.MATCH_ALL.equals(withPostFilter)) {
 			// There is no customCondition: restore the original condition as it may have be changed by the

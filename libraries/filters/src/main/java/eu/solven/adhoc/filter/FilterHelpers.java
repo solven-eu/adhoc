@@ -448,7 +448,13 @@ public class FilterHelpers {
 	// then `a&b|b=a|b`
 	// then `b=a|b` then b is laxer than a, as b is enough to cover a
 	public static boolean isStricterThan(ISliceFilter stricter, ISliceFilter laxer) {
-		return AdhocFilterUnsafe.filterStripperFactory.makeFilterStripper(stricter).isStricterThan(laxer);
+		return isStricterThan(AdhocFilterUnsafe.filterStripperFactory, stricter, laxer);
+	}
+
+	public static boolean isStricterThan(IFilterStripperFactory filterStripperFactory,
+			ISliceFilter stricter,
+			ISliceFilter laxer) {
+		return filterStripperFactory.makeFilterStripper(stricter).isStricterThan(laxer);
 	}
 
 	/**
@@ -459,7 +465,13 @@ public class FilterHelpers {
 	 * @return
 	 */
 	public static boolean isLaxerThan(ISliceFilter laxer, ISliceFilter stricter) {
-		return isStricterThan(laxer.negate(), stricter.negate());
+		return isLaxerThan(AdhocFilterUnsafe.filterStripperFactory, laxer, stricter);
+	}
+
+	public static boolean isLaxerThan(IFilterStripperFactory filterStripperFactory,
+			ISliceFilter laxer,
+			ISliceFilter stricter) {
+		return filterStripperFactory.makeFilterStripper(laxer.negate()).isStricterThan(stricter.negate());
 	}
 
 	/**
