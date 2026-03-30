@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -37,19 +36,13 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 
-import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterUtility;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.transformator.step.CombinatorQueryStep;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -63,30 +56,23 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilterOptimizer {
-	protected final IAdhocFactories factories;
-
 	@Getter
-	protected final IFilterOptimizer filterOptimizer;
+	protected final IFilterQueryBundle filterBundle;
 
 	protected final FilterUtility filterHelper;
 
 	protected Supplier<FilterUtility> filterUtility =
 			Suppliers.memoize(() -> FilterUtility.builder().optimizer(getFilterOptimizer()).build());
 
-	@Deprecated(since = "For unit-tests, else you should probably re-use a filterOptimizer")
-	public ATableQueryFactory(IAdhocFactories factories) {
-		this(factories, factories.getFilterOptimizerFactory().makeOptimizer());
+	public ATableQueryFactory(IFilterQueryBundle filterBundle) {
+		this.filterBundle = filterBundle;
+
+		this.filterHelper = FilterUtility.builder().optimizer(this.filterBundle.getFilterOptimizer()).build();
 	}
 
-	public ATableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		this.factories = factories;
-		if (filterOptimizer == null) {
-			this.filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizer();
-		} else {
-			this.filterOptimizer = filterOptimizer;
-		}
-
-		this.filterHelper = FilterUtility.builder().optimizer(this.filterOptimizer).build();
+	@Override
+	public IFilterOptimizer getFilterOptimizer() {
+		return filterBundle.getFilterOptimizer();
 	}
 
 	/**
@@ -99,7 +85,7 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		Set<ISliceFilter> filters =
 				steps.stream().map(ICubeQueryStep::getFilter).collect(ImmutableSet.toImmutableSet());
 		ISliceFilter commonFilter = filterUtility.get().commonAnd(filters);
-		IFilterStripper stripper = factories.getFilterStripperFactory().makeFilterStripper(commonFilter);
+		IFilterStripper stripper = filterBundle.getFilterStripperFactory().makeFilterStripper(commonFilter);
 
 		// Group steps by their IGroupBy
 		Map<IGroupBy, List<TableQueryStep>> byGroupBy = steps.stream()
@@ -136,50 +122,6 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 				.customMarker(context.getCustomMarker())
 				.options(context.getOptions())
 				.build();
-	}
-
-	protected IMultitypeMergeableColumn<ISlice> prepareInducedColumn(TableQueryStep inducer,
-			TableQueryStep induced,
-			ICuboid inducerValues,
-			IAggregation aggregation) {
-		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
-		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
-		boolean doesBreakSorting = breakSorting(inducerColumns, inducedColumns);
-
-		IMultitypeMergeableColumn<ISlice> inducedValues;
-		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
-		IColumnFactory columnFactory = factories.getColumnFactory();
-
-		if (doesBreakSorting) {
-			log.debug("random-insert for {} -> {}", inducerColumns, inducedColumns);
-			inducedValues = columnFactory.makeColumnRandomInsertions(aggregation, capacity);
-		} else {
-			log.debug("sorted-insert for {} -> {}", inducerColumns, inducedColumns);
-			inducedValues = columnFactory.makeColumn(aggregation, capacity);
-		}
-
-		return inducedValues;
-	}
-
-	/**
-	 * 
-	 * @param inducer
-	 * @param induced
-	 * @return true of induced order is not naturally derived from inducer order
-	 */
-	// `a,b,c` is maintained by `a`, `a,b`
-	// `a,b,c` is broken by `b`, `a,c`
-	// TODO This question the ordering of slice in Adhoc. IAdhocMap has an ordering based on key lexicographical order.
-	// But we may sort keys based on their expected variance, or based on the actual query.
-	protected boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
-		List<String> inducerAsList = inducer.stream().limit(induced.size()).toList();
-		List<String> inducedAsList = induced.stream().toList();
-
-		return !inducerAsList.equals(inducedAsList);
-	}
-
-	protected ISlice inducedGroupBy(NavigableSet<String> groupedByColumns, ISlice inducer) {
-		return inducer.retainAll(groupedByColumns);
 	}
 
 }

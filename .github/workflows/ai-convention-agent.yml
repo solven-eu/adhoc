@@ -203,15 +203,14 @@ jobs:
       - name: Run Claude AI review
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-        run: claude --dangerously-skip-permissions -p "$(cat /tmp/claude-prompt.txt)"
+        # --max-turns caps token consumption so the session ends gracefully before hitting
+        # the daily rate limit. continue-on-error ensures the commit step still runs even
+        # if Claude exits early (e.g. rate-limited), preserving any partial work.
+        continue-on-error: true
+        run: claude --dangerously-skip-permissions --max-turns 30 -p "$(cat /tmp/claude-prompt.txt)"
 
       - name: Re-apply Spotless (safety net for any formatter drift)
         run: mvn spotless:apply --file pom.xml --batch-mode
-
-      - name: Verify static analysis (fail fast before opening a PR)
-        # Mirrors what static-analysis.yml does on every PR. Running it here avoids
-        # opening a PR that would immediately have a red CI status requiring human intervention.
-        run: mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode
 
       - name: Detect and commit changes
         id: detect-changes
@@ -224,6 +223,11 @@ jobs:
             git push origin HEAD
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Verify static analysis (fail fast before opening a PR)
+        # Mirrors what static-analysis.yml does on every PR. Running it here avoids
+        # opening a PR that would immediately have a red CI status requiring human intervention.
+        run: mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode
 
   # ── Job 3 ── Open a PR if either job produced changes ──────────────────────
   open-pr:

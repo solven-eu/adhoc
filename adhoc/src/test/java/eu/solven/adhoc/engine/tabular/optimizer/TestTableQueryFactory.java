@@ -35,7 +35,6 @@ import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.filter.ColumnFilter;
-import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -52,10 +51,8 @@ public class TestTableQueryFactory {
 
 	InduceByAdhocComplete splitter = InduceByAdhocComplete.builder().build();
 	TableStepsGrouper grouper = new TableStepsGrouper();
-	TableQueryFactory optimizer = new TableQueryFactory(AdhocFactories.builder().build(),
-			FilterOptimizer.builder().build(),
-			splitter,
-			grouper);
+	AdhocFactories factories = AdhocFactories.builder().build();
+	TableQueryFactory optimizer = new TableQueryFactory(factories.makeQueryBundle(), splitter, grouper);
 
 	@Test
 	public void testSplit_disjoint_noMeasure() {

@@ -27,14 +27,15 @@ import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperNoGroup;
+import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 
 public class TestTableQueryFactory_SinglePerCubeStep {
 	CubeQueryStep step = CubeQueryStep.builder()
@@ -44,9 +45,9 @@ public class TestTableQueryFactory_SinglePerCubeStep {
 			.build();
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
-			.factories(AdhocFactories.builder().build())
+			.filterBundle(AdhocFactoriesUnsafe.factories.makeQueryBundle())
 			.grouper(new TableStepsGrouperNoGroup())
-			.splitForAdhocInference()
+			.splitter(InduceByAdhocComplete.makeFactory().make(AdhocFactoriesUnsafe.factories.makeQueryBundle()))
 			.build();
 
 	@Test

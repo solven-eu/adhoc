@@ -84,8 +84,7 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 						.dbExecutorService(executorService)
 						.build();
 
-		TableQueryFactory tableQueryFactory =
-				new TableQueryFactory(factories, factories.getFilterOptimizerFactory().makeOptimizer());
+		TableQueryFactory tableQueryFactory = new TableQueryFactory(factories.makeQueryBundle());
 		TableQueryEngineBootstrapped engine =
 				TableQueryEngineBootstrapped.builder().queryPod(queryPod).tableQueryFactory(tableQueryFactory).build();
 

@@ -89,7 +89,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// WithCache as this optimize will be used for a single query
 		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 
-		ITableQueryFactory optimizer = queryFactoryFactory.makeQueryFactory(factories, filterOptimizer, queryPod);
+		ITableQueryFactory optimizer = queryFactoryFactory.makeQueryFactory(factories.makeQueryBundle(), queryPod);
 		if (queryPod.isDebugOrExplain()) {
 			log.info("[EXPLAIN] Using optimizer={} for query={}", optimizer, queryPod.getQueryId());
 		}

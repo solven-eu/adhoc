@@ -39,6 +39,7 @@ import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersIntoSingle;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizerWithCache;
@@ -60,16 +61,17 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 			.filterOptimizerFactory(IFilterOptimizerFactory.standard())
 			.build();
 
+	// Shared bundle ensures a single makeFilterStripper(MATCH_ALL) call across TableQueryFactory and InduceByAdhoc
+	IFilterQueryBundle sharedBundle = factories.makeQueryBundle();
+
 	TableQueryFactory optimizer = TableQueryFactory.builder()
-			.filterOptimizer(factories.getFilterOptimizerFactory().makeOptimizerWithCache())
-			.factories(factories)
+			.filterBundle(sharedBundle)
 			.splitter(InduceByAdhoc.builder()
-					.filterStripperFactory(stripperFactory)
+					.filterBundle(sharedBundle)
 					.mergeInducersFactory(MergeInducersIntoSingle.makeFactory())
-					.inferenceEdgesAdderFactory(
-							(filterStripperFactory, filterOptimizer) -> InduceByAdhocComplete.builder()
-									.filterStripperFactory(filterStripperFactory)
-									.build())
+					.inferenceEdgesAdderFactory((IFilterQueryBundle filterBundle) -> InduceByAdhocComplete.builder()
+							.filterStripperFactory(filterBundle.getFilterStripperFactory())
+							.build())
 					.build())
 			.groupByAggregator()
 			.build();

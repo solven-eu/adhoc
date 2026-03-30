@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableSortedSet;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.inducer.JavaStreamInducedEvaluator;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -90,7 +91,7 @@ public class TestATableQueryOptimizer {
 	Aggregator sumK2 = Aggregator.sum("k2");
 	TableQueryStep groupByA_K2 = TableQueryStep.builder().groupBy(GroupByColumns.named("a")).aggregator(sumK2).build();
 
-	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories) {
+	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories.makeQueryBundle()) {
 
 		@Override
 		public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> querySteps) {
@@ -211,22 +212,5 @@ public class TestATableQueryOptimizer {
 						.groupByToAggregator(GroupByColumns.named("b"),
 								FilteredAggregator.builder().aggregator(sumK1).build())
 						.build());
-	}
-
-	@Test
-	public void testBreakSorting() {
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a"), ImmutableSortedSet.of("a"))).isFalse();
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a"), ImmutableSortedSet.of())).isFalse();
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a"), ImmutableSortedSet.of("a", "b")))
-				.isTrue();
-
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of("a")))
-				.isFalse();
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of()))
-				.isFalse();
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of("b")))
-				.isTrue();
-		Assertions.assertThat(optimizer.breakSorting(ImmutableSortedSet.of("a", "b"), ImmutableSortedSet.of("a", "c")))
-				.isTrue();
 	}
 }

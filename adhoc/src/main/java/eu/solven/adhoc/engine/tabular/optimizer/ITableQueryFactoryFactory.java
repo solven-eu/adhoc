@@ -24,8 +24,8 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Set;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.IFilterFactories;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -40,15 +40,14 @@ import eu.solven.adhoc.query.table.TableQuery;
  */
 @FunctionalInterface
 public interface ITableQueryFactoryFactory {
-	ITableQueryFactory makeQueryFactory(IAdhocFactories factories,
-			IFilterOptimizer filterOptimizer,
-			IHasQueryOptions hasOptions);
+	ITableQueryFactory makeQueryFactory(IFilterQueryBundle filterBundle, IHasQueryOptions hasOptions);
 
 	@Deprecated
-	default ITableQueryFactory makeQueryFactory(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+	default ITableQueryFactory makeQueryFactory(IFilterFactories factories, IHasQueryOptions hasOptions) {
+		IFilterQueryBundle bundle = factories.makeQueryBundle();
 		// WithCache as this optimizer will be used for a single query
-		IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
+		// IFilterOptimizer filterOptimizer = factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 
-		return makeQueryFactory(factories, filterOptimizer, hasOptions);
+		return makeQueryFactory(bundle, hasOptions);
 	}
 }

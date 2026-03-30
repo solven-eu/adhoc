@@ -141,6 +141,8 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	}
 
 	public static ITableStepsSplitterFactory makeFactory() {
-		 return (filterStripperFactory, filterOptimizer) -> InduceByAdhocComplete.builder().filterStripperFactory(filterStripperFactory).build();
+		return filterBundle -> InduceByAdhocComplete.builder()
+				.filterStripperFactory(filterBundle.getFilterStripperFactory())
+				.build();
 	}
 }

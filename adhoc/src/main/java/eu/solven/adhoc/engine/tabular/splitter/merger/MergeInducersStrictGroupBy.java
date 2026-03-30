@@ -62,8 +62,9 @@ public class MergeInducersStrictGroupBy implements IMergeInducers {
 			AdhocFactoriesUnsafe.factories.getFilterOptimizerFactory().makeOptimizer();
 
 	public static IMergeInducers.IMergeInducersFactory makeFactory() {
-		return (stripperFactory,
-				filterOptimizer) -> MergeInducersStrictGroupBy.builder().filterOptimizer(filterOptimizer).build();
+		return filterBundle -> MergeInducersStrictGroupBy.builder()
+				.filterOptimizer(filterBundle.getFilterOptimizer())
+				.build();
 	}
 
 	/**

@@ -76,7 +76,10 @@ public class AddSharedNodes implements IAddSharedNodes {
 			AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
 
 	public static IAddSharedNodesFactory makeFactory() {
-		return (filterStripperFactory,filterOptimizer) -> AddSharedNodes.builder().filterStripperFactory(filterStripperFactory).filterOptimizer(filterOptimizer).build();
+		return filterBundle -> AddSharedNodes.builder()
+				.filterStripperFactory(filterBundle.getFilterStripperFactory())
+				.filterOptimizer(filterBundle.getFilterOptimizer())
+				.build();
 	}
 
 	/**

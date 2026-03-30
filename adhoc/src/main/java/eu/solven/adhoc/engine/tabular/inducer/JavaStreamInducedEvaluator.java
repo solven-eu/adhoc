@@ -124,7 +124,7 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 	 * A prefix of the inducer columns always preserves order (e.g. {@code a,b,c} → {@code a} or {@code a,b}), whereas
 	 * any non-prefix projection breaks it (e.g. {@code a,b} → {@code b}).
 	 */
-	protected static boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
+	public static boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
 		List<String> inducerAsList = inducer.stream().limit(induced.size()).toList();
 		List<String> inducedAsList = induced.stream().toList();
 		return !inducerAsList.equals(inducedAsList);

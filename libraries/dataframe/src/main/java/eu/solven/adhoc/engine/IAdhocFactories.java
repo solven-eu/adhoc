@@ -23,8 +23,7 @@
 package eu.solven.adhoc.engine;
 
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
-import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
+import eu.solven.adhoc.filter.IFilterFactories;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactoryFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
@@ -33,10 +32,10 @@ import eu.solven.adhoc.util.IStopwatchFactory;
 
 /**
  * Centralize the basic factories used through Adhoc.
- * 
+ *
  * @author Benoit Lacelle
  */
-public interface IAdhocFactories {
+public interface IAdhocFactories extends IFilterFactories {
 
 	IOperatorFactory getOperatorFactory();
 
@@ -47,10 +46,6 @@ public interface IAdhocFactories {
 	default ISliceFactory getSliceFactory() {
 		return getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
 	}
-
-	IFilterOptimizerFactory getFilterOptimizerFactory();
-
-	IFilterStripperFactory getFilterStripperFactory();
 
 	IStopwatchFactory getStopwatchFactory();
 

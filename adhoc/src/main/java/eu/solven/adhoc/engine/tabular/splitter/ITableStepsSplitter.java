@@ -28,9 +28,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -70,6 +68,14 @@ public interface ITableStepsSplitter {
 	 */
 	@FunctionalInterface
 	interface ITableStepsSplitterFactory {
-		ITableStepsSplitter make(IFilterStripperFactory filterStripperFactory, IFilterOptimizer filterOptimizer);
+		/**
+		 * Creates a new {@link ITableStepsSplitter} using the query-scoped filter tools bundled in
+		 * {@code filterBundle}.
+		 *
+		 * @param filterBundle
+		 *            query-scoped stripper factory and cached optimizer
+		 * @return a configured splitter
+		 */
+		ITableStepsSplitter make(IFilterQueryBundle filterBundle);
 	}
 }
