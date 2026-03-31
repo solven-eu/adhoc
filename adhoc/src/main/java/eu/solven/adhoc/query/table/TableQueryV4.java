@@ -283,7 +283,7 @@ public class TableQueryV4 implements ITableQuery {
 	 * <p>
 	 * This flag is the shared decision point between sites that choose the execution strategy (e.g.
 	 * {@code JooqTableQueryFactory.prepareQuery}) and sites that describe it in logs or metrics (e.g.
-	 * {@code TableQueryEngineBootstrapped.toPerfLog}).
+	 * {@code TableQueryEngine.toPerfLog}).
 	 */
 	public boolean isPerfectV3() {
 		return groupByToAggregators.keySet()

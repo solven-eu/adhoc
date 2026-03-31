@@ -56,7 +56,7 @@ import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TestTableQueryEngineBootstrapped_Concurrent {
+public class TestTableQueryEngine_Concurrent {
 	AdhocFactories factories = AdhocFactories.builder().build();
 
 	@BeforeEach
@@ -85,8 +85,8 @@ public class TestTableQueryEngineBootstrapped_Concurrent {
 						.build();
 
 		TableQueryFactory tableQueryFactory = new TableQueryFactory(factories.makeQueryBundle());
-		TableQueryEngineBootstrapped engine =
-				TableQueryEngineBootstrapped.builder().queryPod(queryPod).tableQueryFactory(tableQueryFactory).build();
+		TableQueryEngine engine =
+				TableQueryEngine.builder().queryPod(queryPod).tableQueryFactory(tableQueryFactory).build();
 
 		CountDownLatch cdl = new CountDownLatch(2);
 

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,20 +25,17 @@ package eu.solven.adhoc.engine.tabular;
 import java.util.Map;
 
 import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.QueryStepsDag;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.query.table.TableQuery;
 
 /**
- * Part if {@link ICubeQueryEngine} dedicated to {@link TableQuery}.
+ * A tableQuery engine, prepared for a given query.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface ITableQueryEngine {
 
-	Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
+	Map<TableQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag);
 
 }

@@ -54,7 +54,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTestConstants {
 
-	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
+	TableQueryEngineFactory engine = (TableQueryEngineFactory) engine().getTableQueryEngine();
 	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
 	ITableQueryFactory optimizer = engine.queryFactoryFactory.makeQueryFactory(engine().getFactories(),
 			() -> Set.of(InternalQueryOptions.INDUCE_BY_ADHOC));
@@ -78,8 +78,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 		CubeQuery cubeQuery = CubeQuery.builder().measure("byCcy", k1Sum.getName()).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(2);
 
@@ -148,8 +147,7 @@ public class TestTableQueryEngine_induced extends ADagTest implements IAdhocTest
 				CubeQuery.builder().measure("byCcyCountry", "byCcy", k1Sum.getName()).explain(true).build();
 		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
 
-		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 		Assertions.assertThat(output).hasSize(3);
 

@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstants {
 
-	TableQueryEngine engine = (TableQueryEngine) engine().getTableQueryEngine();
+	TableQueryEngineFactory engine = (TableQueryEngineFactory) engine().getTableQueryEngine();
 	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
 	ITableQueryFactory optimizer =
 			engine.queryFactoryFactory.makeQueryFactory(engine.getFactories(), IHasQueryOptions.noOption());
@@ -71,8 +71,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {
@@ -99,8 +98,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
@@ -132,8 +130,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.forest(forest)
 				.table(table())
 				.build();
-		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(2).anySatisfy(dbQuery -> {
@@ -164,8 +161,7 @@ public class TestPrepareTableQuery extends ADagTest implements IAdhocTestConstan
 				.table(table())
 				.queryStepCache(queryStepCache)
 				.build();
-		TableQueryEngineBootstrapped bootstrapped =
-				(TableQueryEngineBootstrapped) engine.bootstrap(queryPod, optimizer, inducer);
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
 		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
 
 		Assertions.assertThat(output).hasSize(1).anySatisfy(dbQuery -> {

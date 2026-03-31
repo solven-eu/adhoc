@@ -1,0 +1,111 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.engine.tabular;
+
+import java.util.Map;
+
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducerFactory;
+import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducerFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactoryFactory;
+import eu.solven.adhoc.eventbus.IAdhocEventBus;
+import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.util.AdhocBlackHole;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Default {@link ITableQueryEngineFactory}.
+ *
+ * It implements optimizations of the queryPlans projected to the underlying table. Typically:
+ *
+ * <ul>
+ * <li>Request for `m over c=c1&d=d1` and `m over c=c1&d=d2` should request `m(FILTER d=d1) and m(FILTER d=d2) over
+ * c=c1`</li>
+ * <li>Request for `m groupBy c` and `m groupBy c&d` should request `m groupBy c,c&d`</li>
+ * </ul>
+ *
+ * @author Benoit Lacelle
+ */
+@Builder(toBuilder = true)
+@Slf4j
+public class TableQueryEngineFactory implements ITableQueryEngineFactory {
+
+	@NonNull
+	@Default
+	@Getter
+	final IAdhocFactories factories = AdhocFactories.builder().build();
+
+	@NonNull
+	@Default
+	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
+
+	@NonNull
+	@Default
+	final ITableQueryFactoryFactory queryFactoryFactory = new TableQueryFactoryFactory();
+
+	@NonNull
+	@Default
+	final ITableQueryInducerFactory inducerFactory = new TableQueryInducerFactory();
+
+	@Override
+	public Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
+	}
+
+	protected ITableQueryEngine bootstrap(QueryPod queryPod) {
+		// WithCache as this optimize will be used for a single query
+		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
+
+		ITableQueryFactory optimizer = queryFactoryFactory.makeQueryFactory(factories.makeQueryBundle(), queryPod);
+		if (queryPod.isDebugOrExplain()) {
+			log.info("[EXPLAIN] Using optimizer={} for query={}", optimizer, queryPod.getQueryId());
+		}
+
+		ITableQueryInducer inducer = inducerFactory.makeInducer(factories, filterOptimizer);
+
+		return bootstrap(queryPod, optimizer, inducer);
+	}
+
+	protected IFilterOptimizer makeFilterOptimizer(IAdhocFactories factories) {
+		// WithCache as this optimizer will be used for a single query
+		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
+	}
+
+	protected ITableQueryEngine bootstrap(QueryPod queryPod, ITableQueryFactory optimizer, ITableQueryInducer inducer) {
+		return new TableQueryEngine(factories, eventBus, queryPod, optimizer, inducer);
+	}
+
+}

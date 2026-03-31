@@ -65,8 +65,8 @@ import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
-import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.ITableQueryEngineFactory;
+import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
@@ -136,11 +136,13 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	@NonNull
 	@VisibleForTesting
 	@Getter
-	ITableQueryEngine tableQueryEngine;
+	ITableQueryEngineFactory tableQueryEngine;
 
-	protected CubeQueryEngine(IAdhocFactories factories, IAdhocEventBus eventBus, ITableQueryEngine tableQueryEngine) {
+	protected CubeQueryEngine(IAdhocFactories factories,
+			IAdhocEventBus eventBus,
+			ITableQueryEngineFactory tableQueryEngine) {
 		if (tableQueryEngine == null) {
-			tableQueryEngine = TableQueryEngine.builder().eventBus(eventBus).factories(factories).build();
+			tableQueryEngine = TableQueryEngineFactory.builder().eventBus(eventBus).factories(factories).build();
 		}
 
 		this.factories = factories;

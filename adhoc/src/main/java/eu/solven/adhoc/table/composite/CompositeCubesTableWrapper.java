@@ -420,9 +420,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * {@link CompositeCubesTableWrapper} is a CPU-bound in-process fan-out, not an I/O-bound database call. It
 	 * therefore uses {@link QueryPod#getExecutorService()} (the CPU pool) rather than
 	 * {@link QueryPod#getDbExecutorService()} (the I/O pool). This is important to avoid deadlock: the caller
-	 * ({@link eu.solven.adhoc.engine.tabular.TableQueryEngineBootstrapped}) submits table queries on the
-	 * {@code dbExecutorService}; submitting sub-queries to a separate CPU pool ensures the two pools never block each
-	 * other.
+	 * ({@link eu.solven.adhoc.engine.tabular.TableQueryEngine}) submits table queries on the {@code dbExecutorService};
+	 * submitting sub-queries to a separate CPU pool ensures the two pools never block each other.
 	 */
 	@SuppressWarnings({ "PMD.CloseResource", "PMD.ExceptionAsFlowControl" })
 	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {

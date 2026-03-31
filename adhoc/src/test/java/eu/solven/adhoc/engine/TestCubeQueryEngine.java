@@ -43,7 +43,7 @@ import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.ThrowingCombination;
@@ -194,7 +194,7 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 					.build();
 		};
 		CubeQueryEngine cubeEngine = CubeQueryEngine.builder()
-				.tableQueryEngine(TableQueryEngine.builder().queryFactoryFactory(queryFactoryFactory).build())
+				.tableQueryEngine(TableQueryEngineFactory.builder().queryFactoryFactory(queryFactoryFactory).build())
 				.build();
 
 		Assertions.assertThat(cubeEngine.getTableQueryEngine()).isNotNull();

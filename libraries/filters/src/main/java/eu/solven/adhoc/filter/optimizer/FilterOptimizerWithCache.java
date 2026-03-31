@@ -30,8 +30,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ISliceFilter;
-import eu.solven.adhoc.filter.stripper.FilterStripper;
-import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.experimental.SuperBuilder;

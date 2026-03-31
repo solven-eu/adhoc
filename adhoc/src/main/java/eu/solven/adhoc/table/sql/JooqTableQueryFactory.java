@@ -501,7 +501,6 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}).toList();
 	}
 
-	@SuppressWarnings("PMD.CognitiveComplexity")
 	protected SelectFieldOrAsterisk toSqlAggregatedColumn(ISliceToJooqCondition toCondition,
 			FilteredAggregator filteredAggregator) {
 		Aggregator a = filteredAggregator.getAggregator();
@@ -510,97 +509,131 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		if (EmptyAggregation.isEmpty(aggregationKey)) {
 			// There is no aggregation for empty: we just want to fetch groupBys
 			return null;
-		} else {
-			String columnName = a.getColumnName();
-
-			Field<?> unaliasedField;
-			if (ExpressionAggregation.isExpression(aggregationKey)) {
-				// Do not call `name` to make sure it is not qualified
-				unaliasedField = DSL.field(DSL.sql(columnName));
-
-				if (!filteredAggregator.getFilter().isMatchAll()) {
-					// BEWARE It is unclear how this could be managed: how to help TableQueryV3 producing valid FILTERs?
-					throw new NotYetImplementedException(
-							"FILTER with `ExpressionAggregation` is not managed. filteredAggregator="
-									+ filteredAggregator);
-				}
-			} else {
-				Name namedColumn = name(columnName);
-
-				ConditionWithFilter condition = toCondition.toConditionSplitLeftover(filteredAggregator.getFilter());
-				if (!condition.getLeftover().isMatchAll()) {
-					log.debug("FILTER with a postFilter. filter={}",
-							PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
-				}
-
-				boolean needCase = !(condition.getCondition() instanceof True) && !canFilterAggregates();
-				Condition conditionInCase;
-				if (needCase) {
-					conditionInCase = condition.getCondition();
-				} else {
-					conditionInCase = DSL.trueCondition();
-				}
-
-				AggregateFunction<?> sqlAggFunction;
-
-				Field<Object> fieldWithoutCase = DSL.field(namedColumn);
-				Field<Object> fieldToAggregate = asCase(conditionInCase, fieldWithoutCase);
-
-				// TODO How not to define the output type from here (e.g. accept BigInteger or `double`, as would be
-				// outputed by DuckDB)
-				// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
-				if (SumAggregation.KEY.equals(aggregationKey)) {
-					sqlAggFunction = aggregate("sum", fieldToAggregate);
-				} else if (MaxAggregation.KEY.equals(aggregationKey)) {
-					sqlAggFunction = DSL.max(fieldToAggregate);
-				} else if (MinAggregation.KEY.equals(aggregationKey)) {
-					sqlAggFunction = DSL.min(fieldToAggregate);
-				} else if (AvgAggregation.isAvg(aggregationKey)) {
-					sqlAggFunction = aggregate("avg", fieldToAggregate);
-				} else if (CountAggregation.isCount(aggregationKey)) {
-					if (fieldWithoutCase.equals(fieldToAggregate) || !DSL.name("*").equals(namedColumn)) {
-						// No case/filter
-						sqlAggFunction = DSL.count(fieldWithoutCase);
-					} else {
-						// Case: rewrap ensuring this is wrapped with `COUNT(CASE ... THEN 1)`
-						Field<?> fieldAs1 = DSL.field(DSL.value(1));
-						Field<?> caseOnFieldAs1 = asCase(conditionInCase, fieldAs1);
-						sqlAggFunction = DSL.count(caseOnFieldAs1);
-					}
-				} else if (RankAggregation.isRank(aggregationKey)) {
-					RankAggregation agg = (RankAggregation) operatorFactory.makeAggregation(a);
-
-					String duckDbFunction;
-
-					if (agg.isAscElseDesc()) {
-						duckDbFunction = "arg_min";
-					} else {
-						duckDbFunction = "arg_max";
-					}
-
-					// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
-					Name functionName = DSL.systemName(duckDbFunction);
-					Param<Integer> rank = DSL.val(agg.getRank());
-					sqlAggFunction =
-							DSL.aggregate(functionName, Object.class, fieldToAggregate, fieldToAggregate, rank);
-				} else {
-					sqlAggFunction = onCustomAggregation(a, namedColumn, conditionInCase);
-				}
-
-				if (condition.getCondition() instanceof True) {
-					unaliasedField = sqlAggFunction;
-				} else {
-					if (needCase) {
-						// FILTER is already applied through a `CASE` as aggregated expression
-						unaliasedField = sqlAggFunction;
-					} else {
-						unaliasedField = sqlAggFunction.filterWhere(condition.getCondition());
-					}
-				}
-			}
-
-			return unaliasedField.as(filteredAggregator.getAlias());
 		}
+
+		String columnName = a.getColumnName();
+
+		if (ExpressionAggregation.isExpression(aggregationKey)) {
+			return buildExpressionField(columnName, filteredAggregator);
+		}
+
+		return buildAggregateField(toCondition, filteredAggregator, columnName);
+	}
+
+	protected SelectFieldOrAsterisk buildExpressionField(String columnName, FilteredAggregator filteredAggregator) {
+		// Do not call `name` to make sure it is not qualified
+		Field<?> unaliasedField = DSL.field(DSL.sql(columnName));
+
+		if (!filteredAggregator.getFilter().isMatchAll()) {
+			// BEWARE It is unclear how this could be managed: how to help TableQueryV3 producing valid FILTERs?
+			throw new NotYetImplementedException(
+					"FILTER with `ExpressionAggregation` is not managed. filteredAggregator=" + filteredAggregator);
+		}
+
+		return unaliasedField.as(filteredAggregator.getAlias());
+	}
+
+	protected SelectFieldOrAsterisk buildAggregateField(ISliceToJooqCondition toCondition,
+			FilteredAggregator filteredAggregator,
+			String columnName) {
+		Name namedColumn = name(columnName);
+
+		ConditionWithFilter condition = toCondition.toConditionSplitLeftover(filteredAggregator.getFilter());
+		if (!condition.getLeftover().isMatchAll()) {
+			log.debug("FILTER with a postFilter. filter={}",
+					PepperLogHelper.getObjectAndClass(filteredAggregator.getFilter()));
+		}
+
+		Condition conditionInCase = buildConditionInCase(condition);
+
+		Aggregator a = filteredAggregator.getAggregator();
+		String aggregationKey = a.getAggregationKey();
+
+		Field<Object> fieldWithoutCase = DSL.field(namedColumn);
+		AggregateFunction<?> sqlAggFunction =
+				buildAggregateFunction(aggregationKey, a, namedColumn, fieldWithoutCase, conditionInCase);
+
+		Field<?> unaliasedField = applyFilterCondition(condition, sqlAggFunction);
+
+		return unaliasedField.as(filteredAggregator.getAlias());
+	}
+
+	protected Condition buildConditionInCase(ConditionWithFilter condition) {
+		boolean needCase = !(condition.getCondition() instanceof True) && !canFilterAggregates();
+		if (needCase) {
+			return condition.getCondition();
+		}
+		return DSL.trueCondition();
+	}
+
+	protected AggregateFunction<?> buildAggregateFunction(String aggregationKey,
+			Aggregator a,
+			Name namedColumn,
+			Field<Object> fieldWithoutCase,
+			Condition conditionInCase) {
+		Field<Object> fieldToAggregate = asCase(conditionInCase, fieldWithoutCase);
+
+		// TODO How not to define the output type from here (e.g. accept BigInteger or `double`, as would be
+		// outputed by DuckDB)
+		// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types
+		if (SumAggregation.KEY.equals(aggregationKey)) {
+			return aggregate("sum", fieldToAggregate);
+		} else if (MaxAggregation.KEY.equals(aggregationKey)) {
+			return DSL.max(fieldToAggregate);
+		} else if (MinAggregation.KEY.equals(aggregationKey)) {
+			return DSL.min(fieldToAggregate);
+		} else if (AvgAggregation.isAvg(aggregationKey)) {
+			return aggregate("avg", fieldToAggregate);
+		} else if (CountAggregation.isCount(aggregationKey)) {
+			return buildCountAggregate(fieldWithoutCase, conditionInCase);
+		} else if (RankAggregation.isRank(aggregationKey)) {
+			return buildRankAggregate(a, fieldToAggregate);
+		} else {
+			return onCustomAggregation(a, namedColumn, conditionInCase);
+		}
+	}
+
+	protected AggregateFunction<?> buildCountAggregate(Field<Object> fieldWithoutCase, Condition conditionInCase) {
+		if (fieldWithoutCase.equals(asCase(conditionInCase, fieldWithoutCase))
+		// || !DSL.name("*").equals(fieldWithoutCase)
+		) {
+			// No case/filter
+			return DSL.count(fieldWithoutCase);
+		}
+
+		// Case: rewrap ensuring this is wrapped with `COUNT(CASE ... THEN 1)`
+		Field<?> fieldAs1 = DSL.field(DSL.value(1));
+		Field<?> caseOnFieldAs1 = asCase(conditionInCase, fieldAs1);
+		return DSL.count(caseOnFieldAs1);
+	}
+
+	protected AggregateFunction<?> buildRankAggregate(Aggregator a, Field<Object> fieldToAggregate) {
+		RankAggregation agg = (RankAggregation) operatorFactory.makeAggregation(a);
+		String duckDbFunction;
+
+		if (agg.isAscElseDesc()) {
+			duckDbFunction = "arg_min";
+		} else {
+			duckDbFunction = "arg_max";
+		}
+
+		// https://duckdb.org/docs/stable/sql/functions/aggregates.html#arg_maxarg-val-n
+		Name functionName = DSL.systemName(duckDbFunction);
+		Param<Integer> rank = DSL.val(agg.getRank());
+		return DSL.aggregate(functionName, Object.class, fieldToAggregate, fieldToAggregate, rank);
+	}
+
+	protected Field<?> applyFilterCondition(ConditionWithFilter condition, AggregateFunction<?> sqlAggFunction) {
+		if (condition.getCondition() instanceof True) {
+			return sqlAggFunction;
+		}
+
+		boolean needCase = !(condition.getCondition() instanceof True) && !canFilterAggregates();
+		if (needCase) {
+			return sqlAggFunction;
+		}
+
+		return sqlAggFunction.filterWhere(condition.getCondition());
 	}
 
 	// https://stackoverflow.com/questions/79692856/jooq-dynamic-aggregated-types

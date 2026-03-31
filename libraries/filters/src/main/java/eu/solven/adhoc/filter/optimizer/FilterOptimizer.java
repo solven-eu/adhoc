@@ -435,7 +435,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				boolean orIsImplied = orMayBeDiscarded.getOperands()
 						.stream()
 						// `a&b&e` is stricter than `a&b` so `(c|a&b)` is matchAll
-						.anyMatch(orOperand -> filterStripper.isStricterThan(orOperand));
+						.anyMatch(filterStripper::isStricterThan);
 
 				if (orIsImplied) {
 					log.trace("Discarded {} in {}", mayBeDiscarded, stripped1By1);

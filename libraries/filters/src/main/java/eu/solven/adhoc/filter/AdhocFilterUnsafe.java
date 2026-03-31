@@ -25,7 +25,6 @@ package eu.solven.adhoc.filter;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.optimizer.KernelFactorizer;
-import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;

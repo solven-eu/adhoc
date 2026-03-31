@@ -20,7 +20,7 @@ classDiagram
     }
     class IStopwatchFactory {
     }
-    class ITableQueryEngine {
+    class ITableQueryEngineFactory {
     }
     class ITableWrapper {
     }
@@ -54,7 +54,7 @@ classDiagram
     class CubeQueryEngine {
         IAdhocFactories factories
         IAdhocEventBus eventBus
-        ITableQueryEngine tableQueryEngine
+        ITableQueryEngineFactory tableQueryEngine
     }
     class CubeWrapper {
         ICubeQueryEngine engine
@@ -78,6 +78,7 @@ classDiagram
     }
     class JooqTableWrapperParameters {
         IOperatorFactory operatorFactory
+        IFilterOptimizerFactory filterOptimizerFactory
         IDSLSupplier dslSupplier
     }
     class MeasureForest {
@@ -99,7 +100,7 @@ classDiagram
         IImplicitOptions implicitOptions
         IQueryStepCache queryStepCache
     }
-    class TableQueryEngine {
+    class TableQueryEngineFactory {
         IAdhocFactories factories
         IAdhocEventBus eventBus
         ITableQueryFactoryFactory queryFactoryFactory
@@ -120,7 +121,7 @@ classDiagram
     }
 
     %% ─── Implements / Extends ──────────────────────────────────────
-    ITableQueryEngine <|.. TableQueryEngine
+    ITableQueryEngineFactory <|.. TableQueryEngineFactory
     ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. CompositeCubesTableWrapper
     ITableWrapper <|.. EmptyTableWrapper
@@ -145,24 +146,25 @@ classDiagram
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
     CubeWrapper *-- CubeQueryEngine : engine
     CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
-    TableQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
+    TableQueryEngineFactory *-- UnsafeAdhocEventBusHelpers : eventBus
     ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
     CubeQueryEngine *-- AdhocFactories : factories
-    TableQueryEngine *-- AdhocFactories : factories
+    TableQueryEngineFactory *-- AdhocFactories : factories
     AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
+    JooqTableWrapperParameters *-- IFilterOptimizerFactory : filterOptimizerFactory
     AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory
     CubeWrapper *-- IMeasureForest : forest
     StandardQueryPreparator *-- IImplicitFilter : implicitFilter
     StandardQueryPreparator *-- IImplicitOptions : implicitOptions
-    TableQueryEngine *-- TableQueryInducerFactory : inducerFactory
+    TableQueryEngineFactory *-- TableQueryInducerFactory : inducerFactory
     ColumnsManager *-- StandardMissingColumnManager : missingColumnManager
     AdhocFactories *-- IOperatorFactory : operatorFactory
     JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
-    TableQueryEngine *-- TableQueryFactoryFactory : queryFactoryFactory
+    TableQueryEngineFactory *-- TableQueryFactoryFactory : queryFactoryFactory
     CubeWrapper *-- StandardQueryPreparator : queryPreparator
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache
     AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
     AdhocFactories *-- IStopwatchFactory : stopwatchFactory
     CubeWrapper *-- ITableWrapper : table
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
-    CubeQueryEngine *-- ITableQueryEngine : tableQueryEngine
+    CubeQueryEngine *-- ITableQueryEngineFactory : tableQueryEngine

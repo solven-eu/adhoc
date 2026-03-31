@@ -99,83 +99,96 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 	 *            `NOT(c = 'v')` is false if c is `NULL`).
 	 * @return
 	 */
-	@SuppressWarnings("PMD.CognitiveComplexity")
 	protected ConditionWithFilter toCondition(ISliceFilter filter, boolean hasParentNot) {
 		if (filter.isMatchAll()) {
-			return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();
+			return buildMatchAllCondition();
 		} else if (filter.isMatchNone()) {
-			return ConditionWithFilter.builder().condition(DSL.falseCondition()).build();
+			return buildMatchNoneCondition();
 		} else if (filter.isColumnFilter() && filter instanceof IColumnFilter columnFilter) {
-			Optional<Condition> optColumnFilterAsCondition = toCondition(columnFilter, hasParentNot);
-			if (optColumnFilterAsCondition.isEmpty()) {
-				log.debug("{} will be applied manually", columnFilter);
-				return ConditionWithFilter.builder().leftover(columnFilter).build();
-			} else {
-				return ConditionWithFilter.builder().condition(optColumnFilterAsCondition.get()).build();
-			}
+			return handleColumnFilter(columnFilter, hasParentNot);
 		} else if (filter.isNot() && filter instanceof INotFilter notFilter) {
-			ConditionWithFilter negated = toCondition(notFilter.getNegated(), true);
-
-			// ConditionWithFilter can not express an OR, so we just ensure one of `sqlCondition` or `postFilter` is
-			// `matchAll`.
-			boolean oneIsMatchAll = false;
-
-			ISliceFilter negatedPostFilter;
-			if (negated.getLeftover().isMatchAll()) {
-				// There is no leftover: keep it as matchAll
-				negatedPostFilter = ISliceFilter.MATCH_ALL;
-				oneIsMatchAll = true;
-			} else {
-				negatedPostFilter = negated.getLeftover().negate();
-			}
-
-			Condition negatedCondition;
-			if (negated.getCondition() instanceof True) {
-				negatedCondition = DSL.trueCondition();
-				oneIsMatchAll = true;
-			} else {
-				negatedCondition = negated.getCondition().not();
-			}
-
-			if (!oneIsMatchAll) {
-				throw new NotYetImplementedException("Converting `%s` to SQL".formatted(filter));
-			}
-
-			return ConditionWithFilter.builder().leftover(negatedPostFilter).condition(negatedCondition).build();
+			return handleNotFilter(notFilter);
 		} else if (filter.isAnd() && filter instanceof IAndFilter andFilter) {
-			Set<? extends ISliceFilter> operands = andFilter.getOperands();
-			// TODO Detect and report if multiple conditions hits the same column
-			// It would be the symptom of conflicting transcoding
-			List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
-
-			List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
-			List<ISliceFilter> leftoversConditions = conditions.stream().map(ConditionWithFilter::getLeftover).toList();
-
-			return and(sqlConditions, leftoversConditions);
+			return handleAndFilter(andFilter, hasParentNot);
 		} else if (filter.isOr() && filter instanceof IOrFilter orFilter) {
-			Set<ISliceFilter> operands = orFilter.getOperands();
-
-			List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
-
-			boolean anyPostFilter =
-					conditions.stream().map(ConditionWithFilter::getLeftover).anyMatch(f -> !f.isMatchAll());
-
-			if (anyPostFilter) {
-				log.debug("A postFilter with OR (`{}`) leads to no table filtering", filter);
-				return ConditionWithFilter.builder().condition(DSL.trueCondition()).leftover(filter).build();
-			} else {
-				List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
-
-				// There is no postFilter: table will handle the filter
-				return ConditionWithFilter.builder()
-						.condition(DSL.or(sqlConditions))
-						.leftover(ISliceFilter.MATCH_ALL)
-						.build();
-			}
+			return handleOrFilter(orFilter, hasParentNot);
 		} else {
 			throw new UnsupportedOperationException(
 					"Not handled: %s".formatted(PepperLogHelper.getObjectAndClass(filter)));
 		}
+	}
+
+	private ConditionWithFilter buildMatchAllCondition() {
+		return ConditionWithFilter.builder().condition(DSL.trueCondition()).build();
+	}
+
+	private ConditionWithFilter buildMatchNoneCondition() {
+		return ConditionWithFilter.builder().condition(DSL.falseCondition()).build();
+	}
+
+	private ConditionWithFilter handleColumnFilter(IColumnFilter columnFilter, boolean hasParentNot) {
+		Optional<Condition> optColumnFilterAsCondition = toCondition(columnFilter, hasParentNot);
+		if (optColumnFilterAsCondition.isEmpty()) {
+			log.debug("{} will be applied manually", columnFilter);
+			return ConditionWithFilter.builder().leftover(columnFilter).build();
+		}
+		return ConditionWithFilter.builder().condition(optColumnFilterAsCondition.get()).build();
+	}
+
+	private ConditionWithFilter handleNotFilter(INotFilter notFilter) {
+		ConditionWithFilter negated = toCondition(notFilter.getNegated(), true);
+
+		boolean oneIsMatchAll = false;
+
+		ISliceFilter negatedPostFilter;
+		if (negated.getLeftover().isMatchAll()) {
+			negatedPostFilter = ISliceFilter.MATCH_ALL;
+			oneIsMatchAll = true;
+		} else {
+			negatedPostFilter = negated.getLeftover().negate();
+		}
+
+		Condition negatedCondition;
+		if (negated.getCondition() instanceof True) {
+			negatedCondition = DSL.trueCondition();
+			oneIsMatchAll = true;
+		} else {
+			negatedCondition = negated.getCondition().not();
+		}
+
+		if (!oneIsMatchAll) {
+			throw new NotYetImplementedException("Converting `%s` to SQL".formatted(notFilter));
+		}
+
+		return ConditionWithFilter.builder().leftover(negatedPostFilter).condition(negatedCondition).build();
+	}
+
+	private ConditionWithFilter handleAndFilter(IAndFilter andFilter, boolean hasParentNot) {
+		Set<? extends ISliceFilter> operands = andFilter.getOperands();
+		List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
+
+		List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
+		List<ISliceFilter> leftoversConditions = conditions.stream().map(ConditionWithFilter::getLeftover).toList();
+
+		return and(sqlConditions, leftoversConditions);
+	}
+
+	private ConditionWithFilter handleOrFilter(IOrFilter orFilter, boolean hasParentNot) {
+		Set<ISliceFilter> operands = orFilter.getOperands();
+
+		List<ConditionWithFilter> conditions = operands.stream().map(c -> toCondition(c, hasParentNot)).toList();
+
+		boolean anyPostFilter =
+				conditions.stream().map(ConditionWithFilter::getLeftover).anyMatch(f -> !f.isMatchAll());
+
+		if (anyPostFilter) {
+			log.debug("A postFilter with OR (`{}`) leads to no table filtering", orFilter);
+			return ConditionWithFilter.builder().condition(DSL.trueCondition()).leftover(orFilter).build();
+		}
+
+		List<Condition> sqlConditions = conditions.stream().map(ConditionWithFilter::getCondition).toList();
+
+		return ConditionWithFilter.builder().condition(DSL.or(sqlConditions)).leftover(ISliceFilter.MATCH_ALL).build();
 	}
 
 	@Override
