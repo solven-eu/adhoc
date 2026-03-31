@@ -12,7 +12,7 @@
 
 	<groupId>eu.solven.adhoc</groupId>
 	<artifactId>aggregator-adhoc</artifactId>
-	<version>0.0.18-SNAPSHOT</version>
+	<version>0.0.18</version>
 
 	<packaging>pom</packaging>
 
@@ -62,7 +62,7 @@
 		<connection>scm:git:git@github.com:solven-eu/adhoc.git</connection>
 		<!-- readwrite -->
 		<developerConnection>scm:git:git@github.com:solven-eu/adhoc.git</developerConnection>
-		<tag>v0.0.2</tag>
+		<tag>v0.0.18</tag>
 		<url>https://github.com/solven-eu/adhoc</url>
 	</scm>
 
