@@ -244,13 +244,9 @@ public class MeasureForestFromResource {
 	 *            the initial serialized view of {@link IMeasure}
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
-	@SuppressWarnings({ "PMD.AvoidDuplicateLiterals" })
 	protected Map<String, ?> simplifyProperties(IMeasure measure, Map<String, ?> map) {
-		Comparator<String> comparing =
-				Comparator.comparing(s -> Optional.ofNullable(KEY_TO_INDEX.get(s)).orElse(SORTED_KEYS.size()));
-		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
+		Map<String, Object> clean = new TreeMap<>(keyComparator());
 
-		// Map<String, Object> clean = new TreeMap<>(keyComparator());
 		clean.putAll(map);
 
 		simplifyByMeasureType(measure, clean);
