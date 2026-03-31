@@ -87,7 +87,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 	/**
 	 * Given a {@link Graph}, adds intermediate nodes to share repeated computations. For example, if two nodes depend
 	 * on the same inducer and apply overlapping {@link ISliceFilter}s, an intermediate node is inserted that applies
-	 * the common filter, letting both dependants reuse the result.
+	 * the common filter, letting both dependents reuse the result.
 	 *
 	 * <p>
 	 * <b>Single linear pass.</b> The traversal order is fixed upfront from a snapshot of the DAG taken before any
@@ -99,7 +99,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 * <ol>
 	 * <li><b>Newly inserted shared nodes are absent from the list, but are processed eagerly.</b>
 	 * {@link #tryInsertSharedNode} returns the newly created node and {@link #addSharedNode} ensures it is fully
-	 * stabilised before the original inducer is retried.</li>
+	 * stabilized before the original inducer is retried.</li>
 	 * <li><b>The parent of each newly inserted shared node is already present later in the list</b> at a higher
 	 * topological position (closer to the root). It will be processed in the natural forward iteration, finding the
 	 * already-inserted shared node as part of its updated induced set — no explicit re-queuing is needed.</li>

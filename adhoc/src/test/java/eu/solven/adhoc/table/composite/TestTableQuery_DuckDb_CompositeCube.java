@@ -61,12 +61,12 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 	}
 
 	String tableName1 = "someTableName1";
-	JooqTableWrapper table1 = new JooqTableWrapper(tableName1,
-			DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName1).build());
+	JooqTableWrapper table1 =
+			new JooqTableWrapper(tableName1, DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName1).build());
 
 	String tableName2 = "someTableName2";
-	JooqTableWrapper table2 = new JooqTableWrapper(tableName2,
-			DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName2).build());
+	JooqTableWrapper table2 =
+			new JooqTableWrapper(tableName2, DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName2).build());
 
 	private CubeWrapper wrapInCube(IMeasureForest forest, JooqTableWrapper table) {
 		return CubeWrapper.builder()

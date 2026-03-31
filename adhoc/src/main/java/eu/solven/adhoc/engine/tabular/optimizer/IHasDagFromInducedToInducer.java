@@ -101,11 +101,7 @@ public interface IHasDagFromInducedToInducer<T extends ICubeQueryStep> {
 	default ImmutableSet<T> getRoots() {
 		IAdhocDag<T> inducedToInducer = getInducedToInducer();
 
-		// relates with `Graphs.vertexHasSuccessors`
-		return inducedToInducer.vertexSet()
-				.stream()
-				.filter(s -> inducedToInducer.inDegreeOf(s) == 0)
-				.collect(ImmutableSet.toImmutableSet());
+		return GraphHelpers.getRoots(inducedToInducer);
 	}
 
 	long edgeCount();

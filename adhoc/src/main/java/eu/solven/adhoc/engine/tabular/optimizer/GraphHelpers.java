@@ -59,6 +59,11 @@ public class GraphHelpers {
 		return graph.incomingEdgesOf(step).stream().map(graph::getEdgeSource).collect(ImmutableSet.toImmutableSet());
 	}
 
+	// relates with `Graphs.vertexHasSuccessors`
+	public static <T> ImmutableSet<T> getRoots(IAdhocDag<T> graph) {
+		return graph.vertexSet().stream().filter(s -> graph.inDegreeOf(s) == 0).collect(ImmutableSet.toImmutableSet());
+	}
+
 	public static <T> IAdhocDag<T> copy(IAdhocDag<T> graph) {
 		IAdhocDag<T> copied = makeGraph();
 

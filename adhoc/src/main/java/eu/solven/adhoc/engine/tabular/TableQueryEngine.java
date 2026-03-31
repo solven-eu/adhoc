@@ -900,6 +900,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 */
 	protected void walkUpInducedDag(ConcurrentMap<TableQueryStep, ICuboid> stepToValues,
 			SplitTableQueries inducerAndInduced) {
+		// TODO How to force the computation to the right executorService?
+		// ITableQueryInducer depends on IInducedEvaluator, which may be a pure JVM-cpu implementation, or typically a
+		// DuckDB-io-semaphore implementation.
 		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);

@@ -69,8 +69,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 
 	@Override
 	public ITableWrapper makeTable() {
-		return new JooqTableWrapper(factTable,
-				DuckDBHelper.parametersBuilder(dslSupplier).table(fromClause).build());
+		return new JooqTableWrapper(factTable, DuckDBHelper.parametersBuilder(dslSupplier).table(fromClause).build());
 	}
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();

@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
@@ -71,6 +72,9 @@ public class AdhocUnsafe {
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
 		// Recreate the VT executor so tests starting a fresh state get a non-shutdown executor
 		adhocMixedPool = MoreExecutors.listeningDecorator(Executors.newVirtualThreadPerTaskExecutor());
+		// Recreate FJP so tests starting a fresh state get a non-shutdown pool
+		// asyncMode is false as stack-based seems better for our DAG usages.
+		adhocCpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, false);
 	}
 
 	public static void reloadProperties() {
@@ -185,6 +189,12 @@ public class AdhocUnsafe {
 	// VTs are cheap, blocking-friendly, and remove the need for a separate IO executor.
 	public static ListeningExecutorService adhocMixedPool = MoreExecutors
 			.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-").factory()));
+
+	// ForkJoinPool for CPU-bound work: tasks submitted from a FJP worker thread that call
+	// Stream.parallelStream() will fork into this pool (work-stealing) rather than the JVM
+	// common pool, giving predictable thread naming and sizing.
+	public static ForkJoinPool adhocCpuPool =
+			new ForkJoinPool(defaultParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, true);
 
 	// Typically used as limit to prevent iterating over large cartesian products
 	// This limit should be applied over the number of potential combinations
