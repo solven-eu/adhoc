@@ -52,7 +52,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
 public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckDbJooqTest
@@ -70,7 +70,7 @@ public class TestTableQuery_DuckDb_withJoin_withAmbiguity_withDot extends ADuckD
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(factTable,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).table(fromClause).build());
+				DuckDBHelper.parametersBuilder(dslSupplier).table(fromClause).build());
 	}
 
 	TableQuery qK1 = TableQuery.builder().aggregators(Set.of(k1Sum)).build();

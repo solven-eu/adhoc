@@ -39,7 +39,7 @@ import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhocTestConstants {
 
@@ -48,7 +48,7 @@ public class TestCubeQuery_DuckDb_Date extends ADuckDbJooqTest implements IAdhoc
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build());
 	}
 
 	LocalDate today = LocalDate.now();

@@ -47,6 +47,7 @@ import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.JooqTabularRecordFactory;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapper;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapperParameters;
 
@@ -66,8 +67,7 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 	@Override
 	public ITableWrapper makeTable() {
 
-		return new JooqTableWrapper(TABLE,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(TABLE).build());
+		return new JooqTableWrapper(TABLE, DuckDBHelper.parametersBuilder(dslSupplier).tableName(TABLE).build());
 	}
 
 	@BeforeEach
@@ -96,7 +96,7 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 	private QueryPod makeQueryPod(int minSplitRows) {
 		DuckDBTableWrapper wrapper = new DuckDBTableWrapper(TABLE,
 				DuckDBTableWrapperParameters.builder()
-						.base(JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(TABLE).build())
+						.base(DuckDBHelper.parametersBuilder(dslSupplier).tableName(TABLE).build())
 						.minSplitRows(minSplitRows)
 						.build());
 		return QueryPod.forTable(wrapper);

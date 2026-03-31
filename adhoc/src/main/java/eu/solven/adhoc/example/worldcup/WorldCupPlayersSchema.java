@@ -221,10 +221,8 @@ public class WorldCupPlayersSchema {
 
 		JooqSnowflakeSchemaBuilder worldCupPlayers = snowflakeBuilder();
 
-		JooqTableWrapperParameters tableParameters = JooqTableWrapperParameters.builder()
-				.table(worldCupPlayers.getSnowflakeTable())
-				.dslSupplier(dslSupplier)
-				.build();
+		JooqTableWrapperParameters tableParameters =
+				DuckDBHelper.parametersBuilder(dslSupplier).table(worldCupPlayers.getSnowflakeTable()).build();
 
 		return new JooqTableWrapper(tableName, tableParameters) {
 

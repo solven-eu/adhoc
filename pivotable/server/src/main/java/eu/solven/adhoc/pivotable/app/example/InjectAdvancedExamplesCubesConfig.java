@@ -72,8 +72,7 @@ public class InjectAdvancedExamplesCubesConfig {
 			log.warn("path=`{}` is not readable. The file probably does not exist.", pathToParquet);
 		}
 		JooqTableWrapper table = new JooqTableWrapper("ban",
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
+				DuckDBHelper.parametersBuilder(DuckDBHelper.inMemoryDSLSupplier())
 						.table(DSL.table("'%s'".formatted(pathToParquet)))
 						.build());
 

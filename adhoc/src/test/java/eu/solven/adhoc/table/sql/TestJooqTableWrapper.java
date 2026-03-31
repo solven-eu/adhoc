@@ -67,10 +67,8 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 		try {
 			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
-			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
-					.dslSupplier(dslSupplier)
-					.tableName(DSL.unquotedName(tableExpression))
-					.build();
+			JooqTableWrapperParameters dbParameters =
+					DuckDBHelper.parametersBuilder(dslSupplier).tableName(DSL.unquotedName(tableExpression)).build();
 			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
 
 			DSLContext dsl = jooqDb.makeDsl();
@@ -112,10 +110,8 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 		try {
 			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
-			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
-					.dslSupplier(dslSupplier)
-					.tableName(DSL.unquotedName(tableExpression))
-					.build();
+			JooqTableWrapperParameters dbParameters =
+					DuckDBHelper.parametersBuilder(dslSupplier).tableName(DSL.unquotedName(tableExpression)).build();
 			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
 
 			DSLContext dsl = jooqDb.makeDsl();
@@ -163,10 +159,8 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 		try {
 			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
-			JooqTableWrapperParameters dbParameters = JooqTableWrapperParameters.builder()
-					.dslSupplier(dslSupplier)
-					.tableName(DSL.unquotedName(tableExpression))
-					.build();
+			JooqTableWrapperParameters dbParameters =
+					DuckDBHelper.parametersBuilder(dslSupplier).tableName(DSL.unquotedName(tableExpression)).build();
 			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
 
 			Assertions.assertThat((Map) jooqDb.getHealthDetails())

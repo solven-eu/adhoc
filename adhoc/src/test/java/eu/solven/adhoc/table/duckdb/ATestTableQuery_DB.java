@@ -57,6 +57,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public abstract class ATestTableQuery_DB extends AJooqTest implements IAdhocTestConstants {
 
@@ -113,7 +114,7 @@ public abstract class ATestTableQuery_DB extends AJooqTest implements IAdhocTest
 	}
 
 	protected JooqTableWrapperParameters baseJooqTableWrapperParameters() {
-		return JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build();
+		return DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build();
 	}
 
 	protected void assertSumOfK1(IDSLSupplier dslSupplier, String tableName, Supplier<ITableWrapper> tableSupplier) {

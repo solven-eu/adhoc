@@ -136,7 +136,7 @@ public class TpchSchema {
 		JooqSnowflakeSchemaBuilder tpch = snowflakeBuilder();
 
 		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().table(tpch.getSnowflakeTable()).dslSupplier(dslSupplier).build();
+				DuckDBHelper.parametersBuilder(dslSupplier).table(tpch.getSnowflakeTable()).build();
 
 		return new JooqTableWrapper(tableName, tableParameters);
 	}

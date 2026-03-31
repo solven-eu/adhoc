@@ -41,8 +41,6 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
-import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestCubeQuery_DuckDb_Aggregations extends ADuckDbJooqTest implements IAdhocTestConstants {

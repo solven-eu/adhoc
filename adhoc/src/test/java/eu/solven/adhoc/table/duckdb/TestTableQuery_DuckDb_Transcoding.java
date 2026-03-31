@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 
@@ -62,7 +62,7 @@ public class TestTableQuery_DuckDb_Transcoding extends ADuckDbJooqTest implement
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build());
 	}
 
 	private CubeWrapper cube(ITableAliaser aliaser) {

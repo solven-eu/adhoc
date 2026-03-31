@@ -52,6 +52,7 @@ import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
@@ -171,7 +172,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 	@Override
 	public ITableWrapper makeTable() {
 		JooqTableWrapperParameters jooqTableWrapperParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build();
 		return new JooqTableWrapper(tableName, jooqTableWrapperParameters) {
 			@Override
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
