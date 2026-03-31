@@ -3,6 +3,19 @@ This document is intended for Adhoc developers and users.
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 
+## [0.0.19]
+
+### Changed
+- `AdhocUnsafe.adhocCommonPool`: replaced `ForkJoinPool`-based work-stealing pool with `Executors.newVirtualThreadPerTaskExecutor()`. Virtual Threads are blocking-friendly, eliminating the need for a separate I/O thread pool.
+- `QueryPod`: removed `dbExecutorService` field — a single `executorService` (Virtual Thread executor for concurrent queries) now covers both DAG walking and table I/O.
+- `StandardQueryPreparator`: removed `concurrentDBExecutorService`, `nonConcurrentDBExecutorService`, `getDBExecutorService`, and the `isDuckDB` check; all queries use the same `executorService`.
+- `AdhocTableUnsafe.setDbParallelism`: now a no-op kept for source compatibility; DB concurrency is controlled by `AdhocDuckDBUnsafe.duckDBSemaphore` instead of a thread pool.
+- `AdhocDuckDBUnsafe`: replaced `adhocDuckDBPool` (fixed-size thread pool) with `duckDBSemaphore` (`Semaphore(2)` by default). Limits concurrent DuckDB queries without blocking Virtual Threads.
+- `ITableWrapper`: new `querySemaphore()` default method returning `null` (no limit). Implementations can return a `Semaphore` to cap concurrent queries.
+- `JooqTableWrapperParameters`: new optional `querySemaphore` field. `JooqTableWrapper` implements `querySemaphore()` from this parameter and applies it lazily in `streamSlices()`.
+- `DuckDBHelper.parametersBuilder(IDSLSupplier)`: new factory method returning a `JooqTableWrapperParameters` builder pre-wired with `AdhocDuckDBUnsafe.duckDBSemaphore`.
+- `TableQueryEngineBootstrapped` → `TableQueryEngine`; `TableQueryEngine` → `TableQueryEngineFactory` (rename).
+
 ## [0.0.18]
 
 ### Fixed

@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -102,7 +103,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
 
 	@NonNull
@@ -129,6 +130,10 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	protected Semaphore querySemaphore() {
+		return tableParameters.getQuerySemaphore();
 	}
 
 	@Override
@@ -311,9 +316,14 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 					StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, tableStream.isParallel());
 		} else {
 			modifiedStream = tableStream;
-
 		}
-		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> modifiedStream);
+
+		Semaphore semaphore = querySemaphore();
+		// Limit concurrent queries: acquire lazily when the stream is first opened and release on close.
+		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
+			semaphore.acquireUninterruptibly();
+			return modifiedStream.onClose(semaphore::release);
+		});
 	}
 
 	protected String toSQL(ResultQuery<Record> resultQuery) {

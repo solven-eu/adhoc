@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Strings;
@@ -70,6 +69,8 @@ public class AdhocUnsafe {
 		parallelism = defaultParallelism();
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
+		// Recreate the VT executor so tests starting a fresh state get a non-shutdown executor
+		adhocMixedPool = MoreExecutors.listeningDecorator(Executors.newVirtualThreadPerTaskExecutor());
 	}
 
 	public static void reloadProperties() {
@@ -126,7 +127,7 @@ public class AdhocUnsafe {
 	private static boolean failFast;
 
 	/**
-	 * @return the default parallelism when calling Executors#newWorkStealingPool
+	 * @return the default parallelism hint, e.g. for sizing connection pools (ClickHouse, etc.)
 	 */
 	@Getter
 	private static int parallelism;
@@ -180,17 +181,10 @@ public class AdhocUnsafe {
 		return Runtime.getRuntime().availableProcessors() * 2;
 	}
 
-	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
-	public static ListeningExecutorService adhocCommonPool = MoreExecutors.listeningDecorator(newWorkStealingPool());
-
-	/**
-	 * Similar with java.util.concurrent.Executors.newWorkStealingPool(int), but with a custom name.
-	 *
-	 * @return
-	 */
-	private static ForkJoinPool newWorkStealingPool() {
-		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
-	}
+	// Virtual-thread executor: replaces the former ForkJoinPool-based work-stealing pool.
+	// VTs are cheap, blocking-friendly, and remove the need for a separate IO executor.
+	public static ListeningExecutorService adhocMixedPool = MoreExecutors
+			.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-").factory()));
 
 	// Typically used as limit to prevent iterating over large cartesian products
 	// This limit should be applied over the number of potential combinations
