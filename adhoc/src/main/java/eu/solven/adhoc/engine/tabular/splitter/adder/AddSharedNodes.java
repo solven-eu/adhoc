@@ -139,17 +139,17 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 * node by at least one. The loop therefore terminates in at most {@code (initial-induced-count − 1)} iterations per
 	 * node on the stack.
 	 *
-	 * @param withFinalInducers
+	 * @param liveDag
 	 *            the live DAG being built; mutated in place
 	 * @param inducer
 	 *            the node whose induced set is being consolidated
 	 */
-	protected void addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
+	protected void addSharedNode(IAdhocDag<TableQueryStep> liveDag, TableQueryStep inducer) {
 		Deque<TableQueryStep> toStabilise = new ArrayDeque<>();
 		toStabilise.push(inducer);
 		while (!toStabilise.isEmpty()) {
 			TableQueryStep current = toStabilise.pop();
-			Optional<TableQueryStep> newNode = tryInsertSharedNode(withFinalInducers, current);
+			Optional<TableQueryStep> newNode = tryInsertSharedNode(liveDag, current);
 			if (newNode.isPresent()) {
 				// newNode is induced by current (child before parent in topological order), so it must
 				// be stabilised first. Stack (LIFO): push current back, then newNode on top so newNode
@@ -166,17 +166,16 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 *
 	 * <p>
 	 * Only one shared node is inserted per call. The caller ({@link #addSharedNode}) is responsible for looping and for
-	 * recursively stabilising the returned node.
+	 * recursively stabilizing the returned node.
 	 *
-	 * @param withFinalInducers
+	 * @param liveDag
 	 *            the live DAG; mutated when a shared node is inserted
 	 * @param inducer
 	 *            node whose induced set is being examined
 	 * @return the newly inserted shared node, or {@link Optional#empty()} if the induced set is already optimal
 	 */
-	protected Optional<TableQueryStep> tryInsertSharedNode(IAdhocDag<TableQueryStep> withFinalInducers,
-			TableQueryStep inducer) {
-		ImmutableSet<TableQueryStep> inducedSteps = GraphHelpers.getInduced(withFinalInducers, inducer);
+	protected Optional<TableQueryStep> tryInsertSharedNode(IAdhocDag<TableQueryStep> liveDag, TableQueryStep inducer) {
+		ImmutableSet<TableQueryStep> inducedSteps = GraphHelpers.getInduced(liveDag, inducer);
 
 		if (inducedSteps.size() < 2) {
 			return Optional.empty();
@@ -236,11 +235,11 @@ public class AddSharedNodes implements IAddSharedNodes {
 						.filter(s -> !s.equals(reforgedStep))
 						.collect(ImmutableSet.toImmutableSet());
 				log.debug("Promoting existing induced step {} as shared node for {}", reforgedStep, otherSteps);
-				otherSteps.forEach(s -> withFinalInducers.removeEdge(s, inducer));
-				otherSteps.forEach(s -> withFinalInducers.addEdge(s, reforgedStep));
+				otherSteps.forEach(s -> liveDag.removeEdge(s, inducer));
+				otherSteps.forEach(s -> liveDag.addEdge(s, reforgedStep));
 				return Optional.of(reforgedStep);
 			} else {
-				registerSharedInDag(withFinalInducers, inducer, relatedSteps, reforgedStep);
+				registerSharedInDag(liveDag, inducer, relatedSteps, reforgedStep);
 
 				return Optional.of(reforgedStep);
 			}
@@ -302,8 +301,9 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 
-		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
-				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
+		assert inducerGroupedByColumns.keySet()
+				.containsAll(sharedColumns) : "InducedToInducer graph issue around inducer=%s and induced=%s"
+						.formatted(inducer, relatedSteps);
 		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
 
 		return inducer.toBuilder()

@@ -5,6 +5,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.19]
 
+### Fixed
+- `FilterHelpers.filterComparator()`: now correctly returns 0 for semantically equivalent filters with different operand order (e.g., `AND(a,b)` vs `AND(b,a)`). Type ranking: AND > OR > NOT > COLUMN.
+
 ### Changed
 - `AdhocUnsafe.adhocCommonPool`: replaced `ForkJoinPool`-based work-stealing pool with `Executors.newVirtualThreadPerTaskExecutor()`. Virtual Threads are blocking-friendly, eliminating the need for a separate I/O thread pool.
 - `QueryPod`: removed `dbExecutorService` field — a single `executorService` (Virtual Thread executor for concurrent queries) now covers both DAG walking and table I/O.
