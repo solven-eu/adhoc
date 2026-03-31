@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.stripper;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import eu.solven.adhoc.filter.ISliceFilter;
 import lombok.Builder;
 
@@ -32,9 +34,18 @@ import lombok.Builder;
  */
 @Builder
 public class FilterStripperFactory implements IFilterStripperFactory {
+	// Count the number of new instance. Useful to detect improper cache sharing through
+	// `IFilterStripper.withWhere(...)`
+	final AtomicLong nbMake = new AtomicLong();
+
+	public void resetStatistics() {
+		nbMake.set(0);
+	}
 
 	@Override
 	public IFilterStripper makeFilterStripper(ISliceFilter where) {
+		nbMake.incrementAndGet();
+
 		// BEWARE Do not rely on a shared filterToStripper it it would introduce a memory leak
 		return FilterStripper.builder().where(where).build();
 	}

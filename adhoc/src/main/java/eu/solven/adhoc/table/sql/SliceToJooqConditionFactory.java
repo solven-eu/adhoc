@@ -27,6 +27,8 @@ import java.util.function.Function;
 import org.jooq.DSLContext;
 import org.jooq.Name;
 
+import eu.solven.adhoc.filter.AdhocFilterUnsafe;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -38,7 +40,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SliceToJooqConditionFactory {
 
+	/**
+	 * Creates a {@link SliceToJooqCondition} with the given naming policy and the default
+	 * {@link AdhocFilterUnsafe#filterOptimizer}.
+	 */
 	public ISliceToJooqCondition with(Function<String, Name> toName) {
-		return new SliceToJooqCondition(toName);
+		return with(toName, AdhocFilterUnsafe.filterOptimizer);
+	}
+
+	/**
+	 * Creates a {@link SliceToJooqCondition} with the given naming policy and the supplied query-scoped optimizer.
+	 *
+	 * @param filterOptimizer
+	 *            optimizer used for all {@link eu.solven.adhoc.filter.FilterBuilder#optimize(IFilterOptimizer)} calls
+	 *            inside the produced instance
+	 */
+	public ISliceToJooqCondition with(Function<String, Name> toName, IFilterOptimizer filterOptimizer) {
+		return SliceToJooqCondition.builder().toName(toName).filterOptimizer(filterOptimizer).build();
 	}
 }

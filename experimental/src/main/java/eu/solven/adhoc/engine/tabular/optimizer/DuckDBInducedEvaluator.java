@@ -51,7 +51,6 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
-import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.IInducedEvaluator;
@@ -114,7 +113,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	/**
 	 * Full constructor used by {@link IInducedEvaluatorFactory} implementations.
 	 */
-	public DuckDBInducedEvaluator(AdhocFactories factories) {
+	public DuckDBInducedEvaluator(IAdhocFactories factories) {
 		this.factories = factories;
 	}
 
@@ -457,7 +456,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 	 * @param aggValue
 	 *            the non-null value from the jOOQ {@link Record}
 	 */
-	public void mergeValue(IValueReceiver receiver, Object aggValue) {
+	protected void mergeValue(IValueReceiver receiver, Object aggValue) {
 		AdhocPrimitiveHelpers.normalizeValueAsProvider(aggValue).acceptReceiver(receiver);
 	}
 }

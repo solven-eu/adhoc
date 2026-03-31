@@ -39,23 +39,39 @@ import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersIntoSingle;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.OrFilter;
+import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
+import eu.solven.adhoc.filter.optimizer.FilterOptimizerWithCache;
+import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
+import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
+import eu.solven.adhoc.filter.stripper.FilterStripperUnsafe;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
 public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAdhocTestConstants {
+	FilterStripperFactory stripperFactory = FilterStripperFactory.builder().build();
+	FilterOptimizer filterOptimizer = FilterOptimizerWithCache.builder().filterStripperFactory(stripperFactory).build();
 
 	TableQueryStep step = TableQueryStep.builder().aggregator(k1Sum).build();
-	AdhocFactories factories = AdhocFactories.builder().build();
+	AdhocFactories factories = AdhocFactories.builder()
+			.filterStripperFactory(stripperFactory)
+			.filterOptimizerFactory(IFilterOptimizerFactory.standard())
+			.build();
+
+	// Shared bundle ensures a single makeFilterStripper(MATCH_ALL) call across TableQueryFactory and InduceByAdhoc
+	IFilterQueryBundle sharedBundle = factories.makeQueryBundle();
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
-			.factories(factories)
+			.filterBundle(sharedBundle)
 			.splitter(InduceByAdhoc.builder()
-					.factories(AdhocFactories.builder().build())
+					.filterBundle(sharedBundle)
 					.mergeInducersFactory(MergeInducersIntoSingle.makeFactory())
-					.inferenceEdgesAdderFactory(() -> InduceByAdhocComplete.builder().build())
+					.inferenceEdgesAdderFactory((IFilterQueryBundle filterBundle) -> InduceByAdhocComplete.builder()
+							.filterStripperFactory(filterBundle.getFilterStripperFactory())
+							.build())
 					.build())
 			.groupByAggregator()
 			.build();
@@ -78,7 +94,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.hasSize(1)
 				.contains(TableQueryStep.edit(step)
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1"))
-								.optimize())
+								.optimize(filterOptimizer))
 						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
 						.build());
 
@@ -92,6 +108,8 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 						.filter(ColumnFilter.matchEq("c", "c1"))
 						.groupBy(GroupByColumns.named("d"))
 						.build());
+
+		Assertions.assertThat(FilterStripperUnsafe.getNbMake(stripperFactory)).isEqualTo(1);
 	}
 
 	@Test
@@ -112,7 +130,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.hasSize(1)
 				.contains(TableQueryStep.edit(step)
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("c", "c1"))
-								.optimize())
+								.optimize(filterOptimizer))
 						.groupBy(GroupByColumns.named("a", "b", "c", "d"))
 						.aggregator(Aggregator.empty())
 						.build());
@@ -278,7 +296,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.hasSize(1)
 				.contains(TableQueryStep.edit(step)
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("d", "d1"), ColumnFilter.matchEq("e", "e1"))
-								.optimize())
+								.optimize(filterOptimizer))
 						.groupBy(GroupByColumns.named("a", "b", "c", "d", "e"))
 						.build());
 

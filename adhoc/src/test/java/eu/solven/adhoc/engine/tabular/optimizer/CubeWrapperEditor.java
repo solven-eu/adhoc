@@ -30,8 +30,8 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
-import eu.solven.adhoc.engine.tabular.ITableQueryEngine;
-import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.ITableQueryEngineFactory;
+import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 
 /**
@@ -60,8 +60,9 @@ public class CubeWrapperEditor {
 		CubeWrapper rawCubeWrapper = (CubeWrapper) cubeWrapper;
 
 		CubeQueryEngine rawCubeQueryEngine = (CubeQueryEngine) rawCubeWrapper.getEngine();
-		TableQueryEngine rawTableQueryEngine = (TableQueryEngine) rawCubeQueryEngine.getTableQueryEngine();
-		ITableQueryEngine editedTableQueryEngine =
+		TableQueryEngineFactory rawTableQueryEngine =
+				(TableQueryEngineFactory) rawCubeQueryEngine.getTableQueryEngine();
+		ITableQueryEngineFactory editedTableQueryEngine =
 				rawTableQueryEngine.toBuilder().queryFactoryFactory(queryFactoryFactory).build();
 
 		ICubeQueryEngine editedEngine = rawCubeQueryEngine.toBuilder().tableQueryEngine(editedTableQueryEngine).build();

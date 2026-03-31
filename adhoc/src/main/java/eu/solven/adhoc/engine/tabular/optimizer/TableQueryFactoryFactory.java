@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine.tabular.optimizer;
 
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.tabular.grouper.ITableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperByAffinity;
@@ -31,7 +30,7 @@ import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouperNoGroup;
 import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByTableWrapper;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import lombok.RequiredArgsConstructor;
@@ -47,14 +46,26 @@ import lombok.extern.slf4j.Slf4j;
 public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 
 	@Override
-	public ITableQueryFactory makeQueryFactory(IAdhocFactories factories,
-			IFilterOptimizer filterOptimizer,
-			IHasQueryOptions hasOptions) {
-		ITableStepsSplitter splitter = makeSplitter(hasOptions, filterOptimizer);
+	public ITableQueryFactory makeQueryFactory(IFilterQueryBundle filterBundle, IHasQueryOptions hasOptions) {
+		ITableStepsSplitter splitter = makeSplitter(filterBundle, hasOptions);
 
-		ITableStepsGrouper grouper = makeGrouper(hasOptions, splitter);
+		ITableStepsGrouper grouper = makeGrouper(filterBundle, splitter, hasOptions);
 
-		return new TableQueryFactory(factories, filterOptimizer, splitter, grouper);
+		return new TableQueryFactory(filterBundle, splitter, grouper);
+	}
+
+	protected ITableStepsSplitter makeSplitter(IFilterQueryBundle filterBundle, IHasQueryOptions hasOptions) {
+		ITableStepsSplitter splitter;
+		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
+			splitter = InduceByAdhocComplete.makeFactory().make(filterBundle);
+		} else if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_TABLE)) {
+			splitter = new InduceByTableWrapper();
+		} else {
+			// BEWARE We're unclear about the right defaults
+			splitter = InduceByAdhocComplete.makeFactory().make(filterBundle);
+			log.debug("Default {} led to {}", ITableStepsSplitter.class.getName(), splitter.getClass().getName());
+		}
+		return splitter;
 	}
 
 	/**
@@ -62,7 +73,9 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 	 * {@link InduceByTableWrapper}, defaults to {@link TableStepsGrouperByAffinity} to avoid cartesian-product waste in
 	 * GROUPING SETS queries.
 	 */
-	protected ITableStepsGrouper makeGrouper(IHasQueryOptions hasOptions, ITableStepsSplitter splitter) {
+	protected ITableStepsGrouper makeGrouper(IFilterQueryBundle filterBundle,
+			ITableStepsSplitter splitter,
+			IHasQueryOptions hasOptions) {
 		ITableStepsGrouper grouper;
 		if (hasOptions.getOptions().contains(InternalQueryOptions.TABLEQUERY_PER_OPTIONS)) {
 			grouper = new TableStepsGrouper();
@@ -83,20 +96,6 @@ public class TableQueryFactoryFactory implements ITableQueryFactoryFactory {
 			log.debug("Default {} led to {}", ITableStepsGrouper.class.getName(), grouper.getClass().getName());
 		}
 		return grouper;
-	}
-
-	protected ITableStepsSplitter makeSplitter(IHasQueryOptions hasOptions, IFilterOptimizer filterOptimizer) {
-		ITableStepsSplitter splitter;
-		if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_ADHOC)) {
-			splitter = InduceByAdhocComplete.builder().build();
-		} else if (hasOptions.getOptions().contains(InternalQueryOptions.INDUCE_BY_TABLE)) {
-			splitter = new InduceByTableWrapper();
-		} else {
-			// BEWARE We're unclear about the right defaults
-			splitter = InduceByAdhocComplete.builder().build();
-			log.debug("Default {} led to {}", ITableStepsSplitter.class.getName(), splitter.getClass().getName());
-		}
-		return splitter;
 	}
 
 }

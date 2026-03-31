@@ -72,9 +72,9 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 			AdhocFactoriesUnsafe.factories.getFilterOptimizerFactory().makeOptimizer();
 
 	public static IMergeInducersFactory makeFactory() {
-		return (filterStripperFactory, filterOptimizer) -> MergeInducersIntoSingle.builder()
-				.filterStripperFactory(filterStripperFactory)
-				.filterOptimizer(filterOptimizer)
+		return filterBundle -> MergeInducersIntoSingle.builder()
+				.filterStripperFactory(filterBundle.getFilterStripperFactory())
+				.filterOptimizer(filterBundle.getFilterOptimizer())
 				.build();
 	}
 

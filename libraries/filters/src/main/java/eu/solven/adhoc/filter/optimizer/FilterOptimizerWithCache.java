@@ -30,6 +30,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -37,10 +38,10 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Extends {@link FilterOptimizer} to enable caching. The caching shall catch any intermediate {@link ISliceFilter}
  * being optimized.
- * 
+ *
  * The default caching strategy has no invalidation: as it may memory-leak, it should not be used for long-running
  * processed. However, it can be used in the context of a single query.
- * 
+ *
  * @author Benoit Lacelle
  */
 @Slf4j
@@ -49,6 +50,10 @@ public class FilterOptimizerWithCache extends FilterOptimizer implements IHasCac
 	// Optimize only `AND` as `OR` and `NOT` are based on `AND`
 	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNegated = CacheBuilder.newBuilder().build();
 	protected final Cache<Set<ISliceFilter>, ISliceFilter> optimizedAndNotNegated = CacheBuilder.newBuilder().build();
+
+	public static FilterOptimizerWithCache.FilterOptimizerWithCacheBuilder<?, ?> builder() {
+		return new FilterOptimizerWithCacheBuilderImpl().filterStripperFactory(IFilterStripperFactory.withCache());
+	}
 
 	@Override
 	public void invalidateAll() {

@@ -281,6 +281,20 @@ public class TestJooqTableQueryFactory_Postgres {
 	}
 
 	@Test
+	public void testFilteredAggregator_countStar() {
+		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
+		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder()
+						.aggregator(Aggregator.countAsterisk())
+						.filter(customFilter)
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select count(*) filter (where "c" = 'c1') as "count(*)" from "someTableName" group by ()""");
+	}
+
+	@Test
 	public void testMinMax() {
 		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("kMin").aggregationKey(MinAggregation.KEY).build())

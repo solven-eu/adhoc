@@ -24,7 +24,7 @@ package eu.solven.adhoc.engine.tabular.splitter.adder;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 
 /**
  * Holds a policy to add shared/intermediate nodes into a {@link IAdhocDag} of {@link TableQueryStep}.
@@ -41,6 +41,13 @@ public interface IAddSharedNodes {
 	 */
 	@FunctionalInterface
 	interface IAddSharedNodesFactory {
-		IAddSharedNodes make(IFilterOptimizer filterOptimizer);
+		/**
+		 * Creates a new {@link IAddSharedNodes} using the query-scoped filter tools bundled in {@code filterBundle}.
+		 *
+		 * @param filterBundle
+		 *            query-scoped stripper factory and cached optimizer
+		 * @return a configured shared-node adder
+		 */
+		IAddSharedNodes make(IFilterQueryBundle filterBundle);
 	}
 }

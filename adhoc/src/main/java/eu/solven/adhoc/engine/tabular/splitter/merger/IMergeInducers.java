@@ -26,8 +26,7 @@ import java.util.Set;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 
 /**
  * Given a set of inducers, this will generate an additional set of inducers.
@@ -49,10 +48,17 @@ public interface IMergeInducers {
 	IAdhocDag<TableQueryStep> mergeInducers(TableQueryStep contextualAggregator, Set<TableQueryStep> steps);
 
 	/**
-	 * Factory for {@link IMergeInducers}
+	 * Factory for {@link IMergeInducers}.
 	 */
 	@FunctionalInterface
 	interface IMergeInducersFactory {
-		IMergeInducers makeMergeInducer(IFilterStripperFactory filterStripperFactory, IFilterOptimizer filterOptimizer);
+		/**
+		 * Creates a new {@link IMergeInducers} using the query-scoped filter tools bundled in {@code filterBundle}.
+		 *
+		 * @param filterBundle
+		 *            query-scoped stripper factory and cached optimizer
+		 * @return a configured merger
+		 */
+		IMergeInducers makeMergeInducer(IFilterQueryBundle filterBundle);
 	}
 }

@@ -22,7 +22,9 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.assertj.core.api.Assertions;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
@@ -41,8 +44,10 @@ import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
+import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
 public class TestInduceByAdhocOptimistic {
@@ -52,30 +57,88 @@ public class TestInduceByAdhocOptimistic {
 	TableQueryStep a = TableQueryStep.builder().aggregator(m1).build();
 
 	AInduceByAdhocParent splitter = InduceByAdhocComplete.builder().build();
+	FilterStripperFactory filterStripperFactory = FilterStripperFactory.builder().build();
+	InduceByAdhocCompleteInner inner = new InduceByAdhocCompleteInner(filterStripperFactory);
+
+	// Typically: `groupBy:ccy+country;ccy=EUR|USD` can induce `ccy=EUR`
+	// BEWARE This design prevents having an induced inferred by multiple inducers
+	// (e.g. `WHERE A` and `WHERE B` can induce `WHERE A OR B`)
+	@Deprecated(since = "not used anymore")
+	protected boolean canInduce(TableQueryStep inducer, TableQueryStep induced) {
+		if (!inducer.getMeasure().getName().equals(induced.getMeasure().getName())) {
+			// Different measures: can not induce
+			return false;
+		} else if (!contextOnly(inducer).equals(contextOnly(induced))) {
+			// Different options/customMarker: can not induce
+			return false;
+		}
+
+		// BEWARE a given name may refer to a ReferencedColumn, or to a StaticCoordinateColumn (or anything else)
+		Collection<IAdhocColumn> inducerColumns = inducer.getGroupBy().getColumns();
+		Collection<IAdhocColumn> inducedColumns = induced.getGroupBy().getColumns();
+		if (!inducerColumns.containsAll(inducedColumns)) {
+			// Not expressing all needed columns: can not induce
+			// If right has all groupBy of left, it means right has same or more groupBy than left,
+			// hence right can be used to compute left
+			return false;
+		}
+
+		ISliceFilter inducedFilter = induced.getFilter();
+		if (ISliceFilter.MATCH_NONE.equals(inducedFilter)) {
+			// Keep matchNone node aside: they do not need to wait for any other node to be evaluated
+			return false;
+		}
+
+		ISliceFilter inducerFilter = inducer.getFilter();
+
+		if (!filterStripperFactory.makeFilterStripper(inducedFilter).isStricterThan(inducerFilter)) {
+			// Induced is not covered by inducer: it can not infer it
+			return false;
+		}
+
+		Optional<ISliceFilter> leftoverFilter =
+				InducerHelpers.makeLeftoverFilter(inducerColumns, inducerFilter, inducedFilter);
+
+		if (leftoverFilter.isEmpty()) {
+			// Inducer is missing columns to reject rows not expected by induced
+			return false;
+		}
+
+		return true;
+	}
+
+	@Deprecated(since = "not used anymore")
+	protected TableQueryStep contextOnly(TableQueryStep inducer) {
+		return TableQueryStep.edit(inducer)
+				.aggregator(Aggregator.sum("noMeasure"))
+				.groupBy(IGroupBy.GRAND_TOTAL)
+				.filter(ISliceFilter.MATCH_ALL)
+				.build();
+	}
 
 	@Test
 	public void testCanInduce_Trivial() {
 		// Different measure by reference
-		Assertions.assertThat(splitter.canInduce(a, a.toBuilder().aggregator(m2).build())).isFalse();
+		Assertions.assertThat(canInduce(a, a.toBuilder().aggregator(m2).build())).isFalse();
 		// Different measure with same name
-		Assertions.assertThat(splitter.canInduce(a, a.toBuilder().aggregator(m1).build())).isTrue();
+		Assertions.assertThat(canInduce(a, a.toBuilder().aggregator(m1).build())).isTrue();
 
 		// Less columns
-		Assertions.assertThat(splitter.canInduce(a.toBuilder().groupBy(GroupByColumns.named("g", "h")).build(),
+		Assertions.assertThat(canInduce(a.toBuilder().groupBy(GroupByColumns.named("g", "h")).build(),
 				a.toBuilder().groupBy(GroupByColumns.named("g")).build())).isTrue();
 		// More columns
-		Assertions.assertThat(splitter.canInduce(a.toBuilder().groupBy(GroupByColumns.named("g", "h")).build(),
+		Assertions.assertThat(canInduce(a.toBuilder().groupBy(GroupByColumns.named("g", "h")).build(),
 				a.toBuilder().groupBy(GroupByColumns.named("g", "h", "i")).build())).isFalse();
 
 		// Different column same coordinate
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ColumnFilter.matchEq("c", "c1")).build(),
 				a.toBuilder().filter(ColumnFilter.matchEq("d", "c1")).build())).isFalse();
 	}
 
 	@Test
 	public void testCanInduce_OrDifferentColumns() {
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// inducer has OR on different columns
 				a.toBuilder()
 						.filter(FilterBuilder.or(ColumnFilter.matchEq("c", "c1"), ColumnFilter.matchEq("d", "d1"))
@@ -86,7 +149,7 @@ public class TestInduceByAdhocOptimistic {
 				// false because filtered columns are not groupedBy
 				.isFalse();
 
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// inducer has OR on different columns
 				a.toBuilder()
 						.groupBy(GroupByColumns.named("g", "h"))
@@ -98,7 +161,7 @@ public class TestInduceByAdhocOptimistic {
 				// true because filtered columns are groupedBy: irrelevant `g` can be filtered.
 				.isTrue();
 
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// inducer has OR on different columns
 				a.toBuilder()
 						.groupBy(GroupByColumns.named("g", "h"))
@@ -113,7 +176,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testCanInduce_AndDifferentColumns() {
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// inducer has OR on different columns
 				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).build(),
 				// induced has only one of filters
@@ -123,7 +186,7 @@ public class TestInduceByAdhocOptimistic {
 				// false because filtered columns are not groupedBy
 				.isFalse();
 
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// inducer has OR on different columns
 				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ColumnFilter.matchEq("g", "c1")).build(),
 				// induced has only one of filters
@@ -133,7 +196,7 @@ public class TestInduceByAdhocOptimistic {
 				// true because filtered columns are groupedBy
 				.isTrue();
 
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// inducer has OR on different columns
 				a.toBuilder().filter(ColumnFilter.matchEq("g", "c1")).build(),
 				// induced has only one of filters
@@ -146,7 +209,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testCanInduce_Same() {
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).groupBy(GroupByColumns.named("d")).build(),
 				a.toBuilder().filter(ColumnFilter.matchEq("c", "c1")).groupBy(GroupByColumns.named("d")).build()))
 				.isTrue();
@@ -154,7 +217,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testCanInduce_DifferentTopology() {
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// groupBy (g,h) matchAll
 				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ISliceFilter.MATCH_ALL).build(),
 				// groupBy (g) filter (g)
@@ -162,7 +225,7 @@ public class TestInduceByAdhocOptimistic {
 				// true because if inducer has laxer filter, there is enough groupBy to infer it
 				.isTrue();
 
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// groupBy (g,h) matchAll
 				a.toBuilder().groupBy(GroupByColumns.named("g", "h")).filter(ISliceFilter.MATCH_ALL).build(),
 				// groupBy (g) filter (g)
@@ -173,7 +236,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testCanInduce_sameFilterNotGroupedBy() {
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				// groupBy (g,h) filterX
 				a.toBuilder()
 						.groupBy(GroupByColumns.named("g", "h"))
@@ -189,7 +252,7 @@ public class TestInduceByAdhocOptimistic {
 	public void testCanInduce_coveringFilterNotFullyGroupedBy() {
 		Assertions
 				.assertThat(
-						splitter.canInduce(
+						canInduce(
 								a.toBuilder()
 										.groupBy(GroupByColumns.named("g", "h"))
 										.filter(FilterBuilder
@@ -211,7 +274,7 @@ public class TestInduceByAdhocOptimistic {
 	public void testCanInduce_inducedIsStricterOnGroupBy() {
 		Assertions
 				.assertThat(
-						splitter.canInduce(
+						canInduce(
 								a.toBuilder()
 										.groupBy(GroupByColumns.named("a"))
 										.filter(FilterBuilder
@@ -232,7 +295,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testCanInduce_inducedIsStricterOnGroupBy_OrDifferentColumns_groupByLaxerColumn() {
-		Assertions.assertThat(splitter.canInduce(
+		Assertions.assertThat(canInduce(
 				a.toBuilder()
 						.groupBy(GroupByColumns.named("b"))
 						.filter(FilterBuilder.and(OrFilter.or("a", "a1", "b", "b2"), ColumnFilter.matchEq("c", "c3"))
@@ -251,7 +314,7 @@ public class TestInduceByAdhocOptimistic {
 	@Test
 	public void testCanInduce_commonFilterIsNotGroupedBy() {
 		Assertions
-				.assertThat(splitter.canInduce(
+				.assertThat(canInduce(
 						a.toBuilder()
 								.groupBy(GroupByColumns.named("g", "h"))
 								.filter(ColumnFilter.matchEq("c", "someC"))

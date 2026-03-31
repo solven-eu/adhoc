@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,11 +38,12 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.eventbus.TableStepIsEvaluating;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.filter.IFilterFactories;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -55,10 +57,12 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  * This will test actual queries over TableQueryOptimizerSinglePerAggregator.
  */
 public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagTest {
+	@NonNull
+	AdhocFactories factories = AdhocFactories.builder().build();
 
 	TableQueryFactory optimizer = TableQueryFactory.builder()
-			.factories(AdhocFactories.builder().build())
-			.splitter(InduceByAdhocComplete.builder().build())
+			.filterBundle(factories.makeQueryBundle())
+			.splitter(InduceByAdhocComplete.makeFactory().make(factories.makeQueryBundle()))
 			.groupByAggregator()
 			.build();
 
@@ -91,7 +95,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 	public void testCanInduce_groupByDifferentColumns() {
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryFactoryFactory() {
 			@Override
-			public ITableQueryFactory makeQueryFactory(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+			public ITableQueryFactory makeQueryFactory(IFilterFactories factories, IHasQueryOptions hasOptions) {
 				return optimizer;
 			}
 		}).build();
@@ -146,7 +150,7 @@ public class TestTableQueryFactory_SinglePerAggregator_cubeQueries extends ADagT
 
 		ICubeWrapper cube = CubeWrapperEditor.edit(cube()).editTableQueryOptimizer(new TableQueryFactoryFactory() {
 			@Override
-			public ITableQueryFactory makeQueryFactory(IAdhocFactories factories, IHasQueryOptions hasOptions) {
+			public ITableQueryFactory makeQueryFactory(IFilterQueryBundle filterBundle, IHasQueryOptions hasOptions) {
 				return optimizer;
 			}
 		}).build();

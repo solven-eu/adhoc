@@ -20,22 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular;
+package eu.solven.adhoc.filter.stripper;
 
-import java.util.Map;
+import com.google.common.cache.Cache;
 
-import eu.solven.adhoc.cuboid.ICuboid;
-import eu.solven.adhoc.engine.QueryStepsDag;
-import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.filter.ISliceFilter;
+import lombok.experimental.UtilityClass;
 
 /**
- * A tableQuery engine, prepared for a given query.
+ * Gives access to internal data-structures from {@link FilterStripper}.
+ * 
+ * BEWARE, this is not standard API. It may break/change/remove at any time.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ITableQueryEngineBootstrapped {
+@UtilityClass
+public class FilterStripperUnsafe {
+	/**
+	 * 
+	 * @param filterStripper
+	 * @return the Cache of FilterStripper in a {@link FilterStripper}.
+	 */
+	public Cache<ISliceFilter, FilterStripper> getCache(FilterStripper filterStripper) {
+		return filterStripper.filterToStripper;
+	}
 
-	Map<TableQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag);
-
+	public long getNbMake(FilterStripperFactory filterStripperFactory) {
+		return filterStripperFactory.nbMake.get();
+	}
 }

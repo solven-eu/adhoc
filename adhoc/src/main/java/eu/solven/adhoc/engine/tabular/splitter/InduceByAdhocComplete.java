@@ -23,9 +23,6 @@
 package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,18 +36,21 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
-import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.stripper.IFilterStripper;
+import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,6 +64,11 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @RequiredArgsConstructor
 public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddOnlyEdges {
+
+	@NonNull
+	@Default
+	@Getter
+	final IFilterStripperFactory filterStripperFactory = AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
 
 	/**
 	 * Given an input set of steps, callback on edge of an inducing DAG. The returned DAG looks for the edge which are
@@ -95,6 +100,10 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		ListeningExecutorService les = getExecutorService(hasOptions);
 
+		// Enables cache sharing
+		IFilterStripper sharedStripper = filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
+		InduceByAdhocCompleteInner complete2 = new InduceByAdhocCompleteInner(sharedStripper::withWhere);
+
 		// Concurrent path: each context group is processed in its own local DAG, then merged.
 		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures = new ArrayList<>();
 		byMeasure.values().forEach(measureSteps -> {
@@ -102,7 +111,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 					measureSteps.stream().collect(Collectors.groupingBy(this::contextOnly));
 			byContext.values()
 					.stream()
-					.map(contextSteps -> les.submit(() -> buildEdgesForContextGroupLocal(contextSteps)))
+					.map(contextSteps -> les.submit(() -> complete2.buildEdgesForContextGroupLocal(contextSteps)))
 					.forEach(futures::add);
 		});
 		List<IAdhocDag<TableQueryStep>> localDags = Futures.getUnchecked(Futures.allAsList(futures));
@@ -131,110 +140,9 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		return les;
 	}
 
-	/**
-	 * Builds all inducing edges for a group of steps sharing the same measure and context, writing directly into
-	 * {@code induceByAdhoc}. Delegates to {@link #buildEdgesForContextGroupLocal(List)} and merges the result.
-	 */
-	protected void buildEdgesForContextGroup(IAdhocDag<TableQueryStep> induceByAdhoc,
-			List<TableQueryStep> contextSteps) {
-		Graphs.addGraph(induceByAdhoc, buildEdgesForContextGroupLocal(contextSteps));
+	public static ITableStepsSplitterFactory makeFactory() {
+		return filterBundle -> InduceByAdhocComplete.builder()
+				.filterStripperFactory(filterBundle.getFilterStripperFactory())
+				.build();
 	}
-
-	/**
-	 * Builds all inducing edges for a group of steps sharing the same measure and context into a fresh local
-	 * {@link IAdhocDag}. Uses two pre-computed indices to avoid the O(n²) cross-product of expensive filter and groupBy
-	 * comparisons:
-	 * <ul>
-	 * <li>GroupBy containment index: for each distinct induced {@link IGroupBy}, the distinct inducer {@link IGroupBy}s
-	 * whose columns are a superset — computed once per distinct groupBy pair (O(g²)).</li>
-	 * <li>Filter strictness index: for each distinct induced filter, the set of inducer filters that are laxer —
-	 * computed once per distinct filter pair (O(f²)).</li>
-	 * </ul>
-	 * Only {@link InducerHelpers#makeLeftoverFilter} must still be checked per step pair (it depends on both the
-	 * inducer groupBy columns and the filter pair simultaneously), but it is reached only when both indices agree.
-	 *
-	 * <p>
-	 * This method is thread-safe: it operates exclusively on a new local graph and its inputs are read-only.
-	 */
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	protected IAdhocDag<TableQueryStep> buildEdgesForContextGroupLocal(List<TableQueryStep> contextSteps) {
-		IAdhocDag<TableQueryStep> localDag = GraphHelpers.makeGraph();
-
-		// Phase 2: groupBy containment index — O(g²) for g distinct groupBys in this context group.
-		// For each distinct induced groupBy, collect all distinct groupBys that are supersets (valid inducers).
-		List<IGroupBy> distinctGroupBys =
-				contextSteps.stream().map(TableQueryStep::getGroupBy).distinct().collect(Collectors.toList());
-
-		Map<IGroupBy, List<IGroupBy>> inducedGroupByToInducerGroupBys = new HashMap<>();
-		for (IGroupBy gbInduced : distinctGroupBys) {
-			Collection<IAdhocColumn> inducedCols = gbInduced.getColumns();
-			List<IGroupBy> inducerGroupBys = new ArrayList<>();
-			for (IGroupBy gbInducer : distinctGroupBys) {
-				if (gbInducer.getColumns().containsAll(inducedCols)) {
-					inducerGroupBys.add(gbInducer);
-				}
-			}
-			inducedGroupByToInducerGroupBys.put(gbInduced, inducerGroupBys);
-		}
-
-		// Phase 3: filter strictness index — O(f²) for f distinct filters in this context group.
-		// For each distinct induced filter, pre-compute the set of inducer filters that are laxer.
-		List<ISliceFilter> distinctFilters =
-				contextSteps.stream().map(TableQueryStep::getFilter).distinct().collect(Collectors.toList());
-
-		Map<ISliceFilter, Set<ISliceFilter>> inducedFilterToLaxerInducerFilters = new HashMap<>();
-		for (ISliceFilter fInduced : distinctFilters) {
-			if (ISliceFilter.MATCH_NONE.equals(fInduced)) {
-				// MATCH_NONE steps are independent: no inducer can serve them
-				continue;
-			}
-			Set<ISliceFilter> laxer = new HashSet<>();
-			for (ISliceFilter fInducer : distinctFilters) {
-				if (FilterHelpers.isStricterThan(fInduced, fInducer)) {
-					laxer.add(fInducer);
-				}
-			}
-			inducedFilterToLaxerInducerFilters.put(fInduced, laxer);
-		}
-
-		// Phase 4: index steps by groupBy for O(1) candidate lookup
-		Map<IGroupBy, List<TableQueryStep>> groupByToSteps =
-				contextSteps.stream().collect(Collectors.groupingBy(TableQueryStep::getGroupBy));
-
-		// Phase 5: for each induced step, use the indices to enumerate only valid inducer candidates
-		contextSteps.forEach(induced -> {
-			localDag.addVertex(induced);
-
-			ISliceFilter inducedFilter = induced.getFilter();
-			if (ISliceFilter.MATCH_NONE.equals(inducedFilter)) {
-				// MATCH_NONE steps are independent: they do not wait for any inducer
-				return;
-			}
-
-			Set<ISliceFilter> validInducerFilters = inducedFilterToLaxerInducerFilters.get(inducedFilter);
-			List<IGroupBy> validInducerGroupBys = inducedGroupByToInducerGroupBys.get(induced.getGroupBy());
-
-			validInducerGroupBys.forEach(inducerGroupBy -> {
-				Collection<IAdhocColumn> inducerColumns = inducerGroupBy.getColumns();
-				groupByToSteps.get(inducerGroupBy)
-						.stream()
-						// No edge from a step to itself
-						.filter(inducer -> inducer != induced)
-						// Inducer filter must be laxer (pre-computed per distinct filter pair)
-						.filter(inducer -> validInducerFilters.contains(inducer.getFilter()))
-						// Leftover filter must be expressible using only inducer groupBy columns
-						.filter(inducer -> InducerHelpers
-								.makeLeftoverFilter(inducerColumns, inducer.getFilter(), inducedFilter)
-								.isPresent())
-						.forEach(inducer -> {
-							localDag.addVertex(inducer);
-							localDag.addEdge(induced, inducer);
-							log.debug("Induced -> Inducer ({} -> {})", induced, inducer);
-						});
-			});
-		});
-
-		return localDag;
-	}
-
 }

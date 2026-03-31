@@ -75,6 +75,10 @@ public class FilterStripper implements IFilterStripper {
 	@Default
 	protected final Cache<ISliceFilter, FilterStripper> filterToStripper = CacheBuilder.newBuilder().build();
 
+	/**
+	 * 
+	 * @return the {@link Set} of columns involved by the underlying {@link ISliceFilter}.
+	 */
 	protected Set<String> getColumns() {
 		return whereColumns.get();
 	}

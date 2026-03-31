@@ -60,7 +60,9 @@ public interface IFilterOptimizerFactory {
 
 			@Override
 			public IFilterOptimizer makeOptimizerWithCache() {
-				return FilterOptimizerWithCache.builder().build();
+				return FilterOptimizerWithCache.builder()
+						.filterStripperFactory(AdhocFilterUnsafe.filterStripperFactory)
+						.build();
 			}
 
 		};

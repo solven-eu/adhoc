@@ -118,7 +118,9 @@ jobs:
           - Do NOT commit.
           EOF
 
-          claude --dangerously-skip-permissions -p "$(cat /tmp/renovate-fix-prompt.txt)"
+          # --max-turns caps token consumption; continue-on-error lets the commit step
+          # still run even if Claude exits early (rate-limited), preserving partial work.
+          claude --dangerously-skip-permissions --max-turns 10 -p "$(cat /tmp/renovate-fix-prompt.txt)" || true
 
       # ── 5 ── Re-apply Spotless so formatting stays consistent ──────────────
       - name: Re-apply Spotless

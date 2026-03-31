@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.engine;
 
-import static eu.solven.adhoc.IAdhocTestConstants.k1Sum;
-
 import java.util.List;
 import java.util.Map;
 
@@ -45,10 +43,9 @@ import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.engine.tabular.TableQueryEngine;
+import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
-import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.ThrowingCombination.ThrowingCombinationException;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxAggregation;
@@ -189,16 +186,15 @@ public class TestCubeQueryEngine extends ADagTest implements IAdhocTestConstants
 	// Check the API to customize the TableQueryEngine and especially the TableQueryEngineOptimizer is actually valid.
 	@Test
 	public void testCustomTableQueryOptimizer() {
-		ITableQueryFactoryFactory queryFactoryFactory = (factories, filterOptimizer, hasOptions) -> {
+		ITableQueryFactoryFactory queryFactoryFactory = (filterBundle, hasOptions) -> {
 			return TableQueryFactory.builder()
-					.factories(AdhocFactories.builder().build())
-					.filterOptimizer(filterOptimizer)
-					.splitter(InduceByAdhocComplete.builder().build())
+					.filterBundle(filterBundle)
+					.splitForAdhocInference(filterBundle)
 					.groupByAggregator()
 					.build();
 		};
 		CubeQueryEngine cubeEngine = CubeQueryEngine.builder()
-				.tableQueryEngine(TableQueryEngine.builder().queryFactoryFactory(queryFactoryFactory).build())
+				.tableQueryEngine(TableQueryEngineFactory.builder().queryFactoryFactory(queryFactoryFactory).build())
 				.build();
 
 		Assertions.assertThat(cubeEngine.getTableQueryEngine()).isNotNull();

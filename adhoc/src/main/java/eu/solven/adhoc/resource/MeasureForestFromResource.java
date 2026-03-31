@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.core.io.Resource;
@@ -56,6 +57,7 @@ import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
+import eu.solven.pepper.mappath.MapPathGet;
 import eu.solven.pepper.mappath.MapPathRemove;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
@@ -242,72 +244,95 @@ public class MeasureForestFromResource {
 	 *            the initial serialized view of {@link IMeasure}
 	 * @return a stripped version of the {@link Map}, where implied properties are removed.
 	 */
-	@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "PMD.CognitiveComplexity" })
 	protected Map<String, ?> simplifyProperties(IMeasure measure, Map<String, ?> map) {
-		Comparator<String> comparing =
-				Comparator.comparing(s -> Optional.ofNullable(KEY_TO_INDEX.get(s)).orElse(SORTED_KEYS.size()));
-		Map<String, Object> clean = new TreeMap<>(comparing.thenComparing(s -> s));
+		Map<String, Object> clean = new TreeMap<>(keyComparator());
 
 		clean.putAll(map);
 
-		if (measure instanceof Aggregator a) {
-			if (SumAggregation.KEY.equals(a.getAggregationKey())) {
-				clean.remove("aggregationKey");
-			}
-			if (a.getColumnName().equals(a.getName())) {
-				clean.remove("columnName");
-			}
-			if (a.getAggregationOptions().isEmpty()) {
-				clean.remove("aggregationOptions");
-			}
-		} else if (measure instanceof Combinator c) {
-			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
-			if (Objects.equals(c.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
-					c.getUnderlyingNames())) {
-				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
-			}
-			if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
-				clean.remove(K_COMBINATION_OPTIONS);
-			}
-		} else if (measure instanceof Dispatchor d) {
-			if (d.getAggregationOptions().isEmpty()) {
-				clean.remove("aggregationOptions");
-			}
-		} else if (measure instanceof Partitionor b) {
-			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
-			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
-					b.getUnderlyingNames())) {
-				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
-			}
-			if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_GROUPBY_COLUMNS),
-					b.getGroupBy().getGroupedByColumns())) {
-				MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_GROUPBY_COLUMNS);
-			}
-			if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
-				clean.remove(K_COMBINATION_OPTIONS);
-			}
-
-			if (b.getAggregationOptions().isEmpty()) {
-				clean.remove("aggregationOptions");
-			}
-
-		} else if (measure instanceof Filtrator f) {
-			log.trace("Keep this branch to write short `type`: {}", f);
-		} else if (measure instanceof Unfiltrator u) {
-			log.trace("Keep this branch to write short `type`: {}", u);
-		} else if (measure instanceof Shiftor s) {
-			log.trace("Keep this branch to write short `type`: {}", s);
-		} else if (measure instanceof Columnator c) {
-			log.trace("Keep this branch to write short `type`: {}", c);
-		} else {
-			onUnknownMeasureType(measure, clean);
-		}
+		simplifyByMeasureType(measure, clean);
 
 		if (measure.getTags().isEmpty()) {
 			clean.remove("tags");
 		}
 
 		return clean;
+	}
+
+	protected Comparator<String> keyComparator() {
+		Comparator<String> c = Comparator.comparing(s -> MapPathGet.<Integer>getOptionalAs(KEY_TO_INDEX, s)
+				// Else return the same and higher (last) index
+				.orElse(SORTED_KEYS.size()));
+		return c.thenComparing(Function.identity());
+	}
+
+	protected void simplifyByMeasureType(IMeasure measure, Map<String, Object> clean) {
+		if (measure instanceof Aggregator a) {
+			simplifyAggregator(a, clean);
+		} else if (measure instanceof Combinator c) {
+			simplifyCombinator(c, clean);
+		} else if (measure instanceof Dispatchor d) {
+			simplifyDispatchor(d, clean);
+		} else if (measure instanceof Partitionor b) {
+			simplifyPartitionor(b, clean);
+		} else if (isSimpleMeasureType(measure)) {
+			log.trace("Keep this branch to write short `type`: {}", measure);
+		} else {
+			onUnknownMeasureType(measure, clean);
+		}
+	}
+
+	protected boolean isSimpleMeasureType(IMeasure measure) {
+		return measure instanceof Filtrator || measure instanceof Unfiltrator
+				|| measure instanceof Shiftor
+				|| measure instanceof Columnator;
+	}
+
+	protected void simplifyAggregator(Aggregator a, Map<String, Object> clean) {
+		if (SumAggregation.KEY.equals(a.getAggregationKey())) {
+			clean.remove("aggregationKey");
+		}
+		if (a.getColumnName().equals(a.getName())) {
+			clean.remove("columnName");
+		}
+		if (a.getAggregationOptions().isEmpty()) {
+			clean.remove("aggregationOptions");
+		}
+	}
+
+	protected void simplifyCombinator(Combinator c, Map<String, Object> clean) {
+		MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
+		if (Objects.equals(c.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
+				c.getUnderlyingNames())) {
+			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
+		}
+		if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
+			clean.remove(K_COMBINATION_OPTIONS);
+		}
+	}
+
+	protected void simplifyDispatchor(Dispatchor d, Map<String, Object> clean) {
+		if (d.getAggregationOptions().isEmpty()) {
+			clean.remove("aggregationOptions");
+		}
+	}
+
+	protected void simplifyPartitionor(Partitionor b, Map<String, Object> clean) {
+		MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_MEASURE);
+		if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_UNDERLYING_NAMES),
+				b.getUnderlyingNames())) {
+			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
+		}
+		if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_GROUPBY_COLUMNS),
+				b.getGroupBy().getGroupedByColumns())) {
+			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_GROUPBY_COLUMNS);
+		}
+		if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {
+			clean.remove(K_COMBINATION_OPTIONS);
+		}
+
+		if (b.getAggregationOptions().isEmpty()) {
+			clean.remove("aggregationOptions");
+		}
 	}
 
 	protected void onUnknownMeasureType(IMeasure measure, Map<String, Object> asMap) {

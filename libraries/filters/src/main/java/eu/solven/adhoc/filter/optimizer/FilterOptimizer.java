@@ -92,6 +92,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 	@Default
 	@Getter
+	@NonNull
 	IFilterStripperFactory filterStripperFactory = AdhocFilterUnsafe.filterStripperFactory;
 
 	@Default
@@ -428,12 +429,13 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 				// testing `N-2` other components, etc, leading to `!N` optimizations.
 				ISliceFilter otherAsAnd = FilterBuilder.and(others).combine();
 
+				IFilterStripper filterStripper = filterStripperFactory.makeFilterStripper(otherAsAnd);
+
 				// `a&b&e&(c|a&b)` -> `a&b`
 				boolean orIsImplied = orMayBeDiscarded.getOperands()
 						.stream()
 						// `a&b&e` is stricter than `a&b` so `(c|a&b)` is matchAll
-						.anyMatch(orOperand -> filterStripperFactory.makeFilterStripper(otherAsAnd)
-								.isStricterThan(orOperand));
+						.anyMatch(filterStripper::isStricterThan);
 
 				if (orIsImplied) {
 					log.trace("Discarded {} in {}", mayBeDiscarded, stripped1By1);
@@ -488,7 +490,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 					if (removeLaxerElseStricter && isStricterThan(candidate, notFinalHarder)) {
 						// removeLaxer, so we searcher for stricter
 						notFinalHarder = candidate;
-					} else if (!removeLaxerElseStricter && FilterHelpers.isLaxerThan(candidate, notFinalHarder)) {
+					} else if (!removeLaxerElseStricter && isLaxerThan(candidate, notFinalHarder)) {
 						// removeStricter, so we search for laxer
 						notFinalHarder = candidate;
 					}
@@ -499,7 +501,7 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 			// Remove all stricter than the laxer
 			Predicate<ISliceFilter> isSofter;
 			if (removeLaxerElseStricter) {
-				isSofter = sf -> FilterHelpers.isLaxerThan(sf, harder);
+				isSofter = sf -> isLaxerThan(sf, harder);
 			} else {
 				isSofter = sf -> isStricterThan(sf, harder);
 			}
@@ -579,6 +581,10 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 
 	protected boolean isStricterThan(ISliceFilter where, ISliceFilter filter) {
 		return filterStripperFactory.makeFilterStripper(where).isStricterThan(filter);
+	}
+
+	protected boolean isLaxerThan(ISliceFilter where, ISliceFilter filter) {
+		return FilterHelpers.isLaxerThan(filterStripperFactory, where, filter);
 	}
 
 	/**

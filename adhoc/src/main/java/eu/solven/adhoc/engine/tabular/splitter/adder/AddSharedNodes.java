@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.adder;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +78,10 @@ public class AddSharedNodes implements IAddSharedNodes {
 			AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
 
 	public static IAddSharedNodesFactory makeFactory() {
-		return filterOptimizer -> AddSharedNodes.builder().filterOptimizer(filterOptimizer).build();
+		return filterBundle -> AddSharedNodes.builder()
+				.filterStripperFactory(filterBundle.getFilterStripperFactory())
+				.filterOptimizer(filterBundle.getFilterOptimizer())
+				.build();
 	}
 
 	/**
@@ -93,9 +98,8 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 * Two properties justify why one forward pass over this list is sufficient:
 	 * <ol>
 	 * <li><b>Newly inserted shared nodes are absent from the list, but are processed eagerly.</b>
-	 * {@link #tryInsertSharedNode} returns the newly created node, and {@link #addSharedNode} immediately recurses into
-	 * it before continuing its own loop. This ensures every new node is fully stabilised (all sub-sharing opportunities
-	 * among its children are exhausted) before control returns to the outer iteration.</li>
+	 * {@link #tryInsertSharedNode} returns the newly created node and {@link #addSharedNode} ensures it is fully
+	 * stabilised before the original inducer is retried.</li>
 	 * <li><b>The parent of each newly inserted shared node is already present later in the list</b> at a higher
 	 * topological position (closer to the root). It will be processed in the natural forward iteration, finding the
 	 * already-inserted shared node as part of its updated induced set — no explicit re-queuing is needed.</li>
@@ -128,14 +132,12 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 	/**
 	 * Exhaustively inserts shared nodes for {@code inducer} until the graph stabilises for that node. Delegates each
-	 * single-insertion attempt to {@link #tryInsertSharedNode}; after each successful insertion it recurses into the
-	 * newly created shared node to stabilise it before continuing, then re-examines {@code inducer}'s updated induced
-	 * set.
+	 * single-insertion attempt to {@link #tryInsertSharedNode}.
 	 *
 	 * <p>
-	 * Each successful call to {@link #tryInsertSharedNode} reduces the number of direct induced steps of
-	 * {@code inducer} by at least one. The recursion therefore terminates in at most
-	 * {@code (initial-induced-count − 1)} calls.
+	 * Each successful call to {@link #tryInsertSharedNode} reduces the number of direct induced steps of the current
+	 * node by at least one. The loop therefore terminates in at most {@code (initial-induced-count − 1)} iterations per
+	 * node on the stack.
 	 *
 	 * @param withFinalInducers
 	 *            the live DAG being built; mutated in place
@@ -143,14 +145,18 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 *            the node whose induced set is being consolidated
 	 */
 	protected void addSharedNode(IAdhocDag<TableQueryStep> withFinalInducers, TableQueryStep inducer) {
-		while (true) {
-			// Re-apply on inducer until there is no more shared node to add
-			Optional<TableQueryStep> newNode = tryInsertSharedNode(withFinalInducers, inducer);
-			if (newNode.isEmpty()) {
-				break;
+		Deque<TableQueryStep> toStabilise = new ArrayDeque<>();
+		toStabilise.push(inducer);
+		while (!toStabilise.isEmpty()) {
+			TableQueryStep current = toStabilise.pop();
+			Optional<TableQueryStep> newNode = tryInsertSharedNode(withFinalInducers, current);
+			if (newNode.isPresent()) {
+				// newNode is induced by current (child before parent in topological order), so it must
+				// be stabilised first. Stack (LIFO): push current back, then newNode on top so newNode
+				// is popped next; current is only retried once newNode is fully stable.
+				toStabilise.push(current);
+				toStabilise.push(newNode.get());
 			}
-			// Stabilise the newly created shared node before re-examining inducer's updated induced set.
-			newNode.ifPresent(n -> addSharedNode(withFinalInducers, n));
 		}
 	}
 
@@ -285,7 +291,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 		ImmutableSet<String> columnsForFilters = relatedSteps.stream()
 				.map(TableQueryStep::getFilter)
 				.map(stripper::strip)
-				.flatMap(strippedFilter -> FilterHelpers.getFilteredColumns(strippedFilter).stream())
+				.flatMap(FilterHelpers::streamFilteredColumns)
 				.collect(ImmutableSet.toImmutableSet());
 		Set<String> columnsForGroupBy = relatedSteps.stream()
 				.flatMap(s -> s.getGroupBy().getGroupedByColumns().stream())

@@ -38,7 +38,6 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
-import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -52,9 +51,9 @@ import eu.solven.adhoc.engine.tabular.splitter.ITableStepsSplitter;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByTableWrapper;
 import eu.solven.adhoc.filter.FilterEquivalencyHelpers;
+import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
-import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -82,11 +81,10 @@ public class TableQueryFactory extends ATableQueryFactory {
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
 	@Builder
-	public TableQueryFactory(IAdhocFactories factories,
-			IFilterOptimizer filterOptimizer,
+	public TableQueryFactory(IFilterQueryBundle filterBundle,
 			ITableStepsSplitter splitter,
 			ITableStepsGrouper grouper) {
-		super(factories, filterOptimizer);
+		super(filterBundle);
 
 		this.splitter = splitter;
 		this.grouper = grouper;
@@ -94,8 +92,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 	// Rely on a filterOptimizer with cache as this tableQueryOptimizer may collect a large number of filters into
 	// a single query, leading to a very large OR.
-	public TableQueryFactory(IAdhocFactories factories, IFilterOptimizer filterOptimizer) {
-		this(factories, filterOptimizer, InduceByAdhocComplete.builder().build(), new TableStepsGrouper());
+	public TableQueryFactory(IFilterQueryBundle filterBundle) {
+		this(filterBundle, InduceByAdhocComplete.makeFactory().make(filterBundle), new TableStepsGrouper());
 	}
 
 	@Override
@@ -278,7 +276,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	protected void sanityCheckInducers(SplitTableQueries inducerAndInduced, Set<TableQueryV4> tableQueries) {
 		// Holds the querySteps evaluated from the ITableWrapper
 		Set<TableQueryStep> receivedInducerSteps = tableQueries.stream()
-				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterOptimizer))
+				.flatMap(tq -> inducerAndInduced.forEachCubeQuerySteps(tq, filterBundle.getFilterOptimizer()))
 				.map(StepAndFilteredAggregator::step)
 				.collect(ImmutableSet.toImmutableSet());
 
@@ -346,8 +344,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 	 * Lombok @Builder
 	 */
 	public static class TableQueryFactoryBuilder {
-		public TableQueryFactoryBuilder splitForAdhocInference() {
-			return this.splitter(InduceByAdhocComplete.builder().build());
+		public TableQueryFactoryBuilder splitForAdhocInference(IFilterQueryBundle queryBundle) {
+			return this.splitter(InduceByAdhocComplete.makeFactory().make(queryBundle));
 		}
 
 		public TableQueryFactoryBuilder splitForTableGroupingSets() {

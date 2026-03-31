@@ -364,6 +364,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.operatorFactory(tableParameters.getOperatorFactory())
 				.table(tableParameters.getTable())
 				.dslContext(dslContext)
+				.filterOptimizer(tableParameters.getFilterOptimizerFactory().makeOptimizerWithCache())
 				.build();
 	}
 

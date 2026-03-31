@@ -25,7 +25,6 @@ package eu.solven.adhoc.filter;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizerIntraCache;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.optimizer.KernelFactorizer;
-import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -50,8 +49,7 @@ public class AdhocFilterUnsafe {
 	 * Default {@link IFilterStripperFactory}, used by static methods. As this one is maintained in the long-run, it
 	 * should have no persistent cache, or with a proper expiring policy.
 	 */
-	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY =
-			FilterStripperFactory.builder().build();
+	private static final IFilterStripperFactory DEFAULT_FILTER_STRIPPER_FACTORY = IFilterStripperFactory.noCache();
 	public static IFilterStripperFactory filterStripperFactory = DEFAULT_FILTER_STRIPPER_FACTORY;
 
 	/**
