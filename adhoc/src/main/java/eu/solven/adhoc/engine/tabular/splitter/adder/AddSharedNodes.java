@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -43,6 +44,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.concurrent.DagCompletableExecutor;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
@@ -56,6 +58,7 @@ import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -85,25 +88,16 @@ public class AddSharedNodes implements IAddSharedNodes {
 	}
 
 	/**
-	 * Given a {@link Graph}, adds intermediate nodes to share repeated computations. For example, if two nodes depend
-	 * on the same inducer and apply overlapping {@link ISliceFilter}s, an intermediate node is inserted that applies
-	 * the common filter, letting both dependents reuse the result.
+	 * Given a {@link Graph}, adds intermediate nodes to share repeated computations. Independent nodes (those with no
+	 * directed path between them) are processed concurrently via {@link DagCompletableExecutor} running on
+	 * {@link AdhocUnsafe#adhocCpuPool}; dependency ordering is maintained so each inducer is processed only after all
+	 * its induced nodes have completed.
 	 *
 	 * <p>
-	 * <b>Single linear pass.</b> The traversal order is fixed upfront from a snapshot of the DAG taken before any
-	 * mutation. {@link TopologicalOrderIterator} must not be used while the graph is being mutated (JGraphT contract),
-	 * so its output is captured into an {@link ImmutableList} before the first insertion.
-	 *
-	 * <p>
-	 * Two properties justify why one forward pass over this list is sufficient:
-	 * <ol>
-	 * <li><b>Newly inserted shared nodes are absent from the list, but are processed eagerly.</b>
-	 * {@link #tryInsertSharedNode} returns the newly created node and {@link #addSharedNode} ensures it is fully
-	 * stabilized before the original inducer is retried.</li>
-	 * <li><b>The parent of each newly inserted shared node is already present later in the list</b> at a higher
-	 * topological position (closer to the root). It will be processed in the natural forward iteration, finding the
-	 * already-inserted shared node as part of its updated induced set — no explicit re-queuing is needed.</li>
-	 * </ol>
+	 * A reversed snapshot of the original DAG is passed to the executor for dependency tracking. The original DAG has
+	 * edges from induced→inducer; reversing it to inducer→induced lets the executor treat each inducer's predecessors
+	 * as "must finish first" dependencies. The snapshot is never mutated; new shared nodes inserted into the live DAG
+	 * during processing are invisible to the executor and are stabilised internally by {@link #addSharedNode}.
 	 *
 	 * @param input
 	 *            the original DAG; never mutated
@@ -111,14 +105,57 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 */
 	@Override
 	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> input) {
-		// Work on a copy so we never mutate the caller's graph
+		// Work on a copy so we never mutate the caller's graph.
 		IAdhocDag<TableQueryStep> dag = GraphHelpers.copy(input);
 
-		// Snapshot the traversal order before any DAG mutations.
-		// Topological order (inDegree=0 leaves first, outDegree=0 roots last) ensures each
-		// node is encountered only after all of its induced children have been fully processed.
-		List<TableQueryStep> toProcess = ImmutableList.copyOf(new TopologicalOrderIterator<>(dag));
+		// Build a reversed snapshot for the executor's dependency graph (never mutated).
+		// Original: induced→inducer. Reversed: inducer→induced.
+		// outgoingEdgesOf(inducer) in reversed = its induced nodes = "must complete before inducer".
+		IAdhocDag<TableQueryStep> reversedSnapshot = buildReversedSnapshot(dag);
+		ImmutableSet<TableQueryStep> roots = GraphHelpers.getRoots(reversedSnapshot);
 
+		DagCompletableExecutor<TableQueryStep> executor = DagCompletableExecutor.<TableQueryStep>builder()
+				.fromQueriedToDependencies(reversedSnapshot)
+				// No pre-completed steps; all original nodes must be processed.
+				.queryStepsDone(ConcurrentHashMap.newKeySet())
+				.onReadyStep(node -> addSharedNode(dag, node))
+				// Forces the CPU pool as this process is CPU only
+				.executor(AdhocUnsafe.adhocCpuPool)
+				.build();
+
+		executor.executeRecursively(roots).join();
+		return dag;
+	}
+
+	/**
+	 * Builds a reversed copy of {@code dag}: for every edge {@code u→v} in {@code dag}, the reversed graph contains
+	 * {@code v→u}. The result is used as the immutable dependency graph for {@link DagCompletableExecutor}; it is never
+	 * mutated after construction.
+	 *
+	 * @param dag
+	 *            the live DAG snapshot to reverse
+	 * @return a new {@link IAdhocDag} with all edges flipped
+	 */
+	protected IAdhocDag<TableQueryStep> buildReversedSnapshot(IAdhocDag<TableQueryStep> dag) {
+		IAdhocDag<TableQueryStep> reversed = GraphHelpers.makeGraph();
+
+		Graphs.addGraphReversed(reversed, dag);
+
+		return reversed;
+	}
+
+	/**
+	 * Applies the shared-node insertion algorithm to {@code dag} sequentially in topological order (inDegree=0 leaves
+	 * first, outDegree=0 roots last) and returns the same mutated instance. Exposed as a protected method for
+	 * subclasses that require a purely sequential processing path.
+	 *
+	 * @param dag
+	 *            the DAG to process in place; must not be shared with other threads during this call
+	 * @return the same {@code dag} instance, possibly enriched with new shared nodes
+	 */
+	protected IAdhocDag<TableQueryStep> processSequentially(IAdhocDag<TableQueryStep> dag) {
+		// Snapshot the traversal order before any DAG mutations.
+		List<TableQueryStep> toProcess = ImmutableList.copyOf(new TopologicalOrderIterator<>(dag));
 		for (TableQueryStep inducer : toProcess) {
 			if (!dag.containsVertex(inducer)) {
 				// Defensive: vertex removed during a prior iteration (e.g. subclass override).
@@ -126,7 +163,6 @@ public class AddSharedNodes implements IAddSharedNodes {
 			}
 			addSharedNode(dag, inducer);
 		}
-
 		return dag;
 	}
 
@@ -161,12 +197,18 @@ public class AddSharedNodes implements IAddSharedNodes {
 	}
 
 	/**
-	 * Single-insertion attempt: scans the current induced steps of {@code inducer} for a filter part shared by at least
-	 * two of them, constructs a shared node whose filter is the OR of those steps' filters, and rewires the graph.
+	 * Single-insertion attempt for {@code inducer}. The method is split into three phases to allow concurrent execution
+	 * when multiple independent inducers are processed in parallel by {@link DagCompletableExecutor}:
 	 *
-	 * <p>
-	 * Only one shared node is inserted per call. The caller ({@link #addSharedNode}) is responsible for looping and for
-	 * recursively stabilizing the returned node.
+	 * <ol>
+	 * <li><b>Phase 1 — synchronized read:</b> snapshot the induced set under {@code synchronized(liveDag)} to prevent
+	 * concurrent modification of JGraphT's internal adjacency structures.</li>
+	 * <li><b>Phase 2 — unsynchronized compute:</b> all filter analysis ({@link #makeSharedStep}, etc.) runs without
+	 * holding the lock so that independent inducers execute their expensive work in parallel.</li>
+	 * <li><b>Phase 3 — synchronized write:</b> graph mutations are applied under {@code synchronized(liveDag)}.
+	 * Correctness holds because independent inducers only touch edges where they are the target, so their write sets
+	 * are disjoint.</li>
+	 * </ol>
 	 *
 	 * @param liveDag
 	 *            the live DAG; mutated when a shared node is inserted
@@ -174,13 +216,19 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 *            node whose induced set is being examined
 	 * @return the newly inserted shared node, or {@link Optional#empty()} if the induced set is already optimal
 	 */
+	@SuppressWarnings("PMD.CollapsibleIfStatements")
 	protected Optional<TableQueryStep> tryInsertSharedNode(IAdhocDag<TableQueryStep> liveDag, TableQueryStep inducer) {
-		ImmutableSet<TableQueryStep> inducedSteps = GraphHelpers.getInduced(liveDag, inducer);
+		// Phase 1: synchronized snapshot of the induced set.
+		ImmutableSet<TableQueryStep> inducedSteps;
+		synchronized (liveDag) {
+			inducedSteps = GraphHelpers.getInduced(liveDag, inducer);
+		}
 
 		if (inducedSteps.size() < 2) {
 			return Optional.empty();
 		}
 
+		// Phase 2: pure filter analysis — no DAG access; runs in parallel with independent inducers.
 		// `a&b|a&b|a&c|d` should lead to `a&(b|c)|d` to the tableQuery
 		// and `a&(b|c)` as intermediate step, useful to prepare both `a&b` and `a&c` steps
 		// and `a` as intermediate step, useful to prepare `a&b` and `a&c`
@@ -222,6 +270,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 					.collect(ImmutableSet.toImmutableSet());
 			assert relatedSteps.size() == mostPresentPart.getValue();
 
+			// makeSharedStep is pure computation — no DAG access; runs outside the lock.
 			TableQueryStep reforgedStep = makeSharedStep(inducer, relatedSteps, filterUtility);
 
 			if (reforgedStep.equals(inducer)) {
@@ -235,12 +284,17 @@ public class AddSharedNodes implements IAddSharedNodes {
 						.filter(s -> !s.equals(reforgedStep))
 						.collect(ImmutableSet.toImmutableSet());
 				log.debug("Promoting existing induced step {} as shared node for {}", reforgedStep, otherSteps);
-				otherSteps.forEach(s -> liveDag.removeEdge(s, inducer));
-				otherSteps.forEach(s -> liveDag.addEdge(s, reforgedStep));
+				// Phase 3 (promotion): independent inducers touch disjoint edges, so writes do not conflict.
+				synchronized (liveDag) {
+					otherSteps.forEach(s -> liveDag.removeEdge(s, inducer));
+					otherSteps.forEach(s -> liveDag.addEdge(s, reforgedStep));
+				}
 				return Optional.of(reforgedStep);
 			} else {
-				registerSharedInDag(liveDag, inducer, relatedSteps, reforgedStep);
-
+				// Phase 3 (new shared node): synchronized write.
+				synchronized (liveDag) {
+					registerSharedInDag(liveDag, inducer, relatedSteps, reforgedStep);
+				}
 				return Optional.of(reforgedStep);
 			}
 		}
