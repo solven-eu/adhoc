@@ -175,7 +175,7 @@ public final class ArrowReflection {
 	 */
 	static ITabularRecord buildRecord(List<?> vectors, int rowIndex, ITabularRecordFactory factory) {
 		// Build a name→index map to allow fast lookup of grouping indicator vectors.
-		Map<String, Integer> nameToIndex = new LinkedHashMap<>();
+		Map<String, Integer> nameToIndex = LinkedHashMap.newLinkedHashMap(vectors.size());
 		for (int i = 0; i < vectors.size(); i++) {
 			nameToIndex.put(getVectorName(vectors.get(i)), i);
 		}

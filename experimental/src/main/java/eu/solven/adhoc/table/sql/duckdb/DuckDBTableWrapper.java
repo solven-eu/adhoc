@@ -46,7 +46,10 @@ public class DuckDBTableWrapper extends AArrowJooqTableWrapper {
 
 	@Builder(builderMethodName = "duckdb")
 	public DuckDBTableWrapper(String name, DuckDBTableWrapperParameters duckDBParameters) {
-		super(name, duckDBParameters.getBase(), duckDBParameters.getMinSplitRows());
+		super(name,
+				duckDBParameters.getBase(),
+				duckDBParameters.getMinSplitRows(),
+				duckDBParameters.getPrefetchCount());
 
 		this.duckDBParameters = duckDBParameters;
 	}

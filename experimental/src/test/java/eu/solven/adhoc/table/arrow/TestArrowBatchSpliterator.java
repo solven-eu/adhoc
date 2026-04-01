@@ -45,7 +45,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.AggregatedRecordFields;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.JooqTabularRecordFactory;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBTableWrapper;
@@ -150,8 +149,9 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 	void trySplit_returnsFixedBatchSpliterator_whenEnoughRows() throws Exception {
 		// 4 rows, minSplitRows=2 → 4 >= 2*2 → splitting allowed
 		try (ArrowHandle h = new ArrowHandle(dsl.configuration().connectionProvider(), "SELECT v FROM " + TABLE, 4L)) {
-			ArrowBatchSpliterator spliterator =
-					new ArrowBatchSpliterator(h.arrowReader, makeFactory(), makeQueryPod(2), 2);
+			ArrowBatchSpliterator spliterator = new ArrowBatchSpliterator(h.arrowReader,
+					new ArrowBatchContext(makeFactory(), makeQueryPod(2), 2),
+					2);
 
 			// trySplit() loads the first batch internally, then splits it
 			Spliterator<ITabularRecord> half = spliterator.trySplit();
@@ -183,8 +183,9 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 	void trySplit_returnsNull_whenBatchTooSmall() throws Exception {
 		// 4 rows, minSplitRows=5 → 4 < 5 → splitting refused
 		try (ArrowHandle h = new ArrowHandle(dsl.configuration().connectionProvider(), "SELECT v FROM " + TABLE, 4L)) {
-			ArrowBatchSpliterator spliterator =
-					new ArrowBatchSpliterator(h.arrowReader, makeFactory(), makeQueryPod(5), 5);
+			ArrowBatchSpliterator spliterator = new ArrowBatchSpliterator(h.arrowReader,
+					new ArrowBatchContext(makeFactory(), makeQueryPod(5), 5),
+					2);
 
 			Spliterator<ITabularRecord> half = spliterator.trySplit();
 
@@ -200,8 +201,9 @@ public class TestArrowBatchSpliterator extends ADuckDbJooqTest {
 		// 4 rows, minSplitRows=2 → first split gives an ArrowFixedBatchSpliterator(2 rows)
 		// A second trySplit on that fixed spliterator: 2 >= 2 → allowed → gives 1+1
 		try (ArrowHandle h = new ArrowHandle(dsl.configuration().connectionProvider(), "SELECT v FROM " + TABLE, 4L)) {
-			ArrowBatchSpliterator spliterator =
-					new ArrowBatchSpliterator(h.arrowReader, makeFactory(), makeQueryPod(2), 2);
+			ArrowBatchSpliterator spliterator = new ArrowBatchSpliterator(h.arrowReader,
+					new ArrowBatchContext(makeFactory(), makeQueryPod(2), 2),
+					2);
 
 			ArrowFixedBatchSpliterator fixed = (ArrowFixedBatchSpliterator) spliterator.trySplit();
 			Assertions.assertThat(fixed).isNotNull();

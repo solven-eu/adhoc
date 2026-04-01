@@ -45,8 +45,23 @@ public class ClickHouseTableWrapperParameters {
 
 	private static final int DEFAULT_MIN_SPLIT_ROWS = 1024;
 
+	/**
+	 * Minimum rows in a loaded batch before {@link eu.solven.adhoc.table.arrow.ArrowFixedBatchSpliterator} will split
+	 * it. Splitting below this threshold produces tasks too small to amortise FJP coordination overhead.
+	 */
 	@Default
 	int minSplitRows = DEFAULT_MIN_SPLIT_ROWS;
+
+	// 2 futures in flight: one being processed by FJP workers, one loading on a VT.
+	private static final int DEFAULT_PREFETCH_COUNT = 2;
+
+	/**
+	 * Maximum number of Arrow batch-loading futures kept in flight during parallel streaming. Each future runs on a
+	 * virtual thread from {@code adhocMixedPool}; they are chained so the Arrow reader is never accessed concurrently.
+	 * Only active in parallel mode ({@code stream.parallel()}); sequential streaming is unaffected.
+	 */
+	@Default
+	int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	@Default
 	Client client = new Client.Builder().addEndpoint("http://localhost:8123")

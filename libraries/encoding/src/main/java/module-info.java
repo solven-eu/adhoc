@@ -37,4 +37,5 @@ module eu.solven.adhoc.encoding {
 	requires static org.jspecify;
 	requires static com.github.spotbugs.annotations;
 	requires static com.google.errorprone.annotations;
+	requires datasketches.java;
 }

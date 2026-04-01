@@ -26,7 +26,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
@@ -36,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
@@ -144,6 +148,105 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 				// BEWARE We seemingly receive a result as the query is so small it is fully executed when cancelled
 				// Assertions.assertThat(asList).hasSize(1).contains(Map.of("k1", 0L + 357));
 			}
+		} finally {
+			Files.delete(tmpParquetPath);
+		}
+	}
+
+	@Test
+	public void testSemaphore_releasedAfterFirstRow() throws IOException, SQLException {
+		Path tmpParquetPath = Files.createTempFile(this.getClass().getSimpleName(), ".parquet");
+		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tmpParquetPath.toAbsolutePath());
+
+		try {
+			Semaphore semaphore = new Semaphore(1);
+			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+			JooqTableWrapperParameters dbParameters = DuckDBHelper.parametersBuilder(dslSupplier)
+					.tableName(DSL.unquotedName(tableExpression))
+					.querySemaphore(semaphore)
+					.build();
+			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
+
+			DSLContext dsl = jooqDb.makeDsl();
+			dsl.execute("""
+					CREATE TABLE someTableName AS
+						SELECT 'a1' AS a, 123 AS k1 UNION ALL
+						SELECT 'a2' AS a, 234 AS k1
+						;
+					""");
+			dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
+
+			QueryPod queryPod = QueryPod.forTable(jooqDb);
+			ITabularRecordStream tabularRecordStream = jooqDb.streamSlices(queryPod,
+					TableQueryV2.builder()
+							.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k1")).build())
+							.build());
+
+			try (Stream<ITabularRecord> stream = tabularRecordStream.records()) {
+				// Permit is acquired when the stream is opened (supplier called)
+				Assertions.assertThat(semaphore.availablePermits()).isZero();
+
+				Iterator<ITabularRecord> it = stream.iterator();
+
+				// Read the first row — the semaphore should be released immediately after
+				Assertions.assertThat(it.hasNext()).isTrue();
+				it.next();
+
+				// Permit released after first row: DB execution is done, another query can start.
+				Assertions.assertThat(semaphore.availablePermits()).isOne();
+
+				// Drain the rest of the stream (permit stays released — no double-release)
+				while (it.hasNext()) {
+					it.next();
+				}
+				Assertions.assertThat(semaphore.availablePermits()).isOne();
+			}
+
+			// After stream close the permit is still available (released early, not double-released)
+			Assertions.assertThat(semaphore.availablePermits()).isOne();
+		} finally {
+			Files.delete(tmpParquetPath);
+		}
+	}
+
+	@Test
+	public void testSemaphore_releasedOnCloseWithoutConsumingRows() throws IOException, SQLException {
+		Path tmpParquetPath = Files.createTempFile(this.getClass().getSimpleName(), ".parquet");
+		String tableExpression = "read_parquet('%s', union_by_name=True)".formatted(tmpParquetPath.toAbsolutePath());
+
+		try {
+			Semaphore semaphore = new Semaphore(1);
+			IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+			JooqTableWrapperParameters dbParameters = DuckDBHelper.parametersBuilder(dslSupplier)
+					.tableName(DSL.unquotedName(tableExpression))
+					.querySemaphore(semaphore)
+					.build();
+			JooqTableWrapper jooqDb = new JooqTableWrapper("fromParquet", dbParameters);
+
+			DSLContext dsl = jooqDb.makeDsl();
+			dsl.execute("""
+					CREATE TABLE someTableName AS
+						SELECT 'a1' AS a, 123 AS k1 UNION ALL
+						SELECT 'a2' AS a, 234 AS k1
+						;
+					""");
+			dsl.execute("COPY someTableName TO '%s' (FORMAT PARQUET);".formatted(tmpParquetPath));
+
+			QueryPod queryPod = QueryPod.forTable(jooqDb);
+			ITabularRecordStream tabularRecordStream = jooqDb.streamSlices(queryPod,
+					TableQueryV2.builder()
+							.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k1")).build())
+							.build());
+
+			// Open the stream but do not consume any rows — close it immediately.
+			// The onClose handler must release the permit even when no rows flowed through peek.
+			try (Stream<ITabularRecord> stream = tabularRecordStream.records()) {
+				Assertions.assertThat(semaphore.availablePermits()).isZero();
+				// Do not iterate: permit is still held
+			}
+
+			// After stream close: permit released by the onClose fallback handler
+			Assertions.assertThat(semaphore.availablePermits()).isOne();
 		} finally {
 			Files.delete(tmpParquetPath);
 		}

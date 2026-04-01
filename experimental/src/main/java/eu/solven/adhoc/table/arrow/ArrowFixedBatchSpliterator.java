@@ -28,12 +28,11 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
-import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
-import eu.solven.adhoc.engine.context.QueryPod;
 
 /**
- * A fixed-range {@link Spliterator} over a single Arrow batch that was split off from an {@link ArrowBatchSpliterator}.
+ * A fixed-range {@link Spliterator} over a single Arrow batch that was taken from an {@link ArrowBatchSpliterator} via
+ * {@link ArrowBatchSpliterator#takeBatch()}.
  *
  * <p>
  * The spliterator holds a reference to a sliced {@code VectorSchemaRoot} produced by {@link ArrowReflection#SLICE}.
@@ -42,8 +41,10 @@ import eu.solven.adhoc.engine.context.QueryPod;
  * range is exhausted.
  *
  * <p>
- * The spliterator can itself be split (via {@link #trySplit()}) into smaller fixed-range sub-spliterators by slicing
- * the already-sliced root further, enabling fine-grained intra-batch parallelism.
+ * Unlike {@link ArrowBatchSpliterator}, this spliterator <em>does</em> support {@link #trySplit()}: all rows are
+ * already in memory (the IO is done), so splitting is pure CPU work and the FJP can process sub-ranges in parallel
+ * without blocking on IO. The {@link ArrowBatchContext} is shared — not copied — across every recursive split, avoiding
+ * redundant object allocation per split.
  *
  * @author Benoit Lacelle
  */
@@ -51,23 +52,16 @@ final class ArrowFixedBatchSpliterator implements Spliterator<ITabularRecord> {
 	private final Object slicedRoot;
 	private final List<?> vectors;
 	private final int rowCount;
-	private final ITabularRecordFactory factory;
-	private final QueryPod queryPod;
-	private final int minSplitRows;
+	/** Shared context inherited from the parent {@link ArrowBatchSpliterator}; never mutated. */
+	private final ArrowBatchContext context;
 
 	private int currentRow;
 	private boolean rootClosed;
 
-	ArrowFixedBatchSpliterator(Object slicedRoot,
-			int rowCount,
-			ITabularRecordFactory factory,
-			QueryPod queryPod,
-			int minSplitRows) {
+	ArrowFixedBatchSpliterator(Object slicedRoot, int rowCount, ArrowBatchContext context) {
 		this.slicedRoot = slicedRoot;
 		this.rowCount = rowCount;
-		this.factory = factory;
-		this.queryPod = queryPod;
-		this.minSplitRows = minSplitRows;
+		this.context = context;
 		try {
 			this.vectors = (List<?>) ArrowReflection.GET_FIELD_VECTORS.invoke(slicedRoot);
 		} catch (InvocationTargetException e) {
@@ -84,11 +78,11 @@ final class ArrowFixedBatchSpliterator implements Spliterator<ITabularRecord> {
 			return false;
 		}
 
-		if (queryPod.isCancelled()) {
+		if (context.queryPod().isCancelled()) {
 			throw new CancelledQueryException("Query cancelled during Arrow stream iteration");
 		}
 
-		action.accept(ArrowReflection.buildRecord(vectors, currentRow, factory));
+		action.accept(ArrowReflection.buildRecord(vectors, currentRow, context.factory()));
 		currentRow++;
 
 		if (currentRow >= rowCount) {
@@ -99,8 +93,10 @@ final class ArrowFixedBatchSpliterator implements Spliterator<ITabularRecord> {
 
 	@Override
 	public Spliterator<ITabularRecord> trySplit() {
+		// All rows are already in memory (IO is done), so splitting is pure CPU work.
+		// FJP can safely process sub-ranges in parallel without touching the Arrow reader.
 		int remaining = rowCount - currentRow;
-		if (remaining < minSplitRows) {
+		if (remaining < context.minSplitRows()) {
 			return null;
 		}
 		int splitSize = remaining / 2;
@@ -109,7 +105,8 @@ final class ArrowFixedBatchSpliterator implements Spliterator<ITabularRecord> {
 		try {
 			Object subRoot = ArrowReflection.SLICE.invoke(slicedRoot, currentRow, splitSize);
 			currentRow += splitSize;
-			return new ArrowFixedBatchSpliterator(subRoot, splitSize, factory, queryPod, minSplitRows);
+			// context is shared: no copy needed across recursive splits
+			return new ArrowFixedBatchSpliterator(subRoot, splitSize, context);
 		} catch (InvocationTargetException e) {
 			throw new IllegalStateException("Error slicing Arrow VectorSchemaRoot", e.getCause());
 		} catch (IllegalAccessException e) {

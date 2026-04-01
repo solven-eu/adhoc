@@ -46,6 +46,9 @@ public class TestFlatAndFilter {
 		Assertions.assertThat(filter.isMatchAll()).isTrue();
 		Assertions.assertThat(filter.isMatchNone()).isFalse();
 		Assertions.assertThat(filter.isAnd()).isTrue();
+
+		Assertions.assertThat(filter).isEqualTo(ISliceFilter.MATCH_ALL);
+		Assertions.assertThat(ISliceFilter.MATCH_ALL).isEqualTo(filter);
 	}
 
 	@Test

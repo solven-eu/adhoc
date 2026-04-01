@@ -55,6 +55,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.NonNull;
@@ -143,6 +144,10 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
 			// reasonable to prefer doing as many computations in a single pass).
 			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
+				if (records.isParallel()) {
+					throw new NotYetImplementedException("IMultitypeMergeableGrid are not thread-safe yet");
+				}
+
 				records.forEach(input -> {
 					GroupByMarker sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);
 					forEachMeasure(sequencedKeyset, input, peekOnCoordinate, grid);

@@ -358,6 +358,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		Map<TableQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
 
+		// TODO This should be concurrent if CONCURRENT is active
 		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
 			IStopwatch stopWatchSinking;
 			Map<TableQueryStep, ICuboid> stepToValues;

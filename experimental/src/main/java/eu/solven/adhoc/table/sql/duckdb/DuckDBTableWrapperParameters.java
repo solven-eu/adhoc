@@ -26,7 +26,6 @@ import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
 
-import eu.solven.adhoc.table.arrow.ArrowBatchSpliterator;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -46,26 +45,35 @@ public class DuckDBTableWrapperParameters {
 	 */
 	private static final long DEFAULT_ARROW_BATCH_SIZE = 2048;
 
-	// DuckDB's default vector size is 2048 rows. Splitting below 1024 rows produces tasks too small
-	// to amortise thread-coordination overhead. Both spliterators use this threshold.
-	// See https://duckdb.org/docs/stable/internals/vector.html
-	private static final int MIN_SPLIT_ROWS = 1024;
-
 	@NonNull
 	JooqTableWrapperParameters base;
 
 	@Default
 	long arrowBatchSize = DEFAULT_ARROW_BATCH_SIZE;
 
+	// DuckDB's default vector size is 2048 rows. Splitting below 1024 rows produces tasks too small
+	// to amortise FJP thread-coordination overhead.
+	// See https://duckdb.org/docs/stable/internals/vector.html
+	private static final int MIN_SPLIT_ROWS = 1024;
+
 	/**
-	 * Minimum number of rows in a batch before {@link ArrowBatchSpliterator} will split it for parallel processing.
-	 * Splitting below this threshold produces tasks too small to amortise thread-coordination overhead.
-	 *
-	 * <p>
-	 * See https://duckdb.org/docs/stable/internals/vector.html
+	 * Minimum rows in a loaded batch before {@link eu.solven.adhoc.table.arrow.ArrowFixedBatchSpliterator} will split
+	 * it. Splitting below this threshold produces tasks too small to amortise FJP coordination overhead.
 	 */
 	@Default
 	int minSplitRows = MIN_SPLIT_ROWS;
+
+	// 2 futures in flight: one being processed by FJP workers, one loading on a VT.
+	// More than 2 gives diminishing returns for typical batch sizes.
+	private static final int DEFAULT_PREFETCH_COUNT = 2;
+
+	/**
+	 * Maximum number of Arrow batch-loading futures kept in flight during parallel streaming. Each future runs on a
+	 * virtual thread from {@code adhocMixedPool}; they are chained so the Arrow reader is never accessed concurrently.
+	 * Only active in parallel mode ({@code stream.parallel()}); sequential streaming is unaffected.
+	 */
+	@Default
+	int prefetchCount = DEFAULT_PREFETCH_COUNT;
 
 	/**
 	 * BEWARE This will not define underlying default dialect to MYSQL.

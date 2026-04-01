@@ -319,10 +319,19 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		}
 
 		Semaphore semaphore = querySemaphore();
-		// Limit concurrent queries: acquire lazily when the stream is first opened and release on close.
+		// Limit concurrent queries: acquire lazily when the stream is first opened.
+		// The permit is released as soon as the first row arrives: at that point the DB has completed query
+		// execution and is streaming results, so a new query can start. If the stream is closed before
+		// producing any row (empty result or early cancel), the permit is released on close instead.
 		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
 			semaphore.acquireUninterruptibly();
-			return modifiedStream.onClose(semaphore::release);
+			AtomicBoolean semaphoreReleased = new AtomicBoolean(false);
+			Runnable releaseSemaphore = () -> {
+				if (semaphoreReleased.compareAndSet(false, true)) {
+					semaphore.release();
+				}
+			};
+			return modifiedStream.peek(__ -> releaseSemaphore.run()).onClose(releaseSemaphore);
 		});
 	}
 

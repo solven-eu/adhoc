@@ -50,8 +50,11 @@ import eu.solven.adhoc.encoding.fsst.IFsstEncoding;
  * 
  */
 public class FsstFreezingWithContext implements IFreezingWithContext {
+	// LinkedHashSet as it holds `null`
 	private static final Set<Class<? extends Object>> FREEZABLE_CLASSES =
 			Sets.newLinkedHashSet(Arrays.asList(String.class, Utf8ByteSlice.class, null));
+
+	final FsstTrainer fsstTrainer = FsstTrainer.builder().build();
 
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	@Override
@@ -85,7 +88,7 @@ public class FsstFreezingWithContext implements IFreezingWithContext {
 	 */
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected IReadableColumn readableColumn(List<IByteSlice> primitiveArray) {
-		IFsstEncoding table = FsstTrainer.builder().build().train(primitiveArray);
+		IFsstEncoding table = fsstTrainer.train(primitiveArray);
 
 		List<IByteSlice> encoded =
 				primitiveArray.stream().map(bytes -> bytes == null ? null : table.encodeAll(bytes)).toList();

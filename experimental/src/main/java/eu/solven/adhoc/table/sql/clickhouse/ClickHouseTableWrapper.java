@@ -49,7 +49,10 @@ public class ClickHouseTableWrapper extends AArrowJooqTableWrapper {
 
 	@Builder(builderMethodName = "clickhouse")
 	public ClickHouseTableWrapper(String name, ClickHouseTableWrapperParameters clickHouseParameters) {
-		super(name, clickHouseParameters.getBase(), clickHouseParameters.getMinSplitRows());
+		super(name,
+				clickHouseParameters.getBase(),
+				clickHouseParameters.getMinSplitRows(),
+				clickHouseParameters.getPrefetchCount());
 
 		this.clickHouseParameters = clickHouseParameters;
 	}

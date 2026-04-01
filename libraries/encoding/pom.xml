@@ -35,11 +35,21 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/me.lemire.integercompression/JavaFastPFOR/ -->
+		<!--
+		https://mvnrepository.com/artifact/me.lemire.integercompression/JavaFastPFOR/ -->
 		<dependency>
 			<groupId>me.lemire.integercompression</groupId>
 			<artifactId>JavaFastPFOR</artifactId>
 			<version>0.3.11</version>
+		</dependency>
+
+		<dependency>
+			<!-- Used for HLL and KNV, for heuristic Distinct count-->
+			<groupId>org.apache.datasketches</groupId>
+			<artifactId>datasketches-java</artifactId>
+			<!-- 9.0.0 requireds JDK25 -->
+			<!-- 8.0.0 requireds JDK21 with some preview options -->
+			<version>3.3.0</version>
 		</dependency>
 
 		<!-- Source: https://mvnrepository.com/artifact/org.agrona/agrona -->

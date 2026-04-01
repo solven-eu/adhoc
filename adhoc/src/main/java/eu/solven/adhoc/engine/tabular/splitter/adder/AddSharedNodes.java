@@ -355,9 +355,8 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 
-		assert inducerGroupedByColumns.keySet()
-				.containsAll(sharedColumns) : "InducedToInducer graph issue around inducer=%s and induced=%s"
-						.formatted(inducer, relatedSteps);
+		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
+				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
 		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
 
 		return inducer.toBuilder()

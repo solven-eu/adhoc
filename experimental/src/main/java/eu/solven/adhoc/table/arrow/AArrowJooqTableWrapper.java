@@ -45,15 +45,26 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Extension of {@link JooqTableWrapper} that streams results through Arrow record batches.
  *
+ * <p>
+ * The returned stream is sequential by default ({@code parallel=false}). Concurrency is controlled entirely by
+ * {@link ArrowBatchSpliterator}: when the caller makes the stream parallel ({@code parallel=true}),
+ * {@link ArrowBatchSpliterator#trySplit()} takes over and pre-fetches each batch on a virtual thread from
+ * {@code adhocMixedPool}, while FJP processes already-loaded batches via {@link ArrowFixedBatchSpliterator#trySplit()}.
+ *
  * @author Benoit Lacelle
  */
 @Slf4j
 public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	private final int minSplitRows;
+	private final int prefetchCount;
 
-	protected AArrowJooqTableWrapper(String name, JooqTableWrapperParameters tableParameters, int minSplitRows) {
+	protected AArrowJooqTableWrapper(String name,
+			JooqTableWrapperParameters tableParameters,
+			int minSplitRows,
+			int prefetchCount) {
 		super(name, tableParameters);
 		this.minSplitRows = minSplitRows;
+		this.prefetchCount = prefetchCount;
 	}
 
 	@Override
@@ -80,9 +91,9 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 		try {
 			Object arrowReader = openArrowReader(sql, resources);
 
-			Stream<ITabularRecord> stream = StreamSupport.stream(
-					new ArrowBatchSpliterator(arrowReader, tabularRecordFactory, queryPod, minSplitRows),
-					false);
+			ArrowBatchContext batchContext = new ArrowBatchContext(tabularRecordFactory, queryPod, minSplitRows);
+			ArrowBatchSpliterator spliterator = new ArrowBatchSpliterator(arrowReader, batchContext, prefetchCount);
+			Stream<ITabularRecord> stream = StreamSupport.stream(spliterator, false);
 
 			return stream.onClose(() -> closeAll(resources));
 		} catch (SQLException e) {
