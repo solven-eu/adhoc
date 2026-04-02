@@ -49,8 +49,9 @@ public class TestSuppliedTabularRecordConsumingStream {
 				.assertThat(
 						new SuppliedTabularRecordConsumingStream("s", true, IConsumingStream::empty).isDistinctSlices())
 				.isTrue();
-		Assertions.assertThat(
-				new SuppliedTabularRecordConsumingStream("s", false, IConsumingStream::empty).isDistinctSlices())
+		Assertions
+				.assertThat(new SuppliedTabularRecordConsumingStream("s", false, IConsumingStream::empty)
+						.isDistinctSlices())
 				.isFalse();
 	}
 
