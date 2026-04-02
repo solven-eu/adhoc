@@ -23,8 +23,14 @@
 package eu.solven.adhoc.engine.concurrent;
 
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -35,7 +41,9 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestDagCompletableExecutor {
 
 	private void execute(IAdhocDag<String> dag,
@@ -150,6 +158,160 @@ public class TestDagCompletableExecutor {
 
 		// initial + layer1 + layer2 + final
 		Assertions.assertThat(nbExecution).hasValue(1 + nbIntermediate + nbIntermediate + 1);
+	}
+
+	/**
+	 * Builds a binary tree DAG with given depth. Each non-leaf node depends on its two children, forming a proper
+	 * binary tree where leaves have no outgoing edges.
+	 *
+	 * @param dag
+	 *            the DAG to populate
+	 * @param depth
+	 *            the tree depth (depth 16 → 2^17 - 1 = 131,071 nodes)
+	 * @return the root vertex of the constructed DAG
+	 */
+	private static String buildBinaryTreeDag(IAdhocDag<String> dag, int depth) {
+		dag.addVertex("0");
+		for (int d = 0; d < depth; d++) {
+			int start = (1 << d) - 1;
+			int end = (1 << (d + 1)) - 1;
+			for (int i = start; i < end; i++) {
+				String parent = String.valueOf(i);
+				String left = String.valueOf(2 * i + 1);
+				String right = String.valueOf(2 * i + 2);
+				dag.addVertex(left);
+				dag.addVertex(right);
+				dag.addEdge(parent, left);
+				dag.addEdge(parent, right);
+			}
+		}
+		return "0";
+	}
+
+	/**
+	 * Builds a binary tree DAG with ~100K nodes (depth 16 → 2^17 - 1 = 131,071 nodes).
+	 *
+	 * @return the root vertex of the constructed DAG
+	 */
+	private static String buildBinaryTreeDag(IAdhocDag<String> dag) {
+		return buildBinaryTreeDag(dag, depth);
+	}
+
+	/**
+	 * Monte Carlo PI estimation. Each task samples random points and counts how many fall inside the unit circle.
+	 *
+	 * @param samplesPerTask
+	 *            number of random points to sample
+	 * @param seed
+	 *            unique seed per task to ensure deterministic results
+	 * @return estimated PI value from this task's samples
+	 */
+	private static double estimatePi(int samplesPerTask, long seed) {
+		Random random = new Random(seed);
+		long insideCircle = 0;
+		for (int i = 0; i < samplesPerTask; i++) {
+			double x = random.nextDouble();
+			double y = random.nextDouble();
+			if (x * x + y * y <= 1.0) {
+				insideCircle++;
+			}
+		}
+		return 4.0 * insideCircle / samplesPerTask;
+	}
+
+	/**
+	 * Executes the DAG with the given executor, computing PI estimates for each node.
+	 *
+	 * @param dag
+	 *            the DAG to execute
+	 * @param root
+	 *            the root node to start from
+	 * @param executor
+	 *            the executor to use
+	 * @param results
+	 *            map to store results (node → PI estimate)
+	 */
+	private void executeWithExecutor(IAdhocDag<String> dag,
+			String root,
+			Executor executor,
+			Map<String, Double> results) {
+		Set<String> queryStepsDone = ConcurrentHashMap.newKeySet();
+
+		DagCompletableExecutor<String> executor2 = DagCompletableExecutor.<String>builder()
+				.fromQueriedToDependencies(dag)
+				.queryStepsDone(queryStepsDone)
+				.onReadyStep(step -> {
+					long stepIndex = Long.parseLong(step);
+					int samplesPerTask = 100;
+					double piEstimate = estimatePi(samplesPerTask, stepIndex);
+					if (sleep > 0) {
+						try {
+							TimeUnit.MILLISECONDS.sleep(sleep);
+						} catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+							throw new IllegalStateException(e);
+						}
+					}
+					results.put(step, piEstimate);
+				})
+				.executor(executor)
+				.build();
+
+		executor2.executeRecursively(root).join();
+
+		log.info("Parallelism: {}", executor2.tracker.getTimeWeightedParallelism());
+	}
+
+	private static final int depth = 15;
+	// A sleep is in favor of VirtualThreads as these can all sleep in parallel, as the pool is unbounded.
+	private static final int sleep = 0;
+
+	/**
+	 * Tests execution of ~130K tasks in a binary tree DAG using VirtualThreadPool. Each node performs a Monte Carlo PI
+	 * estimation. This test verifies that VirtualThreadPool can handle a deep DAG with many tasks efficiently.
+	 */
+	@Test
+	public void testExecuteRecursively_100KTasks_VirtualThreadPool() {
+		IAdhocDag<String> dag = new AdhocDag<>();
+		String root = buildBinaryTreeDag(dag);
+
+		int expectedNodes = (1 << (depth + 1)) - 1;
+		Assertions.assertThat(dag.vertexSet()).hasSize(expectedNodes);
+
+		Map<String, Double> results = new ConcurrentHashMap<>();
+
+		try (ExecutorService virtualThreadPool = Executors.newVirtualThreadPerTaskExecutor()) {
+			long start = System.currentTimeMillis();
+			executeWithExecutor(dag, root, virtualThreadPool, results);
+			long duration = System.currentTimeMillis() - start;
+			log.info("VirtualThreadPool: {} tasks completed in {} ms", results.size(), duration);
+		}
+
+		Assertions.assertThat(results).hasSize(expectedNodes);
+	}
+
+	/**
+	 * Tests execution of ~130K tasks in a binary tree DAG using ForkJoinPool. Each node performs a Monte Carlo PI
+	 * estimation. This test verifies that ForkJoinPool can handle a deep DAG with many tasks efficiently.
+	 */
+	@Test
+	public void testExecuteRecursively_100KTasks_ForkJoinPool() {
+		IAdhocDag<String> dag = new AdhocDag<>();
+		String root = buildBinaryTreeDag(dag);
+
+		int expectedNodes = (1 << (depth + 1)) - 1;
+		Assertions.assertThat(dag.vertexSet()).hasSize(expectedNodes);
+
+		Map<String, Double> results = new ConcurrentHashMap<>();
+
+		try (ForkJoinPool fjp = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
+			long start = System.currentTimeMillis();
+			executeWithExecutor(dag, root, fjp, results);
+			long duration = System.currentTimeMillis() - start;
+			log.info("ForkJoinPool: {} tasks completed in {} ms", results.size(), duration);
+		}
+
+		Assertions.assertThat(results).hasSize(expectedNodes);
 	}
 
 }

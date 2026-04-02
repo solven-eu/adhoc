@@ -495,4 +495,76 @@ public class TestAddSharedNodes {
 				.anySatisfy(GraphsTestHelpers.assertEdge(s3, shared, withShared))
 				.anySatisfy(GraphsTestHelpers.assertEdge(shared, s4, withShared));
 	}
+
+	/**
+	 * Two fully independent subtrees (disconnected components) are given as a single input DAG. Each subtree has two
+	 * leaves sharing a filter part, so each should produce one shared node. The multi-component path in
+	 * {@link AddSharedNodes#addSharedNodes} dispatches them concurrently; the final result must contain both shared
+	 * nodes as if they had been processed sequentially.
+	 */
+	@Test
+	public void twoDisconnectedComponents_eachGetsItsOwnSharedNode() {
+		// Component 1: inductorA ← { s1(country=FR,type=web), s2(country=FR,type=app) }
+		TableQueryStep s1 = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "type", "web"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep s2 = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "type", "app"))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep inductorA =
+				a.toBuilder().filter(AndFilter.and(Map.of())).groupBy(GroupByColumns.named("country", "type")).build();
+
+		// Component 2: inductorB ← { s3(region=EMEA,channel=online), s4(region=EMEA,channel=offline) }
+		TableQueryStep s3 = a.toBuilder()
+				.filter(AndFilter.and("region", "EMEA", "channel", "online"))
+				.groupBy(GroupByColumns.named("region", "channel"))
+				.build();
+		TableQueryStep s4 = a.toBuilder()
+				.filter(AndFilter.and("region", "EMEA", "channel", "offline"))
+				.groupBy(GroupByColumns.named("region", "channel"))
+				.build();
+		TableQueryStep inductorB = a.toBuilder()
+				.filter(AndFilter.and(Map.of()))
+				.groupBy(GroupByColumns.named("region", "channel"))
+				.build();
+
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
+		dag.addVertex(inductorA);
+		Stream.of(s1, s2).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, inductorA);
+		});
+		dag.addVertex(inductorB);
+		Stream.of(s3, s4).forEach(s -> {
+			dag.addVertex(s);
+			dag.addEdge(s, inductorB);
+		});
+
+		IAdhocDag<TableQueryStep> withShared = sharedNodes.addSharedNodes(dag);
+
+		TableQueryStep sharedFR = a.toBuilder()
+				.filter(AndFilter.and("country", "FR", "type", InMatcher.matchIn("web", "app")))
+				.groupBy(GroupByColumns.named("country", "type"))
+				.build();
+		TableQueryStep sharedEMEA = a.toBuilder()
+				.filter(AndFilter.and("region", "EMEA", "channel", InMatcher.matchIn("online", "offline")))
+				.groupBy(GroupByColumns.named("region", "channel"))
+				.build();
+
+		Assertions.assertThat(withShared.vertexSet())
+				.hasSize(dag.vertexSet().size() + 2)
+				.containsAll(dag.vertexSet())
+				.contains(sharedFR, sharedEMEA);
+
+		Assertions.assertThat(withShared.edgeSet())
+				.hasSize(6)
+				.anySatisfy(GraphsTestHelpers.assertEdge(s1, sharedFR, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s2, sharedFR, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedFR, inductorA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s3, sharedEMEA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(s4, sharedEMEA, withShared))
+				.anySatisfy(GraphsTestHelpers.assertEdge(sharedEMEA, inductorB, withShared));
+	}
 }

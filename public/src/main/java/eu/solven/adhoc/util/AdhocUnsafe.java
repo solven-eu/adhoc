@@ -70,6 +70,11 @@ public class AdhocUnsafe {
 		parallelism = defaultParallelism();
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
+		// Recreate the VT executor so tests starting a fresh state get a non-shutdown executor
+		adhocMixedPool = MoreExecutors.listeningDecorator(Executors.newVirtualThreadPerTaskExecutor());
+		// Recreate FJP so tests starting a fresh state get a non-shutdown pool
+		// asyncMode is false as stack-based seems better for our DAG usages.
+		adhocCpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, false);
 	}
 
 	public static void reloadProperties() {
@@ -126,7 +131,7 @@ public class AdhocUnsafe {
 	private static boolean failFast;
 
 	/**
-	 * @return the default parallelism when calling Executors#newWorkStealingPool
+	 * @return the default parallelism hint, e.g. for sizing connection pools (ClickHouse, etc.)
 	 */
 	@Getter
 	private static int parallelism;
@@ -180,17 +185,16 @@ public class AdhocUnsafe {
 		return Runtime.getRuntime().availableProcessors() * 2;
 	}
 
-	// https://stackoverflow.com/questions/47261001/is-it-beneficial-to-use-forkjoinpool-as-usual-executorservice
-	public static ListeningExecutorService adhocCommonPool = MoreExecutors.listeningDecorator(newWorkStealingPool());
+	// Virtual-thread executor: replaces the former ForkJoinPool-based work-stealing pool.
+	// VTs are cheap, blocking-friendly, and remove the need for a separate IO executor.
+	public static ListeningExecutorService adhocMixedPool = MoreExecutors
+			.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 
-	/**
-	 * Similar with java.util.concurrent.Executors.newWorkStealingPool(int), but with a custom name.
-	 *
-	 * @return
-	 */
-	private static ForkJoinPool newWorkStealingPool() {
-		return new ForkJoinPool(getParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-common-"), null, true);
-	}
+	// ForkJoinPool for CPU-bound work: tasks submitted from a FJP worker thread that call
+	// Stream.parallelStream() will fork into this pool (work-stealing) rather than the JVM
+	// common pool, giving predictable thread naming and sizing.
+	public static ForkJoinPool adhocCpuPool =
+			new ForkJoinPool(defaultParallelism(), new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, true);
 
 	// Typically used as limit to prevent iterating over large cartesian products
 	// This limit should be applied over the number of potential combinations

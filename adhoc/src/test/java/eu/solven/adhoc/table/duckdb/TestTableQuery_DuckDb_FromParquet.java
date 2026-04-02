@@ -43,7 +43,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implements IAdhocTestConstants {
 	Path tmpParquetPath;
@@ -62,7 +62,7 @@ public class TestTableQuery_DuckDb_FromParquet extends ADuckDbJooqTest implement
 	public ITableWrapper makeTable() {
 		String tableName = "%s".formatted(tmpParquetPath.toAbsolutePath());
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build());
 	}
 
 	@AfterEach

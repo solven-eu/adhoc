@@ -167,10 +167,7 @@ public class InjectPixarExampleCubesConfig {
 					.build();
 
 			JooqTableWrapper filmsTable = new JooqTableWrapper("films",
-					JooqTableWrapperParameters.builder()
-							.table(films.getSnowflakeTable())
-							.dslSupplier(dslSupplier)
-							.build());
+					DuckDBHelper.parametersBuilder(dslSupplier).table(films.getSnowflakeTable()).build());
 			schema.registerTable(filmsTable);
 
 			List<IMeasure> measuresFilm = new ArrayList<>();

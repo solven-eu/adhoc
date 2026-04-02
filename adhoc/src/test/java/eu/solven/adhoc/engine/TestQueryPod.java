@@ -76,25 +76,13 @@ public class TestQueryPod {
 	public void testCustomExecutorService() {
 		InMemoryTable table = InMemoryTable.builder().build();
 		QueryPod queryContext =
-				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.adhocCommonPool).build();
+				QueryPod.forTable(table).toBuilder().executorService(AdhocUnsafe.adhocMixedPool).build();
 
-		if (Runtime.version().feature() >= 25) {
-			// ForkJoinPool is a ScheduledExecutorService from Java25
-			Assertions.assertThat(queryContext.getExecutorService().toString())
-					.startsWith("com.google.common.util.concurrent.MoreExecutors$ScheduledListeningDecorator")
-					.contains("java.util.concurrent.ForkJoinPool");
-
-			Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
-					// java.util.concurrent.ForkJoinPool
-					.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ScheduledListeningDecorator");
-		} else {
-			Assertions.assertThat(queryContext.getExecutorService().toString())
-					.startsWith("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator")
-					.contains("java.util.concurrent.ForkJoinPool");
-
-			Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
-					// java.util.concurrent.ForkJoinPool
-					.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator");
-		}
+		// adhocCommonPool is a VirtualThread-per-task executor decorated by Guava
+		Assertions.assertThat(queryContext.getExecutorService().toString())
+				.startsWith("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator")
+				.contains("java.util.concurrent.ThreadPerTaskExecutor");
+		Assertions.assertThat(queryContext.getExecutorService().getClass().getName())
+				.isEqualTo("com.google.common.util.concurrent.MoreExecutors$ListeningDecorator");
 	}
 }

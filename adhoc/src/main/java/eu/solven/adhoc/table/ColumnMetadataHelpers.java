@@ -59,7 +59,7 @@ public class ColumnMetadataHelpers {
 
 		// Count the number of returned slices
 		long estimatedCardinality = table.streamSlices(tableQuery)
-				.records()
+				.records2()
 				.map(r -> r.getGroupBy(column))
 				// TODO Should we return the information about null-ness?
 				.filter(Objects::nonNull)

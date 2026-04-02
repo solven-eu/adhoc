@@ -25,15 +25,16 @@ package eu.solven.adhoc.table.arrow;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
+import org.apache.arrow.vector.ipc.ArrowReader;
 import org.jooq.Record;
 import org.jooq.ResultQuery;
 import org.jooq.conf.ParamType;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
+import eu.solven.adhoc.dataframe.stream.ConsumingStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -44,6 +45,12 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Extension of {@link JooqTableWrapper} that streams results through Arrow record batches.
+ *
+ * <p>
+ * The returned stream is sequential by default ({@code parallel=false}). Concurrency is controlled entirely by
+ * {@link ArrowBatchSpliterator}: when the caller makes the stream parallel ({@code parallel=true}),
+ * {@link ArrowBatchSpliterator#trySplit()} takes over and pre-fetches each batch on a virtual thread from
+ * {@code adhocMixedPool}, while FJP processes already-loaded batches via {@link ArrowFixedBatchSpliterator#trySplit()}.
  *
  * @author Benoit Lacelle
  */
@@ -57,17 +64,17 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
-		return sqlQuery.getQueries().stream().flatMap(oneQuery -> {
+		return IConsumingStream.fromStream(sqlQuery.getQueries().stream().map(oneQuery -> {
 			ITabularRecordFactory tabularRecordFactory =
 					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toArrowStream(queryPod, oneQuery, tabularRecordFactory);
-		});
+		}).toList());
 	}
 
-	protected Stream<ITabularRecord> toArrowStream(QueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> toArrowStream(QueryPod queryPod,
 			ResultQuery<Record> sqlQuery,
 			ITabularRecordFactory tabularRecordFactory) {
 		if (queryPod.isCancelled()) {
@@ -80,11 +87,15 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 		try {
 			Object arrowReader = openArrowReader(sql, resources);
 
-			Stream<ITabularRecord> stream = StreamSupport.stream(
-					new ArrowBatchSpliterator(arrowReader, tabularRecordFactory, queryPod, minSplitRows),
-					false);
+			return ConsumingStream.<ITabularRecord>builder().source(s -> {
+				ArrowPojoStreamer.forEach((ArrowReader) arrowReader, root -> {
 
-			return stream.onClose(() -> closeAll(resources));
+					for (int rowIndex = 0; rowIndex < root.getRowCount(); rowIndex++) {
+						s.accept(ArrowReflection.buildRecord(root.getFieldVectors(), rowIndex, tabularRecordFactory));
+					}
+				}, minSplitRows, queryPod.getExecutorService());
+
+			}).closeHandler(() -> closeAll(resources)).build();
 		} catch (SQLException e) {
 			closeAll(resources);
 			throw onArrowSqlException(e);

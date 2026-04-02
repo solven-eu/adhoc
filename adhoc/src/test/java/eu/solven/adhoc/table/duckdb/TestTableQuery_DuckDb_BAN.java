@@ -44,7 +44,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.util.AdhocBenchmark;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,8 +73,7 @@ public class TestTableQuery_DuckDb_BAN extends ADuckDbJooqTest implements IAdhoc
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(dslSupplier)
+				DuckDBHelper.parametersBuilder(dslSupplier)
 						.table(DSL.table(
 								"read_parquet('/Users/blacelle/Downloads/datasets/adresses-france-10-2024.parquet')"))
 						.build());

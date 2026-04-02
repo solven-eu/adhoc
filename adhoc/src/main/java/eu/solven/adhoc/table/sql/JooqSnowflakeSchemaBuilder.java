@@ -37,6 +37,8 @@ import org.jooq.SQLDialect;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 
+import com.google.common.collect.Lists;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -154,6 +156,14 @@ public class JooqSnowflakeSchemaBuilder {
 			String joinName,
 			List<String> on) {
 		return leftJoin(leftTableAlias, joinedTable, joinName, on.stream().map(f -> Map.entry(f, f)).toList());
+	}
+
+	public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias,
+			Table<?> joinedTable,
+			String joinName,
+			String on,
+			String... moreOn) {
+		return joinHomo(leftTableAlias, joinedTable, joinName, Lists.asList(on, moreOn));
 	}
 
 	protected void registerInAliaser(Name leftName, Name rightName) {

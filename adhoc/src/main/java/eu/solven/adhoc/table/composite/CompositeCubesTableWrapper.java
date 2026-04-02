@@ -55,8 +55,9 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
@@ -224,7 +225,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
 
 		// not distinct slices as different subCubes may refer to the same slices
-		return new SuppliedTabularRecordStream(compositeQuery, false, () -> openStream(compositeQuery, cubeToView));
+		return new SuppliedTabularRecordConsumingStream(compositeQuery,
+				false,
+				() -> IConsumingStream.fromStream(openStream(compositeQuery, cubeToView)));
 	}
 
 	/**
@@ -417,11 +420,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	/**
 	 * Executes all sub-queries and returns their results keyed by cube name in insertion order.
 	 * <p>
-	 * {@link CompositeCubesTableWrapper} is a CPU-bound in-process fan-out, not an I/O-bound database call. It
-	 * therefore uses {@link QueryPod#getExecutorService()} (the CPU pool) rather than
-	 * {@link QueryPod#getDbExecutorService()} (the I/O pool). This is important to avoid deadlock: the caller
-	 * ({@link eu.solven.adhoc.engine.tabular.TableQueryEngine}) submits table queries on the {@code dbExecutorService};
-	 * submitting sub-queries to a separate CPU pool ensures the two pools never block each other.
+	 * {@link CompositeCubesTableWrapper} is an in-process fan-out. It uses {@link QueryPod#getExecutorService()} which
+	 * is a Virtual Thread executor when the query is concurrent, so all sub-queries can run in parallel without
+	 * exhausting platform threads.
 	 */
 	@SuppressWarnings({ "PMD.CloseResource", "PMD.ExceptionAsFlowControl" })
 	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {

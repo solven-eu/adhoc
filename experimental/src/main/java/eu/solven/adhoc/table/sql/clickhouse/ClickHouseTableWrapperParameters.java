@@ -45,6 +45,10 @@ public class ClickHouseTableWrapperParameters {
 
 	private static final int DEFAULT_MIN_SPLIT_ROWS = 1024;
 
+	/**
+	 * Minimum rows in a loaded batch before {@link eu.solven.adhoc.table.arrow.ArrowFixedBatchSpliterator} will split
+	 * it. Splitting below this threshold produces tasks too small to amortise FJP coordination overhead.
+	 */
 	@Default
 	int minSplitRows = DEFAULT_MIN_SPLIT_ROWS;
 

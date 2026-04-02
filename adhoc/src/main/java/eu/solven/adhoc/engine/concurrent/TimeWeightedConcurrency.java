@@ -31,14 +31,19 @@ import com.google.common.base.Ticker;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Collects statistics about a concurrent process. It evaluates
+ * Collects statistics about a concurrent process.
+ * 
+ * BEWARE This is not very relevant way of measuring concurrency with virtual-threads as many tasks may be active
+ * without meaning they are actually being computed.
  * 
  * @author Benoit Lacelle
  * 
  */
 @Builder
+@Slf4j
 public class TimeWeightedConcurrency {
 	private final LongAdder weightedSum = new LongAdder();
 	private final LongAdder time = new LongAdder();
@@ -76,6 +81,8 @@ public class TimeWeightedConcurrency {
 	@SuppressWarnings("PMD.AvoidSynchronizedAtMethodLevel")
 	public synchronized int addParallelism(int delta) {
 		int parallelism = currentParallelism.getAndAdd(delta);
+
+		log.debug("parallelism is now {}", parallelism);
 
 		long now = ticker.read();
 		long durationWithParallelism = now - lastTimestamp.get();

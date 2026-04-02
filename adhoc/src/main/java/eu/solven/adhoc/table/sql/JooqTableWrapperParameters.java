@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.sql;
 
+import java.util.concurrent.Semaphore;
+
 import org.jooq.Name;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
@@ -67,6 +69,16 @@ public class JooqTableWrapperParameters {
 	// If we encounter OutOfMemoryError, we should lower this parameter.
 	@Default
 	final int statementFetchSize = DEFAULT_FETCH_SIZE;
+
+	/**
+	 * Optional semaphore limiting concurrent queries against this table.
+	 * <p>
+	 * Useful for databases that perform best with bounded concurrency (e.g. DuckDB). With Virtual Threads, a semaphore
+	 * is the right primitive — a bounded thread pool is no longer needed.
+	 */
+	@Default
+	@NonNull
+	Semaphore querySemaphore = new Semaphore(Integer.MAX_VALUE);
 
 	/**
 	 * Lombok @Builder

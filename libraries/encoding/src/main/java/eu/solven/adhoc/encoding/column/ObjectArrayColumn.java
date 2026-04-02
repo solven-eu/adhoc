@@ -66,6 +66,10 @@ public class ObjectArrayColumn implements IAppendableColumn {
 
 	@Override
 	public String toString() {
+		return toString(asArray);
+	}
+
+	static String toString(List<?> asArray) {
 		int limit = AdhocUnsafe.getLimitOrdinalToString();
 		int size = asArray.size();
 		if (size <= limit) {

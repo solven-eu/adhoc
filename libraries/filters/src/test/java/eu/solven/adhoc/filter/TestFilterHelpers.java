@@ -635,4 +635,64 @@ public class TestFilterHelpers {
 		Assertions.assertThat(FilterHelpers.isStricterThan(ColumnFilter.matchEq("a", "a1"), common)).isTrue();
 	}
 
+	@Test
+	public void testFilterComparator_symmetricDifferentOrder() {
+		ISliceFilter and1 = AndFilter.and(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("b", "b1"));
+		ISliceFilter and2 = AndFilter.and(ColumnFilter.matchEq("b", "b1"), ColumnFilter.matchEq("a", "a1"));
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(and1, and2))
+				.as("AND(a1,b1) and AND(b1,a1) should compare equal (commutative)")
+				.isEqualTo(0);
+	}
+
+	@Test
+	public void testFilterComparator_symmetricDifferentOrder_threeOperands() {
+		ISliceFilter filterA = ColumnFilter.matchEq("a", "a1");
+		ISliceFilter filterB = ColumnFilter.matchEq("b", "b1");
+		ISliceFilter filterC = ColumnFilter.matchEq("c", "c1");
+
+		ISliceFilter and1 = AndFilter.and(filterA, filterB, filterC);
+		ISliceFilter and2 = AndFilter.and(filterC, filterA, filterB);
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(and1, and2))
+				.as("AND of 3 operands in any order should compare equal (commutative)")
+				.isEqualTo(0);
+	}
+
+	@Test
+	public void testFilterComparator_orSymmetricDifferentOrder() {
+		ISliceFilter filterA = ColumnFilter.matchEq("a", "a1");
+		ISliceFilter filterB = ColumnFilter.matchEq("b", "b1");
+
+		ISliceFilter or1 = FilterBuilder.or(filterA, filterB).combine();
+		ISliceFilter or2 = FilterBuilder.or(filterB, filterA).combine();
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(or1, or2))
+				.as("OR(a1,b1) and OR(b1,a1) should compare equal (commutative)")
+				.isEqualTo(0);
+	}
+
+	@Test
+	public void testFilterComparator_differentFilters_notEqual() {
+		ISliceFilter filterA = ColumnFilter.matchEq("a", "a1");
+		ISliceFilter filterB = ColumnFilter.matchEq("b", "b1");
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(filterA, filterB)).isNotEqualTo(0);
+	}
+
+	@Test
+	public void testFilterComparator_not() {
+		ISliceFilter filterA = ColumnFilter.match("a", NotMatcher.notEqualTo("a1"));
+		ISliceFilter filterB = ColumnFilter.match("b", NotMatcher.notEqualTo("b1"));
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(filterA, filterB)).isNotEqualTo(0);
+	}
+
+	@Test
+	public void testFilterComparator_sameFilter() {
+		ISliceFilter filter = ColumnFilter.matchEq("a", "a1");
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(filter, filter)).isEqualTo(0);
+	}
+
 }

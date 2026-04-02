@@ -288,25 +288,22 @@ public class TableQueryEngine implements ITableQueryEngine {
 			Set<TableQueryV4> tableQueries = hasTableQueries.getTableQueries();
 
 			List<Map<TableQueryStep, ICuboid>> listStepsToCuboids;
-			// Submit to the DB pool so table queries (I/O-bound) do not block the CPU-bound common pool.
-			// We avoid .parallel() streams here because they would fall back to ForkJoinPool.commonPool()
-			// when the calling thread is not a ForkJoinPool worker.
-			ListeningExecutorService dbExecutorService = queryPod.getDbExecutorService();
+			// With Virtual Threads, all blocking I/O is acceptable on the executor; no separate IO pool is needed.
+			ListeningExecutorService executorService = queryPod.getExecutorService();
 			if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
 				List<CompletableFuture<Map<TableQueryStep, ICuboid>>> futures = tableQueries.stream()
 						.map(tableQuery -> CompletableFuture.supplyAsync(
 								() -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery),
-								dbExecutorService))
+								executorService))
 						.toList();
 				// join() on each future blocks until it completes (or propagates a failure)
 				listStepsToCuboids =
 						futures.stream().map(CompletableFuture::join).collect(ImmutableList.toImmutableList());
 			} else {
-				// Sequential path: run every table query sequentially, on the thread of the IO pool
-				// TODO Split this part into an IO part and a CPU part? Or use VirtualThreads?
+				// Sequential path: run every table query sequentially on the executor
 				var completable = CompletableFuture.supplyAsync(() -> tableQueries.stream()
 						.map(tableQuery -> processOneTableQuery(sinkExecutionFeedback, hasTableQueries, tableQuery))
-						.collect(ImmutableList.toImmutableList()), dbExecutorService);
+						.collect(ImmutableList.toImmutableList()), executorService);
 				listStepsToCuboids = completable.join();
 			}
 
@@ -361,6 +358,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 
 		Map<TableQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
 
+		// TODO This should be concurrent if CONCURRENT is active
 		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
 			IStopwatch stopWatchSinking;
 			Map<TableQueryStep, ICuboid> stepToValues;
@@ -903,6 +901,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 */
 	protected void walkUpInducedDag(ConcurrentMap<TableQueryStep, ICuboid> stepToValues,
 			SplitTableQueries inducerAndInduced) {
+		// TODO How to force the computation to the right executorService?
+		// ITableQueryInducer depends on IInducedEvaluator, which may be a pure JVM-cpu implementation, or typically a
+		// DuckDB-io-semaphore implementation.
 		QueryEngineConcurrencyHelper.walkUpDag(queryPod, inducerAndInduced, stepToValues, induced -> {
 			try {
 				evaluateInduced(stepToValues, inducerAndInduced, induced);

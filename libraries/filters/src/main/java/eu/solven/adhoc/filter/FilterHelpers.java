@@ -514,12 +514,89 @@ public class FilterHelpers {
 	/**
 	 * This comparison enables a deterministic ordering of {@link ISliceFilter}. It does not implies anything in term of
 	 * relative complexity.
-	 * 
+	 * <p>
+	 * Type ranking: {@code AND > OR > NOT > COLUMN}. Operands of AND/OR are compared in canonical (sorted) order to
+	 * ensure commutative equality ({@code AND(a,b) == AND(b,a)}).
+	 *
 	 * @return a Comparator for {@link ISliceFilter}, enabling deterministic ordering.
 	 */
-	@Deprecated(since = "Not ready")
 	public static Comparator<? super ISliceFilter> filterComparator() {
-		return (l, r) -> l.toString().compareTo(r.toString());
+		return FilterHelpers::compareFilters;
+	}
+
+	/**
+	 * Compares two filters for order. Implements a total order consistent with filter semantics: type first (AND, OR,
+	 * NOT, COLUMN), then operands recursively in canonical order.
+	 *
+	 * @return a negative integer, zero, or a positive integer as l is less than, equal to, or greater than r.
+	 */
+	private static int compareFilters(ISliceFilter l, ISliceFilter r) {
+		int typeRankL = typeRank(l);
+		int typeRankR = typeRank(r);
+		if (typeRankL != typeRankR) {
+			return Integer.compare(typeRankL, typeRankR);
+		}
+
+		if (l.isAnd() && l instanceof IAndFilter andL && r instanceof IAndFilter andR) {
+			return compareOperandSets(andL.getOperands(), andR.getOperands());
+		} else if (l.isOr() && l instanceof IOrFilter orL && r instanceof IOrFilter orR) {
+			return compareOperandSets(orL.getOperands(), orR.getOperands());
+		} else if (l.isNot() && l instanceof INotFilter notL && r instanceof INotFilter notR) {
+			return compareFilters(notL.getNegated(), notR.getNegated());
+		} else if (l.isColumnFilter() && l instanceof IColumnFilter colL && r instanceof IColumnFilter colR) {
+			int columnCmp = colL.getColumn().compareTo(colR.getColumn());
+			if (columnCmp != 0) {
+				return columnCmp;
+			}
+			return colL.getValueMatcher().toString().compareTo(colR.getValueMatcher().toString());
+		} else {
+			throw new NotYetImplementedException("filter l=%s r=%s".formatted(PepperLogHelper.getObjectAndClass(l),
+					PepperLogHelper.getObjectAndClass(r)));
+		}
+	}
+
+	/**
+	 * Returns a rank for filter type, used to group filters by their structural kind before comparing operands.
+	 *
+	 * @return an integer rank where lower values indicate "more complex" types (AND=0, OR=1, NOT=2, COLUMN=3).
+	 */
+	@SuppressWarnings("checkstyle:MagicNumber")
+	private static int typeRank(ISliceFilter filter) {
+		if (filter.isAnd()) {
+			return 0;
+		} else if (filter.isOr()) {
+			return 1;
+		} else if (filter.isNot()) {
+			return 2;
+		} else if (filter.isColumnFilter()) {
+			return 3;
+		} else {
+			return 4;
+		}
+	}
+
+	/**
+	 * Compares two sets of operands (e.g., from AND or OR) after sorting each set into canonical order. This ensures
+	 * that {@code AND(a,b)} and {@code AND(b,a)} compare equal.
+	 *
+	 * @return a negative integer, zero, or a positive integer as left is less than, equal to, or greater than right.
+	 */
+	private static int compareOperandSets(Set<? extends ISliceFilter> left, Set<? extends ISliceFilter> right) {
+		List<? extends ISliceFilter> sortedLeft = left.stream().sorted(FilterHelpers::compareFilters).toList();
+		List<? extends ISliceFilter> sortedRight = right.stream().sorted(FilterHelpers::compareFilters).toList();
+
+		int sizeCmp = Integer.compare(sortedLeft.size(), sortedRight.size());
+		if (sizeCmp != 0) {
+			return sizeCmp;
+		}
+
+		for (int i = 0; i < sortedLeft.size(); i++) {
+			int cmp = compareFilters(sortedLeft.get(i), sortedRight.get(i));
+			if (cmp != 0) {
+				return cmp;
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -528,7 +605,7 @@ public class FilterHelpers {
 	 * <p>
 	 * Two filters belong to the same cluster when their column sets (as returned by {@link #getFilteredColumns}) are
 	 * not disjoint — i.e. they share at least one column. Filters in different clusters have fully disjoint column sets
-	 * and therefore cannot interact logically; each cluster can be optimised independently.
+	 * and therefore cannot interact logically; each cluster can be optimized independently.
 	 *
 	 * <p>
 	 * The grouping is performed by a Union-Find over the distinct column-sets. Since the number of distinct column-sets

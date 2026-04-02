@@ -43,6 +43,7 @@ import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
+import eu.solven.adhoc.table.sql.JooqTabularRecordFactory;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -171,11 +172,11 @@ public final class ArrowReflection {
 	 * convention as {@code JooqTableQueryFactory.groupingAlias}): a value of {@code 0} means the column is present in
 	 * this grouping set; any other value means it is absent.
 	 *
-	 * @see eu.solven.adhoc.table.sql.JooqTableWrapper.intoTabularRecord(ITabularRecordFactory, Record)
+	 * @see JooqTabularRecordFactory
 	 */
 	static ITabularRecord buildRecord(List<?> vectors, int rowIndex, ITabularRecordFactory factory) {
 		// Build a name→index map to allow fast lookup of grouping indicator vectors.
-		Map<String, Integer> nameToIndex = new LinkedHashMap<>();
+		Map<String, Integer> nameToIndex = LinkedHashMap.newLinkedHashMap(vectors.size());
 		for (int i = 0; i < vectors.size(); i++) {
 			nameToIndex.put(getVectorName(vectors.get(i)), i);
 		}

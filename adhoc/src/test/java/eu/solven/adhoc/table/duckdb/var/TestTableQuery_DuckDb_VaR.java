@@ -57,7 +57,7 @@ import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.pepper.memory.IPepperMemoryConstants;
 import eu.solven.pepper.memory.PepperMemoryHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -79,8 +79,7 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(dslSupplier)
+				DuckDBHelper.parametersBuilder(dslSupplier)
 						// `generate_subscripts` is 1-based
 						.table(DSL
 								.table("""

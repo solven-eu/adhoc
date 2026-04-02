@@ -22,10 +22,9 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import java.time.Duration;
+import java.util.concurrent.Semaphore;
 
-import eu.solven.adhoc.table.AdhocTableUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
@@ -38,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @UtilityClass
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+@SuppressWarnings("PMD.FieldDeclarationsShouldBeAtStartOfClass")
 public class AdhocDuckDBUnsafe {
 
 	static {
@@ -53,6 +52,9 @@ public class AdhocDuckDBUnsafe {
 		log.info("Resetting {} configuration", AdhocDuckDBUnsafe.class.getName());
 
 		duckDBParallelism = DEFAULT_DUCKDB_PARALLELISM;
+		// Replace the semaphore so its permit count matches the reset value
+		querySemaphore = new Semaphore(duckDBParallelism, true);
+		semaphoreTimeout = DEFAULT_SEMAPHORE_TIMEOUT;
 	}
 
 	public static void reloadProperties() {
@@ -60,22 +62,42 @@ public class AdhocDuckDBUnsafe {
 	}
 
 	/**
-	 * Typically, DuckDB should have very limited concurrency, as it is itself very well parallelized.
+	 * Limits the number of concurrent DuckDB queries. DuckDB is highly parallel internally, so submitting many queries
+	 * concurrently is counter-productive; a semaphore is more appropriate than a bounded thread pool with Virtual
+	 * Threads.
 	 *
-	 * @return the default parallelism of {@link java.util.concurrent.ExecutorService} executing ITableWrapper
-	 *         operations.
+	 * @return the maximum number of concurrent DuckDB queries
 	 */
 	@Getter
 	private static int duckDBParallelism;
 
+	/**
+	 * Sets the maximum number of concurrent DuckDB queries. If the value changes, a new {@link Semaphore} is created
+	 * with the updated permit count so that in-flight queries are not affected by a stale semaphore.
+	 *
+	 * @param parallelism
+	 *            the new maximum number of concurrent DuckDB queries; must be positive
+	 */
+	public static void setDuckDBParallelism(int parallelism) {
+		if (duckDBParallelism != parallelism) {
+			log.info("Changing duckDBParallelism from {} to {}", duckDBParallelism, parallelism);
+			duckDBParallelism = parallelism;
+			querySemaphore = new Semaphore(duckDBParallelism);
+		}
+	}
+
 	private static final int DEFAULT_DUCKDB_PARALLELISM = 2;
 
-	// A pool dedicated to external database queries (e.g. DuckDB).
-	// Unbounded queue: tasks wait for a DB thread rather than running on the caller's CPU-bound ForkJoinPool thread.
-	// Timeout enforcement belongs at the caller side (e.g. future.get(timeout, unit)).
-	// It is reasonable to have a static pool as even if we use multiple ITableWrapper, they would all rely on the same
-	// resource (i.e. current OS).
-	public static ListeningExecutorService adhocDuckDBPool =
-			MoreExecutors.listeningDecorator(AdhocTableUnsafe.newDbPool("adhoc-duckdbdb-"));
+	// Semaphore limiting concurrent DuckDB queries.
+	// Replaces the former fixed-size thread pool: with Virtual Threads, blocking on I/O is acceptable,
+	// but we still want to avoid saturating DuckDB with too many simultaneous queries.
+	// It is reasonable to use a static semaphore since all ITableWrapper instances share the same DuckDB process.
+	@Getter
+	private static Semaphore querySemaphore = new Semaphore(DEFAULT_DUCKDB_PARALLELISM, true);
+
+	private static final Duration DEFAULT_SEMAPHORE_TIMEOUT = Duration.ofMinutes(15);
+
+	@Getter
+	private static Duration semaphoreTimeout = DEFAULT_SEMAPHORE_TIMEOUT;
 
 }

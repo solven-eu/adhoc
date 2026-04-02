@@ -22,14 +22,12 @@
  */
 package eu.solven.adhoc.engine.concurrent;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinTask;
 import java.util.function.Consumer;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -38,6 +36,7 @@ import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -50,9 +49,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class QueryEngineConcurrencyHelper {
-	// BEWARE DagRecursiveAction leads to dead-lock in actual projects
-	// We seem to observe some form of thread-starving
-	private static final boolean RELY_ON_COMPLETIONFUTURE = true;
 
 	/**
 	 * Execute the steps as described by a DAG.
@@ -110,43 +106,21 @@ public class QueryEngineConcurrencyHelper {
 			Set<T> queryStepsDone,
 			Consumer<? super T> onReadyStep,
 			IAdhocDag<T> dag) {
-		// list root induced
-		List<T> rootSteps = dag.vertexSet().stream().filter(step -> dag.inDegreeOf(step) == 0).toList();
+		// list roots
+		ImmutableSet<T> rootSteps = GraphHelpers.getRoots(dag);
 
-		if (RELY_ON_COMPLETIONFUTURE) {
-			DagCompletableExecutor<T> executor = DagCompletableExecutor.<T>builder()
-					.fromQueriedToDependencies(dag)
-					.queryStepsDone(queryStepsDone)
-					.onReadyStep(onReadyStep)
-					.executor(queryPod.getExecutorService())
-					.hasOptions(queryPod)
-					.build();
+		DagCompletableExecutor<T> executor = DagCompletableExecutor.<T>builder()
+				.fromQueriedToDependencies(dag)
+				.queryStepsDone(queryStepsDone)
+				.onReadyStep(onReadyStep)
+				.executor(queryPod.getExecutorService())
+				.hasOptions(queryPod)
+				.build();
 
-			CompletableFuture<Void> root = executor.executeRecursively(rootSteps);
+		CompletableFuture<Void> root = executor.executeRecursively(rootSteps);
 
-			root.join(); // wait for the whole DAG
-		} else {
-			DagRecursiveAction.DagRecursiveActionBuilder<T> actionTemplate = DagRecursiveAction.<T>builder()
-					.fromQueriedToDependencies(dag)
-					.queryStepsDone(queryStepsDone)
-					.onReadyStep(onReadyStep);
-			List<DagRecursiveAction<T>> rootActions =
-					rootSteps.stream().map(step -> actionTemplate.step(step).build()).toList();
-
-			List<Runnable> stepCancellationListeners = new ArrayList<>();
-			rootActions.forEach(action -> {
-				stepCancellationListeners.add(() -> action.cancel(true));
-			});
-			stepCancellationListeners.forEach(queryPod::addCancellationListener);
-
-			// BEWARE: In case of exception, is it important to remove the cancellation listeners?
-			// try {
-			ForkJoinTask.invokeAll(rootActions);
-			// } finally {
-			// tasksCancellationListeners.forEach(queryPod::removeCancellationListener);
-			// }
-		}
-
+		// wait for the whole DAG
+		root.join();
 	}
 
 }

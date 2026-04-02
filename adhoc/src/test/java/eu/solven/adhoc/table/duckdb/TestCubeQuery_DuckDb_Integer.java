@@ -38,7 +38,7 @@ import eu.solven.adhoc.filter.value.LikeMatcher;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestCubeQuery_DuckDb_Integer extends ADuckDbJooqTest implements IAdhocTestConstants {
 
@@ -47,7 +47,7 @@ public class TestCubeQuery_DuckDb_Integer extends ADuckDbJooqTest implements IAd
 	@Override
 	public ITableWrapper makeTable() {
 		return new JooqTableWrapper(tableName,
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName(tableName).build());
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName(tableName).build());
 	}
 
 	@BeforeEach

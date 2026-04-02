@@ -20,59 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.row;
+package eu.solven.adhoc.encoding.column;
 
-import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.List;
 
-import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
+import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
 /**
- * A {@link ITabularRecordStream} memorizing an underlying `Stream<Map<String, ?>>`
+ * {@link IAppendableColumn} over a List.
  * 
  * @author Benoit Lacelle
  */
-public class SuppliedTabularRecordStream implements ITabularRecordStream {
-	final Object source;
-	final boolean isDistinct;
-	final Supplier<Stream<ITabularRecord>> streamSupplier;
+@Builder
+public class ObjectArrayImmutableColumn implements IAppendableColumn {
 
-	// @Getter
-	// final Object nullPlaceholder;
+	@NonNull
+	@Default
+	final List<?> asArray = ImmutableList.of();
 
-	public SuppliedTabularRecordStream(Object source,
-			boolean isDistinct,
-			// Object nullPlaceholder,
-			Supplier<Stream<ITabularRecord>> streamSupplier) {
-		this.source = source;
-		this.isDistinct = isDistinct;
-		// this.nullPlaceholder = nullPlaceholder;
-		// Memoize the stream to make sure it is open only once
-		this.streamSupplier = Suppliers.memoize(streamSupplier::get);
+	@Override
+	public void append(Object normalizedValue) {
+		throw new UnsupportedAsImmutableException();
 	}
 
 	@Override
-	public Object getTableQuery() {
-		return source;
+	public Object readValue(int rowIndex) {
+		return asArray.get(rowIndex);
 	}
 
 	@Override
-	public Stream<ITabularRecord> records() {
-		return streamSupplier.get();
+	public IReadableColumn freeze(IFreezingStrategy freezer) {
+		return freezer.freeze(this);
 	}
 
-	@Override
-	public void close() {
-		streamSupplier.get().close();
+	public List<?> getAsArray() {
+		return Collections.unmodifiableList(asArray);
 	}
 
 	@Override
 	public String toString() {
-		return "source=%s".formatted(source);
+		return ObjectArrayColumn.toString(asArray);
 	}
 
-	@Override
-	public boolean isDistinctSlices() {
-		return isDistinct;
-	}
 }

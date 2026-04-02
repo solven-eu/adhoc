@@ -34,6 +34,8 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.google.errorprone.annotations.ThreadSafe;
+
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.fsst.SymbolUtil.Symbol;
 import lombok.Builder;
@@ -49,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings({ "checkstyle:MagicNumber", "PMD.GodClass" })
 @Slf4j
 @Builder
+@ThreadSafe
 public class FsstTrainer {
 
 	@Default
@@ -73,26 +76,63 @@ public class FsstTrainer {
 		return train(sample);
 	}
 
+	/**
+	 * Holds the idea that only 2 Counters are needed for a training, one of the them being retained in the `best`
+	 * symbol table while the other is available for process.
+	 */
+	private static final class CountersPair {
+		// Pre-allocate two Counters up-front. When one is saved as bestCounters it must
+		// not be overwritten, so we alternate to the other slot instead of allocating.
+		final Counters first = new Counters();
+		final Counters second = new Counters();
+
+		boolean firstIsFreeElseSecond = true;
+
+		boolean firstIsCleared = true;
+		boolean secondIsCleared = true;
+
+		private Counters pickFree() {
+			// If counter was promoted to bestCounters, switch to the other pre-allocated slot.
+			firstIsFreeElseSecond = !firstIsFreeElseSecond;
+
+			if (firstIsFreeElseSecond) {
+				if (secondIsCleared) {
+					secondIsCleared = false;
+				} else {
+					second.reset();
+				}
+
+				return second;
+			} else {
+				if (firstIsCleared) {
+					firstIsCleared = false;
+				} else {
+					first.reset();
+				}
+
+				return first;
+			}
+		}
+
+		private void canReuse() {
+			// previous `.pickFree()` toggled this: we restore the fact we should keep using the same Counters.
+			firstIsFreeElseSecond = !firstIsFreeElseSecond;
+		}
+	}
+
 	protected SymbolTable train(SamplingResult sample) {
 		SymbolTableTraining table = SymbolTableTraining.makeSymbolTable();
 
-		boolean needNewCounters = false;
-		Counters counter = new Counters();
+		CountersPair countersPair = new CountersPair();
 
 		long bestLengthEncoded = Long.MAX_VALUE;
 		Counters bestCounters = null;
 		SymbolTableTraining bestTable = null;
 
+		int maxFrac = 128;
+
 		for (int frac = 8;; frac += 30) {
-			// It is substantially faster (~ x2) to reset than creating a new instance
-			// May become a bottleneck if trained+encoded on many small inputs
-			if (frac > 8) {
-				if (needNewCounters) {
-					counter = new Counters();
-				} else {
-					counter.reset();
-				}
-			}
+			Counters counter = countersPair.pickFree();
 
 			// Simulate encode given known symbols, counting symbols use
 			// Will read but not write symbolTable
@@ -102,26 +142,14 @@ public class FsstTrainer {
 
 			if (lengthEncoded < bestLengthEncoded) {
 				bestLengthEncoded = lengthEncoded;
-				// Next symbols candidates seems to produce worst results
-				// May happen if the new set of symbols is... ???
-				// break;
-				// } else {
-				// previousLengthEncoded = lengthEncoded;
 				bestCounters = counter;
 				bestTable = table;
-
-				// TODO This may be sometimes skippable (e.g. if last iteration)
-				// Ensure bestCounters are not reset in next step
-				// TODO We could do the whole thing with maximum 2 Counters objects
-				// counter = null;
-				needNewCounters = true;
-				// table does not need to be reset as it kind-of immutable
-				// table = SymbolTableTraining.makeSymbolTable();
+			} else {
+				countersPair.canReuse();
 			}
 
-			if (frac >= 128) {
+			if (frac >= maxFrac) {
 				// Authors recommend having 5 iterations
-				bestTable = buildCandidates(bestTable, bestCounters, frac, sample.isSampled);
 				break;
 			} else {
 				// Build symbol tables given frequencies
@@ -129,16 +157,10 @@ public class FsstTrainer {
 			}
 		}
 
-		compressCount(bestTable, counter, sample, 128);
+		bestTable = buildCandidates(bestTable, bestCounters, maxFrac, sample.isSampled);
 
 		// renumber codes for more efficient compression
-		SymbolTable finalTable = bestTable.finalizeTable();
-
-		counter.reset();
-
-		// long lengthEncodedFinal = compressCount(finalTable.symbols, counter, sample, 128);
-
-		return finalTable;
+		return bestTable.finalizeTable();
 	}
 
 	private record CodeAndLength(int code, int length) {
@@ -202,7 +224,7 @@ public class FsstTrainer {
 	 * 
 	 * See {@link SymbolTable#encode(byte[], byte[])}
 	 */
-	public long compressCount(SymbolTableTraining t, Counters c, SamplingResult samplingResult, int frac) {
+	protected long compressCount(SymbolTableTraining t, Counters c, SamplingResult samplingResult, int frac) {
 		// length of the encoded, restricted to sampled input
 		int encodedLength = 0;
 
@@ -406,16 +428,16 @@ public class FsstTrainer {
 	 * (except in the last round), scores by gain≈frequency×length, keeps top-K via a min-heap, and updates the Table.
 	 * Reuses provided allocations to reduce GC pressure.
 	 */
-	public SymbolTableTraining buildCandidates(SymbolTableTraining t, Counters c, int frac, boolean sampled) {
+	protected SymbolTableTraining buildCandidates(SymbolTableTraining t, Counters c, int frac, boolean sampled) {
 		int minCount = minCount(frac, sampled);
 
 		Map<SymCodeless, QSym> candidates = buildCandidates(t, c, frac, minCount);
 
 		List<QSym> sortedList = sortCandidates(candidates);
 
-		SymbolTableTraining newSymboltable = SymbolTableTraining.makeSymbolTable();
+		SymbolTableTraining newSymbolTable = SymbolTableTraining.makeSymbolTable();
 
-		return finalizeCandidates(frac, sortedList, newSymboltable);
+		return finalizeCandidates(frac, sortedList, newSymbolTable);
 	}
 
 	private SymbolTableTraining finalizeCandidates(int frac,

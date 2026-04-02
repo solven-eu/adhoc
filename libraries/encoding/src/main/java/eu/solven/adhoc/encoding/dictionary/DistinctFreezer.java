@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import com.google.common.math.LongMath;
+import org.apache.datasketches.hll.HllSketch;
+import org.apache.datasketches.hll.TgtHllType;
+import org.apache.datasketches.theta.UpdateSketch;
 
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
@@ -46,11 +48,10 @@ public final class DistinctFreezer implements IFreezingWithContext {
 		if (column instanceof ObjectArrayColumn arrayColumn) {
 			List<?> array = arrayColumn.getAsArray();
 
-			long countDistinct = (long) freezingContext.computeIfAbsent("count_distinct", k -> {
-				return array.stream().distinct().count();
-			});
+			int limitForDictionary = array.size() / DISTINCT_FACTOR;
+			long countDistinct = countDistinctWithLimit(freezingContext, array, limitForDictionary);
 
-			if (LongMath.saturatedMultiply(countDistinct, DISTINCT_FACTOR) <= array.size()) {
+			if (countDistinct <= limitForDictionary) {
 				return Optional.of(DictionarizedObjectColumn.fromArray(array));
 			} else {
 				return Optional.empty();
@@ -58,5 +59,52 @@ public final class DistinctFreezer implements IFreezingWithContext {
 		} else {
 			return Optional.empty();
 		}
+	}
+
+	long countDistinctWithLimit(Map<String, Object> freezingContext, List<?> array, int limitForDictionary) {
+		return (long) freezingContext.computeIfAbsent("count_distinct_" + limitForDictionary, k -> {
+			if (array.stream().allMatch(o -> o == null || o instanceof String)) {
+				List<String> arrayString = array.stream().map(String.class::cast).toList();
+				return estimateDistinctHLL(arrayString);
+			} else {
+				return cappedDistinctCount(array, limitForDictionary);
+			}
+		});
+	}
+
+	static long cappedDistinctCount(List<?> array, int limitForDictionary) {
+		return array.stream()
+				.distinct()
+				// No need to count distinct all, we just need to know if it is greater or not than some limit
+				.limit(limitForDictionary + 1L)
+				.count();
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	static long estimateDistinctHLL(List<String> items) {
+		// Create HLL sketch (log2m = 12, type HLL_4)
+		HllSketch sketch = new HllSketch(12, TgtHllType.HLL_4);
+
+		// Add items to sketch
+		for (String s : items) {
+			sketch.update(s);
+		}
+
+		// Return estimated cardinality
+		return (long) sketch.getEstimate();
+	}
+
+	@SuppressWarnings("checkstyle:MagicNumber")
+	static long estimateDistinctKMV(List<String> items) {
+		// Create a Theta sketch with nominal entries = 1024
+		UpdateSketch sketch = UpdateSketch.builder().setNominalEntries(1024).build();
+
+		// Add items to the sketch
+		for (String s : items) {
+			sketch.update(s);
+		}
+
+		// Return estimated cardinality
+		return (long) sketch.getEstimate();
 	}
 }

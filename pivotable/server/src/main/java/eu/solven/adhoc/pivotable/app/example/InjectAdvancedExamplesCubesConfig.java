@@ -39,7 +39,6 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
-import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,8 +71,7 @@ public class InjectAdvancedExamplesCubesConfig {
 			log.warn("path=`{}` is not readable. The file probably does not exist.", pathToParquet);
 		}
 		JooqTableWrapper table = new JooqTableWrapper("ban",
-				JooqTableWrapperParameters.builder()
-						.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
+				DuckDBHelper.parametersBuilder(DuckDBHelper.inMemoryDSLSupplier())
 						.table(DSL.table("'%s'".formatted(pathToParquet)))
 						.build());
 

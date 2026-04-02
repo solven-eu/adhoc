@@ -24,7 +24,8 @@ module eu.solven.adhoc.encoding {
 	requires com.google.common;
 	requires org.agrona;
 	requires it.unimi.dsi.fastutil;
-	 requires me.lemire.integercompression;
+	requires me.lemire.integercompression;
+	requires datasketches.java;
 
 	// Runtime via Lombok @Slf4j
 	requires org.slf4j;

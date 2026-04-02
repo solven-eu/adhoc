@@ -37,6 +37,8 @@ import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.ConsumingStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
@@ -173,6 +175,29 @@ public class PhasedTableWrapper implements ITableWrapper {
 						.slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(queryPod.getSliceFactory(), slice))
 						.aggregates(aggregates)
 						.build());
+			}
+
+			@Override
+			public IConsumingStream<ITabularRecord> records2() {
+				log.info("streaming arriveAndAwaitAdvance() {} {}", name, phasers.streaming);
+				int phase = phasers.streaming.arriveAndAwaitAdvance();
+				log.info("streaming advance {} phase={}", name, phase);
+
+				Set<String> allColumns = tableQuery.getGroupedByColumns();
+
+				Map<String, Object> slice =
+						allColumns.stream().collect(Collectors.toMap(Function.identity(), e -> name));
+
+				Map<String, Object> aggregates = tableQuery.getAggregators()
+						.stream()
+						.collect(Collectors.toMap(FilteredAggregator::getAlias, a -> 1L));
+
+				return ConsumingStream.<ITabularRecord>builder()
+						.source(o -> o.accept(TabularRecordOverMaps.builder()
+								.slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(queryPod.getSliceFactory(), slice))
+								.aggregates(aggregates)
+								.build()))
+						.build();
 			}
 
 			@Override

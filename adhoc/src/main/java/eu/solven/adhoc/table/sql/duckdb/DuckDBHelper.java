@@ -53,6 +53,7 @@ import eu.solven.adhoc.query.table.TableQuery.TableQueryBuilder;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.StandardDSLSupplier;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -109,6 +110,22 @@ public class DuckDBHelper {
 		return StandardDSLSupplier.builder(false).dialect(SQLDialect.DUCKDB).dataSource(dataSource).build();
 	}
 
+	/**
+	 * Returns a {@link JooqTableWrapperParameters} builder pre-configured for DuckDB: the dialect-appropriate
+	 * {@link IDSLSupplier} is set and the shared {@link AdhocDuckDBUnsafe#duckDBSemaphore} is wired in to limit
+	 * concurrency.
+	 *
+	 * @param dslSupplier
+	 *            the DuckDB DSL supplier
+	 * @return a builder ready for further configuration (e.g. table name)
+	 */
+	public static JooqTableWrapperParameters.JooqTableWrapperParametersBuilder parametersBuilder(
+			IDSLSupplier dslSupplier) {
+		return JooqTableWrapperParameters.builder()
+				.dslSupplier(dslSupplier)
+				.querySemaphore(AdhocDuckDBUnsafe.getQuerySemaphore());
+	}
+
 	public static CoordinatesSample getCoordinates(JooqTableWrapper table,
 			String column,
 			IValueMatcher valueMatcher,
@@ -148,7 +165,7 @@ public class DuckDBHelper {
 
 		TableQuery tableQuery = queryBuilder.build();
 
-		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).records().findAny();
+		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).records2().findAny();
 		if (optCardinalityRecord.isEmpty()) {
 			Map<String, CoordinatesSample> columnToCoordinates = new TreeMap<>();
 

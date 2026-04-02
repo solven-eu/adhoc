@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.concurrent;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -121,7 +122,7 @@ public class DagCompletableExecutor<T> {
 
 	}
 
-	public CompletableFuture<Void> executeRecursively(List<T> steps) {
+	public CompletableFuture<Void> executeRecursively(Collection<T> steps) {
 		List<CompletableFuture<Void>> futures = steps.stream().map(this::executeRecursively).toList();
 
 		return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new));

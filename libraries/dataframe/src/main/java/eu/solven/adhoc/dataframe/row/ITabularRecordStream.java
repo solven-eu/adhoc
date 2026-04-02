@@ -24,7 +24,10 @@ package eu.solven.adhoc.dataframe.row;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 
 /**
  * Holds a resource to a stream of data, typically given a {@link TableQuery}.
@@ -32,7 +35,6 @@ import java.util.stream.Stream;
  * @author Benoit Lacelle
  */
 public interface ITabularRecordStream extends AutoCloseable {
-	// Object getNullPlaceholder();
 
 	Object getTableQuery();
 
@@ -49,7 +51,22 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 * 
 	 * @return a {@link Stream} of {@link ITabularRecord}
 	 */
+	@Deprecated
 	Stream<ITabularRecord> records();
+
+	default IConsumingStream<ITabularRecord> records2() {
+		return IConsumingStream.fromStream(records());
+	}
+
+	/**
+	 * This has same semantic as {@link Stream#forEach(Consumer)}. In particular, it may be called concurrently.
+	 * 
+	 * @param consumer
+	 *            consumer to apply on each {@link ITabularRecord}
+	 */
+	default void forEach(Consumer<ITabularRecord> consumer) {
+		records().forEach(consumer);
+	}
 
 	/**
 	 * @deprecated Used for unitTests
@@ -57,7 +74,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 */
 	@Deprecated
 	default List<Map<String, ?>> toList() {
-		return records().<Map<String, ?>>map(ITabularRecord::asMap).toList();
+		return records2().<Map<String, ?>>map(ITabularRecord::asMap).toList();
 	}
 
 	// Force not to throw an explicit Exception
@@ -78,6 +95,11 @@ public interface ITabularRecordStream extends AutoCloseable {
 			}
 
 			@Override
+			public IConsumingStream<ITabularRecord> records2() {
+				return IConsumingStream.empty();
+			}
+
+			@Override
 			public boolean isDistinctSlices() {
 				return true;
 			}
@@ -86,6 +108,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 			public void close() {
 				// nothing to close
 			}
+
 		};
 	}
 }

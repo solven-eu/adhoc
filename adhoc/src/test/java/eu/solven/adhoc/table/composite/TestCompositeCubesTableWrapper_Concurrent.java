@@ -38,7 +38,6 @@ import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.table.AdhocTableUnsafe;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.table.composite.PhasedTableWrapper.TableWrapperPhasers;
@@ -67,8 +66,6 @@ public class TestCompositeCubesTableWrapper_Concurrent extends ARawDagTest imple
 	// This test will ensure 2 underlying tables are queried concurrently
 	@Test
 	public void testConcurrency() {
-		// TODO We need 3 threads: 1 for each table, plus 1 for the composite cube. This looks like fishy design.
-		AdhocTableUnsafe.setDbParallelism(3);
 
 		TableWrapperPhasers phasers = TableWrapperPhasers.parties(2);
 

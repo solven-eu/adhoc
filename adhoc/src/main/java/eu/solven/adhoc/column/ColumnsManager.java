@@ -31,6 +31,7 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -301,6 +302,30 @@ public class ColumnsManager implements IColumnsManager {
 						.map(row -> evaluateCalculated(transcodingContext, row))
 						// TODO Filter
 						.filter(row -> filterCalculatedColumns(postFilterer, row));
+			}
+
+			@Override
+			public void forEach(Consumer<ITabularRecord> consumer) {
+				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
+				ITableReverseAliaser columnTranscoder = prepareColumnTranscoder(transcodingContext);
+				FilterMatcher postFilterer = FilterMatcher.builder()
+						.filter(postFilter)
+						.onMissingColumn(FilterMatcher.failOnMissing())
+						.build();
+
+				tabularRecordStream.forEach(rawRecord -> {
+					ITabularRecord typeTranscoded = transcodeTypes(valueTranscoder, rawRecord);
+
+					// TODO Should we transcode type before or after columnNames?
+					ITabularRecord valueTranscoded = typeTranscoded.transcode(columnTranscoder);
+
+					// calculate columns after transcoding, as these expression are generally table-independent
+					ITabularRecord withCalculated = evaluateCalculated(transcodingContext, valueTranscoded);
+
+					if (filterCalculatedColumns(postFilterer, withCalculated)) {
+						consumer.accept(withCalculated);
+					}
+				});
 			}
 
 			@Override

@@ -46,12 +46,12 @@ import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
-import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
@@ -89,7 +89,7 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 		return toStream(tableQuery, result);
 	}
 
-	protected SuppliedTabularRecordStream toStream(TableQueryV2 tableQuery, ICellSet result) {
+	protected ITabularRecordStream toStream(TableQueryV2 tableQuery, ICellSet result) {
 		// TODO Return as an Iterator/Stream
 		List<ITabularRecord> asList = new ArrayList<>();
 
@@ -99,7 +99,9 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 			return true;
 		});
 
-		return new SuppliedTabularRecordStream(tableQuery, true, asList::stream);
+		return new SuppliedTabularRecordConsumingStream(tableQuery,
+				true,
+				() -> IConsumingStream.fromStream(asList.stream()));
 	}
 
 	protected ICellSet executeQuery(IQueryable ap, IQuery<ICellSet> gaq) {
@@ -131,7 +133,10 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 			slice.put(column, getColumnCoordinate(tableQuery, result, locationIndex, column));
 		});
 
-		return TabularRecordOverMaps.builder().aggregates(Map.of()).slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(slice)).build();
+		return TabularRecordOverMaps.builder()
+				.aggregates(Map.of())
+				.slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(slice))
+				.build();
 	}
 
 	protected Object getColumnCoordinate(TableQueryV2 tableQuery, ICellSet result, int locationIndex, String column) {

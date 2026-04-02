@@ -191,7 +191,7 @@ public class TestDuckDBHelper {
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
 		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName("someTable").build();
 		CoordinatesSample sample = DuckDBHelper.getCoordinates(
 				JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build(),
 				"someColumn",
@@ -209,7 +209,7 @@ public class TestDuckDBHelper {
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
 		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName("someTable").build();
 		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
 		Assertions
 				.assertThatThrownBy(
@@ -224,7 +224,7 @@ public class TestDuckDBHelper {
 		dslSupplier.getDSLContext().createTable("someTable").column("someColumn", SQLDataType.VARCHAR).execute();
 
 		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName("someTable").build();
 		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
 		Assertions
 				.assertThatThrownBy(
@@ -243,7 +243,7 @@ public class TestDuckDBHelper {
 		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "b1")).execute();
 
 		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName("someTable").build();
 		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
 		CoordinatesSample sample = DuckDBHelper.getCoordinates(table, "someColumn", StringMatcher.hasToString("a1"), 7);
 
@@ -262,7 +262,7 @@ public class TestDuckDBHelper {
 		dslContext.insertInto(DSL.table("someTable")).set(Map.of("someColumn", "b1")).execute();
 
 		JooqTableWrapperParameters tableParameters =
-				JooqTableWrapperParameters.builder().dslSupplier(dslSupplier).tableName("someTable").build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableName("someTable").build();
 		JooqTableWrapper table = JooqTableWrapper.builder().name("someTable").tableParameters(tableParameters).build();
 		CoordinatesSample sample = DuckDBHelper.getCoordinates(table, "someColumn", LikeMatcher.matching("a%"), 7);
 
