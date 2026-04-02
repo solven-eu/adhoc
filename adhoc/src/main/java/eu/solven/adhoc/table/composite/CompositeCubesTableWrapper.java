@@ -237,7 +237,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @param compositeQuery
 	 */
 	protected void checkColumns(TableQueryV2 compositeQuery) {
-		NavigableSet<String> groupedByColumns = new ConcurrentSkipListSet<>(compositeQuery.getGroupedByColumns());
+		NavigableSet<String> groupedByColumns =
+				new ConcurrentSkipListSet<>(compositeQuery.getGroupBy().getSortedColumns());
 		Set<String> filteredColumns =
 				new ConcurrentSkipListSet<>(FilterHelpers.getFilteredColumns(compositeQuery.getFilter()));
 
@@ -282,7 +283,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
 			// from current subCube.
 			NavigableSet<String> subMissingColumns =
-					new TreeSet<>(Sets.difference(compositeQuery.getGroupedByColumns(), subColumns));
+					new TreeSet<>(Sets.difference(compositeQuery.getGroupBy().getSortedColumns(), subColumns));
 
 			Map<String, Object> missingColumnsAsmask;
 
@@ -374,7 +375,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		// groupBy only by relevant columns. Other columns are ignored
 		NavigableMap<String, IAdhocColumn> subGroupBy = new TreeMap<>();
 
-		compositeQuery.getGroupBys().forEach(compositeGroupBy -> subGroupBy.putAll(compositeGroupBy.getNameToColumn()));
+		compositeQuery.getGroupBys()
+				.forEach(compositeGroupBy -> subGroupBy.putAll(compositeGroupBy.getSortedNameToColumn()));
 
 		subGroupBy.keySet().removeIf(Predicate.not(subCubeKnownMeasure::test));
 

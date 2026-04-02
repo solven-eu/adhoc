@@ -274,8 +274,8 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	protected Set<String> getSuppressedGroupBy(IGroupBy generated, IGroupBy suppressed) {
-		Set<String> queriedColumns = generated.getNameToColumn().keySet();
-		Set<String> withoutSuppressedColumns = suppressed.getNameToColumn().keySet();
+		Set<String> queriedColumns = generated.getSortedNameToColumn().keySet();
+		Set<String> withoutSuppressedColumns = suppressed.getSortedNameToColumn().keySet();
 		Set<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
 		return ImmutableSet.copyOf(suppressedView);
 	}
@@ -425,7 +425,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		SetMultimap<String, IAdhocColumn> nameToColumns =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		tableQuery.getGroupBys().forEach(gb -> {
-			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+			nameToColumns.putAll(Multimaps.forMap(gb.getSortedNameToColumn()));
 		});
 
 		if (nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1)) {
@@ -473,9 +473,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 		SetMultimap<String, IAdhocColumn> nameToColumns =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		accepted.forEach(gb -> {
-			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+			nameToColumns.putAll(Multimaps.forMap(gb.getSortedNameToColumn()));
 		});
-		nameToColumns.putAll(Multimaps.forMap(candidate.getNameToColumn()));
+		nameToColumns.putAll(Multimaps.forMap(candidate.getSortedNameToColumn()));
 
 		return nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1);
 	}
@@ -661,7 +661,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	protected TableQueryStep suppressGeneratedColumns(TableQueryStep generatedStep) {
 		Set<String> generatedColumns = generatedColumnsSupplier.get();
 
-		Set<String> groupedByCubeColumns = generatedStep.getGroupBy().getGroupedByColumns();
+		Set<String> groupedByCubeColumns = generatedStep.getGroupBy().getSortedColumns();
 
 		var edited = generatedStep.toBuilder();
 

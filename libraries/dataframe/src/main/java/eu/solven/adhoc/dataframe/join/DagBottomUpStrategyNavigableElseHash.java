@@ -67,6 +67,11 @@ public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrateg
 	}
 
 	@Override
+	public <T> IMultitypeColumnFastGet<T> makeColumnRandomInserts(int initialCapacity) {
+		return MultitypeHashColumn.<T>builder().capacity(initialCapacity).build();
+	}
+
+	@Override
 	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
 		MultitypeNavigableMergeableColumn navigable =
 				MultitypeNavigableMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build();

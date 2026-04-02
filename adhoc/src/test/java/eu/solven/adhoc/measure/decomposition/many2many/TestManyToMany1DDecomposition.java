@@ -191,7 +191,7 @@ public class TestManyToMany1DDecomposition {
 
 		Assertions.assertThat(underlyingSteps).hasSize(1);
 		// The underlying step groups by the element column, not the group column
-		Assertions.assertThat(underlyingSteps.get(0).getGroupBy().getGroupedByColumns()).contains(ELEMENT_COL);
-		Assertions.assertThat(underlyingSteps.get(0).getGroupBy().getGroupedByColumns()).doesNotContain(GROUP_COL);
+		Assertions.assertThat(underlyingSteps.get(0).getGroupBy().getSortedColumns()).contains(ELEMENT_COL);
+		Assertions.assertThat(underlyingSteps.get(0).getGroupBy().getSortedColumns()).doesNotContain(GROUP_COL);
 	}
 }

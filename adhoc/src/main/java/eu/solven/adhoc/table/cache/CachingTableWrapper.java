@@ -159,7 +159,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	// TODO Adjust with the weight of the aggregate
 	private static int cachingValueSize(CachingKey key, CachingValue value) {
 		int nbRecords = value.getRecords().size();
-		int recordWidth = key.getTableQuery().getGroupBy().getGroupedByColumns().size()
+		int recordWidth = key.getTableQuery().getGroupBy().getSortedColumns().size()
 				+ key.getTableQuery().getAggregators().size();
 		return nbRecords * recordWidth;
 	}

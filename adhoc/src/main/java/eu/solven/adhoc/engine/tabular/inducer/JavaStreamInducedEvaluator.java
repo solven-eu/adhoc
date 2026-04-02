@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.tabular.inducer;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -74,8 +75,8 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 				.onMissingColumn(FilterMatcher.failOnMissing())
 				.build();
 
-		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
-		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getGroupedByColumns());
+		NavigableSet<String> inducedColumns = induced.getGroupBy().getSortedColumns();
+		boolean sameColumns = inducedColumns.equals(inducer.getGroupBy().getSortedColumns());
 
 		inducerValues.stream().filter(s -> filterMatcher.match(s.getSlice())).forEach(inducerSlice -> {
 			ISlice inducedSlice;
@@ -100,8 +101,8 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 			TableQueryStep induced,
 			ICuboid inducerValues,
 			IAggregation aggregation) {
-		NavigableSet<String> inducerColumns = inducer.getGroupBy().getGroupedByColumns();
-		NavigableSet<String> inducedColumns = induced.getGroupBy().getGroupedByColumns();
+		Set<String> inducerColumns = inducer.getGroupBy().getSequencedColumns();
+		Set<String> inducedColumns = induced.getGroupBy().getSequencedColumns();
 		boolean doesBreakSorting = breakSorting(inducerColumns, inducedColumns);
 
 		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
@@ -124,7 +125,7 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 	 * A prefix of the inducer columns always preserves order (e.g. {@code a,b,c} → {@code a} or {@code a,b}), whereas
 	 * any non-prefix projection breaks it (e.g. {@code a,b} → {@code b}).
 	 */
-	protected static boolean breakSorting(NavigableSet<String> inducer, NavigableSet<String> induced) {
+	public static boolean breakSorting(Set<String> inducer, Set<String> induced) {
 		List<String> inducerAsList = inducer.stream().limit(induced.size()).toList();
 		List<String> inducedAsList = induced.stream().toList();
 		return !inducerAsList.equals(inducedAsList);

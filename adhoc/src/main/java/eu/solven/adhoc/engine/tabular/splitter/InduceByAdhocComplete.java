@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
@@ -46,8 +44,10 @@ import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -85,7 +85,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 */
 	@Override
 	@SuppressWarnings("PMD.CloseResource")
-	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> steps = inducedToInducer.vertexSet();
 		if (steps.isEmpty()) {
@@ -99,22 +99,22 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		Map<String, List<TableQueryStep>> byMeasure =
 				steps.stream().collect(Collectors.groupingBy(s -> s.getMeasure().getName()));
 
-		ListeningExecutorService les = getExecutorService(hasOptions);
-
 		// Enables cache sharing
 		IFilterStripper sharedStripper = filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
-		InduceByAdhocCompleteInner complete2 = new InduceByAdhocCompleteInner(sharedStripper::withWhere);
+		InduceByAdhocCompleteInner complete = new InduceByAdhocCompleteInner(sharedStripper::withWhere);
+		ListeningExecutorService les = hasOptions.getExecutorService();
 
 		// Concurrent path: each context group is processed in its own local DAG, then merged.
-		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures = new ArrayList<>();
-		byMeasure.values().forEach(measureSteps -> {
-			Map<TableQueryStep, List<TableQueryStep>> byContext =
-					measureSteps.stream().collect(Collectors.groupingBy(this::contextOnly));
-			byContext.values()
-					.stream()
-					.map(contextSteps -> les.submit(() -> complete2.buildEdgesForContextGroupLocal(contextSteps)))
-					.forEach(futures::add);
-		});
+		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures =
+				byMeasure.values().stream().flatMap(measureSteps -> {
+					Map<TableQueryStep, List<TableQueryStep>> byContext =
+							measureSteps.stream().collect(Collectors.groupingBy(this::contextOnly));
+
+					return byContext.values()
+							.stream()
+							.map(contextSteps -> les
+									.submit(() -> complete.buildEdgesForContextGroupLocal(contextSteps)));
+				}).toList();
 		List<IAdhocDag<TableQueryStep>> localDags = Futures.getUnchecked(Futures.allAsList(futures));
 		localDags.forEach(localDag -> Graphs.addGraph(induceByAdhoc, localDag));
 
@@ -122,23 +122,6 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 		TransitiveReductionV2.INSTANCE.reduce(induceByAdhoc);
 
 		return induceByAdhoc;
-	}
-
-	protected ListeningExecutorService getExecutorService(IHasQueryOptions hasOptions) {
-		ListeningExecutorService les;
-		if (hasOptions.getOptions().contains(StandardQueryOptions.CONCURRENT)) {
-			if (hasOptions instanceof QueryPod queryPod) {
-				les = queryPod.getExecutorService();
-			} else {
-				log.warn("Concurrency in default ForkJoinPool due {} not being a {}",
-						hasOptions.getClass(),
-						QueryPod.class);
-				les = MoreExecutors.listeningDecorator(ForkJoinPool.commonPool());
-			}
-		} else {
-			les = MoreExecutors.newDirectExecutorService();
-		}
-		return les;
 	}
 
 	public static ITableStepsSplitterFactory makeFactory() {

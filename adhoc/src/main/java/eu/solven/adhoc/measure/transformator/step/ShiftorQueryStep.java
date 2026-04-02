@@ -38,6 +38,7 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.step.SliceAsMapWithStep;
@@ -112,7 +113,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 
 		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		NavigableSet<String> columns = step.getGroupBy().getGroupedByColumns();
+		NavigableSet<String> columns = step.getGroupBy().getSortedColumns();
 		IMapBuilderPreKeys builder = slice.getSlice().getFactory().newMapBuilder(columns);
 
 		columns.forEach(column -> {
@@ -202,6 +203,6 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 	}
 
 	protected IMultitypeColumnFastGet<ISlice> makeColumn(List<? extends ICuboid> underlyings) {
-		return factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+		return factories.getColumnFactory().makeColumnRandomInsertions(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

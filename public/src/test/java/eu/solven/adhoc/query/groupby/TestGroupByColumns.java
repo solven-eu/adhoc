@@ -144,7 +144,7 @@ public class TestGroupByColumns {
 		Assertions.assertThat(groupBy).hasToString("(b, a)");
 		Assertions.assertThat(groupBy.getColumns())
 				.containsExactly(ReferencedColumn.ref("b"), ReferencedColumn.ref("a"));
-		Assertions.assertThat(groupBy.getNameToColumn().keySet()).containsExactly("a", "b");
+		Assertions.assertThat(groupBy.getSortedNameToColumn().keySet()).containsExactly("a", "b");
 	}
 
 }

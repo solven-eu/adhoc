@@ -55,7 +55,7 @@ public class AdhocExceptionAsMeasureValueHelper {
 
 				return transcodedQuery.getGroupByToAggregators().asMap().entrySet().stream().map(e -> {
 					IGroupBy groupBy = e.getKey();
-					NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
+					NavigableSet<String> groupedByColumns = groupBy.getSortedColumns();
 
 					errorRecordBuilder.slice(groupBy, asSlice(groupedByColumns));
 					e.getValue().forEach(fa -> errorRecordBuilder.aggregate(fa.getAlias(), e));

@@ -39,6 +39,7 @@ import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 
 /**
  * Relies on {@link MultitypeNavigableColumn} by default, and {@link UnderlyingQueryStepHelpersNavigable} to merge
@@ -60,6 +61,11 @@ public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 				.keys(new ArrayList<>(initialCapacity))
 				.values(MultitypeArray.builder().capacity(initialCapacity).build())
 				.build();
+	}
+
+	@Override
+	public <T> IMultitypeColumnFastGet<T> makeColumnRandomInserts(int initialCapacity) {
+		return (IMultitypeColumnFastGet<T>) MultitypeHashColumn.builder().capacity(initialCapacity).build();
 	}
 
 	@Override

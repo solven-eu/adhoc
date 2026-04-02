@@ -216,7 +216,7 @@ public class ColumnsManager implements IColumnsManager {
 			{
 				Map<String, IAdhocColumn> columnToDetails = new LinkedHashMap<>();
 
-				columnToDetails.putAll(groupBy.getNameToColumn());
+				columnToDetails.putAll(groupBy.getSortedNameToColumn());
 
 				for (String postFilterColumn : postFilterColumns) {
 					if (!columnToDetails.containsKey(postFilterColumn)) {
@@ -421,7 +421,7 @@ public class ColumnsManager implements IColumnsManager {
 	}
 
 	protected IGroupBy transcodeGroupBy(AliasingContext aliasingContext, IGroupBy groupBy) {
-		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getNameToColumn();
+		NavigableMap<String, IAdhocColumn> nameToColumn = groupBy.getSortedNameToColumn();
 
 		List<IAdhocColumn> transcoded = nameToColumn.values()
 				.stream()

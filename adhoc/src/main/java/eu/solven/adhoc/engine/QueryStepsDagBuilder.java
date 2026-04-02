@@ -152,7 +152,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	 */
 	protected Set<MeasurelessQuery> rootMeasureless() {
 		// May refer some calculatedCoordinates as groupBy
-		NavigableMap<String, IAdhocColumn> nameToColumn = query.getGroupBy().getNameToColumn();
+		NavigableMap<String, IAdhocColumn> nameToColumn = query.getGroupBy().getSortedNameToColumn();
 
 		// Each index is associated to a groupedBy column
 		// Each groupedBy column is associated to the list of column definitions

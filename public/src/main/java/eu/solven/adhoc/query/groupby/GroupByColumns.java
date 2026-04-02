@@ -111,7 +111,7 @@ public class GroupByColumns implements IGroupBy {
 	}
 
 	@Override
-	public NavigableMap<String, IAdhocColumn> getNameToColumn() {
+	public NavigableMap<String, IAdhocColumn> getSortedNameToColumn() {
 		return cachedNameToColumn.get();
 	}
 

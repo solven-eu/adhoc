@@ -102,7 +102,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		Optional<IGroupBy> singleGroupBy = tableQuery.singleGroupBy();
 		if (singleGroupBy.isPresent()) {
 			IGroupBy groupBy = singleGroupBy.get();
-			NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
+			NavigableSet<String> groupedByColumns = groupBy.getSortedColumns();
 			SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
 			return UniqueGroupingSetAnalyzer.builder()
 					.sequencedKeyset(new GroupByMarker(groupBy, sequencedKeyset))
@@ -110,8 +110,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} else {
 			Map<Set<String>, GroupByMarker> columnsToMarker = tableQuery.getGroupBys()
 					.stream()
-					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getGroupedByColumns, gb -> {
-						Set<String> groupedByColumns = gb.getGroupedByColumns();
+					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getSortedColumns, gb -> {
+						Set<String> groupedByColumns = gb.getSortedColumns();
 						SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
@@ -155,7 +155,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 				Multimaps.asMap(tableQuery.getGroupByToAggregators()).entrySet().forEach(ee -> {
 					IGroupBy groupBy = ee.getKey();
-					ISlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
+					ISlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getSortedColumns());
 
 					ee.getValue().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 				});

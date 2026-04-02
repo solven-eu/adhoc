@@ -24,14 +24,12 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -53,7 +51,7 @@ public interface ITableStepsSplitter {
 	 * @param inducedToInducer
 	 * @return
 	 */
-	IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+	IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer);
 
 	/**
@@ -64,12 +62,12 @@ public interface ITableStepsSplitter {
 	 * 
 	 * @return
 	 */
-	IAdhocDag<TableQueryStep> getLazyGraph(ListeningExecutorService les,
-			IHasQueryOptions hasOptions,
-			IAdhocDag<TableQueryStep> inducedToInducer);
+	IAdhocDag<TableQueryStep> getLazyGraph(IHasQueryOptionsAndExecutorService hasOptions,
+			IAdhocDag<TableQueryStep> dag);
 
 	@Deprecated(since = "Unit-Tests")
-	default IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions, Set<TableQueryStep> steps) {
+	default IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
+			Set<TableQueryStep> steps) {
 		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
 
 		steps.forEach(dag::addVertex);

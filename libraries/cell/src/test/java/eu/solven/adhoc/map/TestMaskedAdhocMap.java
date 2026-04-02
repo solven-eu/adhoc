@@ -215,4 +215,16 @@ public class TestMaskedAdhocMap {
 		RetainAllKeys result = new MaskedAdhocMap.RetainAllKeys(Set.of("a", "b"), mask, Map.of());
 		Assertions.assertThat(result.isCompatible(Set.of("a", "b", "c"), mask)).isFalse();
 	}
+
+	@Test
+	public void testRetainAll_misorderOnlyMask() {
+		Map<String, ?> mask = Map.of("a", "a1", "b", "b1", "c", "c1");
+
+		IAdhocMap decorated = RowSliceFactory.builder().build().newMapBuilder(List.of()).build();
+		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();
+
+		IAdhocMap retained = masked.retainAll(ImmutableSet.of("c", "b"));
+		Assertions.assertThat(retained.keySet()).containsExactly("b", "c");
+		Assertions.assertThat(retained.values()).containsExactly("b1", "c1");
+	}
 }

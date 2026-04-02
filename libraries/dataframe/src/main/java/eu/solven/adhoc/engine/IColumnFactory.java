@@ -40,6 +40,10 @@ import eu.solven.adhoc.measure.aggregation.IAggregation;
  * @author Benoit Lacelle
  */
 public interface IColumnFactory {
+	/**
+	 * To be provided as capacity if we have no clue about its value.
+	 */
+	int NO_ESTIMATION = 0;
 
 	/**
 	 *
@@ -49,6 +53,8 @@ public interface IColumnFactory {
 	 * @return a column which will hold result for the given underlyings
 	 */
 	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
+
+	<T> IMultitypeColumnFastGet<T> makeColumnRandomInsertions(int initialCapacity);
 
 	/**
 	 * @param agg
@@ -67,8 +73,8 @@ public interface IColumnFactory {
 	 * 
 	 * @param agg
 	 * @param initialCapacity
-	 *            0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
-	 *            value.
+	 *            0 (IColumnFactory{@link #NO_ESTIMATION}) is no estimation is available. If strictly positive, the
+	 *            actual capacity may be capped to this value.
 	 * @return a column which will hold result for the given underlyings, allowing multiple writing (through merge) for
 	 *         the same slice.
 	 *

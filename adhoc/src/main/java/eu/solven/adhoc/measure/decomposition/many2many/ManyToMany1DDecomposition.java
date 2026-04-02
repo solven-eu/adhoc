@@ -124,7 +124,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 				value,
 				groupColumn,
 				groups,
-				slice.getQueryStep().getGroupBy().getGroupedByColumns().contains(groupColumn));
+				slice.getQueryStep().getGroupBy().getSortedColumns().contains(groupColumn));
 	}
 
 	/**
@@ -220,7 +220,7 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 		ISliceFilter requestedFilter = step.getFilter();
 		ISliceFilter underlyingFilter = convertGroupsToElementsFilter(groupColumn, elementColumn, requestedFilter);
 
-		if (!step.getGroupBy().getGroupedByColumns().contains(groupColumn)) {
+		if (!step.getGroupBy().getSortedColumns().contains(groupColumn)) {
 			// None of the requested column is an output column of this decomposition : there is nothing to decompose
 			return ImmutableList.of(MeasurelessQuery.edit(step).filter(underlyingFilter).build());
 		}

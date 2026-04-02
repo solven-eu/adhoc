@@ -138,7 +138,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
 		// groupedBy are required to properly feed the requested slice
 		// filtered are required to let DispatcherQueryStep properly filter the relevant slices
-		Set<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
+		Set<String> groupedByColumns = slice.getQueryStep().getGroupBy().getSortedColumns();
 
 		// Do a copy as we will iterate often over this List
 		List<String> duplicatedGroupedByColumns =

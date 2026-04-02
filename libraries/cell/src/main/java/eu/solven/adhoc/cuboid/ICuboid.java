@@ -23,6 +23,7 @@
 package eu.solven.adhoc.cuboid;
 
 import java.util.Map;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -52,6 +53,11 @@ public interface ICuboid extends ICompactable {
 
 	boolean isEmpty();
 
+	/**
+	 * {@link SequencedSet} semantic.
+	 * 
+	 * @return
+	 */
 	Set<String> getColumns();
 
 	Stream<ISlice> slices();

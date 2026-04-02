@@ -126,7 +126,7 @@ public class MergeInducersStrictGroupBy implements IMergeInducers {
 		// columns which are filtered
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(step.getFilter());
 		// columns which are filtered but not in groupBy
-		Set<String> filteredNotGroupedBy = Sets.difference(filteredColumns, step.getGroupBy().getGroupedByColumns());
+		Set<String> filteredNotGroupedBy = Sets.difference(filteredColumns, step.getGroupBy().getSortedColumns());
 
 		// Given filter can not be inferred from slice
 		ISliceFilter filterNotInGroupBy = SimpleFilterEditor.retainsColumns(step.getFilter(), filteredNotGroupedBy);

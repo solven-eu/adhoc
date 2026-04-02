@@ -54,7 +54,7 @@ import eu.solven.adhoc.filter.FilterEquivalencyHelpers;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
@@ -97,7 +97,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> tableSteps) {
+	public SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions,
+			Set<TableQueryStep> tableSteps) {
 		if (tableSteps.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
@@ -115,7 +116,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 				.explicits(tableSteps)
 				.inducedToInducer(inducedToInducer)
 				.stepToTables(leavesToTableQuery)
-				.lazyGraph(les -> splitter.getLazyGraph(les,hasOptions, inducedToInducer))
+				.lazyGraph(les -> splitter.getLazyGraph(hasOptions, inducedToInducer))
 				.build();
 
 		// Sanity checks will typically ensure the tableQueries covers all leaves inducers
@@ -248,8 +249,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 
 			Set<TableQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
 					.filter(s -> s.getGroupBy()
-							.getGroupedByColumns()
-							.equals(firstMissing.getGroupBy().getGroupedByColumns()))
+							.getSortedColumns()
+							.equals(firstMissing.getGroupBy().getSortedColumns()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
 

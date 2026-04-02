@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -32,6 +33,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -43,7 +46,7 @@ import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersStrictGroupBy;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -84,15 +87,8 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
 
 	@Override
-	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
-		// IFilterQueryBundle queryBundle;
-		// if (filterBundle != null) {
-		// queryBundle = filterBundle;
-		// } else {
-		// queryBundle = filterFactories.makeQueryBundle();
-		// }
-
 		// 1. Add inference between existing nodes
 		// If we add such links, we tell the induced will be inferred by Adhoc and there will be less inducers for
 		// ITableWrapper.
@@ -114,27 +110,40 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 		SetMultimap<TableQueryStep, TableQueryStep> aggregatorToQueries = groupByAggregator(tableSteps);
 
+		ListeningExecutorService les = hasOptions.getExecutorService();
+
 		// Merging inducers is done a per options+custom_marker+aggregator basis
-		Multimaps.asMap(aggregatorToQueries).forEach((a, steps) -> {
-			IAdhocDag<TableQueryStep> aInducedToInducer = makeMergeInducers(filterBundle).mergeInducers(a, steps);
+		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures =
+				Multimaps.asMap(aggregatorToQueries).entrySet().stream().map(e -> {
+					TableQueryStep a = e.getKey();
+					Set<TableQueryStep> steps = e.getValue();
 
-			if (hasOptions.isDebugOrExplain()) {
-				SplitTableQueries aTableQueries =
-						SplitTableQueries.builder().inducedToInducer(aInducedToInducer).build();
+					return les.submit(() -> {
+						IAdhocDag<TableQueryStep> additionalDag =
+								makeMergeInducers(filterBundle).mergeInducers(a, steps);
 
-				// TODO This log lacks options and customMarkers if any
-				log.info("[EXPLAIN] explicits={} roots={} vertices={} induceds={} inducers={} for agg={}",
-						steps.size(),
-						aTableQueries.getRoots().size(),
-						aTableQueries.getInducedToInducer().vertexSet().size(),
-						aTableQueries.getInduceds().size(),
-						aTableQueries.getInducers().size(),
-						a.getMeasure().getName());
-			}
+						if (hasOptions.isDebugOrExplain()) {
+							SplitTableQueries aTableQueries =
+									SplitTableQueries.builder().inducedToInducer(additionalDag).build();
 
-			// Step2: merge some inducers together (new vertices and edges)
-			Graphs.addGraph(withMergedInducers, aInducedToInducer);
-		});
+							// TODO This log lacks options and customMarkers if any
+							log.info("[EXPLAIN] explicits={} roots={} vertices={} induceds={} inducers={} for agg={}",
+									steps.size(),
+									aTableQueries.getRoots().size(),
+									aTableQueries.getInducedToInducer().vertexSet().size(),
+									aTableQueries.getInduceds().size(),
+									aTableQueries.getInducers().size(),
+									a.getMeasure().getName());
+						}
+
+						return additionalDag;
+					});
+
+				}).toList();
+
+		// Step2: merge some inducers together (new vertices and edges)
+		List<IAdhocDag<TableQueryStep>> localDags = Futures.getUnchecked(Futures.allAsList(futures));
+		localDags.forEach(localDag -> Graphs.addGraph(withMergedInducers, localDag));
 
 		// 3. As we created some nodes, we need to re-apply the inference between existing nodes
 		// TODO Why? Need at least one example where this is relevant
@@ -143,14 +152,13 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	}
 
 	@Override
-	public IAdhocDag<TableQueryStep> getLazyGraph(ListeningExecutorService les,
-			IHasQueryOptions hasOptions,
+	public IAdhocDag<TableQueryStep> getLazyGraph(IHasQueryOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		// 4. Now, we want to add some additional sharing nodes: these are never inducers but in the middle of the DAG.
 		// They will help computing only once elements of inference (e.g. some filter or some groupBy)
 
 		// add shared nodes over the full graph, as both explicit and other steps may benefit from shared nodes
-		return addSharedNodes(les, inducedToInducer);
+		return addSharedNodes(hasOptions, inducedToInducer);
 	}
 
 	/**
@@ -163,9 +171,9 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 *            current DAG
 	 * @return a DAG fragment containing any newly added shared nodes
 	 */
-	protected IAdhocDag<TableQueryStep> addSharedNodes(ListeningExecutorService les,
+	protected IAdhocDag<TableQueryStep> addSharedNodes(IHasQueryOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
-		IAddSharedNodes sharedNodesAdder = makeSharedNodesAdder(les, filterBundle);
+		IAddSharedNodes sharedNodesAdder = makeSharedNodesAdder(hasOptions, filterBundle);
 		return sharedNodesAdder.addSharedNodes(inducedToInducer);
 	}
 
@@ -202,8 +210,9 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 *            query-scoped filter tools
 	 * @return a configured shared-node adder
 	 */
-	protected IAddSharedNodes makeSharedNodesAdder(ListeningExecutorService les, IFilterQueryBundle queryBundle) {
-		return sharedNodesAdderFactory.make(les, queryBundle);
+	protected IAddSharedNodes makeSharedNodesAdder(IHasQueryOptionsAndExecutorService hasOptions,
+			IFilterQueryBundle queryBundle) {
+		return sharedNodesAdderFactory.make(hasOptions, queryBundle);
 	}
 
 	@Override

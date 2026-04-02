@@ -31,14 +31,15 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DirectedAcyclicGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.SetMultimap;
@@ -58,6 +59,8 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -77,7 +80,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 	@Default
 	@NonNull
-	final Executor executor = AdhocUnsafe.adhocCpuPool;
+	final IHasQueryOptionsAndExecutorService hasOptions = IHasQueryOptionsAndExecutorService.noOption();
 
 	@Default
 	@NonNull
@@ -89,8 +92,8 @@ public class AddSharedNodes implements IAddSharedNodes {
 			AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
 
 	public static IAddSharedNodesFactory makeFactory() {
-		return (les, filterBundle) -> AddSharedNodes.builder()
-				.executor(les)
+		return (hasOptions, filterBundle) -> AddSharedNodes.builder()
+				.hasOptions(hasOptions)
 				.filterStripperFactory(filterBundle.getFilterStripperFactory())
 				.filterOptimizer(filterBundle.getFilterOptimizer())
 				.build();
@@ -114,6 +117,10 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 */
 	@Override
 	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> input) {
+		if (!StandardQueryOptions.CONCURRENT.isActive(hasOptions.getOptions())) {
+			return processSequentially(input);
+		}
+
 		// Work on a copy so we never mutate the caller's graph.
 		IAdhocDag<TableQueryStep> dag = GraphHelpers.copy(input);
 
@@ -131,10 +138,34 @@ public class AddSharedNodes implements IAddSharedNodes {
 				.queryStepsDone(ConcurrentHashMap.newKeySet())
 				.onReadyStep(node -> addSharedNode(lock, dag, node))
 				// Forces the CPU pool as this process is CPU only
-				.executor(executor)
+				.executor(hasOptions.getExecutorService())
 				.build();
 
 		dagExecutor.executeRecursively(roots).join();
+		return dag;
+	}
+
+	/**
+	 * Applies the shared-node insertion algorithm to {@code dag} sequentially in topological order (inDegree=0 leaves
+	 * first, outDegree=0 roots last) and returns the same mutated instance. Exposed as a protected method for
+	 * subclasses that require a purely sequential processing path.
+	 *
+	 * @param dag
+	 *            the DAG to process in place; must not be shared with other threads during this call
+	 * @return the same {@code dag} instance, possibly enriched with new shared nodes
+	 */
+	protected IAdhocDag<TableQueryStep> processSequentially(IAdhocDag<TableQueryStep> dag) {
+		ReentrantLock lock = new ReentrantLock();
+
+		// Snapshot the traversal order before any DAG mutations.
+		List<TableQueryStep> toProcess = ImmutableList.copyOf(new TopologicalOrderIterator<>(dag));
+		for (TableQueryStep inducer : toProcess) {
+			if (!dag.containsVertex(inducer)) {
+				// Defensive: vertex removed during a prior iteration (e.g. subclass override).
+				continue;
+			}
+			addSharedNode(lock, dag, inducer);
+		}
 		return dag;
 	}
 
@@ -356,11 +387,11 @@ public class AddSharedNodes implements IAddSharedNodes {
 				.flatMap(FilterHelpers::streamFilteredColumns)
 				.collect(ImmutableSet.toImmutableSet());
 		Set<String> columnsForGroupBy = relatedSteps.stream()
-				.flatMap(s -> s.getGroupBy().getGroupedByColumns().stream())
+				.flatMap(s -> s.getGroupBy().getSortedColumns().stream())
 				.collect(ImmutableSet.toImmutableSet());
 
 		Map<String, IAdhocColumn> inducerGroupedByColumns = new LinkedHashMap<>();
-		inducerGroupedByColumns.putAll(inducer.getGroupBy().getNameToColumn());
+		inducerGroupedByColumns.putAll(inducer.getGroupBy().getSortedNameToColumn());
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 

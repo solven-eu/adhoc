@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
@@ -37,6 +38,7 @@ import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.engine.tabular.inducer.JavaStreamInducedEvaluator;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
@@ -79,10 +81,16 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
-		return getUnderlyingNames().stream().map(underlying -> {
-			IGroupBy groupBy = GroupByHelpers.union(step.getGroupBy(), partitionor.getGroupBy());
-			return step.toBuilder().groupBy(groupBy).measure(underlying).build();
-		}).toList();
+		// Given current step, we add missing columns to cover partitionor groupBy
+		// This way, we try as much as possible not to break sorting when removing these additional columns
+		IGroupBy groupBy = getUnderlyingGroupBy();
+		return getUnderlyingNames().stream()
+				.map(underlying -> step.toBuilder().groupBy(groupBy).measure(underlying).build())
+				.toList();
+	}
+
+	protected IGroupBy getUnderlyingGroupBy() {
+		return GroupByHelpers.union(step.getGroupBy(), partitionor.getGroupBy());
 	}
 
 	@Override
@@ -103,11 +111,28 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	}
 
 	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg, List<? extends ICuboid> underlyings) {
+		boolean breakSorting = isBreakSorting();
+
 		// BEWARE The output capacity is at most the sum of input capacity. But it is
 		// generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
 		int initialCapacity = CombinatorQueryStep.sumSizes(underlyings);
-		return factories.getColumnFactory().makeColumn(agg, initialCapacity);
+		if (breakSorting) {
+			return factories.getColumnFactory().makeColumnRandomInsertions(agg, initialCapacity);
+		} else {
+			return factories.getColumnFactory().makeColumn(agg, initialCapacity);
+		}
+
+	}
+
+	protected boolean isBreakSorting() {
+		// TODO We should build GROUP BY with most beneficial order from the beginning, i.e. not rely on User
+		// configuration.
+		Set<String> inducedColumns = step.getGroupBy().getSequencedColumns();
+
+		Set<String> inducerColumns = getUnderlyingGroupBy().getSequencedColumns();
+
+		return JavaStreamInducedEvaluator.breakSorting(inducerColumns, inducedColumns);
 	}
 
 	@Override
@@ -145,7 +170,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	}
 
 	protected ISlice queriedSlice(IGroupBy queryGroupBy, ISliceWithStep bucketedSlice) {
-		NavigableSet<String> groupedByColumns = queryGroupBy.getGroupedByColumns();
+		NavigableSet<String> groupedByColumns = queryGroupBy.getSortedColumns();
 
 		return bucketedSlice.getSlice().retainAll(groupedByColumns);
 	}

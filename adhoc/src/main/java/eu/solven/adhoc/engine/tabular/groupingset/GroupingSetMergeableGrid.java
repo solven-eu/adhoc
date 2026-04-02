@@ -64,7 +64,7 @@ public class GroupingSetMergeableGrid implements IMultitypeMergeableGrid<ISlice>
 
 	@Override
 	public IMultitypeColumnFastGet<ISlice> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
-		return getGroupByGrid(gridFactory, queryStep.getGroupBy().getGroupedByColumns()).closeColumn(queryStep,
+		return getGroupByGrid(gridFactory, queryStep.getGroupBy().getSortedColumns()).closeColumn(queryStep,
 				aggregator);
 	}
 

@@ -140,7 +140,7 @@ public class LinearDecomposition implements IDecomposition {
 	@Override
 	public List<IWhereGroupByQuery> getUnderlyingSteps(CubeQueryStep step) {
 		String outputColumn = MapPathGet.getRequiredString(options, K_OUTPUT);
-		if (!step.getGroupBy().getGroupedByColumns().contains(outputColumn)) {
+		if (!step.getGroupBy().getSortedColumns().contains(outputColumn)) {
 			// None of the requested column is an output column of this dispatchor : there is nothing to dispatch
 			return ImmutableList.of(step);
 		}

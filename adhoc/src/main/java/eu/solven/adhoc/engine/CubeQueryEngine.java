@@ -568,8 +568,8 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	protected ISlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
 		IMapBuilderPreKeys errorSliceAsMapBuilder = factories.getSliceFactoryFactory()
 				.makeFactory(queryStep)
-				.newMapBuilder(queryStep.getGroupBy().getGroupedByColumns());
-		queryStep.getGroupBy().getGroupedByColumns().forEach(groupedByColumn -> {
+				.newMapBuilder(queryStep.getGroupBy().getSortedColumns());
+		queryStep.getGroupBy().getSortedColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();
 
 			Object errorCoordinate;

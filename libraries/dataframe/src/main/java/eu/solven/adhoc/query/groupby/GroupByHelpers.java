@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.query.groupby;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -55,12 +55,10 @@ public class GroupByHelpers {
 		}
 	}
 
-	public static IGroupBy suppressColumns(IGroupBy groupby, Set<String> suppressedColumns) {
-		Map<String, IAdhocColumn> nameToColumns = new LinkedHashMap<>(groupby.getNameToColumn());
+	public static IGroupBy suppressColumns(IGroupBy groupBy, Set<String> suppressedColumns) {
+		Set<String> retainedColumns = Sets.difference(groupBy.getSequencedColumns(), suppressedColumns);
 
-		nameToColumns.keySet().removeAll(suppressedColumns);
-
-		return GroupByColumns.of(nameToColumns.values());
+		return groupBy.retainAll(retainedColumns);
 	}
 
 	/**

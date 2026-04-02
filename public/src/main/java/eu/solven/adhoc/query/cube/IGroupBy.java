@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.SequencedSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -51,23 +52,36 @@ public interface IGroupBy {
 	 */
 	@JsonIgnore
 	default boolean isGrandTotal() {
-		return getGroupedByColumns().isEmpty();
+		return getSortedColumns().isEmpty();
+	}
+
+	/**
+	 * This should be a {@link SequencedSet}.
+	 * 
+	 * @return the column in the specific order.
+	 */
+	@JsonIgnore
+	ImmutableSet<IAdhocColumn> getColumns();
+
+	/**
+	 * This should be a {@link SequencedSet}.
+	 * 
+	 * @return the column names in the specific order.
+	 */
+	@JsonIgnore
+	default Set<String> getSequencedColumns() {
+		return getColumns().stream().map(IAdhocColumn::getName).collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
 	 * Some of these columns may not be actual underlying columns, but computed given some logic. Consider using
-	 * {@link #getNameToColumn()}.
+	 * {@link #getSortedNameToColumn()}.
 	 * 
 	 * @return the name of the groupBy when the input and output columns are identical.
 	 */
 	@JsonIgnore
-	default NavigableSet<String> getGroupedByColumns() {
-		return getNameToColumn().navigableKeySet();
-	}
-
-	@JsonIgnore
-	default Set<IAdhocColumn> getColumns() {
-		return ImmutableSet.copyOf(getNameToColumn().values());
+	default NavigableSet<String> getSortedColumns() {
+		return getSortedNameToColumn().navigableKeySet();
 	}
 
 	/**
@@ -76,10 +90,10 @@ public interface IGroupBy {
 	 */
 	// @JsonIgnore as only the columns would be serialized. (name->column) is syntactic sugar.
 	@JsonIgnore
-	NavigableMap<String, IAdhocColumn> getNameToColumn();
+	NavigableMap<String, IAdhocColumn> getSortedNameToColumn();
 
 	default IAdhocColumn getColumn(String column) {
-		return getNameToColumn().get(column);
+		return getSortedNameToColumn().get(column);
 	}
 
 	IGroupBy retainAll(Set<String> columns);

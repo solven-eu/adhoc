@@ -126,7 +126,7 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 	@SuppressWarnings("checkstyle:MagicNumber")
 	protected String buildColumnCoverageString(Set<TableQueryStep> steps, IGroupBy mergedGroupBy) {
 		int total = steps.size();
-		return mergedGroupBy.getGroupedByColumns().stream().map(col -> {
+		return mergedGroupBy.getSortedColumns().stream().map(col -> {
 			long count = steps.stream().filter(s -> ACubeQueryStep.getColumns(s).contains(col)).count();
 			return "%s=%d%%(%d/%d)".formatted(col, count * 100 / total, count, total);
 		}).collect(Collectors.joining(", "));
@@ -157,7 +157,7 @@ public class MergeInducersIntoSingle implements IMergeInducers {
 		ImmutableSet<String> columnsToDifferenciate = eachInducedFilters.stream()
 				.flatMap(f -> FilterHelpers.getFilteredColumns(f).stream())
 				.collect(ImmutableSet.toImmutableSet());
-		Set<String> missingColumns = Sets.difference(columnsToDifferenciate, originalGroupBy.getGroupedByColumns());
+		Set<String> missingColumns = Sets.difference(columnsToDifferenciate, originalGroupBy.getSortedColumns());
 		return GroupByColumns.builder()
 				.columns(originalGroupBy.getColumns())
 				.columns(missingColumns.stream().map(ReferencedColumn::ref).toList())

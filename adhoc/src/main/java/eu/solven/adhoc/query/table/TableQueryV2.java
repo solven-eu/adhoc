@@ -114,6 +114,6 @@ public class TableQueryV2 implements IWhereGroupByQuery, ITableQuery {
 
 	@Override
 	public Set<String> getGroupedByColumns() {
-		return groupBy.getGroupedByColumns();
+		return groupBy.getSortedColumns();
 	}
 }

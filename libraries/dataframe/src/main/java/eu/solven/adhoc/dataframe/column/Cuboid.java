@@ -137,7 +137,7 @@ public class Cuboid implements ICuboid {
 	}
 
 	public static CuboidBuilder forGroupBy(IHasGroupBy hasGroupBy) {
-		return Cuboid.builder().columns(hasGroupBy.getGroupBy().getGroupedByColumns());
+		return Cuboid.builder().columns(hasGroupBy.getGroupBy().getSortedColumns());
 	}
 
 	@Override
