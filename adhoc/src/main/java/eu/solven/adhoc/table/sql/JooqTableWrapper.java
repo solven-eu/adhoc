@@ -68,6 +68,7 @@ import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
+import eu.solven.adhoc.dataframe.row.TabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
@@ -309,17 +310,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
-		// Stream<ITabularRecord> modifiedStream;
-		// if (distinctSlices) {
-		// Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
-		//
-		// int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
-		// modifiedStream =
-		// StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, tableStream.isParallel());
-		// } else {
-		// modifiedStream = tableStream;
-		// }
-
 		Semaphore semaphore = querySemaphore();
 		// Limit concurrent queries: acquire lazily when the stream is first opened.
 		// The permit is released as soon as the first row arrives: at that point the DB has completed query
@@ -455,7 +445,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery,
 			ResultQuery<Record> oneQuery) {
-		return JooqTabularRecordFactory.builder()
+		return TabularRecordFactory.builder()
 				.globalGroupBy(mergedGroupBy)
 				.fields(sqlQuery.getFields())
 				.sliceFactory(queryPod.getSliceFactory())
@@ -507,58 +497,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	// Take original `queriedColumns` as the record may not clearly express aliases (e.g. `p.name` vs `name`). And it
 	// is ambiguous to build a `columnName` from a `Name`.
 	protected ITabularRecord intoTabularRecord(ITabularRecordFactory tabularRecordFactory, Record r) {
-		Set<String> absentColumns = tabularRecordFactory.getOptionalColumns().stream().filter(c -> {
-			Field<?> groupingField = r.field(JooqTableQueryFactory.groupingAlias(c));
-
-			return !Integer.valueOf(0).equals(groupingField.getValue(r));
-		}).collect(ImmutableSet.toImmutableSet());
-
-		TabularRecordBuilder recordBuilder = tabularRecordFactory.makeTabularRecordBuilder(absentColumns);
-
-		int columnShift = 0;
-
-		List<String> aggregateFields = tabularRecordFactory.getAggregates();
-		{
-			int size = aggregateFields.size();
-
-			for (int i = 0; i < size; i++) {
-				Object value = r.get(columnShift + i);
-				if (value != null) {
-					String columnName = aggregateFields.get(i);
-					Object previousValue = recordBuilder.appendAggregate(columnName, value);
-
-					if (previousValue != null) {
-						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
-					}
-				}
-			}
-
-			columnShift += size;
-		}
-
-		{
-			// Record fields may not match exactly the columns, especially on qualified fields
-			ImmutableList<String> columns = tabularRecordFactory.getColumns().asList();
-			int size = columns.size();
-
-			int nbToAppend = size - absentColumns.size();
-			int nbAppend = 0;
-
-			if (absentColumns.size() != size) {
-				for (int i = 0; i < size && nbAppend < nbToAppend; i++) {
-					String currentKey = columns.get(i);
-					if (absentColumns.contains(currentKey)) {
-						log.debug("Skip NULL as {} not in current GROUPING SET", currentKey);
-						continue;
-					}
-
-					recordBuilder.appendGroupBy(r.get(columnShift + i));
-					nbAppend++;
-				}
-			}
-		}
-
-		return recordBuilder.build();
+		return JooqTabularRecordFactory.makeRecord(tabularRecordFactory, r);
 	}
 
 	@Override

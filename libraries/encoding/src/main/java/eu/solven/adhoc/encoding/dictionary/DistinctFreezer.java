@@ -76,7 +76,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 		return array.stream()
 				.distinct()
 				// No need to count distinct all, we just need to know if it is greater or not than some limit
-				.limit(limitForDictionary + 1)
+				.limit(limitForDictionary + 1L)
 				.count();
 	}
 

@@ -1,104 +1,84 @@
-/**
- * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 package eu.solven.adhoc.table.sql;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+
+import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.exception.InvalidResultException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
-import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
-import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.query.cube.IGroupBy;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Singular;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Enable creating {@link TabularRecordBuilder} given an {@link AggregatedRecordFields}.
+ * Turns JooQ {@link Record} into {@link ITabularRecord}.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-@AllArgsConstructor
-public class JooqTabularRecordFactory implements ITabularRecordFactory {
+@UtilityClass
+@Slf4j
+public class JooqTabularRecordFactory {
 
-	@NonNull
-	AggregatedRecordFields fields;
-	@NonNull
-	ISliceFactory sliceFactory;
-	@Singular
-	@Getter
-	ImmutableList<String> optionalColumns;
+	public static ITabularRecord makeRecord(ITabularRecordFactory tabularRecordFactory, Record r) {
 
-	// A non-ambiguous mapping from columnName to column
-	// It is not compatible with all TableQueryV3, as different groupBy may have different columns referring the same
-	// columnName
-	// Some earlier step shall split the tableQuery to prevent such ambiguities
-	@NonNull
-	IGroupBy globalGroupBy;
+		Set<String> absentColumns = tabularRecordFactory.getOptionalColumns().stream().filter(c -> {
+			Field<?> groupingField = r.field(JooqTableQueryFactory.groupingAlias(c));
 
-	@Override
-	public List<String> getAggregates() {
-		return fields.getAggregates();
-	}
+			return !Integer.valueOf(0).equals(groupingField.getValue(r));
+		}).collect(ImmutableSet.toImmutableSet());
 
-	@Override
-	public ImmutableSet<String> getColumns() {
-		return fields.getAllColumns();
-	}
+		TabularRecordBuilder recordBuilder = tabularRecordFactory.makeTabularRecordBuilder(absentColumns);
 
-	@Override
-	public TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns) {
-		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(getAggregates().size());
+		int columnShift = 0;
 
-		Iterable<? extends String> presentColumns = getColumns(absentColumns);
-		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(presentColumns);
+		List<String> aggregateFields = tabularRecordFactory.getAggregates();
+		{
+			int size = aggregateFields.size();
 
-		SequencedSetLikeList columns = sliceFactory.internKeyset(ImmutableSet.copyOf(presentColumns));
+			for (int i = 0; i < size; i++) {
+				Object value = r.get(columnShift + i);
+				if (value != null) {
+					String columnName = aggregateFields.get(i);
+					Object previousValue = recordBuilder.appendAggregate(columnName, value);
 
-		return new TabularRecordBuilder(globalGroupBy.retainAll(columns.sortedSet()), aggregates, sliceBuilder);
-	}
-
-	protected Iterable<? extends String> getColumns(Set<String> absentColumns) {
-		if (absentColumns.isEmpty()) {
-			return getColumns();
-		} else {
-			if (!getColumns().containsAll(absentColumns)) {
-				throw new IllegalArgumentException(
-						"Some absent are unknown. absent=%s known=%s".formatted(absentColumns, getColumns()));
+					if (previousValue != null) {
+						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
+					}
+				}
 			}
-			return Sets.difference(getColumns(), absentColumns);
+
+			columnShift += size;
 		}
+
+		{
+			// Record fields may not match exactly the columns, especially on qualified fields
+			ImmutableList<String> columns = tabularRecordFactory.getColumns().asList();
+			int size = columns.size();
+
+			int nbToAppend = size - absentColumns.size();
+			int nbAppend = 0;
+
+			if (absentColumns.size() != size) {
+				for (int i = 0; i < size && nbAppend < nbToAppend; i++) {
+					String currentKey = columns.get(i);
+					if (absentColumns.contains(currentKey)) {
+						log.debug("Skip NULL as {} not in current GROUPING SET", currentKey);
+						continue;
+					}
+
+					recordBuilder.appendGroupBy(r.get(columnShift + i));
+					nbAppend++;
+				}
+			}
+		}
+
+		return recordBuilder.build();
 	}
 
 }
