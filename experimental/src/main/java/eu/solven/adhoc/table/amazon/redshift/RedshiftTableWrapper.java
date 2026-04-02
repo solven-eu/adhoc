@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -69,9 +70,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod,
-			IGroupBy mergedGroupBy,
-			QueryWithLeftover sqlQuery) {
+	protected IConsumingStream toMapStream(QueryPod queryPod, IGroupBy mergedGroupBy, QueryWithLeftover sqlQuery) {
 		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
 		String sqlStatement = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 
@@ -121,7 +120,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 			return result;
 		});
 
-		return completable.join();
+		return IConsumingStream.fromStream(completable.join());
 		// } catch (RuntimeException rt) {
 		// Throwable cause = rt.getCause();
 		// if (cause instanceof RedshiftDataException redshiftEx) {

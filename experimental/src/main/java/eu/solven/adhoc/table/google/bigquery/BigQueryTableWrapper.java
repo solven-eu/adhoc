@@ -47,6 +47,7 @@ import com.google.cloud.bigquery.TableResult;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
@@ -75,14 +76,14 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+	protected IConsumingStream streamTabularRecords(QueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
-		return sqlQuery.getQueries().stream().flatMap(oneQuery -> {
+		return IConsumingStream.fromStream(sqlQuery.getQueries().stream().flatMap(oneQuery -> {
 			ITabularRecordFactory tabularRecordFactory =
 					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toBigQueryStream(queryPod, oneQuery, tabularRecordFactory);
-		});
+		}));
 	}
 
 	protected Stream<ITabularRecord> toBigQueryStream(QueryPod queryPod,

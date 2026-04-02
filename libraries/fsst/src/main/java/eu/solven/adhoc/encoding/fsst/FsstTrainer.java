@@ -80,7 +80,7 @@ public class FsstTrainer {
 	 * Holds the idea that only 2 Counters are needed for a training, one of the them being retained in the `best`
 	 * symbol table while the other is available for process.
 	 */
-	private static class CountersPair {
+	private static final class CountersPair {
 		// Pre-allocate two Counters up-front. When one is saved as bestCounters it must
 		// not be overwritten, so we alternate to the other slot instead of allocating.
 		final Counters first = new Counters();
@@ -91,11 +91,11 @@ public class FsstTrainer {
 		boolean firstIsCleared = true;
 		boolean secondIsCleared = true;
 
-		public Counters pickFree() {
+		private Counters pickFree() {
 			// If counter was promoted to bestCounters, switch to the other pre-allocated slot.
 			firstIsFreeElseSecond = !firstIsFreeElseSecond;
 
-			if (firstIsFreeElseSecond == true) {
+			if (firstIsFreeElseSecond) {
 				if (secondIsCleared) {
 					secondIsCleared = false;
 				} else {
@@ -114,7 +114,7 @@ public class FsstTrainer {
 			}
 		}
 
-		public void canReuse() {
+		private void canReuse() {
 			// previous `.pickFree()` toggled this: we restore the fact we should keep using the same Counters.
 			firstIsFreeElseSecond = !firstIsFreeElseSecond;
 		}
@@ -160,9 +160,7 @@ public class FsstTrainer {
 		bestTable = buildCandidates(bestTable, bestCounters, maxFrac, sample.isSampled);
 
 		// renumber codes for more efficient compression
-		SymbolTable finalTable = bestTable.finalizeTable();
-
-		return finalTable;
+		return bestTable.finalizeTable();
 	}
 
 	private record CodeAndLength(int code, int length) {
@@ -414,14 +412,14 @@ public class FsstTrainer {
 	 */
 	public record QSym(Symbol symbol, int gain) implements Comparable<QSym> {
 
-		// larger val breaks tie
-		public static final Comparator<QSym> COMPARATOR =
+	// larger val breaks tie
+	public static final Comparator<QSym> COMPARATOR =
 				Comparator.<QSym>comparingInt(q -> q.gain).thenComparingLong(q -> -q.symbol.val);
 
-		@Override
-		public int compareTo(QSym o) {
-			return COMPARATOR.compare(this, o);
-		}
+	@Override
+	public int compareTo(QSym o) {
+		return COMPARATOR.compare(this, o);
+	}
 
 	}
 

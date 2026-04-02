@@ -188,7 +188,7 @@ public class AdhocUnsafe {
 	// Virtual-thread executor: replaces the former ForkJoinPool-based work-stealing pool.
 	// VTs are cheap, blocking-friendly, and remove the need for a separate IO executor.
 	public static ListeningExecutorService adhocMixedPool = MoreExecutors
-			.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-").factory()));
+			.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 
 	// ForkJoinPool for CPU-bound work: tasks submitted from a FJP worker thread that call
 	// Stream.parallelStream() will fork into this pool (work-stealing) rather than the JVM

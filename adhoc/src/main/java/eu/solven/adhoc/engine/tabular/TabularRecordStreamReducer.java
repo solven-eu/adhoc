@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import com.google.common.collect.Multimaps;
 
@@ -55,7 +54,6 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.NonNull;
@@ -143,17 +141,15 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// operations than doing multiple SQLs will seemingly less irrelevant computations, as the multiple SQLs
 			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
 			// reasonable to prefer doing as many computations in a single pass).
-			try (Stream<ITabularRecord> records = stream.records().onClose(aggregatedRecordLogger.closeHandler())) {
-				if (records.isParallel()) {
-					throw new NotYetImplementedException("IMultitypeMergeableGrid are not thread-safe yet");
-				}
-
-				records.forEach(input -> {
+			try {
+				stream.forEach(input -> {
 					GroupByMarker sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);
+
 					forEachMeasure(sequencedKeyset, input, peekOnCoordinate, grid);
 				});
+			} finally {
+				aggregatedRecordLogger.closeHandler().run();
 			}
-
 		} catch (RuntimeException e) {
 			if (queryPod.getOptions().contains(StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE)) {
 
@@ -174,6 +170,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		return grid;
 	}
 
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	protected void forEachMeasure(GroupByMarker sequencedKeyset,
 			ITabularRecord tableRow,
 			BiConsumer<ITabularRecord, ISlice> peekOnCoordinate,
@@ -185,23 +182,27 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 		peekOnCoordinate.accept(tableRow, slice);
 
-		IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
+		// TODO Thread-safety
+		synchronized (this) {
+			IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
 
-		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
-			// We received a pre-aggregated measure
-			// DB has seemingly done the aggregation for us
-			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
+			for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
+				// We received a pre-aggregated measure
+				// DB has seemingly done the aggregation for us
+				IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
 
-			if (queryPod.isDebug()) {
-				Object aggregateValue = IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));
-				log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, slice);
-			}
+				if (queryPod.isDebug()) {
+					Object aggregateValue =
+							IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));
+					log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, slice);
+				}
 
-			if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
-				// TODO Introduce .onBoolean
-				valueReceiver.onLong(0);
-			} else {
-				tableRow.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
+				if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
+					// TODO Introduce .onBoolean
+					valueReceiver.onLong(0);
+				} else {
+					tableRow.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
+				}
 			}
 		}
 	}

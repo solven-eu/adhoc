@@ -521,7 +521,7 @@ public class FilterHelpers {
 	 * @return a Comparator for {@link ISliceFilter}, enabling deterministic ordering.
 	 */
 	public static Comparator<? super ISliceFilter> filterComparator() {
-		return (l, r) -> compareFilters(l, r);
+		return FilterHelpers::compareFilters;
 	}
 
 	/**
@@ -549,13 +549,10 @@ public class FilterHelpers {
 				return columnCmp;
 			}
 			return colL.getValueMatcher().toString().compareTo(colR.getValueMatcher().toString());
-		} else if (l.isMatchAll()) {
-			return 0;
-		} else if (l.isMatchNone()) {
-			return 0;
+		} else {
+			throw new NotYetImplementedException("filter l=%s r=%s".formatted(PepperLogHelper.getObjectAndClass(l),
+					PepperLogHelper.getObjectAndClass(r)));
 		}
-
-		return l.toString().compareTo(r.toString());
 	}
 
 	/**
@@ -563,6 +560,7 @@ public class FilterHelpers {
 	 *
 	 * @return an integer rank where lower values indicate "more complex" types (AND=0, OR=1, NOT=2, COLUMN=3).
 	 */
+	@SuppressWarnings("checkstyle:MagicNumber")
 	private static int typeRank(ISliceFilter filter) {
 		if (filter.isAnd()) {
 			return 0;
@@ -572,10 +570,9 @@ public class FilterHelpers {
 			return 2;
 		} else if (filter.isColumnFilter()) {
 			return 3;
-		} else if (filter.isMatchAll() || filter.isMatchNone()) {
+		} else {
 			return 4;
 		}
-		return 5;
 	}
 
 	/**

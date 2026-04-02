@@ -165,7 +165,7 @@ public class DuckDBHelper {
 
 		TableQuery tableQuery = queryBuilder.build();
 
-		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).records().findAny();
+		Optional<ITabularRecord> optCardinalityRecord = table.streamSlices(tableQuery).records2().findAny();
 		if (optCardinalityRecord.isEmpty()) {
 			Map<String, CoordinatesSample> columnToCoordinates = new TreeMap<>();
 

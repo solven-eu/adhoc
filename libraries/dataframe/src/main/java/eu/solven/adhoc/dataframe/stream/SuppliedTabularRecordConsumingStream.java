@@ -20,26 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.row;
+package eu.solven.adhoc.dataframe.stream;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
+
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 
 /**
  * A {@link ITabularRecordStream} memorizing an underlying `Stream<Map<String, ?>>`
  * 
  * @author Benoit Lacelle
  */
-public class SuppliedTabularRecordStream implements ITabularRecordStream {
+public class SuppliedTabularRecordConsumingStream implements ITabularRecordStream {
 	final Object source;
 	final boolean isDistinct;
-	final Supplier<Stream<ITabularRecord>> streamSupplier;
+	final Supplier<IConsumingStream<ITabularRecord>> streamSupplier;
 
-	public SuppliedTabularRecordStream(Object source,
+	public SuppliedTabularRecordConsumingStream(Object source,
 			boolean isDistinct,
-			Supplier<Stream<ITabularRecord>> streamSupplier) {
+			Supplier<IConsumingStream<ITabularRecord>> streamSupplier) {
 		this.source = source;
 		this.isDistinct = isDistinct;
 		// Memoize the stream to make sure it is open only once
@@ -53,7 +59,21 @@ public class SuppliedTabularRecordStream implements ITabularRecordStream {
 
 	@Override
 	public Stream<ITabularRecord> records() {
+		List<ITabularRecord> list = new ArrayList<>();
+
+		streamSupplier.get().forEach(list::add);
+
+		return list.stream();
+	}
+
+	@Override
+	public IConsumingStream<ITabularRecord> records2() {
 		return streamSupplier.get();
+	}
+
+	@Override
+	public void forEach(Consumer<ITabularRecord> consumer) {
+		streamSupplier.get().forEach(consumer);
 	}
 
 	@Override

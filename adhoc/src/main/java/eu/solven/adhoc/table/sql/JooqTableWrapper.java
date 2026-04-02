@@ -34,11 +34,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Spliterator;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.jooq.DSLContext;
 import org.jooq.Field;
@@ -68,9 +66,10 @@ import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -103,7 +102,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @ToString(of = "name")
-@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
+@SuppressWarnings("PMD.GodClass")
 public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDetails {
 
 	@NonNull
@@ -258,6 +257,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		return tableParameters.getDslSupplier().getDSLContext();
 	}
 
+	@SuppressWarnings("PMD.CloseResource")
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
 		if (!Objects.equals(this, queryPod.getTable())) {
@@ -303,27 +303,27 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 			debugResultQuery(resultQuery);
 		}
 
-		Stream<ITabularRecord> tableStream = toMapStream(queryPod, mergedGroupBy, resultQuery);
+		IConsumingStream<ITabularRecord> tableStream = toMapStream(queryPod, mergedGroupBy, resultQuery);
 
 		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
-		Stream<ITabularRecord> modifiedStream;
-		if (distinctSlices) {
-			Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
-
-			int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
-			modifiedStream =
-					StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, tableStream.isParallel());
-		} else {
-			modifiedStream = tableStream;
-		}
+		// Stream<ITabularRecord> modifiedStream;
+		// if (distinctSlices) {
+		// Spliterator<ITabularRecord> originalSpliterator = tableStream.spliterator();
+		//
+		// int modifiedCharacteristics = originalSpliterator.characteristics() | Spliterator.DISTINCT;
+		// modifiedStream =
+		// StreamSupport.stream(() -> originalSpliterator, modifiedCharacteristics, tableStream.isParallel());
+		// } else {
+		// modifiedStream = tableStream;
+		// }
 
 		Semaphore semaphore = querySemaphore();
 		// Limit concurrent queries: acquire lazily when the stream is first opened.
 		// The permit is released as soon as the first row arrives: at that point the DB has completed query
 		// execution and is streaming results, so a new query can start. If the stream is closed before
 		// producing any row (empty result or early cancel), the permit is released on close instead.
-		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
+		return new SuppliedTabularRecordConsumingStream(tableQuery, distinctSlices, () -> {
 			semaphore.acquireUninterruptibly();
 			AtomicBoolean semaphoreReleased = new AtomicBoolean(false);
 			Runnable releaseSemaphore = () -> {
@@ -331,7 +331,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 					semaphore.release();
 				}
 			};
-			return modifiedStream.peek(__ -> releaseSemaphore.run()).onClose(releaseSemaphore);
+			return tableStream.peek(__ -> releaseSemaphore.run()).onClose(releaseSemaphore);
 		});
 	}
 
@@ -387,10 +387,11 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.build();
 	}
 
-	protected Stream<ITabularRecord> toMapStream(QueryPod queryPod,
+	@SuppressWarnings("PMD.CloseResource")
+	protected IConsumingStream<ITabularRecord> toMapStream(QueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
-		Stream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, mergedGroupBy, sqlQuery);
+		IConsumingStream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, mergedGroupBy, sqlQuery);
 		return tabularRecords
 				// leftover in WHERE
 				.filter(row -> MoreFilterHelpers.match(sqlQuery.getLeftover(), row))
@@ -398,16 +399,16 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.map(row -> applyAggregatorLeftovers(sqlQuery, row));
 	}
 
-	protected Stream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
 		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
 
-		return resultQuery.stream().flatMap(oneQuery -> {
+		return IConsumingStream.fromStream(resultQuery.stream().flatMap(oneQuery -> {
 			ITabularRecordFactory tabularRecordFactory =
 					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toStream(queryPod, oneQuery).map(r -> intoTabularRecord(tabularRecordFactory, r));
-		});
+		}));
 	}
 
 	/**

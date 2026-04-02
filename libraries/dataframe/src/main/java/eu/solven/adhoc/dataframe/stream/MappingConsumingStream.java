@@ -20,22 +20,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.arrow;
+package eu.solven.adhoc.dataframe.stream;
 
-import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
-import eu.solven.adhoc.engine.context.QueryPod;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * Immutable context shared by {@link ArrowBatchSpliterator} and every {@link ArrowFixedBatchSpliterator} derived from
- * it. Grouping these fields avoids re-passing them individually at every {@link ArrowFixedBatchSpliterator#trySplit()}
- * call.
+ * Use a {@link Function} to map elements of one type to another, supporting cross-type transformations.
  *
- * @param factory
- *            the record factory used to convert Arrow vectors to {@link eu.solven.adhoc.dataframe.row.ITabularRecord}
- * @param queryPod
- *            the query pod carrying cancellation state
- * @param minSplitRows
- *            minimum rows in a loaded batch before {@link ArrowFixedBatchSpliterator#trySplit()} will split it
+ * @param <S>
+ *            the element type of the upstream stream
+ * @param <T>
+ *            the element type produced by this stream
  * @author Benoit Lacelle
  */
-record ArrowBatchContext(ITabularRecordFactory factory,QueryPod queryPod,int minSplitRows){}
+@Slf4j
+@Builder(toBuilder = true)
+public class MappingConsumingStream<S, T> implements IConsumingStream<T> {
+
+	@NonNull
+	IConsumingStream<S> upstream;
+
+	@NonNull
+	Function<? super S, T> function;
+
+	@Override
+	public void forEach(Consumer<T> consumer) {
+		try {
+			upstream.forEach(in -> {
+				T mapped = function.apply(in);
+
+				consumer.accept(mapped);
+			});
+		} catch (RuntimeException e) {
+			// Auto-close on exception so that upstream onClose hooks always fire,
+			// even when the caller does not use try-with-resources.
+			close();
+			throw e;
+		}
+	}
+
+	@Override
+	public void close() {
+		upstream.close();
+	}
+
+}

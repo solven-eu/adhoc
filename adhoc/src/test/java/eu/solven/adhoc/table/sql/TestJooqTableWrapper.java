@@ -26,10 +26,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
@@ -41,6 +40,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocTestHelper;
@@ -182,23 +182,25 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 							.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k1")).build())
 							.build());
 
-			try (Stream<ITabularRecord> stream = tabularRecordStream.records()) {
+			Assertions.assertThat(semaphore.availablePermits()).isOne();
+			try (IConsumingStream<ITabularRecord> stream = tabularRecordStream.records2()) {
 				// Permit is acquired when the stream is opened (supplier called)
 				Assertions.assertThat(semaphore.availablePermits()).isZero();
 
-				Iterator<ITabularRecord> it = stream.iterator();
+				AtomicInteger recordIndex = new AtomicInteger();
+				stream.forEach(oneRecord -> {
+					int index = recordIndex.getAndIncrement();
 
-				// Read the first row — the semaphore should be released immediately after
-				Assertions.assertThat(it.hasNext()).isTrue();
-				it.next();
+					// Read the first row — the semaphore should be released immediately after
+					if (index == 0) {
+						// Permit released after first row: DB execution is done, another query can start.
+						Assertions.assertThat(semaphore.availablePermits()).isOne();
+					}
+				});
 
-				// Permit released after first row: DB execution is done, another query can start.
-				Assertions.assertThat(semaphore.availablePermits()).isOne();
+				// Check we encountered 1 row
+				Assertions.assertThat(recordIndex.get()).isEqualTo(1);
 
-				// Drain the rest of the stream (permit stays released — no double-release)
-				while (it.hasNext()) {
-					it.next();
-				}
 				Assertions.assertThat(semaphore.availablePermits()).isOne();
 			}
 
@@ -240,7 +242,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 			// Open the stream but do not consume any rows — close it immediately.
 			// The onClose handler must release the permit even when no rows flowed through peek.
-			try (Stream<ITabularRecord> stream = tabularRecordStream.records()) {
+			try (IConsumingStream<ITabularRecord> stream = tabularRecordStream.records2()) {
 				Assertions.assertThat(semaphore.availablePermits()).isZero();
 				// Do not iterate: permit is still held
 			}

@@ -45,6 +45,7 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -58,6 +59,7 @@ import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.util.IHasCache;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -182,7 +184,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
-	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource" })
+	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource", "checkstyle:MethodLength" })
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
 		if (StandardQueryOptions.NO_CACHE.isActive(queryPod.getOptions())) {
@@ -238,6 +240,11 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 				@Override
 				public Stream<ITabularRecord> records() {
 					return mergeAggregates(tableQuery, customMarkerForCache, fromCache);
+				}
+
+				@Override
+				public IConsumingStream<ITabularRecord> records2() {
+					throw new NotYetImplementedException("Needed?");
 				}
 
 				@Override
@@ -306,6 +313,11 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 					} else {
 						return mergeAggregates(tableQuery, customMarkerForCache, cachedAndJustInTime);
 					}
+				}
+
+				@Override
+				public IConsumingStream<ITabularRecord> records2() {
+					throw new NotYetImplementedException("Needed?");
 				}
 
 				@Override

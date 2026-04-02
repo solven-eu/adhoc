@@ -681,6 +681,14 @@ public class TestFilterHelpers {
 	}
 
 	@Test
+	public void testFilterComparator_not() {
+		ISliceFilter filterA = ColumnFilter.match("a", NotMatcher.notEqualTo("a1"));
+		ISliceFilter filterB = ColumnFilter.match("b", NotMatcher.notEqualTo("b1"));
+
+		Assertions.assertThat(FilterHelpers.filterComparator().compare(filterA, filterB)).isNotEqualTo(0);
+	}
+
+	@Test
 	public void testFilterComparator_sameFilter() {
 		ISliceFilter filter = ColumnFilter.matchEq("a", "a1");
 

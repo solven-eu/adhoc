@@ -34,6 +34,18 @@
 		<exclude name="CallSuperInConstructor" />
 		<!-- TODO DO not exclude this https://github.com/pmd/pmd/issues/2847 -->
 		<exclude name="UseExplicitTypes" />
+		<!-- Reconfigured below to also allow __ as a placeholder, preparing for JDK 22 unnamed variable _ -->
+		<exclude name="FormalParameterNamingConventions" />
+	</rule>
+	<!-- Allow __ in lambda parameters as a placeholder for the JDK 22 unnamed variable _ -->
+	<rule ref="category/java/codestyle.xml/FormalParameterNamingConventions">
+		<!-- https://github.com/pmd/pmd/issues/5028 -->
+		<properties>
+			<property name="methodParameterPattern" value="__|_|[a-z][a-zA-Z0-9]*"/>
+			<property name="finalMethodParameterPattern" value="__|_|[a-z][a-zA-Z0-9]*"/>
+			<property name="lambdaParameterPattern" value="__|_|[a-z][a-zA-Z0-9]*"/>
+			<property name="explicitLambdaParameterPattern" value="__|_|[a-z][a-zA-Z0-9]*"/>
+		</properties>
 	</rule>
 	<!-- https://pmd.github.io/latest/pmd_rules_java_codestyle.html#longvariable -->
 	<rule ref="category/java/codestyle.xml/LongVariable">

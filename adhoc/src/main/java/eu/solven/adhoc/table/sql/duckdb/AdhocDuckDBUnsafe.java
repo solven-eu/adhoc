@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @UtilityClass
-@SuppressWarnings({ "PMD.MutableStaticState", "PMD.FieldDeclarationsShouldBeAtStartOfClass" })
+@SuppressWarnings("PMD.FieldDeclarationsShouldBeAtStartOfClass")
 public class AdhocDuckDBUnsafe {
 
 	static {
@@ -68,6 +68,21 @@ public class AdhocDuckDBUnsafe {
 	 */
 	@Getter
 	private static int duckDBParallelism;
+
+	/**
+	 * Sets the maximum number of concurrent DuckDB queries. If the value changes, a new {@link Semaphore} is created
+	 * with the updated permit count so that in-flight queries are not affected by a stale semaphore.
+	 *
+	 * @param parallelism
+	 *            the new maximum number of concurrent DuckDB queries; must be positive
+	 */
+	public static void setDuckDBParallelism(int parallelism) {
+		if (duckDBParallelism != parallelism) {
+			log.info("Changing duckDBParallelism from {} to {}", duckDBParallelism, parallelism);
+			duckDBParallelism = parallelism;
+			querySemaphore = new Semaphore(duckDBParallelism);
+		}
+	}
 
 	private static final int DEFAULT_DUCKDB_PARALLELISM = 2;
 

@@ -61,19 +61,18 @@ public final class DistinctFreezer implements IFreezingWithContext {
 		}
 	}
 
-	protected long countDistinctWithLimit(Map<String, Object> freezingContext, List<?> array, int limitForDictionary) {
+	long countDistinctWithLimit(Map<String, Object> freezingContext, List<?> array, int limitForDictionary) {
 		return (long) freezingContext.computeIfAbsent("count_distinct_" + limitForDictionary, k -> {
 			if (array.stream().allMatch(o -> o == null || o instanceof String)) {
 				List<String> arrayString = array.stream().map(String.class::cast).toList();
 				return estimateDistinctHLL(arrayString);
 			} else {
 				return cappedDistinctCount(array, limitForDictionary);
-
 			}
 		});
 	}
 
-	protected static long cappedDistinctCount(List<?> array, int limitForDictionary) {
+	static long cappedDistinctCount(List<?> array, int limitForDictionary) {
 		return array.stream()
 				.distinct()
 				// No need to count distinct all, we just need to know if it is greater or not than some limit
@@ -81,7 +80,8 @@ public final class DistinctFreezer implements IFreezingWithContext {
 				.count();
 	}
 
-	protected static long estimateDistinctHLL(List<String> items) {
+	@SuppressWarnings("checkstyle:MagicNumber")
+	static long estimateDistinctHLL(List<String> items) {
 		// Create HLL sketch (log2m = 12, type HLL_4)
 		HllSketch sketch = new HllSketch(12, TgtHllType.HLL_4);
 
@@ -95,7 +95,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected static long estimateDistinctKMV(List<String> items) {
+	static long estimateDistinctKMV(List<String> items) {
 		// Create a Theta sketch with nominal entries = 1024
 		UpdateSketch sketch = UpdateSketch.builder().setNominalEntries(1024).build();
 

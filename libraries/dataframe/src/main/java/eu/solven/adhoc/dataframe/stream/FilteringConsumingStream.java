@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,53 +20,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.encoding.column;
+package eu.solven.adhoc.dataframe.stream;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableList;
-
-import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
-import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
-import lombok.Builder;
-import lombok.Builder.Default;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link IAppendableColumn} over a List.
+ * Use a {@link Predicate} to filter {@link ITabularRecord}.
  * 
  * @author Benoit Lacelle
  */
-@Builder
-public class ObjectArrayImmutableColumn implements IAppendableColumn {
+@Slf4j
+@SuperBuilder
+public class FilteringConsumingStream<T> extends ConsumingStream<T> {
 
 	@NonNull
-	@Default
-	final List<?> asArray = ImmutableList.of();
+	Predicate<? super T> predicate;
 
 	@Override
-	public void append(Object normalizedValue) {
-		throw new UnsupportedAsImmutableException();
-	}
+	public void forEach(Consumer<T> consumer) {
+		source.accept(tabularRecord -> {
+			if (!predicate.test(tabularRecord)) {
+				return;
+			}
 
-	@Override
-	public Object readValue(int rowIndex) {
-		return asArray.get(rowIndex);
-	}
+			consumer.accept(tabularRecord);
 
-	@Override
-	public IReadableColumn freeze(IFreezingStrategy freezer) {
-		return freezer.freeze(this);
+			peekers.forEach(peeker -> peeker.accept(tabularRecord));
+		});
 	}
-
-	public List<?> getAsArray() {
-		return Collections.unmodifiableList(asArray);
-	}
-
-	@Override
-	public String toString() {
-		return ObjectArrayColumn.toString(asArray);
-	}
-
 }

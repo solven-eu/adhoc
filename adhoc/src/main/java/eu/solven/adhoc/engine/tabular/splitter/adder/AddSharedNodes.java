@@ -216,7 +216,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 *            node whose induced set is being examined
 	 * @return the newly inserted shared node, or {@link Optional#empty()} if the induced set is already optimal
 	 */
-	@SuppressWarnings("PMD.CollapsibleIfStatements")
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	protected Optional<TableQueryStep> tryInsertSharedNode(IAdhocDag<TableQueryStep> liveDag, TableQueryStep inducer) {
 		// Phase 1: synchronized snapshot of the induced set.
 		ImmutableSet<TableQueryStep> inducedSteps;

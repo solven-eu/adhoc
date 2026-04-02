@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
@@ -51,6 +52,11 @@ public class TableWrapperHelpers {
 			@Override
 			public Stream<ITabularRecord> records() {
 				return underlyings.stream().flatMap(ITabularRecordStream::records);
+			}
+
+			@Override
+			public void forEach(Consumer<ITabularRecord> consumer) {
+				underlyings.forEach(trs -> trs.forEach(consumer));
 			}
 
 			@Override
