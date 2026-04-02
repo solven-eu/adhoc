@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.adder;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
@@ -48,6 +50,6 @@ public interface IAddSharedNodes {
 		 *            query-scoped stripper factory and cached optimizer
 		 * @return a configured shared-node adder
 		 */
-		IAddSharedNodes make(IFilterQueryBundle filterBundle);
+		IAddSharedNodes make(ListeningExecutorService les, IFilterQueryBundle filterBundle);
 	}
 }

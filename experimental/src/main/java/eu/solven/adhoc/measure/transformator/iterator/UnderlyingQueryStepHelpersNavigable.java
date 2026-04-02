@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -90,7 +91,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 			if (underlyings.isEmpty()) {
 				notSortedAsSet = ImmutableSet.of();
 			} else if (underlyings.size() == 1) {
-				notSortedAsSet = Iterables.getOnlyElement(underlyings).slicesSet();
+				notSortedAsSet = AdhocCollectionHelpers.getFirst(underlyings).slicesSet();
 			} else {
 				notSortedAsSet = underlyings.stream().flatMap(ICuboid::slices).collect(ImmutableSet.toImmutableSet());
 			}

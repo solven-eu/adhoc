@@ -24,6 +24,8 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
@@ -49,6 +51,13 @@ public class InduceByTableWrapper implements ITableStepsSplitter {
 
 	@Override
 	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
+		return GraphHelpers.makeGraph();
+	}
+
+	@Override
+	public IAdhocDag<TableQueryStep> getLazyGraph(ListeningExecutorService les,
+			IHasQueryOptions hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		return GraphHelpers.makeGraph();
 	}

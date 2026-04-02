@@ -22,9 +22,14 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,4 +51,10 @@ public abstract class AInduceByAdhocParent implements ITableStepsSplitter {
 				.build();
 	}
 
+	@Override
+	public IAdhocDag<TableQueryStep> getLazyGraph(ListeningExecutorService les,
+			IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
+		return GraphHelpers.makeGraph();
+	}
 }

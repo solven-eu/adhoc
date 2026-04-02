@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 
@@ -123,8 +124,11 @@ public class TestAdhocCollectionHelpers {
 
 	@Test
 	public void testGetFirst() {
-		AdhocCollectionHelpers.getFirst(List.of("foo"));
-		AdhocCollectionHelpers.getFirst(Set.of("foo"));
+		Assertions.assertThat(AdhocCollectionHelpers.getFirst(List.of("foo"))).isEqualTo("foo");
+		Assertions.assertThat(AdhocCollectionHelpers.getFirst(Set.of("foo"))).isEqualTo("foo");
+
+		Assertions.assertThat(AdhocCollectionHelpers.getFirst(ImmutableList.of("foo"))).isEqualTo("foo");
+		Assertions.assertThat(AdhocCollectionHelpers.getFirst(ImmutableSet.of("foo"))).isEqualTo("foo");
 
 		Assertions.assertThatThrownBy(() -> AdhocCollectionHelpers.getFirst(Set.of()))
 				.isInstanceOf(IllegalArgumentException.class);

@@ -40,6 +40,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jgrapht.Graphs;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -47,6 +49,8 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
@@ -72,6 +76,8 @@ import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
+import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps;
@@ -221,11 +227,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(Set<TableQueryStep> steps,
 			ISinkExecutionFeedback executionFeedfack) {
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
-		SplitTableQueries inducerAndInduced = tableQueryFactory.splitInduced(queryPod, steps);
+		SplitTableQueries withoutShared = tableQueryFactory.splitInduced(queryPod, steps);
+
+		// Evaluate shared nodes asynchronously, in parallel of tableQueries
+		ListenableFuture<IAdhocDag<TableQueryStep>> futureSharedGraph = queryPod.getExecutorService().submit(() -> {
+			return withoutShared.getLazyGraph().apply(queryPod.getExecutorService());
+		});
 
 		// Execute the actual tableQueries
-		Map<TableQueryStep, ICuboid> stepToValuesFromtableWrapper =
-				executeTableQueries(inducerAndInduced, inducerAndInduced);
+		Map<TableQueryStep, ICuboid> stepToValuesFromtableWrapper = executeTableQueries(withoutShared, withoutShared);
+
+		// Wait for sharedNodes execution
+		SplitTableQueries withShared = waitAndMergeSharedNodes(withoutShared, futureSharedGraph);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
@@ -233,21 +246,31 @@ public class TableQueryEngine implements ITableQueryEngine {
 		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);
 		{
 			if (queryPod.isDebugOrExplain()) {
-				explainDagSteps(tableQueryPod, inducerAndInduced);
+				explainDagSteps(tableQueryPod, withShared);
 			}
 
 			// Evaluated the induced tableQueries
 			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the
 			// DAG of size-cost
-			walkUpInducedDag(stepToValues, inducerAndInduced);
+			walkUpInducedDag(stepToValues, withShared);
 
 			if (queryPod.isDebugOrExplain()) {
-				explainDagPerfs(tableQueryPod, inducerAndInduced);
+				explainDagPerfs(tableQueryPod, withShared);
 			}
 		}
 
-		transferSizeAndCost(inducerAndInduced, executionFeedfack);
+		transferSizeAndCost(withShared, executionFeedfack);
 		return stepToValues;
+	}
+
+	private SplitTableQueries waitAndMergeSharedNodes(SplitTableQueries withoutShared,
+			ListenableFuture<IAdhocDag<TableQueryStep>> futureSharedGraph) {
+		IAdhocDag<TableQueryStep> sharedGraph = Futures.getUnchecked(futureSharedGraph);
+		IAdhocDag<TableQueryStep> withSharedGraph = GraphHelpers.copy(withoutShared.getInducedToInducer());
+		Graphs.addGraph(withSharedGraph, sharedGraph);
+
+		SplitTableQueries withShared2 = withoutShared.toBuilder().inducedToInducer(withSharedGraph).build();
+		return withShared2;
 	}
 
 	protected Set<String> getSuppressedGroupBy(IGroupBy generated, IGroupBy suppressed) {

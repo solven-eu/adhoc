@@ -26,10 +26,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
@@ -77,6 +79,10 @@ public class SplitTableQueries
 	@NonNull
 	@Singular
 	ImmutableMap<TableQueryStep, TableQueryV4> stepToTables;
+
+	@NonNull
+	@Default
+	Function<ListeningExecutorService, IAdhocDag<TableQueryStep>> lazyGraph = __ -> GraphHelpers.makeGraph();
 
 	@NonNull
 	@Default

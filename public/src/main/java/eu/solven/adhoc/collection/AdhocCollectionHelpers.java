@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -148,6 +149,8 @@ public class AdhocCollectionHelpers {
 		}
 		if (c instanceof List<T> list) {
 			return list.getFirst();
+		} else if (c instanceof ImmutableCollection<T> immutableC) {
+			return immutableC.asList().getFirst();
 		} else {
 			return c.iterator().next();
 		}

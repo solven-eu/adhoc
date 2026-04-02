@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
@@ -141,7 +142,7 @@ public class FilterBuilder {
 			if (filters.size() != 1) {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
-			return optimizer.not(Iterables.getOnlyElement(filters), false);
+			return optimizer.not(AdhocCollectionHelpers.getFirst(filters), false);
 		}
 	}
 
@@ -165,7 +166,7 @@ public class FilterBuilder {
 				throw new IllegalStateException("NOT is applicable to exactly 1 filter. Was: " + filters);
 			}
 		} else if (filters.size() == 1) {
-			ISliceFilter singleFilter = Iterables.getOnlyElement(filters);
+			ISliceFilter singleFilter = AdhocCollectionHelpers.getFirst(filters);
 			if (andElseOr == Type.NOT) {
 				return NotFilter.simpleNot(singleFilter);
 			} else {

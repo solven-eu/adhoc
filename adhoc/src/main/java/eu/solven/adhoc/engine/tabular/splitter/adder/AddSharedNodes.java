@@ -31,6 +31,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
@@ -73,7 +74,13 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class AddSharedNodes implements IAddSharedNodes {
+
 	@Default
+	@NonNull
+	final Executor executor = AdhocUnsafe.adhocCpuPool;
+
+	@Default
+	@NonNull
 	final IFilterOptimizer filterOptimizer = AdhocFactoriesUnsafe.factories.getFilterOptimizerFactory().makeOptimizer();
 
 	@Default
@@ -82,7 +89,8 @@ public class AddSharedNodes implements IAddSharedNodes {
 			AdhocFactoriesUnsafe.factories.getFilterStripperFactory();
 
 	public static IAddSharedNodesFactory makeFactory() {
-		return filterBundle -> AddSharedNodes.builder()
+		return (les, filterBundle) -> AddSharedNodes.builder()
+				.executor(les)
 				.filterStripperFactory(filterBundle.getFilterStripperFactory())
 				.filterOptimizer(filterBundle.getFilterOptimizer())
 				.build();
@@ -117,16 +125,16 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		ReentrantLock lock = new ReentrantLock();
 
-		DagCompletableExecutor<TableQueryStep> executor = DagCompletableExecutor.<TableQueryStep>builder()
+		DagCompletableExecutor<TableQueryStep> dagExecutor = DagCompletableExecutor.<TableQueryStep>builder()
 				.fromQueriedToDependencies(reversedSnapshot)
 				// No pre-completed steps; all original nodes must be processed.
 				.queryStepsDone(ConcurrentHashMap.newKeySet())
 				.onReadyStep(node -> addSharedNode(lock, dag, node))
 				// Forces the CPU pool as this process is CPU only
-				.executor(AdhocUnsafe.adhocCpuPool)
+				.executor(executor)
 				.build();
 
-		executor.executeRecursively(roots).join();
+		dagExecutor.executeRecursively(roots).join();
 		return dag;
 	}
 
@@ -356,8 +364,9 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 
-		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
-				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
+		assert inducerGroupedByColumns.keySet()
+				.containsAll(sharedColumns) : "InducedToInducer graph issue around inducer=%s and induced=%s"
+						.formatted(inducer, relatedSteps);
 		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
 
 		return inducer.toBuilder()

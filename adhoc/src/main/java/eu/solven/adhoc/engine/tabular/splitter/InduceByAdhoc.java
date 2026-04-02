@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
@@ -41,10 +42,8 @@ import eu.solven.adhoc.engine.tabular.splitter.adder.AddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersStrictGroupBy;
-import eu.solven.adhoc.filter.IFilterFactories;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -58,10 +57,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 public class InduceByAdhoc extends AInduceByAdhocParent {
-
-	@Default
-	@NonNull
-	protected final IFilterFactories filterFactories = AdhocFactoriesUnsafe.factories;
 
 	/**
 	 * Optional query-scoped bundle. When set, it is used directly and no additional {@link IFilterQueryBundle} is
@@ -91,12 +86,12 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	@Override
 	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptions hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
-		IFilterQueryBundle queryBundle;
-		if (filterBundle != null) {
-			queryBundle = filterBundle;
-		} else {
-			queryBundle = filterFactories.makeQueryBundle();
-		}
+		// IFilterQueryBundle queryBundle;
+		// if (filterBundle != null) {
+		// queryBundle = filterBundle;
+		// } else {
+		// queryBundle = filterFactories.makeQueryBundle();
+		// }
 
 		// 1. Add inference between existing nodes
 		// If we add such links, we tell the induced will be inferred by Adhoc and there will be less inducers for
@@ -105,7 +100,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 		// UNION ALL)
 		// BEWARE This should only add edges
 		IAdhocDag<TableQueryStep> withInferenceNodes =
-				inferenceEdgesAdderFactory.make(queryBundle).splitInducedAsDag(hasOptions, inducedToInducer);
+				inferenceEdgesAdderFactory.make(filterBundle).splitInducedAsDag(hasOptions, inducedToInducer);
 
 		// 2. Given the new (and smaller) set of inducers, we may want to add additional vertices, merging inducers
 		// together.
@@ -121,7 +116,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 		// Merging inducers is done a per options+custom_marker+aggregator basis
 		Multimaps.asMap(aggregatorToQueries).forEach((a, steps) -> {
-			IAdhocDag<TableQueryStep> aInducedToInducer = makeMergeInducers(queryBundle).mergeInducers(a, steps);
+			IAdhocDag<TableQueryStep> aInducedToInducer = makeMergeInducers(filterBundle).mergeInducers(a, steps);
 
 			if (hasOptions.isDebugOrExplain()) {
 				SplitTableQueries aTableQueries =
@@ -144,13 +139,18 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 		// 3. As we created some nodes, we need to re-apply the inference between existing nodes
 		// TODO Why? Need at least one example where this is relevant
 
+		return withMergedInducers;
+	}
+
+	@Override
+	public IAdhocDag<TableQueryStep> getLazyGraph(ListeningExecutorService les,
+			IHasQueryOptions hasOptions,
+			IAdhocDag<TableQueryStep> inducedToInducer) {
 		// 4. Now, we want to add some additional sharing nodes: these are never inducers but in the middle of the DAG.
 		// They will help computing only once elements of inference (e.g. some filter or some groupBy)
 
 		// add shared nodes over the full graph, as both explicit and other steps may benefit from shared nodes
-		IAdhocDag<TableQueryStep> sharedNodes = addSharedNodes(queryBundle, withMergedInducers);
-		Graphs.addGraph(withMergedInducers, sharedNodes);
-		return withMergedInducers;
+		return addSharedNodes(les, inducedToInducer);
 	}
 
 	/**
@@ -163,9 +163,10 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 *            current DAG
 	 * @return a DAG fragment containing any newly added shared nodes
 	 */
-	protected IAdhocDag<TableQueryStep> addSharedNodes(IFilterQueryBundle queryBundle,
+	protected IAdhocDag<TableQueryStep> addSharedNodes(ListeningExecutorService les,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
-		return makeSharedNodesAdder(queryBundle).addSharedNodes(inducedToInducer);
+		IAddSharedNodes sharedNodesAdder = makeSharedNodesAdder(les, filterBundle);
+		return sharedNodesAdder.addSharedNodes(inducedToInducer);
 	}
 
 	protected SetMultimap<TableQueryStep, TableQueryStep> groupByAggregator(Set<TableQueryStep> steps) {
@@ -201,8 +202,8 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 *            query-scoped filter tools
 	 * @return a configured shared-node adder
 	 */
-	protected IAddSharedNodes makeSharedNodesAdder(IFilterQueryBundle queryBundle) {
-		return sharedNodesAdderFactory.make(queryBundle);
+	protected IAddSharedNodes makeSharedNodesAdder(ListeningExecutorService les, IFilterQueryBundle queryBundle) {
+		return sharedNodesAdderFactory.make(les, queryBundle);
 	}
 
 	@Override

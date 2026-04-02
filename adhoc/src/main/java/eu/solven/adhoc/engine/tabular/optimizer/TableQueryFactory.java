@@ -109,12 +109,13 @@ public class TableQueryFactory extends ATableQueryFactory {
 		// Add the additional vertices and edges
 		Graphs.addGraph(inducedToInducer, splitter.splitInducedAsDag(hasOptions, inducedToInducer));
 
-		Map<TableQueryStep, TableQueryV4> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
+		Map<TableQueryStep, TableQueryV4> leavesToTableQuery = makeStepToTableQuery(inducedToInducer);
 
 		SplitTableQueries splitTableQueries = SplitTableQueries.builder()
 				.explicits(tableSteps)
 				.inducedToInducer(inducedToInducer)
-				.stepToTables(stepToTableQuery)
+				.stepToTables(leavesToTableQuery)
+				.lazyGraph(les -> splitter.getLazyGraph(les,hasOptions, inducedToInducer))
 				.build();
 
 		// Sanity checks will typically ensure the tableQueries covers all leaves inducers
@@ -159,8 +160,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 		return "%.1f%%".formatted(100.0 * nbNeededSteps / nbEvaluatedSteps);
 	}
 
-	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(Set<TableQueryStep> tableSteps,
-			IAdhocDag<TableQueryStep> inducedToInducer) {
+	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> inducers = GraphHelpers.getInducers(inducedToInducer);
 
 		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(inducers);
