@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.Singular;
 import lombok.ToString;
@@ -43,6 +44,7 @@ import lombok.Value;
 @Value
 @Builder
 @ToString(exclude = "allColumns")
+@EqualsAndHashCode(exclude = "allColumns")
 public class AggregatedRecordFields {
 	@NonNull
 	@Singular
@@ -62,7 +64,7 @@ public class AggregatedRecordFields {
 	@Singular
 	ImmutableSet<String> groupingColumns;
 
-	private Supplier<ImmutableSet<String>> allColumns =
+	private final Supplier<ImmutableSet<String>> allColumns =
 			Suppliers.memoize(() -> ImmutableSet.copyOf(Iterables.concat(getColumns(), getLeftovers())));
 
 	public ImmutableSet<String> getAllColumns() {

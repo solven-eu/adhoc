@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dataframe.stream;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -170,5 +172,13 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 
 	static <T> IConsumingStream<T> empty() {
 		return ConsumingStream.<T>builder().source(ImmutableList.<T>of()::forEach).build();
+	}
+
+	default List<T> toList() {
+		List<T> list = Collections.synchronizedList(new ArrayList<>());
+
+		forEach(list::add);
+
+		return list;
 	}
 }

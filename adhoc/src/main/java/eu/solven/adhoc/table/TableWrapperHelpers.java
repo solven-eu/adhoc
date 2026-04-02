@@ -90,6 +90,11 @@ public class TableWrapperHelpers {
 			}
 
 			@Override
+			public void forEach(Consumer<ITabularRecord> consumer) {
+				underlyings.stream().forEach(s -> s.forEach(consumer));
+			}
+
+			@Override
 			public boolean isDistinctSlices() {
 				return false;
 			}

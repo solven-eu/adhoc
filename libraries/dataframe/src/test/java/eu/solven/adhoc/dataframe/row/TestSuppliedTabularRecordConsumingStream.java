@@ -29,26 +29,37 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class TestSuppliedTabularRecordStream {
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
+
+public class TestSuppliedTabularRecordConsumingStream {
 
 	@Test
 	public void testGetTableQuery() {
 		Object source = "mySource";
-		SuppliedTabularRecordStream stream = new SuppliedTabularRecordStream(source, false, Stream::empty);
+		SuppliedTabularRecordConsumingStream stream =
+				new SuppliedTabularRecordConsumingStream(source, false, IConsumingStream::empty);
 
 		Assertions.assertThat(stream.getTableQuery()).isSameAs(source);
 	}
 
 	@Test
 	public void testIsDistinctSlices() {
-		Assertions.assertThat(new SuppliedTabularRecordStream("s", true, Stream::empty).isDistinctSlices()).isTrue();
-		Assertions.assertThat(new SuppliedTabularRecordStream("s", false, Stream::empty).isDistinctSlices()).isFalse();
+		Assertions
+				.assertThat(
+						new SuppliedTabularRecordConsumingStream("s", true, IConsumingStream::empty).isDistinctSlices())
+				.isTrue();
+		Assertions.assertThat(
+				new SuppliedTabularRecordConsumingStream("s", false, IConsumingStream::empty).isDistinctSlices())
+				.isFalse();
 	}
 
 	@Test
 	public void testRecords_delegatesToSupplier() {
 		ITabularRecord record = Mockito.mock(ITabularRecord.class);
-		SuppliedTabularRecordStream stream = new SuppliedTabularRecordStream("s", false, () -> Stream.of(record));
+		SuppliedTabularRecordConsumingStream stream = new SuppliedTabularRecordConsumingStream("s",
+				false,
+				() -> IConsumingStream.fromStream(Stream.of(record)));
 
 		Assertions.assertThat(stream.records()).containsExactly(record);
 	}
@@ -57,9 +68,9 @@ public class TestSuppliedTabularRecordStream {
 	public void testRecords_memoized() {
 		// The supplier must be called at most once; subsequent calls return the same stream instance.
 		AtomicInteger callCount = new AtomicInteger();
-		SuppliedTabularRecordStream stream = new SuppliedTabularRecordStream("s", false, () -> {
+		SuppliedTabularRecordConsumingStream stream = new SuppliedTabularRecordConsumingStream("s", false, () -> {
 			callCount.incrementAndGet();
-			return Stream.empty();
+			return IConsumingStream.empty();
 		});
 
 		stream.records();
@@ -70,7 +81,8 @@ public class TestSuppliedTabularRecordStream {
 
 	@Test
 	public void testToString_containsSource() {
-		SuppliedTabularRecordStream stream = new SuppliedTabularRecordStream("myQuery", false, Stream::empty);
+		SuppliedTabularRecordConsumingStream stream =
+				new SuppliedTabularRecordConsumingStream("myQuery", false, IConsumingStream::empty);
 
 		Assertions.assertThat(stream.toString()).contains("myQuery");
 	}

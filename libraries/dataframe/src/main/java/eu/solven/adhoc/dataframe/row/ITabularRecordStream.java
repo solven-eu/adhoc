@@ -35,7 +35,6 @@ import eu.solven.adhoc.dataframe.stream.IConsumingStream;
  * @author Benoit Lacelle
  */
 public interface ITabularRecordStream extends AutoCloseable {
-	// Object getNullPlaceholder();
 
 	Object getTableQuery();
 
@@ -75,7 +74,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 */
 	@Deprecated
 	default List<Map<String, ?>> toList() {
-		return records().<Map<String, ?>>map(ITabularRecord::asMap).toList();
+		return records2().<Map<String, ?>>map(ITabularRecord::asMap).toList();
 	}
 
 	// Force not to throw an explicit Exception

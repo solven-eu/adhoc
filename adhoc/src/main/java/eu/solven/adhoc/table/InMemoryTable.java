@@ -53,8 +53,9 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -178,60 +179,69 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 			log.info("[EXPLAIN] tableQuery: {}", tableQuery);
 		}
 
-		return new SuppliedTabularRecordStream(tableQuery, distinctSlices, () -> {
-			Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
-				return MoreFilterHelpers.match(tableQuery.getFilter(), row);
-			});
+		return new SuppliedTabularRecordConsumingStream(tableQuery, distinctSlices, () -> {
+			return IConsumingStream
+					.fromStream(makeStream(queryPod, tableQuery, aggregateColumns, isEmptyAggregation, groupByColumns));
+		});
+	}
 
-			SetMultimap<String, FilteredAggregator> columnToAggregators = LinkedHashMultimap.create();
-			aggregateColumns.forEach(aggregatedColumn -> {
-				tableQuery.getAggregators()
-						.stream()
-						.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
-						.forEach(a -> columnToAggregators.put(aggregatedColumn, a));
-			});
+	protected Stream<ITabularRecord> makeStream(QueryPod queryPod,
+			TableQueryV2 tableQuery,
+			Set<String> aggregateColumns,
+			boolean isEmptyAggregation,
+			Set<String> groupByColumns) {
+		Stream<Map<String, ?>> matchingRows = this.stream().filter(row -> {
+			return MoreFilterHelpers.match(tableQuery.getFilter(), row);
+		});
 
-			ISliceFactory sliceFactory = queryPod.getSliceFactory();
+		SetMultimap<String, FilteredAggregator> columnToAggregators = LinkedHashMultimap.create();
+		aggregateColumns.forEach(aggregatedColumn -> {
+			tableQuery.getAggregators()
+					.stream()
+					.filter(a -> a.getAggregator().getColumnName().equals(aggregatedColumn))
+					.forEach(a -> columnToAggregators.put(aggregatedColumn, a));
+		});
 
-			Stream<ITabularRecord> stream = matchingRows.map(row -> {
-				return toRecord(sliceFactory, tableQuery, columnToAggregators, groupByColumns, row);
-			});
+		ISliceFactory sliceFactory = queryPod.getSliceFactory();
 
-			if (isEmptyAggregation) {
-				// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
+		Stream<ITabularRecord> stream = matchingRows.map(row -> {
+			return toRecord(sliceFactory, tableQuery, columnToAggregators, groupByColumns, row);
+		});
 
-				// groupBy groupedByColumns
-				Map<ISlice, Optional<ITabularRecord>> groupedAggregatedRecord =
-						stream.collect(Collectors.groupingBy(ITabularRecord::asSlice,
-								LinkedHashMap::new,
-								// empty is legit as we query no measure
-								Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
+		if (isEmptyAggregation) {
+			// TODO Enable aggregations from InMemoryTable, even if there is actual aggregations
 
-				return groupedAggregatedRecord.entrySet()
-						.stream()
-						.filter(e -> e.getValue().isPresent())
-						.map(e -> TabularRecordOverMaps.builder()
-								.slice(tableQuery.getGroupBy(), e.getKey())
-								.aggregates(e.getValue().get().aggregatesAsMap())
-								.build());
-			} else {
-				if (distinctSlices) {
-					List<ITabularRecord> asList = stream.toList();
+			// groupBy groupedByColumns
+			Map<ISlice, Optional<ITabularRecord>> groupedAggregatedRecord =
+					stream.collect(Collectors.groupingBy(ITabularRecord::asSlice,
+							LinkedHashMap::new,
+							// empty is legit as we query no measure
+							Collectors.reducing((left, right) -> TabularRecordOverMaps.empty())));
 
-					long nbSlices = asList.stream().map(ITabularRecord::columnsKeySet).count();
-					if (nbSlices != asList.size()) {
-						// TODO We may implement the aggregations, but it may be unnecessary for unitTests
-						throw new IllegalStateException("Rows does not enable distinct groupBys");
-					}
+			return groupedAggregatedRecord.entrySet()
+					.stream()
+					.filter(e -> e.getValue().isPresent())
+					.map(e -> TabularRecordOverMaps.builder()
+							.slice(tableQuery.getGroupBy(), e.getKey())
+							.aggregates(e.getValue().get().aggregatesAsMap())
+							.build());
+		} else {
+			if (distinctSlices) {
+				List<ITabularRecord> asList = stream.toList();
 
-					return asList.stream();
-				} else {
-					// This may publish multiple record with the same groupBy
-					return stream;
+				long nbSlices = asList.stream().map(ITabularRecord::columnsKeySet).count();
+				if (nbSlices != asList.size()) {
+					// TODO We may implement the aggregations, but it may be unnecessary for unitTests
+					throw new IllegalStateException("Rows does not enable distinct groupBys");
 				}
 
+				return asList.stream();
+			} else {
+				// This may publish multiple record with the same groupBy
+				return stream;
 			}
-		});
+
+		}
 	}
 
 	/**

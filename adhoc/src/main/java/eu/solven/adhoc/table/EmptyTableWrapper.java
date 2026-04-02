@@ -23,13 +23,13 @@
 package eu.solven.adhoc.table;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.Builder;
@@ -51,7 +51,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
-		return new SuppliedTabularRecordStream("empty", true, Stream::empty);
+		return new SuppliedTabularRecordConsumingStream("empty", true, IConsumingStream::empty);
 	}
 
 	@Override

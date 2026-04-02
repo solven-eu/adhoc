@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableList;
 
+import lombok.NonNull;
 import lombok.Singular;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -39,17 +40,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuperBuilder(toBuilder = true)
 public class ConsumingStream<T> implements IConsumingStream<T> {
-	Consumer<Consumer<T>> source;
+	@NonNull
+	final Consumer<Consumer<T>> source;
 
 	@Singular
-	ImmutableList<Runnable> closeHandlers;
+	@NonNull
+	final ImmutableList<Runnable> closeHandlers;
 
 	// Not part of the builder: each instance gets its own fresh flag via field initialisation.
 	// Ensures close() is idempotent when both auto-close-on-exception and try-with-resources fire.
 	private final AtomicBoolean alreadyClosed = new AtomicBoolean(false);
 
 	@Singular
-	ImmutableList<Consumer<? super T>> peekers;
+	@NonNull
+	final ImmutableList<Consumer<? super T>> peekers;
 
 	@Override
 	public void forEach(Consumer<T> consumer) {

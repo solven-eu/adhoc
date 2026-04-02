@@ -55,8 +55,9 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.row.SuppliedTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
@@ -224,7 +225,9 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
 
 		// not distinct slices as different subCubes may refer to the same slices
-		return new SuppliedTabularRecordStream(compositeQuery, false, () -> openStream(compositeQuery, cubeToView));
+		return new SuppliedTabularRecordConsumingStream(compositeQuery,
+				false,
+				() -> IConsumingStream.fromStream(openStream(compositeQuery, cubeToView)));
 	}
 
 	/**
