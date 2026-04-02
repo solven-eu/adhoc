@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.sql.duckdb;
 
+import java.time.Duration;
 import java.util.concurrent.Semaphore;
 
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -52,7 +53,8 @@ public class AdhocDuckDBUnsafe {
 
 		duckDBParallelism = DEFAULT_DUCKDB_PARALLELISM;
 		// Replace the semaphore so its permit count matches the reset value
-		querySemaphore = new Semaphore(duckDBParallelism);
+		querySemaphore = new Semaphore(duckDBParallelism, true);
+		semaphoreTimeout = DEFAULT_SEMAPHORE_TIMEOUT;
 	}
 
 	public static void reloadProperties() {
@@ -91,6 +93,11 @@ public class AdhocDuckDBUnsafe {
 	// but we still want to avoid saturating DuckDB with too many simultaneous queries.
 	// It is reasonable to use a static semaphore since all ITableWrapper instances share the same DuckDB process.
 	@Getter
-	private static Semaphore querySemaphore = new Semaphore(DEFAULT_DUCKDB_PARALLELISM);
+	private static Semaphore querySemaphore = new Semaphore(DEFAULT_DUCKDB_PARALLELISM, true);
+
+	private static final Duration DEFAULT_SEMAPHORE_TIMEOUT = Duration.ofMinutes(15);
+
+	@Getter
+	private static Duration semaphoreTimeout = DEFAULT_SEMAPHORE_TIMEOUT;
 
 }

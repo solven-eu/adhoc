@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -82,6 +83,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
+import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IHasCache;
@@ -324,7 +326,16 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		// execution and is streaming results, so a new query can start. If the stream is closed before
 		// producing any row (empty result or early cancel), the permit is released on close instead.
 		return new SuppliedTabularRecordConsumingStream(tableQuery, distinctSlices, () -> {
-			semaphore.acquireUninterruptibly();
+			try {
+				Duration timeout = AdhocDuckDBUnsafe.getSemaphoreTimeout();
+				boolean acquired = semaphore.tryAcquire(timeout.getSeconds(), TimeUnit.SECONDS);
+				if (!acquired) {
+					throw new IllegalStateException("Failed acquiring semaphore after %s".formatted(timeout));
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new IllegalStateException(e);
+			}
 			AtomicBoolean semaphoreReleased = new AtomicBoolean(false);
 			Runnable releaseSemaphore = () -> {
 				if (semaphoreReleased.compareAndSet(false, true)) {
