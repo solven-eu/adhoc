@@ -22,21 +22,10 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-
 import eu.solven.adhoc.table.sql.IDSLSupplier;
-import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public abstract class ADuckDbJooqTest extends AJooqTest {
-
-	@BeforeEach
-	public void checkDuckDBSemaphore() {
-		// Useful to detect leak of permits
-		Assertions.assertThat(AdhocDuckDBUnsafe.getQuerySemaphore().availablePermits())
-				.isEqualTo(AdhocDuckDBUnsafe.getDuckDBParallelism());
-	}
 
 	@Override
 	public IDSLSupplier makeDSLSupplier() {

@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
+import org.assertj.core.api.Assertions;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import eu.solven.adhoc.ARawDagTest;
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
 
 public abstract class AJooqTest extends ARawDagTest {
 
@@ -41,5 +45,13 @@ public abstract class AJooqTest extends ARawDagTest {
 
 	protected DSLContext makeDSL() {
 		return dslSupplier.getDSLContext();
+	}
+
+	@BeforeEach
+	@AfterEach
+	public void checkDuckDBSemaphore() {
+		// Useful to detect leak of permits
+		Assertions.assertThat(AdhocDuckDBUnsafe.getQuerySemaphore().availablePermits())
+				.isEqualTo(AdhocDuckDBUnsafe.getDuckDBParallelism());
 	}
 }

@@ -56,11 +56,10 @@ public class MappingConsumingStream<S, T> implements IConsumingStream<T> {
 
 				consumer.accept(mapped);
 			});
-		} catch (RuntimeException e) {
-			// Auto-close on exception so that upstream onClose hooks always fire,
-			// even when the caller does not use try-with-resources.
+		} finally {
+			// Always close on exit, mirroring ConsumingStream semantics.
+			// upstream.close() is idempotent so a surrounding try-with-resources is still safe.
 			close();
-			throw e;
 		}
 	}
 

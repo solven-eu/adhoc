@@ -41,6 +41,17 @@ public class TestConsumingStream {
 		return IConsumingStream.fromStream(IntStream.of(items).boxed());
 	}
 
+	// forEach always closes the stream on exit (finally), so onClose hooks fire even on empty streams.
+	@Test
+	public void onClose_firedAutomaticallyOnEmptyStream() {
+		AtomicInteger closed = new AtomicInteger();
+
+		streamOf().onClose(closed::incrementAndGet).forEach(s -> {
+		});
+
+		Assertions.assertThat(closed.get()).isEqualTo(1);
+	}
+
 	@Test
 	public void peek_calledBeforeMainConsumer() {
 		List<String> order = new ArrayList<>();
@@ -98,17 +109,18 @@ public class TestConsumingStream {
 	}
 
 	@Test
-	public void onClose_firedOnClose() {
+	public void onClose_firedByForEach() {
 		AtomicInteger closed = new AtomicInteger();
 
 		IConsumingStream<String> stream = streamOf("a").onClose(closed::incrementAndGet);
 		stream.forEach(s -> {
 		});
 
-		Assertions.assertThat(closed.get()).isEqualTo(0);
+		// forEach always closes in its finally block
+		Assertions.assertThat(closed.get()).isEqualTo(1);
 
+		// subsequent close() is a no-op (idempotent)
 		stream.close();
-
 		Assertions.assertThat(closed.get()).isEqualTo(1);
 	}
 
@@ -124,7 +136,7 @@ public class TestConsumingStream {
 	}
 
 	@Test
-	public void onClose_afterFilter_firedOnClose() {
+	public void onClose_afterFilter_firedByForEach() {
 		AtomicInteger closed = new AtomicInteger();
 
 		IConsumingStream<String> stream =
@@ -132,24 +144,16 @@ public class TestConsumingStream {
 		stream.forEach(s -> {
 		});
 
-		Assertions.assertThat(closed.get()).isEqualTo(0);
-
-		stream.close();
-
 		Assertions.assertThat(closed.get()).isEqualTo(1);
 	}
 
 	@Test
-	public void onClose_afterMap_firedOnClose() {
+	public void onClose_afterMap_firedByForEach() {
 		AtomicInteger closed = new AtomicInteger();
 
 		IConsumingStream<String> stream = streamOfInts(1, 2).map(i -> "item-" + i).onClose(closed::incrementAndGet);
 		stream.forEach(s -> {
 		});
-
-		Assertions.assertThat(closed.get()).isEqualTo(0);
-
-		stream.close();
 
 		Assertions.assertThat(closed.get()).isEqualTo(1);
 	}

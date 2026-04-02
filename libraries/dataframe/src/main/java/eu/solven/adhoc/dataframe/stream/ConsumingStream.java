@@ -59,11 +59,11 @@ public class ConsumingStream<T> implements IConsumingStream<T> {
 
 				consumer.accept(tabularRecord);
 			});
-		} catch (RuntimeException e) {
-			// Auto-close on exception so that registered onClose hooks always fire,
-			// even when the caller does not use try-with-resources.
+		} finally {
+			// Always close on exit: IConsumingStream is single-use and IO-bound sources must be released
+			// immediately after the last element, whether forEach completed normally or threw.
+			// alreadyClosed makes this idempotent, so a surrounding try-with-resources is still safe.
 			close();
-			throw e;
 		}
 	}
 
