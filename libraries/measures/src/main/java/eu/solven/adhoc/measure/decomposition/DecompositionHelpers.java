@@ -69,9 +69,10 @@ public class DecompositionHelpers {
 	public static MeasurelessQuery suppressColumn(IWhereGroupByQuery step, String column) {
 		MeasurelessQueryBuilder underlyingStep = MeasurelessQuery.edit(step);
 
-		if (step.getGroupBy().getGroupedByColumns().contains(column)) {
+		if (step.getGroupBy().getSortedColumns().contains(column)) {
 			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			Map<String, IAdhocColumn> groupByWithoutIndex = new LinkedHashMap<>(step.getGroupBy().getNameToColumn());
+			Map<String, IAdhocColumn> groupByWithoutIndex =
+					new LinkedHashMap<>(step.getGroupBy().getSortedNameToColumn());
 			groupByWithoutIndex.remove(column);
 			underlyingStep.groupBy(GroupByColumns.of(groupByWithoutIndex.values())).build();
 		}

@@ -30,10 +30,16 @@ import java.util.stream.Stream;
  * @author Benoit Lacelle
  */
 public enum StreamStrategy {
-	// All slices
+	/**
+	 * All slices
+	 */
 	ALL,
-	// Sorted fraction
+	/**
+	 * Sorted fraction
+	 */
 	SORTED_SUB,
-	// The complement of the sorted fraction
+	/**
+	 * The complement of the sorted fraction
+	 */
 	SORTED_SUB_COMPLEMENT,
 }

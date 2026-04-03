@@ -62,7 +62,7 @@ public class ExampleVaRDecomposition implements IDecomposition, IExampleVaRConst
 
 	@Override
 	public List<IDecompositionEntry> decompose(ISliceWithStep slice, Object value) {
-		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
+		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getSortedColumns();
 		boolean groupByScenario =
 				groupedByColumns.contains(C_SCENARIOINDEX) || groupedByColumns.contains(C_SCENARIONAME);
 

@@ -26,13 +26,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
@@ -79,6 +83,12 @@ public class SplitTableQueries
 	ImmutableMap<TableQueryStep, TableQueryV4> stepToTables;
 
 	@NonNull
+	// @Default
+	Function<ListeningExecutorService, IAdhocDag<TableQueryStep>> lazyGraph
+	// = __ -> getInducedToInducer()
+	;
+
+	@NonNull
 	@Default
 	Map<ICubeQueryStep, SizeAndDuration> stepToCost = new ConcurrentHashMap<>();
 
@@ -88,7 +98,8 @@ public class SplitTableQueries
 	}
 
 	public static SplitTableQueries empty() {
-		return SplitTableQueries.builder().inducedToInducer(GraphHelpers.makeGraph()).build();
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
+		return SplitTableQueries.builder().inducedToInducer(dag).lazyGraph(les -> GraphHelpers.immutable(dag)).build();
 	}
 
 	@Override
@@ -122,4 +133,5 @@ public class SplitTableQueries
 	public boolean containsStep(TableQueryStep queryStep) {
 		return stepToTables.containsKey(queryStep);
 	}
+
 }

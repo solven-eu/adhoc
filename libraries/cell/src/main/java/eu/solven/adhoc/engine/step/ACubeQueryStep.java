@@ -127,7 +127,7 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 	 */
 	public static Set<String> getColumns(ICubeQueryStep step) {
 		return ImmutableSet.<String>builder()
-				.addAll(step.getGroupBy().getGroupedByColumns())
+				.addAll(step.getGroupBy().getSortedColumns())
 				.addAll(FilterHelpers.getFilteredColumns(step.getFilter()))
 				.build();
 	}

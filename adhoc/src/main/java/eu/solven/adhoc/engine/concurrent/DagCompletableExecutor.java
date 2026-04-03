@@ -36,7 +36,7 @@ import org.jgrapht.graph.DefaultEdge;
 
 import com.google.common.base.MoreObjects;
 
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import lombok.Builder;
 import lombok.Builder.Default;

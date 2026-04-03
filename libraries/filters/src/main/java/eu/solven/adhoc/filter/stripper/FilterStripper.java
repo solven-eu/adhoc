@@ -191,7 +191,7 @@ public class FilterStripper implements IFilterStripper {
 		return postOr;
 	}
 
-	// `a&b=matchNone` is equivalent to `a includes !b`, which is equivalent to `a is stricter than !b`
+	// `a&b=matchNone` is equivalent to `!b includes a`, which is equivalent to `a is stricter than !b`
 	protected boolean isDisjoint(ISliceFilter right) {
 		return isStricterThan(right.negate());
 	}

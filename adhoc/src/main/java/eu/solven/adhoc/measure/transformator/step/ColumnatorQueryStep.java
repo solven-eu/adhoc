@@ -84,7 +84,7 @@ public class ColumnatorQueryStep extends CombinatorQueryStep {
 	}
 
 	protected boolean isColumnPresent(String column) {
-		return step.getGroupBy().getGroupedByColumns().contains(column) || isMonoSelected(step.getFilter(), column);
+		return step.getGroupBy().getSortedColumns().contains(column) || isMonoSelected(step.getFilter(), column);
 	}
 
 	protected boolean isMonoSelected(ISliceFilter filter, String column) {

@@ -80,7 +80,7 @@ public class CaseInsensitiveCubeQueryEngine implements ICubeQueryEngine {
 		ISliceFilter normalizedFilter =
 				MoreFilterHelpers.transcodeFilter(NOOP_TYPE_MANAGER, aliaser, query.getFilter());
 		IGroupBy normalizedGroupBy =
-				GroupByColumns.named(query.getGroupBy().getGroupedByColumns().stream().map(ctx::normalize).toList());
+				GroupByColumns.named(query.getGroupBy().getSortedColumns().stream().map(ctx::normalize).toList());
 
 		ICubeQuery normalizedQuery = CubeQuery.edit(query).filter(normalizedFilter).groupBy(normalizedGroupBy).build();
 		return queryPod.toBuilder().query(normalizedQuery).build();

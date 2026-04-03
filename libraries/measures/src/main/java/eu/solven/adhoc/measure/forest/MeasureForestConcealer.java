@@ -161,7 +161,7 @@ public class MeasureForestConcealer {
 				columnNames.addAll(col.getColumns());
 			}
 			if (m instanceof Partitionor par) {
-				columnNames.addAll(par.getGroupBy().getGroupedByColumns());
+				columnNames.addAll(par.getGroupBy().getSortedColumns());
 			}
 		}
 		Map<String, String> columnMapping = buildColumnMapping(columnNames);
@@ -451,7 +451,7 @@ public class MeasureForestConcealer {
 				return IGroupBy.GRAND_TOTAL;
 			}
 			return GroupByColumns
-					.named(groupBy.getGroupedByColumns().stream().map(c -> columnMapping.getOrDefault(c, c)).toList());
+					.named(groupBy.getSortedColumns().stream().map(c -> columnMapping.getOrDefault(c, c)).toList());
 		}
 
 		protected String mapName(String name) {

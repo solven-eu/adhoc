@@ -98,7 +98,7 @@ public class TableQuery implements IWhereGroupByQuery, ITableQuery {
 
 	@Override
 	public Set<String> getGroupedByColumns() {
-		return groupBy.getGroupedByColumns();
+		return groupBy.getSortedColumns();
 	}
 
 	@Deprecated(since = "use .toBuilder()", forRemoval = true)

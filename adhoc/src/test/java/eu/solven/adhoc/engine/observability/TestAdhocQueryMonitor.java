@@ -145,7 +145,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 
 		Assertions.assertThat(queryMonitor.queryToStart).isEmpty();
 		Assertions.assertThat(queryMonitor.slowestQueried).hasSize(1);
-		Assertions.assertThat(queryMonitor.slowestQueried.peek().getKey().getQuery().getGroupBy().getGroupedByColumns())
+		Assertions.assertThat(queryMonitor.slowestQueried.peek().getKey().getQuery().getGroupBy().getSortedColumns())
 				.hasSize(0);
 
 		// slow
@@ -154,7 +154,7 @@ public class TestAdhocQueryMonitor extends ADagTest {
 
 		Assertions.assertThat(queryMonitor.queryToStart).isEmpty();
 		Assertions.assertThat(queryMonitor.slowestQueried).hasSize(1);
-		Assertions.assertThat(queryMonitor.slowestQueried.peek().getKey().getQuery().getGroupBy().getGroupedByColumns())
+		Assertions.assertThat(queryMonitor.slowestQueried.peek().getKey().getQuery().getGroupBy().getSortedColumns())
 				.hasSize(1);
 	}
 }

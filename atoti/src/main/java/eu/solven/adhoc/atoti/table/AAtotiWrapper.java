@@ -129,7 +129,7 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 	protected ITabularRecord asMap(TableQueryV2 tableQuery, ICellSet result, int locationIndex) {
 		Map<String, Object> slice = new LinkedHashMap<>();
 
-		tableQuery.getGroupBy().getGroupedByColumns().forEach(column -> {
+		tableQuery.getGroupBy().getSortedColumns().forEach(column -> {
 			slice.put(column, getColumnCoordinate(tableQuery, result, locationIndex, column));
 		});
 

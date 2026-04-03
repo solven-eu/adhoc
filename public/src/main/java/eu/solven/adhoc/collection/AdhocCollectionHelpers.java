@@ -35,6 +35,7 @@ import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -142,12 +143,15 @@ public class AdhocCollectionHelpers {
 	 * @param c
 	 * @return the first item of input {@link Collection}
 	 */
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T> T getFirst(Collection<T> c) {
 		if (c.isEmpty()) {
 			throw new IllegalArgumentException("Can not .getFirst due to emptyness");
 		}
 		if (c instanceof List<T> list) {
 			return list.getFirst();
+		} else if (c instanceof ImmutableCollection<T> immutableC) {
+			return immutableC.asList().getFirst();
 		} else {
 			return c.iterator().next();
 		}

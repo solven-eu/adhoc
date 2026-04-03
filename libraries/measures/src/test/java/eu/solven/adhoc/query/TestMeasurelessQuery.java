@@ -68,6 +68,6 @@ public class TestMeasurelessQuery {
 		MeasurelessQuery edited = MeasurelessQuery.edit(plain).build();
 
 		Assertions.assertThat(edited.getFilter()).isSameAs(ISliceFilter.MATCH_NONE);
-		Assertions.assertThat(edited.getGroupBy().getGroupedByColumns()).containsExactly("city");
+		Assertions.assertThat(edited.getGroupBy().getSortedColumns()).containsExactly("city");
 	}
 }

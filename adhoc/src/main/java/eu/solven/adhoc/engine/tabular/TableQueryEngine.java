@@ -47,6 +47,8 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
@@ -66,6 +68,7 @@ import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
@@ -221,11 +224,18 @@ public class TableQueryEngine implements ITableQueryEngine {
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(Set<TableQueryStep> steps,
 			ISinkExecutionFeedback executionFeedfack) {
 		// Split these queries given inducing logic. (e.g. `SUM(a) GROUP BY b` may be induced by `SUM(a) GROUP BY b, c`)
-		SplitTableQueries inducerAndInduced = tableQueryFactory.splitInduced(queryPod, steps);
+		SplitTableQueries withoutShared = tableQueryFactory.splitInduced(queryPod, steps);
+
+		// Evaluate shared nodes asynchronously, in parallel of tableQueries
+		ListenableFuture<IAdhocDag<TableQueryStep>> futureSharedGraph = queryPod.getExecutorService().submit(() -> {
+			return withoutShared.getLazyGraph().apply(queryPod.getExecutorService());
+		});
 
 		// Execute the actual tableQueries
-		Map<TableQueryStep, ICuboid> stepToValuesFromtableWrapper =
-				executeTableQueries(inducerAndInduced, inducerAndInduced);
+		Map<TableQueryStep, ICuboid> stepToValuesFromtableWrapper = executeTableQueries(withoutShared, withoutShared);
+
+		// Wait for sharedNodes execution
+		SplitTableQueries withShared = waitAndMergeSharedNodes(withoutShared, futureSharedGraph);
 
 		QueryPod tableQueryPod = queryPod.asTableQuery();
 
@@ -233,26 +243,37 @@ public class TableQueryEngine implements ITableQueryEngine {
 		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);
 		{
 			if (queryPod.isDebugOrExplain()) {
-				explainDagSteps(tableQueryPod, inducerAndInduced);
+				explainDagSteps(tableQueryPod, withShared);
 			}
 
 			// Evaluated the induced tableQueries
 			// BEWARE This will also register some shared nodes, which are irrelevant to the output but useful for the
 			// DAG of size-cost
-			walkUpInducedDag(stepToValues, inducerAndInduced);
+			walkUpInducedDag(stepToValues, withShared);
 
 			if (queryPod.isDebugOrExplain()) {
-				explainDagPerfs(tableQueryPod, inducerAndInduced);
+				explainDagPerfs(tableQueryPod, withShared);
 			}
 		}
 
-		transferSizeAndCost(inducerAndInduced, executionFeedfack);
+		transferSizeAndCost(withShared, executionFeedfack);
 		return stepToValues;
 	}
 
+	public static SplitTableQueries waitAndMergeSharedNodes(SplitTableQueries withoutShared,
+			ListenableFuture<IAdhocDag<TableQueryStep>> futureSharedGraph) {
+		IAdhocDag<TableQueryStep> sharedGraph = Futures.getUnchecked(futureSharedGraph);
+
+		// No need to merge as getLazyGraph includes the original graph
+		// IAdhocDag<TableQueryStep> withSharedGraph = GraphHelpers.copy(withoutShared.getInducedToInducer());
+		// Graphs.addGraph(withSharedGraph, sharedGraph);
+
+		return withoutShared.toBuilder().inducedToInducer(sharedGraph).build();
+	}
+
 	protected Set<String> getSuppressedGroupBy(IGroupBy generated, IGroupBy suppressed) {
-		Set<String> queriedColumns = generated.getNameToColumn().keySet();
-		Set<String> withoutSuppressedColumns = suppressed.getNameToColumn().keySet();
+		Set<String> queriedColumns = generated.getSortedNameToColumn().keySet();
+		Set<String> withoutSuppressedColumns = suppressed.getSortedNameToColumn().keySet();
 		Set<String> suppressedView = Sets.difference(queriedColumns, withoutSuppressedColumns);
 		return ImmutableSet.copyOf(suppressedView);
 	}
@@ -351,44 +372,66 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return stepToValues;
 	}
 
+	@SuppressWarnings("PMD.CloseResource")
 	protected Map<TableQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
 			TableQueryV4 tableQuery) {
 		List<TableQueryV4> nonAmbiguousQueries = splitForNonAmbiguousColumns(tableQuery);
 
+		List<Map<TableQueryStep, ICuboid>> eachStepToValues;
+
+		if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
+			ListeningExecutorService service = queryPod.getExecutorService();
+
+			List<ListenableFuture<Map<TableQueryStep, ICuboid>>> futuresEachStepToValues = nonAmbiguousQueries.stream()
+					.map(nonAmbiguousQuery -> service.submit(
+							() -> executeOneNonAmbiguous(sinkExecutionFeedback, tableQueries, nonAmbiguousQuery)))
+					.toList();
+
+			eachStepToValues = Futures.getUnchecked(Futures.allAsList(futuresEachStepToValues));
+		} else {
+			eachStepToValues = nonAmbiguousQueries.stream()
+					.map(nonAmbiguousQuery -> executeOneNonAmbiguous(sinkExecutionFeedback,
+							tableQueries,
+							nonAmbiguousQuery))
+					.toList();
+		}
+
 		Map<TableQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
+		eachStepToValues.forEach(allStepToValues::putAll);
+		return allStepToValues;
+	}
 
-		// TODO This should be concurrent if CONCURRENT is active
-		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
-			IStopwatch stopWatchSinking;
-			Map<TableQueryStep, ICuboid> stepToValues;
+	protected Map<TableQueryStep, ICuboid> executeOneNonAmbiguous(ISinkExecutionFeedback sinkExecutionFeedback,
+			IHasTableQueryForSteps tableQueries,
+			TableQueryV4 tableQuery) {
+		IStopwatch stopWatchSinking;
+		Map<TableQueryStep, ICuboid> stepToValues;
 
-			IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
-			// Open the stream: the table may or may not return after the actual execution
-			try (ITabularRecordStream rowsStream = openTableStream(nonAmbiguousQuery)) {
-				if (queryPod.isDebugOrExplain()) {
-					// JooQ may be slow to load some classes
-					// Slowness also due to fetching stream characteristics, which actually open the query
-					Duration openingElasped = openingStopwatch.elapsed();
-					eventBus.post(AdhocLogEvent.builder()
-							.debug(queryPod.isDebug())
-							.explain(queryPod.isExplain())
-							.performance(true)
-							.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, nonAmbiguousQuery))
-							.source(this)
-							.build());
-				}
-
-				stopWatchSinking = factories.getStopwatchFactory().createStarted();
-				stepToValues = aggregateStreamToAggregates(tableQueries, nonAmbiguousQuery, rowsStream);
+		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
+		// Open the stream: the table may or may not return after the actual execution
+		try (ITabularRecordStream rowsStream = openTableStream(tableQuery)) {
+			if (queryPod.isDebugOrExplain()) {
+				// JooQ may be slow to load some classes
+				// Slowness also due to fetching stream characteristics, which actually open the
+				// query
+				Duration openingElasped = openingStopwatch.elapsed();
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(queryPod.isDebug())
+						.explain(queryPod.isExplain())
+						.performance(true)
+						.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, tableQuery))
+						.source(this)
+						.build());
 			}
 
-			Duration elapsed = stopWatchSinking.elapsed();
-			reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+			stopWatchSinking = factories.getStopwatchFactory().createStarted();
+			stepToValues = aggregateStreamToAggregates(tableQueries, tableQuery, rowsStream);
+		}
 
-			allStepToValues.putAll(stepToValues);
-		});
-		return allStepToValues;
+		Duration elapsed = stopWatchSinking.elapsed();
+		reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+		return stepToValues;
 	}
 
 	/**
@@ -402,7 +445,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		SetMultimap<String, IAdhocColumn> nameToColumns =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		tableQuery.getGroupBys().forEach(gb -> {
-			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+			nameToColumns.putAll(Multimaps.forMap(gb.getSortedNameToColumn()));
 		});
 
 		if (nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1)) {
@@ -450,9 +493,9 @@ public class TableQueryEngine implements ITableQueryEngine {
 		SetMultimap<String, IAdhocColumn> nameToColumns =
 				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 		accepted.forEach(gb -> {
-			nameToColumns.putAll(Multimaps.forMap(gb.getNameToColumn()));
+			nameToColumns.putAll(Multimaps.forMap(gb.getSortedNameToColumn()));
 		});
-		nameToColumns.putAll(Multimaps.forMap(candidate.getNameToColumn()));
+		nameToColumns.putAll(Multimaps.forMap(candidate.getSortedNameToColumn()));
 
 		return nameToColumns.asMap().values().stream().allMatch(c -> c.size() == 1);
 	}
@@ -638,7 +681,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	protected TableQueryStep suppressGeneratedColumns(TableQueryStep generatedStep) {
 		Set<String> generatedColumns = generatedColumnsSupplier.get();
 
-		Set<String> groupedByCubeColumns = generatedStep.getGroupBy().getGroupedByColumns();
+		Set<String> groupedByCubeColumns = generatedStep.getGroupBy().getSortedColumns();
 
 		var edited = generatedStep.toBuilder();
 

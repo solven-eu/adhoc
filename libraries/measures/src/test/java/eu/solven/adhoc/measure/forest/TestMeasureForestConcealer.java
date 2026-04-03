@@ -384,7 +384,7 @@ public class TestMeasureForestConcealer {
 		// underlying measure reference is hashed
 		Assertions.assertThat(concealedPar.getUnderlyings()).containsExactly(mn("revenue"));
 		// groupBy column names are hashed
-		Assertions.assertThat(concealedPar.getGroupBy().getGroupedByColumns())
+		Assertions.assertThat(concealedPar.getGroupBy().getSortedColumns())
 				.containsExactlyInAnyOrder(cn("ccy"), cn("region"));
 		// aggregation and combination keys preserved
 		Assertions.assertThat(concealedPar.getAggregationKey()).isNotEmpty();

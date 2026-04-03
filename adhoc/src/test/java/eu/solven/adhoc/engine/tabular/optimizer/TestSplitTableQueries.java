@@ -27,6 +27,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
 import eu.solven.adhoc.filter.optimizer.FilterOptimizer;
@@ -68,7 +69,8 @@ public class TestSplitTableQueries {
 		TableQueryV4 tableQueryV4 = TableQueryV4.builder().groupByToAggregator(GroupByColumns.named("a"), fa).build();
 
 		SplitTableQueries split = SplitTableQueries.builder()
-				.inducedToInducer(GraphHelpers.makeGraph())
+				.inducedToInducer(GraphHelpers.empty())
+				.lazyGraph(__ -> GraphHelpers.empty())
 				.stepToTable(step, tableQueryV4)
 				.build();
 

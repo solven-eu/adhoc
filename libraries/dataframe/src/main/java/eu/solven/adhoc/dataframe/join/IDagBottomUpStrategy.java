@@ -46,7 +46,6 @@ import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
  * 
  * @author Benoit Lacelle
  */
-// TODO Move to `XXX.join`
 public interface IDagBottomUpStrategy {
 
 	/**
@@ -56,6 +55,8 @@ public interface IDagBottomUpStrategy {
 	 * @return the storage for a {@link IMeasureQueryStep} output.
 	 */
 	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
+
+	<T> IMultitypeColumnFastGet<T> makeColumnRandomInserts(int initialCapacity);
 
 	/**
 	 * 

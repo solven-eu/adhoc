@@ -47,7 +47,7 @@ import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -73,7 +73,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements IHasQueryOptions, IMeasureResolver, IHasMeasures, IIsCancellable {
+public class QueryPod implements IHasQueryOptionsAndExecutorService, IMeasureResolver, IHasMeasures, IIsCancellable {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;

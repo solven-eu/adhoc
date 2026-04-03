@@ -188,8 +188,8 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			IAggregation aggregation,
 			String aggKey) {
 
-		NavigableSet<String> inducerGroupByCols = inducer.getGroupBy().getGroupedByColumns();
-		NavigableSet<String> inducedGroupByCols = induced.getGroupBy().getGroupedByColumns();
+		NavigableSet<String> inducerGroupByCols = inducer.getGroupBy().getSortedColumns();
+		NavigableSet<String> inducedGroupByCols = induced.getGroupBy().getSortedColumns();
 
 		// Probe the first entry to determine schema types
 		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findFirst();

@@ -299,7 +299,7 @@ public class TableQueryV4 implements ITableQuery {
 	@Override
 	public Set<String> getGroupedByColumns() {
 		return getGroupBys().stream()
-				.flatMap(gb -> gb.getGroupedByColumns().stream())
+				.flatMap(gb -> gb.getSortedColumns().stream())
 				.distinct()
 				.collect(ImmutableSet.toImmutableSet());
 	}

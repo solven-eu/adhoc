@@ -24,6 +24,7 @@ package eu.solven.adhoc.map;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SequencedMap;
 import java.util.Set;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -46,13 +47,15 @@ import eu.solven.adhoc.util.immutable.IImmutable;
  * 
  * @author Benoit Lacelle
  */
-public interface IAdhocMap extends Map<String, Object>, IImmutable, Comparable<IAdhocMap> {
+public interface IAdhocMap extends SequencedMap<String, Object>, IImmutable, Comparable<IAdhocMap> {
 
 	ISlice asSlice();
 
 	ISliceFactory getFactory();
 
 	/**
+	 * BEWARE the output keep its order, minus the not retained keys. In other words, the input does NOT define a new
+	 * order.
 	 * 
 	 * @param columns
 	 *            SHOULD be a subset of the existing columns.

@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -38,6 +39,7 @@ import com.google.common.collect.Iterators;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Builder;
 
@@ -148,6 +150,11 @@ public class MaskedAdhocMap extends AbstractMap<String, Object> implements IAdho
 		} else {
 			return super.equals(o);
 		}
+	}
+
+	@Override
+	public SequencedMap<String, Object> reversed() {
+		throw new NotYetImplementedException("TODO");
 	}
 
 	/**

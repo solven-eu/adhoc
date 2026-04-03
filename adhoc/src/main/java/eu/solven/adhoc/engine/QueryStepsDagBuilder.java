@@ -48,10 +48,10 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.cache.TransverseCacheHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.dag.AdhocDag;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasTransverseCache;
-import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -152,7 +152,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	 */
 	protected Set<MeasurelessQuery> rootMeasureless() {
 		// May refer some calculatedCoordinates as groupBy
-		NavigableMap<String, IAdhocColumn> nameToColumn = query.getGroupBy().getNameToColumn();
+		NavigableMap<String, IAdhocColumn> nameToColumn = query.getGroupBy().getSortedNameToColumn();
 
 		// Each index is associated to a groupedBy column
 		// Each groupedBy column is associated to the list of column definitions

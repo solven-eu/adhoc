@@ -38,6 +38,8 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -54,7 +56,7 @@ import eu.solven.adhoc.filter.FilterEquivalencyHelpers;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
@@ -97,7 +99,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> tableSteps) {
+	public SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions,
+			Set<TableQueryStep> tableSteps) {
 		if (tableSteps.isEmpty()) {
 			return SplitTableQueries.empty();
 		}
@@ -109,12 +112,13 @@ public class TableQueryFactory extends ATableQueryFactory {
 		// Add the additional vertices and edges
 		Graphs.addGraph(inducedToInducer, splitter.splitInducedAsDag(hasOptions, inducedToInducer));
 
-		Map<TableQueryStep, TableQueryV4> stepToTableQuery = makeStepToTableQuery(tableSteps, inducedToInducer);
+		Map<TableQueryStep, TableQueryV4> leavesToTableQuery = makeStepToTableQuery(inducedToInducer);
 
 		SplitTableQueries splitTableQueries = SplitTableQueries.builder()
 				.explicits(tableSteps)
 				.inducedToInducer(inducedToInducer)
-				.stepToTables(stepToTableQuery)
+				.stepToTables(leavesToTableQuery)
+				.lazyGraph(les -> splitter.getLazyGraph(hasOptions, inducedToInducer))
 				.build();
 
 		// Sanity checks will typically ensure the tableQueries covers all leaves inducers
@@ -159,8 +163,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 		return "%.1f%%".formatted(100.0 * nbNeededSteps / nbEvaluatedSteps);
 	}
 
-	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(Set<TableQueryStep> tableSteps,
-			IAdhocDag<TableQueryStep> inducedToInducer) {
+	protected Map<TableQueryStep, TableQueryV4> makeStepToTableQuery(IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> inducers = GraphHelpers.getInducers(inducedToInducer);
 
 		Collection<? extends Collection<TableQueryStep>> groups = grouper.groupInducers(inducers);
@@ -247,9 +250,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 			log.warn("Missing has {} sameMeasure siblings", impliedSameMeasure.size());
 
 			Set<TableQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
-					.filter(s -> s.getGroupBy()
-							.getGroupedByColumns()
-							.equals(firstMissing.getGroupBy().getGroupedByColumns()))
+					.filter(s -> s.getGroupBy().getSortedColumns().equals(firstMissing.getGroupBy().getSortedColumns()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
 

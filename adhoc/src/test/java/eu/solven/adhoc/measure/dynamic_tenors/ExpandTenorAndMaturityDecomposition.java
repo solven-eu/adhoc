@@ -87,7 +87,7 @@ public class ExpandTenorAndMaturityDecomposition implements IDecomposition, IExa
 
 		List<IDecompositionEntry> decompositions = new ArrayList<>();
 
-		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getGroupedByColumns();
+		NavigableSet<String> groupedByColumns = slice.getQueryStep().getGroupBy().getSortedColumns();
 
 		sensitivives.getCoordinatesToDelta().object2DoubleEntrySet().forEach(e -> {
 			Map<String, ?> sensitivityCoordinates = e.getKey();

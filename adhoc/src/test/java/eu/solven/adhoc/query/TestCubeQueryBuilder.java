@@ -71,14 +71,14 @@ public class TestCubeQueryBuilder {
 	public void testAddGroupBy() {
 		CubeQuery q1 = CubeQuery.builder().groupByAlso("a", "b").groupByAlso("c", "d").build();
 
-		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("a", "b", "c", "d");
+		Assertions.assertThat(q1.getGroupBy().getSortedColumns()).contains("a", "b", "c", "d");
 	}
 
 	@Test
 	public void testResetGroupBy() {
 		CubeQuery q1 = CubeQuery.builder().groupByAlso("a", "b").groupBy(GroupByColumns.named("c", "d")).build();
 
-		Assertions.assertThat(q1.getGroupBy().getGroupedByColumns()).contains("c", "d");
+		Assertions.assertThat(q1.getGroupBy().getSortedColumns()).contains("c", "d");
 	}
 
 	@Test

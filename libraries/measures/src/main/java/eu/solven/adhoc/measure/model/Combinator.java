@@ -110,7 +110,7 @@ public class Combinator implements ICombinator, IHasCombinationKey {
 		// It seemed simpler to provide the whole measure for now
 		if (hasUnderlyings instanceof IHasGroupBy hasGroupBy) {
 			IGroupBy groupBy = hasGroupBy.getGroupBy();
-			allOptions.put(KEY_GROUPBY_COLUMNS, groupBy.getGroupedByColumns());
+			allOptions.put(KEY_GROUPBY_COLUMNS, groupBy.getSortedColumns());
 		}
 
 		allOptions.put(KEY_MEASURE, hasUnderlyings);

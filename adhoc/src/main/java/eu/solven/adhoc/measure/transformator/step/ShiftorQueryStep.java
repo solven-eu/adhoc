@@ -112,7 +112,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 
 		ISliceFilter editedSlice = shift(filter, step.getCustomMarker());
 
-		NavigableSet<String> columns = step.getGroupBy().getGroupedByColumns();
+		NavigableSet<String> columns = step.getGroupBy().getSortedColumns();
 		IMapBuilderPreKeys builder = slice.getSlice().getFactory().newMapBuilder(columns);
 
 		columns.forEach(column -> {
@@ -202,6 +202,6 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 	}
 
 	protected IMultitypeColumnFastGet<ISlice> makeColumn(List<? extends ICuboid> underlyings) {
-		return factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+		return factories.getColumnFactory().makeColumnRandomInsertions(ColumnatorQueryStep.sumSizes(underlyings));
 	}
 }

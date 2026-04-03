@@ -31,11 +31,14 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
 import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -66,7 +69,8 @@ public class TestTableQueryFactory {
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(Aggregator.sum("m1"))
 				.build();
-		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split =
+				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(2)
@@ -135,7 +139,8 @@ public class TestTableQueryFactory {
 				.aggregator(m1)
 				.build();
 
-		SplitTableQueries split = optimizer.splitInducedLegacy(() -> Set.of(), Set.of(tq1, tq2));
+		SplitTableQueries split =
+				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 		// Check default is safe
 		optimizer.sanityChecks(split);
 

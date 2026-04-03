@@ -262,7 +262,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 
 	protected Set<String> getGroupByColumns(TableQueryV2 tableQuery) {
 		return tableQuery.getGroupBy()
-				.getGroupedByColumns()
+				.getSortedColumns()
 				.stream()
 				.map(this::clearColumnName)
 				.collect(Collectors.toCollection(TreeSet::new));

@@ -54,8 +54,18 @@ public class StandardColumnFactory implements IColumnFactory {
 	}
 
 	@Override
+	public <T> IMultitypeColumnFastGet<T> makeColumnRandomInsertions(int initialCapacity) {
+		return bottomUpStrategy.makeColumnRandomInserts(initialCapacity);
+	}
+
+	@Override
 	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
 		return bottomUpStrategy.makeColumn(agg, initialCapacity);
+	}
+
+	@Override
+	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInsertions(IAggregation agg, int initialCapacity) {
+		return bottomUpStrategy.makeColumnRandomInserts(agg, initialCapacity);
 	}
 
 	@Override
@@ -63,8 +73,4 @@ public class StandardColumnFactory implements IColumnFactory {
 		return bottomUpStrategy.joinCuboids(step, underlyings);
 	}
 
-	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInsertions(IAggregation agg, int initialCapacity) {
-		return bottomUpStrategy.makeColumnRandomInserts(agg, initialCapacity);
-	}
 }

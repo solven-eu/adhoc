@@ -38,7 +38,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.ColumnMetadata;
@@ -103,14 +102,15 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		public CachingKey(TableQueryV2 tableQuery) {
 			this.tableQuery = tableQuery;
 
-			if (tableQuery.getAggregators().isEmpty()) {
+			ImmutableSet<FilteredAggregator> aggregators = tableQuery.getAggregators();
+			if (aggregators.isEmpty()) {
 				log.trace("Request for slices/emptyMeasure");
 			} else {
-				if (tableQuery.getAggregators().size() != 1) {
+				if (aggregators.size() != 1) {
 					throw new IllegalArgumentException("Must have a single aggregator. Was %s".formatted(tableQuery));
 				}
 
-				if (!ISliceFilter.MATCH_ALL.equals(Iterables.getOnlyElement(tableQuery.getAggregators()).getFilter())) {
+				if (!ISliceFilter.MATCH_ALL.equals(AdhocCollectionHelpers.getFirst(aggregators).getFilter())) {
 					throw new IllegalArgumentException("Aggregator must not be filtered. Was %s".formatted(tableQuery));
 				}
 			}
@@ -158,7 +158,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	// TODO Adjust with the weight of the aggregate
 	private static int cachingValueSize(CachingKey key, CachingValue value) {
 		int nbRecords = value.getRecords().size();
-		int recordWidth = key.getTableQuery().getGroupBy().getGroupedByColumns().size()
+		int recordWidth = key.getTableQuery().getGroupBy().getSortedColumns().size()
 				+ key.getTableQuery().getAggregators().size();
 		return nbRecords * recordWidth;
 	}

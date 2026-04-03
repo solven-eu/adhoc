@@ -39,11 +39,11 @@ import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
-import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableColumn;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.dataframe.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -159,7 +159,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg) {
 		// Not MultitypeNavigableColumn as decomposition will prevent writing slices in order.
 		// BEWARE This should be reviewed, as some later IMeasure would expect to receive an ordered slices
-		return MultitypeHashMergeableColumn.<ISlice>builder().aggregation(agg).build();
+		return factories.getColumnFactory().makeColumnRandomInsertions(agg, IColumnFactory.NO_ESTIMATION);
 	}
 
 	protected void onSlice(List<? extends ICuboid> underlyings,
@@ -217,7 +217,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 	}
 
 	protected ISlice queryGroupBy(@NonNull IGroupBy groupBy, ISliceWithStep slice, Map<String, ?> fragmentCoordinate) {
-		NavigableSet<String> groupByColumns = groupBy.getGroupedByColumns();
+		NavigableSet<String> groupByColumns = groupBy.getSortedColumns();
 		IMapBuilderPreKeys queryCoordinatesBuilder = slice.getSlice().getFactory().newMapBuilder(groupByColumns);
 
 		ISliceReader sliceReader = slice.sliceReader();
@@ -227,7 +227,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 			// BEWARE it is legal to get groupColumns only from the fragment coordinate
 			Object value = fragmentCoordinate.get(groupByColumn);
 
-			IAdhocColumn column = groupBy.getNameToColumn().get(groupByColumn);
+			IAdhocColumn column = groupBy.getSortedNameToColumn().get(groupByColumn);
 			if (column instanceof ICalculatedColumn calculatedColumn) {
 				Map<String, Object> sliceAsMap = new LinkedHashMap<>();
 				sliceAsMap.putAll(slice.getSlice().asAdhocMap());

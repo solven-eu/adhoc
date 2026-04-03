@@ -40,7 +40,7 @@ public class TestGroupByHelpers {
 
 		IGroupBy union = GroupByHelpers.union(left, right);
 
-		Assertions.assertThat(union.getGroupedByColumns()).containsExactlyInAnyOrder("a", "b");
+		Assertions.assertThat(union.getSortedColumns()).containsExactlyInAnyOrder("a", "b");
 	}
 
 	@Test
@@ -50,21 +50,21 @@ public class TestGroupByHelpers {
 
 		IGroupBy union = GroupByHelpers.union(left, right);
 
-		Assertions.assertThat(union.getGroupedByColumns()).containsExactlyInAnyOrder("a", "b", "c");
+		Assertions.assertThat(union.getSortedColumns()).containsExactlyInAnyOrder("a", "b", "c");
 	}
 
 	@Test
 	public void testUnion_grandTotalLeft() {
 		IGroupBy union = GroupByHelpers.union(IGroupBy.GRAND_TOTAL, GroupByColumns.named("x"));
 
-		Assertions.assertThat(union.getGroupedByColumns()).containsExactly("x");
+		Assertions.assertThat(union.getSortedColumns()).containsExactly("x");
 	}
 
 	@Test
 	public void testUnion_bothGrandTotal() {
 		IGroupBy union = GroupByHelpers.union(IGroupBy.GRAND_TOTAL, IGroupBy.GRAND_TOTAL);
 
-		Assertions.assertThat(union.getGroupedByColumns()).isEmpty();
+		Assertions.assertThat(union.getSortedColumns()).isEmpty();
 	}
 
 	// ── suppressColumns ──────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ public class TestGroupByHelpers {
 
 		IGroupBy result = GroupByHelpers.suppressColumns(groupBy, Set.of("b"));
 
-		Assertions.assertThat(result.getGroupedByColumns()).containsExactlyInAnyOrder("a", "c");
+		Assertions.assertThat(result.getSortedColumns()).containsExactlyInAnyOrder("a", "c");
 	}
 
 	@Test
@@ -84,7 +84,7 @@ public class TestGroupByHelpers {
 
 		IGroupBy result = GroupByHelpers.suppressColumns(groupBy, Set.of("z"));
 
-		Assertions.assertThat(result.getGroupedByColumns()).containsExactlyInAnyOrder("a", "b");
+		Assertions.assertThat(result.getSortedColumns()).containsExactlyInAnyOrder("a", "b");
 	}
 
 	@Test
@@ -93,6 +93,6 @@ public class TestGroupByHelpers {
 
 		IGroupBy result = GroupByHelpers.suppressColumns(groupBy, Set.of("a"));
 
-		Assertions.assertThat(result.getGroupedByColumns()).isEmpty();
+		Assertions.assertThat(result.getSortedColumns()).isEmpty();
 	}
 }

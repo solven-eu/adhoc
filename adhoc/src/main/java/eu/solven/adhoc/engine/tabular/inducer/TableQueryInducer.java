@@ -122,8 +122,8 @@ public class TableQueryInducer implements ITableQueryInducer {
 								"No evaluator succeeded for inducer=%s induced=%s".formatted(inducer, induced)));
 
 		if (hasOptions.isDebugOrExplain()) {
-			Set<String> removedGroupBys = Sets.difference(inducer.getGroupBy().getGroupedByColumns(),
-					induced.getGroupBy().getGroupedByColumns());
+			Set<String> removedGroupBys =
+					Sets.difference(inducer.getGroupBy().getSortedColumns(), induced.getGroupBy().getSortedColumns());
 			log.info(
 					"[EXPLAIN] size={} induced size={} on agg={} by filtering f={} and reducing groupBy={} ({} induced {})",
 					inducerValues.size(),

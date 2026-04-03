@@ -323,7 +323,7 @@ public class MeasureForestFromResource {
 			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_UNDERLYING_NAMES);
 		}
 		if (Objects.equals(b.getCombinationOptions().get(IHasCombinationKey.KEY_GROUPBY_COLUMNS),
-				b.getGroupBy().getGroupedByColumns())) {
+				b.getGroupBy().getSortedColumns())) {
 			MapPathRemove.remove(clean, K_COMBINATION_OPTIONS, IHasCombinationKey.KEY_GROUPBY_COLUMNS);
 		}
 		if (AdhocMapPathGet.getRequiredMap(clean, K_COMBINATION_OPTIONS).isEmpty()) {

@@ -122,7 +122,7 @@ public class RelevancyHeuristic {
 					if (measure instanceof Columnator columnator) {
 						columnator.getColumns().forEach(columnToRef::incrementAndGet);
 					} else if (measure instanceof Partitionor partitionor) {
-						partitionor.getGroupBy().getGroupedByColumns().forEach(columnToRef::incrementAndGet);
+						partitionor.getGroupBy().getSortedColumns().forEach(columnToRef::incrementAndGet);
 					}
 
 					oneAdded.set(true);

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -571,5 +572,10 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	@Override
 	public void clear() {
 		throw new UnsupportedAsImmutableException();
+	}
+
+	@Override
+	public SequencedMap<String, Object> reversed() {
+		throw new NotYetImplementedException("TODO");
 	}
 }

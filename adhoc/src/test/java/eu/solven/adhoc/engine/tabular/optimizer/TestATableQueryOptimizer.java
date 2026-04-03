@@ -43,7 +43,7 @@ import eu.solven.adhoc.filter.value.LikeMatcher;
 import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -92,7 +92,8 @@ public class TestATableQueryOptimizer {
 	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories.makeQueryBundle()) {
 
 		@Override
-		public SplitTableQueries splitInduced(IHasQueryOptions hasOptions, Set<TableQueryStep> querySteps) {
+		public SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions,
+				Set<TableQueryStep> querySteps) {
 			throw new UnsupportedOperationException();
 		}
 	};

@@ -28,12 +28,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
+import eu.solven.adhoc.dataframe.aggregating.PartitionedMultitypeMergeableGrid;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
@@ -54,6 +56,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
 import lombok.NonNull;
@@ -82,7 +85,6 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	TableQueryV4 tableQuery;
 
 	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream) {
-
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
 
 		if (stream.isDistinctSlices()) {
@@ -91,10 +93,23 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			gridFactory = () -> AggregatingColumns.<ISlice>builder().operatorFactory(operatorFactory).build();
 		}
 
-		if (tableQuery.singleGroupBy().isPresent()) {
-			return gridFactory.get();
+		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory2;
+		if (StandardQueryOptions.PARTITIONED.isActive(queryPod.getOptions())) {
+			int nbPartitions = AdhocUnsafe.getParallelism();
+			if (queryPod.isDebugOrExplain()) {
+				log.info("[EXPLAIN] Partitioned is activated with parallelism={}", nbPartitions);
+			}
+			gridFactory2 = () -> PartitionedMultitypeMergeableGrid.<ISlice, Integer>builder()
+					.partitions(IntStream.range(0, nbPartitions).mapToObj(i -> gridFactory.get()).toList())
+					.build();
 		} else {
-			return GroupingSetMergeableGrid.builder().gridFactory(gridFactory).build();
+			gridFactory2 = gridFactory;
+		}
+
+		if (tableQuery.singleGroupBy().isPresent()) {
+			return gridFactory2.get();
+		} else {
+			return GroupingSetMergeableGrid.builder().gridFactory(gridFactory2).build();
 		}
 	}
 
@@ -102,7 +117,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		Optional<IGroupBy> singleGroupBy = tableQuery.singleGroupBy();
 		if (singleGroupBy.isPresent()) {
 			IGroupBy groupBy = singleGroupBy.get();
-			NavigableSet<String> groupedByColumns = groupBy.getGroupedByColumns();
+			NavigableSet<String> groupedByColumns = groupBy.getSortedColumns();
 			SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
 			return UniqueGroupingSetAnalyzer.builder()
 					.sequencedKeyset(new GroupByMarker(groupBy, sequencedKeyset))
@@ -110,8 +125,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		} else {
 			Map<Set<String>, GroupByMarker> columnsToMarker = tableQuery.getGroupBys()
 					.stream()
-					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getGroupedByColumns, gb -> {
-						Set<String> groupedByColumns = gb.getGroupedByColumns();
+					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getSortedColumns, gb -> {
+						Set<String> groupedByColumns = gb.getSortedColumns();
 						SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
@@ -155,7 +170,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 				Multimaps.asMap(tableQuery.getGroupByToAggregators()).entrySet().forEach(ee -> {
 					IGroupBy groupBy = ee.getKey();
-					ISlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getGroupedByColumns());
+					ISlice errorSlice = AdhocExceptionAsMeasureValueHelper.asSlice(groupBy.getSortedColumns());
 
 					ee.getValue().forEach(fa -> grid.contribute(errorSlice, fa).onObject(e));
 				});

@@ -58,11 +58,8 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 	// Used to get faster the next/minimum slice
 	final Queue<PeekingIterator<SliceAndMeasure<ISlice>>> queue;
 
-	// @SuppressWarnings("PMD.LinguisticNaming")
-	// final boolean[] isNotSorted;
 	final List<? extends ICuboid> rawSlices;
 
-	// @SuppressWarnings("PMD.ArrayIsStoredDirectly")
 	public MergedSlicesIteratorNavigableElseHash(CubeQueryStep queryStep,
 			List<? extends Iterator<SliceAndMeasure<ISlice>>> iterators,
 			// boolean[] isNotSorted,
@@ -80,7 +77,6 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 				.filter(Iterator::hasNext)
 				.forEach(queue::add);
 
-		// this.isNotSorted = isNotSorted;
 		this.rawSlices = rawSlices;
 	}
 

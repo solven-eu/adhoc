@@ -46,7 +46,7 @@ public class TestDecompositionHelpers {
 
 		MeasurelessQuery result = DecompositionHelpers.suppressColumn(step, "color");
 
-		Assertions.assertThat(result.getGroupBy().getGroupedByColumns()).containsExactly("country");
+		Assertions.assertThat(result.getGroupBy().getSortedColumns()).containsExactly("country");
 	}
 
 	@Test
@@ -70,7 +70,7 @@ public class TestDecompositionHelpers {
 
 		MeasurelessQuery result = DecompositionHelpers.suppressColumn(step, "color");
 
-		Assertions.assertThat(result.getGroupBy().getGroupedByColumns()).containsExactly("country");
+		Assertions.assertThat(result.getGroupBy().getSortedColumns()).containsExactly("country");
 		Assertions.assertThat(result.getFilter()).isSameAs(ISliceFilter.MATCH_ALL);
 	}
 
@@ -85,7 +85,7 @@ public class TestDecompositionHelpers {
 
 		MeasurelessQuery result = DecompositionHelpers.suppressColumn(step, Set.of("color", "country"));
 
-		Assertions.assertThat(result.getGroupBy().getGroupedByColumns()).containsExactly("year");
+		Assertions.assertThat(result.getGroupBy().getSortedColumns()).containsExactly("year");
 	}
 
 	@Test

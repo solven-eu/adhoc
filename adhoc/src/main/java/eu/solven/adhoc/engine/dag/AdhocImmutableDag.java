@@ -20,26 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.dag;
 
+import org.jgrapht.graph.AsUnmodifiableGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.DirectedAcyclicGraph;
 
 /**
- * Default implementation of {@link IAdhocDag}, backed by {@link DirectedAcyclicGraph}.
- *
- * <p>
- * Prefer obtaining instances via {@link GraphHelpers#makeGraph()} rather than constructing directly.
+ * Immutable view over {@link IAdhocDag}.
  *
  * @param <T>
  *            the vertex type
  * @author Benoit Lacelle
  */
-public class AdhocDag<T> extends DirectedAcyclicGraph<T, DefaultEdge> implements IAdhocDag<T> {
+public class AdhocImmutableDag<T> extends AsUnmodifiableGraph<T, DefaultEdge> implements IAdhocDag<T> {
 	private static final long serialVersionUID = -249972253876618809L;
 
-	public AdhocDag() {
-		super(DefaultEdge.class);
+	public AdhocImmutableDag(IAdhocDag<T> wrapped) {
+		super(wrapped);
 	}
 
 }

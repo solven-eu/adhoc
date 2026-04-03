@@ -36,9 +36,9 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -46,7 +46,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
 import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
@@ -331,7 +331,7 @@ public class TestInduceByAdhocOptimistic {
 
 	@Test
 	public void testSplitAsDag_2groupByWithNonEmptyIntersection() {
-		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
+		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(),
 				ImmutableSet.<TableQueryStep>builder()
 						.add(a.toBuilder().groupBy(GroupByColumns.named("a", "b")).build())
 						.add(a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build())
@@ -347,8 +347,8 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep size1 = a.toBuilder().groupBy(GroupByColumns.named("a")).build();
 		TableQueryStep size3 = a.toBuilder().groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		IAdhocDag<TableQueryStep> split =
-				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(size1, size3));
+		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(),
+				ImmutableSet.of(size1, size3));
 
 		// size3 can induce size1 (it contains column "a")
 		Assertions.assertThat(split.edgeSet()).hasSize(1);
@@ -364,7 +364,7 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep s2 = a.toBuilder().groupBy(GroupByColumns.named("b", "c")).build();
 		@NonNull
 		TableQueryStep s3 = a.toBuilder().groupBy(GroupByColumns.named("b")).build();
-		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptions.noOption(),
+		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(),
 				ImmutableSet.<TableQueryStep>builder().add(s1).add(s2).add(s3).build());
 
 		Assertions.assertThat(split.vertexSet()).hasSize(3);
@@ -394,7 +394,7 @@ public class TestInduceByAdhocOptimistic {
 		merged.addEdge(s2, s3);
 
 		IAdhocDag<TableQueryStep> withShared =
-				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), ImmutableSet.of(s1, s2, s3));
+				splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(), ImmutableSet.of(s1, s2, s3));
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
@@ -433,7 +433,7 @@ public class TestInduceByAdhocOptimistic {
 		merged.addEdge(s2, s3);
 
 		IAdhocDag<TableQueryStep> withShared =
-				splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2, s3));
+				splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(), Set.of(s1, s2, s3));
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(3).contains(s1, s2, s3);
 
@@ -452,7 +452,8 @@ public class TestInduceByAdhocOptimistic {
 		merged.addVertex(s1);
 		merged.addVertex(s2);
 
-		IAdhocDag<TableQueryStep> withShared = splitter.splitInducedAsDag(IHasQueryOptions.noOption(), Set.of(s1, s2));
+		IAdhocDag<TableQueryStep> withShared =
+				splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(), Set.of(s1, s2));
 
 		Assertions.assertThat(withShared.vertexSet()).hasSize(2).contains(s1, s2);
 

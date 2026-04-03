@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.engine.tabular.optimizer;
+package eu.solven.adhoc.engine.dag;
 
 import org.jgrapht.Graphs;
 
@@ -35,9 +35,20 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class GraphHelpers {
+	@SuppressWarnings({ "rawtypes", "PMD.AvoidFieldNameMatchingMethodName" })
+	private static final IAdhocDag EMPTY = immutable(makeGraph());
+
+	@SuppressWarnings("unchecked")
+	public static <T> IAdhocDag<T> empty() {
+		return EMPTY;
+	}
 
 	public static <T> IAdhocDag<T> makeGraph() {
 		return new AdhocDag<>();
+	}
+
+	public static <T> IAdhocDag<T> immutable(IAdhocDag<T> dag) {
+		return new AdhocImmutableDag<>(dag);
 	}
 
 	/**

@@ -29,9 +29,9 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
@@ -126,7 +126,7 @@ public class MergeInducersStrictGroupBy implements IMergeInducers {
 		// columns which are filtered
 		Set<String> filteredColumns = FilterHelpers.getFilteredColumns(step.getFilter());
 		// columns which are filtered but not in groupBy
-		Set<String> filteredNotGroupedBy = Sets.difference(filteredColumns, step.getGroupBy().getGroupedByColumns());
+		Set<String> filteredNotGroupedBy = Sets.difference(filteredColumns, step.getGroupBy().getSortedColumns());
 
 		// Given filter can not be inferred from slice
 		ISliceFilter filterNotInGroupBy = SimpleFilterEditor.retainsColumns(step.getFilter(), filteredNotGroupedBy);
