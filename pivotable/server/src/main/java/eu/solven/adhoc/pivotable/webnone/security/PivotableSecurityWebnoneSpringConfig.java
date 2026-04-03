@@ -27,23 +27,20 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
-import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
 import eu.solven.adhoc.pivotable.webnone.api.GreetingController;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableLoginWebnoneController;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableMetadataController;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Everything related with security in Pivotable.
+ * Everything related with security in Pivotable, but neither specific to WebMVC nor to WebFlux..
  * 
  * @author Benoit Lacelle
  */
 // https://docs.spring.io/spring-security/reference/reactive/oauth2/login/advanced.html#webflux-oauth2-login-advanced-userinfo-endpoint
-@EnableWebSecurity
 @Import({
 
 		PivotableSocialWebnoneSecurity.class,
@@ -51,7 +48,6 @@ import lombok.extern.slf4j.Slf4j;
 		GreetingController.class,
 		PivotableMetadataController.class,
 
-		PivotableResourceServerConfiguration.class,
 		PivotableTokenService.class,
 
 		PivotableLoginWebnoneController.class,

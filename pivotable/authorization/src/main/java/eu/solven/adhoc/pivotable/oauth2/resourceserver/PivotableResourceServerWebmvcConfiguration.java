@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app;
+package eu.solven.adhoc.pivotable.oauth2.resourceserver;
 
+import java.text.ParseException;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
-import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+
+import eu.solven.adhoc.tools.IUuidGenerator;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Wraps API-related components.
+ * Manages decoding of JWT.
  * 
  * @author Benoit Lacelle
  */
-@Import({
-
-		// None
-		PivotableWebnoneSpringConfig.class,
-
-		// Webmvc
-		// TODO Migrate each of them
-		// PivotableSpaRouter.class,
-		// CubesHandler.class,
-		// PivotableEndpointsHandler.class,
-		// GreetingHandler.class,
-		// PivotableQueryHandler.class,
-		// PivotableApiRouter.class,
-		// PivotableFakeUserRouter.class,
-		// GreetingHandler.class,
-		// PivotableLoginRouter.class,
-		// AccessTokenHandler.class,
-
-		// PivotableWebExceptionHandler.class,
-})
-@Slf4j
 @Configuration
-public class PivotableWebmvcSpringConfig {
+@Slf4j
+public class PivotableResourceServerWebmvcConfiguration extends PivotableResourceServerConfiguration {
+
+	@Bean
+	@SneakyThrows(ParseException.class)
+	public JwtDecoder jwtDecoder(Environment env, IUuidGenerator uuidGenerator) {
+		OctetSequenceKey octetSequenceKey = loadOAuth2SigningKey(env, uuidGenerator);
+		SecretKey secretKey = octetSequenceKey.toSecretKey();
+
+		return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MAC_ALGORITHM).build();
+	}
 
 }

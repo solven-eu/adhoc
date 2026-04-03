@@ -35,11 +35,11 @@ import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.app.InjectPivotableAccountsConfig;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.ActiveRefreshTokens;
-import eu.solven.adhoc.pivotable.security.PivotableSecurityWebfluxSpringConfig;
-import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
+import eu.solven.adhoc.pivotable.webflux.security.PivotableSecurityWebfluxSpringConfig;
+import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 
 @SpringBootApplication(scanBasePackages = "none")

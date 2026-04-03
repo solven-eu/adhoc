@@ -36,6 +36,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.pivotable.webflux.app.PivotableServerWebfluxApplication;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
@@ -44,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT })
 @ActiveProfiles(IPivotableSpringProfiles.P_UNSAFE)
 @Slf4j
-public class TestSpringWebfluxAutonomyUnsafe implements IPivotableSpringProfiles {
+public class TestPivotableServerWebfluxApplicationUnsafe implements IPivotableSpringProfiles {
 
 	@Autowired
 	ApplicationContext appContext;

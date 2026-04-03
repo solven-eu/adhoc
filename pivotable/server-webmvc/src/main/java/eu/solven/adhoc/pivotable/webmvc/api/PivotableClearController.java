@@ -20,20 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.webflux.api;
+package eu.solven.adhoc.pivotable.webmvc.api;
 
 import java.util.Map;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.server.ServerRequest;
-import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import eu.solven.adhoc.util.IHasCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 /**
  * API enabling clearing anything transient. Useful for integration tests.
@@ -42,17 +40,13 @@ import reactor.core.publisher.Mono;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class PivotableClearHandler {
+@RestController
+public class PivotableClearController {
 	final ApplicationContext appContext;
 
-	// Webflux
-	public Mono<ServerResponse> clear(ServerRequest serverRequest) {
-		return clear().flatMap(body -> ServerResponse.ok().body(BodyInserters.fromValue(body)));
-	}
-
-	// Webmvc
 	@GetMapping
-	public Mono<Map<String, ?>> clear() {
+	@PostMapping
+	public Map<String, ?> clear() {
 		Map<String, IHasCache> beansWithCache = appContext.getBeansOfType(IHasCache.class);
 
 		beansWithCache.forEach((name, bean) -> {
@@ -60,6 +54,6 @@ public class PivotableClearHandler {
 			bean.invalidateAll();
 		});
 
-		return Mono.just(Map.of("clear", true, "caches", beansWithCache.keySet()));
+		return Map.of("clear", true, "caches", beansWithCache.keySet());
 	}
 }

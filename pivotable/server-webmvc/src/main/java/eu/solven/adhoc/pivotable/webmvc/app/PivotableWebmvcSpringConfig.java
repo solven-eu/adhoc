@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,20 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.webflux;
+package eu.solven.adhoc.pivotable.webmvc.app;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import eu.solven.adhoc.pivotable.cube.CubesHandler;
-import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
-import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
-import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
-import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
-import eu.solven.adhoc.pivotable.webflux.api.PivotableFakeUserRouter;
-import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
-import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
-import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
+import eu.solven.adhoc.pivotable.webmvc.api.PivotableClearController;
 import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,21 +39,24 @@ import lombok.extern.slf4j.Slf4j;
 		// None
 		PivotableWebnoneSpringConfig.class,
 
-		// Webflux
-		PivotableSpaRouter.class,
-		CubesHandler.class,
-		PivotableEndpointsHandler.class,
-		GreetingHandler.class,
-		PivotableQueryHandler.class,
-		PivotableApiRouter.class,
-		PivotableFakeUserRouter.class,
-		GreetingHandler.class,
-		PivotableLoginRouter.class,
-		AccessTokenHandler.class,
+		// Webmvc
+		// TODO Migrate each of them
+		// PivotableSpaRouter.class,
+		// CubesHandler.class,
+		// PivotableEndpointsHandler.class,
+		// GreetingHandler.class,
+		// PivotableQueryHandler.class,
+		// PivotableApiRouter.class,
+		// PivotableFakeUserRouter.class,
+		// GreetingHandler.class,
+		// PivotableLoginRouter.class,
+		// AccessTokenHandler.class,
+		PivotableClearController.class,
 
-		PivotableWebExceptionHandler.class, })
+		// PivotableWebExceptionHandler.class,
+})
 @Slf4j
 @Configuration
-public class PivotableWebfluxSpringConfig {
+public class PivotableWebmvcSpringConfig {
 
 }

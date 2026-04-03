@@ -30,7 +30,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
+import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
+import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -115,4 +118,46 @@ public class PivotableOAuth2UserWebnoneService {
 		return "https://accounts.google.com".equals(uri.toASCIIString());
 	}
 
+	public static OAuth2User processOAuth2User(IOnPivotableUser onUser,
+			OAuth2UserRequest oAuth2UserRequest,
+			OAuth2User userFromProvider) {
+		// The following comment can be used to register new unittest on new registration
+		// new ObjectMapper().writeValueAsString(userFromProvider.getAttributes());
+
+		PivotableUserRawRaw rawRaw = PivotableOAuth2UserWebnoneService.oauth2ToRawRaw(userFromProvider);
+
+		String registrationId = oAuth2UserRequest.getClientRegistration().getRegistrationId();
+		if (!registrationId.equals(rawRaw.getProviderId())) {
+			throw new IllegalStateException("Inconsistent providerId inference from OAuth2User");
+		}
+
+		String keyForPicture = switch (registrationId) {
+		case PivotableOAuth2UserWebnoneService.PROVIDERID_GITHUB:
+			yield "avatar_url";
+		case PivotableOAuth2UserWebnoneService.PROVIDERID_GOOGLE:
+			yield "picture";
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + registrationId);
+		};
+		PivotableUserDetails.PivotableUserDetailsBuilder userBuilder = PivotableUserDetails.builder()
+				// .rawRaw(rawRaw)
+				.username(userFromProvider.getAttributes().get("name").toString())
+				.name(userFromProvider.getAttributes().get("name").toString())
+				.email(userFromProvider.getAttributes().get("email").toString());
+
+		Object rawPicture = userFromProvider.getAttributes().get(keyForPicture);
+		if (rawPicture != null) {
+			userBuilder = userBuilder.picture(URI.create(rawPicture.toString()));
+		}
+		PivotableUserDetails rawUser = userBuilder.build();
+
+		PivotableUserPreRegister userPreRegister =
+				PivotableUserPreRegister.builder().rawRaw(rawRaw).details(rawUser).build();
+
+		PivotableUser user = onUser.onAdhocUserRaw(userPreRegister);
+
+		log.trace("User info is {}", user);
+		return userFromProvider;
+
+	}
 }

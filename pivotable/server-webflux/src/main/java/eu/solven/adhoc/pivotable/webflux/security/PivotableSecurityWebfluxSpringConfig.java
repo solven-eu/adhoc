@@ -20,18 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.security;
+package eu.solven.adhoc.pivotable.webflux.security;
 
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 
 import eu.solven.adhoc.pivotable.account.JwtUserContextHolder;
-import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableJwtWebfluxSecurity;
-import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
+import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerWebfluxConfiguration;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
-import eu.solven.adhoc.pivotable.webnone.api.GreetingController;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableMetadataController;
 import eu.solven.adhoc.pivotable.webnone.security.PivotableSecurityWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -51,13 +49,10 @@ import lombok.extern.slf4j.Slf4j;
 		// webflux
 		PivotableSocialWebfluxSecurity.class,
 		PivotableJwtWebfluxSecurity.class,
+		PivotableResourceServerWebfluxConfiguration.class,
 
-		GreetingController.class,
 		PivotableLoginWebfluxController.class,
 		PivotableMetadataController.class,
-
-		PivotableResourceServerConfiguration.class,
-		PivotableTokenService.class,
 
 		JwtUserContextHolder.class,
 

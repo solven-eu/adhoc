@@ -45,10 +45,10 @@ import org.springframework.test.web.reactive.server.StatusAssertions;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
+import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.pivotable.webnone.api.GreetingController;
 import eu.solven.pepper.spring.PepperResourceHelper;
 import eu.solven.pepper.unittest.ILogDisabler;

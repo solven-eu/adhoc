@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.pivotable.app.mvc.actuator;
+package eu.solven.adhoc.pivotable.mvc.actuator;
 
 import java.util.Map;
 import java.util.Optional;

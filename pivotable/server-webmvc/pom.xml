@@ -24,6 +24,13 @@
 			<artifactId>pivotable-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-webmvc</artifactId>
+		    <version>4.1.0-M4</version>
+		    <scope>compile</scope>
+		</dependency>
 
 		<dependency>
 			<!-- Used by some examples datasets in InjectSimpleCubesConfig -->

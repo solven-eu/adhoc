@@ -36,7 +36,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.greeting.Greeting;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
-import eu.solven.adhoc.pivotable.security.tokens.AccessTokenHandler;
+import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
 import lombok.extern.slf4j.Slf4j;
 
 /**

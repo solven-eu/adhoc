@@ -47,6 +47,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
+import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerWebfluxConfiguration;
 import eu.solven.adhoc.tools.JdkUuidGenerator;
 
 public class TestPivotableTokenService {
@@ -77,7 +78,7 @@ public class TestPivotableTokenService {
 		}
 
 		JwtReactiveAuthenticationManager authManager = new JwtReactiveAuthenticationManager(
-				new PivotableResourceServerConfiguration().reactiveJwtDecoder(env, JdkUuidGenerator.INSTANCE));
+				new PivotableResourceServerWebfluxConfiguration().reactiveJwtDecoder(env, JdkUuidGenerator.INSTANCE));
 
 		Authentication auth = authManager.authenticate(new BearerTokenAuthenticationToken(accessToken)).block();
 
@@ -111,7 +112,7 @@ public class TestPivotableTokenService {
 		}
 
 		JwtReactiveAuthenticationManager authManager = new JwtReactiveAuthenticationManager(
-				new PivotableResourceServerConfiguration().reactiveJwtDecoder(env, JdkUuidGenerator.INSTANCE));
+				new PivotableResourceServerWebfluxConfiguration().reactiveJwtDecoder(env, JdkUuidGenerator.INSTANCE));
 
 		Authentication auth = authManager.authenticate(new BearerTokenAuthenticationToken(accessToken)).block();
 
