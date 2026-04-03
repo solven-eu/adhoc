@@ -92,7 +92,8 @@ public class TestATableQueryOptimizer {
 	ATableQueryFactory optimizer = new ATableQueryFactory(AdhocFactoriesUnsafe.factories.makeQueryBundle()) {
 
 		@Override
-		public SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions, Set<TableQueryStep> querySteps) {
+		public SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions,
+				Set<TableQueryStep> querySteps) {
 			throw new UnsupportedOperationException();
 		}
 	};

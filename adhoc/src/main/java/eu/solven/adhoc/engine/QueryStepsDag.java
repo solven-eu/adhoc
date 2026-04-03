@@ -35,10 +35,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.pepper.core.PepperLogHelper;

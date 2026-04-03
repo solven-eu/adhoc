@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -109,6 +110,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		List<Stream<SliceAndMeasures>> unsortedStreams = unsortedStreams(queryStep, underlyings, sortedSlicesAsSet);
 
 		// Process ordered slices in priority. Good for MultitypeNavigableElseHashColumn
+		// BEWARE `unsortedStreams` requires `sortedSlices` to be executed first: this MUST NOT be `.parallel()`
 		return Stream.concat(sortedSlices, unsortedStreams.stream().flatMap(s -> s));
 	}
 
@@ -121,27 +123,13 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 */
 	private static Stream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
 			List<? extends ICuboid> underlyings) {
-		// boolean[] isNotSorted = new boolean[underlyings.size()];
-		//
-		// for (int i = 0; i < underlyings.size(); i++) {
-		// if (!underlyings.get(i).isSorted()) {
-		// isNotSorted[i] = true;
-		// }
-		// }
-
 		// Exclude the notSortedIterators: they will be processed in a later step
 		List<Iterator<SliceAndMeasure<ISlice>>> sortedIterators = underlyings.stream().map(s -> {
-			// if (s.isSorted()) {
-			// return s.stream().iterator();
-			// } else {
-			// return Collections.<SliceAndMeasure<SliceAsMap>>emptyIterator();
-			// }
 			return s.stream(StreamStrategy.SORTED_SUB).iterator();
 		}).toList();
 
-		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIteratorNavigableElseHash(queryStep, sortedIterators
-		// , isNotSorted
-				, underlyings);
+		Iterator<SliceAndMeasures> mergedIterator =
+				new MergedSlicesIteratorNavigableElseHash(queryStep, sortedIterators, underlyings);
 
 		int characteristics = 0
 				// keys are sorted naturally
@@ -162,12 +150,13 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 * @param sortedSlicesAsSet
 	 *            the Set of slices which were already processed by the sorted streams. This may be filled lazily, which
 	 *            is fine as long as unsorted streams are consumed strictly after the sorted streams are consumed.
+	 *            BEWARE This condition may not stand for parallel {@link Stream}.
 	 * @return a List of {@link Stream} handling unsorted columns
 	 */
 	private static List<Stream<SliceAndMeasures>> unsortedStreams(CubeQueryStep queryStep,
 			List<? extends ICuboid> underlyings,
 			Set<ISlice> sortedSlicesAsSet) {
-		Set<ISlice> unsortedSlicesAsSet = new LinkedHashSet<>();
+		Set<ISlice> unsortedSlicesAsSet = ConcurrentHashMap.newKeySet();
 
 		List<Stream<SliceAndMeasures>> unsortedStreams = new ArrayList<>();
 

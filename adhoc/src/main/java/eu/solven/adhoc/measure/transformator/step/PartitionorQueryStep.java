@@ -100,7 +100,6 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		}
 
 		IAggregation agg = getMakeAggregation();
-
 		IMultitypeMergeableColumn<ISlice> values = makeColumn(agg, underlyings);
 
 		ICombination combinator = combinationSupplier.get();
@@ -111,6 +110,9 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	}
 
 	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg, List<? extends ICuboid> underlyings) {
+		// TODO We should analyze the actual columns from ICuboid, as CubeQueryStep are equals even if groupBy are
+		// ordered differently. Also, anyway, IAdhocMap are currently sorted along the sorted keySet, and not the
+		// sequencedSet.
 		boolean breakSorting = isBreakSorting();
 
 		// BEWARE The output capacity is at most the sum of input capacity. But it is

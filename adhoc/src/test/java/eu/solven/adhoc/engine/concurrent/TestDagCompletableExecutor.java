@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
 
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
+import eu.solven.adhoc.engine.dag.AdhocDag;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

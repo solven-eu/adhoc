@@ -41,6 +41,8 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.dag.AdhocDag;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
@@ -72,7 +74,10 @@ public class TestTableQueryFactory_Perf {
 		inducedToInducer.addVertex(inducedStep);
 		inducedToInducer.addEdge(inducedStep, inducerStep);
 
-		SplitTableQueries split = SplitTableQueries.builder().inducedToInducer(inducedToInducer).build();
+		SplitTableQueries split = SplitTableQueries.builder()
+				.inducedToInducer(inducedToInducer)
+				.lazyGraph(__ -> inducedToInducer)
+				.build();
 
 		IMultitypeColumnFastGet<ISlice> inducerValues = MultitypeHashColumn.<ISlice>builder().build();
 

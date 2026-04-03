@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cuboid;
+package eu.solven.adhoc.engine.dag;
 
-import java.util.stream.Stream;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedAcyclicGraph;
 
 /**
- * Enables an {@link IMultitypeColumnFastGet} to output a given {@link Stream}.
- * 
+ * Default implementation of {@link IAdhocDag}, backed by {@link DirectedAcyclicGraph}.
+ *
+ * <p>
+ * Prefer obtaining instances via {@link GraphHelpers#makeGraph()} rather than constructing directly.
+ *
+ * @param <T>
+ *            the vertex type
  * @author Benoit Lacelle
  */
-public enum StreamStrategy {
-	/**
-	 * All slices
-	 */
-	ALL,
-	/**
-	 * Sorted fraction
-	 */
-	SORTED_SUB,
-	/**
-	 * The complement of the sorted fraction
-	 */
-	SORTED_SUB_COMPLEMENT,
+public class AdhocDag<T> extends DirectedAcyclicGraph<T, DefaultEdge> implements IAdhocDag<T> {
+	private static final long serialVersionUID = -249972253876618809L;
+
+	public AdhocDag() {
+		super(DefaultEdge.class);
+	}
+
 }

@@ -57,7 +57,8 @@ public interface ITableQueryFactory {
 	SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions, Set<TableQueryStep> querySteps);
 
 	@Deprecated(since = ".splitInduced", forRemoval = true)
-	default SplitTableQueries splitInducedLegacy(IHasQueryOptionsAndExecutorService hasOptions, Set<TableQuery> tableQueries) {
+	default SplitTableQueries splitInducedLegacy(IHasQueryOptionsAndExecutorService hasOptions,
+			Set<TableQuery> tableQueries) {
 		Set<TableQueryStep> steps = tableQueries.stream().flatMap(tq -> {
 			return tq.getAggregators().stream().map(agg -> TableQueryStep.edit(tq).aggregator(agg).build());
 		}).collect(ImmutableSet.toImmutableSet());

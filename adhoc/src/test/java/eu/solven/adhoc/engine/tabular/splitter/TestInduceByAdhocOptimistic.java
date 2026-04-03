@@ -36,9 +36,9 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.FilterBuilder;
@@ -347,8 +347,8 @@ public class TestInduceByAdhocOptimistic {
 		TableQueryStep size1 = a.toBuilder().groupBy(GroupByColumns.named("a")).build();
 		TableQueryStep size3 = a.toBuilder().groupBy(GroupByColumns.named("a", "b", "c")).build();
 
-		IAdhocDag<TableQueryStep> split =
-				splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(), ImmutableSet.of(size1, size3));
+		IAdhocDag<TableQueryStep> split = splitter.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(),
+				ImmutableSet.of(size1, size3));
 
 		// size3 can induce size1 (it contains column "a")
 		Assertions.assertThat(split.edgeSet()).hasSize(1);

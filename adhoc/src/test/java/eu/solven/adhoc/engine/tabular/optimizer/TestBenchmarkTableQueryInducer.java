@@ -37,6 +37,9 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.engine.dag.AdhocDag;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
@@ -71,7 +74,8 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 		ITableQueryInducer inducer = new TableQueryInducer(AdhocFactoriesUnsafe.factories);
 
 		IAdhocDag<TableQueryStep> dag = new AdhocDag<>();
-		SplitTableQueries inducerAndInduced = SplitTableQueries.builder().inducedToInducer(dag).build();
+		SplitTableQueries inducerAndInduced =
+				SplitTableQueries.builder().inducedToInducer(dag).lazyGraph(__ -> GraphHelpers.immutable(dag)).build();
 		Map<TableQueryStep, ICuboid> stepToValues = new LinkedHashMap<>();
 
 		TableQueryStep inducedGrandTotal = TableQueryStep.builder().aggregator(Aggregator.sum("v")).build();

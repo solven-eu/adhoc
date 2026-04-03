@@ -38,6 +38,8 @@ import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.dataframe.tabular.primitives.Int2ObjectBiConsumer;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -248,9 +250,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 			log.warn("Missing has {} sameMeasure siblings", impliedSameMeasure.size());
 
 			Set<TableQueryStep> impliedSameMeasureSameGroupBy = impliedSameMeasure.stream()
-					.filter(s -> s.getGroupBy()
-							.getSortedColumns()
-							.equals(firstMissing.getGroupBy().getSortedColumns()))
+					.filter(s -> s.getGroupBy().getSortedColumns().equals(firstMissing.getGroupBy().getSortedColumns()))
 					.collect(ImmutableSet.toImmutableSet());
 			log.warn("Missing has {} sameMeasureAndGroupBy siblings", impliedSameMeasureSameGroupBy.size());
 

@@ -38,8 +38,8 @@ import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.AdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -92,7 +92,8 @@ public class TestTableQueryEngine_Concurrent {
 			TableQueryStep stepA = TableQueryStep.builder().aggregator(Aggregator.sum("a")).build();
 			TableQueryStep stepB = TableQueryStep.builder().aggregator(Aggregator.sum("b")).build();
 			SplitTableQueries split = SplitTableQueries.builder()
-					.inducedToInducer(new AdhocDag<>())
+					.inducedToInducer(GraphHelpers.empty())
+					.lazyGraph(les -> GraphHelpers.empty())
 					.stepToTable(stepA,
 							TableQueryV4.builder()
 									.groupByToAggregator(IGroupBy.GRAND_TOTAL,

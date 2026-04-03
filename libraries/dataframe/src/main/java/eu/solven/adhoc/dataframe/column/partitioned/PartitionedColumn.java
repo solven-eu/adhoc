@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cuboid;
+package eu.solven.adhoc.dataframe.column.partitioned;
 
-import java.util.stream.Stream;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import lombok.experimental.SuperBuilder;
 
 /**
- * Enables an {@link IMultitypeColumnFastGet} to output a given {@link Stream}.
- * 
+ * A read-only {@link IMultitypeColumnFastGet} assembled from N independently-built partition columns. Keys are routed
+ * to their owning partition via {@link PartitioningHelpers#getPartitionIndex(Object, int)}, so each key lives in
+ * exactly one partition.
+ *
+ * <p>
+ * This is the read-only counterpart of {@link PartitionedMergeableColumn}: it is typically created after all
+ * per-partition writes are complete (e.g. after parallel aggregation) and is then used for sequential scanning or point
+ * lookups.
+ *
+ * @param <T>
+ *            the key type (typically {@link eu.solven.adhoc.cuboid.slice.ISlice})
  * @author Benoit Lacelle
  */
-public enum StreamStrategy {
-	/**
-	 * All slices
-	 */
-	ALL,
-	/**
-	 * Sorted fraction
-	 */
-	SORTED_SUB,
-	/**
-	 * The complement of the sorted fraction
-	 */
-	SORTED_SUB_COMPLEMENT,
+@SuperBuilder
+public class PartitionedColumn<T> extends APartitionedColumn<T, IMultitypeColumnFastGet<T>> {
+
 }

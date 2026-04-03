@@ -40,8 +40,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jgrapht.Graphs;
-
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -70,14 +68,13 @@ import eu.solven.adhoc.engine.ISinkExecutionFeedback;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.concurrent.QueryEngineConcurrencyHelper;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.DagExplainer;
 import eu.solven.adhoc.engine.observability.DagExplainerForPerfs;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasFilterOptimizer;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps;
@@ -263,14 +260,15 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return stepToValues;
 	}
 
-	private SplitTableQueries waitAndMergeSharedNodes(SplitTableQueries withoutShared,
+	public static SplitTableQueries waitAndMergeSharedNodes(SplitTableQueries withoutShared,
 			ListenableFuture<IAdhocDag<TableQueryStep>> futureSharedGraph) {
 		IAdhocDag<TableQueryStep> sharedGraph = Futures.getUnchecked(futureSharedGraph);
-		IAdhocDag<TableQueryStep> withSharedGraph = GraphHelpers.copy(withoutShared.getInducedToInducer());
-		Graphs.addGraph(withSharedGraph, sharedGraph);
 
-		SplitTableQueries withShared2 = withoutShared.toBuilder().inducedToInducer(withSharedGraph).build();
-		return withShared2;
+		// No need to merge as getLazyGraph includes the original graph
+		// IAdhocDag<TableQueryStep> withSharedGraph = GraphHelpers.copy(withoutShared.getInducedToInducer());
+		// Graphs.addGraph(withSharedGraph, sharedGraph);
+
+		return withoutShared.toBuilder().inducedToInducer(sharedGraph).build();
 	}
 
 	protected Set<String> getSuppressedGroupBy(IGroupBy generated, IGroupBy suppressed) {
@@ -374,44 +372,66 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return stepToValues;
 	}
 
+	@SuppressWarnings("PMD.CloseResource")
 	protected Map<TableQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
 			TableQueryV4 tableQuery) {
 		List<TableQueryV4> nonAmbiguousQueries = splitForNonAmbiguousColumns(tableQuery);
 
+		List<Map<TableQueryStep, ICuboid>> eachStepToValues;
+
+		if (StandardQueryOptions.CONCURRENT.isActive(queryPod.getOptions())) {
+			ListeningExecutorService service = queryPod.getExecutorService();
+
+			List<ListenableFuture<Map<TableQueryStep, ICuboid>>> futuresEachStepToValues = nonAmbiguousQueries.stream()
+					.map(nonAmbiguousQuery -> service.submit(
+							() -> executeOneNonAmbiguous(sinkExecutionFeedback, tableQueries, nonAmbiguousQuery)))
+					.toList();
+
+			eachStepToValues = Futures.getUnchecked(Futures.allAsList(futuresEachStepToValues));
+		} else {
+			eachStepToValues = nonAmbiguousQueries.stream()
+					.map(nonAmbiguousQuery -> executeOneNonAmbiguous(sinkExecutionFeedback,
+							tableQueries,
+							nonAmbiguousQuery))
+					.toList();
+		}
+
 		Map<TableQueryStep, ICuboid> allStepToValues = new LinkedHashMap<>();
+		eachStepToValues.forEach(allStepToValues::putAll);
+		return allStepToValues;
+	}
 
-		// TODO This should be concurrent if CONCURRENT is active
-		nonAmbiguousQueries.forEach(nonAmbiguousQuery -> {
-			IStopwatch stopWatchSinking;
-			Map<TableQueryStep, ICuboid> stepToValues;
+	protected Map<TableQueryStep, ICuboid> executeOneNonAmbiguous(ISinkExecutionFeedback sinkExecutionFeedback,
+			IHasTableQueryForSteps tableQueries,
+			TableQueryV4 tableQuery) {
+		IStopwatch stopWatchSinking;
+		Map<TableQueryStep, ICuboid> stepToValues;
 
-			IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
-			// Open the stream: the table may or may not return after the actual execution
-			try (ITabularRecordStream rowsStream = openTableStream(nonAmbiguousQuery)) {
-				if (queryPod.isDebugOrExplain()) {
-					// JooQ may be slow to load some classes
-					// Slowness also due to fetching stream characteristics, which actually open the query
-					Duration openingElasped = openingStopwatch.elapsed();
-					eventBus.post(AdhocLogEvent.builder()
-							.debug(queryPod.isDebug())
-							.explain(queryPod.isExplain())
-							.performance(true)
-							.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, nonAmbiguousQuery))
-							.source(this)
-							.build());
-				}
-
-				stopWatchSinking = factories.getStopwatchFactory().createStarted();
-				stepToValues = aggregateStreamToAggregates(tableQueries, nonAmbiguousQuery, rowsStream);
+		IStopwatch openingStopwatch = factories.getStopwatchFactory().createStarted();
+		// Open the stream: the table may or may not return after the actual execution
+		try (ITabularRecordStream rowsStream = openTableStream(tableQuery)) {
+			if (queryPod.isDebugOrExplain()) {
+				// JooQ may be slow to load some classes
+				// Slowness also due to fetching stream characteristics, which actually open the
+				// query
+				Duration openingElasped = openingStopwatch.elapsed();
+				eventBus.post(AdhocLogEvent.builder()
+						.debug(queryPod.isDebug())
+						.explain(queryPod.isExplain())
+						.performance(true)
+						.message(formatPerfLog("/-- time=%s for openingStream", openingElasped, tableQuery))
+						.source(this)
+						.build());
 			}
 
-			Duration elapsed = stopWatchSinking.elapsed();
-			reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+			stopWatchSinking = factories.getStopwatchFactory().createStarted();
+			stepToValues = aggregateStreamToAggregates(tableQueries, tableQuery, rowsStream);
+		}
 
-			allStepToValues.putAll(stepToValues);
-		});
-		return allStepToValues;
+		Duration elapsed = stopWatchSinking.elapsed();
+		reportOnTableQuery(tableQuery, sinkExecutionFeedback, elapsed, stepToValues);
+		return stepToValues;
 	}
 
 	/**

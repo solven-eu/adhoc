@@ -23,7 +23,6 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Objects;
-import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
@@ -32,7 +31,6 @@ import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.map.AbstractAdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

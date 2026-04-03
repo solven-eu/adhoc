@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;

@@ -30,6 +30,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.map.MaskedAdhocMap.RetainAllKeys;
@@ -218,7 +219,7 @@ public class TestMaskedAdhocMap {
 
 	@Test
 	public void testRetainAll_misorderOnlyMask() {
-		Map<String, ?> mask = Map.of("a", "a1", "b", "b1", "c", "c1");
+		Map<String, ?> mask = ImmutableMap.of("a", "a1", "b", "b1", "c", "c1");
 
 		IAdhocMap decorated = RowSliceFactory.builder().build().newMapBuilder(List.of()).build();
 		MaskedAdhocMap masked = MaskedAdhocMap.builder().decorated(decorated).mask(mask).build();

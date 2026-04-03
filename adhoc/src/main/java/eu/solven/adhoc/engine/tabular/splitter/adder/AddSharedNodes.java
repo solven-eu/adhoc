@@ -48,9 +48,9 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.concurrent.DagCompletableExecutor;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
@@ -80,7 +80,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 	@Default
 	@NonNull
-	final IHasQueryOptionsAndExecutorService hasOptions = IHasQueryOptionsAndExecutorService.noOption();
+	final IHasQueryOptionsAndExecutorService concurrencyOptions = IHasQueryOptionsAndExecutorService.noOption();
 
 	@Default
 	@NonNull
@@ -93,7 +93,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 	public static IAddSharedNodesFactory makeFactory() {
 		return (hasOptions, filterBundle) -> AddSharedNodes.builder()
-				.hasOptions(hasOptions)
+				.concurrencyOptions(hasOptions)
 				.filterStripperFactory(filterBundle.getFilterStripperFactory())
 				.filterOptimizer(filterBundle.getFilterOptimizer())
 				.build();
@@ -111,18 +111,18 @@ public class AddSharedNodes implements IAddSharedNodes {
 	 * as "must finish first" dependencies. The snapshot is never mutated; new shared nodes inserted into the live DAG
 	 * during processing are invisible to the executor and are stabilised internally by {@link #addSharedNode}.
 	 *
-	 * @param input
+	 * @param original
 	 *            the original DAG; never mutated
 	 * @return a new DAG that may contain additional shared nodes
 	 */
 	@Override
-	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> input) {
-		if (!StandardQueryOptions.CONCURRENT.isActive(hasOptions.getOptions())) {
-			return processSequentially(input);
-		}
-
+	public IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> original) {
 		// Work on a copy so we never mutate the caller's graph.
-		IAdhocDag<TableQueryStep> dag = GraphHelpers.copy(input);
+		IAdhocDag<TableQueryStep> dag = GraphHelpers.copy(original);
+
+		if (!StandardQueryOptions.CONCURRENT.isActive(concurrencyOptions.getOptions())) {
+			return processSequentially(dag);
+		}
 
 		// Build a reversed snapshot for the executor's dependency graph (never mutated).
 		// Original: induced→inducer. Reversed: inducer→induced.
@@ -138,11 +138,12 @@ public class AddSharedNodes implements IAddSharedNodes {
 				.queryStepsDone(ConcurrentHashMap.newKeySet())
 				.onReadyStep(node -> addSharedNode(lock, dag, node))
 				// Forces the CPU pool as this process is CPU only
-				.executor(hasOptions.getExecutorService())
+				.executor(concurrencyOptions.getExecutorService())
 				.build();
 
 		dagExecutor.executeRecursively(roots).join();
-		return dag;
+
+		return GraphHelpers.immutable(dag);
 	}
 
 	/**
@@ -395,9 +396,8 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 		Set<String> sharedColumns = Sets.union(columnsForFilters, columnsForGroupBy);
 
-		assert inducerGroupedByColumns.keySet()
-				.containsAll(sharedColumns) : "InducedToInducer graph issue around inducer=%s and induced=%s"
-						.formatted(inducer, relatedSteps);
+		assert inducerGroupedByColumns.keySet().containsAll(sharedColumns)
+				: "InducedToInducer graph issue around inducer=%s and induced=%s".formatted(inducer, relatedSteps);
 		inducerGroupedByColumns.keySet().retainAll(sharedColumns);
 
 		return inducer.toBuilder()

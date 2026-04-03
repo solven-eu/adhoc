@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cuboid;
+package eu.solven.adhoc.dataframe.column.partitioned;
 
-import java.util.stream.Stream;
+import lombok.experimental.UtilityClass;
 
 /**
- * Enables an {@link IMultitypeColumnFastGet} to output a given {@link Stream}.
- * 
+ * Utility methods for hash-based partitioning as used by {@link IPartitioned} implementations.
+ *
  * @author Benoit Lacelle
  */
-public enum StreamStrategy {
+@UtilityClass
+public class PartitioningHelpers {
+
 	/**
-	 * All slices
+	 * Maps {@code key} to a partition index in {@code [0, nbPartitions)}.
+	 *
+	 * <p>
+	 * {@link Math#floorMod} is used rather than {@code %} so that negative hash codes — including
+	 * {@link Integer#MIN_VALUE} — always produce a non-negative index.
+	 *
+	 * @param key
+	 *            the key to route; must not be {@code null}
+	 * @param nbPartitions
+	 *            the total number of partitions; must be strictly positive
+	 * @return a value in {@code [0, nbPartitions)}
 	 */
-	ALL,
-	/**
-	 * Sorted fraction
-	 */
-	SORTED_SUB,
-	/**
-	 * The complement of the sorted fraction
-	 */
-	SORTED_SUB_COMPLEMENT,
+	public static int getPartitionIndex(Object key, int nbPartitions) {
+		return Math.floorMod(key.hashCode(), nbPartitions);
+	}
 }

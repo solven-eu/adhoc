@@ -103,9 +103,7 @@ public class QueryWithLeftover {
 			groupingColumns = ImmutableSet.of();
 		} else {
 			groupingColumns = groupByColumns.stream()
-					.filter(c -> tableQuery.getGroupBys()
-							.stream()
-							.anyMatch(gb -> !gb.getSortedColumns().contains(c)))
+					.filter(c -> tableQuery.getGroupBys().stream().anyMatch(gb -> !gb.getSortedColumns().contains(c)))
 					.collect(ImmutableSet.toImmutableSet());
 
 		}

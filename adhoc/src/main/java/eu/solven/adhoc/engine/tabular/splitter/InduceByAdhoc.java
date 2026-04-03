@@ -37,9 +37,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
 import eu.solven.adhoc.engine.tabular.splitter.adder.AddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
@@ -86,6 +86,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	@Default
 	protected IAddSharedNodes.IAddSharedNodesFactory sharedNodesAdderFactory = AddSharedNodes.makeFactory();
 
+	@SuppressWarnings("PMD.CloseResource")
 	@Override
 	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
@@ -165,8 +166,6 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 * A last-minute step typically used to add shared nodes in the middle of the DAG, to help applying some
 	 * computations only once.
 	 *
-	 * @param queryBundle
-	 *            query-scoped filter tools
 	 * @param inducedToInducer
 	 *            current DAG
 	 * @return a DAG fragment containing any newly added shared nodes

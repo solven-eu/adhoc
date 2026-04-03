@@ -70,6 +70,11 @@ public enum StandardQueryOptions implements IQueryOption {
 	CONCURRENT,
 
 	/**
+	 * Enable partitioning of queries. Typically based on a modulo over the hash of `ISlice`.
+	 */
+	PARTITIONED,
+
+	/**
 	 * Force sequential execution of inner parts of a query. Has priority over {@value #CONCURRENT}.
 	 */
 	SEQUENTIAL,

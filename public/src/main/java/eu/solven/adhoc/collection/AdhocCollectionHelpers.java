@@ -143,6 +143,7 @@ public class AdhocCollectionHelpers {
 	 * @param c
 	 * @return the first item of input {@link Collection}
 	 */
+	@SuppressWarnings("PMD.LooseCoupling")
 	public static <T> T getFirst(Collection<T> c) {
 		if (c.isEmpty()) {
 			throw new IllegalArgumentException("Can not .getFirst due to emptyness");

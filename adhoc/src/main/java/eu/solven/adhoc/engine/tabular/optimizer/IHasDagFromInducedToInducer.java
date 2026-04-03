@@ -33,6 +33,8 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.observability.SizeAndDuration;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;

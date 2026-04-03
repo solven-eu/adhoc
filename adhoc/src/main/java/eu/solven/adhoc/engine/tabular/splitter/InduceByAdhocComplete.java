@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,21 +32,16 @@ import org.jgrapht.Graphs;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
-import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
-import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
-import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;

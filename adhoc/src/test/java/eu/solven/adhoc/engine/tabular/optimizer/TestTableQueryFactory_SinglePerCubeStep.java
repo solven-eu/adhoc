@@ -63,7 +63,8 @@ public class TestTableQueryFactory_SinglePerCubeStep {
 				.groupBy(GroupByColumns.named("d"))
 				.aggregator(Aggregator.sum("m1"))
 				.build();
-		SplitTableQueries split = optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
+		SplitTableQueries split =
+				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(2)

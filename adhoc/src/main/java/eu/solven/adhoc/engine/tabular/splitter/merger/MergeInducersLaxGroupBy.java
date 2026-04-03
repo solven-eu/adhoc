@@ -24,8 +24,8 @@ package eu.solven.adhoc.engine.tabular.splitter.merger;
 
 import com.google.common.collect.LinkedHashMultimap;
 
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;

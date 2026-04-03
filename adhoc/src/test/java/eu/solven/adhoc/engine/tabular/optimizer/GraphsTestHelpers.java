@@ -26,6 +26,7 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowingConsumer;
 import org.jgrapht.graph.DefaultEdge;
 
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 
 public class GraphsTestHelpers {

@@ -24,10 +24,10 @@ package eu.solven.adhoc.engine.tabular.splitter;
 
 import java.util.Set;
 
+import eu.solven.adhoc.engine.dag.GraphHelpers;
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.GraphHelpers;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 import eu.solven.adhoc.query.table.TableQuery;
@@ -42,6 +42,7 @@ import eu.solven.adhoc.table.ITableWrapper;
  * 
  * @author Benoit Lacelle
  */
+@FunctionalInterface
 public interface ITableStepsSplitter {
 
 	/**
@@ -58,12 +59,13 @@ public interface ITableStepsSplitter {
 	 * Evaluates lazily some intermdiate vertices and edges. This can be done lazily as it is forbidden to create new
 	 * roots/inducers, hence it would not impact the {@link TableQuery}.
 	 * 
-	 * @param les
-	 * 
 	 * @return
 	 */
-	IAdhocDag<TableQueryStep> getLazyGraph(IHasQueryOptionsAndExecutorService hasOptions,
-			IAdhocDag<TableQueryStep> dag);
+	default IAdhocDag<TableQueryStep> getLazyGraph(IHasQueryOptionsAndExecutorService hasOptions,
+			IAdhocDag<TableQueryStep> withoutShared) {
+		// By default, do not add any node
+		return GraphHelpers.immutable(withoutShared);
+	}
 
 	@Deprecated(since = "Unit-Tests")
 	default IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,

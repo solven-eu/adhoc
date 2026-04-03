@@ -43,8 +43,9 @@ public class HelloGroupBy {
 	public void helloGroupBy() {
 		IGroupBy groupBy = GroupByColumns.named("color", "ccy");
 
-		Assertions.assertThat(groupBy.getGroupedByColumns()).containsExactly("ccy", "color");
-		Assertions.assertThat(groupBy.getNameToColumn().get("color")).isEqualTo(ReferencedColumn.ref("color"));
-		Assertions.assertThat(groupBy.getNameToColumn().get("ccy")).isEqualTo(ReferencedColumn.ref("ccy"));
+		Assertions.assertThat(groupBy.getSequencedColumns()).containsExactly("ccy", "color");
+		Assertions.assertThat(groupBy.getSortedColumns()).containsExactly("ccy", "color");
+		Assertions.assertThat(groupBy.getColumn("color")).isEqualTo(ReferencedColumn.ref("color"));
+		Assertions.assertThat(groupBy.getColumn("ccy")).isEqualTo(ReferencedColumn.ref("ccy"));
 	}
 }

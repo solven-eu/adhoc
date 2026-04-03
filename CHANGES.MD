@@ -5,6 +5,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ## [0.0.19]
 
+### Added
+- `StandardQueryOptions.PARTITIONED`: new query option that splits the output column into N hash partitions (one per available core) during aggregation. Each partition is an independent `PartitionedMergeableColumn`, reducing per-partition map size and enabling future parallel reduction across cores.
+
 ### Fixed
 - `FilterHelpers.filterComparator()`: now correctly returns 0 for semantically equivalent filters with different operand order (e.g., `AND(a,b)` vs `AND(b,a)`). Type ranking: AND > OR > NOT > COLUMN.
 

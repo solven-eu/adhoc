@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter.adder;
 
+import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
-import eu.solven.adhoc.engine.tabular.optimizer.IAdhocDag;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 
@@ -35,6 +35,11 @@ import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
 @FunctionalInterface
 public interface IAddSharedNodes {
 
+	/**
+	 * 
+	 * @param inducedToInducer
+	 * @return a new {@link IAdhocDag} covering the input, and with additional vertices+edges.
+	 */
 	IAdhocDag<TableQueryStep> addSharedNodes(IAdhocDag<TableQueryStep> inducedToInducer);
 
 	/**

@@ -71,7 +71,8 @@ public class DecompositionHelpers {
 
 		if (step.getGroupBy().getSortedColumns().contains(column)) {
 			// Underlying measure handles an array: `scenarioIndex` is meaningless
-			Map<String, IAdhocColumn> groupByWithoutIndex = new LinkedHashMap<>(step.getGroupBy().getSortedNameToColumn());
+			Map<String, IAdhocColumn> groupByWithoutIndex =
+					new LinkedHashMap<>(step.getGroupBy().getSortedNameToColumn());
 			groupByWithoutIndex.remove(column);
 			underlyingStep.groupBy(GroupByColumns.of(groupByWithoutIndex.values())).build();
 		}
