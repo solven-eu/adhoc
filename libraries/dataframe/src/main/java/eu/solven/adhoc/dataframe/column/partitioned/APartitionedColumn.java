@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.column.partitioned;
 import java.util.List;
 import java.util.stream.Stream;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cuboid.IColumnScanner;
@@ -140,5 +142,20 @@ public abstract class APartitionedColumn<T, D extends IMultitypeColumnFastGet<T>
 				compactable.compact();
 			}
 		});
+	}
+
+	@Override
+	public String toString() {
+		ToStringHelper toStringHelper = MoreObjects.toStringHelper(this);
+
+		toStringHelper.add("nbPartitions", getNbPartitions());
+
+		for (int i = 0; i < getNbPartitions(); i++) {
+			D partition = getPartition(i);
+
+			toStringHelper.add("partition:" + i, partition);
+		}
+
+		return toStringHelper.toString();
 	}
 }

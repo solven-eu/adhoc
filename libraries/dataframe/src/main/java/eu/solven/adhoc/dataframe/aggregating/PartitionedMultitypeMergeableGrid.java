@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.dataframe.aggregating;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
@@ -60,13 +61,9 @@ public class PartitionedMultitypeMergeableGrid<T extends Comparable<T>, K> exten
 	@Default
 	AdhocFactories factories = AdhocFactories.builder().build();
 
-	@NonNull
-	@Default
-	Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
-
 	@Override
 	public Set<String> getAggregators() {
-		return aggregatorToAggregates.keySet();
+		return partitions.stream().flatMap(g -> g.getAggregators().stream()).collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override
@@ -103,4 +100,18 @@ public class PartitionedMultitypeMergeableGrid<T extends Comparable<T>, K> exten
 		return partitions.get(index);
 	}
 
+	@Override
+	public String toString() {
+		ToStringHelper sh = MoreObjects.toStringHelper(this);
+
+		sh.add("nbPartitions", getNbPartitions());
+
+		for (int i = 0; i < getNbPartitions(); i++) {
+			IMultitypeMergeableGrid<T> partition = getPartition(i);
+
+			sh.add("partition:" + i, partition);
+		}
+
+		return sh.toString();
+	}
 }
