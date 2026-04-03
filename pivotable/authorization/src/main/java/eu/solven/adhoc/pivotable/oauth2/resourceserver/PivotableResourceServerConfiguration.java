@@ -36,6 +36,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 
@@ -75,11 +77,20 @@ public class PivotableResourceServerConfiguration {
 	// Jwt). And later a Jwt to a AbstractAuthenticationToken.
 	@Bean
 	@SneakyThrows(ParseException.class)
-	public ReactiveJwtDecoder jwtDecoder(Environment env, IUuidGenerator uuidGenerator) {
+	public ReactiveJwtDecoder reactiveJwtDecoder(Environment env, IUuidGenerator uuidGenerator) {
 		OctetSequenceKey octetSequenceKey = loadOAuth2SigningKey(env, uuidGenerator);
 		SecretKey secretKey = octetSequenceKey.toSecretKey();
 
 		return NimbusReactiveJwtDecoder.withSecretKey(secretKey).macAlgorithm(MAC_ALGORITHM).build();
+	}
+
+	@Bean
+	@SneakyThrows(ParseException.class)
+	public JwtDecoder jwtDecoder(Environment env, IUuidGenerator uuidGenerator) {
+		OctetSequenceKey octetSequenceKey = loadOAuth2SigningKey(env, uuidGenerator);
+		SecretKey secretKey = octetSequenceKey.toSecretKey();
+
+		return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MAC_ALGORITHM).build();
 	}
 
 	@SuppressWarnings("PMD.AvoidSynchronizedStatement")

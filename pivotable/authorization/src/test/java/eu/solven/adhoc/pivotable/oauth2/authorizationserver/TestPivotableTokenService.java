@@ -77,7 +77,7 @@ public class TestPivotableTokenService {
 		}
 
 		JwtReactiveAuthenticationManager authManager = new JwtReactiveAuthenticationManager(
-				new PivotableResourceServerConfiguration().jwtDecoder(env, JdkUuidGenerator.INSTANCE));
+				new PivotableResourceServerConfiguration().reactiveJwtDecoder(env, JdkUuidGenerator.INSTANCE));
 
 		Authentication auth = authManager.authenticate(new BearerTokenAuthenticationToken(accessToken)).block();
 
@@ -111,7 +111,7 @@ public class TestPivotableTokenService {
 		}
 
 		JwtReactiveAuthenticationManager authManager = new JwtReactiveAuthenticationManager(
-				new PivotableResourceServerConfiguration().jwtDecoder(env, JdkUuidGenerator.INSTANCE));
+				new PivotableResourceServerConfiguration().reactiveJwtDecoder(env, JdkUuidGenerator.INSTANCE));
 
 		Authentication auth = authManager.authenticate(new BearerTokenAuthenticationToken(accessToken)).block();
 

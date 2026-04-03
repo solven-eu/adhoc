@@ -1,0 +1,21 @@
+# server: the default configuration for a contestServer
+
+spring:
+    security:
+        oauth2:
+            client:
+                registration:
+                    unitTest:
+                        clientId: unitTestClientId
+                        clientSecret: unitTestClientSecret
+                        providerId: unitTestProviderId
+                        authorizationGrantType: client_credentials
+                # https://stackoverflow.com/questions/71104112/caused-by-java-lang-illegalstateexception-provider-id-must-be-specified-for-cl
+                provider:
+                  unitTest:
+                    authorization-uri: https://api.instagram.com/oauth/authorize
+                    token-uri: https://api.instagram.com/oauth/access_token
+                    # authorizationGrantType: client_credentials
+
+adhoc.pivotable.login.oauth2:
+    unitTest.enabled: true

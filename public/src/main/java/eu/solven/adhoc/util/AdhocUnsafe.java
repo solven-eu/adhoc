@@ -71,7 +71,8 @@ public class AdhocUnsafe {
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
 		// Recreate the VT executor so tests starting a fresh state get a non-shutdown executor
-		adhocMixedPool = MoreExecutors.listeningDecorator(Executors.newVirtualThreadPerTaskExecutor());
+		adhocMixedPool = MoreExecutors.listeningDecorator(
+				Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("adhoc-vt-", 0).factory()));
 		// Recreate FJP so tests starting a fresh state get a non-shutdown pool
 		// asyncMode is false as stack-based seems better for our DAG usages.
 		adhocCpuPool = new ForkJoinPool(parallelism, new NamingForkJoinWorkerThreadFactory("adhoc-cpu-"), null, false);

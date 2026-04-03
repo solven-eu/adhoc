@@ -18,6 +18,36 @@
 		<automatic.module.name>eu.solven.adhoc.pivotable.js</automatic.module.name>
 	</properties>
 
+	<dependencies>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>webjars-locator-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>jquery</artifactId>
+			<version>3.7.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>bootstrap</artifactId>
+			<version>5.3.8</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue -->
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>vue</artifactId>
+			<version>3.5.31</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>vue-router</artifactId>
+			<version>4.6.3</version>
+		</dependency>
+	</dependencies>
+
 	<build>
 		<resources>
 			<resource>

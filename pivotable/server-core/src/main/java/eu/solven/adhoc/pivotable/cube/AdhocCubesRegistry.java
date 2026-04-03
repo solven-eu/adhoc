@@ -86,8 +86,4 @@ public class AdhocCubesRegistry {
 
 		return metaStream.collect(Collectors.toList());
 	}
-
-	// public Stream<? extends AdhocEntrypointMetadata> getGames() {
-	// return idToCube.values().stream();
-	// }
 }
