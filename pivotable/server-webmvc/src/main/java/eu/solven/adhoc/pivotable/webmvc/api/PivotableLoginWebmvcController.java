@@ -35,10 +35,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,6 +62,7 @@ import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
 import graphql.com.google.common.collect.ImmutableMap;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -109,7 +110,7 @@ public class PivotableLoginWebmvcController {
 	 */
 	@GetMapping("/json")
 	@ResponseBody
-	public Map<String, ?> loginStatus(@AuthenticationPrincipal OAuth2User oauth2User) {
+	public Map<String, ?> loginStatus() {
 		Optional<PivotableUser> user = userMayEmpty();
 		if (user.isPresent()) {
 			return Map.of("login", HttpStatus.OK.value());
@@ -121,16 +122,34 @@ public class PivotableLoginWebmvcController {
 	/**
 	 * BASIC login is available only when the {@code fakeUser} profile is active.
 	 *
+	 * <p>
+	 * In Spring Security 6, {@code BasicAuthenticationFilter} authenticates per-request but never calls
+	 * {@code SecurityContextRepository.saveContext()}, so the SecurityContext is not persisted to the HTTP session
+	 * automatically. This endpoint explicitly saves it so that subsequent requests can restore authentication from the
+	 * session cookie.
+	 *
+	 * @param request
+	 *            the current servlet request, used to obtain/create the HTTP session
 	 * @return authentication details for the fake user
 	 */
 	@PostMapping("/basic")
 	@ResponseBody
-	public Map<String, ?> basic() {
+	public Map<String, ?> basic(HttpServletRequest request) {
 		if (!env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_FAKEUSER))) {
 			throw new LoginRouteButNotAuthenticatedException("No BASIC");
 		}
 
 		PivotableUserRaw user = user();
+
+		// Spring Security 6 replaced SecurityContextPersistenceFilter (which auto-saved after every request) with
+		// SecurityContextHolderFilter (which only loads). BasicAuthenticationFilter was never updated to call
+		// saveContext() because HTTP Basic is a stateless protocol — but this endpoint deliberately bootstraps a
+		// stateful session from a one-time Basic credential, so we save the context explicitly.
+		// https://docs.spring.io/spring-security/reference/migration/servlet/session-management.html#_require_explicit_saving_of_securitycontextrepository
+		HttpSession session = request.getSession(true);
+		session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+				SecurityContextHolder.getContext());
+
 		return ImmutableMap.<String, Object>builder()
 				.put("Authentication", "BASIC")
 				.put("username", user.getAccountId())

@@ -34,6 +34,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
@@ -47,6 +48,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
@@ -121,6 +123,7 @@ public class PivotableSocialWebmvcSecurity {
 						"/ui/img/**",
 						// The routes used by the spa
 						"/",
+						"/index.html",
 						"/favicon.ico",
 						"/html/**",
 
@@ -162,7 +165,7 @@ public class PivotableSocialWebmvcSecurity {
 						.permitAll()
 
 						// The route used by the SPA: they all serve index.html
-						.requestMatchers("/", "/html/**")
+						.requestMatchers("/", "/index.html", "/html/**")
 						.permitAll()
 
 						// Webjars and static resources
@@ -212,6 +215,10 @@ public class PivotableSocialWebmvcSecurity {
 					}
 				})
 
+				// TODO Is this the normal way to get a cookie? How does it relates with session?
+				// .rememberMe(rememberMe -> rememberMe.alwaysRemember(true).userDetailsService(userDetailsService()))
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+
 				.logout(logout -> {
 					SimpleUrlLogoutSuccessHandler logoutSuccessHandler = new SimpleUrlLogoutSuccessHandler();
 					// We need to redirect to a 2XX URL, and not a 3XX URL, as Fetch API can not intercept redirections.
@@ -255,6 +262,11 @@ public class PivotableSocialWebmvcSecurity {
 	// `IPivotableSpringProfiles.P_FAKEUSER` profile
 	@SuppressWarnings("java:S6437")
 	private HttpSecurity configureBasicForFakeUser(HttpSecurity commonConf) {
+		InMemoryUserDetailsManager userDetailsService = userDetailsService();
+		return commonConf.userDetailsService(userDetailsService);
+	}
+
+	private InMemoryUserDetailsManager userDetailsService() {
 		Map<String, UserDetails> userDetails = new ConcurrentHashMap<>();
 
 		UserDetails fakeUser = User.builder()
@@ -266,6 +278,8 @@ public class PivotableSocialWebmvcSecurity {
 
 		userDetails.put(fakeUser.getUsername(), fakeUser);
 
-		return commonConf.userDetailsService(new InMemoryUserDetailsManager(fakeUser));
+		InMemoryUserDetailsManager userDetailsService = new InMemoryUserDetailsManager(fakeUser);
+		return userDetailsService;
 	}
+
 }

@@ -63,7 +63,8 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerSecurityWebfluxApplication.class,
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-		properties = {IPivotableSpringProfiles.P_CONFIG_IMPORT, "logging.level.org.springframework.security.web=DEBUG"})
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT,
+				"logging.level.org.springframework.security.web=DEBUG" })
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul

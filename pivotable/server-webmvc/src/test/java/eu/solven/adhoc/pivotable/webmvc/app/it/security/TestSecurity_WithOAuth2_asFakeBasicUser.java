@@ -31,9 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -42,6 +44,7 @@ import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
 import eu.solven.adhoc.pivotable.app.PivotableJackson;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableLoginWebmvcController;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -121,7 +124,7 @@ public class TestSecurity_WithOAuth2_asFakeBasicUser extends TestSecurity_WithOA
 	}
 
 	@Test
-	public void testLoginBasic() throws Exception {
+	public void testLoginBasic_unknownUser() throws Exception {
 		log.debug("About {}", PivotableLoginWebmvcController.class);
 
 		// Use MockMvc to inject a valid CSRF token (required by the session-based security chain)
@@ -132,5 +135,34 @@ public class TestSecurity_WithOAuth2_asFakeBasicUser extends TestSecurity_WithOA
 						"Basic " + HttpHeaders
 								.encodeBasicAuth("someUnknownUser", "no_password", StandardCharsets.UTF_8)))
 				.andExpect(MockMvcResultMatchers.status().isUnauthorized());
+	}
+
+	@Test
+	public void testLoginBasic_fakeUser() throws Exception {
+		log.debug("About {}", PivotableLoginWebmvcController.class);
+
+		// Step 1: authenticate via BASIC and capture the session cookie
+		MvcResult loginResult = mockMvc
+				.perform(MockMvcRequestBuilders.post("/api/login/v1/basic")
+						.with(SecurityMockMvcRequestPostProcessors.csrf())
+						.accept(MediaType.APPLICATION_JSON)
+						.header(HttpHeaders.AUTHORIZATION,
+								"Basic " + HttpHeaders.encodeBasicAuth(FakeUser.ACCOUNT_ID.toString(),
+										"no_password",
+										StandardCharsets.UTF_8)))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andReturn();
+
+		// MockMvc does not set Set-Cookie response headers for sessions (the real servlet container does that);
+		// carry the session object directly instead.
+		HttpSession session = loginResult.getRequest().getSession(false);
+		Assertions.assertThat(session).isNotNull();
+
+		// Step 2: replay the session — the authenticated SecurityContext should be restored
+		mockMvc.perform(MockMvcRequestBuilders.get("/api/login/v1/json")
+				.accept(MediaType.APPLICATION_JSON)
+				.session((MockHttpSession) session))
+				.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.login").value(200));
 	}
 }

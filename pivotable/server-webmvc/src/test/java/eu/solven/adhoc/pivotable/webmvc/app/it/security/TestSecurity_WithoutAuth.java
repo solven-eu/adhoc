@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.StatusAssertions;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
@@ -89,6 +91,29 @@ public class TestSecurity_WithoutAuth {
 				.isOk()
 				.expectBody(String.class)
 				.value(greeting -> assertThat(greeting).isEqualTo("This is a public endpoint"));
+	}
+
+	@Test
+	public void testRoot() {
+		log.debug("About {}", GreetingController.class);
+
+		Stream.of(
+				// "",
+				"/").forEach(url -> {
+					MvcResult mvcResult = (MvcResult) webTestClient
+
+							.get()
+							.uri(url)
+							.exchange()
+
+							.expectStatus()
+							.isOk()
+
+							.returnResult()
+							.getMockServerResult();
+
+					Assertions.assertThat(mvcResult.getModelAndView().getViewName()).isEqualTo("forward:index.html");
+				});
 	}
 
 	@Test

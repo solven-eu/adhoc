@@ -278,6 +278,8 @@ public class PivotableSocialWebfluxSecurity {
 
 		UserDetailsRepositoryReactiveAuthenticationManager ram =
 				new UserDetailsRepositoryReactiveAuthenticationManager(new MapReactiveUserDetailsService(userDetails));
+
+		// This will save session in-memory. Does it work only for BASIC, but not oauth2?
 		basic.authenticationManager(ram).securityContextRepository(new WebSessionServerSecurityContextRepository());
 	}
 }

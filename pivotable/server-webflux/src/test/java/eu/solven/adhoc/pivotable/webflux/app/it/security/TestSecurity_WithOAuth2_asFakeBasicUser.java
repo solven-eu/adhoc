@@ -31,9 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.reactive.server.FluxExchangeResult;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
@@ -137,5 +139,54 @@ public class TestSecurity_WithOAuth2_asFakeBasicUser extends TestSecurity_WithOA
 
 				.expectStatus()
 				.isUnauthorized();
+	}
+
+	@Test
+	@SuppressWarnings("rawtypes")
+	public void testLoginBasic_fakeUser() throws Exception {
+		log.debug("About {}", PivotableLoginWebfluxController.class);
+
+		// Step 1: authenticate via BASIC and capture the SESSION cookie.
+		// In WebFlux, AuthenticationWebFilter explicitly calls securityContextRepository.save() after successful
+		// authentication, so the SESSION cookie is set automatically — unlike the servlet BasicAuthenticationFilter.
+		// https://docs.spring.io/spring-security/reference/migration/servlet/session-management.html#_require_explicit_saving_of_securitycontextrepository
+		FluxExchangeResult<Map> loginResult = webTestClient
+
+				// https://www.baeldung.com/spring-security-csrf
+				.mutateWith(SecurityMockServerConfigurers.csrf())
+
+				.post()
+				.uri("/api/login/v1/basic")
+				.accept(MediaType.APPLICATION_JSON)
+				.header(HttpHeaders.AUTHORIZATION,
+						"Basic " + HttpHeaders
+								.encodeBasicAuth(FakeUser.ACCOUNT_ID.toString(), "no_password", StandardCharsets.UTF_8))
+				.exchange()
+
+				.expectStatus()
+				.isOk()
+
+				.expectCookie()
+				.exists("SESSION")
+
+				.returnResult(Map.class);
+
+		ResponseCookie sessionCookie = loginResult.getResponseCookies().getFirst("SESSION");
+		Assertions.assertThat(sessionCookie).isNotNull();
+
+		// Step 2: replay the SESSION cookie — the authenticated SecurityContext should be restored
+		webTestClient.get()
+				.uri("/api/login/v1/json")
+				.accept(MediaType.APPLICATION_JSON)
+				.cookie(sessionCookie.getName(), sessionCookie.getValue())
+				.exchange()
+
+				.expectStatus()
+				.isOk()
+
+				.expectBody(Map.class)
+				.value(body -> {
+					Assertions.assertThat(body).containsEntry("login", 200);
+				});
 	}
 }

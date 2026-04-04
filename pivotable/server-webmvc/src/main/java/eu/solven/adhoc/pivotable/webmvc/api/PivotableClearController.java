@@ -25,10 +25,11 @@ package eu.solven.adhoc.pivotable.webmvc.api;
 import java.util.Map;
 
 import org.springframework.context.ApplicationContext;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,11 +42,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 @RestController
+@RequestMapping(IPivotableApiConstants.PREFIX)
 public class PivotableClearController {
 	final ApplicationContext appContext;
 
-	@GetMapping
-	@PostMapping
+	@RequestMapping(method = { RequestMethod.GET, RequestMethod.POST }, path = "/clear")
 	public Map<String, ?> clear() {
 		Map<String, IHasCache> beansWithCache = appContext.getBeansOfType(IHasCache.class);
 

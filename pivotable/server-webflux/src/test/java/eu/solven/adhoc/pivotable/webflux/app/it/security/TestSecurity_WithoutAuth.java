@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -84,6 +85,26 @@ public class TestSecurity_WithoutAuth {
 				.isOk()
 				.expectBody(String.class)
 				.value(greeting -> assertThat(greeting).isEqualTo("This is a public endpoint"));
+	}
+
+	@Test
+	public void testRoot() {
+		log.debug("About {}", GreetingController.class);
+
+		Stream.of(
+				// "",
+				"/").forEach(url -> {
+					webTestClient
+
+							.get()
+							.uri(url)
+							.exchange()
+
+							.expectStatus()
+							.isOk()
+							.expectHeader()
+							.contentType(MediaType.TEXT_HTML);
+				});
 	}
 
 	@Test

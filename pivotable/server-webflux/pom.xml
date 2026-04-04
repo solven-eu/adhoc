@@ -26,6 +26,11 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<dependency>
 			<!-- Used by some examples datasets in InjectSimpleCubesConfig -->
 			<groupId>org.duckdb</groupId>
 			<artifactId>duckdb_jdbc</artifactId>
@@ -93,7 +98,8 @@
 		</dependency>
 
 		<dependency>
-			<!-- https://github.com/spring-projects/spring-security/issues/18782#issuecomment-4001120294 -->
+			<!--
+			https://github.com/spring-projects/spring-security/issues/18782#issuecomment-4001120294 -->
 			<!-- @WithMockUser -->
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
@@ -136,7 +142,7 @@
 				<configuration>
 					<classifier>exec</classifier>
 
-					<mainClass>eu.solven.adhoc.pivotable.app.PivotableServerApplication</mainClass>
+					<mainClass>eu.solven.adhoc.pivotable.webflux.app.PivotableServerWebfluxApplication</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>

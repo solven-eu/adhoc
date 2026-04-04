@@ -33,7 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -100,7 +99,7 @@ public class PivotableLoginWebfluxController {
 
 	// This API enables fetching the login status without getting a 401/generating a JS error/generating an exception.
 	@GetMapping("/json")
-	public Mono<? extends Map<String, ?>> loginStatus(@AuthenticationPrincipal OAuth2User oauth2User) {
+	public Mono<? extends Map<String, ?>> loginStatus() {
 		return userMayEmpty().map(user -> Map.of("login", HttpStatus.OK.value()))
 				.switchIfEmpty(Mono.just(Map.of("login", HttpStatus.UNAUTHORIZED.value())));
 	}

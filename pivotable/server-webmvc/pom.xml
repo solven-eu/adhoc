@@ -142,7 +142,7 @@
 				<configuration>
 					<classifier>exec</classifier>
 
-					<mainClass>eu.solven.adhoc.pivotable.app.PivotableServerApplication</mainClass>
+					<mainClass>eu.solven.adhoc.pivotable.webmvc.app.PivotableServerWebmvcApplication</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>
