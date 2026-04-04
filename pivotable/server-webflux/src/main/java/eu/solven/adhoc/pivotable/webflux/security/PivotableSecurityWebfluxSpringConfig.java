@@ -25,10 +25,9 @@ package eu.solven.adhoc.pivotable.webflux.security;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 
-import eu.solven.adhoc.pivotable.account.JwtUserContextHolder;
-import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableJwtWebfluxSecurity;
 import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerWebfluxConfiguration;
 import eu.solven.adhoc.pivotable.webflux.PivotableWebExceptionHandler;
+import eu.solven.adhoc.pivotable.webflux.account.JwtUserContextHolder;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginWebfluxController;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableMetadataController;
 import eu.solven.adhoc.pivotable.webnone.security.PivotableSecurityWebnoneSpringConfig;

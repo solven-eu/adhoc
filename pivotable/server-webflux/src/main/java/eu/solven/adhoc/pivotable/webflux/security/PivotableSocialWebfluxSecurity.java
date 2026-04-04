@@ -275,7 +275,7 @@ public class PivotableSocialWebfluxSecurity {
 				.build();
 
 		userDetails.put(fakeUser.getUsername(), fakeUser);
-		
+
 		UserDetailsRepositoryReactiveAuthenticationManager ram =
 				new UserDetailsRepositoryReactiveAuthenticationManager(new MapReactiveUserDetailsService(userDetails));
 		basic.authenticationManager(ram).securityContextRepository(new WebSessionServerSecurityContextRepository());

@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Import;
 
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.ActiveRefreshTokens;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
+import eu.solven.adhoc.pivotable.webnone.api.GreetingController;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -42,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 		// AuthroizationServer)
 		PivotableTokenService.class,
 
-})
+		GreetingController.class, })
 @Slf4j
 @Configuration
 public class PivotableWebnoneSpringConfig {

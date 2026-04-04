@@ -38,7 +38,7 @@ import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
-import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerConfiguration;
+import eu.solven.adhoc.pivotable.oauth2.resourceserver.PivotableResourceServerHelpers;
 import eu.solven.adhoc.tools.IUuidGenerator;
 import eu.solven.adhoc.tools.JdkUuidGenerator;
 
@@ -67,7 +67,7 @@ public class TestPivotableLoginWebfluxController {
 		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://unit.test.adhoc");
 		SecureRandom secureRandom = new SecureRandom(new byte[] { 0, 1, 2 });
 		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY,
-				PivotableResourceServerConfiguration.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE)
+				PivotableResourceServerHelpers.generateSignatureSecret(secureRandom, JdkUuidGenerator.INSTANCE)
 						.toJSONString());
 
 		tokenService = new PivotableTokenService(env, uuidGenerator);

@@ -33,7 +33,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -48,7 +47,6 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
-import org.springframework.security.web.server.SecurityWebFilterChain;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
@@ -202,15 +200,8 @@ public class PivotableSocialWebmvcSecurity {
 
 				// `/html/login` has to be synced with the SPA login route
 				.formLogin(login -> {
-					ReactiveAuthenticationManager ram = auth -> {
-						throw new IllegalStateException();
-					};
-
 					String loginPage = "/html/login";
-					login.loginPage(loginPage)
-					// Required not to get an NPE at `.build()`
-					// .authenticationManager(ram)
-					;
+					login.loginPage(loginPage);
 				})
 
 				.httpBasic(basic -> {

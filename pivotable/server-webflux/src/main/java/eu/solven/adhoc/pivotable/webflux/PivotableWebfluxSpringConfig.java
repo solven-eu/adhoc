@@ -25,14 +25,14 @@ package eu.solven.adhoc.pivotable.webflux;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import eu.solven.adhoc.pivotable.cube.CubesHandler;
-import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
-import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableApiRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableFakeUserRouter;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableLoginRouter;
+import eu.solven.adhoc.pivotable.webflux.api.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.webflux.api.PivotableSpaRouter;
+import eu.solven.adhoc.pivotable.webflux.cube.CubesHandler;
+import eu.solven.adhoc.pivotable.webflux.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.webflux.security.tokens.AccessTokenHandler;
 import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;

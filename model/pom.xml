@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>aggregator-adhoc</artifactId>
+		<version>0.0.19-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>adhoc-model</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
+
+	<properties>
+		<testJarPhase>package</testJarPhase>
+		<jacoco.branch.ratio>0.88</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.83</jacoco.instruction.ratio>
+		<automatic.module.name>eu.solven.adhoc.model</automatic.module.name>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+		<dependency>
+			<!-- ImmutableSet -->
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>

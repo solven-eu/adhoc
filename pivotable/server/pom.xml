@@ -28,7 +28,7 @@
 
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>pivotable-authorization</artifactId>
+			<artifactId>pivotable-server-oauth2</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -102,7 +102,12 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-webclient-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webtestclient</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -115,7 +120,7 @@
 				<configuration>
 					<classifier>exec</classifier>
 
-					<mainClass>eu.solven.adhoc.pivotable.app.PivotableServerApplication</mainClass>
+					<mainClass>eu.solven.adhoc.pivotable.webnone.app.PivotableServerWebnoneApplication</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>

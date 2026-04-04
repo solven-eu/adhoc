@@ -24,12 +24,11 @@
 			<artifactId>pivotable-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
-		    <groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-starter-webmvc</artifactId>
-		    <version>4.1.0-M4</version>
-		    <scope>compile</scope>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>
@@ -120,6 +119,11 @@
 			<artifactId>pepper-unittest</artifactId>
 			<version>${pepper.version}</version>
 			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webtestclient</artifactId>
 		</dependency>
 	</dependencies>
 

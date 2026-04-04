@@ -25,7 +25,12 @@ package eu.solven.adhoc.pivotable.webmvc.app;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import eu.solven.adhoc.pivotable.webmvc.PivotableWebmvcExceptionHandler;
+import eu.solven.adhoc.pivotable.webmvc.api.CubesController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableClearController;
+import eu.solven.adhoc.pivotable.webmvc.api.PivotableEndpointsController;
+import eu.solven.adhoc.pivotable.webmvc.api.PivotableQueryController;
+import eu.solven.adhoc.pivotable.webmvc.api.PivotableSpaController;
 import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,20 +45,13 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableWebnoneSpringConfig.class,
 
 		// Webmvc
-		// TODO Migrate each of them
-		// PivotableSpaRouter.class,
-		// CubesHandler.class,
-		// PivotableEndpointsHandler.class,
-		// GreetingHandler.class,
-		// PivotableQueryHandler.class,
-		// PivotableApiRouter.class,
-		// PivotableFakeUserRouter.class,
-		// GreetingHandler.class,
-		// PivotableLoginRouter.class,
-		// AccessTokenHandler.class,
+		PivotableSpaController.class,
+		CubesController.class,
+		PivotableEndpointsController.class,
+		PivotableQueryController.class,
 		PivotableClearController.class,
+		PivotableWebmvcExceptionHandler.class,
 
-		// PivotableWebExceptionHandler.class,
 })
 @Slf4j
 @Configuration

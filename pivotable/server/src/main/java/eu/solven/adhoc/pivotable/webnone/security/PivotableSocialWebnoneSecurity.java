@@ -22,34 +22,6 @@
  */
 package eu.solven.adhoc.pivotable.webnone.security;
 
-import java.net.URI;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.config.web.server.ServerHttpSecurity.HttpBasicSpec;
-import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.server.resource.web.server.BearerTokenServerAuthenticationEntryPoint;
-import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authentication.RedirectServerAuthenticationFailureHandler;
-import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
-import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
-import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
-import org.springframework.security.web.server.csrf.WebSessionServerCsrfTokenRepository;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
-
-import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
-import eu.solven.adhoc.pivotable.webnone.api.PivotableLoginWebnoneController;
 import lombok.extern.slf4j.Slf4j;
 
 /**

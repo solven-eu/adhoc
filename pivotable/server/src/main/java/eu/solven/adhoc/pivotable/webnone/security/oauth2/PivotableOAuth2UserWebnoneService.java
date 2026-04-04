@@ -124,7 +124,7 @@ public class PivotableOAuth2UserWebnoneService {
 		// The following comment can be used to register new unittest on new registration
 		// new ObjectMapper().writeValueAsString(userFromProvider.getAttributes());
 
-		PivotableUserRawRaw rawRaw = PivotableOAuth2UserWebnoneService.oauth2ToRawRaw(userFromProvider);
+		PivotableUserRawRaw rawRaw = oauth2ToRawRaw(userFromProvider);
 
 		String registrationId = oAuth2UserRequest.getClientRegistration().getRegistrationId();
 		if (!registrationId.equals(rawRaw.getProviderId())) {
@@ -132,9 +132,9 @@ public class PivotableOAuth2UserWebnoneService {
 		}
 
 		String keyForPicture = switch (registrationId) {
-		case PivotableOAuth2UserWebnoneService.PROVIDERID_GITHUB:
+		case PROVIDERID_GITHUB:
 			yield "avatar_url";
-		case PivotableOAuth2UserWebnoneService.PROVIDERID_GOOGLE:
+		case PROVIDERID_GOOGLE:
 			yield "picture";
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + registrationId);

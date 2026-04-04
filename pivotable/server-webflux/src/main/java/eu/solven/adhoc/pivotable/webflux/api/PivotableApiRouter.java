@@ -42,10 +42,10 @@ import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsHandler;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
-import eu.solven.adhoc.pivotable.query.PivotableQueryHandler;
 import eu.solven.adhoc.pivotable.query.QueryResultHolder;
+import eu.solven.adhoc.pivotable.webflux.endpoint.PivotableEndpointsHandler;
+import eu.solven.adhoc.pivotable.webnone.api.IPivotableRouteConstants;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration(proxyBeanMethods = false)
 @Slf4j
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class PivotableApiRouter {
+public class PivotableApiRouter implements IPivotableRouteConstants {
 
 	private static RequestPredicate json(String path) {
 		final RequestPredicate json = RequestPredicates.accept(MediaType.APPLICATION_JSON);
@@ -143,7 +143,7 @@ public class PivotableApiRouter {
 										.implementationArray(PivotableCubeMetadata.class)))
 
 				// simple AdhocQuery with a GET
-				.GET(json("/cubes/query"),
+				.GET(json(R_CUBE_QUERY),
 						queryHandler::executeFlatQuery,
 						ops -> ops.operationId("executeQuery")
 								// the targeted cube can be referred through id or name
@@ -168,7 +168,7 @@ public class PivotableApiRouter {
 										.implementation(ListBasedTabularView.class)))
 
 				// complex AdhocQuery with a POST
-				.POST(json("/cubes/query"),
+				.POST(json(R_CUBE_QUERY),
 						queryHandler::executeQuery,
 						ops -> ops.operationId("executeQuery")
 								// .parameter(parameterBuilder().name("synchronous")
@@ -180,7 +180,7 @@ public class PivotableApiRouter {
 										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200")
 										.implementation(ListBasedTabularView.class)))
-				.POST(arrow("/cubes/query"),
+				.POST(arrow(R_CUBE_QUERY),
 						queryHandler::executeQueryAsArrow,
 						ops -> ops.operationId("executeQueryAsArrow")
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
@@ -193,7 +193,7 @@ public class PivotableApiRouter {
 								.requestBody(org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder()
 										.implementation(TargetedCubeQuery.class))
 								.response(responseBuilder().responseCode("200").implementation(UUID.class)))
-				.DELETE(json("/cubes/query"),
+				.DELETE(json(R_CUBE_QUERY),
 						queryHandler::cancelQuery,
 						ops -> ops.operationId("cancelQuery")
 								.parameter(parameterBuilder().name("query_id")

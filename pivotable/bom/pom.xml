@@ -44,12 +44,12 @@
 			<!-- ── Pivotable modules ─────────────────────────────────────────── -->
 			<dependency>
 				<groupId>eu.solven.adhoc</groupId>
-				<artifactId>pivotable-public</artifactId>
+				<artifactId>pivotable-model</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>eu.solven.adhoc</groupId>
-				<artifactId>pivotable-authorization</artifactId>
+				<artifactId>pivotable-server-oauth2</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
@@ -64,7 +64,7 @@
 			</dependency>
 			<dependency>
 				<groupId>eu.solven.adhoc</groupId>
-				<artifactId>pivotable-tools</artifactId>
+				<artifactId>pivotable-infra</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>

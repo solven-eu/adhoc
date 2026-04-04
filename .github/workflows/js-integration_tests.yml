@@ -10,9 +10,20 @@ permissions: read-all
 
 jobs:
   test:
-    name: JS Integration (Playwright) Tests
+    name: JS Integration (Playwright) Tests [${{ matrix.server-variant }}]
     timeout-minutes: 30
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - server-variant: webflux
+            maven-module: ':pivotable-server'
+            npm-script: pw_localhost8080
+          - server-variant: webmvc
+            maven-module: ':pivotable-server-webmvc'
+            npm-script: pw_localhost8080-webmvc
+
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -31,9 +42,9 @@ jobs:
         key: maven-js-integration-tests-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           maven-js-integration-tests-${{ runner.os }}-
-    - name: Install Adhoc Server
+    - name: Install Adhoc Server [${{ matrix.server-variant }}]
       # `install` so that each module is available in local repository, as later mvn command will not be executed on the root
-      run: mvn install -Pfast -pl :pivotable-server -am
+      run: mvn install -Pfast -pl ${{ matrix.maven-module }} -am
     - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
       with:
         node-version: lts/*
@@ -57,10 +68,10 @@ jobs:
       run: npx playwright install --with-deps
     - name: Run Playwright tests
       working-directory: ./pivotable/js
-      run: npm run pw_localhost8080
+      run: npm run ${{ matrix.npm-script }}
     - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       if: always()
       with:
-        name: playwright-report
+        name: playwright-report-${{ matrix.server-variant }}
         path: pivotable/js/playwright-report/
         retention-days: 30

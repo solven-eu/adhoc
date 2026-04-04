@@ -64,6 +64,7 @@ import lombok.extern.slf4j.Slf4j;
 		InjectPixarExampleCubesConfig.class,
 		InjectWorldCupExampleCubesConfig.class, })
 @Slf4j
+@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class PivotableServerWebfluxApplication {
 
 	public static void main(String[] args) {

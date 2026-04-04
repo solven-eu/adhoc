@@ -28,8 +28,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
@@ -72,7 +70,7 @@ public class PivotableReactiveOAuth2UserService extends DefaultReactiveOAuth2Use
 		return processOAuth2User(oAuth2UserRequest, userFromProvider);
 	}
 
-	@VisibleForTesting
+	@Override
 	public PivotableUser onAdhocUserRaw(PivotableUserPreRegister userPreRegister) {
 		return usersRegistry.registerOrUpdate(userPreRegister);
 	}
