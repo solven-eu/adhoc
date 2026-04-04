@@ -72,7 +72,7 @@ public class AccessTokenHandler {
 
 			String accessTokenJti = getJti(tokenWrapper);
 
-			log.info("Generating access_token.kid={} given refresh_token.kid={}",
+			log.info("Generating access_token.jti={} given refresh_token.jti={}",
 					accessTokenJti,
 					jwtToUser.getKey().getId());
 

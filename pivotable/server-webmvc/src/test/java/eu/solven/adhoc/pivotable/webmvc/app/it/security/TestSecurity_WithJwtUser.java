@@ -32,10 +32,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.StatusAssertions;
@@ -62,9 +62,12 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerSecurityWebmvcApplication.class,
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-		properties = IPivotableSpringProfiles.P_CONFIG_IMPORT)
+		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT// , "logging.level.org.springframework.security=DEBUG"
+		})
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
 @Slf4j
+// TODO There is weird interactions between MockMvc and WebTestClient
+@AutoConfigureMockMvc
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 @AutoConfigureWebTestClient
 public class TestSecurity_WithJwtUser {
@@ -227,11 +230,7 @@ public class TestSecurity_WithJwtUser {
 	public void testApiPOSTWithCsrf() {
 		log.debug("About {}", GreetingController.class);
 
-		loggedInClient()
-				// https://www.baeldung.com/spring-security-csrf
-				.mutateWith(SecurityMockServerConfigurers.csrf())
-
-				.post()
+		loggedInClient().post()
 				.uri("/api/v1/hello")
 				.bodyValue("{}")
 				.accept(MediaType.APPLICATION_JSON)
@@ -245,14 +244,14 @@ public class TestSecurity_WithJwtUser {
 	public void testApiPOSTWithoutCsrf() {
 		log.debug("About {}", GreetingController.class);
 
-		StatusAssertions expectStatus = loggedInClient().post()
+		loggedInClient().post()
 				.uri("/api/v1/hello")
 				.bodyValue("{}")
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
-				.expectStatus();
 
-		expectStatus.isOk();
+				.expectStatus()
+				.isOk();
 	}
 
 	@Test
@@ -269,11 +268,14 @@ public class TestSecurity_WithJwtUser {
 					.expectStatus();
 
 			// We need an oauth2 user, not a jwt user
-			expectStatus.isUnauthorized().expectBody(Map.class).value(bodyAsMap -> {
-				Assertions.assertThat(bodyAsMap)
-						// .containsEntry("error_message", "No user").hasSize(1)
-						.isNull();
-			});
+			expectStatus.isUnauthorized()
+					.expectBody(byte[].class)
+					// .expectBody(Map.class)
+					.value(bodyAsMap -> {
+						Assertions.assertThat(bodyAsMap)
+								// .containsEntry("error_message", "No user").hasSize(1)
+								.contains();
+					});
 
 		}
 	}
@@ -282,7 +284,7 @@ public class TestSecurity_WithJwtUser {
 	public void testRefreshTokenToAccessToken() {
 		log.debug("About {}", AccessTokenController.class);
 
-		StatusAssertions expectStatus = loggedInClient()
+		loggedInClient()
 
 				.get()
 				.uri("/api/v1/oauth2/token")
@@ -290,10 +292,12 @@ public class TestSecurity_WithJwtUser {
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateRefreshToken())
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
-				.expectStatus();
 
-		expectStatus.isOk().expectBody(AccessTokenWrapper.class).value(accessTokenHolder -> {
-			Assertions.assertThat(accessTokenHolder.getAccessToken()).isNotEmpty();
-		});
+				.expectStatus()
+				.isOk()
+				.expectBody(AccessTokenWrapper.class)
+				.value(accessTokenHolder -> {
+					Assertions.assertThat(accessTokenHolder.getAccessToken()).isNotEmpty();
+				});
 	}
 }

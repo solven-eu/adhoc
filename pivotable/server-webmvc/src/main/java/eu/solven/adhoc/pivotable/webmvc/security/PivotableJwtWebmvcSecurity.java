@@ -40,7 +40,6 @@ import com.nimbusds.jwt.JWT;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -49,7 +48,6 @@ import lombok.extern.slf4j.Slf4j;
  *
  * @author Benoit Lacelle
  */
-@RequiredArgsConstructor
 @Slf4j
 public class PivotableJwtWebmvcSecurity {
 

@@ -26,9 +26,11 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
@@ -50,10 +52,17 @@ public class TestPivotableLoginWebnoneController {
 
 	{
 		ApplicationContext appContext = Mockito.mock(ApplicationContext.class);
+
+		// webflux
 		Mockito.when(appContext.getEnvironment()).thenReturn(env);
 		Mockito.doReturn(clientRegistrationRepository)
 				.when(appContext)
 				.getBean(InMemoryReactiveClientRegistrationRepository.class);
+
+		// webmvc
+		ObjectProvider<InMemoryClientRegistrationRepository> mvcBeanProvider = Mockito.mock(ObjectProvider.class);
+		Mockito.doReturn(mvcBeanProvider).when(appContext).getBeanProvider(InMemoryClientRegistrationRepository.class);
+
 		controller = new PivotableLoginWebnoneController(appContext);
 	}
 

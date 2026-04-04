@@ -30,6 +30,8 @@ import java.util.stream.StreamSupport;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.stereotype.Controller;
@@ -37,9 +39,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
-import graphql.com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,10 +69,7 @@ public class PivotableLoginWebnoneController {
 		final Environment env = appContext.getEnvironment();
 
 		if (appContext.getEnvironment().getProperty(P_OAUTH2, Boolean.class, true)) {
-			// BEWARE If the following fails, you probably lacks some oauth2 registrations, as suggested in
-			// application-pivotable-demo_external_oauth2.yml
-			final InMemoryReactiveClientRegistrationRepository clientRegistrationRepository =
-					appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
+			Iterable<ClientRegistration> clientRegistrationRepository = getClientRegistration();
 
 			StreamSupport.stream(clientRegistrationRepository.spliterator(), false)
 					.filter(registration -> AuthorizationGrantType.AUTHORIZATION_CODE
@@ -111,6 +111,21 @@ public class PivotableLoginWebnoneController {
 		}
 
 		return Map.of("map", registrationIdToDetails, "list", registrationIdToDetails.values());
+	}
+
+	protected Iterable<ClientRegistration> getClientRegistration() {
+		// Support both servlet (WebMVC) and reactive (WebFlux) client registration repositories
+		// BEWARE If the following fails, you probably lacks some oauth2 registrations, as suggested in
+		// application-pivotable-demo_external_oauth2.yml
+		Iterable<ClientRegistration> clientRegistrationRepository;
+		InMemoryClientRegistrationRepository servletRepo =
+				appContext.getBeanProvider(InMemoryClientRegistrationRepository.class).getIfAvailable();
+		if (servletRepo != null) {
+			clientRegistrationRepository = servletRepo;
+		} else {
+			clientRegistrationRepository = appContext.getBean(InMemoryReactiveClientRegistrationRepository.class);
+		}
+		return clientRegistrationRepository;
 	}
 
 }

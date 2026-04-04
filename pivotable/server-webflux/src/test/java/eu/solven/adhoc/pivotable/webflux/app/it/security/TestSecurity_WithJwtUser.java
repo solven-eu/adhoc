@@ -63,7 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = PivotableServerSecurityWebfluxApplication.class,
 		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-		properties = IPivotableSpringProfiles.P_CONFIG_IMPORT)
+		properties = {IPivotableSpringProfiles.P_CONFIG_IMPORT, "logging.level.org.springframework.security.web=DEBUG"})
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
@@ -284,7 +284,7 @@ public class TestSecurity_WithJwtUser {
 	public void testRefreshTokenToAccessToken() {
 		log.debug("About {}", AccessTokenHandler.class);
 
-		StatusAssertions expectStatus = loggedInClient()
+		loggedInClient()
 
 				.get()
 				.uri("/api/v1/oauth2/token")
@@ -292,10 +292,12 @@ public class TestSecurity_WithJwtUser {
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + generateRefreshToken())
 				.accept(MediaType.APPLICATION_JSON)
 				.exchange()
-				.expectStatus();
 
-		expectStatus.isOk().expectBody(AccessTokenWrapper.class).value(accessTokenHolder -> {
-			Assertions.assertThat(accessTokenHolder.getAccessToken()).isNotEmpty();
-		});
+				.expectStatus()
+				.isOk()
+				.expectBody(AccessTokenWrapper.class)
+				.value(accessTokenHolder -> {
+					Assertions.assertThat(accessTokenHolder.getAccessToken()).isNotEmpty();
+				});
 	}
 }

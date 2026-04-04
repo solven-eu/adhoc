@@ -54,7 +54,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 @Slf4j
 @RestController
-@RequestMapping({ "/api/login/v1", IPivotableApiConstants.PREFIX })
+@RequestMapping(IPivotableApiConstants.PREFIX)
 public class AccessTokenController {
 
 	final PivotableTokenService tokenService;
@@ -76,7 +76,7 @@ public class AccessTokenController {
 
 		String accessTokenJti = getJti(tokenWrapper);
 
-		log.info("Generating access_token.kid={} given refresh_token.kid={}",
+		log.info("Generating access_token.jti={} given refresh_token.jti={}",
 				accessTokenJti,
 				jwtToUser.getKey().getId());
 
@@ -92,6 +92,9 @@ public class AccessTokenController {
 	}
 
 	protected Map.Entry<Jwt, PivotableUser> userFromRefreshTokenJwt(Authentication authentication) {
+		if (authentication == null) {
+			throw new IllegalArgumentException("Expected a JWT token. Was null");
+		}
 		if (!(authentication instanceof JwtAuthenticationToken jwtAuthentication)) {
 			throw new IllegalArgumentException("Expected a JWT token. Was a: " + authentication.getClass());
 		}

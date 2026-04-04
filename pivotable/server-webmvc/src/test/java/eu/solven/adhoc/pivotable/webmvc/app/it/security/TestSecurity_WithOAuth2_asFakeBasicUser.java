@@ -31,9 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
@@ -119,23 +121,16 @@ public class TestSecurity_WithOAuth2_asFakeBasicUser extends TestSecurity_WithOA
 	}
 
 	@Test
-	public void testLoginBasic() {
+	public void testLoginBasic() throws Exception {
 		log.debug("About {}", PivotableLoginWebmvcController.class);
 
-		webTestClient
-
-				// https://www.baeldung.com/spring-security-csrf
-				.mutateWith(SecurityMockServerConfigurers.csrf())
-
-				.post()
-				.uri("/api/login/v1/basic")
+		// Use MockMvc to inject a valid CSRF token (required by the session-based security chain)
+		mockMvc.perform(MockMvcRequestBuilders.post("/api/login/v1/basic")
+				.with(SecurityMockMvcRequestPostProcessors.csrf())
 				.accept(MediaType.APPLICATION_JSON)
 				.header(HttpHeaders.AUTHORIZATION,
 						"Basic " + HttpHeaders
-								.encodeBasicAuth("someUnknownUser", "no_password", StandardCharsets.UTF_8))
-				.exchange()
-
-				.expectStatus()
-				.isUnauthorized();
+								.encodeBasicAuth("someUnknownUser", "no_password", StandardCharsets.UTF_8)))
+				.andExpect(MockMvcResultMatchers.status().isUnauthorized());
 	}
 }

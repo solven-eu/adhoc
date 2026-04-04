@@ -23,8 +23,10 @@
 package eu.solven.adhoc.pivotable.webnone.api;
 
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
@@ -46,15 +48,16 @@ public class GreetingController {
 	}
 
 	@GetMapping(IPivotableApiConstants.PREFIX + "/private")
-	public String privateEndpoint() {
-		return "This is a private endpoint";
+	public String privateEndpoint(Authentication auth) {
+		return "This is a private endpoint. hello:%s".formatted(auth.getName());
 	}
 
 	/**
 	 * @return a static greeting message.
 	 */
-	@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, path = IPivotableApiConstants.PREFIX + "/hello")
-	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
+			path = IPivotableApiConstants.PREFIX + "/hello",
+			method = { RequestMethod.GET, RequestMethod.POST })
 	public Greeting hello() {
 		return Greeting.builder().message("Hello, Spring!").build();
 	}

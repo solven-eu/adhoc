@@ -35,13 +35,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.StatusAssertions;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.webmvc.PivotableWebmvcExceptionHandler;
@@ -60,11 +64,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE })
+@AutoConfigureMockMvc
 @AutoConfigureWebTestClient(timeout = "P1D")
 public class TestSecurity_WithoutAuth {
 
 	@Autowired
 	private WebTestClient webTestClient;
+
+	@Autowired
+	private MockMvc mockMvc;
 
 	@Test
 	public void testApiPublic() {
@@ -215,25 +223,15 @@ public class TestSecurity_WithoutAuth {
 	}
 
 	@Test
-	public void testLogout() {
+	public void testLogout() throws Exception {
 		log.debug("About {}", PivotableLoginWebmvcController.class);
 
 		// SPA does a first call triggering the Logout: it must returns a 2XX response,
 		// as Fetch can not intercept 3XX.
-		webTestClient
-
-				// https://www.baeldung.com/spring-security-csrf
-				.mutateWith(SecurityMockServerConfigurers.csrf())
-
-				.post()
-				.uri("/logout")
-				// .accept(MediaType.APPLICATION_JSON)
-				.exchange()
-
-				.expectStatus()
-				.isFound()
-				.expectHeader()
-				.location("/api/login/v1/logout");
+		// Use MockMvc to inject a valid CSRF token (required by the session-based security chain)
+		mockMvc.perform(MockMvcRequestBuilders.post("/logout").with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.andExpect(MockMvcResultMatchers.status().isFound())
+				.andExpect(MockMvcResultMatchers.header().string("Location", "/api/login/v1/logout"));
 
 		// SPA will then redirect the browser to URL provided in 2XX
 		webTestClient
@@ -381,11 +379,8 @@ public class TestSecurity_WithoutAuth {
 		log.debug("About {}", GreetingController.class);
 
 		try (ILogDisabler logDisabler = PepperTestHelper.disableLog(PivotableWebmvcExceptionHandler.class)) {
-			webTestClient
-					// https://www.baeldung.com/spring-security-csrf
-					.mutateWith(SecurityMockServerConfigurers.csrf())
-
-					.post()
+			// CSRF is disabled on the JWT chain that covers /api/v1/**
+			webTestClient.post()
 					.uri("/api/v1/hello")
 					.bodyValue("{}")
 					.accept(MediaType.APPLICATION_JSON)

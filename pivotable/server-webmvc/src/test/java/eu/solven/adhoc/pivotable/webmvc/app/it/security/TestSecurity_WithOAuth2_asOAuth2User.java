@@ -24,6 +24,7 @@ package eu.solven.adhoc.pivotable.webmvc.app.it.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,16 +33,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.OAuth2LoginMutator;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.account.login.IPivotableTestConstants;
@@ -73,6 +81,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 // https://stackoverflow.com/questions/73881370/mocking-oauth2-client-with-webtestclient-for-servlet-applications-results-in-nul
 // https://stackoverflow.com/questions/56784289/autoconfigurewebtestclienttimeout-600000-has-no-effect
+@AutoConfigureMockMvc
 @AutoConfigureWebTestClient(timeout = "PT10M")
 public class TestSecurity_WithOAuth2_asOAuth2User {
 
@@ -82,25 +91,45 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 	WebTestClient webTestClient;
 
 	@Autowired
+	WebApplicationContext context;
+
+	@Autowired
+	MockMvc mockMvc;
+
+	@Autowired
 	PivotableOAuth2UserService oauth2UserService;
 
-	private OAuth2LoginMutator prepareLogin() {
-		// Beware `.mutateWith(oauth2Login)` skips KumiteOAuth2UserService, hence automated registration on first OAuth2
-		// login
-		OAuth2LoginMutator oauth2Login;
-		{
-			PivotableUserPreRegister userPreRegister = IPivotableTestConstants.userPreRegister();
-			oauth2Login = SecurityMockServerConfigurers.mockOAuth2Login().attributes(attributes -> {
-				attributes.put("id", userPreRegister.getRawRaw().getSub());
-				attributes.put("providerId", userPreRegister.getRawRaw().getProviderId());
-			});
-			oauth2UserService.onAdhocUserRaw(userPreRegister);
-		}
-		return oauth2Login;
+	/**
+	 * Registers the test user and returns an {@link OAuth2AuthenticationToken} that can be injected into MockMvc
+	 * requests via {@link SecurityMockMvcRequestPostProcessors#authentication}.
+	 */
+	protected OAuth2AuthenticationToken prepareLogin() {
+		PivotableUserPreRegister userPreRegister = IPivotableTestConstants.userPreRegister();
+		oauth2UserService.onAdhocUserRaw(userPreRegister);
+
+		Map<String, Object> attributes = new LinkedHashMap<>();
+		attributes.put("id", userPreRegister.getRawRaw().getSub());
+		attributes.put("providerId", userPreRegister.getRawRaw().getProviderId());
+
+		DefaultOAuth2User oauth2User =
+				new DefaultOAuth2User(List.of(new SimpleGrantedAuthority("ROLE_USER")), attributes, "id");
+		return new OAuth2AuthenticationToken(oauth2User,
+				oauth2User.getAuthorities(),
+				userPreRegister.getRawRaw().getProviderId());
 	}
 
+	/**
+	 * Returns a {@link WebTestClient} pre-configured with Spring Security, OAuth2 authentication and CSRF token for all
+	 * requests.
+	 */
 	WebTestClient getWebTestClient() {
-		return webTestClient.mutateWith(prepareLogin());
+		OAuth2AuthenticationToken authToken = prepareLogin();
+		return MockMvcWebTestClient.bindToApplicationContext(context)
+				.apply(SecurityMockMvcConfigurers.springSecurity())
+				.defaultRequest(MockMvcRequestBuilders.get("/")
+						.with(SecurityMockMvcRequestPostProcessors.authentication(authToken))
+						.with(SecurityMockMvcRequestPostProcessors.csrf()))
+				.build();
 	}
 
 	@Test
@@ -196,10 +225,8 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 	public void testLoginUser_update() {
 		log.debug("About {}", PivotableLoginWebmvcController.class);
 
+		// CSRF is applied via defaultRequest in getWebTestClient()
 		getWebTestClient()
-
-				// https://www.baeldung.com/spring-security-csrf
-				.mutateWith(SecurityMockServerConfigurers.csrf())
 
 				.post()
 				.uri("/api/login/v1/user")
@@ -242,10 +269,8 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 		log.debug("About {}", PivotableLoginWebmvcController.class);
 
 		// SPA does a first call triggering the Logout: it must returns a 2XX response, as Fetch can not intercept 3XX.
+		// CSRF is applied via defaultRequest in getWebTestClient()
 		getWebTestClient()
-
-				// https://www.baeldung.com/spring-security-csrf
-				.mutateWith(SecurityMockServerConfigurers.csrf())
 
 				.post()
 				.uri("/logout")
@@ -279,23 +304,8 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 	public void testLoginAccessToken() {
 		log.debug("About {}", PivotableLoginWebmvcController.class);
 
-		PivotableUser user;
-
-		// Beware `.mutateWith(oauth2Login)` skips KumiteOAuth2UserService, hence automated registration on first OAuth2
-		// login
-		OAuth2LoginMutator oauth2Login;
-		{
-			PivotableUserPreRegister userPreRegister = IPivotableTestConstants.userPreRegister();
-			oauth2Login = SecurityMockServerConfigurers.mockOAuth2Login().attributes(attributes -> {
-				attributes.put("id", userPreRegister.getRawRaw().getSub());
-				attributes.put("providerId", userPreRegister.getRawRaw().getProviderId());
-			});
-			user = oauth2UserService.onAdhocUserRaw(userPreRegister);
-		}
-
-		webTestClient
-
-				.mutateWith(oauth2Login)
+		// Uses getWebTestClient() which handles both auth and CSRF
+		getWebTestClient()
 
 				.get()
 				.uri("/api/login/v1/oauth2/token")
@@ -367,10 +377,8 @@ public class TestSecurity_WithOAuth2_asOAuth2User {
 	public void testApiPrivatePostMoveWithCsrf() {
 		log.debug("About {}", PivotableQueryController.class);
 
+		// CSRF is applied via defaultRequest in getWebTestClient(), but is disabled in the JWT chain anyway
 		getWebTestClient()
-
-				// https://www.baeldung.com/spring-security-csrf
-				.mutateWith(SecurityMockServerConfigurers.csrf())
 
 				.post()
 				.uri("/api/board/move?contest_id=7ffcb8e6-bf71-4817-9f72-077c22172643&player_id=11111111-1111-1111-1111-111111111111")

@@ -14,11 +14,13 @@ suggested from Open-Sourced repositories distributed by ActiveViam.
 
 More specifically, this repository follows guidelines provided in:
 
-- [Memory Analysis Cube](https://github.com/activeviam/mac) ([License: Apache 2.0](https://github.com/activeviam/mac/blob/main/LICENSE))
-- [Atoti Spring-Boot Template](https://github.com/solven-eu/atoti-spring-boot-template) ([License: Apache 2.0](https://github.com/solven-eu/atoti-spring-boot-template/blob/6.1/LICENSE))
-- [Pivot Spring-Boot](https://github.com/activeviam/pivot-spring-boot) ([License: Apache 2.0](https://github.com/activeviam/pivot-spring-boot/blob/6.1.0/LICENSE))
-- [Atoti AutoPivot](https://github.com/activeviam/autopivot) ([License: Apache 2.0](https://github.com/activeviam/autopivot/blob/master/LICENSE))
-- [Java API Migration Tool to migrate Atoti](https://github.com/activeviam/java-api-migration-tool) (License: Unlicensed)
+- [Memory Analysis Cube](https://github.com/activeviam/mac) ([License: Apache 2.0](https://github.com/activeviam/mac/blob/main/LICENSE)) [fork](https://github.com/solven-eu/mac)
+- [Atoti Spring-Boot Template](https://github.com/solven-eu/atoti-spring-boot-template) ([License: Apache 2.0](https://github.com/solven-eu/atoti-spring-boot-template/blob/6.1/LICENSE)) [fork](https://github.com/solven-eu/atoti-spring-boot-template)
+- [Pivot Spring-Boot](https://github.com/activeviam/pivot-spring-boot) ([License: Apache 2.0](https://github.com/activeviam/pivot-spring-boot/blob/6.1.0/LICENSE)) [fork](https://github.com/solven-eu/atoti-spring-boot-template/tree/6.1)
+- [Atoti AutoPivot](https://github.com/activeviam/autopivot) ([License: Apache 2.0](https://github.com/activeviam/autopivot/blob/master/LICENSE)) [fork](https://github.com/solven-eu/autopivot) [fork](https://github.com/solven-eu/autopivot)
+- [Java API Migration Tool to migrate Atoti](https://github.com/activeviam/java-api-migration-tool) (License: Unlicensed) [fork](https://github.com/solven-eu/java-api-migration-tool)
+- [ActiveViam Tools](https://github.com/activeviam/activeviam.github.io) ([License: Apache 2.0](https://github.com/activeviam/activeviam.github.io/blob/develop/LICENSE))  [fork](https://github.com/solven-eu/activeviam.github.io)
+- [Atoti Notebooks](https://github.com/solven-eu/atoti-notebooks) ([License: Apache 2.0](https://github.com/activeviam/atoti-notebooks/blob/main/LICENSE)) [fork](https://github.com/solven-eu/atoti-notebooks)
 
 [Licensing note](https://github.com/activeviam/autopivot?tab=readme-ov-file#licensing):
 
@@ -179,7 +181,7 @@ The migration strategy is:
 ## IPrefetcher
 
 [Atoti Javadoc](https://docs.activeviam.com/products/atoti/server/latest/javadoc/com/activeviam/activepivot/core/intf/api/postprocessing/IPrefetcher.html)
-[Atoti Wiki - Filtering][https://docs.activeviam.com/products/atoti/server/latest/docs/cube/filtering/]
+[Atoti Wiki - Filtering](https://docs.activeviam.com/products/atoti/server/latest/docs/cube/filtering/)
 
 - *Adhoc* defines the underlying CubeQueryStep through `IMeasureQueryStep.getUnderlyingSteps`
 
