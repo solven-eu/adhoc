@@ -87,43 +87,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery</artifactId>
-			<version>3.7.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap</artifactId>
-			<version>5.3.8</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue -->
-		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>vue</artifactId>
-			<version>3.5.31</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
-		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>vue-router</artifactId>
-			<version>4.6.3</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
 			<version>${springdoc-openapi.version}</version>
-		</dependency>
-
-		<dependency>
-			<!-- https://docs.spring.io/spring-session/reference/guides/boot-redis.html -->
-			<groupId>org.springframework.session</groupId>
-			<artifactId>spring-session-data-redis</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>webjars-locator-core</artifactId>
 		</dependency>
 
 		<dependency>
@@ -132,27 +98,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
 			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<!-- https://github.com/skyscreamer/JSONassert/pull/194 -->
-					<groupId>com.vaadin.external.google</groupId>
-					<artifactId>android-json</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<!-- https://www.baeldung.com/spring-embedded-redis -->
-			<!-- https://github.com/codemonstur/embedded-redis -->
-			<groupId>com.github.codemonstur</groupId>
-			<artifactId>embedded-redis</artifactId>
-			<version>1.4.3</version>
 			<scope>test</scope>
 		</dependency>
 

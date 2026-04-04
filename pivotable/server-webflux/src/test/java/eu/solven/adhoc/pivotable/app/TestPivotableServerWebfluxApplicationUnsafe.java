@@ -30,8 +30,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.session.ReactiveMapSessionRepository;
-import org.springframework.session.ReactiveSessionRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -57,11 +55,5 @@ public class TestPivotableServerWebfluxApplicationUnsafe implements IPivotableSp
 		log.info("startupDate: {}", appContext.getStartupDate());
 
 		Assertions.assertThat(env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_INMEMORY))).isTrue();
-	}
-
-	@Test
-	public void testSession() {
-		Assertions.assertThat(appContext.getBean(ReactiveSessionRepository.class))
-				.isInstanceOf(ReactiveMapSessionRepository.class);
 	}
 }

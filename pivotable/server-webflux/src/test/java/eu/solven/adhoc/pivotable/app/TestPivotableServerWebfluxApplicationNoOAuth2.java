@@ -32,8 +32,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.session.ReactiveMapSessionRepository;
-import org.springframework.session.ReactiveSessionRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -72,12 +70,6 @@ public class TestPivotableServerWebfluxApplicationNoOAuth2 implements IPivotable
 		log.info("startupDate: {}", appContext.getStartupDate());
 
 		Assertions.assertThat(env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_INMEMORY))).isTrue();
-	}
-
-	@Test
-	public void testSession() {
-		Assertions.assertThat(appContext.getBean(ReactiveSessionRepository.class))
-				.isInstanceOf(ReactiveMapSessionRepository.class);
 	}
 
 	@Test

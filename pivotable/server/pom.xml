@@ -80,20 +80,9 @@
 		</dependency>
 
 		<dependency>
-			<!--
-			https://github.com/spring-projects/spring-security/issues/18782#issuecomment-4001120294 -->
 			<!-- @WithMockUser -->
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<!-- https://www.baeldung.com/spring-embedded-redis -->
-			<!-- https://github.com/codemonstur/embedded-redis -->
-			<groupId>com.github.codemonstur</groupId>
-			<artifactId>embedded-redis</artifactId>
-			<version>1.4.3</version>
 			<scope>test</scope>
 		</dependency>
 

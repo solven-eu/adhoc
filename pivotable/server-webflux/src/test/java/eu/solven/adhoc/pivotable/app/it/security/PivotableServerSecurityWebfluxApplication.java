@@ -22,14 +22,9 @@
  */
 package eu.solven.adhoc.pivotable.app.it.security;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.session.ReactiveMapSessionRepository;
-import org.springframework.session.ReactiveSessionRepository;
 
 import eu.solven.adhoc.pivotable.account.InMemoryUserRepository;
 import eu.solven.adhoc.pivotable.account.PivotableUsersRegistry;
@@ -66,12 +61,6 @@ public class PivotableServerSecurityWebfluxApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(PivotableServerSecurityWebfluxApplication.class, args);
-	}
-
-	// https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type
-	@Bean
-	public ReactiveSessionRepository<?> inmemorySessionRepository() {
-		return new ReactiveMapSessionRepository(new ConcurrentHashMap<>());
 	}
 
 }

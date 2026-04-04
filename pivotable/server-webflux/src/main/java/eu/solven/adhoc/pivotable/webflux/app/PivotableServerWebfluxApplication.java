@@ -22,18 +22,12 @@
  */
 package eu.solven.adhoc.pivotable.webflux.app;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Profile;
-import org.springframework.session.ReactiveMapSessionRepository;
-import org.springframework.session.ReactiveSessionRepository;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.app.example.InjectAdvancedExamplesCubesConfig;
@@ -88,15 +82,6 @@ public class PivotableServerWebfluxApplication {
 				.build();
 
 		springApp.run(args);
-	}
-
-	// // https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide#spring-session-store-type
-	@Bean
-	// This will override any auto-configured SessionRepository like Redis one
-	@Profile({ IPivotableSpringProfiles.P_INMEMORY })
-	public ReactiveSessionRepository<?> inmemorySessionRepository() {
-		log.info("Sessions are managed by a {}", ReactiveMapSessionRepository.class.getSimpleName());
-		return new ReactiveMapSessionRepository(new ConcurrentHashMap<>());
 	}
 
 }
