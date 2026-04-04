@@ -1,0 +1,170 @@
+classDiagram
+    direction TB
+
+    %% ─── Interfaces ────────────────────────────────────────────────
+    class IDSLSupplier {
+    }
+    class IFilterOptimizerFactory {
+    }
+    class IImplicitFilter {
+    }
+    class IImplicitOptions {
+    }
+    class IMeasureForest {
+    }
+    class IOperatorFactory {
+    }
+    class IQueryStepCache {
+    }
+    class ISliceFactoryFactory {
+    }
+    class IStopwatchFactory {
+    }
+    class ITableQueryEngineFactory {
+    }
+    class ITableWrapper {
+    }
+
+    %% ─── Concrete classes ──────────────────────────────────────────
+    class AdhocFactories {
+        IOperatorFactory operatorFactory
+        IColumnFactory columnFactory
+        ISliceFactoryFactory sliceFactoryFactory
+        IFilterOptimizerFactory filterOptimizerFactory
+        IFilterStripperFactory filterStripperFactory
+        IStopwatchFactory stopwatchFactory
+    }
+    class AdhocFilterUnsafe {
+    }
+    class AtotiAliaser {
+    }
+    class CachingTableWrapper {
+        ITableWrapper decorated
+    }
+    class ColumnsManager {
+        IAdhocEventBus eventBus
+        ITableAliaser aliaser
+        IMissingColumnManager missingColumnManager
+        ICustomTypeManager customTypeManager
+        IColumnGenerator columnGenerator
+    }
+    class CompositeCubesTableWrapper {
+        IColumnsManager columnsManager
+    }
+    class CubeQueryEngine {
+        IAdhocFactories factories
+        IAdhocEventBus eventBus
+        ITableQueryEngineFactory tableQueryEngine
+    }
+    class CubeWrapper {
+        ICubeQueryEngine engine
+        ITableWrapper table
+        IMeasureForest forest
+        IColumnsManager columnsManager
+        IQueryPreparator queryPreparator
+    }
+    class DagBottomUpStrategyNavigableElseHash {
+    }
+    class EmptyColumnGenerator {
+    }
+    class EmptyTableWrapper {
+    }
+    class IdentityImplicitAliaser {
+    }
+    class InMemoryTable {
+    }
+    class JooqTableWrapper {
+        JooqTableWrapperParameters tableParameters
+    }
+    class JooqTableWrapperParameters {
+        IOperatorFactory operatorFactory
+        IFilterOptimizerFactory filterOptimizerFactory
+        IDSLSupplier dslSupplier
+    }
+    class MeasureForest {
+    }
+    class StandardColumnFactory {
+        IDagBottomUpStrategy bottomUpStrategy
+    }
+    class StandardCoordinateNormalizer {
+    }
+    class StandardCustomTypeManager {
+    }
+    class StandardDSLSupplier {
+    }
+    class StandardMissingColumnManager {
+        ICoordinateNormalizer coordinateNormalizer
+    }
+    class StandardQueryPreparator {
+        IImplicitFilter implicitFilter
+        IImplicitOptions implicitOptions
+        IQueryStepCache queryStepCache
+    }
+    class TableQueryEngineFactory {
+        IAdhocFactories factories
+        IAdhocEventBus eventBus
+        ITableQueryFactoryFactory queryFactoryFactory
+        ITableQueryInducerFactory inducerFactory
+    }
+    class TableQueryFactoryFactory {
+    }
+    class TableQueryInducerFactory {
+    }
+    class UnsafeAdhocEventBusHelpers {
+    }
+    class UnsafeMeasureForest {
+    }
+
+    %% ─── Abstract classes ──────────────────────────────────────────
+    class AAtotiWrapper {
+        ITableAliaser aliaser
+    }
+
+    %% ─── Implements / Extends ──────────────────────────────────────
+    ITableQueryEngineFactory <|.. TableQueryEngineFactory
+    ITableWrapper <|.. CachingTableWrapper
+    ITableWrapper <|.. CompositeCubesTableWrapper
+    ITableWrapper <|.. EmptyTableWrapper
+    ITableWrapper <|.. InMemoryTable
+    ITableWrapper <|.. JooqTableWrapper
+    IDSLSupplier <|.. StandardDSLSupplier
+    ITableWrapper <|.. AAtotiWrapper
+    IMeasureForest <|.. MeasureForest
+    IMeasureForest <|.. UnsafeMeasureForest
+
+    %% ─── Composition ───────────────────────────────────────────────
+    ColumnsManager *-- IdentityImplicitAliaser : aliaser
+    AAtotiWrapper *-- AtotiAliaser : aliaser
+    StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
+    AdhocFactories *-- StandardColumnFactory : columnFactory
+    ColumnsManager *-- EmptyColumnGenerator : columnGenerator
+    CubeWrapper *-- ColumnsManager : columnsManager
+    CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
+    StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
+    ColumnsManager *-- StandardCustomTypeManager : customTypeManager
+    CachingTableWrapper *-- ITableWrapper : decorated
+    JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
+    CubeWrapper *-- CubeQueryEngine : engine
+    CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
+    TableQueryEngineFactory *-- UnsafeAdhocEventBusHelpers : eventBus
+    ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
+    CubeQueryEngine *-- AdhocFactories : factories
+    TableQueryEngineFactory *-- AdhocFactories : factories
+    AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
+    JooqTableWrapperParameters *-- IFilterOptimizerFactory : filterOptimizerFactory
+    AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory
+    CubeWrapper *-- IMeasureForest : forest
+    StandardQueryPreparator *-- IImplicitFilter : implicitFilter
+    StandardQueryPreparator *-- IImplicitOptions : implicitOptions
+    TableQueryEngineFactory *-- TableQueryInducerFactory : inducerFactory
+    ColumnsManager *-- StandardMissingColumnManager : missingColumnManager
+    AdhocFactories *-- IOperatorFactory : operatorFactory
+    JooqTableWrapperParameters *-- IOperatorFactory : operatorFactory
+    TableQueryEngineFactory *-- TableQueryFactoryFactory : queryFactoryFactory
+    CubeWrapper *-- StandardQueryPreparator : queryPreparator
+    StandardQueryPreparator *-- IQueryStepCache : queryStepCache
+    AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
+    AdhocFactories *-- IStopwatchFactory : stopwatchFactory
+    CubeWrapper *-- ITableWrapper : table
+    JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
+    CubeQueryEngine *-- ITableQueryEngineFactory : tableQueryEngine
