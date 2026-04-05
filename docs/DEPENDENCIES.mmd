@@ -25,12 +25,18 @@ flowchart TD
     adhoc_public["adhoc-public"]
     adhoc_spring["adhoc-spring"]
     adhoc_training["adhoc-training"]
+    adhoc_model["adhoc-model"]
+    pivotable_infra["pivotable-infra"]
+    pivotable_model["pivotable-model"]
+    pivotable_server_oauth2["pivotable-server-oauth2"]
+    pivotable_server_webflux["pivotable-server-webflux"]
+    pivotable_server_webmvc["pivotable-server-webmvc"]
 
     subgraph spring-boot-starter-parent
         aggregator_adhoc["aggregator-adhoc"]
     end
 
-    adhoc --> adhoc_public
+    adhoc --> adhoc_model
     adhoc --> adhoc_encoding
     adhoc --> adhoc_dataframe
     adhoc --> adhoc_cell
@@ -51,25 +57,30 @@ flowchart TD
     adhoc_jmh --> adhoc_fsst
     adhoc_cell --> adhoc_encoding
     adhoc_cell --> adhoc_filters
-    adhoc_cell -.-> adhoc_public
-    adhoc_dataframe --> adhoc_public
+    adhoc_cell -.-> adhoc_model
+    adhoc_dataframe --> adhoc_model
     adhoc_dataframe --> adhoc_encoding
     adhoc_dataframe --> adhoc_cell
     adhoc_dataframe --> adhoc_measures
-    adhoc_encoding --> adhoc_public
+    adhoc_encoding --> adhoc_model
     adhoc_encoding --> adhoc_fsst
-    adhoc_filters --> adhoc_public
+    adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
-    adhoc_measures -.-> adhoc_public
+    adhoc_measures -.-> adhoc_model
     pivotable_authorization --> pivotable_tools
     pivotable_authorization --> pivotable_public
     pivotable_mcp --> pivotable_server_core
     pivotable_public --> adhoc_filters
     pivotable_server_core --> adhoc
-    pivotable_server_core --> pivotable_tools
-    pivotable_server_core --> pivotable_public
+    pivotable_server_core --> pivotable_infra
+    pivotable_server_core --> pivotable_model
     pivotable_server --> pivotable_server_core
-    pivotable_server --> pivotable_authorization
+    pivotable_server --> pivotable_server_oauth2
     pivotable_server --> pivotable_js
     adhoc_spring --> adhoc
     adhoc_training --> pivotable_server
+    pivotable_model --> adhoc_filters
+    pivotable_server_oauth2 --> pivotable_infra
+    pivotable_server_oauth2 --> pivotable_model
+    pivotable_server_webflux --> pivotable_server
+    pivotable_server_webmvc --> pivotable_server

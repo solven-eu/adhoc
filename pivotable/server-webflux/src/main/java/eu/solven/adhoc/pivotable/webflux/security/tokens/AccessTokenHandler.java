@@ -42,6 +42,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUser;
 import eu.solven.adhoc.pivotable.login.AccessTokenWrapper;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.ActiveRefreshTokens;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
+import eu.solven.adhoc.security.AdhocOWASP;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -73,8 +74,8 @@ public class AccessTokenHandler {
 			String accessTokenJti = getJti(tokenWrapper);
 
 			log.info("Generating access_token.jti={} given refresh_token.jti={}",
-					accessTokenJti,
-					jwtToUser.getKey().getId());
+					AdhocOWASP.sanitizeLog(accessTokenJti),
+					AdhocOWASP.sanitizeLog(jwtToUser.getKey().getId()));
 
 			return ServerResponse.ok()
 					.contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +107,7 @@ public class AccessTokenHandler {
 		activeRefreshTokens.touchRefreshToken(accountId, UUID.fromString(jwt.getId()));
 
 		PivotableUser user = usersRegistry.getUser(accountId);
-		log.debug("We loaded {} from jti={}", user, jwt.getId());
+		log.debug("We loaded {} from jti={}", user, AdhocOWASP.sanitizeLog(jwt.getId()));
 		return Map.entry(jwt, user);
 	}
 

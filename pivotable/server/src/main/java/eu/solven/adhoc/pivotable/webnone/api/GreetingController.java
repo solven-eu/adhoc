@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.greeting.Greeting;
 import lombok.AllArgsConstructor;
@@ -55,6 +56,10 @@ public class GreetingController {
 	/**
 	 * @return a static greeting message.
 	 */
+	// SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING seems a false-positive as we have `method = { RequestMethod.GET,
+	// RequestMethod.POST }`
+	@SuppressFBWarnings(value = "SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING",
+			justification = "This endpoint is on the JWT resource-server filter chain which disables CSRF (see PivotableJwtWebmvcSecurity.onCsrf).")
 	@RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE,
 			path = IPivotableApiConstants.PREFIX + "/hello",
 			method = { RequestMethod.GET, RequestMethod.POST })

@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,10 @@ import lombok.extern.slf4j.Slf4j;
 public class PivotableClearController {
 	final ApplicationContext appContext;
 
+	// SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING seems a false-positive as we have `method = { RequestMethod.GET,
+	// RequestMethod.POST }`
+	@SuppressFBWarnings(value = "SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING",
+			justification = "This endpoint is on the JWT resource-server filter chain which disables CSRF (see PivotableJwtWebmvcSecurity.onCsrf).")
 	@RequestMapping(method = { RequestMethod.GET, RequestMethod.POST }, path = "/clear")
 	public Map<String, ?> clear() {
 		Map<String, IHasCache> beansWithCache = appContext.getBeansOfType(IHasCache.class);

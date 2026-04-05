@@ -248,25 +248,21 @@ public class PivotableSocialWebmvcSecurity {
 
 						String loginError = "/html/login?error";
 						oauth2.failureHandler(new SimpleUrlAuthenticationFailureHandler(loginError));
-					})
-			// .oauth2Client(oauth2 -> oauth2.)
-			;
+					});
 		}
 
-		return commonConf
-
-				.build();
+		return commonConf.build();
 	}
 
 	// `java:S6437` is about the hardcoded `no_password`, which is safe as this activates only with the
 	// `IPivotableSpringProfiles.P_FAKEUSER` profile
 	@SuppressWarnings("java:S6437")
-	private HttpSecurity configureBasicForFakeUser(HttpSecurity commonConf) {
+	protected HttpSecurity configureBasicForFakeUser(HttpSecurity commonConf) {
 		InMemoryUserDetailsManager userDetailsService = userDetailsService();
 		return commonConf.userDetailsService(userDetailsService);
 	}
 
-	private InMemoryUserDetailsManager userDetailsService() {
+	protected InMemoryUserDetailsManager userDetailsService() {
 		Map<String, UserDetails> userDetails = new ConcurrentHashMap<>();
 
 		UserDetails fakeUser = User.builder()
@@ -278,8 +274,7 @@ public class PivotableSocialWebmvcSecurity {
 
 		userDetails.put(fakeUser.getUsername(), fakeUser);
 
-		InMemoryUserDetailsManager userDetailsService = new InMemoryUserDetailsManager(fakeUser);
-		return userDetailsService;
+		return new InMemoryUserDetailsManager(fakeUser);
 	}
 
 }

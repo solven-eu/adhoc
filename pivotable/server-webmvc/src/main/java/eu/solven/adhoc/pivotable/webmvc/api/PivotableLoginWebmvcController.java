@@ -104,8 +104,6 @@ public class PivotableLoginWebmvcController {
 	/**
 	 * Returns login status without triggering a 401/error — useful for JS polling.
 	 *
-	 * @param oauth2User
-	 *            injected when the request is authenticated via OAuth2
 	 * @return a JSON map with a {@code login} key holding the HTTP status code
 	 */
 	@GetMapping("/json")
