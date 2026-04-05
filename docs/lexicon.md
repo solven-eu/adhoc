@@ -1,52 +1,188 @@
 # Lexicon
 
+Definitions of terms used throughout Adhoc, with cross-references to standard OLAP vocabulary and
+to ActivePivot/Atoti where the concept maps (or deliberately diverges).
+
+---
+
 ## OLAP
 
-Online Analytical Processing.
+**Online Analytical Processing.** A class of read-only queries that synthesise large volumes of raw
+data into a smaller, aggregated result set — typically via `GROUP BY`, filters, and computed
+indicators. Contrasts with OLTP (transactional writes).
 
-It refers to running read-only queries, typically synthesizing a large quantity of data into a smaller set of data (e.g. with `GROUP BY`).
+---
 
 ## Cube
 
-A cube is a multidimensional structure. A cube can by drilled-down by:
-- filtering, i.e. selecting a subset of data.
-- decomposing, i.e. splitting
-the requested measures ()
+A multidimensional data space where every point (a *cell*) is identified by a coordinate along each
+*column* and holds one or more *measure* values.
 
-In `Adhoc`, a `ICubeWrapper` is essentially the pairing of a `table` with a `forest`.
+In Adhoc, `ICubeWrapper` pairs a `table` (data source) with a `forest` (measure tree). Queries are
+issued against the cube; the cube decomposes them into `TableQuery` objects that are sent to the
+table, then assembles the results through the measure tree.
+
+> **ActivePivot equivalent:** `IActivePivot` / `IMultiVersionActivePivot`.
+
+---
 
 ## Table
 
-A `table` refers to database, where data is going on a per-column basis, with aggregation capabilities.
+The external data source backing a cube. Adhoc treats tables as black boxes that can answer
+aggregation queries (`TableQuery`): `GROUP BY` a set of columns, `WHERE` a filter, compute a set of
+aggregations.
 
-In `Adhoc`, a `ITableWrapper` is the abstraction to external databases.
+`ITableWrapper` is the abstraction. Implementations include:
 
-Example tables are:
-- `InMemoryTable` which is essential a `List` of `Map`s.
-- `JooqTableWrapper` which can wraps many SQL-engine (e.g. `DuckDB`, `PostgreSQL`, `RedShift`, etc) with the help of JooQ.
-- `MongoTableWrapper` which demonstrate how to manage NoSQL databases.
+| Implementation | Backend |
+|---|---|
+| `InMemoryTable` | `List<Map>` in JVM heap |
+| `JooqTableWrapper` | Any JDBC-compatible engine (DuckDB, PostgreSQL, Redshift, …) |
+| `MongoTableWrapper` | MongoDB |
+| `ActivePivotTableWrapper` | Atoti/ActivePivot cube queried as a table |
 
-A `table` can run `TableQueries`.
+> **ActivePivot equivalent:** a *store* is the closest analogue, though ActivePivot stores are
+> strongly-typed and schema-bound, while Adhoc tables are schema-on-read.
+
+---
 
 ## Column
 
-A column generally refers to the column of a table, or a hierarchy of a cube.
+The unit of grouping and filtering. Roughly equivalent to a *dimension* or *hierarchy level* in
+traditional OLAP, but Adhoc deliberately flattens the hierarchy model: every column is a single
+level — there are no multi-level hierarchies.
 
-In the context of a cube, it may also be called with various names:
-- dimensions
-- hierarchies
-- levels
-- axes
+A column can be:
+- **Physical** — directly backed by a table column.
+- **Calculated** (`ICalculatedColumn`) — derived at query time from other columns (e.g. a date
+  truncation, a bucket expression).
 
-A column may be scalar/primitive if it is materialized by an actual table column, or calculated (see `ICalculatedColumn`) when it is derived (e.g. from other columns).
+> **Traditional OLAP vocabulary:** dimension → hierarchy → level. Adhoc collapses these three into
+> one concept.  
+> **ActivePivot equivalent:** a *level* within a hierarchy.
+
+---
+
+## Slice
+
+A specific coordinate in the cube — a `Map<column, value>` that identifies a single cell or a set
+of cells. In code, `ISlice` / `ISliceWithStep` carry these coordinates through the measure
+evaluation pipeline.
+
+---
+
+## GroupBy
+
+The set of columns along which a query is broken down. Equivalent to the `GROUP BY` clause in SQL
+or the *axes* / *location wildcards* in MDX.
+
+> **ActivePivot equivalent:** the wildcard dimensions of an `ILocation`.
+
+---
+
+## Filter
+
+A boolean predicate over column values, restricting which rows of the table contribute to the
+result. `ISliceFilter` implements full boolean arithmetic (AND, OR, NOT, column predicates).
+
+Filters compose: a `Shiftor` or other transformator may narrow or widen the filter as it propagates
+down the measure tree.
+
+> **ActivePivot equivalent:** `ISubCubeProperties` / `ICubeFilter`.
+
+---
+
+## Cell
+
+The intersection of a specific *slice* (set of column values) and a *measure* in the result of a
+cube query. A cell holds the aggregated value for that combination.
+
+---
 
 ## Measure
 
-A `measure` is an indicator. One may be confused between:
-- a transformator archetype (e.g. `Combinator`, `Partitionor`), defining the type of formula, which is essentially defined by its `ATransformatorQueryStep` (e.g. `CombinatorQueryStep`).
-- a transformator (e.g. `SumCombination implements ICombination`), defining the formula but lacking its configuration.
-- a measure (e.g. `Combinator.builder().name("measureName").combinationKey("someKey").build();`), defining an instance of a transformator (e.g. with a unique name).
+An indicator computed by the cube. The term covers three related concepts:
+
+| Concept | Description | Example |
+|---|---|---|
+| **Archetype** | The type of formula, defined by its `QueryStep` class | `Combinator`, `Partitionor`, `Filtrator` |
+| **Combination / implementation** | The concrete formula without its configuration | `SumCombination implements ICombination` |
+| **Measure instance** | A named, configured instance ready to be queried | `Combinator.builder().name("revenue").combinationKey("SUM").underlyings(List.of("amount")).build()` |
+
+> **ActivePivot equivalent:** a *measure* (native or post-processed).
+
+### Aggregator
+
+A leaf measure that queries the table directly and applies an aggregation function (SUM, MAX, COUNT,
+…). `IAggregator` / `AggregatedMeasure`.
+
+> **ActivePivot equivalent:** `AggregatedMeasure`.
+
+### Combinator
+
+A measure that combines the values of one or more underlying measures at the cell level — the most
+common type of post-processing. Equivalent to `ABasicPostProcessor` in ActivePivot.
+
+### Partitionor
+
+A measure that re-aggregates underlying values across a sub-partition of the current groupby —
+useful for running totals, share-of-total, etc. Equivalent to
+`ADynamicAggregationPostProcessorV2`.
+
+### Filtrator
+
+A measure that applies an additional filter before evaluating its underlying — equivalent to
+`AFilteringPostProcessorV2`.
+
+### Dispatchor
+
+A measure that dispatches the current slice into multiple derived slices before evaluating an
+underlying. Equivalent to `AAdvancedPostProcessorV2`.
+
+---
 
 ## Forest
 
-A `forest` is a tree of measures.
+A directed acyclic graph (in practice a tree) of measures. Each node is a measure; edges represent
+*depends-on* relationships. The forest is the schema of all computable indicators for a given cube.
+
+`IMeasureForest` / `IMeasureForestVisitor`.
+
+---
+
+## TableQuery
+
+A query sent to an `ITableWrapper`. It specifies:
+- a `GROUP BY` (set of columns)
+- a `WHERE` filter
+- a set of aggregations to compute
+
+The query engine may merge or split `TableQuery` objects to minimise round-trips to the underlying
+store.
+
+---
+
+## CubeQuery / CubeQueryStep
+
+A `CubeQuery` is the user-facing request to a cube: which measures, which groupby, which filter.
+
+Internally, the engine decomposes it into a DAG of `CubeQueryStep` objects — one per distinct
+`(measure, groupby, filter)` triple. Steps share sub-computations where possible; the DAG is
+executed concurrently by `DagCompletableExecutor`.
+
+---
+
+## MDX
+
+**MultiDimensional eXpressions** — the query language standardised for OLAP cubes (used by
+Microsoft Analysis Services, ActivePivot, and others). Adhoc does **not** implement MDX; queries
+are expressed programmatically via the Java builder API or through the REST/GraphQL interface of
+Pivotable.
+
+---
+
+## Pivotable
+
+The reference Spring Boot web application wrapping Adhoc. It exposes cube queries over HTTP (REST +
+optional GraphQL) and provides a Vue.js front-end. `Pivotable` is to `Adhoc` what a web server is
+to a query engine.
