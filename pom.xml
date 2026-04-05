@@ -39,7 +39,7 @@
 	</developers>
 
 	<modules>
-		<module>public</module>
+		<module>model</module>
 		<module>adhoc</module>
 		<module>experimental</module>
 		<module>calcite</module>

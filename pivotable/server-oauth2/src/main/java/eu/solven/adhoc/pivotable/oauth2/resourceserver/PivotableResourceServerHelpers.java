@@ -1,0 +1,142 @@
+/**
+ * The MIT License
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.pivotable.oauth2.resourceserver;
+
+import java.security.SecureRandom;
+import java.text.ParseException;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.gen.OctetSequenceKeyGenerator;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.solven.adhoc.app.IPivotableSpringProfiles;
+import eu.solven.adhoc.pivotable.oauth2.IPivotableOAuth2Constants;
+import eu.solven.adhoc.tools.IUuidGenerator;
+import eu.solven.adhoc.tools.JdkUuidGenerator;
+import lombok.SneakyThrows;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Manages decoding of JWT.
+ * 
+ * @author Benoit Lacelle
+ */
+@Slf4j
+@UtilityClass
+public class PivotableResourceServerHelpers {
+
+	public static final MacAlgorithm MAC_ALGORITHM = MacAlgorithm.HS256;
+
+	private static final AtomicReference<String> GENERATED_SIGNINGKEY = new AtomicReference<>();
+
+	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
+	public static OctetSequenceKey loadOAuth2SigningKey(Environment env, IUuidGenerator uuidGenerator)
+			throws ParseException {
+		String secretKeySpec = env.getRequiredProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY);
+
+		if ("NEEDS_TO_BE_DEFINED".equals(secretKeySpec)) {
+			throw new IllegalStateException("Lack proper `" + IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY
+					+ "` or spring.profiles.active="
+					+ IPivotableSpringProfiles.P_UNSAFE
+					+ " (profiles="
+					+ Arrays.asList(env.getActiveProfiles())
+					+ ")");
+		} else if (IPivotableOAuth2Constants.GENERATE.equals(secretKeySpec)) {
+			if (env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_PRDMODE))) {
+				throw new IllegalStateException(
+						"Can not GENERATE oauth2 signingKey with -P%s".formatted(IPivotableSpringProfiles.P_PRDMODE));
+			}
+			// Ensure we generate a signingKey only once, so that the key in IJwtDecoder and the token in Bearer token
+			// are based on the same signingKey
+			synchronized (PivotableResourceServerHelpers.class) {
+				if (GENERATED_SIGNINGKEY.get() == null) {
+					secretKeySpec = generateSigningKey(uuidGenerator);
+					GENERATED_SIGNINGKEY.set(secretKeySpec);
+				} else {
+					secretKeySpec = GENERATED_SIGNINGKEY.get();
+				}
+			}
+		}
+
+		OctetSequenceKey octetSequenceKey = OctetSequenceKey.parse(secretKeySpec);
+		log.info("Loaded or generated octetSequenceKey with kid={}", octetSequenceKey.getKeyID());
+		return octetSequenceKey;
+	}
+
+	@SuppressFBWarnings("DMI_RANDOM_USED_ONLY_ONCE")
+	private static String generateSigningKey(IUuidGenerator uuidGenerator) {
+		String secretKeySpec;
+		// Rely on the PID so that the signingKey is not changed on a SpringBootDevMode reload
+		long pid = getPID();
+
+		SecureRandom secureRandom = new SecureRandom();
+		secureRandom.setSeed(pid);
+
+		log.warn("We generate a random signingKey based on PID={}", pid);
+		secretKeySpec = generateSignatureSecret(secureRandom, uuidGenerator).toJSONString();
+		return secretKeySpec;
+	}
+
+	@SneakyThrows(JOSEException.class)
+	// @SuppressWarnings("PMD.ReplaceJavaUtilDate")
+	public static JWK generateSignatureSecret(SecureRandom secureRandom, IUuidGenerator uuidGenerator) {
+		// https://connect2id.com/products/nimbus-jose-jwt/examples/jws-with-hmac
+		// Generate random 256-bit (32-byte) shared secret
+		// SecureRandom random = new SecureRandom();
+		//
+		String rawNbBits = MAC_ALGORITHM.getName().substring("HS".length());
+		int nbBits = Integer.parseInt(rawNbBits);
+
+		OctetSequenceKey jwk = new OctetSequenceKeyGenerator(nbBits).secureRandom(secureRandom)
+				.keyID(uuidGenerator.randomUUID().toString())
+				.algorithm(JWSAlgorithm.parse(MAC_ALGORITHM.getName()))
+				.issueTime(Date.from(Instant.now()))
+				.generate();
+
+		log.info("Generated a JWK with kid={}", jwk.getKeyID());
+
+		return jwk;
+	}
+
+	protected static long getPID() {
+		return ProcessHandle.current().pid();
+	}
+
+	public static void main(String[] args) {
+		JWK secretKey = generateSignatureSecret(new SecureRandom(), new JdkUuidGenerator());
+		log.info("Secret key for JWT signing: {}", secretKey.toJSONString());
+	}
+
+}

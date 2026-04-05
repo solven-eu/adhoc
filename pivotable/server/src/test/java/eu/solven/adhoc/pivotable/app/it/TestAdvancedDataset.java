@@ -41,10 +41,10 @@ import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
-import eu.solven.adhoc.pivotable.app.PivotableServerApplication;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.webnone.app.PivotableServerWebnoneApplication;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
@@ -57,7 +57,8 @@ import lombok.extern.slf4j.Slf4j;
  * @see 'TestTSPLifecycle'
  */
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = PivotableServerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = PivotableServerWebnoneApplication.class,
+		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({ IPivotableSpringProfiles.P_UNSAFE,
 		IPivotableSpringProfiles.P_INMEMORY,
 		IPivotableSpringProfiles.P_ADVANCED_DATASETS })

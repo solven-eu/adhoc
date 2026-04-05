@@ -24,7 +24,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc-public</artifactId>
+			<artifactId>adhoc-model</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -218,7 +218,7 @@
 		<dependency>
 			<!-- IValueProviderTestHelpers -->
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc-public</artifactId>
+			<artifactId>adhoc-model</artifactId>
 			<version>${project.version}</version>
 			<classifier>tests</classifier>
 		</dependency>

@@ -5,9 +5,17 @@
 Most data-structures are immutable to enable easy concurrency.
 - AdhocMap
 
-## ForkJoinPool
+## Thread pools
 
-By default, `adhoc` relies on a custom ForkJoinPool. It can be customized in `AdhocUnsafe.adhocCommonPool`.
+`AdhocUnsafe` exposes three pools, each tuned for a different workload:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `adhocMixedPool` | Virtual-thread executor (`newThreadPerTaskExecutor`) | Mixed / IO-bound work. Virtual threads are cheap and blocking-friendly, so no separate IO executor is needed. |
+| `adhocCpuPool` | `ForkJoinPool` (sized to `parallelism`) | CPU-bound work. Tasks submitted from a FJP worker that call `parallelStream()` fork into this pool rather than the JVM common pool, giving predictable naming and sizing. |
+| `maintenancePool` | Cached daemon thread pool | Background maintenance (e.g. `CacheBuilder.refreshAfterWrite`). Daemon so it never prevents JVM shutdown. |
+
+All three can be replaced before the first query is executed. `AdhocUnsafe.resetAll()` recreates them to a clean default state (useful in tests).
 
 ## DAG (Direct-Acyclic-Graph)
 
@@ -48,6 +56,15 @@ To implement `IAdhocMap.get(String key)`, we need a fast `NavigableSetLikeList.i
 - This could be achieved with a `HashMap` from `String key` to `int index`.
 - We observe better performance (x2 CPU) with a perfect-hashing (see `SimplePerfectHash`).
 
+`SimplePerfectHash` uses power-of-two masks (bitwise AND instead of modulo) with a shift parameter to resolve collisions without growing the table. Construction tries increasing table sizes until a collision-free assignment is found.
+
+State-of-the-art references:
+- [GNU gperf](https://www.gnu.org/software/gperf/) — classic compile-time perfect hash for static C/C++ key sets.
+- [sux4j](https://github.com/vigna/sux4j) (Sebastiano Vigna) — minimal perfect hash functions (MPHF) achieving ~2.24 bits/key; the academic gold standard for space-optimal static MPHFs.
+- [CHD algorithm](http://cmph.sourceforge.net/chd.html) (Compress, Hash, Displace) — near-optimal MPHF construction in O(n) expected time; also implemented in [CMPH](http://cmph.sourceforge.net/).
+- [PTHash](https://github.com/jermp/pthash) — fast and space-efficient MPHF with configurable space/time trade-off; well-suited for large static key sets.
+- [RecordHash / BDZ / BPZ](http://cmph.sourceforge.net/bdz.html) — MPHF variants also in CMPH, useful for understanding the space lower bounds.
+
 ## Columnar storage
 
 Each `IAdhocMap` is similar to a `HashMap`. However:
@@ -58,6 +75,14 @@ Each `IAdhocMap` is similar to a `HashMap`. However:
   - `ThreadLocalAppendableTable` enables one page per-thread.
   - `IAppendableColumnFactory` enables one `IAppendableColumn` per key
   - `IFreezingStrategy` enables encoding/compression per-block, once a page is full.
+
+### Per-query isolation — no cross-query sharing
+
+The columnar storage (dictionaries, compressed column pages) is **scoped to a single query**. `ISliceFactoryFactory.makeFactory(queryOptions)` creates a fresh `ISliceFactory` for every query; two independent concurrent queries never share any dictionary or column data. This is a deliberate design choice:
+
+- **No memory leak**: once a query finishes and its result is consumed, the factory (and all its backing arrays) can be GC'd without any cross-query reference keeping it alive.
+- **No cross-query lock contention**: each query's columns are private, so appending values needs no coordination with other queries.
+- **Simpler lifecycle**: the factory does not need invalidation logic; it is simply abandoned after the query.
 
 ## Encodings
 

@@ -30,19 +30,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.pivotable.account.JwtUserContextHolder;
 import eu.solven.adhoc.pivotable.core.PivotableComponentsConfiguration;
-import eu.solven.adhoc.pivotable.webflux.PivotableWebFluxSpringConfig;
-import eu.solven.adhoc.pivotable.webflux.api.GreetingHandler;
+import eu.solven.adhoc.pivotable.webnone.PivotableWebnoneSpringConfig;
 import lombok.extern.slf4j.Slf4j;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(
-		classes = { PivotableWebFluxSpringConfig.class,
-				PivotableComponentsConfiguration.class,
-				JwtUserContextHolder.class, },
-		webEnvironment = SpringBootTest.WebEnvironment.MOCK,
-		properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, })
+@SpringBootTest(classes = { PivotableWebnoneSpringConfig.class, PivotableComponentsConfiguration.class,
+// JwtUserContextHolder.class,
+}, webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = { IPivotableSpringProfiles.P_CONFIG_IMPORT, })
 @ActiveProfiles(IPivotableSpringProfiles.P_UNSAFE)
 @Slf4j
 @EnableAutoConfiguration
@@ -50,6 +45,6 @@ public class TestPivotableRouterSpringConfig {
 
 	@Test
 	public void testHello() {
-		log.debug("About {}", GreetingHandler.class);
+		// log.debug("About {}", GreetingHandler.class);
 	}
 }

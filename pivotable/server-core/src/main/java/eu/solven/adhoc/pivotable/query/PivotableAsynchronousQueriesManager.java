@@ -59,12 +59,8 @@ public class PivotableAsynchronousQueriesManager implements IHasCache, Disposabl
 	// This is useful in unitTest, not to be confused in case of concurrent tests
 	private static final AtomicInteger INDEX = new AtomicInteger();
 
-	final ListeningExecutorService asynchronousQueriesService =
-			MoreExecutors.listeningDecorator(Executors.newCachedThreadPool(Thread.ofPlatform()
-					// Daemon as these thread does not hold critical operations
-					.daemon(true)
-					.name("pivotable-asynchronous-", INDEX.getAndIncrement())
-					.factory()));
+	final ListeningExecutorService asynchronousQueriesService = MoreExecutors.listeningDecorator(Executors
+			.newThreadPerTaskExecutor(Thread.ofVirtual().name("pivotable-vt-", INDEX.getAndIncrement()).factory()));
 
 	final PivotableAsynchronousQueriesPolicy policy = PivotableAsynchronousQueriesPolicy.builder().build();
 

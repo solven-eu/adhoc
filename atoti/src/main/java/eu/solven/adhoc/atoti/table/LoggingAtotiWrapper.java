@@ -25,7 +25,6 @@ package eu.solven.adhoc.atoti.table;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-
 import com.quartetfs.biz.pivot.IActivePivotVersion;
 import com.quartetfs.biz.pivot.cellset.impl.EmptyCellSet;
 import com.quartetfs.biz.pivot.query.IGetAggregatesQuery;

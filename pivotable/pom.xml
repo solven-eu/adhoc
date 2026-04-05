@@ -14,16 +14,51 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<modules>
-		<module>authorization</module>
-		<module>tools</module>
-		<module>public</module>
+		<module>server-oauth2</module>
+		<module>infra</module>
+		<module>model</module>
 		<module>server-core</module>
 		<module>js</module>
 		<module>mcp</module>
+		<module>server</module>
 
 		<!-- Following modules are bootable-->
-		<module>server</module>
+		<module>server-webflux</module>
+		<module>server-webmvc</module>
 
 		<module>bom</module>
 	</modules>
+
+	<properties>
+		<springdoc-openapi.version>3.0.2</springdoc-openapi.version>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.opencsv</groupId>
+				<artifactId>opencsv</artifactId>
+				<version>5.12.0</version>
+				<exclusions>
+					<exclusion>
+						<!-- Would conflict with spring-jcl -->
+						<!-- Typical warning is: -->
+						<!-- Standard Commons Logging discovery in action with
+					spring-jcl: please remove commons-logging.jar from classpath
+					in order to avoid potential conflicts -->
+						<groupId>commons-logging</groupId>
+						<artifactId>commons-logging</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+
+			<dependency>
+				<!-- https://github.com/skyscreamer/JSONassert -->
+				<!-- https://github.com/spring-projects/spring-boot/issues/47385 -->
+				<groupId>org.skyscreamer</groupId>
+				<artifactId>jsonassert</artifactId>
+				<version>2.0-rc1</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 </project>

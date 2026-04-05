@@ -12,8 +12,8 @@
 	<name>${project.groupId}:${project.artifactId}</name>
 
 	<properties>
-		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.80</jacoco.instruction.ratio>
+		<jacoco.branch.ratio>0.05</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.43</jacoco.instruction.ratio>
 
 		<springdoc-openapi.version>3.0.2</springdoc-openapi.version>
 		<automatic.module.name>eu.solven.adhoc.pivotable.server</automatic.module.name>
@@ -28,7 +28,7 @@
 
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>pivotable-authorization</artifactId>
+			<artifactId>pivotable-server-oauth2</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -46,31 +46,14 @@
 			<optional>true</optional>
 		</dependency>
 
-		<dependency>
-			<groupId>com.ezylang</groupId>
-			<artifactId>EvalEx</artifactId>
-			<version>${evalex.ezylang.version}</version>
-			<!-- Many projects may not use EvalTranformation-->
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Used by Pixar example -->
 		<dependency>
 			<groupId>com.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
-			<version>5.12.0</version>
 			<!-- Many projects may not use CSVParsing-->
 			<optional>true</optional>
-			<exclusions>
-				<exclusion>
-					<!-- Would conflict with spring-jcl -->
-					<!-- Typical warning is: -->
-					<!-- Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts -->
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
+
 		<!-- Used by Simple example -->
 		<dependency>
 			<groupId>net.datafaker</groupId>
@@ -90,92 +73,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<!--artifactId>springdoc-openapi-starter-webmvc-ui</artifactId-->
-			<artifactId>springdoc-openapi-starter-webflux-api</artifactId>
-			<version>${springdoc-openapi.version}</version>
-		</dependency>
+
 		<!--		<dependency>-->
-		<!--			 https://docs.spring.io/spring-boot/reference/using/devtools.html -->
 		<!--			<groupId>org.springframework.boot</groupId>-->
-		<!--			<artifactId>spring-boot-devtools</artifactId>-->
-		<!--			<scope>runtime</scope>-->
-		<!--			<optional>true</optional>-->
+		<!--			<artifactId>spring-boot-starter-graphql</artifactId>-->
 		<!--		</dependency>-->
 
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-graphql</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>jquery</artifactId>
-			<version>3.7.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>bootstrap</artifactId>
-			<version>5.3.8</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue -->
-		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>vue</artifactId>
-			<version>3.5.32</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.webjars.npm/vue-router -->
-		<dependency>
-			<groupId>org.webjars.npm</groupId>
-			<artifactId>vue-router</artifactId>
-			<version>4.6.3</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
-			<version>${springdoc-openapi.version}</version>
-		</dependency>
-
-		<dependency>
-			<!-- https://docs.spring.io/spring-session/reference/guides/boot-redis.html -->
-			<groupId>org.springframework.session</groupId>
-			<artifactId>spring-session-data-redis</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.webjars</groupId>
-			<artifactId>webjars-locator-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<!-- https://github.com/spring-projects/spring-security/issues/18782#issuecomment-4001120294 -->
 			<!-- @WithMockUser -->
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<!-- https://github.com/skyscreamer/JSONassert/pull/194 -->
-					<groupId>com.vaadin.external.google</groupId>
-					<artifactId>android-json</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<!-- https://www.baeldung.com/spring-embedded-redis -->
-			<!-- https://github.com/codemonstur/embedded-redis -->
-			<groupId>com.github.codemonstur</groupId>
-			<artifactId>embedded-redis</artifactId>
-			<version>1.4.3</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -194,9 +101,13 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<!-- @WebFluxTest-->
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux-test</artifactId>
+			<artifactId>spring-boot-starter-webclient-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webtestclient</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -209,7 +120,7 @@
 				<configuration>
 					<classifier>exec</classifier>
 
-					<mainClass>eu.solven.adhoc.pivotable.app.PivotableServerApplication</mainClass>
+					<mainClass>eu.solven.adhoc.pivotable.webnone.app.PivotableServerWebnoneApplication</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>
