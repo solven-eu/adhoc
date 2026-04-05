@@ -12,9 +12,9 @@ the plumbing — iterating slices, routing underlying queries, assembling the ou
 
 ## Where ICombination is used
 
-| Measure type | How the combination is applied |
-|---|---|
-| `Combinator` | Called once per output slice; receives the underlying measure values for that slice |
+| Measure type  |                                                                   How the combination is applied                                                                   |
+|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Combinator`  | Called once per output slice; receives the underlying measure values for that slice                                                                                |
 | `Partitionor` | Called once per *partition slice* (the induced GROUP BY); receives the underlying values at that finer granularity, before the re-aggregation step folds them back |
 
 In both cases the signature is the same:
@@ -23,11 +23,11 @@ In both cases the signature is the same:
 @FunctionalInterface
 public interface ICombination {
 
-    /** Combine underlying values at a single slice into one output value. */
-    Object combine(ISliceWithStep slice, List<?> underlyingValues);
+	/** Combine underlying values at a single slice into one output value. */
+	Object combine(ISliceWithStep slice, List<?> underlyingValues);
 
-    /** Alternative overload using ISlicedRecord for indexed access. */
-    default IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) { ... }
+	/** Alternative overload using ISlicedRecord for indexed access. */
+	default IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) { ... }
 }
 ```
 
@@ -78,10 +78,10 @@ When writing a combination that reads GROUP BY columns, handle the null case exp
 ```java
 IValueMatcher matcher = reader.getValueMatcher("ccy");
 if (matcher instanceof EqualsMatcher eq) {
-    String ccy = (String) eq.getOperand();
-    // ... use ccy
+	String ccy = (String) eq.getOperand();
+	// ... use ccy
 } else if (matcher instanceof NullMatcher) {
-    // ccy is null for this slice — decide how to handle it
+	// ccy is null for this slice — decide how to handle it
 }
 ```
 
@@ -90,8 +90,8 @@ Or with `extractCoordinateLax`:
 ```java
 Optional<String> ccy = reader.extractCoordinateLax("ccy", String.class);
 ccy.ifPresentOrElse(
-    c -> /* use c */,
-    () -> /* handle null-ccy slice */);
+	c -> /* use c */,
+	() -> /* handle null-ccy slice */);
 ```
 
 ---
@@ -104,22 +104,22 @@ A `Combinator` groups by `ccy` and applies FX conversion per currency. The combi
 ```java
 public class ForeignExchangeCombination implements ICombination {
 
-    public static final String KEY = "FX";
+	public static final String KEY = "FX";
 
-    private final IForeignExchangeStorage fxStorage;
-    private final String baseCcy;
+	private final IForeignExchangeStorage fxStorage;
+	private final String baseCcy;
 
-    @Override
-    public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-        Object rawAmount = underlyingValues.get(0);
-        if (rawAmount == null) return null;
+	@Override
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		Object rawAmount = underlyingValues.get(0);
+		if (rawAmount == null) return null;
 
-        // The Partitionor groups by "ccy", so this coordinate is always present
-        String ccy = slice.sliceReader().extractCoordinate("ccy", String.class);
+		// The Partitionor groups by "ccy", so this coordinate is always present
+		String ccy = slice.sliceReader().extractCoordinate("ccy", String.class);
 
-        double rate = fxStorage.getRate(ccy, baseCcy);
-        return ((Number) rawAmount).doubleValue() * rate;
-    }
+		double rate = fxStorage.getRate(ccy, baseCcy);
+		return ((Number) rawAmount).doubleValue() * rate;
+	}
 }
 ```
 
@@ -127,12 +127,12 @@ Used inside a `Partitionor`:
 
 ```java
 Partitionor.builder()
-        .name("pnl.usd")
-        .underlyings(List.of("pnl"))
-        .groupBy(GroupByColumns.named("ccy"))          // guarantees ccy is in the slice
-        .combinationKey(ForeignExchangeCombination.KEY)
-        .aggregationKey(SumAggregation.KEY)
-        .build()
+		.name("pnl.usd")
+		.underlyings(List.of("pnl"))
+		.groupBy(GroupByColumns.named("ccy"))          // guarantees ccy is in the slice
+		.combinationKey(ForeignExchangeCombination.KEY)
+		.aggregationKey(SumAggregation.KEY)
+		.build()
 ```
 
 Because `ccy` is in the `Partitionor`'s `groupBy`, `extractCoordinate("ccy", String.class)` is
@@ -146,10 +146,10 @@ Reference the implementation class name as the `combinationKey`:
 
 ```java
 Combinator.builder()
-        .name("pnl.converted")
-        .underlyings(List.of("pnl"))
-        .combinationKey(ForeignExchangeCombination.class.getName())
-        .build()
+		.name("pnl.converted")
+		.underlyings(List.of("pnl"))
+		.combinationKey(ForeignExchangeCombination.class.getName())
+		.build()
 ```
 
 `StandardOperatorFactory` will instantiate it via reflection (no-arg constructor, or
@@ -162,9 +162,9 @@ other collaborators, use a custom `IOperatorsFactory` — see [Operators Factory
 
 `ICombination.combine` has two overloads:
 
-| Overload | When to use |
-|---|---|
-| `combine(slice, List<?> values)` | Simple cases; values accessed by index |
+|                Overload                |                                                  When to use                                                  |
+|----------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| `combine(slice, List<?> values)`       | Simple cases; values accessed by index                                                                        |
 | `combine(slice, ISlicedRecord record)` | When indexed access via `record.read(int)` returning `IValueProvider` is preferred over boxing through `List` |
 
 Both overloads see the same data. `ISlicedRecord` avoids materialising all values into a `List`
@@ -178,3 +178,4 @@ when only one or two are needed, reducing allocation on the hot path.
 - [Custom Aggregations](aggregation.md) — `IAggregation`, the leaf-level counterpart for table-side accumulation
 - [Operators Factory](operators-factory.md) — injecting Spring beans into `ICombination` implementations
 - [Custom Measures](custom-measure.md) — when `ICombination` is not enough and a full `AMeasureQueryStep` is needed
+

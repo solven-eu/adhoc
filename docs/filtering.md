@@ -21,8 +21,8 @@ Adhoc provides a `StandardOperatorFactory` including generic operators (e.g. `SU
 
 - It can refer to custom operators by referring them by their `Class.getName()` as key.
 - Your custom `IAggregation`/`ICombination`/`IDecomposition`/`ISliceFilterEditor` should then have:
-  - Either an empty constructor
-  - Or a `Map<String, ?>` single-parameter constructor.
+- Either an empty constructor
+- Or a `Map<String, ?>` single-parameter constructor.
 
 One may also define a custom `IOperatorsFactory`:
 
@@ -34,7 +34,7 @@ One may also define a custom `IOperatorsFactory`:
 
 Humans are generally happier when things goes faster. `Adhoc` enables split-second queries over the underlying table. Very large queries can be performed with limited resources (e.g. a JVM with a few GB of RAM) and may take seconds/minutes.
 
-The limiting factor in term of performance is generally the under table, which executes aggregations at the granularity requested by Adhoc, induced by the User `GROUP BY`, and those implied by some formulas (e.g. a `Partitionor` by Currency). 
+The limiting factor in term of performance is generally the under table, which executes aggregations at the granularity requested by Adhoc, induced by the User `GROUP BY`, and those implied by some formulas (e.g. a `Partitionor` by Currency).
 
 Hence, we do not target absolute performance in `Adhoc`. In other words, we prefer things to remains slightly slower, as long as it enables this project to remains simpler, given a query is generally slow due to the underlying `ITableWrapper`.
 

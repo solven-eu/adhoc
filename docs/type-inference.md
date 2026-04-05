@@ -19,3 +19,4 @@
 ## Numbers
 
 - Aggregations should generally aggregates as `long`, else `double`.
+

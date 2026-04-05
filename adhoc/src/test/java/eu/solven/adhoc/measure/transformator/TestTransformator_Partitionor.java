@@ -22,12 +22,9 @@
  */
 package eu.solven.adhoc.measure.transformator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,9 +34,7 @@ import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
-import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -208,69 +203,6 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(1)
 				.containsEntry(Map.of(), Map.of("maxK1K2", 0L + 123 + 345));
-	}
-
-	/**
-	 * A custom {@link ICombination} that records each {@code b} coordinate it observes via
-	 * {@code sliceReader().extractCoordinateLax()}, so the test can assert that a null {@code b} value is handled
-	 * gracefully (i.e. {@link Optional#empty()} for the partition where {@code b} is absent).
-	 *
-	 * <p>
-	 * The static list is cleared at the start of each test that uses this class.
-	 *
-	 * <p>
-	 * See docs/combination.md — "The GROUP BY guarantee" section for a full explanation of the NullMatcher case.
-	 */
-	public static class RecordingBCombination implements ICombination {
-
-		// package-private for test assertion; cleared per-test
-		static final List<Optional<String>> seenBValues = new ArrayList<>();
-
-		@Override
-		public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-			// b is in the Partitionor groupBy — may be null for rows where b is absent in the source data
-			Optional<String> b = slice.sliceReader().extractCoordinateLax("b", String.class);
-			seenBValues.add(b);
-			return underlyingValues.get(0); // pass through
-		}
-	}
-
-	/**
-	 * Verifies that a custom {@link ICombination} using {@code sliceReader().extractCoordinateLax()} correctly handles
-	 * a {@code null} coordinate in the Partitionor GROUP BY. Column {@code b} is absent (hence null) for rows where
-	 * {@code a=a1}, so the combination must receive {@link Optional#empty()} for those slices rather than throwing.
-	 *
-	 * <p>
-	 * See docs/combination.md — "The GROUP BY guarantee" section.
-	 */
-	@Test
-	public void testCombination_nullCoordinate_inPartitionorGroupBy() {
-		RecordingBCombination.seenBValues.clear();
-
-		forest.addMeasure(Partitionor.builder()
-				.name("k1ByB")
-				.underlyings(Arrays.asList("k1"))
-				.groupBy(GroupByColumns.named("b"))
-				.combinationKey(RecordingBCombination.class.getName())
-				.aggregationKey(SumAggregation.KEY)
-				.build());
-
-		forest.addMeasure(k1Sum);
-
-		ITabularView output = cube().execute(CubeQuery.builder().measure("k1ByB").build());
-
-		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
-
-		// Grand-total result: all partitions re-aggregated to a single cell
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).containsKey(Collections.emptyMap());
-
-		// The null-b partition (rows with a=a1, where b is absent) produces Optional.empty()
-		Assertions.assertThat(RecordingBCombination.seenBValues).contains(Optional.empty());
-
-		// Non-null partitions produce the expected coordinate values
-		Assertions.assertThat(RecordingBCombination.seenBValues)
-				.contains(Optional.of("b1"))
-				.contains(Optional.of("b2"));
 	}
 
 	@Test

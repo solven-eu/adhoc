@@ -41,10 +41,10 @@ domain code needing to be aware of the query engine internals.
 Every `ISlice` is backed by an `IAdhocMap`, accessible via `slice.asAdhocMap()`. The two views are
 interchangeable — `IAdhocMap.asSlice()` wraps it back — but they serve different audiences:
 
-| | `ISlice` | `IAdhocMap` |
-|---|---|---|
-| **Audience** | Measure authors, filter logic | Engine internals, optimisation code |
-| **Abstraction** | A named row in a pivot table | A specialised `SequencedMap<String, Object>` |
+|                 |                   `ISlice`                   |                   `IAdhocMap`                    |
+|-----------------|----------------------------------------------|--------------------------------------------------|
+| **Audience**    | Measure authors, filter logic                | Engine internals, optimisation code              |
+| **Abstraction** | A named row in a pivot table                 | A specialised `SequencedMap<String, Object>`     |
 | **Key methods** | `getRaw`, `asFilter`, `retainAll`, `isEmpty` | `get`, `sequencedKeySet`, `retainAll`, `asSlice` |
 
 `IAdhocMap` extends `SequencedMap<String, Object>` and adds three strong contracts:
@@ -91,11 +91,11 @@ projections recur across the entire query, so the cache is almost always warm.
 
 ## Concrete implementations
 
-| Class | Backing storage | Use |
-|---|---|---|
-| `MapOverLists` | `List<?>` of values | Default row-oriented construction |
-| `MapOverIntFunction` | `IntFunction<Object>` | Dictionary/columnar encoding; lazy value lookup |
-| `MaskedAdhocMap` | Another `IAdhocMap` + a mask `Map` | Adds temporary columns (e.g. from `IColumnGenerator`) without copying the original |
+|        Class         |          Backing storage           |                                        Use                                         |
+|----------------------|------------------------------------|------------------------------------------------------------------------------------|
+| `MapOverLists`       | `List<?>` of values                | Default row-oriented construction                                                  |
+| `MapOverIntFunction` | `IntFunction<Object>`              | Dictionary/columnar encoding; lazy value lookup                                    |
+| `MaskedAdhocMap`     | Another `IAdhocMap` + a mask `Map` | Adds temporary columns (e.g. from `IColumnGenerator`) without copying the original |
 
 `MaskedAdhocMap` is particularly useful for composite tables and many-to-many scenarios where a
 handful of synthetic columns need to be injected on top of an existing slice without allocating a
@@ -125,3 +125,4 @@ ISlice grandTotal = SliceHelpers.grandTotal();
 - [Immutability](immutability.md) — why immutable data structures improve correctness beyond thread safety
 - [Optimisations](optimisations.md) — perfect hashing, columnar encoding, and filter arithmetic
 - [Concepts](concepts.md) — where slices fit in the overall query flow
+

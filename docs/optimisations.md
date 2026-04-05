@@ -9,11 +9,11 @@ Most data-structures are immutable to enable easy concurrency.
 
 `AdhocUnsafe` exposes three pools, each tuned for a different workload:
 
-| Field | Type | Purpose |
-|---|---|---|
-| `adhocMixedPool` | Virtual-thread executor (`newThreadPerTaskExecutor`) | Mixed / IO-bound work. Virtual threads are cheap and blocking-friendly, so no separate IO executor is needed. |
-| `adhocCpuPool` | `ForkJoinPool` (sized to `parallelism`) | CPU-bound work. Tasks submitted from a FJP worker that call `parallelStream()` fork into this pool rather than the JVM common pool, giving predictable naming and sizing. |
-| `maintenancePool` | Cached daemon thread pool | Background maintenance (e.g. `CacheBuilder.refreshAfterWrite`). Daemon so it never prevents JVM shutdown. |
+|       Field       |                         Type                         |                                                                                  Purpose                                                                                  |
+|-------------------|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `adhocMixedPool`  | Virtual-thread executor (`newThreadPerTaskExecutor`) | Mixed / IO-bound work. Virtual threads are cheap and blocking-friendly, so no separate IO executor is needed.                                                             |
+| `adhocCpuPool`    | `ForkJoinPool` (sized to `parallelism`)              | CPU-bound work. Tasks submitted from a FJP worker that call `parallelStream()` fork into this pool rather than the JVM common pool, giving predictable naming and sizing. |
+| `maintenancePool` | Cached daemon thread pool                            | Background maintenance (e.g. `CacheBuilder.refreshAfterWrite`). Daemon so it never prevents JVM shutdown.                                                                 |
 
 All three can be replaced before the first query is executed. `AdhocUnsafe.resetAll()` recreates them to a clean default state (useful in tests).
 
@@ -34,9 +34,9 @@ The study the ability to make a single DAG for the whole query.
 In Adhoc, we consider slices (which are similar to Maps expressing coordinates along columns). These slices are:
 - numerous, as we consider many slices per CubeQueryStep
 - often based on the same `.keySet()`, similarly to a `table`.
-  - a `CubeQueryStep` always refers to the same columns
-  - a `Combinator` refers to the same columns as its underlyings `CubeQuerySteps`
-  - the inducing phase of `ATableQueryOptimizer` generates a `table` from  a `table`, by removing some columns (and applying some filter).
+- a `CubeQueryStep` always refers to the same columns
+- a `Combinator` refers to the same columns as its underlyings `CubeQuerySteps`
+- the inducing phase of `ATableQueryOptimizer` generates a `table` from  a `table`, by removing some columns (and applying some filter).
 
 Hence, instead of relying on a `HashMap`, we rely on `AdhocMap` which is specialized for recurrent `.keySet()`.
 
@@ -72,9 +72,9 @@ Each `IAdhocMap` is similar to a `HashMap`. However:
 - Given we often encounter the same values (i.e. coordinates along a column)
 - We like storing the underlying data into a column-store.
 - This is achieved by `ColumnarSliceFactory`, where each `IAdhocMap` refers an `int` to a `IAppendableTable`.
-  - `ThreadLocalAppendableTable` enables one page per-thread.
-  - `IAppendableColumnFactory` enables one `IAppendableColumn` per key
-  - `IFreezingStrategy` enables encoding/compression per-block, once a page is full.
+- `ThreadLocalAppendableTable` enables one page per-thread.
+- `IAppendableColumnFactory` enables one `IAppendableColumn` per key
+- `IFreezingStrategy` enables encoding/compression per-block, once a page is full.
 
 ### Per-query isolation — no cross-query sharing
 
@@ -128,7 +128,7 @@ These caches:
 - `JooqTableWrapper.fieldsCache` is a cache for metadata from the table (e.g. columns metadata).
 - `PivotableAsynchronousQueriesManager.queryIdToView` holds query results of asynchronous queries.
 - `IQueryStepCache` enables caching of `cubeQueryStep` results from one query to another. It is typically an LRU cache. It is a property of `StandardQueryPreparator`.
-- `CachingTableWrapper` is an `ITableWrapper` decorator enabling caching. It is deprecated as it seems less relevant and more difficult to tweak than a proper `IQueryStepCache`. 
+- `CachingTableWrapper` is an `ITableWrapper` decorator enabling caching. It is deprecated as it seems less relevant and more difficult to tweak than a proper `IQueryStepCache`.
 
 These caches:
 - does implement `IHasCache`.
@@ -184,26 +184,26 @@ It is also possible to change the way queries are grouped together (typically on
 
 ```java
 CubeWrapper cube = CubeWrapper.builder()
-    .name(table.getName())
-    .table(table)
-    .forest(forest)
-    .engine(CubeQueryEngine.builder()
-            .tableQueryEngine(TableQueryEngine.builder().optimizerFactory(new ITableQueryOptimizerFactory() {
+	.name(table.getName())
+	.table(table)
+	.forest(forest)
+	.engine(CubeQueryEngine.builder()
+			.tableQueryEngine(TableQueryEngine.builder().optimizerFactory(new ITableQueryOptimizerFactory() {
 
-                @Override
-                public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
-                    if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
-                        return new TableQueryOptimizerNone(factories);
-                    } else {
-                        return new TableQueryOptimizerSinglePerAggregator(factories);
-                    }
-                }
-            }).build())
-            .build())
-    .build();
+				@Override
+				public ITableQueryOptimizer makeOptimizer(AdhocFactories factories, IHasQueryOptions hasOptions) {
+					if (hasOptions.getOptions().contains(InternalQueryOptions.DISABLE_AGGREGATOR_INDUCTION)) {
+						return new TableQueryOptimizerNone(factories);
+					} else {
+						return new TableQueryOptimizerSinglePerAggregator(factories);
+					}
+				}
+			}).build())
+			.build())
+	.build();
 ```
 
-`TableQueryOptimizerSinglePerAggregator` will merge all `GROUP BY` in a union of columns, and filters into a `OR`. Hence, in a single query, 
+`TableQueryOptimizerSinglePerAggregator` will merge all `GROUP BY` in a union of columns, and filters into a `OR`. Hence, in a single query,
 it will be able to fetch al lthe necessary information.
 
 For instance:

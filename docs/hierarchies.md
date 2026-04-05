@@ -25,20 +25,20 @@ handled by **measure logic**.
 The most common approach is to store each level as a separate column and populate every row with
 values at all levels:
 
-| city | country | region | sales |
-|------|---------|--------|-------|
-| Paris | FR | EMEA | 80 |
-| Lyon | FR | EMEA | 43 |
-| Berlin | DE | EMEA | 61 |
-| New York | US | AMER | 120 |
+|   city   | country | region | sales |
+|----------|---------|--------|-------|
+| Paris    | FR      | EMEA   | 80    |
+| Lyon     | FR      | EMEA   | 43    |
+| Berlin   | DE      | EMEA   | 61    |
+| New York | US      | AMER   | 120   |
 
 Querying at any single level is a plain `GROUP BY`:
 
 ```java
 CubeQuery.builder()
-        .measure("sales")
-        .groupBy(GroupByColumns.named("country"))   // or "region", or "city"
-        .build()
+		.measure("sales")
+		.groupBy(GroupByColumns.named("country"))   // or "region", or "city"
+		.build()
 ```
 
 This works because all three columns are present on every row. No hierarchy configuration is
@@ -52,18 +52,18 @@ using the `Unfiltrator` pattern:
 ```java
 // Denominator: drop city, keep country filter
 Unfiltrator countryTotal = Unfiltrator.builder()
-        .name("sales.country_total")
-        .underlying("sales")
-        .column("country")
-        .mode(Mode.Retain)   // whatever the query filter contains, keep only country
-        .build();
+		.name("sales.country_total")
+		.underlying("sales")
+		.column("country")
+		.mode(Mode.Retain)   // whatever the query filter contains, keep only country
+		.build();
 
 // Ratio
 Combinator cityShare = Combinator.builder()
-        .name("sales.city_share")
-        .underlyings(List.of("sales", "sales.country_total"))
-        .combinationKey(DivideCombination.KEY)
-        .build();
+		.name("sales.city_share")
+		.underlyings(List.of("sales", "sales.country_total"))
+		.combinationKey(DivideCombination.KEY)
+		.build();
 ```
 
 When the user filters `country=FR AND city=Paris`, the `Retain` mode drops `city` and yields the
@@ -78,19 +78,19 @@ walk up the hierarchy:
 ```java
 public class GeoParentEditor implements IFilterEditor {
 
-    private final GeoHierarchy hierarchy; // injected: knows FR is the parent of Paris
+	private final GeoHierarchy hierarchy; // injected: knows FR is the parent of Paris
 
-    @Override
-    public ISliceFilter editFilter(ISliceFilter filter) {
-        IValueMatcher matcher = FilterHelpers.getValueMatcher(filter, "geo");
-        if (matcher instanceof EqualsMatcher eq) {
-            String parent = hierarchy.parentOf((String) eq.getOperand()); // "Paris" → "FR"
-            if (parent != null) {
-                return SimpleFilterEditor.shift(filter, "geo", parent);
-            }
-        }
-        return filter;
-    }
+	@Override
+	public ISliceFilter editFilter(ISliceFilter filter) {
+		IValueMatcher matcher = FilterHelpers.getValueMatcher(filter, "geo");
+		if (matcher instanceof EqualsMatcher eq) {
+			String parent = hierarchy.parentOf((String) eq.getOperand()); // "Paris" → "FR"
+			if (parent != null) {
+				return SimpleFilterEditor.shift(filter, "geo", parent);
+			}
+		}
+		return filter;
+	}
 }
 ```
 
@@ -150,3 +150,4 @@ the most common hierarchical use cases. See [Unfiltrator](unfiltrator.md) and
 - [Shiftor](shiftor.md) — navigating hierarchy levels via `IFilterEditor`
 - [Many-to-many](many-to-many.md) — DAG hierarchies with `Dispatchor`
 - [Lexicon → Column](lexicon.md) — why Adhoc flattens the traditional dimension/hierarchy/level model
+

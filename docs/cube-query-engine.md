@@ -30,9 +30,9 @@ For each pending step the builder asks the measure what it depends on:
 ```
 if measure is Aggregator    → leaf node; no further expansion
 if measure is IHasUnderlyingMeasures →
-    factory.makeQueryStep(step, measure)   // instantiates the IMeasureQueryStep
-    queryStep.getUnderlyingSteps()         // returns child CubeQueryStep list
-    register each child and recurse
+	factory.makeQueryStep(step, measure)   // instantiates the IMeasureQueryStep
+	queryStep.getUnderlyingSteps()         // returns child CubeQueryStep list
+	register each child and recurse
 ```
 
 This is the seam where custom measures plug in — `getUnderlyingSteps()` declares the children
@@ -46,10 +46,10 @@ same groupBy/filter share a single `CubeQueryStep` node. Deduplication happens d
 
 ```java
 CubeQueryStep {
-    IMeasure  measure;      // which measure to evaluate at this node
-    IGroupBy  groupBy;      // the columns defining the result granularity
-    ISliceFilter filter;    // the filter in scope at this node
-    Object    customMarker; // optional context (e.g. target currency for a Shiftor)
+	IMeasure  measure;      // which measure to evaluate at this node
+	IGroupBy  groupBy;      // the columns defining the result granularity
+	ISliceFilter filter;    // the filter in scope at this node
+	Object    customMarker; // optional context (e.g. target currency for a Shiftor)
 }
 ```
 
@@ -70,9 +70,9 @@ The `TableQueryEngine` does not send one query per leaf `CubeQueryStep`. Instead
 
 ```
 Set<TableQueryStep>              (one per leaf aggregator)
-        ↓  splitInducedAsDag()
+		↓  splitInducedAsDag()
 IAdhocDag<TableQueryStep>        (inducer → induced edges)
-        ↓  IMergeInducers
+		↓  IMergeInducers
 Set<TableQueryV4>                (the actual DB queries)
 ```
 
@@ -112,9 +112,9 @@ Independent steps are executed concurrently via `DagCompletableExecutor`, which 
 
 ```
 for each step (topological order, concurrent where independent):
-    wait for all child cuboids
-    call queryStep.produceOutputColumn(childCuboids)
-    publish result cuboid for parent steps to consume
+	wait for all child cuboids
+	call queryStep.produceOutputColumn(childCuboids)
+	publish result cuboid for parent steps to consume
 ```
 
 The root step's cuboid is finally converted into an `ITabularView` and returned to the caller.
@@ -125,34 +125,34 @@ The root step's cuboid is finally converted into an `ITabularView` and returned 
 
 ```
 CubeQuery
-    │
-    ▼
+	│
+	▼
 getRootMeasures()
-    │
-    ▼
+	│
+	▼
 QueryStepsDagBuilder.registerRootWithDescendants()
-    │   ↳ for each IHasUnderlyingMeasures: getUnderlyingSteps() → recurse
-    │   ↳ for each Aggregator: leaf node
-    │
-    ▼
+	│   ↳ for each IHasUnderlyingMeasures: getUnderlyingSteps() → recurse
+	│   ↳ for each Aggregator: leaf node
+	│
+	▼
 Cube DAG  (CubeQueryStep nodes)
-    │
-    ├─► executeTableQueries()
-    │       │
-    │       ▼
-    │   splitInduced() + mergeInducers()
-    │       │
-    │       ▼
-    │   TableQueryV4 → ITableWrapper (DB)
-    │       │
-    │       ▼
-    │   evaluateInduced() → Map<TableQueryStep, ICuboid>
-    │
-    ▼
+	│
+	├─► executeTableQueries()
+	│       │
+	│       ▼
+	│   splitInduced() + mergeInducers()
+	│       │
+	│       ▼
+	│   TableQueryV4 → ITableWrapper (DB)
+	│       │
+	│       ▼
+	│   evaluateInduced() → Map<TableQueryStep, ICuboid>
+	│
+	▼
 walkUpDag()  (concurrent, bottom-up)
-    │   ↳ produceOutputColumn(childCuboids) per non-aggregator step
-    │
-    ▼
+	│   ↳ produceOutputColumn(childCuboids) per non-aggregator step
+	│
+	▼
 ITabularView
 ```
 
@@ -180,3 +180,4 @@ A roadmap item tracks this:
 - [Concurrency](concurrency.md) — thread-pool topology and `DagCompletableExecutor`
 - [Custom Measures](custom-measure.md) — implementing `getUnderlyingSteps()` to define Cube DAG edges
 - [Optimisations](optimisations.md) — details on table-query merging and inducer logic
+

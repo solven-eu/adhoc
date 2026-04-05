@@ -19,17 +19,17 @@ measure that knows how to fetch the value for `d - 1`. That is exactly what `Shi
 ```java
 // Step 1 — the shifted leaf measure
 Shiftor pnlYesterday = Shiftor.builder()
-        .name("pnl.yesterday")
-        .underlying("pnl")
-        .editorKey(PreviousDayEditor.class.getName())
-        .build();
+		.name("pnl.yesterday")
+		.underlying("pnl")
+		.editorKey(PreviousDayEditor.class.getName())
+		.build();
 
 // Step 2 — the delta (Combinator over the two)
 Combinator delta = Combinator.builder()
-        .name("pnl.delta")
-        .underlyings(List.of("pnl", "pnl.yesterday"))
-        .combinationKey(SubtractionCombination.KEY)
-        .build();
+		.name("pnl.delta")
+		.underlyings(List.of("pnl", "pnl.yesterday"))
+		.combinationKey(SubtractionCombination.KEY)
+		.build();
 ```
 
 For each `{d=2025-04-05}` slice, `pnl.yesterday` fetches the `pnl` value at `{d=2025-04-04}`.
@@ -43,11 +43,11 @@ The shift logic lives in `IFilterEditor`:
 ```java
 @FunctionalInterface
 public interface IFilterEditor {
-    ISliceFilter editFilter(ISliceFilter filter);
+	ISliceFilter editFilter(ISliceFilter filter);
 
-    default ISliceFilter editFilter(FilterEditorContext ctx) {
-        return editFilter(ctx.getFilter());
-    }
+	default ISliceFilter editFilter(FilterEditorContext ctx) {
+		return editFilter(ctx.getFilter());
+	}
 }
 ```
 
@@ -57,16 +57,16 @@ target slice. A typical implementation for a one-day shift:
 ```java
 public class PreviousDayEditor implements IFilterEditor {
 
-    @Override
-    public ISliceFilter editFilter(ISliceFilter filter) {
-        IValueMatcher dateMatcher = FilterHelpers.getValueMatcher(filter, "d");
+	@Override
+	public ISliceFilter editFilter(ISliceFilter filter) {
+		IValueMatcher dateMatcher = FilterHelpers.getValueMatcher(filter, "d");
 
-        if (dateMatcher instanceof EqualsMatcher eq) {
-            LocalDate yesterday = ((LocalDate) eq.getOperand()).minusDays(1);
-            return SimpleFilterEditor.shift(filter, "d", yesterday);
-        }
-        return filter; // no date coordinate — return unchanged
-    }
+		if (dateMatcher instanceof EqualsMatcher eq) {
+			LocalDate yesterday = ((LocalDate) eq.getOperand()).minusDays(1);
+			return SimpleFilterEditor.shift(filter, "d", yesterday);
+		}
+		return filter; // no date coordinate — return unchanged
+	}
 }
 ```
 
@@ -94,8 +94,8 @@ optional `customMarker` for this purpose:
 ```java
 @Override
 public ISliceFilter editFilter(FilterEditorContext ctx) {
-    String targetCcy = (String) ctx.getCustomMarker(); // e.g. "EUR"
-    return SimpleFilterEditor.shift(ctx.getFilter(), "ccy", targetCcy);
+	String targetCcy = (String) ctx.getCustomMarker(); // e.g. "EUR"
+	return SimpleFilterEditor.shift(ctx.getFilter(), "ccy", targetCcy);
 }
 ```
 
@@ -128,22 +128,22 @@ invisible.
 
 ```java
 Shiftor.builder()
-        .name("pnl.yesterday")
-        .underlying("pnl")                           // single underlying (always one for Shiftor)
-        .editorKey(PreviousDayEditor.class.getName()) // IFilterEditor implementation
-        // .editorOptions(Map.of("calendar", "NYSE")) // optional config, passed to constructor
-        .build()
+		.name("pnl.yesterday")
+		.underlying("pnl")                           // single underlying (always one for Shiftor)
+		.editorKey(PreviousDayEditor.class.getName()) // IFilterEditor implementation
+		// .editorOptions(Map.of("calendar", "NYSE")) // optional config, passed to constructor
+		.build()
 ```
 
 For simple inline cases, use the `lambda` shortcut:
 
 ```java
 Shiftor.builder()
-        .name("pnl.yesterday")
-        .underlying("pnl")
-        .lambda(filter -> SimpleFilterEditor.shift(filter, "d",
-                FilterHelpers.getDate(filter, "d").minusDays(1)))
-        .build()
+		.name("pnl.yesterday")
+		.underlying("pnl")
+		.lambda(filter -> SimpleFilterEditor.shift(filter, "d",
+				FilterHelpers.getDate(filter, "d").minusDays(1)))
+		.build()
 ```
 
 The `lambda` helper stores the editor as a `LambdaEditor` under the hood.
@@ -158,33 +158,33 @@ combines a `Shiftor` (to fetch the prior-day value) with a `Combinator` (to subt
 ```java
 // 1. Leaf measure — raw daily value
 Aggregator pnl = Aggregator.builder()
-        .name("pnl")
-        .aggregationKey(SumAggregation.KEY)
-        .build();
+		.name("pnl")
+		.aggregationKey(SumAggregation.KEY)
+		.build();
 
 // 2. Shifted measure — pnl evaluated one day earlier
 Shiftor pnlYesterday = Shiftor.builder()
-        .name("pnl.yesterday")
-        .underlying("pnl")
-        .lambda(filter -> SimpleFilterEditor.shift(filter, "d",
-                FilterHelpers.getDate(filter, "d").minusDays(1)))
-        .build();
+		.name("pnl.yesterday")
+		.underlying("pnl")
+		.lambda(filter -> SimpleFilterEditor.shift(filter, "d",
+				FilterHelpers.getDate(filter, "d").minusDays(1)))
+		.build();
 
 // 3. Delta — today minus yesterday
 Combinator pnlDay2Day = Combinator.builder()
-        .name("pnl.day2day")
-        .underlyings(List.of("pnl", "pnl.yesterday"))
-        .combinationKey(SubtractionCombination.KEY)
-        .build();
+		.name("pnl.day2day")
+		.underlyings(List.of("pnl", "pnl.yesterday"))
+		.combinationKey(SubtractionCombination.KEY)
+		.build();
 ```
 
 Querying `pnl.day2day GROUP BY d` produces:
 
-| d | pnl | pnl.yesterday | pnl.day2day |
-|---|-----|---------------|-------------|
-| 2025-04-03 | 100 | 80 | +20 |
-| 2025-04-04 | 80 | 110 | −30 |
-| 2025-04-05 | 130 | 80 | +50 |
+|     d      | pnl | pnl.yesterday | pnl.day2day |
+|------------|-----|---------------|-------------|
+| 2025-04-03 | 100 | 80            | +20         |
+| 2025-04-04 | 80  | 110           | −30         |
+| 2025-04-05 | 130 | 80            | +50         |
 
 `pnl.yesterday` is `null` for the earliest date in the result (no prior row exists); the
 subtraction therefore also returns `null` for that row, which is the expected behaviour.
@@ -197,12 +197,12 @@ unchanged — only the shift logic needs to change.
 
 ## Comparison with Filtrator
 
-| | Filtrator | Shiftor |
-|---|---|---|
-| **What changes** | AND-adds a hardcoded filter | Replaces/mutates the existing filter |
-| **Typical use** | "Always restrict to EUR" | "Fetch the value from the previous day" |
-| **Output coordinates** | Same as input | Same as input (value read from shifted coords) |
-| **Filter produced** | `query.filter AND measure.filter` | `editor(query.filter)` |
+|                        |             Filtrator             |                    Shiftor                     |
+|------------------------|-----------------------------------|------------------------------------------------|
+| **What changes**       | AND-adds a hardcoded filter       | Replaces/mutates the existing filter           |
+| **Typical use**        | "Always restrict to EUR"          | "Fetch the value from the previous day"        |
+| **Output coordinates** | Same as input                     | Same as input (value read from shifted coords) |
+| **Filter produced**    | `query.filter AND measure.filter` | `editor(query.filter)`                         |
 
 A `Filtrator` narrows the filter; a `Shiftor` *redirects* it.
 
@@ -219,3 +219,4 @@ A `Filtrator` narrows the filter; a `Shiftor` *redirects* it.
 - [Hierarchies](hierarchies.md) — using Shiftor to navigate parent levels in a hierarchy
 - [Concepts → Measure archetypes](concepts.md) — overview of all measure types
 - [Slice and IAdhocMap](slice.md) — how `ISliceFilter` is structured and what `shift()` modifies
+

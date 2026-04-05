@@ -44,20 +44,20 @@ Once the underlying result is available at `(desk, ccyFrom)`, the combination fu
 
 ```java
 Partitionor.builder()
-    .name("k1.CCY")
-    .underlyings(List.of("k1"))                         // measure(s) to evaluate per partition
-    .groupBy(GroupByColumns.named("ccyFrom"))            // the partitioning dimension
-    .combinationKey(ForeignExchangeCombination.KEY)      // combine per (desk, ccyFrom) cell
-    .aggregationKey(SumElseSetAggregation.KEY)           // aggregate across currencies
-    .build()
+	.name("k1.CCY")
+	.underlyings(List.of("k1"))                         // measure(s) to evaluate per partition
+	.groupBy(GroupByColumns.named("ccyFrom"))            // the partitioning dimension
+	.combinationKey(ForeignExchangeCombination.KEY)      // combine per (desk, ccyFrom) cell
+	.aggregationKey(SumElseSetAggregation.KEY)           // aggregate across currencies
+	.build()
 ```
 
-| Field | Purpose |
-|---|---|
-| `underlyings` | Measures evaluated at the widened groupBy |
-| `groupBy` | Extra columns added to the parent groupBy for the underlying query |
+|      Field       |                                        Purpose                                         |
+|------------------|----------------------------------------------------------------------------------------|
+| `underlyings`    | Measures evaluated at the widened groupBy                                              |
+| `groupBy`        | Extra columns added to the parent groupBy for the underlying query                     |
 | `combinationKey` | `ICombination` applied to each partition cell; receives the slice (including currency) |
-| `aggregationKey` | `IAggregation` used to fold partition results back to parent granularity |
+| `aggregationKey` | `IAggregation` used to fold partition results back to parent granularity               |
 
 ---
 
@@ -68,18 +68,18 @@ The combination function receives the full slice — including `ccyFrom` — and
 ```java
 public class ForeignExchangeCombination implements ICombination {
 
-    public static final String KEY = "FX";
+	public static final String KEY = "FX";
 
-    @Override
-    public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-        Object rawAmount = underlyingValues.get(0);
-        if (rawAmount == null) return null;
+	@Override
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		Object rawAmount = underlyingValues.get(0);
+		if (rawAmount == null) return null;
 
-        String ccyFrom = (String) slice.getRaw("ccyFrom");
-        double rate = fxStorage.getRate(ccyFrom, baseCurrency);
+		String ccyFrom = (String) slice.getRaw("ccyFrom");
+		double rate = fxStorage.getRate(ccyFrom, baseCurrency);
 
-        return ((Number) rawAmount).doubleValue() * rate;
-    }
+		return ((Number) rawAmount).doubleValue() * rate;
+	}
 }
 ```
 
@@ -89,12 +89,12 @@ The full example, including an `IForeignExchangeStorage` backed by a `Map<(ccyFr
 
 ## Comparison with other measure types
 
-| | Combinator | Filtrator | Partitionor |
-|---|---|---|---|
-| **Changes groupBy?** | No | No | Yes — widens to include partition columns |
-| **Changes filter?** | No | Yes — ANDs an extra filter | No |
-| **Evaluation phases** | Single | Single | Two (combine per partition, then aggregate) |
-| **Typical use** | Ratios, expressions | Scoped sub-totals | FX conversion, any rate × amount pattern |
+|                       |     Combinator      |         Filtrator          |                 Partitionor                 |
+|-----------------------|---------------------|----------------------------|---------------------------------------------|
+| **Changes groupBy?**  | No                  | No                         | Yes — widens to include partition columns   |
+| **Changes filter?**   | No                  | Yes — ANDs an extra filter | No                                          |
+| **Evaluation phases** | Single              | Single                     | Two (combine per partition, then aggregate) |
+| **Typical use**       | Ratios, expressions | Scoped sub-totals          | FX conversion, any rate × amount pattern    |
 
 ---
 
@@ -104,3 +104,4 @@ The full example, including an `IForeignExchangeStorage` backed by a `Map<(ccyFr
 - `TestTransformator_Partitionor` — "sum of max" pattern (max per group, sum across groups)
 - `ForeignExchangeCombination` — reference `ICombination` implementation for currency conversion
 - [Concepts → Measure archetypes](concepts.md) — overview of all measure types
+

@@ -16,10 +16,10 @@ the constraint is baked into the measure definition:
 
 ```java
 Filtrator salesFr = Filtrator.builder()
-        .name("sales.fr")
-        .underlying("sales")
-        .filter(ColumnFilter.matchEq("country", "FR"))
-        .build();
+		.name("sales.fr")
+		.underlying("sales")
+		.filter(ColumnFilter.matchEq("country", "FR"))
+		.build();
 ```
 
 When a user queries `sales.fr GROUP BY city`, the engine evaluates `SUM(sales) WHERE country=FR`
@@ -44,21 +44,21 @@ Both sides are arbitrary `ISliceFilter` trees, so the hardcoded filter can be as
 ```java
 // Restrict to FR or DE
 Filtrator.builder()
-        .name("sales.frade")
-        .underlying("sales")
-        .filter(OrFilter.of(
-                ColumnFilter.matchEq("country", "FR"),
-                ColumnFilter.matchEq("country", "DE")))
-        .build()
+		.name("sales.frade")
+		.underlying("sales")
+		.filter(OrFilter.of(
+				ColumnFilter.matchEq("country", "FR"),
+				ColumnFilter.matchEq("country", "DE")))
+		.build()
 
 // Restrict to a date range
 Filtrator.builder()
-        .name("sales.2025")
-        .underlying("sales")
-        .filter(AndFilter.of(
-                ColumnFilter.isGreaterOrEqualTo("date", LocalDate.of(2025, 1, 1)),
-                ColumnFilter.isLessThan("date",        LocalDate.of(2026, 1, 1))))
-        .build()
+		.name("sales.2025")
+		.underlying("sales")
+		.filter(AndFilter.of(
+				ColumnFilter.isGreaterOrEqualTo("date", LocalDate.of(2025, 1, 1)),
+				ColumnFilter.isLessThan("date",        LocalDate.of(2026, 1, 1))))
+		.build()
 ```
 
 ---
@@ -72,25 +72,25 @@ the reference total for that constraint:
 ```java
 // Numerator: force country=FR on top of the query filter
 Filtrator salesFrSlice = Filtrator.builder()
-        .name("sales.fr_slice")
-        .underlying("sales")
-        .filter(ColumnFilter.matchEq("country", "FR"))
-        .build();
+		.name("sales.fr_slice")
+		.underlying("sales")
+		.filter(ColumnFilter.matchEq("country", "FR"))
+		.build();
 
 // Denominator: evaluate sales.fr_slice but strip everything except country
 Unfiltrator salesFrWhole = Unfiltrator.builder()
-        .name("sales.fr_whole")
-        .underlying("sales.fr_slice")
-        .column("country")
-        .mode(Mode.Retain)          // keep country=FR, drop city, color, desk, …
-        .build();
+		.name("sales.fr_whole")
+		.underlying("sales.fr_slice")
+		.column("country")
+		.mode(Mode.Retain)          // keep country=FR, drop city, color, desk, …
+		.build();
 
 // Ratio
 Combinator salesFrRatio = Combinator.builder()
-        .name("sales.fr_ratio")
-        .underlyings(List.of("sales.fr_slice", "sales.fr_whole"))
-        .combinationKey(DivideCombination.KEY)
-        .build();
+		.name("sales.fr_ratio")
+		.underlyings(List.of("sales.fr_slice", "sales.fr_whole"))
+		.combinationKey(DivideCombination.KEY)
+		.build();
 ```
 
 `RatioOverSpecificColumnValueCompositor` generates exactly this triple from a single call.
@@ -99,13 +99,13 @@ Combinator salesFrRatio = Combinator.builder()
 
 ## Comparison with related measure types
 
-| | Filtrator | Unfiltrator | Shiftor |
-|---|---|---|---|
-| **Effect on filter** | ANDs a hardcoded constraint | Removes constraint(s) | Replaces a value via `IFilterEditor` |
-| **Direction** | Narrows | Widens | Redirects |
-| **Complexity** | Simple — no pluggable logic | Simple — column list + mode | Flexible — full `IFilterEditor` |
-| **Typical use** | "Always enforce `country=FR`" | "Drop `city`, keep `country`" | "Fetch value from yesterday" |
-| **Output coordinates** | Same as input | Same as input | Same as input |
+|                        |           Filtrator           |          Unfiltrator          |               Shiftor                |
+|------------------------|-------------------------------|-------------------------------|--------------------------------------|
+| **Effect on filter**   | ANDs a hardcoded constraint   | Removes constraint(s)         | Replaces a value via `IFilterEditor` |
+| **Direction**          | Narrows                       | Widens                        | Redirects                            |
+| **Complexity**         | Simple — no pluggable logic   | Simple — column list + mode   | Flexible — full `IFilterEditor`      |
+| **Typical use**        | "Always enforce `country=FR`" | "Drop `city`, keep `country`" | "Fetch value from yesterday"         |
+| **Output coordinates** | Same as input                 | Same as input                 | Same as input                        |
 
 Use `Filtrator` when the constraint is constant and known at forest-build time. Reach for `Shiftor`
 when the target filter must be computed from the current slice at query time (e.g. the previous
@@ -120,3 +120,4 @@ business day, or the parent node in a hierarchy).
 - [Unfiltrator](unfiltrator.md) — the counterpart that widens filters
 - [Shiftor](shiftor.md) — the generalisation that redirects filters via a pluggable `IFilterEditor`
 - [Hierarchies](hierarchies.md) — how Filtrator + Unfiltrator compose for hierarchical totals
+

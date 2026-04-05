@@ -10,10 +10,10 @@ arbitrary evaluation logic can be plugged in without forking the engine.
 
 A custom measure requires two classes:
 
-| Class | Role |
-|---|---|
-| **Measure** (data) | Holds configuration: name, underlying measure names, options. Implements `IHasUnderlyingMeasures`. |
-| **QueryStep** (logic) | Holds evaluation logic. Extends `AMeasureQueryStep`. Named `<Measure>QueryStep` by convention. |
+|         Class         |                                                Role                                                |
+|-----------------------|----------------------------------------------------------------------------------------------------|
+| **Measure** (data)    | Holds configuration: name, underlying measure names, options. Implements `IHasUnderlyingMeasures`. |
+| **QueryStep** (logic) | Holds evaluation logic. Extends `AMeasureQueryStep`. Named `<Measure>QueryStep` by convention.     |
 
 The engine wires them together: when it encounters a measure whose class implements
 `IHasUnderlyingMeasures`, it looks up the corresponding `QueryStep` class via
@@ -26,18 +26,18 @@ The engine wires them together: when it encounters a measure whose class impleme
 ```java
 public interface IHasUnderlyingMeasures extends IHasUnderlyingNames {
 
-    /** Declares the underlying measure names this measure depends on. */
-    List<String> getUnderlyingNames();
+	/** Declares the underlying measure names this measure depends on. */
+	List<String> getUnderlyingNames();
 
-    /**
-     * Returns the fully-qualified name of the AMeasureQueryStep class that
-     * evaluates this measure. The default convention maps
-     * {@code com.example.Foo} → {@code ...step.FooQueryStep}.
-     */
-    default String queryStepClass() {
-        return "eu.solven.adhoc.measure.transformator.step.%sQueryStep"
-                .formatted(this.getClass().getSimpleName());
-    }
+	/**
+	 * Returns the fully-qualified name of the AMeasureQueryStep class that
+	 * evaluates this measure. The default convention maps
+	 * {@code com.example.Foo} → {@code ...step.FooQueryStep}.
+	 */
+	default String queryStepClass() {
+		return "eu.solven.adhoc.measure.transformator.step.%sQueryStep"
+				.formatted(this.getClass().getSimpleName());
+	}
 }
 ```
 
@@ -51,24 +51,24 @@ different package.
 ```java
 public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 
-    /** The query context: measure, groupBy, filter, options. */
-    public abstract CubeQueryStep getStep();
+	/** The query context: measure, groupBy, filter, options. */
+	public abstract CubeQueryStep getStep();
 
-    /** Factory access: column construction, slice factory, operator factory. */
-    public abstract IAdhocFactories getFactories();
+	/** Factory access: column construction, slice factory, operator factory. */
+	public abstract IAdhocFactories getFactories();
 
-    /**
-     * Returns the CubeQueryStep for each underlying measure the engine must
-     * evaluate before this step can run. May request the same underlying
-     * multiple times (e.g. Shiftor requests it twice — once shifted, once not).
-     */
-    public abstract List<CubeQueryStep> getUnderlyingSteps();
+	/**
+	 * Returns the CubeQueryStep for each underlying measure the engine must
+	 * evaluate before this step can run. May request the same underlying
+	 * multiple times (e.g. Shiftor requests it twice — once shifted, once not).
+	 */
+	public abstract List<CubeQueryStep> getUnderlyingSteps();
 
-    /**
-     * Produces the output ICuboid given the already-evaluated underlying
-     * cuboids, in the same order as getUnderlyingSteps().
-     */
-    public abstract ICuboid produceOutputColumn(List<? extends ICuboid> underlyings);
+	/**
+	 * Produces the output ICuboid given the already-evaluated underlying
+	 * cuboids, in the same order as getUnderlyingSteps().
+	 */
+	public abstract ICuboid produceOutputColumn(List<? extends ICuboid> underlyings);
 }
 ```
 
@@ -79,7 +79,7 @@ public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 ```java
 IValueProvider value = cuboid.onValue(slice);   // read value at a slice
 cuboid.stream()                                  // iterate all (slice, value) pairs
-      .forEach(sam -> ...);
+	.forEach(sam -> ...);
 boolean missing = cuboid.isEmpty();
 ```
 
@@ -103,27 +103,27 @@ select the right measure automatically based on the `asOf` coordinate.
 @Jacksonized
 public class RouterMeasure implements IMeasure, IHasUnderlyingMeasures {
 
-    @NonNull String name;
+	@NonNull String name;
 
-    @NonNull @Singular @With ImmutableSet<String> tags;
+	@NonNull @Singular @With ImmutableSet<String> tags;
 
-    /** The measure to use for asOf <= cutoverDate. */
-    @NonNull String beforeMeasure;
+	/** The measure to use for asOf <= cutoverDate. */
+	@NonNull String beforeMeasure;
 
-    /** The measure to use for asOf > cutoverDate. */
-    @NonNull String afterMeasure;
+	/** The measure to use for asOf > cutoverDate. */
+	@NonNull String afterMeasure;
 
-    /** The column carrying the as-of date (typically "asOf"). */
-    @NonNull @Default String asOfColumn = "asOf";
+	/** The column carrying the as-of date (typically "asOf"). */
+	@NonNull @Default String asOfColumn = "asOf";
 
-    /** The cut-over date. Slices with asOf on or before this date use beforeMeasure. */
-    @NonNull LocalDate cutoverDate;
+	/** The cut-over date. Slices with asOf on or before this date use beforeMeasure. */
+	@NonNull LocalDate cutoverDate;
 
-    @JsonIgnore
-    @Override
-    public List<String> getUnderlyingNames() {
-        return List.of(beforeMeasure, afterMeasure);
-    }
+	@JsonIgnore
+	@Override
+	public List<String> getUnderlyingNames() {
+		return List.of(beforeMeasure, afterMeasure);
+	}
 }
 ```
 
@@ -136,48 +136,48 @@ instantiate by convention.
 @RequiredArgsConstructor
 public class RouterMeasureQueryStep extends AMeasureQueryStep {
 
-    final RouterMeasure measure;
-    @Getter final CubeQueryStep step;
-    @Getter(AccessLevel.PROTECTED) final IAdhocFactories factories;
+	final RouterMeasure measure;
+	@Getter final CubeQueryStep step;
+	@Getter(AccessLevel.PROTECTED) final IAdhocFactories factories;
 
-    @Override
-    public List<CubeQueryStep> getUnderlyingSteps() {
-        // Request both underlyings with identical filter/groupBy.
-        // The engine evaluates them; produceOutputColumn picks the right one per slice.
-        return List.of(
-                CubeQueryStep.edit(step).measure(measure.getBeforeMeasure()).build(),
-                CubeQueryStep.edit(step).measure(measure.getAfterMeasure()).build());
-    }
+	@Override
+	public List<CubeQueryStep> getUnderlyingSteps() {
+		// Request both underlyings with identical filter/groupBy.
+		// The engine evaluates them; produceOutputColumn picks the right one per slice.
+		return List.of(
+				CubeQueryStep.edit(step).measure(measure.getBeforeMeasure()).build(),
+				CubeQueryStep.edit(step).measure(measure.getAfterMeasure()).build());
+	}
 
-    @Override
-    public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
-        ICuboid beforeCuboid = underlyings.get(0);
-        ICuboid afterCuboid  = underlyings.get(1);
+	@Override
+	public ICuboid produceOutputColumn(List<? extends ICuboid> underlyings) {
+		ICuboid beforeCuboid = underlyings.get(0);
+		ICuboid afterCuboid  = underlyings.get(1);
 
-        IMultitypeColumnFastGet<ISlice> output =
-                factories.getColumnFactory().makeColumn(beforeCuboid.size());
+		IMultitypeColumnFastGet<ISlice> output =
+				factories.getColumnFactory().makeColumn(beforeCuboid.size());
 
-        // Iterate the union of all slices present in either cuboid
-        forEachDistinctSlice(underlyings, (sliceAndMeasures) -> {
-            ISlice slice = sliceAndMeasures.getSlice().getSlice();
+		// Iterate the union of all slices present in either cuboid
+		forEachDistinctSlice(underlyings, (sliceAndMeasures) -> {
+			ISlice slice = sliceAndMeasures.getSlice().getSlice();
 
-            // Determine which cuboid to read based on the asOf coordinate
-            ICuboid source = route(slice) ? beforeCuboid : afterCuboid;
-            source.onValue(slice).acceptReceiver(output.putSlice(slice));
-        });
+			// Determine which cuboid to read based on the asOf coordinate
+			ICuboid source = route(slice) ? beforeCuboid : afterCuboid;
+			source.onValue(slice).acceptReceiver(output.putSlice(slice));
+		});
 
-        return Cuboid.forGroupBy(step).values(output).build();
-    }
+		return Cuboid.forGroupBy(step).values(output).build();
+	}
 
-    /** Returns true if the slice belongs to the "before" period. */
-    private boolean route(ISlice slice) {
-        Object raw = slice.getRaw(measure.getAsOfColumn());
-        if (raw instanceof LocalDate asOf) {
-            return !asOf.isAfter(measure.getCutoverDate());
-        }
-        // No asOf coordinate in this slice — default to the after-measure
-        return false;
-    }
+	/** Returns true if the slice belongs to the "before" period. */
+	private boolean route(ISlice slice) {
+		Object raw = slice.getRaw(measure.getAsOfColumn());
+		if (raw instanceof LocalDate asOf) {
+			return !asOf.isAfter(measure.getCutoverDate());
+		}
+		// No asOf coordinate in this slice — default to the after-measure
+		return false;
+	}
 }
 ```
 
@@ -185,12 +185,12 @@ public class RouterMeasureQueryStep extends AMeasureQueryStep {
 
 ```java
 RouterMeasure router = RouterMeasure.builder()
-        .name("pnl.routed")
-        .beforeMeasure("pnl.legacy")
-        .afterMeasure("pnl.new")
-        .asOfColumn("asOf")
-        .cutoverDate(LocalDate.of(2025, 12, 31))
-        .build();
+		.name("pnl.routed")
+		.beforeMeasure("pnl.legacy")
+		.afterMeasure("pnl.new")
+		.asOfColumn("asOf")
+		.cutoverDate(LocalDate.of(2025, 12, 31))
+		.build();
 
 forest.addMeasure(router);
 ```
@@ -205,12 +205,12 @@ Querying `pnl.routed GROUP BY desk, asOf` now transparently uses `pnl.legacy` fo
 The same infrastructure drives all built-in types. Their `getUnderlyingSteps()` patterns are
 worth knowing when implementing custom measures:
 
-| Measure type | getUnderlyingSteps() pattern |
-|---|---|
-| `Combinator` | One step per underlying, same filter and groupBy |
-| `Filtrator` | One step with `query.filter AND measure.filter` |
-| `Shiftor` | Two steps: one with shifted filter (to read), one unshifted (to resolve write coordinates) |
-| `Partitionor` | One step per underlying with a *widened* groupBy (union of query + measure groupBy) |
+| Measure type  |                                getUnderlyingSteps() pattern                                |
+|---------------|--------------------------------------------------------------------------------------------|
+| `Combinator`  | One step per underlying, same filter and groupBy                                           |
+| `Filtrator`   | One step with `query.filter AND measure.filter`                                            |
+| `Shiftor`     | Two steps: one with shifted filter (to read), one unshifted (to resolve write coordinates) |
+| `Partitionor` | One step per underlying with a *widened* groupBy (union of query + measure groupBy)        |
 
 ---
 
@@ -235,3 +235,4 @@ For cases where a pluggable function is sufficient, prefer `Combinator` (with a 
 - [Shiftor](shiftor.md) — the routing pattern applied to filter transformation
 - [Partitionor](partitionor.md) — the groupBy-widening pattern
 - [Concepts → Measure archetypes](concepts.md) — overview of all built-in measure types
+

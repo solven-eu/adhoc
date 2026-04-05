@@ -6,12 +6,12 @@ that is not hard-coded into the core library.
 
 It produces four kinds of operators:
 
-| Operator | Consumed by | Purpose |
-|----------|------------|---------|
-| `IAggregation` | `Aggregator` | Merge two partial results into one (e.g. `SUM`) |
-| `ICombination` | `Combinator` | Combine a fixed set of underlying values at one slice |
-| `IDecomposition` | `Dispatchor` | Split one input slice into multiple output entries |
-| `IFilterEditor` | `Shiftor`, `Unfiltrator` | Transform an `ISliceFilter` before evaluation |
+|     Operator     |       Consumed by        |                        Purpose                        |
+|------------------|--------------------------|-------------------------------------------------------|
+| `IAggregation`   | `Aggregator`             | Merge two partial results into one (e.g. `SUM`)       |
+| `ICombination`   | `Combinator`             | Combine a fixed set of underlying values at one slice |
+| `IDecomposition` | `Dispatchor`             | Split one input slice into multiple output entries    |
+| `IFilterEditor`  | `Shiftor`, `Unfiltrator` | Transform an `ISliceFilter` before evaluation         |
 
 ---
 
@@ -29,10 +29,10 @@ classpath can be referenced without registration — just pass its class name as
 
 ```java
 Combinator.builder()
-        .name("pnl.converted")
-        .underlyings(List.of("pnl"))
-        .combinationKey(FxCombination.class.getName())
-        .build()
+		.name("pnl.converted")
+		.underlyings(List.of("pnl"))
+		.combinationKey(FxCombination.class.getName())
+		.build()
 ```
 
 The limitation of reflection-based instantiation is that it cannot inject dependencies. A class
@@ -55,25 +55,25 @@ The simplest approach: declare the dependencies explicitly as constructor fields
 @Component
 public class SpringOperatorFactory extends StandardOperatorFactory {
 
-    private final FxRateService fxRateService;
-    private final BusinessCalendarService calendarService;
+	private final FxRateService fxRateService;
+	private final BusinessCalendarService calendarService;
 
-    public SpringOperatorFactory(FxRateService fxRateService,
-                                 BusinessCalendarService calendarService) {
-        this.fxRateService = fxRateService;
-        this.calendarService = calendarService;
-    }
+	public SpringOperatorFactory(FxRateService fxRateService,
+								BusinessCalendarService calendarService) {
+		this.fxRateService = fxRateService;
+		this.calendarService = calendarService;
+	}
 
-    @Override
-    public ICombination makeCombination(String key, Map<String, ?> options) {
-        if (FxCombination.KEY.equals(key)) {
-            return new FxCombination(fxRateService);
-        }
-        if (BusinessDayCombination.KEY.equals(key)) {
-            return new BusinessDayCombination(calendarService, options);
-        }
-        return super.makeCombination(key, options);  // fall back to reflection
-    }
+	@Override
+	public ICombination makeCombination(String key, Map<String, ?> options) {
+		if (FxCombination.KEY.equals(key)) {
+			return new FxCombination(fxRateService);
+		}
+		if (BusinessDayCombination.KEY.equals(key)) {
+			return new BusinessDayCombination(calendarService, options);
+		}
+		return super.makeCombination(key, options);  // fall back to reflection
+	}
 }
 ```
 
@@ -82,20 +82,20 @@ The `FxCombination` receives a fully initialised, Spring-managed `FxRateService`
 ```java
 public class FxCombination implements ICombination {
 
-    public static final String KEY = "FX_LIVE";
+	public static final String KEY = "FX_LIVE";
 
-    private final FxRateService fxRateService;
+	private final FxRateService fxRateService;
 
-    public FxCombination(FxRateService fxRateService) {
-        this.fxRateService = fxRateService;
-    }
+	public FxCombination(FxRateService fxRateService) {
+		this.fxRateService = fxRateService;
+	}
 
-    @Override
-    public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
-        String ccy = (String) slice.getRaw("ccy");
-        double rate = fxRateService.getRate(ccy, "USD");
-        return ((Number) underlyingValues.get(0)).doubleValue() * rate;
-    }
+	@Override
+	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+		String ccy = (String) slice.getRaw("ccy");
+		double rate = fxRateService.getRate(ccy, "USD");
+		return ((Number) underlyingValues.get(0)).doubleValue() * rate;
+	}
 }
 ```
 
@@ -108,20 +108,20 @@ having to enumerate every dependency in the factory constructor:
 @Component
 public class SpringOperatorFactory extends StandardOperatorFactory {
 
-    private final ApplicationContext ctx;
+	private final ApplicationContext ctx;
 
-    public SpringOperatorFactory(ApplicationContext ctx) {
-        this.ctx = ctx;
-    }
+	public SpringOperatorFactory(ApplicationContext ctx) {
+		this.ctx = ctx;
+	}
 
-    @Override
-    public ICombination makeCombination(String key, Map<String, ?> options) {
-        // If a bean with that name exists and implements ICombination, use it
-        if (ctx.containsBean(key) && ctx.isTypeMatch(key, ICombination.class)) {
-            return ctx.getBean(key, ICombination.class);
-        }
-        return super.makeCombination(key, options);
-    }
+	@Override
+	public ICombination makeCombination(String key, Map<String, ?> options) {
+		// If a bean with that name exists and implements ICombination, use it
+		if (ctx.containsBean(key) && ctx.isTypeMatch(key, ICombination.class)) {
+			return ctx.getBean(key, ICombination.class);
+		}
+		return super.makeCombination(key, options);
+	}
 }
 ```
 
@@ -130,7 +130,7 @@ Each operator is then registered as a named Spring bean:
 ```java
 @Bean("FX_LIVE")
 public ICombination fxCombination(FxRateService fxRateService) {
-    return new FxCombination(fxRateService);
+	return new FxCombination(fxRateService);
 }
 ```
 
@@ -138,10 +138,10 @@ The measure references the bean name as its `combinationKey`:
 
 ```java
 Combinator.builder()
-        .name("pnl.usd")
-        .underlyings(List.of("pnl"))
-        .combinationKey("FX_LIVE")
-        .build()
+		.name("pnl.usd")
+		.underlyings(List.of("pnl"))
+		.combinationKey("FX_LIVE")
+		.build()
 ```
 
 ### Wiring the factory into the cube
@@ -151,16 +151,16 @@ Register the `SpringOperatorFactory` where the `CubeWrapper` or `CubeQueryEngine
 ```java
 @Bean
 public CubeWrapper cube(ITableWrapper table,
-                        IMeasureForest forest,
-                        SpringOperatorFactory operatorFactory) {
-    return CubeWrapper.builder()
-            .table(table)
-            .forest(forest)
-            .engine(CubeQueryEngine.builder()
-                    .forest(forest)
-                    .operatorFactory(operatorFactory)
-                    .build())
-            .build();
+						IMeasureForest forest,
+						SpringOperatorFactory operatorFactory) {
+	return CubeWrapper.builder()
+			.table(table)
+			.forest(forest)
+			.engine(CubeQueryEngine.builder()
+					.forest(forest)
+					.operatorFactory(operatorFactory)
+					.build())
+			.build();
 }
 ```
 
@@ -175,7 +175,7 @@ one factory subclassing the other:
 ```java
 @Bean
 public IOperatorsFactory operatorFactory(SpringOperatorFactory springFactory) {
-    return CompositeOperatorFactory.of(springFactory, new StandardOperatorFactory());
+	return CompositeOperatorFactory.of(springFactory, new StandardOperatorFactory());
 }
 ```
 
@@ -187,3 +187,4 @@ public IOperatorsFactory operatorFactory(SpringOperatorFactory springFactory) {
 - [Partitionor](partitionor.md) — `IAggregation` used as the re-aggregation step after per-partition combination
 - [Filtrator](filtrator.md) — `IFilterEditor` used to AND a hardcoded filter
 - [Shiftor](shiftor.md) — `IFilterEditor` used to redirect a filter to a different slice
+

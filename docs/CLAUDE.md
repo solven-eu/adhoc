@@ -26,3 +26,4 @@ When a root-level `*.MD` file is moved into `docs/`:
 2. Rename to lowercase `.md` to follow the existing convention.
 3. Add the file to `index.md` so it satisfies the reachability rule.
 4. Update any existing links in `README.MD` or other files to point to the new path.
+

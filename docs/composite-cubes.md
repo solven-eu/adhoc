@@ -14,10 +14,10 @@ more complex cube.
 
 Consider two cubes fed by different data sources:
 
-| Cube | Columns | Measures |
-|------|---------|----------|
+|   Cube   |           Columns           |    Measures    |
+|----------|-----------------------------|----------------|
 | `equity` | `desk`, `ccy`, `instrument` | `pnl`, `delta` |
-| `rates` | `desk`, `ccy`, `tenor` | `pnl`, `dv01` |
+| `rates`  | `desk`, `ccy`, `tenor`      | `pnl`, `dv01`  |
 
 A user query `SUM(pnl) GROUP BY desk` should aggregate both. With a composite wrapper, each cube
 contributes its own `pnl` slice; the composite layer sums them together. Neither cube needs to know
@@ -29,20 +29,20 @@ about the other's schema columns (`instrument`, `tenor`).
 
 ```java
 CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder()
-        .name("all-books")
-        .cube(equityCube)
-        .cube(ratesCube)
-        .build();
+		.name("all-books")
+		.cube(equityCube)
+		.cube(ratesCube)
+		.build();
 ```
 
 The composite wrapper itself is used as the `ITableWrapper` of an outer `CubeWrapper`:
 
 ```java
 CubeWrapper outerCube = CubeWrapper.builder()
-        .name("composite")
-        .table(composite)
-        .forest(compositeForest)
-        .build();
+		.name("composite")
+		.table(composite)
+		.forest(compositeForest)
+		.build();
 ```
 
 To automatically register all measures from sub-cubes into the outer forest, use
@@ -80,11 +80,11 @@ For each incoming `TableQuery`, the composite wrapper:
 Sub-cubes are allowed to have different columns. The composite layer tags each column with its
 coverage:
 
-| Tag | Meaning |
-|-----|---------|
-| `composite-full` | Column present in every sub-cube |
-| `composite-partial` | Column present in some sub-cubes |
-| `composite-known:cubeName` | Column present in the named cube |
+|             Tag              |              Meaning              |
+|------------------------------|-----------------------------------|
+| `composite-full`             | Column present in every sub-cube  |
+| `composite-partial`          | Column present in some sub-cubes  |
+| `composite-known:cubeName`   | Column present in the named cube  |
 | `composite-unknown:cubeName` | Column absent from the named cube |
 
 When a sub-cube does not carry a column that appears in the composite groupBy, the missing value is
@@ -101,9 +101,9 @@ sub-cube that produced each slice. You can group or filter by it:
 
 ```java
 CubeQuery.builder()
-        .groupBy(GroupByColumns.named("desk", "~CompositeSlicer"))
-        .measure("pnl")
-        .build()
+		.groupBy(GroupByColumns.named("desk", "~CompositeSlicer"))
+		.measure("pnl")
+		.build()
 ```
 
 This lets you compare contributions side-by-side without changing the sub-cube definitions.
@@ -131,3 +131,4 @@ cube remains simple and focused, and the composite layer handles the fan-out and
 - `TestCompositeCubesTableWrapper_Concurrent` — verifies that sub-queries execute in parallel
 - `TestTableQuery_DuckDb_CompositeCube` — integration test with DuckDB-backed sub-cubes
 - [Concepts → General Architecture](concepts.md) — how `ICubeWrapper`, `ITableWrapper`, and `IMeasureForest` relate
+

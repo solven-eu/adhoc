@@ -4,34 +4,34 @@
 
 ```mermaid
 flowchart TD
-    Pivotable --> ICubeWrapper
-    ICubeWrapper --> IMeasureForest
-    ICubeWrapper --> ITableWrapper
-    ICubeWrapper --> ICubeQueryEngine
-    ICubeWrapper --> IQueryPreparator
-    IQueryPreparator --> IQueryStepCache
-    IQueryPreparator --> IImplicitFilter
-    IQueryPreparator --> IImplicitOptions
-    IQueryPreparator --> ExecutorService
-    ICubeQueryEngine --> ITableQueryEngine
-    ITableQueryEngine --> ITableWrapper
-    ITableQueryEngine --> ITableQueryOptimizer
-    ITableWrapper --> DuckDB
-    ITableWrapper --> RedShift
-    ITableWrapper --> BigQuery
+	Pivotable --> ICubeWrapper
+	ICubeWrapper --> IMeasureForest
+	ICubeWrapper --> ITableWrapper
+	ICubeWrapper --> ICubeQueryEngine
+	ICubeWrapper --> IQueryPreparator
+	IQueryPreparator --> IQueryStepCache
+	IQueryPreparator --> IImplicitFilter
+	IQueryPreparator --> IImplicitOptions
+	IQueryPreparator --> ExecutorService
+	ICubeQueryEngine --> ITableQueryEngine
+	ITableQueryEngine --> ITableWrapper
+	ITableQueryEngine --> ITableQueryOptimizer
+	ITableWrapper --> DuckDB
+	ITableWrapper --> RedShift
+	ITableWrapper --> BigQuery
 ```
 
 [Class graph](ARCHITECTURE.MMD)
 
 ## General Query Flow
 
-``` mermaid
+```mermaid
 flowchart TD
-    CubeQuery --> CubeQueryStep_userMeasure
-    CubeQueryStep_userMeasure --> CubeQueryStep_underlyingMeasure
-    CubeQueryStep_underlyingMeasure --> CubeQueryStep_aggregator
-    CubeQueryStep_aggregator --> SplitTableQueries
-    SplitTableQueries --> TableQueryV2
+	CubeQuery --> CubeQueryStep_userMeasure
+	CubeQueryStep_userMeasure --> CubeQueryStep_underlyingMeasure
+	CubeQueryStep_underlyingMeasure --> CubeQueryStep_aggregator
+	CubeQueryStep_aggregator --> SplitTableQueries
+	SplitTableQueries --> TableQueryV2
 ```
 
 - `CubeQuery --> CubeQueryStep_userMeasure` is mostly managed by `CubeQueryEngine.getRootMeasures(...)`
@@ -49,11 +49,11 @@ An `CubeQuery` is similar to a `SELECT ... WHERE ... GROUP BY ...` SQL statement
 
 ```mermaid
 graph TB
-    sum -- haircut --> delta
-    sum -- haircut --> gamma
-    sum.FR -- country=France --> sum
-    ratio.FR --> sum.FR
-    ratio.FR --> sum
+	sum -- haircut --> delta
+	sum -- haircut --> gamma
+	sum.FR -- country=France --> sum
+	ratio.FR --> sum.FR
+	ratio.FR --> sum
 ```
 
 ## Table
@@ -91,10 +91,11 @@ In case of a table with `JOIN`s, one would often encounter ambiguities when quer
 - querying joined tables with `*`, but tables have conflicting field names.
 
 In such a case, one can resolve ambiguities by resolving them in a `ITableWrapper`. For instance:
+
 ```java
 MapTableAliaser.builder()
-    .queriedToUnderlying("someColumn", "someTable.someColumn")
-    .build()
+	.queriedToUnderlying("someColumn", "someTable.someColumn")
+	.build()
 ```
 
 #### Value Transcoding
@@ -128,16 +129,16 @@ See https://support.microsoft.com/en-us/office/aggregate-function-43b9278e-6aa7-
 
 ### Expressions as Aggregations
 
-`ExpressionAggregation` enable custom expression for table processing. 
+`ExpressionAggregation` enable custom expression for table processing.
 
 For instance, in DuckDB, one can use the syntax `SUM("v") FILTER color = 'red'`. It can be used as aggregator:
 
 ```
 Aggregator.builder()
-    .name("v_RED")
-    .aggregationKey(ExpressionAggregation.KEY)
-    .column("max(\"v\") FILTER(\"color\" in ('red'))")
-    .build();
+	.name("v_RED")
+	.aggregationKey(ExpressionAggregation.KEY)
+	.column("max(\"v\") FILTER(\"color\" in ('red'))")
+	.build();
 ```
 
 ### Transformators
@@ -148,3 +149,4 @@ On top of aggregated-measures, one can define transformators.
 - Filtrator: evaluate underlying measure with a coordinate when the filter is enforced. The node `filter` is AND-ed with the `measure` filter. Hence, if the query filters `country=France` and the filtrator filters `country=Germany`, then the result is empty.
 - Partitionor: evaluates the underlying measures with an additional groupBy, then aggregates up to the node granularity.
 - Dispatchor: given an cell, it will contribute into multiple cells. Useful for `many-to-many` or `rebucketing`.
+

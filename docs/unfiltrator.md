@@ -33,30 +33,30 @@ strips `city`, and queries the underlying measure with `country=FR` alone.
 
 ```java
 Unfiltrator.builder()
-        .name("sales.fr_total")
-        .underlying("sales")
-        .column("city")          // suppress the city filter
-        .mode(Mode.Suppress)     // default; explicit here for clarity
-        .build()
+		.name("sales.fr_total")
+		.underlying("sales")
+		.column("city")          // suppress the city filter
+		.mode(Mode.Suppress)     // default; explicit here for clarity
+		.build()
 ```
 
 ### Mode.Suppress vs Mode.Retain
 
-| Mode | Semantics |
-|------|-----------|
+|    Mode    |                                  Semantics                                   |
+|------------|------------------------------------------------------------------------------|
 | `Suppress` | Listed columns have their filter replaced by `matchAll`; all others are kept |
-| `Retain` | Listed columns keep their filter; **all others** are replaced by `matchAll` |
+| `Retain`   | Listed columns keep their filter; **all others** are replaced by `matchAll`  |
 
 `Retain` is useful when you want to express "keep only the country-level filter, drop everything
 else" without having to enumerate every other column:
 
 ```java
 Unfiltrator.builder()
-        .name("sales.country_total")
-        .underlying("sales")
-        .column("country")
-        .mode(Mode.Retain)    // keep country, suppress city, color, desk, …
-        .build()
+		.name("sales.country_total")
+		.underlying("sales")
+		.column("country")
+		.mode(Mode.Retain)    // keep country, suppress city, color, desk, …
+		.build()
 ```
 
 ---
@@ -69,33 +69,33 @@ measures. `RatioOverSpecificColumnValueCompositor` generates exactly this triple
 ```java
 // 1. Numerator — force country=FR on top of the query filter
 Filtrator salesFrSlice = Filtrator.builder()
-        .name("sales.fr_slice")
-        .underlying("sales")
-        .filter(ColumnFilter.matchEq("country", "FR"))
-        .build();
+		.name("sales.fr_slice")
+		.underlying("sales")
+		.filter(ColumnFilter.matchEq("country", "FR"))
+		.build();
 
 // 2. Denominator — evaluate sales.fr_slice but drop everything except country
 Unfiltrator salesFrWhole = Unfiltrator.builder()
-        .name("sales.fr_whole")
-        .underlying("sales.fr_slice")
-        .column("country")
-        .mode(Mode.Retain)        // keep the country=FR constraint, drop city, color, …
-        .build();
+		.name("sales.fr_whole")
+		.underlying("sales.fr_slice")
+		.column("country")
+		.mode(Mode.Retain)        // keep the country=FR constraint, drop city, color, …
+		.build();
 
 // 3. Ratio
 Combinator salesFrRatio = Combinator.builder()
-        .name("sales.fr_ratio")
-        .underlyings(List.of("sales.fr_slice", "sales.fr_whole"))
-        .combinationKey(DivideCombination.KEY)
-        .build();
+		.name("sales.fr_ratio")
+		.underlyings(List.of("sales.fr_slice", "sales.fr_whole"))
+		.combinationKey(DivideCombination.KEY)
+		.build();
 ```
 
 **Query:** `sales.fr_ratio GROUP BY city, color WHERE country=FR`
 
-| city | color | fr_slice | fr_whole | fr_ratio |
-|------|-------|----------|----------|----------|
-| Paris | blue | 80 | 357 | 22.4 % |
-| Lyon | blue | 43 | 357 | 12.0 % |
+| city  | color | fr_slice | fr_whole | fr_ratio |
+|-------|-------|----------|----------|----------|
+| Paris | blue  | 80       | 357      | 22.4 %   |
+| Lyon  | blue  | 43       | 357      | 12.0 %   |
 
 The denominator is always the France total regardless of the `city` and `color` coordinates in
 scope.
@@ -108,21 +108,21 @@ Unfiltrator also solves the case where the **query filter itself** may be at var
 sometimes the user filters by country, sometimes by city. The measure should respect the coarsest
 applicable level.
 
-| User filter | Desired denominator behaviour |
-|-------------|------------------------------|
-| `country=FR` | Denominator = France total ✓ (no change needed) |
-| `country=FR AND city=Paris` | Denominator = France total (drop city) |
+|                User filter                 |          Desired denominator behaviour           |
+|--------------------------------------------|--------------------------------------------------|
+| `country=FR`                               | Denominator = France total ✓ (no change needed)  |
+| `country=FR AND city=Paris`                | Denominator = France total (drop city)           |
 | `country=FR AND city=Paris AND color=blue` | Denominator = France total (drop city and color) |
 
 A single `Unfiltrator` with `Mode.Retain` on `country` handles all three cases uniformly:
 
 ```java
 Unfiltrator.builder()
-        .name("sales.country_total")
-        .underlying("sales")
-        .column("country")
-        .mode(Mode.Retain)  // regardless of how many extra filters arrive, keep only country
-        .build()
+		.name("sales.country_total")
+		.underlying("sales")
+		.column("country")
+		.mode(Mode.Retain)  // regardless of how many extra filters arrive, keep only country
+		.build()
 ```
 
 This is the standard approach for building hierarchical share-of-total measures today. See
@@ -133,12 +133,12 @@ support.
 
 ## Comparison with related measure types
 
-| | Filtrator | Unfiltrator | Shiftor |
-|---|---|---|---|
-| **Effect on filter** | ANDs an extra constraint | Removes constraint(s) | Replaces a value |
-| **Direction** | Narrows | Widens | Redirects |
-| **Typical use** | "Always include country=FR" | "Drop city, keep country" | "Fetch value from yesterday" |
-| **Output coordinates** | Same as input | Same as input | Same as input |
+|                        |          Filtrator          |        Unfiltrator        |           Shiftor            |
+|------------------------|-----------------------------|---------------------------|------------------------------|
+| **Effect on filter**   | ANDs an extra constraint    | Removes constraint(s)     | Replaces a value             |
+| **Direction**          | Narrows                     | Widens                    | Redirects                    |
+| **Typical use**        | "Always include country=FR" | "Drop city, keep country" | "Fetch value from yesterday" |
+| **Output coordinates** | Same as input               | Same as input             | Same as input                |
 
 ---
 
@@ -152,3 +152,4 @@ support.
 - [Filtrator](filtrator.md) — the counterpart that narrows (ANDs) the filter instead of widening it
 - [Hierarchies](hierarchies.md) — how to model multi-level dimensions and where Unfiltrator fits
 - [Concepts → Measure archetypes](concepts.md) — overview of all measure types
+

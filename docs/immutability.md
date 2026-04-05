@@ -68,14 +68,14 @@ are needed.
 
 ## How immutability is applied in Adhoc
 
-| Type | Guarantee | Where used |
-|------|-----------|-----------|
-| `IAdhocMap` | Fully immutable `SequencedMap`; hash code cached | Slice backing map; result storage |
-| `ISlice` | Immutable coordinate set backed by `IAdhocMap` | Passed through the entire evaluation pipeline |
-| `ISliceFilter` | Immutable filter tree (`AndFilter`, `OrFilter`, …) | Built once per query; shared across steps |
-| `IMeasure` (Lombok `@Value`) | All measure definitions are value objects | Forest construction; DAG edges |
-| `IMeasureForest` | Frozen after construction | Shared across concurrent query executions |
-| `ImmutableList` / `ImmutableMap` (Guava) | Guava immutable collections throughout | Options, tags, underlyings lists |
+|                   Type                   |                     Guarantee                      |                  Where used                   |
+|------------------------------------------|----------------------------------------------------|-----------------------------------------------|
+| `IAdhocMap`                              | Fully immutable `SequencedMap`; hash code cached   | Slice backing map; result storage             |
+| `ISlice`                                 | Immutable coordinate set backed by `IAdhocMap`     | Passed through the entire evaluation pipeline |
+| `ISliceFilter`                           | Immutable filter tree (`AndFilter`, `OrFilter`, …) | Built once per query; shared across steps     |
+| `IMeasure` (Lombok `@Value`)             | All measure definitions are value objects          | Forest construction; DAG edges                |
+| `IMeasureForest`                         | Frozen after construction                          | Shared across concurrent query executions     |
+| `ImmutableList` / `ImmutableMap` (Guava) | Guava immutable collections throughout             | Options, tags, underlyings lists              |
 
 ---
 
@@ -100,3 +100,4 @@ the immutability guarantees at the API boundary.
 - [Slice and IAdhocMap](slice.md) — how `ISlice` and `IAdhocMap` apply these contracts in practice
 - [Concurrency](concurrency.md) — how immutability enables safe concurrent query execution
 - [Optimisations](optimisations.md) — how cached projections and perfect hashing build on immutability
+

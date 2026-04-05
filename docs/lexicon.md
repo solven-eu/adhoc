@@ -34,12 +34,12 @@ aggregations.
 
 `ITableWrapper` is the abstraction. Implementations include:
 
-| Implementation | Backend |
-|---|---|
-| `InMemoryTable` | `List<Map>` in JVM heap |
-| `JooqTableWrapper` | Any JDBC-compatible engine (DuckDB, PostgreSQL, Redshift, …) |
-| `MongoTableWrapper` | MongoDB |
-| `ActivePivotTableWrapper` | Atoti/ActivePivot cube queried as a table |
+|      Implementation       |                           Backend                            |
+|---------------------------|--------------------------------------------------------------|
+| `InMemoryTable`           | `List<Map>` in JVM heap                                      |
+| `JooqTableWrapper`        | Any JDBC-compatible engine (DuckDB, PostgreSQL, Redshift, …) |
+| `MongoTableWrapper`       | MongoDB                                                      |
+| `ActivePivotTableWrapper` | Atoti/ActivePivot cube queried as a table                    |
 
 > **ActivePivot equivalent:** a *store* is the closest analogue, though ActivePivot stores are
 > strongly-typed and schema-bound, while Adhoc tables are schema-on-read.
@@ -55,7 +55,7 @@ level — there are no multi-level hierarchies.
 A column can be:
 - **Physical** — directly backed by a table column.
 - **Calculated** (`ICalculatedColumn`) — derived at query time from other columns (e.g. a date
-  truncation, a bucket expression).
+truncation, a bucket expression).
 
 > **Traditional OLAP vocabulary:** dimension → hierarchy → level. Adhoc collapses these three into
 > one concept.  
@@ -103,11 +103,11 @@ cube query. A cell holds the aggregated value for that combination.
 
 An indicator computed by the cube. The term covers three related concepts:
 
-| Concept | Description | Example |
-|---|---|---|
-| **Archetype** | The type of formula, defined by its `QueryStep` class | `Combinator`, `Partitionor`, `Filtrator` |
-| **Combination / implementation** | The concrete formula without its configuration | `SumCombination implements ICombination` |
-| **Measure instance** | A named, configured instance ready to be queried | `Combinator.builder().name("revenue").combinationKey("SUM").underlyings(List.of("amount")).build()` |
+|             Concept              |                      Description                      |                                               Example                                               |
+|----------------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| **Archetype**                    | The type of formula, defined by its `QueryStep` class | `Combinator`, `Partitionor`, `Filtrator`                                                            |
+| **Combination / implementation** | The concrete formula without its configuration        | `SumCombination implements ICombination`                                                            |
+| **Measure instance**             | A named, configured instance ready to be queried      | `Combinator.builder().name("revenue").combinationKey("SUM").underlyings(List.of("amount")).build()` |
 
 > **ActivePivot equivalent:** a *measure* (native or post-processed).
 

@@ -94,12 +94,12 @@ Rationale: a FJP carrier thread that blocks waiting for a VT future will hold a 
 
 `IAdhocStream<T>` is Adhoc's own streaming abstraction, intentionally decoupled from `java.util.stream.Stream`. Key differences:
 
-| | `java.util.stream.Stream` | `IAdhocStream` |
-|---|---|---|
-| Parallelism | `.parallel()` → ForkJoinPool | no built-in parallel split |
-| Blocking-safe | no (FJP starvation risk) | yes (designed for VT usage) |
-| `trySplit` semantics | eager, upfront | n/a |
-| Close lifecycle | `try-with-resources` | explicit `close()` + `onClose(Runnable)` |
+|                      |  `java.util.stream.Stream`   |              `IAdhocStream`              |
+|----------------------|------------------------------|------------------------------------------|
+| Parallelism          | `.parallel()` → ForkJoinPool | no built-in parallel split               |
+| Blocking-safe        | no (FJP starvation risk)     | yes (designed for VT usage)              |
+| `trySplit` semantics | eager, upfront               | n/a                                      |
+| Close lifecycle      | `try-with-resources`         | explicit `close()` + `onClose(Runnable)` |
 
 Use `IAdhocStream` everywhere a stream may originate from IO. Use `Stream` only for pure in-memory pipelines where the full dataset is already materialised.
 
@@ -107,13 +107,14 @@ Use `IAdhocStream` everywhere a stream may originate from IO. Use `Stream` only 
 
 ## Summary table
 
-| Work type | Pool | Reason |
-|---|---|---|
-| JDBC iteration | `adhocMixedPool` | IO-bound, may block |
-| Arrow batch load | `adhocMixedPool` (single VT, mono-threaded) | mono-threaded + IO-bound |
-| Arrow slice processing | `adhocMixedPool` (per-slice VT) | may involve mixed work |
-| HTTP / API calls | `adhocMixedPool` | IO-bound |
-| DAG orchestration | `adhocMixedPool` | triggers IO-bound steps |
-| Filter optimisation | `adhocCpuPool` | pure CPU |
-| In-memory aggregation | `adhocCpuPool` | pure CPU |
-| Cache maintenance | `maintenancePool` | background, daemon |
+|       Work type        |                    Pool                     |          Reason          |
+|------------------------|---------------------------------------------|--------------------------|
+| JDBC iteration         | `adhocMixedPool`                            | IO-bound, may block      |
+| Arrow batch load       | `adhocMixedPool` (single VT, mono-threaded) | mono-threaded + IO-bound |
+| Arrow slice processing | `adhocMixedPool` (per-slice VT)             | may involve mixed work   |
+| HTTP / API calls       | `adhocMixedPool`                            | IO-bound                 |
+| DAG orchestration      | `adhocMixedPool`                            | triggers IO-bound steps  |
+| Filter optimisation    | `adhocCpuPool`                              | pure CPU                 |
+| In-memory aggregation  | `adhocCpuPool`                              | pure CPU                 |
+| Cache maintenance      | `maintenancePool`                           | background, daemon       |
+
