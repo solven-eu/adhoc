@@ -142,7 +142,10 @@ always safe — except when a row has a null `ccy` value (see NullMatcher note a
 
 ## Registering a custom ICombination
 
-Reference the implementation class name as the `combinationKey`:
+`ICombination` instances are created by the `IOperatorsFactory` in scope for the query engine.
+The default implementation is `StandardOperatorFactory`, which resolves combinations by class name.
+
+Set the `combinationKey` to the fully-qualified class name of your implementation:
 
 ```java
 Combinator.builder()
@@ -152,9 +155,15 @@ Combinator.builder()
 		.build()
 ```
 
-`StandardOperatorFactory` will instantiate it via reflection (no-arg constructor, or
-`Map<String, ?>` constructor if `combinationOptions` are provided). To inject Spring beans or
-other collaborators, use a custom `IOperatorsFactory` — see [Operators Factory](operators-factory.md).
+`StandardOperatorFactory` instantiates the class via reflection using one of two constructors, in
+order of preference:
+
+1. **`MyClass(Map<String, ?> options)`** — used when `combinationOptions` are provided on the
+   measure; the options map is passed as the sole argument.
+2. **`MyClass()`** — no-arg constructor; used when no `combinationOptions` are set.
+
+To inject Spring beans or other collaborators that cannot be passed through a plain `Map`, use a
+custom `IOperatorsFactory` — see [Operators Factory](operators-factory.md).
 
 ---
 
