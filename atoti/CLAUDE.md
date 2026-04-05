@@ -34,15 +34,15 @@ ActivePivot source code is **not available** — rely on the public resources be
 
 ## Key external resources
 
-| Resource | URL |
-|----------|-----|
-| Atoti Server Javadoc (6.1.7) | https://docs.activeviam.com/products/atoti/server/6.1/javadoc/6.1.7/ |
-| Atoti Server Javadoc (latest) | https://docs.activeviam.com/products/atoti/server/latest/javadoc/ |
-| Atoti technical docs | https://docs.activeviam.com/products/atoti/server/latest/docs/ |
-| Memory Analysis Cube (open-source reference) | https://github.com/activeviam/mac |
-| Pivot Spring-Boot (open-source reference) | https://github.com/activeviam/pivot-spring-boot |
-| AutoPivot (open-source reference) | https://github.com/activeviam/autopivot |
-| ActiveViam Tools | https://github.com/activeviam/activeviam.github.io |
+|                   Resource                   |                                 URL                                  |
+|----------------------------------------------|----------------------------------------------------------------------|
+| Atoti Server Javadoc (6.1.7)                 | https://docs.activeviam.com/products/atoti/server/6.1/javadoc/6.1.7/ |
+| Atoti Server Javadoc (latest)                | https://docs.activeviam.com/products/atoti/server/latest/javadoc/    |
+| Atoti technical docs                         | https://docs.activeviam.com/products/atoti/server/latest/docs/       |
+| Memory Analysis Cube (open-source reference) | https://github.com/activeviam/mac                                    |
+| Pivot Spring-Boot (open-source reference)    | https://github.com/activeviam/pivot-spring-boot                      |
+| AutoPivot (open-source reference)            | https://github.com/activeviam/autopivot                              |
+| ActiveViam Tools                             | https://github.com/activeviam/activeviam.github.io                   |
 
 When you need to understand an ActivePivot type, fetch the relevant Javadoc page or search the open-source
 reference repositories above — they use the same APIs.
@@ -51,23 +51,23 @@ reference repositories above — they use the same APIs.
 
 ## Concept mapping: ActivePivot → Adhoc
 
-| ActivePivot concept | Adhoc equivalent |
-|---------------------|-----------------|
-| `ILocation` (wildcard) | `groupBy` |
-| `ISubCubeProperties` / `ICubeFilter` | `filter` |
-| `IContextValue` | `CubeQueryBuilder.customMarker()` / `CubeQueryStep.getCustomMarker()` |
-| `IQueryCache` | `CubeQueryStep.getTransverseCache()` |
-| `IPrefetcher` | `IMeasureQueryStep.getUnderlyingSteps` |
-| `IAggregationFunction` | `IAggregation` |
-| `AggregatedMeasure` | `IAggregator` |
-| `ABasicPostProcessor` | `Combinator` |
-| `ADynamicAggregationPostProcessorV2` | `Partitionor` |
-| `AFilteringPostProcessorV2` | `Filtrator` |
-| `AAdvancedPostProcessorV2` | `Dispatchor` |
-| `ILevelInfo` | column as `String` (typically `LevelIdentifier.level`) |
+|              ActivePivot concept              |                                    Adhoc equivalent                                    |
+|-----------------------------------------------|----------------------------------------------------------------------------------------|
+| `ILocation` (wildcard)                        | `groupBy`                                                                              |
+| `ISubCubeProperties` / `ICubeFilter`          | `filter`                                                                               |
+| `IContextValue`                               | `CubeQueryBuilder.customMarker()` / `CubeQueryStep.getCustomMarker()`                  |
+| `IQueryCache`                                 | `CubeQueryStep.getTransverseCache()`                                                   |
+| `IPrefetcher`                                 | `IMeasureQueryStep.getUnderlyingSteps`                                                 |
+| `IAggregationFunction`                        | `IAggregation`                                                                         |
+| `AggregatedMeasure`                           | `IAggregator`                                                                          |
+| `ABasicPostProcessor`                         | `Combinator`                                                                           |
+| `ADynamicAggregationPostProcessorV2`          | `Partitionor`                                                                          |
+| `AFilteringPostProcessorV2`                   | `Filtrator`                                                                            |
+| `AAdvancedPostProcessorV2`                    | `Dispatchor`                                                                           |
+| `ILevelInfo`                                  | column as `String` (typically `LevelIdentifier.level`)                                 |
 | `LocationUtil.getCoordinate(location, level)` | `ISliceWithStep.sliceReader()` → `ISliceReader.extractCoordinate(level, String.class)` |
-| `IRecordReader` | `ISlicedRecord` |
-| `IWritableCell` | `IValueProvider` |
+| `IRecordReader`                               | `ISlicedRecord`                                                                        |
+| `IWritableCell`                               | `IValueProvider`                                                                       |
 
 ---
 
