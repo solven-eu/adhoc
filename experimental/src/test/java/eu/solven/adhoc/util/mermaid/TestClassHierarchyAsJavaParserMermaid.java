@@ -99,7 +99,16 @@ public class TestClassHierarchyAsJavaParserMermaid {
 		// .contains("ITableWrapper")
 		// .contains("engine");
 
-		// Write the generated diagram to docs/ so it can be rendered at https://mermaid.live
+		writeArchitectureDiagram(diagram);
+	}
+
+	/**
+	 * Writes the Mermaid class-hierarchy diagram to {@code docs/ARCHITECTURE.mmd} at the project root.
+	 *
+	 * @param diagram
+	 *            the rendered Mermaid diagram string to persist
+	 */
+	private static void writeArchitectureDiagram(String diagram) throws IOException {
 		Path projectRoot = Path.of(System.getProperty("maven.multiModuleProjectDirectory", ".."));
 		Path outputFile = projectRoot.resolve("docs/ARCHITECTURE.mmd");
 		Files.createDirectories(outputFile.getParent());

@@ -103,9 +103,25 @@ public class TestMavenDependencyAsMermaid {
 				.as("pivotable-server should depend on pivotable-server-core")
 				.isTrue();
 
-		// Render and write to disk
+		writeDependenciesDiagram(analyzer, graph, projectRoot);
+	}
+
+	/**
+	 * Filters the graph, renders it as a Mermaid diagram, and writes it to {@code docs/DEPENDENCIES.mmd}.
+	 *
+	 * <p>
+	 * {@code adhoc-jmh} is excluded because it has low functional value and would clutter the diagram.
+	 */
+	protected void writeDependenciesDiagram(MavenDependencyAsMermaid analyzer,
+			Graph<String, DependencyEdge> graph,
+			Path projectRoot) throws IOException {
+		// These modules have low functional value for readers of the dependency diagram
+		graph.removeVertex("adhoc-jmh");
+		graph.removeVertex("adhoc-aggregate");
+		graph.removeVertex("adhoc-training");
+
 		String diagram = analyzer.toMermaid(graph);
-		Assertions.assertThat(diagram).startsWith("flowchart TD");
+		Assertions.assertThat(diagram).startsWith("flowchart LR");
 
 		Path outputFile = projectRoot.resolve("docs/DEPENDENCIES.mmd");
 		Files.createDirectories(outputFile.getParent());

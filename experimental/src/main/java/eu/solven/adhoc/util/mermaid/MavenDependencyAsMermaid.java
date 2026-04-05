@@ -197,7 +197,9 @@ public class MavenDependencyAsMermaid {
 	@SuppressWarnings("checkstyle:MagicNumber")
 	public String toMermaid(Graph<String, DependencyEdge> graph, Map<String, PomModule> modules) {
 		StringBuilder sb = new StringBuilder(512);
-		sb.append("flowchart TD\n");
+
+		// `LR` as the graph is quite flat
+		sb.append("flowchart LR\n");
 
 		// Group modules by parent artifactId for subgraph blocks
 		Map<String, List<String>> parentToChildren = new LinkedHashMap<>();

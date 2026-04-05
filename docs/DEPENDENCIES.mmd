@@ -1,11 +1,9 @@
-flowchart TD
+flowchart LR
     adhoc["adhoc"]
-    adhoc_aggregate["adhoc-aggregate"]
     adhoc_atoti["adhoc-atoti"]
     adhoc_bom["adhoc-bom"]
     adhoc_calcite["adhoc-calcite"]
     adhoc_experimental["adhoc-experimental"]
-    adhoc_jmh["adhoc-jmh"]
     adhoc_cell["adhoc-cell"]
     adhoc_dataframe["adhoc-dataframe"]
     adhoc_encoding["adhoc-encoding"]
@@ -24,7 +22,6 @@ flowchart TD
     pivotable_tools["pivotable-tools"]
     adhoc_public["adhoc-public"]
     adhoc_spring["adhoc-spring"]
-    adhoc_training["adhoc-training"]
     adhoc_model["adhoc-model"]
     pivotable_infra["pivotable-infra"]
     pivotable_model["pivotable-model"]
@@ -41,20 +38,9 @@ flowchart TD
     adhoc --> adhoc_dataframe
     adhoc --> adhoc_cell
     adhoc --> adhoc_measures
-    adhoc_aggregate --> adhoc_fsst
-    adhoc_aggregate --> adhoc_cell
-    adhoc_aggregate --> adhoc_filters
-    adhoc_aggregate --> adhoc_measures
-    adhoc_aggregate --> adhoc_dataframe
-    adhoc_aggregate --> adhoc
-    adhoc_aggregate --> adhoc_experimental
-    adhoc_aggregate --> pivotable_server
     adhoc_atoti --> adhoc
     adhoc_calcite --> adhoc
     adhoc_experimental --> adhoc
-    adhoc_jmh --> adhoc
-    adhoc_jmh --> adhoc_experimental
-    adhoc_jmh --> adhoc_fsst
     adhoc_cell --> adhoc_encoding
     adhoc_cell --> adhoc_filters
     adhoc_cell -.-> adhoc_model
@@ -78,7 +64,6 @@ flowchart TD
     pivotable_server --> pivotable_server_oauth2
     pivotable_server --> pivotable_js
     adhoc_spring --> adhoc
-    adhoc_training --> pivotable_server
     pivotable_model --> adhoc_filters
     pivotable_server_oauth2 --> pivotable_infra
     pivotable_server_oauth2 --> pivotable_model

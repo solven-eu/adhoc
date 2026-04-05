@@ -29,8 +29,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -42,12 +42,25 @@ import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A {@link Unfiltrator} is an {@link IMeasure} which is removing filtered columns from current {@link CubeQueryStep}.
- * By removing a filter, we request underlying measures with a wider slice. It is typically useful to make ratios with a
- * parent slice.
- * 
- * If `inverse=true`, the filter is kept only for selected columns, which all others are turned into `matchAll`.
+ * An {@link Unfiltrator} is a specialisation of {@link Shiftor} where the {@link IFilterEditor} widens the current
+ * filter by replacing constraints on selected columns with {@code matchAll}. Because this pattern (requesting
+ * underlying measures at a coarser granularity) is extremely common, {@link Unfiltrator} provides a simpler builder
+ * that does not require implementing a full {@link IFilterEditor}.
  *
+ * <p>
+ * Two modes are available via {@link Mode}:
+ * <ul>
+ * <li>{@link Mode#Suppress} — listed columns have their filter replaced by {@code matchAll}; all others are kept.</li>
+ * <li>{@link Mode#Retain} — listed columns keep their filter; all other columns are replaced by {@code matchAll}.</li>
+ * </ul>
+ *
+ * <p>
+ * A typical use-case is computing a hierarchical share-of-total: the numerator is filtered to a city, while the
+ * denominator uses an {@link Unfiltrator} with {@link Mode#Retain} on {@code country} to widen the slice to the
+ * full-country total.
+ *
+ * @see Shiftor the generalisation that supports arbitrary filter transformations via {@link IFilterEditor}
+ * @see Filtrator the counterpart that narrows (ANDs) the filter instead of widening it
  * @author Benoit Lacelle
  */
 @Value

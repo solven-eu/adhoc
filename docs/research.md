@@ -1,0 +1,26 @@
+# Research
+
+- Boolean Algebra / Logic optimization https://en.m.wikipedia.org/wiki/Logic_optimization
+- https://en.m.wikipedia.org/wiki/Quine%E2%80%93McCluskey_algorithm
+- https://en.m.wikipedia.org/wiki/Espresso_heuristic_logic_minimizer
+- Algebraic factoring / Logic Synthesis / Kernel Extraction / Common Subexpression Extraction (CSE): merging table steps leads to large OR, which should be simplied before being submitted to `ITableWrapper`.
+- Task dependencies (as DAG) optimization (context: ICuboid execution and inference)
+- Dependancy construction: all table steps may be inferred by a smaller set of input steps.
+- Merging of leaves into new leaves (e.g. leading to less queries to ITableWrapper)
+- Generating intermediate nodes computing shared computation (e.g. applying `a=a1` once even if needed by multiple steps)
+- Columnar Random-Access Compression
+- FSST enables random-access over compressed `List` of `String`
+- Immutable, Sequenced, Perfect-Hash `Map` (`IAdhocMap`)
+- **Immutable**: no defensive copies needed; safe as `HashMap` key; enables hashCode caching (à la `String.hashCode()`).
+- **`SequencedMap`** (Java 21): insertion order is preserved and exposed, unlike `HashMap`. Keys and values can be iterated in a stable, predictable order without sorting overhead.
+- **Faster `.get` via perfect hashing** (`SimplePerfectHash`): for a fixed, known key-set the hash function maps every key to a unique slot with no collision, so lookup is a single array access after one multiply+mask rather than open-addressing or chaining.
+- **`Comparable`**: enables `TreeMap`/sorted-column optimisations and benefits from JEP 180 (tree-ified `HashMap` collision chains use `compareTo` when keys implement `Comparable`).
+- **Cached keyset projections** (`retainAll`): the mapping from a full keyset to a projected sub-keyset is memoised, so repeated `retainAll` calls (common in groupBy/slice projection) pay the cost only once.
+- State-of-the-art alternatives worth knowing:
+- [Guava `ImmutableMap`](https://github.com/google/guava/wiki/ImmutableCollectionsExplained) — immutable, iteration-ordered, array-backed for ≤ 5 entries; no `SequencedMap`, no perfect hash.
+- [Eclipse Collections `UnifiedMap` / immutable maps](https://github.com/eclipse/eclipse-collections) — rich immutable variants, primitive-key maps, lower memory footprint than `HashMap`.
+- [sux4j](https://github.com/vigna/sux4j) (Sebastiano Vigna) — minimal perfect hash functions (MPHF) for static key sets; the theoretical gold standard for space-optimal MPHFs.
+- [CHD algorithm](http://cmph.sourceforge.net/) (Compress, Hash, Displace) — near-optimal MPHF construction; also implemented in [CMPH](http://cmph.sourceforge.net/).
+- [Abseil `flat_hash_map` / Swiss tables](https://abseil.io/about/design/swisstables) — SIMD-accelerated open-addressing with a separate metadata byte array; sets the bar for CPU-cache-friendly hash-map throughput (C++; inspiration for Java ports like [F14](https://github.com/facebook/folly/blob/main/folly/container/F14.md)).
+- [HPPC](https://github.com/carrotsearch/hppc) (High Performance Primitive Collections) — avoids boxing for primitive keys/values; relevant when keys are `int`/`long` rather than `String`.
+

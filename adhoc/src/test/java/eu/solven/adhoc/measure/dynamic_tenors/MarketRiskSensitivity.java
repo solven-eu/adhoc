@@ -41,7 +41,7 @@ import lombok.Value;
 public class MarketRiskSensitivity {
 	// Typically `tenor->1Y&maturity->2Y`
 	@Default
-	Object2DoubleMap<Map<String, ?>> coordinatesToDelta = new Object2DoubleOpenHashMap<>();
+	Object2DoubleMap<Map<String, ?>> coordinatesToDelta = Object2DoubleMaps.emptyMap();
 
 	public MarketRiskSensitivity mergeWith(MarketRiskSensitivity other) {
 		Object2DoubleMap<Map<String, ?>> merged = new Object2DoubleOpenHashMap<>(coordinatesToDelta);
