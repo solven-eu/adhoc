@@ -22,15 +22,11 @@
  */
 package eu.solven.adhoc.dataframe.aggregating;
 
-import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.cuboid.slice.SliceHelpers;
-import eu.solven.adhoc.dataframe.tabular.primitives.Object2IntBiConsumer;
-import eu.solven.adhoc.measure.model.Aggregator;
-import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -45,11 +41,17 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
+import eu.solven.adhoc.dataframe.tabular.primitives.Object2IntBiConsumer;
+import eu.solven.adhoc.measure.model.Aggregator;
+import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 /**
  * Benchmarks related with {@link AggregatingColumns}.
@@ -62,9 +64,10 @@ import java.util.function.Consumer;
 @Fork(value = 1)
 @Warmup(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 2, time = 3, timeUnit = TimeUnit.SECONDS)
-@Slf4j
 @SuppressWarnings("checkstyle:MagicNumber")
 public class BenchmarkAggregatingColumns {
+	// No @Slf4j in JMH?
+	private static final Logger LOGGER = LoggerFactory.getLogger(BenchmarkAggregatingColumns.class);
 
 	int size = 1_000_000;
 
@@ -88,14 +91,13 @@ public class BenchmarkAggregatingColumns {
 		new Runner(opt).run();
 	}
 
-
 	// visible for benchmarks
 	@SuppressWarnings("PMD.LooseCoupling")
 	@Deprecated(since = "Not used anymore")
 	public static <T extends Comparable<T>> ObjectArrayList<Object2IntMap.Entry<T>> doSort(
 			Consumer<Object2IntBiConsumer<T>> sliceToIndex,
 			int size) {
-		log.debug("> sorting {}", size);
+		LOGGER.debug("> sorting {}", size);
 
 		// Do not rely on a TreeMap, else the sorting is done one element at a time
 		// ObjectArrayList enables calling `Arrays.parallelSort`
@@ -107,7 +109,7 @@ public class BenchmarkAggregatingColumns {
 
 		Arrays.parallelSort(sortedEntries.elements(), Map.Entry.comparingByKey());
 
-		log.debug("< sorting {}", size);
+		LOGGER.debug("< sorting {}", size);
 
 		return sortedEntries;
 	}
