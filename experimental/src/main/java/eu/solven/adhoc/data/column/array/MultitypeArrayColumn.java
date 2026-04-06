@@ -30,9 +30,9 @@ import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
-import eu.solven.adhoc.cuboid.ICompactable;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder.value;
-
-import eu.solven.adhoc.column.IHasColumnTypes;
+package eu.solven.adhoc.dataframe;
 
 /**
- * Used to transcode types, typically from/to {@link ITableWrapper}.
+ * Enables customization of the initial capacity for data-structures.
  * 
- * Typically used when the application relies on an {@link Enum}, but the table expects a {@link String}.
- *
  * @author Benoit Lacelle
  */
-public interface ICustomTypeManager extends ICustomTypeManagerSimple, IHasColumnTypes {
-
-	/**
-	 *
-	 * @param column
-	 * @param coordinate
-	 *            some coordinate, typically provided by a table.
-	 * @return the equivalent object compatible with the cube/measures/user
-	 */
-	Object fromTable(String column, Object coordinate);
+@Deprecated(since = "Useless?")
+public interface ICapacityStrategy {
 
 }

@@ -20,15 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cuboid;
+package eu.solven.adhoc.column;
+
+import java.util.Map;
 
 /**
- * Used for data structure which can be compacted. Typically useful when all write operations are done, and we want to
- * minimize memory consumption.
+ * Helps describing the column of some data-structure.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface ICompactable {
-	void compact();
+public interface IHasColumnTypes {
+
+	/**
+	 * 
+	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
+	 */
+	Map<String, Class<?>> getColumnTypes();
+
 }

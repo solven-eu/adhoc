@@ -191,6 +191,8 @@ public class AdhocCollectionHelpers {
 	public static void trimToSize(Collection<?> collection) {
 		if (collection instanceof ArrayList arrayList) {
 			arrayList.trimToSize();
+		} else if (collection instanceof ICompactable compactable) {
+			compactable.compact();
 		}
 	}
 }

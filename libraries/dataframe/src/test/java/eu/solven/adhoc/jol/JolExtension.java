@@ -20,26 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder.value;
+package eu.solven.adhoc.jol;
 
-import eu.solven.adhoc.column.IHasColumnTypes;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
- * Used to transcode types, typically from/to {@link ITableWrapper}.
- * 
- * Typically used when the application relies on an {@link Enum}, but the table expects a {@link String}.
+ * JUnit 5 extension that suppresses the JOL HotSpot SA attach warning before any test in the class runs.
  *
- * @author Benoit Lacelle
+ * <p>
+ * Without this, JOL attempts to attach to the HotSpot SA (serviceability agent) to gather layout information, which
+ * triggers a warning or failure in CI environments that do not allow ptrace. Setting
+ * {@code jol.skipHotspotSAAttach=true} tells JOL to skip that step.
+ *
+ * <p>
+ * Usage:
+ *
+ * <pre>{@code
+ * &#64;ExtendWith(JolExtension.class)
+ * class MyTest { ... }
+ * }</pre>
+ *
+ * @see <a href="https://bugs.openjdk.org/browse/CODETOOLS-7903447">CODETOOLS-7903447</a>
  */
-public interface ICustomTypeManager extends ICustomTypeManagerSimple, IHasColumnTypes {
+public class JolExtension implements BeforeAllCallback {
 
-	/**
-	 *
-	 * @param column
-	 * @param coordinate
-	 *            some coordinate, typically provided by a table.
-	 * @return the equivalent object compatible with the cube/measures/user
-	 */
-	Object fromTable(String column, Object coordinate);
-
+	@Override
+	public void beforeAll(ExtensionContext context) {
+		System.setProperty("jol.skipHotspotSAAttach", "true");
+	}
 }

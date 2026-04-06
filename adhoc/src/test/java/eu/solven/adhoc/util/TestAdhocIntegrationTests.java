@@ -39,8 +39,9 @@ public class TestAdhocIntegrationTests {
 	public static final String ENABLED_IF = "eu.solven.adhoc.util.TestAdhocIntegrationTests" + "#runIntegrationTests";
 
 	public static boolean runIntegrationTests() {
+		// Fallback: IntelliJ runner classes appear in the call stack
 		Optional<StackTraceElement> ideEntry = Stream.of(Thread.currentThread().getStackTrace())
-				.filter(e -> e.getClassName().startsWith("org.eclipse.jdt."))
+				.filter(e -> e.getClassName().startsWith("org.junit."))
 				.findAny();
 		if (ideEntry.isPresent()) {
 			log.info("Running {} due to {}", "IntegrationTests", ideEntry.get());

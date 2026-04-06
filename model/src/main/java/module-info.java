@@ -2,7 +2,7 @@
  * Column-oriented encoding layer: packed integers, dictionary encoding, FSST string compression, and appendable table
  * pages.
  */
-module eu.solven.adhoc.meta {
+module eu.solven.adhoc.model {
 
 	// ── Exported packages ────────────────────────────────────────────────────
 	exports eu.solven.adhoc.collection;

@@ -20,22 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
-
-import java.util.Map;
+package eu.solven.adhoc.collection;
 
 /**
- * Helps describing the column of some data-structure.
+ * Used for data structure which can be compacted. Typically useful when all write operations are done, and we want to
+ * minimize memory consumption.
  * 
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface IHasColumnTypes {
-
-	/**
-	 * 
-	 * @return the columns available for groupBy operations, mapped to the Java-type of given column.
-	 */
-	Map<String, Class<?>> getColumnTypes();
-
+public interface ICompactable {
+	void compact();
 }

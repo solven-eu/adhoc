@@ -22,23 +22,18 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableList;
-
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
+import eu.solven.adhoc.dataframe.collection.ChunkedList;
+import eu.solven.adhoc.dataframe.collection.DoubleChunkedList;
+import eu.solven.adhoc.dataframe.collection.LongChunkedList;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueFunction;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
-import it.unimi.dsi.fastutil.doubles.DoubleList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -55,7 +50,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Builder
-public class MultitypeArray implements IMultitypeArray {
+// concrete field types (LongChunkedList, DoubleChunkedList, ChunkedList) are intentional: compact() is only on the
+// concrete class
+@SuppressWarnings("PMD.LooseCoupling")
+public class MultitypeArray implements IMultitypeArray, ICompactable {
 	// Indicate the single type of values stored in this column
 	// For now, since column can handle long or (exclusively) doubles. Switching to Object if the type is not only-long
 	// or only-double.
@@ -67,15 +65,15 @@ public class MultitypeArray implements IMultitypeArray {
 	// MergeableMultitypeStorage
 	@Default
 	@NonNull
-	final LongList valuesL = new LongArrayList(0);
+	final LongChunkedList valuesL = new LongChunkedList();
 
 	@Default
 	@NonNull
-	final DoubleList valuesD = new DoubleArrayList(0);
+	final DoubleChunkedList valuesD = new DoubleChunkedList();
 
 	@Default
 	@NonNull
-	final List<Object> valuesO = new ArrayList<>(0);
+	final ChunkedList<Object> valuesO = new ChunkedList<>();
 
 	@Default
 	@Setter
@@ -94,21 +92,12 @@ public class MultitypeArray implements IMultitypeArray {
 		}
 	}
 
-	@SuppressWarnings({ "PMD.LooseCoupling", "PMD.CollapsibleIfStatements" })
+	/**
+	 * No-op: {@link LongChunkedList}, {@link DoubleChunkedList}, and {@link ChunkedList} allocate tail chunks lazily on
+	 * demand; there is no bulk pre-allocation step equivalent to {@code ensureCapacity}.
+	 */
 	protected void ensureCapacityForType(int type) {
-		if (type == IMultitypeConstants.MASK_LONG) {
-			if (valuesL instanceof LongArrayList array) {
-				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
-			}
-		} else if (type == IMultitypeConstants.MASK_DOUBLE) {
-			if (valuesD instanceof DoubleArrayList array) {
-				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
-			}
-		} else if (type == IMultitypeConstants.MASK_OBJECT) {
-			if (valuesO instanceof ObjectArrayList array) {
-				array.ensureCapacity(IAdhocCapacityConstants.capacity(capacity));
-			}
-		}
+		// intentionally empty
 	}
 
 	@Override
@@ -250,9 +239,9 @@ public class MultitypeArray implements IMultitypeArray {
 
 	public static MultitypeArray empty() {
 		return MultitypeArray.builder()
-				.valuesD(DoubleList.of())
-				.valuesL(LongList.of())
-				.valuesO(ImmutableList.of())
+				.valuesL(new LongChunkedList())
+				.valuesD(new DoubleChunkedList())
+				.valuesO(new ChunkedList<>())
 				.build();
 	}
 
@@ -292,6 +281,13 @@ public class MultitypeArray implements IMultitypeArray {
 		}
 	}
 
+	@Override
+	public void compact() {
+		valuesL.compact();
+		valuesD.compact();
+		valuesO.compact();
+	}
+
 	public void clear() {
 		valuesType = IMultitypeConstants.MASK_EMPTY;
 
@@ -302,12 +298,12 @@ public class MultitypeArray implements IMultitypeArray {
 
 	@Override
 	public IMultitypeArray purgeAggregationCarriers() {
-		final List<Object> valuesOPurged = new ArrayList<>(valuesO);
+		final ChunkedList<Object> valuesOPurged = new ChunkedList<>(valuesO);
 
 		for (int i = 0; i < valuesO.size(); i++) {
 			Object value = valuesOPurged.get(i);
 			if (value instanceof IValueProvider valueProvider) {
-				valuesO.set(i, IValueProvider.getValue(valueProvider));
+				valuesOPurged.set(i, IValueProvider.getValue(valueProvider));
 			}
 		}
 
@@ -318,5 +314,4 @@ public class MultitypeArray implements IMultitypeArray {
 				.valuesO(valuesOPurged)
 				.build();
 	}
-
 }

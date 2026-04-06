@@ -99,8 +99,9 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			if (queryPod.isDebugOrExplain()) {
 				log.info("[EXPLAIN] Partitioned is activated with parallelism={}", nbPartitions);
 			}
+
 			gridFactory2 = () -> PartitionedMultitypeMergeableGrid.<ISlice, Integer>builder()
-					.partitions(IntStream.range(0, nbPartitions).mapToObj(i -> gridFactory.get()).toList())
+					.partitions(IntStream.range(0, nbPartitions).mapToObj(_ -> gridFactory.get()).toList())
 					.build();
 		} else {
 			gridFactory2 = gridFactory;

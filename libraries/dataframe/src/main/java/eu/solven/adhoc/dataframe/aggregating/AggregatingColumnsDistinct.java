@@ -22,33 +22,38 @@
  */
 package eu.solven.adhoc.dataframe.aggregating;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
-import eu.solven.adhoc.cuboid.ICompactable;
+import eu.solven.adhoc.collection.FrozenException;
+import eu.solven.adhoc.collection.ICompactable;
+import eu.solven.adhoc.collection.IFrozen;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
+import eu.solven.adhoc.dataframe.collection.ChunkedList;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarriers;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
+import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -64,22 +69,34 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 @SuppressWarnings("checkstyle:TypeName")
-public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggregatingColumns<T, Integer> {
+// NotThreadSafe
+public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggregatingColumns<T, Integer>
+		implements IFrozen {
 	@NonNull
 	@Default
-	AdhocFactories factories = AdhocFactories.builder().build();
+	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
 
-	// May go for Hash or Navigable
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
 	// aggregators).
 	@NonNull
 	@Default
-	List<T> indexToSlice = new ArrayList<>(AdhocColumnUnsafe.getDefaultColumnCapacity());
+	final List<T> indexToSlice = new ChunkedList<>();
 
 	@NonNull
 	@Default
-	Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
+	final Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
+
+	final Supplier<Object2IntFunction<T>> memoizeSliceToIndex = Suppliers.memoize(this::sliceToindex);
+
+	// Set to true on the first closeColumn() call; subsequent openSlice() calls are rejected.
+	// non-final: set lazily on close, not at construction time
+	private boolean frozen;
+
+	@Override
+	public boolean isFrozen() {
+		return frozen;
+	}
 
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
@@ -99,6 +116,10 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 	@Override
 	public IOpenedSlice openSlice(T key) {
+		if (frozen) {
+			throw new FrozenException(
+					"AggregatingColumnsDistinct is frozen: openSlice must not be called after closeColumn");
+		}
 		int keyIndex = dictionarize(key);
 
 		return aggregator -> {
@@ -126,24 +147,30 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
-		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator.getAlias());
+		// Freeze on first closeColumn: all slices have been ingested; further openSlice calls are invalid.
+		frozen = true;
 
-		if (notFinalColumn == null) {
+		IMultitypeColumnFastGet<Integer> column = getColumn(aggregator.getAlias());
+
+		if (column == null) {
 			// Typically happens when a filter reject completely one of the underlying
 			// measure, and not a single aggregate was written
-			notFinalColumn = MultitypeHashColumn.empty();
+			column = MultitypeHashColumn.empty();
 		}
 
-		if (notFinalColumn.isEmpty()) {
+		if (column.isEmpty()) {
 			// RAM optimization
 			return MultitypeHashColumn.empty();
-		} else if (notFinalColumn instanceof ICompactable compactable) {
+		} else if (column instanceof ICompactable compactable) {
 			compactable.compact();
 		}
 
-		AdhocCollectionHelpers.trimToSize(indexToSlice);
+		// Turn the columnByIndex to a columnBySlice
+		return AggregatingColumns.undictionarizeColumn(column, memoizeSliceToIndex.get(), indexToSlice::get);
+	}
 
-		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
+	protected Object2IntFunction<T> sliceToindex() {
+		AdhocCollectionHelpers.trimToSize(indexToSlice);
 
 		// Reverse from `slice->index` to `index->slice`
 		Object2IntMap<T> sliceToIndex = AdhocPrimitiveMapHelpers.newHashMapDefaultMinus1(indexToSlice.size());
@@ -151,8 +178,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			sliceToIndex.put(indexToSlice.get(i), i);
 		}
 
-		// Turn the columnByIndex to a columnBySlice
-		return AggregatingColumns.undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
+		return sliceToIndex::getInt;
 	}
 
 	@Override

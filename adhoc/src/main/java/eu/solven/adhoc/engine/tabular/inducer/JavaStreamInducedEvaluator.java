@@ -29,7 +29,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.cuboid.ICompactable;
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;

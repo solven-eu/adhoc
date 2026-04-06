@@ -20,26 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder.value;
-
-import eu.solven.adhoc.column.IHasColumnTypes;
+package eu.solven.adhoc.collection;
 
 /**
- * Used to transcode types, typically from/to {@link ITableWrapper}.
- * 
- * Typically used when the application relies on an {@link Enum}, but the table expects a {@link String}.
+ * Marks a data structure that has gone through a one-way transition from mutable to read-only. After freezing, all
+ * write operations must throw {@link UnsupportedOperationException}; reads remain valid.
+ *
+ * <p>
+ * The transition is typically triggered by a finalisation step such as {@code compact()} or {@code closeColumn()}. Once
+ * frozen, a structure cannot be unfrozen.
  *
  * @author Benoit Lacelle
  */
-public interface ICustomTypeManager extends ICustomTypeManagerSimple, IHasColumnTypes {
+@SuppressWarnings("PMD.ImplicitFunctionalInterface")
+public interface IFrozen {
 
 	/**
+	 * Returns {@code true} if this object has been frozen and can no longer accept write operations.
 	 *
-	 * @param column
-	 * @param coordinate
-	 *            some coordinate, typically provided by a table.
-	 * @return the equivalent object compatible with the cube/measures/user
+	 * @return {@code true} once the one-way freeze transition has occurred
 	 */
-	Object fromTable(String column, Object coordinate);
-
+	boolean isFrozen();
 }

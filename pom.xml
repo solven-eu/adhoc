@@ -73,7 +73,8 @@
 		<pepper.version>5.6</pepper.version>
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
-		<!-- If this version is enforced only in adhoc module, pivotablr will take SpringBoot default-->
+		<!-- If this version is enforced only in adhoc module, pivotablr will
+		take SpringBoot default-->
 		<jooq.version>3.21.1</jooq.version>
 
 		<spotless.version>3.4.0</spotless.version>
@@ -92,9 +93,12 @@
 		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
 		<jacoco.instruction.ratio>0.70</jacoco.instruction.ratio>
 
-		<!-- By default (i.e. in local environments), check for code formatting AFTER trying automatic fixes. -->
-		<!-- We suppose the developper would see the fixed and include them in his commit. -->
-		<!-- In the CI, we check BEFORE automatic fixes as the CI should report early invalid code -->
+		<!-- By default (i.e. in local environments), check for code formatting
+		AFTER trying automatic fixes. -->
+		<!-- We suppose the developper would see the fixed and include them in
+		his commit. -->
+		<!-- In the CI, we check BEFORE automatic fixes as the CI should report
+		early invalid code -->
 		<staticChecks>process-sources</staticChecks>
 		<!-- SpotBugs works on bytecode, hence require compilation to be done -->
 		<!-- http://maven.apache.org/ref/3.8.1/maven-core/lifecycles.html -->
@@ -106,26 +110,35 @@
 
 		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs -->
 		<spotbugs.version>4.9.3</spotbugs.version>
-		<!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-maven-plugin -->
+		<!--
+		https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-maven-plugin -->
 		<spotbugs-maven.version>4.9.8.3</spotbugs-maven.version>
-		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
+		<!--
+		https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-checkstyle-plugin -->
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<!-- https://mvnrepository.com/artifact/com.puppycrawl.tools/checkstyle -->
 		<checkstyle.version>13.4.0</checkstyle.version>
-		<!-- https://mvnrepository.com/artifact/info.novatec.ita/stereotype.check.plugin -->
+		<!--
+		https://mvnrepository.com/artifact/info.novatec.ita/stereotype.check.plugin -->
 		<stereotype.check.plugin.version>4.0.0</stereotype.check.plugin.version>
-		<!-- https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-pmd-plugin -->
+		<!--
+		https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-pmd-plugin -->
 		<maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
 		<!-- https://mvnrepository.com/artifact/net.sourceforge.pmd/pmd -->
 		<pmd.version>7.21.0</pmd.version>
 
-		<!-- https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
+		<!--
+		https://stackoverflow.com/questions/13829538/maven-surefire-append-to-argline -->
 		<customArgLine />
 
 		<automatic.module.name />
 
-		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError ${customArgLine}</argLine>
-		<!-- Set to 'package' to skip trigger the tests jar (e.g. not to skip deployment) -->
+		<!-- -Djol.magicFieldOffset=true helps JOL to measure Heap consumption
+		on private fields-->
+		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError
+			-Djol.magicFieldOffset=true ${customArgLine}</argLine>
+		<!-- Set to 'package' to skip trigger the tests jar (e.g. not to skip
+		deployment) -->
 		<testJarPhase>none</testJarPhase>
 	</properties>
 
@@ -161,10 +174,12 @@
 					<executions>
 						<execution>
 							<goals>
-								<!-- Provides a classifier=tests jar, helpful for integration tests or benchmarks-->
+								<!-- Provides a classifier=tests jar, helpful
+								for integration tests or benchmarks-->
 								<goal>test-jar</goal>
 							</goals>
-							<!-- Set -DtestJarPhase=none to skip building and deploying the tests jar -->
+							<!-- Set -DtestJarPhase=none to skip building and
+							deploying the tests jar -->
 							<phase>${testJarPhase}</phase>
 							<configuration>
 								<archive>
@@ -172,7 +187,8 @@
 										<Automatic-Module-Name>${automatic.module.name}.tests</Automatic-Module-Name>
 									</manifestEntries>
 								</archive>
-								<!-- Skip modules without test sources (e.g. the aggregator POM) -->
+								<!-- Skip modules without test sources (e.g. the
+								aggregator POM) -->
 								<skipIfEmpty>true</skipIfEmpty>
 							</configuration>
 						</execution>
@@ -183,8 +199,10 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
 					<configuration>
-						<!-- https://stackoverflow.com/questions/52110023/how-do-you-organize-tests-in-a-modular-java-project -->
-						<!-- https://stackoverflow.com/questions/46613214/java-9-maven-junit-does-test-code-need-module-info-java-of-its-own-and-wher -->
+						<!--
+						https://stackoverflow.com/questions/52110023/how-do-you-organize-tests-in-a-modular-java-project -->
+						<!--
+						https://stackoverflow.com/questions/46613214/java-9-maven-junit-does-test-code-need-module-info-java-of-its-own-and-wher -->
 						<!--  allow to use unnamed modules -->
 						<useModulePath>false</useModulePath>
 					</configuration>
@@ -196,7 +214,8 @@
 					<configuration>
 						<annotationProcessorPaths>
 							<!-- https://projectlombok.org/setup/maven -->
-							<!-- https://github.com/projectlombok/lombok/issues/3967 -->
+							<!--
+							https://github.com/projectlombok/lombok/issues/3967 -->
 							<path>
 								<groupId>org.projectlombok</groupId>
 								<artifactId>lombok</artifactId>
@@ -229,14 +248,18 @@
 					<artifactId>maven-javadoc-plugin</artifactId>
 					<version>3.12.0</version>
 					<configuration>
-						<!-- https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8212233 -->
+						<!--
+						https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8212233 -->
 						<!-- <source>8</source>-->
 						<defaultAuthor>Benoit Chatain Lacelle</defaultAuthor>
 						<failOnError>false</failOnError>
-						<!-- https://docs.oracle.com/en/java/javase/17/docs/specs/man/javadoc.html#additional-options-provided-by-the-standard-doclet -->
-						<!-- https://maven.apache.org/plugins/maven-javadoc-plugin/javadoc-mojo.html#doclint -->
+						<!--
+						https://docs.oracle.com/en/java/javase/17/docs/specs/man/javadoc.html#additional-options-provided-by-the-standard-doclet -->
+						<!--
+						https://maven.apache.org/plugins/maven-javadoc-plugin/javadoc-mojo.html#doclint -->
 						<doclint>-html,-syntax,-accessibility,-missing</doclint>
-						<!-- https://stackoverflow.com/questions/71784748/maven-javadoc-plugin-generates-warning-about-generating-every-file-why-what-is -->
+						<!--
+						https://stackoverflow.com/questions/71784748/maven-javadoc-plugin-generates-warning-about-generating-every-file-why-what-is -->
 						<quiet>true</quiet>
 					</configuration>
 					<executions>
@@ -270,7 +293,8 @@
 					<version>3.6.2</version>
 					<dependencies>
 						<dependency>
-							<!-- https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
+							<!--
+							https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
 							<groupId>org.codehaus.mojo</groupId>
 							<artifactId>extra-enforcer-rules</artifactId>
 							<version>1.12.0</version>
@@ -284,14 +308,18 @@
 							</goals>
 							<configuration>
 								<failFast>true</failFast>
-								<!-- https://maven.apache.org/enforcer/enforcer-rules/index.html -->
+								<!--
+								https://maven.apache.org/enforcer/enforcer-rules/index.html -->
 								<rules>
-									<!-- We have a local site used to upload report in circleci -->
+									<!-- We have a local site used to upload
+									report in circleci -->
 									<!-- <banDistributionManagement /> -->
 									<banDuplicatePomDependencyVersions />
-									<!-- TODO Activate this rule requiring to force quite many dependencies -->
+									<!-- TODO Activate this rule requiring to
+									force quite many dependencies -->
 									<!-- <dependencyConvergence /> -->
-									<!-- reactorModuleConvergence seems not to handle outer BOM (e.g. from SpringBoot) -->
+									<!-- reactorModuleConvergence seems not to
+									handle outer BOM (e.g. from SpringBoot) -->
 									<!-- <reactorModuleConvergence /> -->
 									<requireMavenVersion>
 										<version>[3.9,)</version>
@@ -299,21 +327,26 @@
 									<requireJavaVersion>
 										<version>25.0</version>
 									</requireJavaVersion>
-									<!-- We leave some plugin versions to SpringBoot -->
+									<!-- We leave some plugin versions to
+									SpringBoot -->
 									<!-- <requirePluginVersions /> -->
 									<requireReleaseDeps>
 										<onlyWhenRelease>true</onlyWhenRelease>
 									</requireReleaseDeps>
 									<bannedDependencies>
 										<excludes>
-											<!--											<exclude>org.slf4j:slf4j-api:2</exclude>-->
+											<!--
+											<exclude>org.slf4j:slf4j-api:2</exclude>-->
 											<!-- JUnit 4 — project is on JUnit 5 -->
 											<exclude>junit:junit</exclude>
-											<!-- Log4j v1 — CVE-prone, superseded by Logback/Log4j2 -->
+											<!-- Log4j v1 — CVE-prone,
+											superseded by Logback/Log4j2 -->
 											<exclude>log4j:log4j</exclude>
-											<!-- commons-logging — use jcl-over-slf4j bridge instead -->
+											<!-- commons-logging — use
+											jcl-over-slf4j bridge instead -->
 											<exclude>commons-logging:commons-logging</exclude>
-											<!-- Old servlet API — use jakarta.servlet:jakarta.servlet-api -->
+											<!-- Old servlet API — use
+											jakarta.servlet:jakarta.servlet-api -->
 											<exclude>javax.servlet:servlet-api</exclude>
 										</excludes>
 									</bannedDependencies>
@@ -321,7 +354,8 @@
 										<excludes />
 									</requireUpperBoundDeps>
 
-									<!-- https://www.mojohaus.org/extra-enforcer-rules/enforceBytecodeVersion.html -->
+									<!--
+									https://www.mojohaus.org/extra-enforcer-rules/enforceBytecodeVersion.html -->
 									<enforceBytecodeVersion>
 										<maxJdkVersion>25</maxJdkVersion>
 										<ignoredScopes>
@@ -332,12 +366,16 @@
 									<banCircularDependencies />
 
 									<banDuplicateClasses>
-										<!-- https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
+										<!--
+										https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
 										<ignoreClasses>
-											<!-- com.github.stephenc.jcip:jcip-annotations -->
+											<!--
+											com.github.stephenc.jcip:jcip-annotations -->
 											<!-- net.jcip:jcip-annotations -->
-											<!-- com.google.code.findbugs:annotations -->
-											<!--											<ignoreClass>net.jcip.annotations.GuardedBy</ignoreClass>-->
+											<!--
+											com.google.code.findbugs:annotations -->
+											<!--
+											<ignoreClass>net.jcip.annotations.GuardedBy</ignoreClass>-->
 										</ignoreClasses>
 										<scopes>
 											<scope>compile</scope>
@@ -354,7 +392,8 @@
 
 				<plugin>
 					<!--https://spotbugs.github.io/spotbugs-maven-plugin/index.html -->
-					<!-- mvn compile com.github.spotbugs:spotbugs-maven-plugin:spotbugs -->
+					<!-- mvn compile
+					com.github.spotbugs:spotbugs-maven-plugin:spotbugs -->
 					<groupId>com.github.spotbugs</groupId>
 					<artifactId>spotbugs-maven-plugin</artifactId>
 					<version>${spotbugs-maven.version}</version>
@@ -365,10 +404,13 @@
 
 						<excludeFilterFile>${maven.multiModuleProjectDirectory}/.cleanthat/spotbugs.xml</excludeFilterFile>
 
-						<!-- Default timeout is 10 minutes, but it is unnecessary large, while we sometimes encounter timeouts due to a bug in concurrent builds -->
+						<!-- Default timeout is 10 minutes, but it is
+						unnecessary large, while we sometimes encounter timeouts
+						due to a bug in concurrent builds -->
 						<timeout>60000</timeout>
 
-						<!-- In the hope of going faster, no need to start a brand new JVM on each module -->
+						<!-- In the hope of going faster, no need to start a
+						brand new JVM on each module -->
 						<fork>false</fork>
 						<plugins>
 							<plugin>
@@ -396,17 +438,21 @@
 								<goal>check</goal>
 							</goals>
 							<!-- default phase is verify, which is after tests. -->
-							<!-- We prefer to run static analysis before tests not to wait -->
+							<!-- We prefer to run static analysis before tests
+							not to wait -->
 							<phase>${staticChecksOverBytecode}</phase>
 						</execution>
 					</executions>
 				</plugin>
 				<plugin>
-					<!-- https://maven.apache.org/plugins/maven-checkstyle-plugin/ -->
+					<!--
+					https://maven.apache.org/plugins/maven-checkstyle-plugin/ -->
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-checkstyle-plugin</artifactId>
 					<version>${maven-checkstyle-plugin.version}</version>
-					<!-- Make sure the configuration is not in execution blocks, so then are re-used by explicit invocation (vs lifecycle phase) -->
+					<!-- Make sure the configuration is not in execution blocks,
+					so then are re-used by explicit invocation (vs lifecycle
+					phase) -->
 					<configuration>
 						<excludes>**/generated/**,**/me/lemire/integercompression/**</excludes>
 
@@ -417,8 +463,10 @@
 						<inputEncoding>UTF-8</inputEncoding>
 						<consoleOutput>true</consoleOutput>
 						<failsOnError>true</failsOnError>
-						<!-- Prevent [WARNING] Unable to locate Source XRef to link to - DISABLED -->
-						<!-- only with goal checkstyle-aggregate or checkstyle generating a report -->
+						<!-- Prevent [WARNING] Unable to locate Source XRef to
+						link to - DISABLED -->
+						<!-- only with goal checkstyle-aggregate or checkstyle
+						generating a report -->
 						<!--<linkXRef>false</linkXRef> -->
 					</configuration>
 					<dependencies>
@@ -442,7 +490,8 @@
 								<goal>check</goal>
 							</goals>
 							<!-- default phase is verify, which is after tests. -->
-							<!-- We prefer to run static analysis before tests not to wait -->
+							<!-- We prefer to run static analysis before tests
+							not to wait -->
 							<phase>${staticChecks}</phase>
 						</execution>
 					</executions>
@@ -450,7 +499,8 @@
 				<plugin>
 					<!--https://maven.apache.org/plugins/maven-pmd-plugin/ -->
 					<!-- Skip a row by adding '//NOPMD' at the end -->
-					<!-- https://pmd.github.io/pmd-6.6.0/pmd_userdocs_suppressing_warnings.html#nopmd-comment -->
+					<!--
+					https://pmd.github.io/pmd-6.6.0/pmd_userdocs_suppressing_warnings.html#nopmd-comment -->
 					<!-- Trigger only pmd with 'mvn pmd:check' -->
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-pmd-plugin</artifactId>
@@ -462,7 +512,8 @@
 
 						<!-- TODO Decrease to 4, then 3, until 1 -->
 						<failurePriority>5</failurePriority>
-						<!-- Prevent [WARNING] Unable to locate Source XRef to link to - DISABLED -->
+						<!-- Prevent [WARNING] Unable to locate Source XRef to
+						link to - DISABLED -->
 						<linkXRef>false</linkXRef>
 						<rulesets>
 							<ruleset>${maven.multiModuleProjectDirectory}/.cleanthat/pmd.rulesets.xml</ruleset>
@@ -478,7 +529,8 @@
 							<artifactId>pmd-java</artifactId>
 							<version>${pmd.version}</version>
 						</dependency>
-						<!-- maven-pmd-plugin relies by default on some version of PMD which -->
+						<!-- maven-pmd-plugin relies by default on some version
+						of PMD which -->
 						<!-- may be incompatible with custom PMD versions -->
 						<dependency>
 							<groupId>net.sourceforge.pmd</groupId>
@@ -486,7 +538,8 @@
 							<version>${pmd.version}</version>
 						</dependency>
 
-						<!-- `javascript` and `jsp` are included b ydefault: we also need to ensure they have proper version -->
+						<!-- `javascript` and `jsp` are included b ydefault: we
+						also need to ensure they have proper version -->
 						<dependency>
 							<groupId>net.sourceforge.pmd</groupId>
 							<artifactId>pmd-javascript</artifactId>
@@ -505,13 +558,18 @@
 								<goal>cpd-check</goal>
 							</goals>
 							<!-- Default phase is verify, which is after tests. -->
-							<!-- We prefer to run static analysis before tests not to wait -->
+							<!-- We prefer to run static analysis before tests
+							not to wait -->
 
-							<!-- PMD should run after import auto-cleaning: done by using same phase but ordering plugins properly -->
-							<!-- https://stackoverflow.com/questions/8243912/changing-the-order-of-maven-plugin-execution -->
+							<!-- PMD should run after import auto-cleaning: done
+							by using same phase but ordering plugins properly -->
+							<!--
+							https://stackoverflow.com/questions/8243912/changing-the-order-of-maven-plugin-execution -->
 
-							<!-- Since PMD7, we need to run PMD analysis after compilation otherwise we get ambiguous resolutions -->
-							<!-- https://github.com/solven-eu/mitrust-datasharing/pull/13287#issuecomment-2127074525 -->
+							<!-- Since PMD7, we need to run PMD analysis after
+							compilation otherwise we get ambiguous resolutions -->
+							<!--
+							https://github.com/solven-eu/mitrust-datasharing/pull/13287#issuecomment-2127074525 -->
 							<phase>${staticChecksOverBytecode}</phase>
 						</execution>
 					</executions>
@@ -524,10 +582,12 @@
 					<artifactId>spotless-maven-plugin</artifactId>
 					<version>${spotless.version}</version>
 					<configuration>
-						<!-- optional: limit format enforcement to just the files changed by this feature branch -->
+						<!-- optional: limit format enforcement to just the
+						files changed by this feature branch -->
 						<!--ratchetFrom>origin/master</ratchetFrom-->
 						<formats>
-							<!-- you can define as many formats as you want, each is independent -->
+							<!-- you can define as many formats as you want,
+							each is independent -->
 							<format>
 								<!-- define the files to apply to -->
 								<includes>
@@ -548,15 +608,18 @@
 								<include>pom.xml</include>
 							</includes>
 
-							<!-- https://github.com/diffplug/spotless/tree/main/plugin-maven#sortpom -->
+							<!--
+							https://github.com/diffplug/spotless/tree/main/plugin-maven#sortpom -->
 							<sortPom>
-								<!-- We like empty elements, while plugin default configuration would expand them -->
+								<!-- We like empty elements, while plugin
+								default configuration would expand them -->
 								<expandEmptyElements>false</expandEmptyElements>
 
 								<!-- https://github.com/Ekryd/sortpom/issues/75 -->
 								<spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
 
-								<!-- https://github.com/Ekryd/sortpom/wiki/Parameters#for-both-the-sort-and-verify-goal -->
+								<!--
+								https://github.com/Ekryd/sortpom/wiki/Parameters#for-both-the-sort-and-verify-goal -->
 								<!-- -1 means '\t' -->
 								<nrOfIndentSpace>-1</nrOfIndentSpace>
 							</sortPom>
@@ -581,12 +644,14 @@
 						<!-- define a language-specific format -->
 						<java>
 							<excludes>
-								<!-- TestCases needs to remains not formatted/cleaned -->
+								<!-- TestCases needs to remains not
+								formatted/cleaned -->
 								<exclude>**/do_not_format_me/**</exclude>
 								<exclude>**/me/lemire/integercompression/**</exclude>
 								<exclude>**/TransitiveReductionV2.java</exclude>
 
-								<!-- As there is no Javadoc, it would lead to a dangling Javadoc according to PMD-->
+								<!-- As there is no Javadoc, it would lead to a
+								dangling Javadoc according to PMD-->
 								<exclude>**/module-info.java</exclude>
 							</excludes>
 
@@ -599,7 +664,8 @@
 								</mutators>
 								<includeDraft>true</includeDraft>
 								<excludedMutators>
-									<!-- https://github.com/javaparser/javaparser/issues/3930 -->
+									<!--
+									https://github.com/javaparser/javaparser/issues/3930 -->
 									<excludedMutator>LambdaReturnsSingleStatement</excludedMutator>
 									<!-- Too much instable -->
 									<excludedMutator>UseDiamondOperator</excludedMutator>
@@ -616,14 +682,17 @@
 
 							<eclipse>
 								<!-- matches the version of Eclipse IDE-->
-								<!-- https://download.eclipse.org/eclipse/downloads/ -->
-								<!-- 4.39 is broken https://github.com/diffplug/spotless/issues/2897 -->
+								<!--
+								https://download.eclipse.org/eclipse/downloads/ -->
+								<!-- 4.39 is broken
+								https://github.com/diffplug/spotless/issues/2897 -->
 								<version>4.38</version>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/eclipse_java_code_formatter.xml</file>
 							</eclipse>
 
 							<licenseHeader>
-								<!-- https://github.com/diffplug/spotless/issues/1418 -->
+								<!--
+								https://github.com/diffplug/spotless/issues/1418 -->
 								<delimiter>(package )|(import )</delimiter>
 								<file>${maven.multiModuleProjectDirectory}/.cleanthat/spotless.license</file>
 							</licenseHeader>
@@ -644,11 +713,13 @@
 								<include>/.*/*.json</include>
 								<!-- json files in src folder-->
 								<include>src/**/*.json</include>
-								<!-- Make sure the root modules does not process all json of all modules-->
+								<!-- Make sure the root modules does not process
+								all json of all modules-->
 							</includes>
 
 							<excludes>
-								<!-- Given file is the concatenation of multiple small JSONs, 1 JSON per line-->
+								<!-- Given file is the concatenation of multiple
+								small JSONs, 1 JSON per line-->
 								<exclude>/src/test/resources/zips-mini.json</exclude>
 							</excludes>
 
@@ -660,7 +731,8 @@
 						<javascript>
 							<includes>
 								<!-- Do not include HTML and Vue files -->
-								<!-- https://biomejs.dev/internals/language-support/#html-super-languages-support -->
+								<!--
+								https://biomejs.dev/internals/language-support/#html-super-languages-support -->
 								<include>src/**/*.js</include>
 							</includes>
 							<excludes>
@@ -669,13 +741,16 @@
 
 							<!-- https://biomejs.dev/ -->
 							<biome>
-								<!-- Download Biome from the network if not already downloaded, see below for more info  -->
+								<!-- Download Biome from the network if not
+								already downloaded, see below for more info  -->
 								<version>1.9.4</version>
 
-								<!-- (optional) Path to the directory with the biome.json config file -->
+								<!-- (optional) Path to the directory with the
+								biome.json config file -->
 								<configPath>${maven.multiModuleProjectDirectory}/.cleanthat/</configPath>
 
-								<!-- (optional) Biome will auto detect the language based on the file extension. -->
+								<!-- (optional) Biome will auto detect the
+								language based on the file extension. -->
 								<!-- See below for possible values. -->
 								<!--        <language>js</language>-->
 							</biome>
@@ -700,7 +775,8 @@
 					<version>0.8.14</version>
 					<configuration>
 						<excludes>
-							<!-- Vendored third-party sources, excluded from coverage -->
+							<!-- Vendored third-party sources, excluded from
+							coverage -->
 							<exclude>**/me/lemire/integercompression/**</exclude>
 						</excludes>
 					</configuration>
@@ -728,20 +804,27 @@
 								<skip>${skipTests}</skip>
 								<rules>
 									<rule implementation="org.jacoco.maven.RuleConfiguration">
-										<!-- BUNDLE, PACKAGE, CLASS, SOURCEFILE or METHOD -->
+										<!-- BUNDLE, PACKAGE, CLASS, SOURCEFILE
+										or METHOD -->
 										<element>BUNDLE</element>
 										<limits>
 											<limit implementation="org.jacoco.report.check.Limit">
-												<!-- INSTRUCTION, LINE, BRANCH, COMPLEXITY, METHOD, CLASS -->
+												<!-- INSTRUCTION, LINE, BRANCH,
+												COMPLEXITY, METHOD, CLASS -->
 												<counter>BRANCH</counter>
-												<!-- TOTALCOUNT, COVEREDCOUNT, MISSEDCOUNT, COVEREDRATIO, MISSEDRATIO -->
+												<!-- TOTALCOUNT, COVEREDCOUNT,
+												MISSEDCOUNT, COVEREDRATIO,
+												MISSEDRATIO -->
 												<value>COVEREDRATIO</value>
 												<minimum>${jacoco.branch.ratio}</minimum>
 											</limit>
 											<limit implementation="org.jacoco.report.check.Limit">
-												<!-- INSTRUCTION, LINE, BRANCH, COMPLEXITY, METHOD, CLASS -->
+												<!-- INSTRUCTION, LINE, BRANCH,
+												COMPLEXITY, METHOD, CLASS -->
 												<counter>INSTRUCTION</counter>
-												<!-- TOTALCOUNT, COVEREDCOUNT, MISSEDCOUNT, COVEREDRATIO, MISSEDRATIO -->
+												<!-- TOTALCOUNT, COVEREDCOUNT,
+												MISSEDCOUNT, COVEREDRATIO,
+												MISSEDRATIO -->
 												<value>COVEREDRATIO</value>
 												<minimum>${jacoco.instruction.ratio}</minimum>
 											</limit>
@@ -755,7 +838,9 @@
 			</plugins>
 		</pluginManagement>
 
-		<!-- It is useful to reference the plugins here, so that the pluginManagement configuration kicks in also when the plugin is requested directly (vs bound to a lifecycle phase)-->
+		<!-- It is useful to reference the plugins here, so that the
+		pluginManagement configuration kicks in also when the plugin is
+		requested directly (vs bound to a lifecycle phase)-->
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -796,12 +881,16 @@
 				<artifactId>maven-release-plugin</artifactId>
 				<version>3.3.1</version>
 				<configuration>
-					<!-- https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#autoVersionSubmodules -->
+					<!--
+					https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#autoVersionSubmodules -->
 					<autoVersionSubmodules>true</autoVersionSubmodules>
-					<!-- https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#signTag -->
+					<!--
+					https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#signTag -->
 					<signTag>true</signTag>
-					<!-- https://maven.apache.org/maven-release/maven-release-plugin/usage/prepare-release.html#overriding-the-default-tag-name-format -->
-					<!-- https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#tagNameFormat -->
+					<!--
+					https://maven.apache.org/maven-release/maven-release-plugin/usage/prepare-release.html#overriding-the-default-tag-name-format -->
+					<!--
+					https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html#tagNameFormat -->
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 
 					<!-- http://central.sonatype.org/pages/apache-maven.html -->
@@ -810,13 +899,15 @@
 
 					<!-- On each release, push the jars to Maven Central -->
 					<goals>deploy</goals>
-					<!-- Temporarily ensure release:perform is fast, until release is stabilized -->
+					<!-- Temporarily ensure release:perform is fast, until
+					release is stabilized -->
 					<!-- Ensure Javadoc is not skipped -->
 					<arguments>-Pfast</arguments>
 				</configuration>
 			</plugin>
 
-			<!-- https://central.sonatype.org/publish/publish-portal-maven/#automatic-publishing -->
+			<!--
+			https://central.sonatype.org/publish/publish-portal-maven/#automatic-publishing -->
 			<plugin>
 				<groupId>org.sonatype.central</groupId>
 				<artifactId>central-publishing-maven-plugin</artifactId>
@@ -836,8 +927,10 @@
 	<profiles>
 		<profile>
 			<!-- mvn clean install -Pactiveviam -->
-			<!-- This would require adding a private repository holding activeviam jars -->
-			<!-- https://docs.activeviam.com/products/atoti/server/6.1.1/docs/start/download/ -->
+			<!-- This would require adding a private repository holding
+			activeviam jars -->
+			<!--
+			https://docs.activeviam.com/products/atoti/server/6.1.1/docs/start/download/ -->
 			<id>activeviam</id>
 			<modules>
 				<module>atoti</module>
@@ -859,7 +952,8 @@
 		</profile>
 
 		<profile>
-			<!-- http://central.sonatype.org/pages/apache-maven.html#deploying-to-ossrh-with-apache-maven-introduction -->
+			<!--
+			http://central.sonatype.org/pages/apache-maven.html#deploying-to-ossrh-with-apache-maven-introduction -->
 			<id>sonatype</id>
 
 			<!-- `ossrh` needs a server entry in settings.xml -->
@@ -940,7 +1034,8 @@
 			<!-- Used to recompile quickly only the core components -->
 			<id>benchmark-with</id>
 			<properties>
-				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<!-- see
+				eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
 				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
 			</properties>
 		</profile>
@@ -948,9 +1043,11 @@
 			<!-- Used to recompile quickly only the core components -->
 			<id>benchmark-only</id>
 			<properties>
-				<!-- see eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
+				<!-- see
+				eu.solven.adhoc.util.TestAdhocIntegrationTests.runIntegrationTests() -->
 				<customArgLine>-Dadhoc.runIntegrationTests</customArgLine>
-				<!-- https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups -->
+				<!--
+				https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#groups -->
 				<groups>adhoc-benchmark</groups>
 				<excludedGroups />
 			</properties>

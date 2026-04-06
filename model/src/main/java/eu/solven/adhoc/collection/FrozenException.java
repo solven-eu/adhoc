@@ -20,26 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder.value;
-
-import eu.solven.adhoc.column.IHasColumnTypes;
+package eu.solven.adhoc.collection;
 
 /**
- * Used to transcode types, typically from/to {@link ITableWrapper}.
- * 
- * Typically used when the application relies on an {@link Enum}, but the table expects a {@link String}.
+ * Thrown when a write operation is attempted on an {@link IFrozen} data structure that has already been frozen.
+ *
+ * <p>
+ * Extends {@link UnsupportedOperationException} so that callers catching the standard JDK exception continue to work
+ * without changes.
  *
  * @author Benoit Lacelle
  */
-public interface ICustomTypeManager extends ICustomTypeManagerSimple, IHasColumnTypes {
+public class FrozenException extends UnsupportedOperationException {
 
-	/**
-	 *
-	 * @param column
-	 * @param coordinate
-	 *            some coordinate, typically provided by a table.
-	 * @return the equivalent object compatible with the cube/measures/user
-	 */
-	Object fromTable(String column, Object coordinate);
+	private static final long serialVersionUID = 1L;
 
+	/** Creates a {@code FrozenException} with the given detail message. */
+	public FrozenException(String message) {
+		super(message);
+	}
 }

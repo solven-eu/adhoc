@@ -22,20 +22,12 @@
  */
 package eu.solven.adhoc.dataframe.aggregating;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Consumer;
-
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
-import eu.solven.adhoc.dataframe.tabular.primitives.Object2IntBiConsumer;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import it.unimi.dsi.fastutil.objects.AbstractObject2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
@@ -73,28 +65,5 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 		}
 
 		return size;
-	}
-
-	// visible for benchmarks
-	@SuppressWarnings("PMD.LooseCoupling")
-	@Deprecated(since = "Not used anymore")
-	public static <T extends Comparable<T>> ObjectArrayList<Object2IntMap.Entry<T>> doSort(
-			Consumer<Object2IntBiConsumer<T>> sliceToIndex,
-			int size) {
-		log.debug("> sorting {}", size);
-
-		// Do not rely on a TreeMap, else the sorting is done one element at a time
-		// ObjectArrayList enables calling `Arrays.parallelSort`
-		// `.wrap` else will rely on a `Object[]`, which will later fail on `Arrays.parallelSort`
-		ObjectArrayList<Object2IntMap.Entry<T>> sortedEntries = ObjectArrayList.wrap(new Object2IntMap.Entry[size], 0);
-
-		sliceToIndex.accept(
-				(slice, rowIndex) -> sortedEntries.add(new AbstractObject2IntMap.BasicEntry<>(slice, rowIndex)));
-
-		Arrays.parallelSort(sortedEntries.elements(), Map.Entry.comparingByKey());
-
-		log.debug("< sorting {}", size);
-
-		return sortedEntries;
 	}
 }
