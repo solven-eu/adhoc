@@ -11,23 +11,19 @@ flowchart LR
     adhoc_fsst["adhoc-fsst"]
     adhoc_measures["adhoc-measures"]
     adhoc_libraries["adhoc-libraries"]
-    pivotable_authorization["pivotable-authorization"]
+    adhoc_model["adhoc-model"]
     pivotable_bom["pivotable-bom"]
+    pivotable_infra["pivotable-infra"]
     pivotable_js["pivotable-js"]
     pivotable_mcp["pivotable-mcp"]
-    pivotable["pivotable"]
-    pivotable_public["pivotable-public"]
-    pivotable_server_core["pivotable-server-core"]
-    pivotable_server["pivotable-server"]
-    pivotable_tools["pivotable-tools"]
-    adhoc_public["adhoc-public"]
-    adhoc_spring["adhoc-spring"]
-    adhoc_model["adhoc-model"]
-    pivotable_infra["pivotable-infra"]
     pivotable_model["pivotable-model"]
+    pivotable["pivotable"]
+    pivotable_server_core["pivotable-server-core"]
     pivotable_server_oauth2["pivotable-server-oauth2"]
     pivotable_server_webflux["pivotable-server-webflux"]
     pivotable_server_webmvc["pivotable-server-webmvc"]
+    pivotable_server["pivotable-server"]
+    adhoc_spring["adhoc-spring"]
 
     subgraph spring-boot-starter-parent
         aggregator_adhoc["aggregator-adhoc"]
@@ -53,19 +49,16 @@ flowchart LR
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
     adhoc_measures -.-> adhoc_model
-    pivotable_authorization --> pivotable_tools
-    pivotable_authorization --> pivotable_public
     pivotable_mcp --> pivotable_server_core
-    pivotable_public --> adhoc_filters
+    pivotable_model --> adhoc_filters
     pivotable_server_core --> adhoc
     pivotable_server_core --> pivotable_infra
     pivotable_server_core --> pivotable_model
-    pivotable_server --> pivotable_server_core
-    pivotable_server --> pivotable_server_oauth2
-    pivotable_server --> pivotable_js
-    adhoc_spring --> adhoc
-    pivotable_model --> adhoc_filters
     pivotable_server_oauth2 --> pivotable_infra
     pivotable_server_oauth2 --> pivotable_model
     pivotable_server_webflux --> pivotable_server
     pivotable_server_webmvc --> pivotable_server
+    pivotable_server --> pivotable_server_core
+    pivotable_server --> pivotable_server_oauth2
+    pivotable_server --> pivotable_js
+    adhoc_spring --> adhoc

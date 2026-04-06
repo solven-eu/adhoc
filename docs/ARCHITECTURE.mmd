@@ -122,12 +122,12 @@ classDiagram
 
     %% ─── Implements / Extends ──────────────────────────────────────
     ITableQueryEngineFactory <|.. TableQueryEngineFactory
-    ITableWrapper <|.. CachingTableWrapper
-    ITableWrapper <|.. CompositeCubesTableWrapper
-    ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. InMemoryTable
+    ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. JooqTableWrapper
     IDSLSupplier <|.. StandardDSLSupplier
+    ITableWrapper <|.. CompositeCubesTableWrapper
+    ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. AAtotiWrapper
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
