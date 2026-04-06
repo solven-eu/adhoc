@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,8 +91,8 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		// Phase 1: group by measure name, then by context (options + customMarker).
 		// Steps from different measures or contexts can never induce each other, so we avoid evaluating those pairs.
-		Map<String, List<TableQueryStep>> byMeasure =
-				steps.stream().collect(Collectors.groupingBy(s -> s.getMeasure().getName()));
+		Map<String, List<TableQueryStep>> byMeasure = steps.stream()
+				.collect(Collectors.groupingBy(s -> s.getMeasure().getName(), LinkedHashMap::new, Collectors.toList()));
 
 		// Enables cache sharing
 		IFilterStripper sharedStripper = filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
