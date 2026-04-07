@@ -183,7 +183,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 							.build());
 
 			Assertions.assertThat(semaphore.availablePermits()).isOne();
-			try (IConsumingStream<ITabularRecord> stream = tabularRecordStream.records2()) {
+			try (IConsumingStream<ITabularRecord> stream = tabularRecordStream.records()) {
 				// Permit is acquired when the stream is opened (supplier called)
 				Assertions.assertThat(semaphore.availablePermits()).isZero();
 
@@ -242,7 +242,7 @@ public class TestJooqTableWrapper implements IAdhocTestConstants {
 
 			// Open the stream but do not consume any rows — close it immediately.
 			// The onClose handler must release the permit even when no rows flowed through peek.
-			try (IConsumingStream<ITabularRecord> stream = tabularRecordStream.records2()) {
+			try (IConsumingStream<ITabularRecord> stream = tabularRecordStream.records()) {
 				Assertions.assertThat(semaphore.availablePermits()).isZero();
 				// Do not iterate: permit is still held
 			}

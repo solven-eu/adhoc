@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
@@ -147,38 +146,12 @@ public class PhasedTableWrapper implements ITableWrapper {
 		return new ITabularRecordStream() {
 
 			@Override
-			public Object getTableQuery() {
-				return tableQuery;
-			}
-
-			@Override
 			public boolean isDistinctSlices() {
 				return false;
 			}
 
 			@Override
-			public Stream<ITabularRecord> records() {
-				log.info("streaming arriveAndAwaitAdvance() {} {}", name, phasers.streaming);
-				int phase = phasers.streaming.arriveAndAwaitAdvance();
-				log.info("streaming advance {} phase={}", name, phase);
-
-				Set<String> allColumns = tableQuery.getGroupedByColumns();
-
-				Map<String, Object> slice =
-						allColumns.stream().collect(Collectors.toMap(Function.identity(), e -> name));
-
-				Map<String, Object> aggregates = tableQuery.getAggregators()
-						.stream()
-						.collect(Collectors.toMap(FilteredAggregator::getAlias, a -> 1L));
-
-				return Stream.<ITabularRecord>of(TabularRecordOverMaps.builder()
-						.slice(tableQuery.getGroupBy(), SliceHelpers.asSlice(queryPod.getSliceFactory(), slice))
-						.aggregates(aggregates)
-						.build());
-			}
-
-			@Override
-			public IConsumingStream<ITabularRecord> records2() {
+			public IConsumingStream<ITabularRecord> records() {
 				log.info("streaming arriveAndAwaitAdvance() {} {}", name, phasers.streaming);
 				int phase = phasers.streaming.arriveAndAwaitAdvance();
 				log.info("streaming advance {} phase={}", name, phase);

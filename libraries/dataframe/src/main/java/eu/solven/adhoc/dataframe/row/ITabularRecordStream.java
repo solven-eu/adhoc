@@ -24,7 +24,6 @@ package eu.solven.adhoc.dataframe.row;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.dataframe.stream.IConsumingStream;
@@ -35,8 +34,6 @@ import eu.solven.adhoc.dataframe.stream.IConsumingStream;
  * @author Benoit Lacelle
  */
 public interface ITabularRecordStream extends AutoCloseable {
-
-	Object getTableQuery();
 
 	/**
 	 * BEWARE We do not rely on Stream caracteristics as a {@link Stream} may be distinct (with `.distinct()`) due to
@@ -51,22 +48,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 * 
 	 * @return a {@link Stream} of {@link ITabularRecord}
 	 */
-	@Deprecated
-	Stream<ITabularRecord> records();
-
-	default IConsumingStream<ITabularRecord> records2() {
-		return IConsumingStream.fromStream(records());
-	}
-
-	/**
-	 * This has same semantic as {@link Stream#forEach(Consumer)}. In particular, it may be called concurrently.
-	 * 
-	 * @param consumer
-	 *            consumer to apply on each {@link ITabularRecord}
-	 */
-	default void forEach(Consumer<ITabularRecord> consumer) {
-		records2().forEach(consumer);
-	}
+	IConsumingStream<ITabularRecord> records();
 
 	/**
 	 * @deprecated Used for unitTests
@@ -74,7 +56,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 */
 	@Deprecated
 	default List<Map<String, ?>> toList() {
-		return records2().<Map<String, ?>>map(ITabularRecord::asMap).toList();
+		return records().<Map<String, ?>>map(ITabularRecord::asMap).toList();
 	}
 
 	// Force not to throw an explicit Exception
@@ -84,18 +66,13 @@ public interface ITabularRecordStream extends AutoCloseable {
 	static ITabularRecordStream empty() {
 		return new ITabularRecordStream() {
 
-			@Override
-			public Object getTableQuery() {
-				throw new UnsupportedOperationException();
-			}
+			// @Override
+			// public Stream<ITabularRecord> records() {
+			// return Stream.empty();
+			// }
 
 			@Override
-			public Stream<ITabularRecord> records() {
-				return Stream.empty();
-			}
-
-			@Override
-			public IConsumingStream<ITabularRecord> records2() {
+			public IConsumingStream<ITabularRecord> records() {
 				return IConsumingStream.empty();
 			}
 

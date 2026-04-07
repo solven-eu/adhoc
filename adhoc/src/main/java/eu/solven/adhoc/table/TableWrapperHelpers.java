@@ -23,11 +23,12 @@
 package eu.solven.adhoc.table;
 
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.stream.ConsumingStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -47,33 +48,7 @@ public class TableWrapperHelpers {
 		List<ITabularRecordStream> underlyings =
 				tableQuery.flatMap(TableQueryV4::streamV3).map(v3 -> tableWrapper.streamSlices(queryPod, v3)).toList();
 
-		return new ITabularRecordStream() {
-
-			@Override
-			public Stream<ITabularRecord> records() {
-				return underlyings.stream().flatMap(ITabularRecordStream::records);
-			}
-
-			@Override
-			public void forEach(Consumer<ITabularRecord> consumer) {
-				underlyings.forEach(trs -> trs.forEach(consumer));
-			}
-
-			@Override
-			public boolean isDistinctSlices() {
-				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return tableQuery;
-			}
-
-			@Override
-			public void close() {
-				closeAll(underlyings);
-			}
-		};
+		return composite(underlyings);
 	}
 
 	public static ITabularRecordStream v3TovV2(QueryPod queryPod,
@@ -82,26 +57,22 @@ public class TableWrapperHelpers {
 		List<ITabularRecordStream> underlyings =
 				tableQuery.flatMap(TableQueryV3::streamV2).map(v2 -> tableWrapper.streamSlices(queryPod, v2)).toList();
 
+		return composite(underlyings);
+	}
+
+	private static ITabularRecordStream composite(List<ITabularRecordStream> underlyings) {
 		return new ITabularRecordStream() {
 
 			@Override
-			public Stream<ITabularRecord> records() {
-				return underlyings.stream().flatMap(ITabularRecordStream::records);
-			}
-
-			@Override
-			public void forEach(Consumer<ITabularRecord> consumer) {
-				underlyings.stream().forEach(s -> s.forEach(consumer));
+			public IConsumingStream<ITabularRecord> records() {
+				return ConsumingStream.<ITabularRecord>builder().source(consumer -> {
+					underlyings.stream().forEach(s -> s.records().forEach(consumer));
+				}).build();
 			}
 
 			@Override
 			public boolean isDistinctSlices() {
 				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return tableQuery;
 			}
 
 			@Override

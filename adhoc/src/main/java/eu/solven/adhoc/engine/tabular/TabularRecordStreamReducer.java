@@ -166,7 +166,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
 			// reasonable to prefer doing as many computations in a single pass).
 			try {
-				IConsumingStream<GroupByAndTabularRecord> records2 = stream.records2().map(input -> {
+				IConsumingStream<GroupByAndTabularRecord> records2 = stream.records().map(input -> {
 					GroupByMarker groupByMarker = groupingSetAnalyzer.getGroupingSet(input);
 
 					// Typically useful to discard the column underlying a calculated column

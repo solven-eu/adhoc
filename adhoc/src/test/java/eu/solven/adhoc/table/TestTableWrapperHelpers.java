@@ -24,31 +24,27 @@ package eu.solven.adhoc.table;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 
 public class TestTableWrapperHelpers {
 
 	static ITabularRecordStream streamThatClosesNormally(AtomicInteger closeCount) {
 		return new ITabularRecordStream() {
+
 			@Override
-			public Stream<ITabularRecord> records() {
-				return Stream.empty();
+			public IConsumingStream<ITabularRecord> records() {
+				return IConsumingStream.empty();
 			}
 
 			@Override
 			public boolean isDistinctSlices() {
 				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return null;
 			}
 
 			@Override
@@ -61,18 +57,13 @@ public class TestTableWrapperHelpers {
 	static ITabularRecordStream streamThatThrowsOnClose(AtomicInteger closeCount, String message) {
 		return new ITabularRecordStream() {
 			@Override
-			public Stream<ITabularRecord> records() {
-				return Stream.empty();
+			public IConsumingStream<ITabularRecord> records() {
+				return IConsumingStream.empty();
 			}
 
 			@Override
 			public boolean isDistinctSlices() {
 				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return null;
 			}
 
 			@Override

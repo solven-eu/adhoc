@@ -35,15 +35,6 @@ import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 public class TestSuppliedTabularRecordConsumingStream {
 
 	@Test
-	public void testGetTableQuery() {
-		Object source = "mySource";
-		SuppliedTabularRecordConsumingStream stream =
-				new SuppliedTabularRecordConsumingStream(source, false, IConsumingStream::empty);
-
-		Assertions.assertThat(stream.getTableQuery()).isSameAs(source);
-	}
-
-	@Test
 	public void testIsDistinctSlices() {
 		Assertions
 				.assertThat(
@@ -62,7 +53,7 @@ public class TestSuppliedTabularRecordConsumingStream {
 				false,
 				() -> IConsumingStream.fromStream(Stream.of(record)));
 
-		Assertions.assertThat(stream.records()).containsExactly(record);
+		Assertions.assertThat(stream.records().toList()).containsExactly(record);
 	}
 
 	@Test
