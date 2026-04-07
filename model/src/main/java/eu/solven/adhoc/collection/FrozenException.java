@@ -23,7 +23,7 @@
 package eu.solven.adhoc.collection;
 
 /**
- * Thrown when a write operation is attempted on an {@link IFrozen} data structure that has already been frozen.
+ * Thrown when a write operation is attempted on an {@link IFreezable} data structure that has already been frozen.
  *
  * <p>
  * Extends {@link UnsupportedOperationException} so that callers catching the standard JDK exception continue to work

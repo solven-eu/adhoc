@@ -37,7 +37,7 @@ import com.google.common.base.Suppliers;
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.collection.ICompactable;
-import eu.solven.adhoc.collection.IFrozen;
+import eu.solven.adhoc.collection.IFreezable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
@@ -71,7 +71,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("checkstyle:TypeName")
 // NotThreadSafe
 public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggregatingColumns<T, Integer>
-		implements IFrozen {
+		implements IFreezable {
 	@NonNull
 	@Default
 	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;

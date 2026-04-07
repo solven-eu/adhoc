@@ -133,10 +133,8 @@
 
 		<automatic.module.name />
 
-		<!-- -Djol.magicFieldOffset=true helps JOL to measure Heap consumption
-		on private fields-->
-		<argLine>-Xmx512M -XX:+HeapDumpOnOutOfMemoryError
-			-Djol.magicFieldOffset=true ${customArgLine}</argLine>
+		<!-- -Djol.magicFieldOffset=true helps JOL to measure Heap consumption on private fields-->
+		<argLine><![CDATA[-Xmx512M -XX:+HeapDumpOnOutOfMemoryError -Djol.magicFieldOffset=true ${customArgLine}]]></argLine>
 		<!-- Set to 'package' to skip trigger the tests jar (e.g. not to skip
 		deployment) -->
 		<testJarPhase>none</testJarPhase>

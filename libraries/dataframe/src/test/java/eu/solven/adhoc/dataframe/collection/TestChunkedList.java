@@ -24,8 +24,6 @@ package eu.solven.adhoc.dataframe.collection;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.IntStream;
@@ -107,7 +105,7 @@ public class TestChunkedList {
 		for (int i = 0; i < 100; i++) {
 			list.add(i);
 		}
-		Assertions.assertThat(list).hasSize(100);
+		Assertions.assertThat((List) list).hasSize(100);
 		for (int i = 0; i < 100; i++) {
 			Assertions.assertThat(list.get(i)).isEqualTo(i);
 		}
@@ -126,7 +124,7 @@ public class TestChunkedList {
 
 		Assertions.assertThat(old).isEqualTo("b");
 		Assertions.assertThat(list.get(1)).isEqualTo("B");
-		Assertions.assertThat(list).hasSize(3);
+		Assertions.assertThat((List) list).hasSize(3);
 	}
 
 	@Test
@@ -152,7 +150,7 @@ public class TestChunkedList {
 
 		list.add(2, 2);
 
-		Assertions.assertThat(list).containsExactly(0, 1, 2, 3);
+		Assertions.assertThat((List) list).containsExactly(0, 1, 2, 3);
 	}
 
 	@Test
@@ -165,7 +163,7 @@ public class TestChunkedList {
 		String removed = list.remove(1);
 
 		Assertions.assertThat(removed).isEqualTo("b");
-		Assertions.assertThat(list).containsExactly("a", "c");
+		Assertions.assertThat((List) list).containsExactly("a", "c");
 	}
 
 	// --- clear ---
@@ -176,7 +174,7 @@ public class TestChunkedList {
 		IntStream.range(0, 50).forEach(list::add);
 		list.clear();
 
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 	}
 
 	@Test
@@ -185,7 +183,7 @@ public class TestChunkedList {
 		IntStream.range(0, 500).forEach(list::add);
 		list.clear();
 
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 	}
 
 	// --- constructors ---
@@ -195,7 +193,7 @@ public class TestChunkedList {
 		List<Integer> source = List.of(10, 20, 30, 40, 50);
 		ChunkedList<Integer> list = new ChunkedList<>(source);
 
-		Assertions.assertThat(list).containsExactlyElementsOf(source);
+		Assertions.assertThat((List) list).containsExactlyElementsOf(source);
 	}
 
 	@Test
@@ -204,7 +202,7 @@ public class TestChunkedList {
 		for (int i = 0; i < 300; i++) {
 			list.add("x" + i);
 		}
-		Assertions.assertThat(list).hasSize(300);
+		Assertions.assertThat((List) list).hasSize(300);
 		Assertions.assertThat(list.get(299)).isEqualTo("x299");
 	}
 
@@ -213,7 +211,7 @@ public class TestChunkedList {
 		ChunkedList<String> list = new ChunkedList<>(0);
 		list.add("first");
 
-		Assertions.assertThat(list).containsExactly("first");
+		Assertions.assertThat((List) list).containsExactly("first");
 	}
 
 	// --- customizable base ---
@@ -224,7 +222,7 @@ public class TestChunkedList {
 		ChunkedList<Integer> list = new ChunkedList<>(256);
 		IntStream.range(0, 256).forEach(list::add);
 
-		Assertions.assertThat(list).hasSize(256);
+		Assertions.assertThat((List) list).hasSize(256);
 		Assertions.assertThat(list.get(0)).isEqualTo(0);
 		Assertions.assertThat(list.get(255)).isEqualTo(255);
 	}
@@ -235,7 +233,7 @@ public class TestChunkedList {
 		ChunkedList<Integer> list = new ChunkedList<>(256);
 		IntStream.range(0, 257).forEach(list::add);
 
-		Assertions.assertThat(list).hasSize(257);
+		Assertions.assertThat((List) list).hasSize(257);
 		Assertions.assertThat(list.get(255)).isEqualTo(255);
 		Assertions.assertThat(list.get(256)).isEqualTo(256);
 	}
@@ -246,7 +244,7 @@ public class TestChunkedList {
 		ChunkedList<Integer> list = new ChunkedList<>(300);
 		IntStream.range(0, 300).forEach(list::add);
 
-		Assertions.assertThat(list).hasSize(300);
+		Assertions.assertThat((List) list).hasSize(300);
 		IntStream.range(0, 300).forEach(i -> Assertions.assertThat(list.get(i)).isEqualTo(i));
 	}
 
@@ -256,7 +254,7 @@ public class TestChunkedList {
 		ChunkedList<Integer> list = new ChunkedList<>(510);
 		IntStream.range(0, 510).forEach(list::add);
 
-		Assertions.assertThat(list).hasSize(510);
+		Assertions.assertThat((List) list).hasSize(510);
 		Assertions.assertThat(list.get(0)).isEqualTo(0);
 		Assertions.assertThat(list.get(509)).isEqualTo(509);
 	}
@@ -281,7 +279,7 @@ public class TestChunkedList {
 	public void testEmptyList() {
 		ChunkedList<String> list = new ChunkedList<>();
 
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 		Assertions.assertThat(list.size()).isZero();
 		Assertions.assertThat(list.contains("x")).isFalse();
 		Assertions.assertThat(list.indexOf("x")).isEqualTo(-1);
@@ -296,7 +294,7 @@ public class TestChunkedList {
 
 		Assertions.assertThat(list.get(0)).isEqualTo("only");
 		Assertions.assertThat(list.remove(0)).isEqualTo("only");
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 	}
 
 	// --- add at head and tail ---
@@ -308,7 +306,7 @@ public class TestChunkedList {
 			list.add(0, i);
 		}
 
-		Assertions.assertThat(list).containsExactly(0, 1, 2, 3, 4);
+		Assertions.assertThat((List) list).containsExactly(0, 1, 2, 3, 4);
 	}
 
 	@Test
@@ -318,7 +316,7 @@ public class TestChunkedList {
 		for (int i = 0; i < 5; i++) {
 			Assertions.assertThat(list.remove(0)).isEqualTo(i);
 		}
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 	}
 
 	// --- contains / indexOf / lastIndexOf ---
@@ -342,7 +340,7 @@ public class TestChunkedList {
 		list.add(0);
 		list.addAll(List.of(1, 2, 3));
 
-		Assertions.assertThat(list).containsExactly(0, 1, 2, 3);
+		Assertions.assertThat((List) list).containsExactly(0, 1, 2, 3);
 	}
 
 	@Test
@@ -350,7 +348,7 @@ public class TestChunkedList {
 		ChunkedList<Integer> list = new ChunkedList<>(List.of(0, 3, 4));
 		list.addAll(1, List.of(1, 2));
 
-		Assertions.assertThat(list).containsExactly(0, 1, 2, 3, 4);
+		Assertions.assertThat((List) list).containsExactly(0, 1, 2, 3, 4);
 	}
 
 	// --- equals and hashCode (from AbstractList) ---
@@ -360,13 +358,13 @@ public class TestChunkedList {
 		List<Integer> reference = new ArrayList<>(List.of(1, 2, 3));
 		ChunkedList<Integer> list = new ChunkedList<>(reference);
 
-		Assertions.assertThat(list).isEqualTo(reference);
+		Assertions.assertThat((List) list).isEqualTo(reference);
 		Assertions.assertThat(list.hashCode()).isEqualTo(reference.hashCode());
 	}
 
 	@Test
 	public void testEquals_emptyLists() {
-		Assertions.assertThat(new ChunkedList<>()).isEqualTo(new ArrayList<>());
+		Assertions.assertThat((List) new ChunkedList<>()).isEqualTo(new ArrayList<>());
 	}
 
 	// --- bounds checks ---
@@ -394,16 +392,6 @@ public class TestChunkedList {
 	}
 
 	@Test
-	public void testIterator_cme_onAdd() {
-		ChunkedList<Integer> list = new ChunkedList<>(List.of(1, 2, 3));
-		Iterator<Integer> it = list.iterator();
-		it.next();
-		list.add(4);
-
-		Assertions.assertThatThrownBy(it::next).isInstanceOf(ConcurrentModificationException.class);
-	}
-
-	@Test
 	public void testListIterator_bidirectional() {
 		ChunkedList<String> list = new ChunkedList<>(List.of("a", "b", "c"));
 		ListIterator<String> it = list.listIterator(3);
@@ -423,7 +411,7 @@ public class TestChunkedList {
 		ChunkedList<Integer> list = new ChunkedList<>();
 		IntStream.range(0, 10).forEach(list::add);
 
-		Assertions.assertThat(list.subList(3, 7)).containsExactly(3, 4, 5, 6);
+		Assertions.assertThat((List) list.subList(3, 7)).containsExactly(3, 4, 5, 6);
 	}
 
 	// --- compact ---
@@ -453,7 +441,7 @@ public class TestChunkedList {
 		list.add("y");
 		list.compact();
 
-		Assertions.assertThat(list).hasSize(2);
+		Assertions.assertThat((List) list).hasSize(2);
 		Assertions.assertThat(list.get(0)).isEqualTo("x");
 		Assertions.assertThat(list.get(1)).isEqualTo("y");
 	}
@@ -464,7 +452,7 @@ public class TestChunkedList {
 		IntStream.range(0, 50).forEach(list::add);
 		list.compact();
 
-		Assertions.assertThat(list).hasSize(50);
+		Assertions.assertThat((List) list).hasSize(50);
 		IntStream.range(0, 50).forEach(i -> Assertions.assertThat(list.get(i)).isEqualTo(i));
 	}
 
@@ -474,7 +462,7 @@ public class TestChunkedList {
 		IntStream.range(0, 300).forEach(list::add);
 		list.compact();
 
-		Assertions.assertThat(list).hasSize(300);
+		Assertions.assertThat((List) list).hasSize(300);
 		IntStream.range(0, 300).forEach(i -> Assertions.assertThat(list.get(i)).isEqualTo(i));
 	}
 
@@ -560,7 +548,7 @@ public class TestChunkedList {
 		// compact() on an unwritten list must not throw NullPointerException
 		list.compact();
 
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 		Assertions.assertThat(list.isFrozen()).isTrue();
 	}
 
@@ -570,7 +558,7 @@ public class TestChunkedList {
 		// clear() on an unwritten list must not throw NullPointerException
 		list.clear();
 
-		Assertions.assertThat(list).isEmpty();
+		Assertions.assertThat((List) list).isEmpty();
 	}
 
 	// --- large growth ---
@@ -581,7 +569,7 @@ public class TestChunkedList {
 		int n = 2000;
 		IntStream.range(0, n).forEach(list::add);
 
-		Assertions.assertThat(list).hasSize(n);
+		Assertions.assertThat((List) list).hasSize(n);
 		IntStream.range(0, n).forEach(i -> Assertions.assertThat(list.get(i)).isEqualTo(i));
 	}
 }

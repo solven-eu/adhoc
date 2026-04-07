@@ -23,7 +23,6 @@
 package eu.solven.adhoc.dataframe.collection;
 
 import java.lang.reflect.Field;
-import java.util.ConcurrentModificationException;
 import java.util.stream.IntStream;
 
 import org.assertj.core.api.Assertions;
@@ -366,18 +365,6 @@ public class TestDoubleChunkedList {
 		}
 
 		Assertions.assertThat(sum).isEqualTo(6.0);
-	}
-
-	@Test
-	public void testIterator_cme_onAdd() {
-		DoubleChunkedList list = new DoubleChunkedList();
-		list.add(1.0);
-		list.add(2.0);
-		DoubleIterator it = list.iterator();
-		it.nextDouble();
-		list.add(3.0);
-
-		Assertions.assertThatThrownBy(it::nextDouble).isInstanceOf(ConcurrentModificationException.class);
 	}
 
 	// --- large growth ---

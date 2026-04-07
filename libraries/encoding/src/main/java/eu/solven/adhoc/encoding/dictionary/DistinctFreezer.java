@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.apache.datasketches.hll.HllSketch;
 import org.apache.datasketches.hll.TgtHllType;
-import org.apache.datasketches.theta.UpdateSketch;
+import org.apache.datasketches.theta.UpdatableThetaSketch;
 
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
@@ -103,7 +103,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 	@SuppressWarnings("checkstyle:MagicNumber")
 	static long estimateDistinctKMV(List<String> items) {
 		// Create a Theta sketch with nominal entries = 1024
-		UpdateSketch sketch = UpdateSketch.builder().setNominalEntries(1024).build();
+		UpdatableThetaSketch sketch = UpdatableThetaSketch.builder().setNominalEntries(1024).build();
 
 		// Add items to the sketch
 		for (String s : items) {

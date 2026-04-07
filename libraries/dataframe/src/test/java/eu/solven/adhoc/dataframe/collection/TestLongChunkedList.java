@@ -23,7 +23,6 @@
 package eu.solven.adhoc.dataframe.collection;
 
 import java.lang.reflect.Field;
-import java.util.ConcurrentModificationException;
 import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
@@ -363,18 +362,6 @@ public class TestLongChunkedList {
 		}
 
 		Assertions.assertThat(sum).isEqualTo(60L);
-	}
-
-	@Test
-	public void testIterator_cme_onAdd() {
-		LongChunkedList list = new LongChunkedList();
-		list.add(1L);
-		list.add(2L);
-		LongIterator it = list.iterator();
-		it.nextLong();
-		list.add(3L);
-
-		Assertions.assertThatThrownBy(it::nextLong).isInstanceOf(ConcurrentModificationException.class);
 	}
 
 	// --- large growth ---

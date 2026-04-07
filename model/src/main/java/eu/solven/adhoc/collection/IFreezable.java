@@ -33,7 +33,7 @@ package eu.solven.adhoc.collection;
  * @author Benoit Lacelle
  */
 @SuppressWarnings("PMD.ImplicitFunctionalInterface")
-public interface IFrozen {
+public interface IFreezable {
 
 	/**
 	 * Returns {@code true} if this object has been frozen and can no longer accept write operations.

@@ -22,14 +22,14 @@
  */
 package eu.solven.adhoc.dataframe.collection;
 
-import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.RandomAccess;
 
 import eu.solven.adhoc.collection.FrozenException;
-import eu.solven.adhoc.collection.IFrozen;
+import eu.solven.adhoc.collection.IFreezable;
+import it.unimi.dsi.fastutil.objects.AbstractObjectList;
 
 /**
  * A {@link java.util.List} backed by two separate storage areas:
@@ -71,7 +71,7 @@ import eu.solven.adhoc.collection.IFrozen;
  */
 // Relates with
 // https://github.com/eclipse-mat/mat/blob/master/plugins/org.eclipse.mat.report/src/org/eclipse/mat/collect/ArrayIntBig.java
-public class ChunkedList<E> extends AbstractList<E> implements RandomAccess, IFrozen {
+public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAccess, IFreezable {
 
 	/** Default {@code log2(base)}. Alias of {@link ChunkedArrays#LOG2_BASE_DEFAULT} kept for test access. */
 	static final int LOG2_BASE_DEFAULT = ChunkedArrays.LOG2_BASE_DEFAULT;
@@ -213,7 +213,6 @@ public class ChunkedList<E> extends AbstractList<E> implements RandomAccess, IFr
 		ensureTailChunkFor(size);
 		writeAt(size, e);
 		size++;
-		modCount++;
 		return true;
 	}
 
@@ -228,7 +227,6 @@ public class ChunkedList<E> extends AbstractList<E> implements RandomAccess, IFr
 		}
 		writeAt(index, element);
 		size++;
-		modCount++;
 	}
 
 	/** Removes and returns the element at {@code index}, shifting subsequent elements left. O(n). */
@@ -244,7 +242,6 @@ public class ChunkedList<E> extends AbstractList<E> implements RandomAccess, IFr
 		// Null out the vacated last slot to allow GC.
 		writeAt(size - 1, null);
 		size--;
-		modCount++;
 		return (E) old;
 	}
 
@@ -267,7 +264,6 @@ public class ChunkedList<E> extends AbstractList<E> implements RandomAccess, IFr
 			}
 		}
 		size = 0;
-		modCount++;
 	}
 
 	// --- compact ---
@@ -307,7 +303,6 @@ public class ChunkedList<E> extends AbstractList<E> implements RandomAccess, IFr
 			}
 		}
 		compacted = true;
-		modCount++;
 		return this;
 	}
 
