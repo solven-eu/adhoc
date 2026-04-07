@@ -3,68 +3,68 @@ flowchart LR
     adhoc_atoti["adhoc-atoti"]
     adhoc_bom["adhoc-bom"]
     adhoc_calcite["adhoc-calcite"]
-    adhoc_experimental["adhoc-experimental"]
     adhoc_cell["adhoc-cell"]
     adhoc_dataframe["adhoc-dataframe"]
     adhoc_encoding["adhoc-encoding"]
+    adhoc_experimental["adhoc-experimental"]
     adhoc_filters["adhoc-filters"]
     adhoc_fsst["adhoc-fsst"]
-    adhoc_measures["adhoc-measures"]
     adhoc_libraries["adhoc-libraries"]
-    pivotable_authorization["pivotable-authorization"]
-    pivotable_bom["pivotable-bom"]
-    pivotable_js["pivotable-js"]
-    pivotable_mcp["pivotable-mcp"]
-    pivotable["pivotable"]
-    pivotable_public["pivotable-public"]
-    pivotable_server_core["pivotable-server-core"]
-    pivotable_server["pivotable-server"]
-    pivotable_tools["pivotable-tools"]
+    adhoc_measures["adhoc-measures"]
+    adhoc_model["adhoc-model"]
     adhoc_public["adhoc-public"]
     adhoc_spring["adhoc-spring"]
-    adhoc_model["adhoc-model"]
+    pivotable["pivotable"]
+    pivotable_authorization["pivotable-authorization"]
+    pivotable_bom["pivotable-bom"]
     pivotable_infra["pivotable-infra"]
+    pivotable_js["pivotable-js"]
+    pivotable_mcp["pivotable-mcp"]
     pivotable_model["pivotable-model"]
+    pivotable_public["pivotable-public"]
+    pivotable_server["pivotable-server"]
+    pivotable_server_core["pivotable-server-core"]
     pivotable_server_oauth2["pivotable-server-oauth2"]
     pivotable_server_webflux["pivotable-server-webflux"]
     pivotable_server_webmvc["pivotable-server-webmvc"]
+    pivotable_tools["pivotable-tools"]
 
     subgraph spring-boot-starter-parent
         aggregator_adhoc["aggregator-adhoc"]
     end
 
-    adhoc --> adhoc_model
-    adhoc --> adhoc_encoding
-    adhoc --> adhoc_dataframe
     adhoc --> adhoc_cell
+    adhoc --> adhoc_dataframe
+    adhoc --> adhoc_encoding
     adhoc --> adhoc_measures
+    adhoc --> adhoc_model
     adhoc_atoti --> adhoc
     adhoc_calcite --> adhoc
-    adhoc_experimental --> adhoc
     adhoc_cell --> adhoc_encoding
     adhoc_cell --> adhoc_filters
     adhoc_cell -.-> adhoc_model
-    adhoc_dataframe --> adhoc_model
-    adhoc_dataframe --> adhoc_encoding
     adhoc_dataframe --> adhoc_cell
+    adhoc_dataframe --> adhoc_encoding
     adhoc_dataframe --> adhoc_measures
-    adhoc_encoding --> adhoc_model
+    adhoc_dataframe --> adhoc_model
     adhoc_encoding --> adhoc_fsst
+    adhoc_encoding --> adhoc_model
+    adhoc_experimental --> adhoc
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
     adhoc_measures -.-> adhoc_model
-    pivotable_authorization --> pivotable_tools
+    adhoc_spring --> adhoc
     pivotable_authorization --> pivotable_public
+    pivotable_authorization --> pivotable_tools
     pivotable_mcp --> pivotable_server_core
+    pivotable_model --> adhoc_filters
     pivotable_public --> adhoc_filters
+    pivotable_server --> pivotable_js
+    pivotable_server --> pivotable_server_core
+    pivotable_server --> pivotable_server_oauth2
     pivotable_server_core --> adhoc
     pivotable_server_core --> pivotable_infra
     pivotable_server_core --> pivotable_model
-    pivotable_server --> pivotable_server_core
-    pivotable_server --> pivotable_server_oauth2
-    pivotable_server --> pivotable_js
-    adhoc_spring --> adhoc
-    pivotable_model --> adhoc_filters
     pivotable_server_oauth2 --> pivotable_infra
     pivotable_server_oauth2 --> pivotable_model
     pivotable_server_webflux --> pivotable_server

@@ -160,7 +160,7 @@ public class DoubleChunkedList extends AbstractDoubleList implements IFrozen {
 	@SuppressWarnings("PMD.LooseCoupling")
 	public DoubleChunkedList compact() {
 		if (size < base) {
-			if (head != null && head.length < size) {
+			if (head != null && size < head.length) {
 				head = Arrays.copyOf(head, size);
 			}
 		} else if (size > base && tail != null) {

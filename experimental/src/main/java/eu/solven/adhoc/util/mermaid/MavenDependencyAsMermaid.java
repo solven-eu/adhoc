@@ -26,12 +26,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -201,16 +203,16 @@ public class MavenDependencyAsMermaid {
 		// `LR` as the graph is quite flat
 		sb.append("flowchart LR\n");
 
-		// Group modules by parent artifactId for subgraph blocks
-		Map<String, List<String>> parentToChildren = new LinkedHashMap<>();
-		Set<String> noParent = new LinkedHashSet<>();
-		for (String artifactId : graph.vertexSet()) {
+		// Group modules by parent artifactId for subgraph blocks — TreeMap/TreeSet for stable output order
+		Map<String, List<String>> parentToChildren = new TreeMap<>();
+		Set<String> noParent = new TreeSet<>();
+		for (String artifactId : new TreeSet<>(graph.vertexSet())) {
 			PomModule module = modules.get(artifactId);
 			if (module != null && module.getParentArtifactId().isPresent()) {
 				String parent = module.getParentArtifactId().get();
 				// Only group when the parent itself is NOT in the graph (aggregator-only poms)
 				if (!graph.containsVertex(parent)) {
-					parentToChildren.computeIfAbsent(parent, k -> new ArrayList<>()).add(artifactId);
+					parentToChildren.computeIfAbsent(parent, _ -> new ArrayList<>()).add(artifactId);
 				} else {
 					noParent.add(artifactId);
 				}
@@ -229,15 +231,19 @@ public class MavenDependencyAsMermaid {
 		// Subgraph blocks for aggregator parents
 		for (Map.Entry<String, List<String>> entry : parentToChildren.entrySet()) {
 			sb.append("\n    subgraph ").append(entry.getKey()).append('\n');
-			for (String artifactId : entry.getValue()) {
+			for (String artifactId : entry.getValue().stream().sorted().toList()) {
 				sb.append("        ").append(nodeDecl(artifactId)).append('\n');
 			}
 			sb.append("    end\n");
 		}
 
-		// Dependency edges
+		// Dependency edges — sorted by source then target for stable output
 		sb.append('\n');
-		for (DependencyEdge edge : graph.edgeSet()) {
+		for (DependencyEdge edge : graph.edgeSet()
+				.stream()
+				.sorted(Comparator.comparing((DependencyEdge e) -> graph.getEdgeSource(e))
+						.thenComparing(e -> graph.getEdgeTarget(e)))
+				.toList()) {
 			String src = nodeId(graph.getEdgeSource(edge));
 			String tgt = nodeId(graph.getEdgeTarget(edge));
 			if (edge.isTestScope()) {
@@ -284,9 +290,12 @@ public class MavenDependencyAsMermaid {
 	}
 
 	protected List<Path> findPomFiles() throws IOException {
-		try (Stream<Path> walk = Files.walk(projectRoot, maxDepth)) {
+		try (Stream<Path> walk = Files.walk(projectRoot, maxDepth)
+				// sorted in FS is not necessary ordered
+				.sorted()) {
 			return walk.filter(p -> "pom.xml".equals(p.getFileName().toString()))
 					.filter(p -> !p.toString().contains("/target/") && !p.toString().contains("\\target\\"))
+					// sorted in FS is not necessary ordered
 					.sorted()
 					.toList();
 		}
