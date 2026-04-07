@@ -37,6 +37,9 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 
+import eu.solven.adhoc.dataframe.column.partitioned.PartitionedForEachParameters;
+import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
+
 /**
  * A lazy, sequential, closeable stream of elements of type {@code T}.
  *
@@ -86,6 +89,17 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 	 *            the action to perform on each element
 	 */
 	void forEach(Consumer<T> consumer);
+
+	/**
+	 * Partition-aware terminal operation. Delegates to
+	 * {@link PartitioningHelpers#forEachPartitioned(PartitionedForEachParameters)}.
+	 *
+	 * @param parameters
+	 *            all configuration for the partitioned consumption (the {@code stream} field is set to {@code this})
+	 */
+	default void forEachPartitioned(PartitionedForEachParameters<T> parameters) {
+		PartitioningHelpers.forEachPartitioned(parameters);
+	}
 
 	@Override
 	default void accept(Consumer<T> t) {
@@ -147,7 +161,7 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 	default long count() {
 		AtomicLong counter = new AtomicLong();
 
-		this.forEach(__ -> counter.incrementAndGet());
+		this.forEach(_ -> counter.incrementAndGet());
 
 		return counter.get();
 	}

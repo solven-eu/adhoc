@@ -65,7 +65,7 @@ public interface ITabularRecordStream extends AutoCloseable {
 	 *            consumer to apply on each {@link ITabularRecord}
 	 */
 	default void forEach(Consumer<ITabularRecord> consumer) {
-		records().forEach(consumer);
+		records2().forEach(consumer);
 	}
 
 	/**

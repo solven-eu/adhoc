@@ -41,8 +41,10 @@ import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,10 +54,8 @@ import lombok.extern.slf4j.Slf4j;
  * @see MultitypeNavigableElseHashColumn
  */
 @Slf4j
+@UtilityClass
 public class UnderlyingQueryStepHelpersNavigableElseHash {
-	protected UnderlyingQueryStepHelpersNavigableElseHash() {
-		// hidden
-	}
 
 	/**
 	 * @param queryStep
@@ -64,8 +64,17 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 *            the underlyings for given queryStep.
 	 * @return the union-Set of slices
 	 */
+	public static IConsumingStream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
+			List<? extends ICuboid> underlyings) {
+		return IConsumingStream.fromStream(distinctSlicesAsStream(queryStep, underlyings));
+	}
+
+	/**
+	 * Internal Stream-based implementation for {@link #distinctSlices}. The public API wraps this in an
+	 * {@link IConsumingStream} to enable partition-aware downstream consumption.
+	 */
 	@SuppressWarnings("PMD.LinguisticNaming")
-	public static Stream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
+	private static Stream<SliceAndMeasures> distinctSlicesAsStream(CubeQueryStep queryStep,
 			List<? extends ICuboid> underlyings) {
 		boolean debug = queryStep.isDebug();
 

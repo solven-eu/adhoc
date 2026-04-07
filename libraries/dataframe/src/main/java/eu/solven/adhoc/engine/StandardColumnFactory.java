@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
@@ -31,6 +30,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.join.DagBottomUpStrategyNavigableElseHash;
 import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import lombok.Builder;
@@ -69,7 +69,7 @@ public class StandardColumnFactory implements IColumnFactory {
 	}
 
 	@Override
-	public Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
+	public IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
 		return bottomUpStrategy.joinCuboids(step, underlyings);
 	}
 

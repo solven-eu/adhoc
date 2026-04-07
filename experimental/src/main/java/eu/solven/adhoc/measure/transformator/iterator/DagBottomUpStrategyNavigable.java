@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.transformator.iterator;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
@@ -37,6 +36,7 @@ import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
@@ -82,7 +82,7 @@ public class DagBottomUpStrategyNavigable implements IDagBottomUpStrategy {
 	}
 
 	@Override
-	public Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
+	public IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
 		return UnderlyingQueryStepHelpersNavigable.distinctSlices(step, underlyings);
 	}
 

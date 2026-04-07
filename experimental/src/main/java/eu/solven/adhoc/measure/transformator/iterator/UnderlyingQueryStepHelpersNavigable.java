@@ -41,6 +41,7 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
+import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,12 @@ public class UnderlyingQueryStepHelpersNavigable {
 	 *            the underlyings for given queryStep.
 	 * @return the union-Set of slices
 	 */
-	public static Stream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
+	public static IConsumingStream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
+			List<? extends ICuboid> underlyings) {
+		return IConsumingStream.fromStream(distinctSlicesAsStream(queryStep, underlyings));
+	}
+
+	private static Stream<SliceAndMeasures> distinctSlicesAsStream(CubeQueryStep queryStep,
 			List<? extends ICuboid> underlyings) {
 		boolean debug = queryStep.isDebug();
 

@@ -68,6 +68,7 @@ public class AdhocUnsafe {
 		limitOrdinalToString = 16;
 		failFast = true;
 		parallelism = defaultParallelism();
+		queueCapacity = DEFAULT_QUEUE_CAPACITY;
 		cartesianProductLimit = DEFAULT_CARTESIAN_PRODUCT_LIMIT;
 		setNullComparator(DEFAULT_NULL_COMPARATOR);
 		// Recreate the VT executor so tests starting a fresh state get a non-shutdown executor
@@ -86,6 +87,9 @@ public class AdhocUnsafe {
 		failFast = safeLoadBooleanProperty("adhoc.failfast", true);
 		// Customize with `-Dadhoc.parallelism=16`
 		parallelism = safeLoadIntegerProperty("adhoc.parallelism", defaultParallelism());
+		// Customize with `-Dadhoc.queueCapacity=16`
+		queueCapacity = safeLoadIntegerProperty("adhoc.queueCapacity", DEFAULT_QUEUE_CAPACITY);
+		// Customize with `-Dadhoc.cartesianProductLimit=16`
 		cartesianProductLimit = safeLoadIntegerProperty("adhoc.cartesianProductLimit", DEFAULT_CARTESIAN_PRODUCT_LIMIT);
 	}
 
@@ -136,6 +140,11 @@ public class AdhocUnsafe {
 	 */
 	@Getter
 	private static int parallelism;
+
+	private static final int DEFAULT_QUEUE_CAPACITY = 1024;
+
+	@Getter
+	private static int queueCapacity = DEFAULT_QUEUE_CAPACITY;
 
 	/**
 	 * Used for unitTests
