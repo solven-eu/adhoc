@@ -23,12 +23,16 @@
 package eu.solven.adhoc.dataframe.collection;
 
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.collection.IFrozen;
 import it.unimi.dsi.fastutil.longs.AbstractLongList;
+import it.unimi.dsi.fastutil.longs.AbstractLongListIterator;
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongListIterator;
 
 /**
  * A primitive {@link LongList} backed by the same head/tail chunked layout as {@link ChunkedList}, avoiding boxing of
@@ -147,6 +151,62 @@ public class LongChunkedList extends AbstractLongList implements IFrozen {
 		// head stays allocated if it was ever written; subsequent writes reuse it.
 		size = 0;
 		modCount++;
+	}
+
+	/**
+	 * Returns a fail-fast list iterator starting at {@code index}. Throws {@link ConcurrentModificationException} if
+	 * the list is structurally modified between iterator creation and any subsequent {@code nextLong()} /
+	 * {@code previousLong()} call.
+	 */
+	@Override
+	public LongListIterator listIterator(final int index) {
+		Objects.checkIndex(index, size + 1);
+		final int expectedModCount = modCount;
+		return new AbstractLongListIterator() {
+			private int pos = index;
+
+			@Override
+			public boolean hasNext() {
+				return pos < size;
+			}
+
+			@Override
+			public boolean hasPrevious() {
+				return pos > 0;
+			}
+
+			@Override
+			public long nextLong() {
+				if (modCount != expectedModCount) {
+					throw new ConcurrentModificationException();
+				}
+				if (!hasNext()) {
+					throw new NoSuchElementException();
+				}
+				return readAt(pos++);
+			}
+
+			@Override
+			public long previousLong() {
+				if (modCount != expectedModCount) {
+					throw new ConcurrentModificationException();
+				}
+				if (!hasPrevious()) {
+					throw new NoSuchElementException();
+				}
+				return readAt(--pos);
+			}
+
+			@Override
+			public int nextIndex() {
+				return pos;
+			}
+
+			@Override
+			public int previousIndex() {
+				return pos - 1;
+			}
+		};
 	}
 
 	// --- compact ---
