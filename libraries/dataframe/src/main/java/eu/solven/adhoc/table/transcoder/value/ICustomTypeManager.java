@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
-import eu.solven.adhoc.util.IHasColumnTypes;
+import eu.solven.adhoc.column.IHasColumnTypes;
 
 /**
  * Used to transcode types, typically from/to {@link ITableWrapper}.

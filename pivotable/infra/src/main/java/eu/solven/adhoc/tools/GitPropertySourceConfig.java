@@ -23,7 +23,6 @@
 package eu.solven.adhoc.tools;
 
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.Environment;
 
 import lombok.extern.slf4j.Slf4j;
 

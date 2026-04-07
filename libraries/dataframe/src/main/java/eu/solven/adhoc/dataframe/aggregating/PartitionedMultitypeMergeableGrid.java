@@ -35,9 +35,10 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
 import eu.solven.adhoc.dataframe.column.partitioned.PartitionedColumn;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
-import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -59,7 +60,7 @@ public class PartitionedMultitypeMergeableGrid<T extends Comparable<T>, K> exten
 
 	@NonNull
 	@Default
-	AdhocFactories factories = AdhocFactories.builder().build();
+	IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
 
 	@Override
 	public Set<String> getAggregators() {

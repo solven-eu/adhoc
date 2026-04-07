@@ -30,7 +30,7 @@ import java.util.function.Function;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
-import eu.solven.adhoc.cuboid.ICompactable;
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
@@ -97,11 +97,9 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	public IOpenedSlice openSlice(T key) {
 		int keyIndex = dictionarize(key);
 		return aggregator -> {
+			IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
 			IMultitypeMergeableColumn<Integer> column =
-					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> {
-						IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
-						return makePreColumn(agg);
-					});
+					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn(agg));
 
 			if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
 				return hasCarriers.wrap(column.append(keyIndex));
@@ -123,7 +121,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// BEWARE This happens even if the aggregates is null and then should be skipped,
 		// which is sub-optimal (but IValueReceiver API leads to this). It is acceptable as we expect at least one
 		// aggregate to have a value for given slice.
-		return sliceToIndex.computeIfAbsent(key, k -> sliceToIndex.size());
+		return sliceToIndex.computeIfAbsent(key, _ -> sliceToIndex.size());
 	}
 
 	@Override
@@ -148,6 +146,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// TODO PERFORMANCE Is this process duplicated for each column?!
 		// Reverse from `slice->index` to `index->slice`
 		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
+		// `.parallelStream()`?
 		sliceToIndex.object2IntEntrySet().forEach((e) -> indexToSlice.put(e.getIntValue(), e.getKey()));
 
 		// Turn the columnByIndex to a columnBySlice

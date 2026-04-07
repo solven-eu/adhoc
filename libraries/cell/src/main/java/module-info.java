@@ -17,7 +17,7 @@ module eu.solven.adhoc.cell {
 
 	// ── Sibling modules ──────────────────────────────────────────────────────
 	// adhoc-public: AdhocUnsafe, ILikeList, options.*, primitive.*
-	requires eu.solven.adhoc.meta;
+	requires eu.solven.adhoc.model;
 	// adhoc-encoding: IAppendableTable, IHasIndexOf, encoding.*
 	requires eu.solven.adhoc.encoding;
 	// adhoc-filters: ISliceFilter, FilterBuilder, filter.value.*

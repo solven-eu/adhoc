@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import eu.solven.adhoc.util.IHasColumnTypes;
 import eu.solven.adhoc.util.IHasColumnsKeySet;
 import eu.solven.pepper.core.PepperStreamHelper;
 

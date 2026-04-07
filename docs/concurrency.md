@@ -105,6 +105,58 @@ Use `IAdhocStream` everywhere a stream may originate from IO. Use `Stream` only 
 
 ---
 
+## Memory strategy for growing data-structures
+
+Allocating aggregation buffers per partition raises a tension between two constraints: avoid
+costly rehashing / reallocation during a query, but also avoid pre-allocating so much memory
+that parallelism causes an `OutOfMemoryError` even for small queries.
+
+### Legacy strategy — upfront pre-allocation
+
+The original approach allocates each column buffer at its maximum expected size upfront, using
+`AdhocColumnUnsafe.getDefaultColumnCapacity()` (default: 1 000 000 entries). This prevents any
+rehashing or array copy during the query at the cost of reserving 1 M-slot structures immediately.
+
+Under sequential execution this is acceptable: one large buffer is allocated once, used, and
+discarded. Under `PARTITIONED` execution however the same buffer is allocated once **per
+partition**, so a query with parallelism P reserves `P × capacity` memory before a single row
+is processed. For a 32-core machine with the default capacity this means 32 M slots — easily
+triggering OOM on small datasets.
+
+### Current strategy — chunked lazy growth
+
+The replacement is a family of chunked data-structures (`ChunkedList`, `LongChunkedList`,
+`DoubleChunkedList`) whose storage grows on demand rather than being pre-allocated:
+
+- **Head chunk** — a compact array allocated lazily on the first write, sized to a small base
+  (default 128 entries). A list that stays within this range never allocates anything beyond it.
+- **Tail chunks** — additional chunks allocated one at a time when the head overflows. Each new
+  tail chunk is twice the size of the previous one (exponential growth), bounding the number of
+  allocations to `O(log n)` for a final size of `n`.
+
+This mirrors the strategy used by Eclipse MAT's `ArrayIntBig`, and keeps the initial footprint
+tiny regardless of parallelism. A query running on 32 partitions that only ever touches 100 rows
+allocates 32 × 128-slot heads instead of 32 M slots.
+
+A **linear growth** variant (fixed-size chunks, as in the original MAT approach) is under
+consideration for workloads where the exponential doubling still wastes too much memory near
+chunk boundaries.
+
+### Trade-offs
+
+|         Concern          |              Pre-allocation              |              Chunked growth               |
+|--------------------------|------------------------------------------|-------------------------------------------|
+| Rehash / array-copy cost | none (reserved upfront)                  | O(log n) allocations, no copy             |
+| Memory for small queries | `P × capacity` regardless of actual size | proportional to actual row count          |
+| Memory for large queries | 1 buffer, optimal                        | slightly fragmented across chunks         |
+| `PARTITIONED` safety     | OOM risk at high parallelism             | safe — each partition starts at base size |
+| Random-access speed      | single array, cache-friendly             | one indirection per tail lookup           |
+
+The chunked approach is the current direction. Pre-allocated structures remain in place in
+`MultitypeArrayColumn` and `AggregatingColumnsDistinct` while the migration is in progress.
+
+---
+
 ## Summary table
 
 |       Work type        |                    Pool                     |          Reason          |

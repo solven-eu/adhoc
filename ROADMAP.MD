@@ -1,6 +1,8 @@
 
 # Feature Candidates
 
+- [Study] Investigate HAMT (Hash Array Mapped Trie), CHAMP, and [Vavr](https://www.vavr.io/) persistent collections as drop-in alternatives to `HashMap`/`LinkedHashMap` where resizing is the dominant cost — primary candidates are the coordinate maps built per query row and the measure-value accumulators in `TabularRecordStreamReducer`; evaluate structural sharing benefits for immutable snapshots and GC pressure reduction.
+- [Study] Evaluate Stream Gatherers (JDK 24, `stream.gather(Gatherer)`) for stateful intermediate operations — primary candidate is `IConsumingStream.distinct()` which currently abuses `filter()` with a side-effectful predicate; secondary candidates are sliding-window aggregations and streaming deduplication if those use cases arise.
 - [CodeGen] BDD: Automated generation of Scenario given an `ICubeQuery`
 - [Feature] Introduce the concept of multiLevel hierarchies, hence implicitly the concept of slicing hierarchies. For now, each hierarchy is optional: no hierarchy is required in groupBy (or implicit on some default member).
 - [Explain] Improve `EXPLAIN` behavior when it jumps through components. Typically, it is difficult to follow `EXPLAIN` from a composite-cube to its subQueries.
@@ -11,7 +13,6 @@
 - [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Composite] `getCoordinates` should be executed once per underlying cube
 - [Concurrency][DuckDB] DuckDB serializes concurrent writes and has limited benefit from highly parallel reads on a single connection. Consider wrapping the `dbExecutorService` (or the DuckDB `ITableWrapper`) with a `Semaphore` to cap the number of in-flight DuckDB queries, preventing thread-pile-up and reducing lock contention inside DuckDB itself.
-- [Concurrency] Review the two-pool model (`executorService` for CPU-bound work, `dbExecutorService` for I/O-bound work). `CompositeCubesTableWrapper` currently fans out to `executorService` to avoid re-entering `dbExecutorService` and deadlocking; this split requires callers to know which pool to use. Consider replacing both pools with a single virtual-thread executor (`Executors.newVirtualThreadPerTaskExecutor()`): virtual threads are unbounded, block safely, and remove the need to classify work as CPU- vs I/O-bound.
 - [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
 - [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Break rowspan on right columns
@@ -41,4 +42,5 @@
 - [Feature] Enable `ICombination` to declare their required levels (e.g. `getRequiredGroupBys()`). The query engine could then automatically infer the necessary `GroupBy`/`Partitionor` clauses when building sub-queries, removing the need for callers to specify them manually in most cases.
 - [EXPLAIN] Introduce `EXPLAIN` vs `EXPLAIN ANALYZE` modes (inspired by SQL): `EXPLAIN` describes the query plan (measures DAG, querySteps, filters) without executing the query, enabling cheap plan inspection and validation; `EXPLAIN ANALYZE` executes the query and augments the plan with actual row counts, durations, and memory usage per step.
 - [Performance] Merge the `CubeQueryStep` DAG and the `TableQueryStep` DAG into a single unified execution graph. Today the two DAGs are built and optimised independently; a combined optimiser could discover shared sub-computations across both layers, enabling further reduction of DB round-trips and elimination of redundant Adhoc-side re-aggregations. See `docs/cube-query-engine.md` for context.
+- [Performance] `ChunkedList` (and `LongChunkedList`, `DoubleChunkedList`) could accept a `maximumChunkSize` cap, capping exponential growth at `AdhocColumnUnsafe.getDefaultColumnCapacity()`. Without a cap, the last tail chunk may be pre-allocated at a size far larger than the actual data, wasting memory when the final chunk is only partially filled.
 - [Correctness] `ACubeQueryStep.equals()` (and `hashCode`) should distinguish steps whose `groupBy` columns are in different orders. Currently two steps with `{a, b}` and `{b, a}` may hash/equal identically even though they imply different sort orders, causing `isBreakSorting()` to produce wrong results and potentially triggering incorrect inducing rules. Fixing this may require revisiting deduplication logic and sorting assumptions in `JavaStreamInducedEvaluator` and `PartitionorQueryStep`.

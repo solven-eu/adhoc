@@ -15,8 +15,9 @@ Adhoc makes it easy to define/code/review [a la Excel](https://support.microsoft
 
 - The formulas define a DAG/Directed-Acyclic-Graph, going from abstract measures to aggregated measures. Intermediate formulas could also be used as measures.
 - The DAG should be easily readable and modifiable by a human, not necessarily a developer.
-- The DAG can express simple operations like `SUM` or `PRODUCT`, and complex operations like `GROUP BY` or any custom logic. 
-- Aggregated measures are evaluation by external databased (e.g. `GROUP BY` queries in SQL databases).
+- The DAG can express simple aggregations like `SUM` or `PRODUCT`, transformations like `GROUP BY`, filters like `WHERE country = FRA`.
+- The DAg may also apply complex transformations (e.g. Many-to-many).
+- Aggregated measures are evaluation by external databases (e.g. `GROUP BY` queries in SQL databases).
 
 Most measures, including intermediate measures, hold a functional meaning. Hence, Adhoc can be seen as a semantic layer, enabling complex formulas over a snowflake SQL/!SQL schema, or a composite of snowflake schemas.
 

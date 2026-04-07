@@ -43,6 +43,7 @@ import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.ProductCombination;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.transformator.TestTransformator_Combinator_Perf;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -116,7 +117,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 	}
 
 	@Test
-	public void testGrandTotal_noCache() {
+	public void testGrandTotal_Sequential() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
@@ -131,7 +132,48 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 	}
 
 	@Test
-	public void testGrandTotal_withCache() {
+	public void testGrandTotal_Concurrent() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
+
+		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
+
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(m)
+				.groupByAlso("l")
+				.option(StandardQueryOptions.CONCURRENT)
+				.explain(true)
+				.build());
+
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of("l", "A"), Map.of(m, sum));
+
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
+	}
+
+	@Test
+	public void testGrandTotal_Concurrent_Partitioned() {
+		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
+
+		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
+
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(m)
+				.groupByAlso("l")
+				.option(StandardQueryOptions.CONCURRENT)
+				.option(StandardQueryOptions.PARTITIONED)
+				.explain(true)
+				.build());
+
+		Assertions.assertThat(MapBasedTabularView.load(output).getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of("l", "A"), Map.of(m, sum));
+
+		log.info("Performance report:{}{}", "\r\n", String.join("\r\n", messages));
+	}
+
+	@Test
+	public void testGrandTotal_Sequential_withCache() {
 		List<String> messages = AdhocExplainerTestHelper.listenForPerf(eventBusGuava());
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();

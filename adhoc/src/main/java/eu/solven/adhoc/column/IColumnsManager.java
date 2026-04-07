@@ -36,7 +36,6 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
-import eu.solven.adhoc.util.IHasColumnTypes;
 
 /**
  * Helps managing various edge-cases around columns, like missing columns or type transcoding.

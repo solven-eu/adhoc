@@ -13,7 +13,7 @@ module eu.solven.adhoc.query.filters {
 
 	// ── Sibling modules ──────────────────────────────────────────────────────
 	// adhoc-public: AdhocUnsafe, ILikeList, options.*
-	requires eu.solven.adhoc.meta;
+	requires eu.solven.adhoc.model;
 
 	// ── Named third-party modules ────────────────────────────────────────────
 	requires com.google.common;

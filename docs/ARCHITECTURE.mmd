@@ -27,11 +27,11 @@ classDiagram
 
     %% ─── Concrete classes ──────────────────────────────────────────
     class AdhocFactories {
-        IOperatorFactory operatorFactory
         IColumnFactory columnFactory
-        ISliceFactoryFactory sliceFactoryFactory
         IFilterOptimizerFactory filterOptimizerFactory
         IFilterStripperFactory filterStripperFactory
+        IOperatorFactory operatorFactory
+        ISliceFactoryFactory sliceFactoryFactory
         IStopwatchFactory stopwatchFactory
     }
     class AdhocFilterUnsafe {
@@ -42,26 +42,26 @@ classDiagram
         ITableWrapper decorated
     }
     class ColumnsManager {
-        IAdhocEventBus eventBus
         ITableAliaser aliaser
-        IMissingColumnManager missingColumnManager
-        ICustomTypeManager customTypeManager
         IColumnGenerator columnGenerator
+        ICustomTypeManager customTypeManager
+        IAdhocEventBus eventBus
+        IMissingColumnManager missingColumnManager
     }
     class CompositeCubesTableWrapper {
         IColumnsManager columnsManager
     }
     class CubeQueryEngine {
-        IAdhocFactories factories
         IAdhocEventBus eventBus
+        IAdhocFactories factories
         ITableQueryEngineFactory tableQueryEngine
     }
     class CubeWrapper {
-        ICubeQueryEngine engine
-        ITableWrapper table
-        IMeasureForest forest
         IColumnsManager columnsManager
+        ICubeQueryEngine engine
+        IMeasureForest forest
         IQueryPreparator queryPreparator
+        ITableWrapper table
     }
     class DagBottomUpStrategyNavigableElseHash {
     }
@@ -77,9 +77,9 @@ classDiagram
         JooqTableWrapperParameters tableParameters
     }
     class JooqTableWrapperParameters {
-        IOperatorFactory operatorFactory
-        IFilterOptimizerFactory filterOptimizerFactory
         IDSLSupplier dslSupplier
+        IFilterOptimizerFactory filterOptimizerFactory
+        IOperatorFactory operatorFactory
     }
     class MeasureForest {
     }
@@ -101,10 +101,10 @@ classDiagram
         IQueryStepCache queryStepCache
     }
     class TableQueryEngineFactory {
-        IAdhocFactories factories
         IAdhocEventBus eventBus
-        ITableQueryFactoryFactory queryFactoryFactory
+        IAdhocFactories factories
         ITableQueryInducerFactory inducerFactory
+        ITableQueryFactoryFactory queryFactoryFactory
     }
     class TableQueryFactoryFactory {
     }
@@ -122,19 +122,19 @@ classDiagram
 
     %% ─── Implements / Extends ──────────────────────────────────────
     ITableQueryEngineFactory <|.. TableQueryEngineFactory
+    ITableWrapper <|.. AAtotiWrapper
     ITableWrapper <|.. CachingTableWrapper
     ITableWrapper <|.. CompositeCubesTableWrapper
     ITableWrapper <|.. EmptyTableWrapper
     ITableWrapper <|.. InMemoryTable
     ITableWrapper <|.. JooqTableWrapper
     IDSLSupplier <|.. StandardDSLSupplier
-    ITableWrapper <|.. AAtotiWrapper
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
 
     %% ─── Composition ───────────────────────────────────────────────
-    ColumnsManager *-- IdentityImplicitAliaser : aliaser
     AAtotiWrapper *-- AtotiAliaser : aliaser
+    ColumnsManager *-- IdentityImplicitAliaser : aliaser
     StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
     AdhocFactories *-- StandardColumnFactory : columnFactory
     ColumnsManager *-- EmptyColumnGenerator : columnGenerator

@@ -20,15 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.cuboid;
+package eu.solven.adhoc.collection;
 
-/**
- * Used for data structure which can be compacted. Typically useful when all write operations are done, and we want to
- * minimize memory consumption.
- * 
- * @author Benoit Lacelle
- */
-@FunctionalInterface
-public interface ICompactable {
-	void compact();
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class TestFrozenException {
+
+	@Test
+	public void testMessage() {
+		FrozenException ex = new FrozenException("structure is frozen");
+
+		Assertions.assertThat(ex.getMessage()).isEqualTo("structure is frozen");
+	}
+
+	@Test
+	public void testIsUnsupportedOperationException() {
+		FrozenException ex = new FrozenException("frozen");
+
+		Assertions.assertThat(ex).isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	/** Callers that catch {@link UnsupportedOperationException} must also catch {@link FrozenException}. */
+	@Test
+	public void testCaughtAsUnsupportedOperationException() {
+		Assertions.assertThatThrownBy(() -> {
+			throw new FrozenException("write rejected");
+		}).isInstanceOf(UnsupportedOperationException.class).hasMessage("write rejected");
+	}
 }

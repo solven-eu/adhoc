@@ -47,9 +47,7 @@
 			<!-- Used for HLL and KNV, for heuristic Distinct count-->
 			<groupId>org.apache.datasketches</groupId>
 			<artifactId>datasketches-java</artifactId>
-			<!-- 9.0.0 requireds JDK25 -->
-			<!-- 8.0.0 requireds JDK21 with some preview options -->
-			<version>7.0.1</version>
+			<version>9.0.0</version>
 		</dependency>
 
 		<!-- Source: https://mvnrepository.com/artifact/org.agrona/agrona -->

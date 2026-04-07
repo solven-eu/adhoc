@@ -41,6 +41,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -73,7 +74,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMultitypeColumnFastGetSorted<T> {
+public class MultitypeNavigableColumn<T extends Comparable<T>>
+		implements IMultitypeColumnFastGetSorted<T>, ICompactable {
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 
 		@Override
@@ -344,11 +346,14 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 		case StreamStrategy.ALL:
 		case StreamStrategy.SORTED_SUB:
 			// The whole column is sorted
-	yield stream();case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			yield stream();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 
-	yield Stream.empty();default:
-	yield IMultitypeColumn.defaultStream(this,stragegy);
-	};}
+			yield Stream.empty();
+		default:
+			yield IMultitypeColumn.defaultStream(this, stragegy);
+		};
+	}
 
 	@Override
 	public long size() {
@@ -450,6 +455,14 @@ public class MultitypeNavigableColumn<T extends Comparable<T>> implements IMulti
 			if (index == lastInsertionIndex.get()) {
 				lastInsertionIndex.set(-1);
 			}
+		}
+	}
+
+	@Override
+	public void compact() {
+		lazyClearLastWrite();
+		if (values instanceof ICompactable compactable) {
+			compactable.compact();
 		}
 	}
 }

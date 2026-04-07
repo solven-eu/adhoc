@@ -29,9 +29,9 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
-import eu.solven.adhoc.cuboid.ICompactable;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;

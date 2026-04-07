@@ -25,9 +25,9 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
-import eu.solven.adhoc.cuboid.ICompactable;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;

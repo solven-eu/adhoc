@@ -21,7 +21,7 @@ flowchart TD
 	ITableWrapper --> BigQuery
 ```
 
-[Class graph](ARCHITECTURE.MMD)
+[Class graph](ARCHITECTURE.mmd)
 
 ## General Query Flow
 

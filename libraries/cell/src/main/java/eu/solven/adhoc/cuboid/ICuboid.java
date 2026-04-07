@@ -27,6 +27,7 @@ import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.primitive.IValueProvider;

@@ -74,7 +74,7 @@ public class TestAggregations_RatioPairOfCountry extends ADagTest {
 
 		forest.addMeasure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
 
-		forest.getNameToMeasure().forEach((measureName, measure) -> {
+		forest.getNameToMeasure().keySet().forEach(measureName -> {
 			log.debug("Measure: {}", measureName);
 		});
 	}

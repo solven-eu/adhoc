@@ -390,6 +390,7 @@ public class ClassHierarchyAsJavaParserMermaid {
 		graph.outgoingEdgesOf(node)
 				.stream()
 				.filter(e -> e.getKind() == EdgeKind.HAS_FIELD)
+				.sorted(Comparator.comparing(ClassEdge::getFieldName))
 				.forEach(e -> sb.append("        ")
 						.append(e.getDeclaredType())
 						.append(' ')
@@ -479,7 +480,7 @@ public class ClassHierarchyAsJavaParserMermaid {
 				continue;
 			}
 			try (Stream<Path> files = Files.walk(root)) {
-				files.filter(p -> p.toString().endsWith(".java")).forEach(javaFile -> {
+				files.filter(p -> p.toString().endsWith(".java")).sorted().forEach(javaFile -> {
 					try {
 						parser.parse(javaFile).getResult().stream().flatMap(cu -> cu.getTypes().stream()).flatMap(t -> {
 							if (t.isClassOrInterfaceDeclaration()) {
@@ -518,6 +519,8 @@ public class ClassHierarchyAsJavaParserMermaid {
 					.forEach(t -> result.computeIfAbsent(rawName(t.getNameAsString()), k -> new ArrayList<>())
 							.add(coid.getNameAsString()));
 		});
+		// Sort each implementation list so that traversal order in collectNodes is deterministic
+		result.values().forEach(list -> list.sort(Comparator.naturalOrder()));
 		return result;
 	}
 
