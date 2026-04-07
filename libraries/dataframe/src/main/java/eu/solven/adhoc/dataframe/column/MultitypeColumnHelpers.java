@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
+import eu.solven.adhoc.dataframe.collection.ChunkedDoubleList;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
-import eu.solven.adhoc.dataframe.collection.DoubleChunkedList;
-import eu.solven.adhoc.dataframe.collection.LongChunkedList;
+import eu.solven.adhoc.dataframe.collection.ChunkedLongList;
 import eu.solven.adhoc.dataframe.column.MultitypeArray.MultitypeArrayBuilder;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
@@ -103,7 +103,7 @@ public class MultitypeColumnHelpers {
 		keyToObject.sort((Comparator) Map.Entry.<T, Object>comparingByKey());
 
 		if (nbLong.get() == size) {
-			final LongChunkedList values = new LongChunkedList(size);
+			final ChunkedLongList values = new ChunkedLongList(size);
 
 			keyToObject.forEach(e -> {
 				keys.add(e.getKey());
@@ -112,7 +112,7 @@ public class MultitypeColumnHelpers {
 
 			multitypeArrayBuilder.valuesL(values).valuesType(IMultitypeConstants.MASK_LONG);
 		} else if (nbDouble.get() == size) {
-			final DoubleChunkedList values = new DoubleChunkedList(size);
+			final ChunkedDoubleList values = new ChunkedDoubleList(size);
 
 			keyToObject.forEach(e -> {
 				keys.add(e.getKey());

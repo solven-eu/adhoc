@@ -22,18 +22,21 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
+import java.util.List;
 import java.util.function.Function;
 
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
+import eu.solven.adhoc.dataframe.collection.ChunkedDoubleList;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
-import eu.solven.adhoc.dataframe.collection.DoubleChunkedList;
-import eu.solven.adhoc.dataframe.collection.LongChunkedList;
+import eu.solven.adhoc.dataframe.collection.ChunkedLongList;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueFunction;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import it.unimi.dsi.fastutil.doubles.DoubleList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -65,15 +68,15 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 	// MergeableMultitypeStorage
 	@Default
 	@NonNull
-	final LongChunkedList valuesL = new LongChunkedList();
+	final LongList valuesL = new ChunkedLongList();
 
 	@Default
 	@NonNull
-	final DoubleChunkedList valuesD = new DoubleChunkedList();
+	final DoubleList valuesD = new ChunkedDoubleList();
 
 	@Default
 	@NonNull
-	final ChunkedList<Object> valuesO = new ChunkedList<>();
+	final List<Object> valuesO = new ChunkedList<>();
 
 	@Default
 	@Setter
@@ -93,7 +96,7 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 	}
 
 	/**
-	 * No-op: {@link LongChunkedList}, {@link DoubleChunkedList}, and {@link ChunkedList} allocate tail chunks lazily on
+	 * No-op: {@link ChunkedLongList}, {@link ChunkedDoubleList}, and {@link ChunkedList} allocate tail chunks lazily on
 	 * demand; there is no bulk pre-allocation step equivalent to {@code ensureCapacity}.
 	 */
 	protected void ensureCapacityForType(int type) {
@@ -239,8 +242,8 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 
 	public static MultitypeArray empty() {
 		return MultitypeArray.builder()
-				.valuesL(new LongChunkedList())
-				.valuesD(new DoubleChunkedList())
+				.valuesL(new ChunkedLongList())
+				.valuesD(new ChunkedDoubleList())
 				.valuesO(new ChunkedList<>())
 				.build();
 	}
@@ -283,9 +286,15 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 
 	@Override
 	public void compact() {
-		valuesL.compact();
-		valuesD.compact();
-		valuesO.compact();
+		if (valuesL instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (valuesD instanceof ICompactable compactable) {
+			compactable.compact();
+		}
+		if (valuesO instanceof ICompactable compactable) {
+			compactable.compact();
+		}
 	}
 
 	public void clear() {

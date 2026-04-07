@@ -45,11 +45,11 @@ import it.unimi.dsi.fastutil.longs.LongList;
  * </pre>
  *
  * <p>
- * See {@link ChunkedArrays} for the index-arithmetic shared with {@link ChunkedList} and {@link DoubleChunkedList}.
+ * See {@link ChunkedArrays} for the index-arithmetic shared with {@link ChunkedList} and {@link ChunkedDoubleList}.
  *
  * @author Benoit Lacelle
  */
-public class LongChunkedList extends AbstractLongList implements IFreezable {
+public class ChunkedLongList extends AbstractLongList implements IFreezable {
 
 	private final int log2Base;
 	private final int base;
@@ -66,7 +66,7 @@ public class LongChunkedList extends AbstractLongList implements IFreezable {
 	private boolean compacted;
 
 	/** Creates an empty list with the default base size (128). The head array is allocated lazily on first write. */
-	public LongChunkedList() {
+	public ChunkedLongList() {
 		this.log2Base = ChunkedArrays.LOG2_BASE_DEFAULT;
 		this.base = ChunkedArrays.BASE_DEFAULT;
 	}
@@ -75,7 +75,7 @@ public class LongChunkedList extends AbstractLongList implements IFreezable {
 	 * Creates an empty list pre-sizing the tail pointer array for up to {@code initialCapacity} elements. The base size
 	 * is derived from the capacity via {@link ChunkedArrays#computeLog2Base}.
 	 */
-	public LongChunkedList(int initialCapacity) {
+	public ChunkedLongList(int initialCapacity) {
 		if (initialCapacity < 0) {
 			throw new IllegalArgumentException("Negative initialCapacity: " + initialCapacity);
 		}
@@ -150,7 +150,7 @@ public class LongChunkedList extends AbstractLongList implements IFreezable {
 	 * @see ChunkedList#compact()
 	 */
 	@SuppressWarnings("PMD.LooseCoupling")
-	public LongChunkedList compact() {
+	public ChunkedLongList compact() {
 		if (size < base) {
 			if (head != null && size < head.length) {
 				head = Arrays.copyOf(head, size);
@@ -159,10 +159,10 @@ public class LongChunkedList extends AbstractLongList implements IFreezable {
 			int adjusted = size - 1 - base;
 			int unitIndex = adjusted >> log2Base;
 			int k = ChunkedArrays.tailChunkIndex(unitIndex);
-			int lastOffset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
+			int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
 
-			if (lastOffset + 1 < tail[k].length) {
-				tail[k] = Arrays.copyOf(tail[k], lastOffset + 1);
+			if (offset + 1 < tail[k].length) {
+				tail[k] = Arrays.copyOf(tail[k], offset + 1);
 			}
 		}
 		compacted = true;

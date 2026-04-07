@@ -144,13 +144,13 @@ chunk boundaries.
 
 ### Trade-offs
 
-| Concern | Pre-allocation | Chunked growth |
-|---|---|---|
-| Rehash / array-copy cost | none (reserved upfront) | O(log n) allocations, no copy |
-| Memory for small queries | `P × capacity` regardless of actual size | proportional to actual row count |
-| Memory for large queries | 1 buffer, optimal | slightly fragmented across chunks |
-| `PARTITIONED` safety | OOM risk at high parallelism | safe — each partition starts at base size |
-| Random-access speed | single array, cache-friendly | one indirection per tail lookup |
+|         Concern          |              Pre-allocation              |              Chunked growth               |
+|--------------------------|------------------------------------------|-------------------------------------------|
+| Rehash / array-copy cost | none (reserved upfront)                  | O(log n) allocations, no copy             |
+| Memory for small queries | `P × capacity` regardless of actual size | proportional to actual row count          |
+| Memory for large queries | 1 buffer, optimal                        | slightly fragmented across chunks         |
+| `PARTITIONED` safety     | OOM risk at high parallelism             | safe — each partition starts at base size |
+| Random-access speed      | single array, cache-friendly             | one indirection per tail lookup           |
 
 The chunked approach is the current direction. Pre-allocated structures remain in place in
 `MultitypeArrayColumn` and `AggregatingColumnsDistinct` while the migration is in progress.

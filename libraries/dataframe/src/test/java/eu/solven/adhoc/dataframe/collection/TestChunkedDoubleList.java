@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.collection.FrozenException;
 import it.unimi.dsi.fastutil.doubles.DoubleIterator;
 
-public class TestDoubleChunkedList {
+public class TestChunkedDoubleList {
 
 	static final int BASE = ChunkedArrays.BASE_DEFAULT;
 
@@ -39,14 +39,14 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testDefaultConstructor_empty() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 
 		Assertions.assertThat(list.isEmpty()).isTrue();
 	}
 
 	@Test
 	public void testCapacityConstructor_zero() {
-		DoubleChunkedList list = new DoubleChunkedList(0);
+		ChunkedDoubleList list = new ChunkedDoubleList(0);
 
 		Assertions.assertThat(list.isEmpty()).isTrue();
 		list.add(3.14);
@@ -55,14 +55,14 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCapacityConstructor_negative_throws() {
-		Assertions.assertThatThrownBy(() -> new DoubleChunkedList(-1))
+		Assertions.assertThatThrownBy(() -> new ChunkedDoubleList(-1))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("-1");
 	}
 
 	@Test
 	public void testCapacityConstructor_aboveBase() {
-		DoubleChunkedList list = new DoubleChunkedList(300);
+		ChunkedDoubleList list = new ChunkedDoubleList(300);
 		IntStream.range(0, 300).forEach(i -> list.add(i * 1.0));
 
 		Assertions.assertThat(list.size()).isEqualTo(300);
@@ -73,17 +73,17 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testLazyInit_headIsNull() throws Exception {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 
-		Field f = DoubleChunkedList.class.getDeclaredField("head");
+		Field f = ChunkedDoubleList.class.getDeclaredField("head");
 		f.setAccessible(true);
 		Assertions.assertThat(f.get(list)).isNull();
 	}
 
 	@Test
 	public void testLazyInit_headAllocatedOnFirstAdd() throws Exception {
-		DoubleChunkedList list = new DoubleChunkedList();
-		Field f = DoubleChunkedList.class.getDeclaredField("head");
+		ChunkedDoubleList list = new ChunkedDoubleList();
+		Field f = ChunkedDoubleList.class.getDeclaredField("head");
 		f.setAccessible(true);
 
 		Assertions.assertThat(f.get(list)).isNull();
@@ -95,7 +95,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testAdd_andGet_sequential() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		for (int i = 0; i < 100; i++) {
 			list.add(i * 0.5);
 		}
@@ -108,7 +108,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testAdd_specialValues() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(0.0);
 		list.add(-0.0);
 		list.add(Double.NaN);
@@ -125,7 +125,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testGet_outOfBounds_throws() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 
 		Assertions.assertThatThrownBy(() -> list.getDouble(1)).isInstanceOf(IndexOutOfBoundsException.class);
@@ -136,7 +136,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testHeadBoundary_lastHeadAndFirstTail() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, BASE + 1).forEach(i -> list.add(i * 1.0));
 
 		Assertions.assertThat(list.getDouble(BASE - 1)).isEqualTo((BASE - 1) * 1.0);
@@ -145,7 +145,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testTailChunkBoundaries() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, 1024).forEach(i -> list.add(i * 1.0));
 
 		int[] boundaries = { 0, 127, 128, 255, 256, 511, 512, 1023 };
@@ -158,7 +158,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testSet_returnsOldValue() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.add(2.0);
 		list.add(3.0);
@@ -172,7 +172,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testSet_inTail() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, 300).forEach(i -> list.add(i * 1.0));
 
 		list.set(200, 999.5);
@@ -186,7 +186,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testAddAtIndex_shiftsRight() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(0.0);
 		list.add(1.0);
 		list.add(3.0);
@@ -198,7 +198,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testRemove_shiftsLeft() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.add(2.0);
 		list.add(3.0);
@@ -211,7 +211,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testRemove_outOfBounds_throws() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 
 		Assertions.assertThatThrownBy(() -> list.removeDouble(1)).isInstanceOf(IndexOutOfBoundsException.class);
@@ -221,7 +221,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testClear_headOnly() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, 50).forEach(i -> list.add(i * 1.0));
 		list.clear();
 
@@ -233,7 +233,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testClear_withTail() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, 500).forEach(i -> list.add(i * 1.0));
 		list.clear();
 
@@ -244,7 +244,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testIsFrozen_falseBeforeCompact() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 
 		Assertions.assertThat(list.isFrozen()).isFalse();
@@ -252,7 +252,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testIsFrozen_trueAfterCompact() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.compact();
 
@@ -261,7 +261,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_emptyList_noNpe() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.compact();
 
 		Assertions.assertThat(list.isEmpty()).isTrue();
@@ -270,7 +270,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_trimsHead_twoElements() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.5);
 		list.add(2.5);
 		list.compact();
@@ -282,7 +282,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_headOnly_readsCorrectly() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, 50).forEach(i -> list.add(i * 1.0));
 		list.compact();
 
@@ -294,7 +294,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_withTail_readsCorrectly() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		IntStream.range(0, 300).forEach(i -> list.add(i * 1.0));
 		list.compact();
 
@@ -306,7 +306,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_preventsAdd() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.compact();
 
@@ -315,7 +315,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_preventsAddAtIndex() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.compact();
 
@@ -324,7 +324,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_preventsSet() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.compact();
 
@@ -333,7 +333,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_preventsRemove() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.compact();
 
@@ -342,7 +342,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testCompact_preventsClear() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.compact();
 
@@ -353,7 +353,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testIterator_traversesAllElements() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		list.add(1.0);
 		list.add(2.0);
 		list.add(3.0);
@@ -371,7 +371,7 @@ public class TestDoubleChunkedList {
 
 	@Test
 	public void testLargeGrowth() {
-		DoubleChunkedList list = new DoubleChunkedList();
+		ChunkedDoubleList list = new ChunkedDoubleList();
 		int n = 2000;
 		IntStream.range(0, n).forEach(i -> list.add(i * 1.0));
 

@@ -297,9 +297,9 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 			int unitIndex = adjusted >> log2Base;
 			int k = ChunkedArrays.tailChunkIndex(unitIndex);
 			// Compute the offset of the last occupied slot in tail[k]
-			int lastOffset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
-			if (lastOffset + 1 < tail[k].length) {
-				tail[k] = Arrays.copyOf(tail[k], lastOffset + 1);
+			int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
+			if (offset + 1 < tail[k].length) {
+				tail[k] = Arrays.copyOf(tail[k], offset + 1);
 			}
 		}
 		compacted = true;

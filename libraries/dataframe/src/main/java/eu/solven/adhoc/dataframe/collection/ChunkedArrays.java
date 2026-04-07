@@ -23,8 +23,8 @@
 package eu.solven.adhoc.dataframe.collection;
 
 /**
- * Shared constants and index-arithmetic utilities used by {@link ChunkedList}, {@link LongChunkedList}, and
- * {@link DoubleChunkedList}.
+ * Shared constants and index-arithmetic utilities used by {@link ChunkedList}, {@link ChunkedLongList}, and
+ * {@link ChunkedDoubleList}.
  *
  * <p>
  * All three classes share the same head/tail storage layout and the same bit-arithmetic to map a flat index to a chunk

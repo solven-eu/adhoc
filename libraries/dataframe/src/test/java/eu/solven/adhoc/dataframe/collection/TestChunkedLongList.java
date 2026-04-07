@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import eu.solven.adhoc.collection.FrozenException;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 
-public class TestLongChunkedList {
+public class TestChunkedLongList {
 
 	static final int BASE = ChunkedArrays.BASE_DEFAULT;
 
@@ -39,7 +39,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testDefaultConstructor_empty() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 
 		Assertions.assertThat(list.size()).isZero();
 		Assertions.assertThat(list.isEmpty()).isTrue();
@@ -47,7 +47,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCapacityConstructor_zero() {
-		LongChunkedList list = new LongChunkedList(0);
+		ChunkedLongList list = new ChunkedLongList(0);
 
 		Assertions.assertThat(list.isEmpty()).isTrue();
 		list.add(42L);
@@ -56,14 +56,14 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCapacityConstructor_negative_throws() {
-		Assertions.assertThatThrownBy(() -> new LongChunkedList(-1))
+		Assertions.assertThatThrownBy(() -> new ChunkedLongList(-1))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("-1");
 	}
 
 	@Test
 	public void testCapacityConstructor_aboveBase() {
-		LongChunkedList list = new LongChunkedList(300);
+		ChunkedLongList list = new ChunkedLongList(300);
 		LongStream.range(0, 300).forEach(list::add);
 
 		Assertions.assertThat(list.size()).isEqualTo(300);
@@ -74,17 +74,17 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testLazyInit_headIsNull() throws Exception {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 
-		Field f = LongChunkedList.class.getDeclaredField("head");
+		Field f = ChunkedLongList.class.getDeclaredField("head");
 		f.setAccessible(true);
 		Assertions.assertThat(f.get(list)).isNull();
 	}
 
 	@Test
 	public void testLazyInit_headAllocatedOnFirstAdd() throws Exception {
-		LongChunkedList list = new LongChunkedList();
-		Field f = LongChunkedList.class.getDeclaredField("head");
+		ChunkedLongList list = new ChunkedLongList();
+		Field f = ChunkedLongList.class.getDeclaredField("head");
 		f.setAccessible(true);
 
 		Assertions.assertThat(f.get(list)).isNull();
@@ -96,7 +96,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testAdd_andGet_sequential() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		for (long i = 0; i < 100; i++) {
 			list.add(i);
 		}
@@ -109,7 +109,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testAdd_zero_andNegative() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(0L);
 		list.add(-1L);
 		list.add(Long.MIN_VALUE);
@@ -123,7 +123,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testGet_outOfBounds_throws() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 
 		Assertions.assertThatThrownBy(() -> list.getLong(1)).isInstanceOf(IndexOutOfBoundsException.class);
@@ -134,7 +134,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testHeadBoundary_lastHeadAndFirstTail() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, BASE + 1).forEach(list::add);
 
 		Assertions.assertThat(list.getLong(BASE - 1)).isEqualTo(BASE - 1);
@@ -143,7 +143,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testTailChunkBoundaries() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, 1024).forEach(list::add);
 
 		int[] boundaries = { 0, 127, 128, 255, 256, 511, 512, 1023 };
@@ -156,7 +156,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testSet_returnsOldValue() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(10L);
 		list.add(20L);
 		list.add(30L);
@@ -170,7 +170,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testSet_inTail() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, 300).forEach(list::add);
 
 		list.set(200, 999L);
@@ -184,7 +184,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testAddAtIndex_shiftsRight() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(0L);
 		list.add(1L);
 		list.add(3L);
@@ -196,7 +196,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testRemove_shiftsLeft() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(10L);
 		list.add(20L);
 		list.add(30L);
@@ -209,7 +209,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testRemove_outOfBounds_throws() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 
 		Assertions.assertThatThrownBy(() -> list.removeLong(1)).isInstanceOf(IndexOutOfBoundsException.class);
@@ -219,7 +219,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testClear_headOnly() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, 50).forEach(list::add);
 		list.clear();
 
@@ -230,7 +230,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testClear_withTail() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, 500).forEach(list::add);
 		list.clear();
 
@@ -241,7 +241,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testIsFrozen_falseBeforeCompact() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 
 		Assertions.assertThat(list.isFrozen()).isFalse();
@@ -249,7 +249,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testIsFrozen_trueAfterCompact() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 		list.compact();
 
@@ -258,7 +258,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_emptyList_noNpe() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.compact();
 
 		Assertions.assertThat(list.isEmpty()).isTrue();
@@ -267,7 +267,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_trimsHead_twoElements() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(10L);
 		list.add(20L);
 		list.compact();
@@ -279,7 +279,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_headOnly_readsCorrectly() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, 50).forEach(list::add);
 		list.compact();
 
@@ -291,7 +291,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_withTail_readsCorrectly() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		LongStream.range(0, 300).forEach(list::add);
 		list.compact();
 
@@ -303,7 +303,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_preventsAdd() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 		list.compact();
 
@@ -312,7 +312,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_preventsAddAtIndex() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 		list.compact();
 
@@ -321,7 +321,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_preventsSet() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 		list.compact();
 
@@ -330,7 +330,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_preventsRemove() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 		list.compact();
 
@@ -339,7 +339,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testCompact_preventsClear() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(1L);
 		list.compact();
 
@@ -350,7 +350,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testIterator_traversesAllElements() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		list.add(10L);
 		list.add(20L);
 		list.add(30L);
@@ -368,7 +368,7 @@ public class TestLongChunkedList {
 
 	@Test
 	public void testLargeGrowth() {
-		LongChunkedList list = new LongChunkedList();
+		ChunkedLongList list = new ChunkedLongList();
 		int n = 2000;
 		LongStream.range(0, n).forEach(list::add);
 
