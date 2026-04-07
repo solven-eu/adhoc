@@ -106,12 +106,12 @@ public class TestAggregatingColumnsDistinct {
 		IMultitypeColumnFastGet<String> closedB =
 				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure(b).build(), b);
 
-		Assertions.assertThat(GraphLayout.parseInstance(closedA).totalSize()).isEqualTo(1616L);
-		Assertions.assertThat(GraphLayout.parseInstance(closedB).totalSize()).isEqualTo(1616L);
+		Assertions.assertThat(GraphLayout.parseInstance(closedA).totalSize()).isEqualTo(1112L);
+		Assertions.assertThat(GraphLayout.parseInstance(closedB).totalSize()).isEqualTo(1112L);
 
 		// Make sure closedA and closedB shares the `indexToSlice` structure: this must be much smaller than
 		// `closedA+closedB`
-		Assertions.assertThat(PepperFootprintHelper.deepSize(Arrays.asList(closedA, closedB))).isEqualTo(2440L);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(Arrays.asList(closedA, closedB))).isEqualTo(1936L);
 	}
 
 }

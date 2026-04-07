@@ -248,10 +248,6 @@ public class TestMultitypeNavigableColumn {
 
 	@Test
 	public void testCapacity() {
-		// https://bugs.openjdk.org/browse/CODETOOLS-7903447
-		// -Djol.skipHotspotSAAttach=true
-		System.setProperty("jol.skipHotspotSAAttach", "true");
-
 		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(40);
 		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(152);
 

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import eu.solven.adhoc.collection.FrozenException;
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.collection.IFreezable;
 import it.unimi.dsi.fastutil.doubles.AbstractDoubleList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
@@ -49,7 +50,7 @@ import it.unimi.dsi.fastutil.doubles.DoubleList;
  *
  * @author Benoit Lacelle
  */
-public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable {
+public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable, ICompactable {
 
 	private final int log2Base;
 	private final int base;
@@ -145,11 +146,10 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable 
 	/**
 	 * Shrinks all storage to exactly the space needed for the current elements, then marks this list as read-only.
 	 *
-	 * @return {@code this}, for chaining
 	 * @see ChunkedList#compact()
 	 */
-	@SuppressWarnings("PMD.LooseCoupling")
-	public ChunkedDoubleList compact() {
+	@Override
+	public void compact() {
 		if (size < base) {
 			if (head != null && size < head.length) {
 				head = Arrays.copyOf(head, size);
@@ -164,7 +164,6 @@ public class ChunkedDoubleList extends AbstractDoubleList implements IFreezable 
 			}
 		}
 		compacted = true;
-		return this;
 	}
 
 	@Override

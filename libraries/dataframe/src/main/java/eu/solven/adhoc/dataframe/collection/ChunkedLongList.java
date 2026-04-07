@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import eu.solven.adhoc.collection.FrozenException;
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.collection.IFreezable;
 import it.unimi.dsi.fastutil.longs.AbstractLongList;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -49,7 +50,7 @@ import it.unimi.dsi.fastutil.longs.LongList;
  *
  * @author Benoit Lacelle
  */
-public class ChunkedLongList extends AbstractLongList implements IFreezable {
+public class ChunkedLongList extends AbstractLongList implements IFreezable, ICompactable {
 
 	private final int log2Base;
 	private final int base;
@@ -146,11 +147,10 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable {
 	/**
 	 * Shrinks all storage to exactly the space needed for the current elements, then marks this list as read-only.
 	 *
-	 * @return {@code this}, for chaining
 	 * @see ChunkedList#compact()
 	 */
-	@SuppressWarnings("PMD.LooseCoupling")
-	public ChunkedLongList compact() {
+	@Override
+	public void compact() {
 		if (size < base) {
 			if (head != null && size < head.length) {
 				head = Arrays.copyOf(head, size);
@@ -166,7 +166,6 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable {
 			}
 		}
 		compacted = true;
-		return this;
 	}
 
 	@Override

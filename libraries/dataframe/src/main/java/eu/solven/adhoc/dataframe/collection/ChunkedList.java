@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.RandomAccess;
 
 import eu.solven.adhoc.collection.FrozenException;
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.collection.IFreezable;
 import it.unimi.dsi.fastutil.objects.AbstractObjectList;
 
@@ -71,7 +72,7 @@ import it.unimi.dsi.fastutil.objects.AbstractObjectList;
  */
 // Relates with
 // https://github.com/eclipse-mat/mat/blob/master/plugins/org.eclipse.mat.report/src/org/eclipse/mat/collect/ArrayIntBig.java
-public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAccess, IFreezable {
+public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAccess, IFreezable, ICompactable {
 
 	/** Default {@code log2(base)}. Alias of {@link ChunkedArrays#LOG2_BASE_DEFAULT} kept for test access. */
 	static final int LOG2_BASE_DEFAULT = ChunkedArrays.LOG2_BASE_DEFAULT;
@@ -283,10 +284,9 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	 * After compacting, all mutating operations ({@link #add}, {@link #set}, {@link #remove}, {@link #clear}) throw
 	 * {@link UnsupportedOperationException}. The operation is irreversible.
 	 *
-	 * @return {@code this}, for chaining
 	 */
-	@SuppressWarnings("PMD.LooseCoupling")
-	public ChunkedList<E> compact() {
+	@Override
+	public void compact() {
 		if (size < base) {
 			// Head is partially used (or still null for an empty list): shrink/trim to exact size.
 			if (head != null && size < head.length) {
@@ -303,7 +303,6 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 			}
 		}
 		compacted = true;
-		return this;
 	}
 
 	@Override
