@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Booleans;
@@ -182,15 +181,16 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 
 		// Push-based: drain the iterator into the consumer
 		return ConsumingStream.<SliceAndMeasures>builder().source(consumer -> {
-			while (mergedIterator.hasNext()) {
-				consumer.accept(mergedIterator.next());
-			}
+			mergedIterator.forEachRemaining(consumer::accept);
 		}).build();
 	}
 
 	/**
 	 * Builds one {@link IConsumingStream} per unsorted cuboid, each filtering out slices already seen by the sorted
 	 * pass or by previous unsorted cuboids.
+	 * 
+	 * BEWARE The output has to be processed sequentially as it relies on a state build by the iteration (i.e. the slice
+	 * already processed).
 	 *
 	 * @param queryStep
 	 *            the considered queryStep.
@@ -205,59 +205,71 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	private static List<IConsumingStream<SliceAndMeasures>> unsortedStreams(CubeQueryStep queryStep,
 			List<? extends ICuboid> underlyings,
 			Set<ISlice> sortedSlicesAsSet) {
-		Set<ISlice> unsortedSlicesAsSet = ConcurrentHashMap.newKeySet();
-
-		List<IConsumingStream<SliceAndMeasures>> unsortedStreams = new ArrayList<>();
+		Set<ISlice> unsortedSlicesAsSet = new LinkedHashSet<>();
 
 		int size = underlyings.size();
+		List<IConsumingStream<SliceAndMeasures>> unsortedStreams = new ArrayList<>(size);
 
 		// Iterate through unsorted stream of slices, considering each of them at a time, and skipping previously
 		// considered slices
 		for (int rawUnsortedIndex = 0; rawUnsortedIndex < size; rawUnsortedIndex++) {
 			int unsortedIndex = rawUnsortedIndex;
 			ICuboid cuboid = underlyings.get(unsortedIndex);
+
+			// Register the slices being added by current cuboid
+			// BEWARE We do that in a temporary Set so that current cuboid iteration does not check for the slice it
+			// added itself in current iteration
+			Set<ISlice> unsortedSlicesAsSetCurrent = new LinkedHashSet<>();
+
 			IConsumingStream<SliceAndMeasures> unsortedStream = cuboid.stream(StreamStrategy.SORTED_SUB_COMPLEMENT)
 					// Skip the slices already processed by sorted iterators
 					.filter(s -> !sortedSlicesAsSet.contains(s.getSlice()))
 					// Skip the slices processed by unsorted iterators
 					.filter(s -> !unsortedSlicesAsSet.contains(s.getSlice()))
-					.map(s -> {
-						SliceAndMeasure<ISlice> sliceAndMeasure = s;
-
-						ImmutableList.Builder<IValueProvider> valueProviders =
-								ImmutableList.builderWithExpectedSize(size);
-
-						// No point in processing previous columns as their slices are already processed
-						for (int ii = 0; ii < unsortedIndex; ii++) {
-							valueProviders.add(IValueProvider.NULL);
-						}
-						for (int ii = unsortedIndex; ii < size; ii++) {
-							if (ii == unsortedIndex) {
-								// Current column
-								valueProviders.add(s.getValueProvider());
-							} else {
-								ICuboid underlying = underlyings.get(ii);
-								if (!underlying.isSorted()) {
-									// Only unsorted columns are candidate
-									valueProviders.add(underlying.onValue(s.getSlice()));
-								} else {
-									// sorted columns got all their slices processed previously
-									valueProviders.add(IValueProvider.NULL);
-								}
-							}
-						}
+					.map(sliceAndMeasure -> {
+						List<IValueProvider> valueProviders =
+								makeValueProviders(underlyings, size, unsortedIndex, sliceAndMeasure);
 
 						// If this is not the last unsorted stream
 						if (unsortedIndex < size - 1) {
 							// Prevent this slice to be considered by next unsorted cuboids
-							unsortedSlicesAsSet.add(s.getSlice());
+							unsortedSlicesAsSetCurrent.add(sliceAndMeasure.getSlice());
 						}
 
-						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders.build());
+						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders);
 					});
 
 			unsortedStreams.add(unsortedStream);
+			unsortedSlicesAsSet.addAll(unsortedSlicesAsSetCurrent);
 		}
 		return unsortedStreams;
+	}
+
+	private static List<IValueProvider> makeValueProviders(List<? extends ICuboid> underlyings,
+			int size,
+			int unsortedIndex,
+			SliceAndMeasure<ISlice> sliceAndMeasure) {
+		ImmutableList.Builder<IValueProvider> valueProviders = ImmutableList.builderWithExpectedSize(size);
+
+		// No point in processing previous columns as their slices are already processed
+		for (int ii = 0; ii < unsortedIndex; ii++) {
+			valueProviders.add(IValueProvider.NULL);
+		}
+		for (int ii = unsortedIndex; ii < size; ii++) {
+			if (ii == unsortedIndex) {
+				// Current column
+				valueProviders.add(sliceAndMeasure.getValueProvider());
+			} else {
+				ICuboid underlying = underlyings.get(ii);
+				if (underlying.isSorted()) {
+					// sorted columns got all their slices processed previously
+					valueProviders.add(IValueProvider.NULL);
+				} else {
+					// Only unsorted columns are candidate
+					valueProviders.add(underlying.onValue(sliceAndMeasure.getSlice()));
+				}
+			}
+		}
+		return valueProviders.build();
 	}
 }
