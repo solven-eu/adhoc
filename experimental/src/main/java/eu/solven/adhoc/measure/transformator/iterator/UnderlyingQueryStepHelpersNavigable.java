@@ -41,9 +41,9 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.extern.slf4j.Slf4j;
 
 /**

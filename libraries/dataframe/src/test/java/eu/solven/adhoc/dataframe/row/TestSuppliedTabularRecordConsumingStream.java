@@ -29,8 +29,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 public class TestSuppliedTabularRecordConsumingStream {
 

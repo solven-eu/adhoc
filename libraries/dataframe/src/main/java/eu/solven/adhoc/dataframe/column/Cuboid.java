@@ -38,6 +38,7 @@ import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
@@ -56,7 +57,7 @@ import lombok.ToString;
 // methods/processes like `.purgeAggregationCarriers()`. This is also immutable (by interface).
 @ToString
 @Builder(toBuilder = true)
-public class Cuboid implements ICuboid {
+public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	@NonNull
 	// Getter for testing
 	@Getter
@@ -138,6 +139,28 @@ public class Cuboid implements ICuboid {
 
 	public static CuboidBuilder forGroupBy(IHasGroupBy hasGroupBy) {
 		return Cuboid.builder().columns(hasGroupBy.getGroupBy().getSortedColumns());
+	}
+
+	@Override
+	public int getNbPartitions() {
+		if (values instanceof IPartitioned<?> partitioned) {
+			return partitioned.getNbPartitions();
+		}
+		return 1;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public ICuboid getPartition(int index) {
+		if (values instanceof IPartitioned<?> partitioned) {
+			IMultitypeColumnFastGet<ISlice> partitionValues =
+					(IMultitypeColumnFastGet<ISlice>) partitioned.getPartition(index);
+			return toBuilder().values(partitionValues).build();
+		}
+		if (index != 0) {
+			throw new IndexOutOfBoundsException("Non-partitioned cuboid only has partition 0, requested " + index);
+		}
+		return this;
 	}
 
 	@Override

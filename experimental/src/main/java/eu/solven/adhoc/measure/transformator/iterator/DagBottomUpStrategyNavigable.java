@@ -36,10 +36,10 @@ import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * Relies on {@link MultitypeNavigableColumn} by default, and {@link UnderlyingQueryStepHelpersNavigable} to merge

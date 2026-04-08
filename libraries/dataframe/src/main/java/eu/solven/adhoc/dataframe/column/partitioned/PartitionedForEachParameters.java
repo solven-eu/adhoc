@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;

@@ -33,11 +33,11 @@ import org.jooq.conf.ParamType;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
-import eu.solven.adhoc.dataframe.stream.ConsumingStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;

@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.LongStream;
 
-import eu.solven.adhoc.util.AdhocUnsafe;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,6 +52,7 @@ import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.util.AdhocBenchmark;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
 

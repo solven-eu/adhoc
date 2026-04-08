@@ -162,23 +162,23 @@ public class TabularRecordOverMaps implements ITabularRecord {
 
 	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
 	public static String toString(ITabularRecord tabularRecord) {
-		StringBuilder string = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 
-		string.append("slice:{");
-		string.append(tabularRecord.columnsKeySet()
+		sb.append("slice:{");
+		sb.append(tabularRecord.columnsKeySet()
 				.stream()
 				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
 				.collect(Collectors.joining(", ")));
-		string.append("} aggregates:{");
+		sb.append("} aggregates:{");
 
-		string.append(tabularRecord.aggregateKeySet()
+		sb.append(tabularRecord.aggregateKeySet()
 				.stream()
 				.filter(aggregateName -> null != tabularRecord.getAggregate(aggregateName))
 				.map(aggregateName -> aggregateName + "=" + tabularRecord.getAggregate(aggregateName))
 				.collect(Collectors.joining(", ")));
-		string.append('}');
+		sb.append('}');
 
-		return string.toString();
+		return sb.toString();
 	}
 
 	protected static TabularGroupByRecordOverMap groupByRecord(IGroupBy groupBy, ISlice slice) {

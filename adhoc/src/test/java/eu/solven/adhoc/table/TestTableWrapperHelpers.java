@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 public class TestTableWrapperHelpers {
 

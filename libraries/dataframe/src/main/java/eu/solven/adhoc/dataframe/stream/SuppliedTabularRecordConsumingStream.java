@@ -28,6 +28,7 @@ import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * A {@link ITabularRecordStream} memorizing an underlying `Stream<Map<String, ?>>`

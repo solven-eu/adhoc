@@ -41,7 +41,6 @@ import eu.solven.adhoc.dataframe.column.partitioned.PartitionedForEachParameters
 import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid.IOpenedSlice;
 import eu.solven.adhoc.engine.context.QueryPod;
@@ -60,6 +59,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
@@ -177,18 +177,22 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 				if (grid instanceof IPartitioned<?> partitioned) {
 					int nbPartitions = partitioned.getNbPartitions();
-					records2.forEachPartitioned(PartitionedForEachParameters.<GroupByAndTabularRecord>builder()
-							.stream(records2)
-							.nbPartitions(nbPartitions)
-							.partitioner(input -> {
-								ISlice slice = input.retainedRecord().asSlice();
-								return PartitioningHelpers.getPartitionIndex(slice, nbPartitions);
-							})
-							.consumer(input -> {
-								forEachMeasure(input.groupByMarker(), input.retainedRecord(), peekOnCoordinate, grid);
-							})
-							.executor(queryPod.getExecutorService())
-							.build());
+					PartitioningHelpers
+							.forEachPartitioned(PartitionedForEachParameters.<GroupByAndTabularRecord>builder()
+									.stream(records2)
+									.nbPartitions(nbPartitions)
+									.partitioner(input -> {
+										ISlice slice = input.retainedRecord().asSlice();
+										return PartitioningHelpers.getPartitionIndex(slice, nbPartitions);
+									})
+									.consumer(input -> {
+										forEachMeasure(input.groupByMarker(),
+												input.retainedRecord(),
+												peekOnCoordinate,
+												grid);
+									})
+									.executor(queryPod.getExecutorService())
+									.build());
 				} else {
 					// synchronized: when CONCURRENT is active, Arrow batches may be processed
 					// concurrently, so multiple threads can call forEachMeasure simultaneously

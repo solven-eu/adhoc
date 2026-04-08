@@ -30,9 +30,9 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * Holds the strategy to create {@link IMultitypeColumn} and {@link Cuboid}.

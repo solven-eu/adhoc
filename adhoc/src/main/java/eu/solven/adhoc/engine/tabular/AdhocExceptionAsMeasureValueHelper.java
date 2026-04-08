@@ -33,11 +33,11 @@ import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps.TabularRecordOverMapsBuilder;
-import eu.solven.adhoc.dataframe.stream.ConsumingStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.experimental.UtilityClass;
 
 /**

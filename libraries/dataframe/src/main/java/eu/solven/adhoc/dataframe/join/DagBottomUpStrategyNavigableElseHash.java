@@ -33,11 +33,11 @@ import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * This `v1` improves `v0` by relying on {@link MultitypeNavigableElseHashColumn}, which can handle a large number of

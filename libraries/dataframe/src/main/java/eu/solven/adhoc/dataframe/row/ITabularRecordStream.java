@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * Holds a resource to a stream of data, typically given a {@link TableQuery}.
