@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.column.generated_column.IMayHaveColumnGenerator;
+import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -64,6 +65,10 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @RequiredArgsConstructor
 public class StandardQueryPreparator implements IQueryPreparator {
+
+	@NonNull
+	@Default
+	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
 
 	// By default, the filters are not modified
 	@NonNull
@@ -103,7 +108,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				.columnsManager(columnsManager)
 				.executorService(getExecutorService(preparedQuery))
 				.queryStepCache(getQueryStepCache(preparedQuery))
-				.sliceFactory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(preparedQuery))
+				.sliceFactory(factories.getSliceFactoryFactory().makeFactory(preparedQuery))
 				.build();
 
 		// Filtering the forest is useful for edge-cases like:
@@ -166,8 +171,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 				if (relevantMeasures.add(resolvedMeasure)) {
 
 					// BEWARE Not `IHasUnderlyingNames` as it is informative. e.g. in Composite Cube, measure may
-					// list
-					// underlying measures in underlying cubes, while in compositeCube.queryPlan, these are
+					// list underlying measures in underlying cubes, while in compositeCube.queryPlan, these are
 					// irrelevant.
 					if (resolvedMeasure instanceof IHasUnderlyingMeasures hasUnderlyings) {
 						nextMeasuresToAdd.addAll(hasUnderlyings.getUnderlyingNames());

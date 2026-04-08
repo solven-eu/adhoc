@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.LongStream;
 
+import eu.solven.adhoc.util.AdhocUnsafe;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -157,6 +158,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
 
+		AdhocUnsafe.setParallelism(2);
 		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(m)
 				.groupByAlso("l")

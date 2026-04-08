@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,43 +22,17 @@
  */
 package eu.solven.adhoc.encoding.page;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.google.errorprone.annotations.ThreadSafe;
-
-import lombok.experimental.SuperBuilder;
-import lombok.extern.slf4j.Slf4j;
+import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
+import lombok.experimental.UtilityClass;
 
 /**
- * Standard {@link IAppendableTable}.
- * 
- * It is thread-safe by creating an {@link IAppendableTablePage} per calling thread. Given page should then write in a
- * mono-threaded way.
+ * Unsafe operations around {@link AAppendableTable}.
  * 
  * @author Benoit Lacelle
  */
-@SuperBuilder
-@Slf4j
-@ThreadSafe
-public class ThreadLocalAppendableTable extends AAppendableTable {
-	protected final ThreadLocal<Map<List<String>, IAppendableTablePage>> keyToPage = new ThreadLocal<>() {
-		@Override
-		protected Map<List<String>, IAppendableTablePage> initialValue() {
-			return new LinkedHashMap<>();
-		}
-	};
-
-	@Override
-	protected IAppendableTablePage getCurrentPage(List<String> keysAsList) {
-		return keyToPage.get().computeIfAbsent(keysAsList, _ -> makePage());
-	}
-
-	@Override
-	protected boolean compareAndSetPage(List<String> keysAsList,
-			IAppendableTablePage currentPage,
-			IAppendableTablePage newCandidate) {
-		return keyToPage.get().replace(keysAsList, currentPage, newCandidate);
+@UtilityClass
+public class AppendableTableUnsafe {
+	public static IFreezingStrategy getStrategy(AAppendableTable table) {
+		return table.freezer;
 	}
 }

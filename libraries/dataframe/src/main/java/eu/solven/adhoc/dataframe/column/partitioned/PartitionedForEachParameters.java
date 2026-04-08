@@ -73,9 +73,16 @@ public class PartitionedForEachParameters<T> {
 	Executor executor;
 
 	/**
-	 * Bounded capacity per partition queue. Applies backpressure so the producer cannot get far ahead of slow
-	 * consumers.
+	 * Bounded capacity per partition queue (in number of batches). Applies backpressure so the producer cannot get far
+	 * ahead of slow consumers.
 	 */
 	@Builder.Default
 	int queueCapacity = AdhocUnsafe.getQueueCapacity();
+
+	/**
+	 * Number of elements accumulated per partition before dispatching a batch to the queue. Larger values reduce queue
+	 * put/take overhead at the cost of slightly higher latency for the first elements.
+	 */
+	@Builder.Default
+	int batchSize = 256;
 }

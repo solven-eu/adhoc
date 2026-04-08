@@ -131,7 +131,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	protected ITabularRecord withSlice(ISliceFactory factory, Map<String, ?> slice) {
-		return toBuilder().slice(groupBy.getGroupBy(), AdhocMapHelpers.fromMap(factory, slice).asSlice()).build();
+		return withGroupBy(groupByRecord(groupBy.getGroupBy(), AdhocMapHelpers.fromMap(factory, slice).asSlice()));
 	}
 
 	@Override
@@ -181,6 +181,10 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		return string.toString();
 	}
 
+	protected static TabularGroupByRecordOverMap groupByRecord(IGroupBy groupBy, ISlice slice) {
+		return TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(slice).build();
+	}
+
 	/**
 	 * Lombok @Builder
 	 *
@@ -192,8 +196,9 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		// }
 
 		public TabularRecordOverMapsBuilder slice(IGroupBy groupBy, ISlice slice) {
-			return groupBy(TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(slice).build());
+			return groupBy(groupByRecord(groupBy, slice));
 		}
+
 	}
 
 	@Override

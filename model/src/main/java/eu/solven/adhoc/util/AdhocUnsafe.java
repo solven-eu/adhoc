@@ -139,6 +139,7 @@ public class AdhocUnsafe {
 	 * @return the default parallelism hint, e.g. for sizing connection pools (ClickHouse, etc.)
 	 */
 	@Getter
+	@Setter
 	private static int parallelism;
 
 	private static final int DEFAULT_QUEUE_CAPACITY = 1024;

@@ -32,9 +32,14 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.encoding.column.freezer.AsynchronousFreezingStrategy;
+import eu.solven.adhoc.encoding.page.AAppendableTable;
+import eu.solven.adhoc.encoding.page.AppendableTableUnsafe;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapUnsafe;
 import eu.solven.adhoc.map.IAdhocMap;
+import eu.solven.adhoc.map.factory.ColumnSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.options.StandardQueryOptions;
 
 public class TestColumnSliceFactory {
 
@@ -166,5 +171,14 @@ public class TestColumnSliceFactory {
 	public void testAppendTooMuch() {
 		Assertions.assertThatThrownBy(() -> factory.newMapBuilder(List.of("a", "b")).append("a1", "b1", "c1"))
 				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void testAsyncFreezer() {
+		ColumnSliceFactory sliceFactory =
+				ColumnSliceFactory.builder().options(() -> Set.of(StandardQueryOptions.CONCURRENT)).build();
+		MapBuilderPreKeys mapBuilder = (MapBuilderPreKeys) sliceFactory.newMapBuilder();
+		Assertions.assertThat(AppendableTableUnsafe.getStrategy(((AAppendableTable) mapBuilder.pageFactory)))
+				.isInstanceOf(AsynchronousFreezingStrategy.class);
 	}
 }
