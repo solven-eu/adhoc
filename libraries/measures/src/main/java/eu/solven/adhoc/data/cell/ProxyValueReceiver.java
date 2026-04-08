@@ -20,33 +20,55 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.measure.combination;
+package eu.solven.adhoc.data.cell;
 
-import java.util.Map;
-
-import eu.solven.adhoc.data.row.ISlicedRecord;
-import eu.solven.adhoc.engine.step.ISliceWithStep;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.util.map.AdhocMapPathGet;
+import eu.solven.adhoc.util.AdhocBlackHole;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.RequiredArgsConstructor;
 
 /**
- * A {@link ICombination} returning a constant value.
+ * Helps intercepting the value sent to an {@link IValueReceiver}
  * 
  * @author Benoit Lacelle
  */
-public class ConstantCombination implements ICombination {
-	public static final String K_CONSTANT = "constant";
+@RequiredArgsConstructor
+@Builder
+public class ProxyValueReceiver implements IValueReceiver {
+	private static final IAggregation COALESCE = new CoalesceAggregation();
 
-	final IValueProvider constantProvider;
+	@Default
+	final IValueReceiver proxied = AdhocBlackHole.getInstance();
+	final IMultitypeCell recorder = MultitypeCell.builder().aggregation(COALESCE).build();
 
-	public ConstantCombination(Map<String, ?> options) {
-		Object constant = AdhocMapPathGet.getRequiredAs(options, K_CONSTANT);
-		constantProvider = IValueProvider.setValue(constant);
+	@Override
+	public void onLong(long v) {
+		proxied.onLong(v);
+		recorder.merge().onLong(v);
 	}
 
 	@Override
-	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
-		constantProvider.acceptReceiver(valueReceiver);
+	public void onDouble(double v) {
+		proxied.onDouble(v);
+		recorder.merge().onDouble(v);
+	}
+
+	@Override
+	public void onObject(Object v) {
+		proxied.onObject(v);
+		recorder.merge().onObject(v);
+	}
+
+	public IValueProvider asValueProvider() {
+		return recorder.reduce();
+	}
+
+	@Override
+	public String toString() {
+		return "recorded: " + IValueProvider.getValue(recorder.reduce());
 	}
 }

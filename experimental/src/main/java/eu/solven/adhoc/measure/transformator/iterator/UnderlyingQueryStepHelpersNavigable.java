@@ -81,7 +81,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 				Object value = IValueProvider.getValue(slice.getValueProvider());
 
 				return SliceAndMeasures.from(slice.getSlice(), queryStep, ImmutableList.of(value));
-			});
+			}).toList().stream();
 		}
 
 		// It is unclear how to implement an algorithm handling both sorted and hash columns
@@ -98,7 +98,8 @@ public class UnderlyingQueryStepHelpersNavigable {
 			} else if (underlyings.size() == 1) {
 				notSortedAsSet = AdhocCollectionHelpers.getFirst(underlyings).slicesSet();
 			} else {
-				notSortedAsSet = underlyings.stream().flatMap(ICuboid::slices).collect(ImmutableSet.toImmutableSet());
+				notSortedAsSet = ImmutableSet
+						.copyOf(IConsumingStream.concat(underlyings.stream().map(ICuboid::slices).toList()).toList());
 			}
 
 			int size = underlyings.size();
@@ -141,7 +142,7 @@ public class UnderlyingQueryStepHelpersNavigable {
 				throw new IllegalArgumentException(
 						"This requires input Stream to be sorted. queryStep=%s".formatted(queryStep));
 			}
-		}).map(s -> s.stream().iterator()).toList();
+		}).map(s -> s.stream().toList().iterator()).toList();
 
 		Iterator<SliceAndMeasures> mergedIterator = new MergedSlicesIteratorNavigable(queryStep, sortedIterators);
 

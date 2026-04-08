@@ -22,13 +22,6 @@
  */
 package eu.solven.adhoc.dataframe.column.partitioned;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicReference;
-
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,131 +65,10 @@ public class PartitioningHelpers {
 	 * @param parameters
 	 *            all configuration for the partitioned consumption
 	 */
-	@SuppressWarnings("unchecked")
 	public static <T> void forEachPartitioned(PartitionedForEachParameters<T> parameters) {
-		int nbPartitions = parameters.getNbPartitions();
-		int batchSize = parameters.getBatchSize();
-
-		AtomicReference<Throwable> firstError = new AtomicReference<>();
-		CountDownLatch latch = new CountDownLatch(nbPartitions);
-
-		// Queues carry List batches, not individual elements. This reduces park/unpark overhead.
-		BlockingDeque<List<Object>>[] queues = new LinkedBlockingDeque[nbPartitions];
-		{
-			int queueCapacity = parameters.getQueueCapacity();
-			for (int i = 0; i < nbPartitions; i++) {
-				queues[i] = new LinkedBlockingDeque<>(queueCapacity);
-			}
-		}
-
-		// Empty list sentinel signals end-of-stream to consumer threads
-		List<Object> poison = List.of();
-
-		// One consumer thread per partition — each drains batches sequentially
-		var executor = parameters.getExecutor();
-		var consumer = parameters.getConsumer();
-		for (int i = 0; i < nbPartitions; i++) {
-			BlockingDeque<List<Object>> queue = queues[i];
-			executor.execute(() -> {
-				try {
-					while (true) {
-						List<Object> batch = queue.take();
-						if (batch.isEmpty()) {
-							// Poison pill — end of stream
-							break;
-						}
-						for (Object item : batch) {
-							consumer.accept((T) item);
-						}
-					}
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					firstError.compareAndSet(null, e);
-				} catch (RuntimeException e) {
-					firstError.compareAndSet(null, e);
-				} finally {
-					latch.countDown();
-				}
-			});
-		}
-
-		// Per-partition accumulation buffers on the producer thread (no synchronization needed)
-		List<Object>[] buffers = new List[nbPartitions];
-		for (int i = 0; i < nbPartitions; i++) {
-			buffers[i] = new ArrayList<>(batchSize);
-		}
-
-		// Drive iteration on the current thread; batch elements by partition before dispatching
-		try {
-			var partitioner = parameters.getPartitioner();
-			parameters.getStream().forEach(element -> {
-				if (firstError.get() != null) {
-					return;
-				}
-				int idx = partitioner.applyAsInt(element);
-				buffers[idx].add(element);
-				if (buffers[idx].size() == batchSize) {
-					flushBuffer(queues[idx], buffers[idx], firstError);
-					buffers[idx] = new ArrayList<>(batchSize);
-				}
-			});
-			// Flush remaining partial batches
-			for (int i = 0; i < nbPartitions; i++) {
-				if (!buffers[i].isEmpty()) {
-					flushBuffer(queues[i], buffers[i], firstError);
-				}
-			}
-		} catch (RuntimeException e) {
-			firstError.compareAndSet(null, e);
-		} finally {
-			// Signal completion to all consumer threads
-			boolean hasError = firstError.get() != null;
-			for (int i = 0; i < nbPartitions; i++) {
-				BlockingDeque<List<Object>> queue = queues[i];
-				try {
-					if (hasError) {
-						int discarded = queue.size();
-						if (discarded > 0) {
-							log.warn("Discarding {} pending batches for partitionIndex={}", discarded, i);
-						}
-						queue.clear();
-						queue.putFirst(poison);
-					} else {
-						// Normal completion: append poison after all data batches
-						queue.put(poison);
-					}
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					firstError.compareAndSet(null, e);
-				}
-			}
-			try {
-				latch.await();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				firstError.compareAndSet(null, e);
-			}
-		}
-
-		Throwable error = firstError.get();
-		if (error instanceof RuntimeException re) {
-			throw re;
-		} else if (error != null) {
-			throw new IllegalStateException("Partition consumer failed", error);
-		}
-	}
-
-	/**
-	 * Puts the batch into the queue, applying backpressure if the queue is full.
-	 */
-	protected static void flushBuffer(BlockingDeque<List<Object>> queue,
-			List<Object> batch,
-			AtomicReference<Throwable> firstError) {
-		try {
-			queue.put(batch);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			firstError.compareAndSet(null, e);
-		}
+		PartitionedDispatcher<T> dispatcher = new PartitionedDispatcher<>(parameters);
+		dispatcher.startConsumers();
+		dispatcher.produce(parameters.getStream());
+		dispatcher.awaitAndRethrow();
 	}
 }

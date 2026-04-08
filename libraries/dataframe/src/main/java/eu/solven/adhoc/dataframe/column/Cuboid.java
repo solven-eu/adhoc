@@ -42,6 +42,7 @@ import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -78,13 +79,13 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	}
 
 	@Override
-	public Stream<ISlice> slices() {
+	public IConsumingStream<ISlice> slices() {
 		return values.keyStream();
 	}
 
 	@Override
 	public Set<ISlice> slicesSet() {
-		return values.keyStream().collect(ImmutableSet.toImmutableSet());
+		return ImmutableSet.copyOf(values.keyStream().toList());
 	}
 
 	@Override
@@ -98,7 +99,7 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<ISlice>> stream() {
+	public IConsumingStream<SliceAndMeasure<ISlice>> stream() {
 		return values.stream();
 	}
 
@@ -121,7 +122,7 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy) {
+	public IConsumingStream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy) {
 		return values.stream(strategy);
 	}
 

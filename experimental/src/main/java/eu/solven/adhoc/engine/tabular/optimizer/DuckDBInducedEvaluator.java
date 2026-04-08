@@ -192,7 +192,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		NavigableSet<String> inducedGroupByCols = induced.getGroupBy().getSortedColumns();
 
 		// Probe the first entry to determine schema types
-		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findFirst();
+		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findAny();
 		if (optFirst.isEmpty()) {
 			return Optional.empty();
 		}

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -38,6 +39,7 @@ import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.ToString;
@@ -107,13 +109,13 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
-		return Stream.concat(navigable.stream(), hash.stream());
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
+		return IConsumingStream.concat(List.of(navigable.stream(), hash.stream()));
 	}
 
 	@Override
-	public Stream<T> keyStream() {
-		return Stream.concat(navigable.keyStream(), hash.keyStream());
+	public IConsumingStream<T> keyStream() {
+		return IConsumingStream.concat(List.of(navigable.keyStream(), hash.keyStream()));
 	}
 
 	@Override
@@ -155,7 +157,7 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	@Override
-	public Stream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
+	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
 		return switch (stragegy) {
 		case StreamStrategy.ALL -> this.stream();
 		case StreamStrategy.SORTED_SUB -> navigable.stream();

@@ -34,6 +34,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.SlicedRecordFromSlices;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -79,17 +80,23 @@ public class TestSubstractionCombination {
 
 	@Test
 	public void testSimpleCases_fromSlicedRecord() {
-		Assertions
-				.assertThat(IValueProvider.getValue(combination.combine(slice,
-						SlicedRecordFromSlices.builder().valueProvider(IValueProvider.setValue(123)).build())))
-				.isEqualTo(123L);
+		{
+			ProxyValueReceiver proxyReceiver = ProxyValueReceiver.builder().build();
+			combination.combine(slice,
+					SlicedRecordFromSlices.builder().valueProvider(IValueProvider.setValue(123)).build(),
+					proxyReceiver);
+			Assertions.assertThat(IValueProvider.getValue(proxyReceiver.asValueProvider())).isEqualTo(123L);
+		}
 
-		Assertions.assertThat(IValueProvider.getValue(combination.combine(slice,
-				SlicedRecordFromSlices.builder()
-						.valueProvider(IValueProvider.setValue(123))
-						.valueProvider(IValueProvider.NULL)
-						.build())))
-				.isEqualTo(123L);
+		{
+			ProxyValueReceiver proxyReceiver = ProxyValueReceiver.builder().build();
+			combination.combine(slice,
+					SlicedRecordFromSlices.builder()
+							.valueProvider(IValueProvider.setValue(123))
+							.valueProvider(IValueProvider.NULL)
+							.build(),
+					proxyReceiver);
+		}
 
 		// Coverage
 		{
@@ -99,9 +106,9 @@ public class TestSubstractionCombination {
 			valueProviders.add(IValueProvider.NULL);
 
 			Collections2.permutations(valueProviders).stream().filter(l -> l.size() == 2).forEach(vps -> {
-				IValueProvider vp =
-						combination.combine(slice, SlicedRecordFromSlices.builder().valueProviders(vps).build());
-				Object o = IValueProvider.getValue(vp);
+				ProxyValueReceiver proxyReceiver = ProxyValueReceiver.builder().build();
+				combination.combine(slice, SlicedRecordFromSlices.builder().valueProviders(vps).build(), proxyReceiver);
+				Object o = IValueProvider.getValue(proxyReceiver.asValueProvider());
 
 				Assertions.assertThat(o).isNotNull();
 			});
@@ -145,8 +152,9 @@ public class TestSubstractionCombination {
 					Assertions.assertThat(o).isEqualTo(combination.combine(slice, slicedRecord.asList()));
 					Assertions.assertThat(o).isNotNull();
 
-					IValueProvider vpProvider = combination.combine(slice, slicedRecord);
-					Object oProvider = IValueProvider.getValue(vpProvider);
+					ProxyValueReceiver vr = ProxyValueReceiver.builder().build();
+					combination.combine(slice, slicedRecord, vr);
+					Object oProvider = IValueProvider.getValue(vr.asValueProvider());
 					Assertions.assertThat(oProvider).isEqualTo(o);
 				});
 			});

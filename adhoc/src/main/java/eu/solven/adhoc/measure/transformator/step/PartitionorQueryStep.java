@@ -31,6 +31,7 @@ import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -44,6 +45,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.AccessLevel;
@@ -140,28 +142,27 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	@Override
 	protected void onSlice(SliceAndMeasures contributionSlice, ICombination combinator, ISliceAndValueConsumer output) {
 		try {
-			IValueProvider valueProvider =
-					combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures());
+			ISlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
+
+			IValueReceiver receiver = output.putSlice(partitionSlice);
 
 			if (isDebug()) {
+				ProxyValueReceiver proxyReceiver = new ProxyValueReceiver(receiver);
+
+				combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures(), proxyReceiver);
+
+				Object combinedValue = IValueProvider.getValue(proxyReceiver.asValueProvider());
 				log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
 						partitionor.getName(),
 						partitionor.getCombinationKey(),
 						contributionSlice.getMeasures(),
-						IValueProvider.getValue(valueProvider),
+						combinedValue,
 						contributionSlice);
+
+				log.info("[DEBUG] m={} contributed {} into {}", partitionor.getName(), combinedValue, partitionSlice);
+			} else {
+				combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures(), receiver);
 			}
-
-			ISlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
-
-			if (isDebug()) {
-				log.info("[DEBUG] m={} contributed {} into {}",
-						partitionor.getName(),
-						IValueProvider.getValue(valueProvider),
-						partitionSlice);
-			}
-
-			valueProvider.acceptReceiver(output.putSlice(partitionSlice));
 		} catch (RuntimeException e) {
 			List<?> underlyingVs = contributionSlice.getMeasures().asList();
 			throw new IllegalArgumentException(

@@ -37,6 +37,7 @@ import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -105,7 +106,7 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<ISli
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<ISlice>> stream() {
+	public IConsumingStream<SliceAndMeasure<ISlice>> stream() {
 		return masked.stream().map(maskedSliceAndMeasure -> {
 			return SliceAndMeasure.<ISlice>builder()
 					.slice(extendSlice(maskedSliceAndMeasure.getSlice()))
@@ -127,7 +128,7 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<ISli
 	}
 
 	@Override
-	public Stream<ISlice> keyStream() {
+	public IConsumingStream<ISlice> keyStream() {
 		return masked.keyStream().map(this::extendSlice);
 	}
 

@@ -54,6 +54,7 @@ import eu.solven.adhoc.dataframe.column.MultitypeArray;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -331,17 +332,17 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
-		return IntStream.range(0, Ints.checkedCast(size()))
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
+		return IConsumingStream.fromStream(IntStream.range(0, Ints.checkedCast(size()))
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(keys.get(i))
 						.valueProvider(values.read(i)::acceptReceiver)
-						.build());
+						.build()));
 	}
 
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	@Override
-	public Stream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
+	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
 		return switch (stragegy) {
 		case StreamStrategy.ALL:
 		case StreamStrategy.SORTED_SUB:
@@ -349,7 +350,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			yield stream();
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 
-			yield Stream.empty();
+			yield IConsumingStream.empty();
 		default:
 			yield IMultitypeColumn.defaultStream(this, stragegy);
 		};
@@ -370,18 +371,19 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	}
 
 	@Override
-	public Stream<T> keyStream() {
+	public IConsumingStream<T> keyStream() {
 		doLock();
 
 		// No need for .distinct as each key is guaranteed to appear in a single column
-		return StreamSupport.stream(Spliterators.spliterator(keys, // keys is guaranteed to hold distinct value
+		return IConsumingStream.fromStream(StreamSupport.stream(Spliterators.spliterator(keys, // keys is guaranteed to
+																								// hold distinct value
 				Spliterator.DISTINCT
 						// keys are sorted naturally
 						| Spliterator.ORDERED
 						| Spliterator.SORTED
 						// When read, this can not be edited anymore
 						| Spliterator.IMMUTABLE),
-				false);
+				false));
 
 	}
 

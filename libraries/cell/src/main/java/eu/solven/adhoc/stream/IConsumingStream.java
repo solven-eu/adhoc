@@ -165,7 +165,7 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 		return ConsumingStream.<T>builder().source(stream::forEach).build();
 	}
 
-	static <T> IConsumingStream<T> fromStream(List<IConsumingStream<T>> list) {
+	static <T> IConsumingStream<T> concat(List<IConsumingStream<T>> list) {
 		// TODO Enable concurrency
 		return ConsumingStream.<T>builder().source(s -> list.forEach(c -> c.forEach(s))).build();
 	}

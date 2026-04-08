@@ -79,7 +79,7 @@ public class AggregationCombination implements ICombination {
 
 	@Override
 	@SuppressWarnings("PMD.NullAssignment")
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		MultitypeCell refMultitype = makeMultitypeCell();
 
 		IValueReceiver cellValueConsumer = refMultitype.merge();
@@ -121,10 +121,10 @@ public class AggregationCombination implements ICombination {
 		}
 
 		if (customIfAnyNullOperand && hasNull.get()) {
-			return oneUnderlyingIsNull();
+			oneUnderlyingIsNull().acceptReceiver(valueReceiver);
+		} else {
+			refMultitype.reduce().acceptReceiver(valueReceiver);
 		}
-
-		return refMultitype.reduce();
 	}
 
 	protected IValueProvider oneUnderlyingIsNull() {

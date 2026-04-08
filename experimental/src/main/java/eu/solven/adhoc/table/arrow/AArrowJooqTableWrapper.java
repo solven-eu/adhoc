@@ -67,7 +67,7 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	protected IConsumingStream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
-		return IConsumingStream.fromStream(sqlQuery.getQueries().stream().map(oneQuery -> {
+		return IConsumingStream.concat(sqlQuery.getQueries().stream().map(oneQuery -> {
 			ITabularRecordFactory tabularRecordFactory =
 					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toArrowStream(queryPod, oneQuery, tabularRecordFactory);

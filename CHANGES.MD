@@ -22,6 +22,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `JooqTableWrapperParameters`: new optional `querySemaphore` field. `JooqTableWrapper` implements `querySemaphore()` from this parameter and applies it lazily in `streamSlices()`.
 - `DuckDBHelper.parametersBuilder(IDSLSupplier)`: new factory method returning a `JooqTableWrapperParameters` builder pre-wired with `AdhocDuckDBUnsafe.duckDBSemaphore`.
 - `TableQueryEngineBootstrapped` → `TableQueryEngine`; `TableQueryEngine` → `TableQueryEngineFactory` (rename).
+- `ICombination`: signature changed from returning an `IValueProvider` to accepting an `IValueReceiver` as input, enabling push-based value delivery and avoiding intermediate allocations.
 
 ## [0.0.18]
 

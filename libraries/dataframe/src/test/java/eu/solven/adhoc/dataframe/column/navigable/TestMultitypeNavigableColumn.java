@@ -95,8 +95,11 @@ public class TestMultitypeNavigableColumn {
 		List<String> slices = sortedCopy.stream().map(sm -> sm.getSlice()).toList();
 		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
 
-		long[] values =
-				sortedCopy.stream().mapToLong(m -> IValueProviderTestHelpers.getLong(m.getValueProvider())).toArray();
+		long[] values = sortedCopy.stream()
+				.toList()
+				.stream()
+				.mapToLong(m -> IValueProviderTestHelpers.getLong(m.getValueProvider()))
+				.toArray();
 		Assertions.assertThat(values).hasSize(3).contains(123, 234, 345);
 	}
 
@@ -123,6 +126,8 @@ public class TestMultitypeNavigableColumn {
 		Assertions.assertThat(slices).hasSize(3).containsExactly("a", "b", "c");
 
 		double[] values = sortedCopy.stream()
+				.toList()
+				.stream()
 				.mapToDouble(m -> IValueProviderTestHelpers.getDouble(m.getValueProvider()))
 				.toArray();
 		Assertions.assertThat(values).hasSize(3).contains(12.34D, 23.45D, 34.56D);

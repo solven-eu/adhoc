@@ -84,5 +84,5 @@ public class PartitionedForEachParameters<T> {
 	 * put/take overhead at the cost of slightly higher latency for the first elements.
 	 */
 	@Builder.Default
-	int batchSize = 256;
+	int batchSize = AdhocUnsafe.getBatchSize();
 }

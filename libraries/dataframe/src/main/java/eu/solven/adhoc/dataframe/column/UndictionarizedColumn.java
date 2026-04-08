@@ -32,6 +32,7 @@ import eu.solven.adhoc.cuboid.IColumnValueConverter;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
 import lombok.NonNull;
@@ -86,7 +87,7 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
 		return column.stream()
 				.map(sliceAndMeasure -> SliceAndMeasure.<T>builder()
 						.slice(indexToSlice.apply(sliceAndMeasure.getSlice()))
@@ -95,7 +96,7 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
-	public Stream<T> keyStream() {
+	public IConsumingStream<T> keyStream() {
 		return column.keyStream().map(indexToSlice::apply);
 	}
 
@@ -106,7 +107,9 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public String toString() {
-		return stream().limit(AdhocUnsafe.getLimitOrdinalToString())
+		return stream().toList()
+				.stream()
+				.limit(AdhocUnsafe.getLimitOrdinalToString())
 				.map(sm -> sm.getSlice() + "=" + IValueProvider.getValue(sm.getValueProvider()))
 				.collect(Collectors.joining(" "));
 	}
