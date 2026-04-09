@@ -140,7 +140,6 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	 * via a sequential merge pass.
 	 * </ol>
 	 */
-	@SuppressWarnings("PMD.CloseResource")
 	protected ICuboid produceOutputColumnPartitioned(List<? extends ICuboid> underlyings, int nbPartitions) {
 		// Step 1: process each input partition independently into its own unsharded output column (concurrent)
 		List<ICuboid> unshardedColumns = produceOutputPerInputPartition(underlyings, nbPartitions);
@@ -172,8 +171,10 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
+	@SuppressWarnings("PMD.CloseResource")
 	protected List<ICuboid> produceOutputPerInputPartition(List<? extends ICuboid> underlyings, int nbPartitions) {
 		ListeningExecutorService executor = factories.getExecutorService();
+		
 		List<ListenableFuture<ICuboid>> futures = new ArrayList<>(nbPartitions);
 		for (int p = 0; p < nbPartitions; p++) {
 			int partitionIndex = p;

@@ -51,6 +51,7 @@ import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
+import eu.solven.adhoc.util.map.LastLookupCache;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -97,9 +98,9 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
 
-	// TODO Purge policy
-	// TODO Compare perf with ThreadLocal
-	static final Map<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+	// Thread-local reference-equality fast path + ConcurrentHashMap slow path.
+	// Key parts for reference equality: (retainedColumns, sequencedKeysList, factory).
+	static final LastLookupCache<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new LastLookupCache<>();
 
 	public AbstractAdhocMap(ISliceFactory factory, SequencedSetLikeList sequencedKeys) {
 		this.factory = factory;
@@ -466,12 +467,27 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	}
 
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedKeysetCacheKey(retainedColumns, sequencedKeys.asList()),
-				k -> noCacheRetainKeyset(retainedColumns));
+		List<String> keyList = sequencedKeys.asList();
 
+		// Fast path: zero allocation, reference equality on (retainedColumns, keyList, factory)
+		RetainedKeySet cached = CACHE_RETAINEDKEYS.getByRef(retainedColumns, keyList, factory);
+		if (cached != null) {
+			return cached;
+		}
+
+		// Slow path: build composite key, compute if absent
+		return CACHE_RETAINEDKEYS.slowComputeIfAbsent(new Object[] { retainedColumns, keyList, factory },
+				() -> new RetainedKeysetCacheKey(retainedColumns, keyList),
+				_ -> computeRetainKeyset(retainedColumns, sequencedKeys, factory));
 	}
 
-	protected RetainedKeySet noCacheRetainKeyset(Set<String> retainedColumns) {
+	/**
+	 * Computes the {@link RetainedKeySet} without caching. This is static so that the cache mapping function does not
+	 * capture {@code this}.
+	 */
+	protected static RetainedKeySet computeRetainKeyset(Set<String> retainedColumns,
+			SequencedSetLikeList sequencedKeys,
+			ISliceFactory factory) {
 		Set<String> intersection;
 		if (sequencedKeys.containsAll(retainedColumns)) {
 			// In most cases, we retain a subSet
@@ -482,7 +498,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 		}
 		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
 
-		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+		List<String> sequencedKeysAsList = sequencedKeys.asList();
 		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
 			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
 
