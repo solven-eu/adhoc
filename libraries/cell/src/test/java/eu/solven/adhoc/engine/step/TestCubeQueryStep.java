@@ -23,8 +23,6 @@
 package eu.solven.adhoc.engine.step;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -152,7 +150,7 @@ public class TestCubeQueryStep {
 				.option(StandardQueryOptions.EXPLAIN)
 				.build();
 
-		Map<Object, Object> transverseCache = new HashMap<>();
+		ConcurrentMap<Object, Object> transverseCache = new ConcurrentHashMap<>();
 		step.setCrossStepsCache(transverseCache);
 
 		step.getCache().put("k", "v");

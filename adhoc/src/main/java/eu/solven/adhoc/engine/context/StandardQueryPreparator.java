@@ -35,6 +35,7 @@ import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
@@ -43,6 +44,8 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest.MeasureForestBuilder;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
+import eu.solven.adhoc.options.HasOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -93,6 +96,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 	IQueryStepCache queryStepCache = IQueryStepCache.noCache();
 
 	@Override
+	@SuppressWarnings("PMD.CloseResource")
 	public QueryPod prepareQuery(ITableWrapper table,
 			IMeasureForest forest,
 			IColumnsManager columnsManager,
@@ -100,15 +104,21 @@ public class StandardQueryPreparator implements IQueryPreparator {
 		ICubeQuery preparedQuery = combineWithImplicit(rawQuery);
 		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), preparedQuery);
 
+		ListeningExecutorService executorService = getExecutorService(preparedQuery);
+		IHasOptionsAndExecutorService withOptions = HasOptionsAndExecutorService.builder()
+				.options(preparedQuery.getOptions())
+				.executorService(executorService)
+				.build();
+		ISliceFactory sliceFactory = factories.getSliceFactoryFactory().makeFactory(withOptions);
 		QueryPod fullQueryPod = QueryPod.builder()
 				.query(preparedQuery)
 				.queryId(queryId)
 				.forest(forest)
 				.table(table)
 				.columnsManager(columnsManager)
-				.executorService(getExecutorService(preparedQuery))
+				.executorService(executorService)
 				.queryStepCache(getQueryStepCache(preparedQuery))
-				.sliceFactory(factories.getSliceFactoryFactory().makeFactory(preparedQuery))
+				.sliceFactory(sliceFactory)
 				.build();
 
 		// Filtering the forest is useful for edge-cases like:

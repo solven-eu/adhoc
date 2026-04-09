@@ -34,7 +34,7 @@ import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.IConsumingStream;
@@ -61,8 +61,8 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<ISli
 
 	@NonNull
 	@Default
-	ISliceFactory factory =
-			AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+	ISliceFactory factory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()
+			.makeFactory(IHasOptionsAndExecutorService.noOption());
 
 	@NonNull
 	final IMultitypeColumnFastGet<ISlice> masked;

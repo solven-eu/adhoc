@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.dataframe.column.partitioned.PartitionedForEachParameters;
+import eu.solven.adhoc.dataframe.column.partitioned.ForEachShardingParameters;
 import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.stream.IConsumingStream;
 
@@ -204,7 +204,7 @@ public class TestConsumingStream {
 
 		// Elements 0..8, partitioned into 3 buckets by modulo
 		IConsumingStream<Integer> stream = streamOfInts(0, 1, 2, 3, 4, 5, 6, 7, 8);
-		PartitioningHelpers.forEachPartitioned(PartitionedForEachParameters.<Integer>builder()
+		PartitioningHelpers.forEachSharding(ForEachShardingParameters.<Integer>builder()
 				.stream(stream)
 				.nbPartitions(3)
 				.partitioner(i -> i % 3)
@@ -223,7 +223,7 @@ public class TestConsumingStream {
 		AtomicInteger closed = new AtomicInteger();
 
 		IConsumingStream<String> stream = streamOf("a", "b").onClose(closed::incrementAndGet);
-		PartitioningHelpers.forEachPartitioned(PartitionedForEachParameters.<String>builder()
+		PartitioningHelpers.forEachSharding(ForEachShardingParameters.<String>builder()
 				.stream(stream)
 				.nbPartitions(2)
 				.partitioner(s -> s.charAt(0) % 2)
@@ -241,7 +241,7 @@ public class TestConsumingStream {
 
 		IConsumingStream<Integer> stream = streamOfInts(0, 1, 2);
 		Assertions.assertThatThrownBy(
-				() -> PartitioningHelpers.forEachPartitioned(PartitionedForEachParameters.<Integer>builder()
+				() -> PartitioningHelpers.forEachSharding(ForEachShardingParameters.<Integer>builder()
 						.stream(stream)
 						.nbPartitions(2)
 						.partitioner(i -> i % 2)
@@ -262,7 +262,7 @@ public class TestConsumingStream {
 		AtomicInteger count = new AtomicInteger();
 
 		IConsumingStream<Integer> stream = streamOfInts();
-		PartitioningHelpers.forEachPartitioned(PartitionedForEachParameters.<Integer>builder()
+		PartitioningHelpers.forEachSharding(ForEachShardingParameters.<Integer>builder()
 				.stream(stream)
 				.nbPartitions(4)
 				.partitioner(i -> i % 4)

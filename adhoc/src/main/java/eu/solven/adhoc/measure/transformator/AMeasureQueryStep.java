@@ -91,6 +91,7 @@ public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 				log.info("[DEBUG] Done processing {} slices", slicesDone);
 			}
 		});
+
 	}
 
 	/**

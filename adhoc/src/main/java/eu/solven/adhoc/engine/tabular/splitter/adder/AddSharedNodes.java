@@ -59,7 +59,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
@@ -80,7 +80,7 @@ public class AddSharedNodes implements IAddSharedNodes {
 
 	@Default
 	@NonNull
-	final IHasQueryOptionsAndExecutorService concurrencyOptions = IHasQueryOptionsAndExecutorService.noOption();
+	final IHasOptionsAndExecutorService concurrencyOptions = IHasOptionsAndExecutorService.noOption();
 
 	@Default
 	@NonNull

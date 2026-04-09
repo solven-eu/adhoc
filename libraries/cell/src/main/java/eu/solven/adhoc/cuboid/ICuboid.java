@@ -48,8 +48,8 @@ public interface ICuboid extends ICompactable {
 	 * 
 	 * @return true if `keySetStream` is already sorted
 	 */
-	@Deprecated(since = "Some structures can be mixed (e.g. a section is navigable, another is hash)")
-	boolean isSorted();
+	// @Deprecated(since = "Some structures can be mixed (e.g. a section is navigable, another is hash)")
+	// boolean isSorted();
 
 	long size();
 

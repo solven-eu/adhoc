@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,18 +20,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.options;
 
-import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Singular;
 
 /**
- * Some {@link ISliceFactory} will rely on some shared data-structure. This enables creating a context for given
- * sharing. Typically, a context is a single query.
+ * Relevant as we often check for {@link StandardQueryOptions#CONCURRENT}, in which case we would need the relevant
+ * {@link ListeningExecutorService} to submit tasks.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ISliceFactoryFactory {
+@Builder
+public class HasOptionsAndExecutorService implements IHasOptionsAndExecutorService {
+	@Singular
+	@NonNull
+	@Getter
+	final ImmutableSet<IQueryOption> options;
 
-	ISliceFactory makeFactory(IHasOptionsAndExecutorService queryOptions);
+	@NonNull
+	@Getter
+	@Default
+	final ListeningExecutorService executorService = MoreExecutors.newDirectExecutorService();
+
 }

@@ -114,14 +114,6 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	}
 
 	@Override
-	public boolean isSorted() {
-		if (values instanceof IIsSorted) {
-			return true;
-		}
-		return false;
-	}
-
-	@Override
 	public IConsumingStream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy) {
 		return values.stream(strategy);
 	}
@@ -157,11 +149,11 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 			IMultitypeColumnFastGet<ISlice> partitionValues =
 					(IMultitypeColumnFastGet<ISlice>) partitioned.getPartition(index);
 			return toBuilder().values(partitionValues).build();
-		}
-		if (index != 0) {
+		} else if (index != 0) {
 			throw new IndexOutOfBoundsException("Non-partitioned cuboid only has partition 0, requested " + index);
+		} else {
+			return this;
 		}
-		return this;
 	}
 
 	@Override

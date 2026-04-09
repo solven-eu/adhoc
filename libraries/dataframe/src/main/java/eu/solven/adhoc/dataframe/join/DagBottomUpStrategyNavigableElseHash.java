@@ -23,6 +23,7 @@
 package eu.solven.adhoc.dataframe.join;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;

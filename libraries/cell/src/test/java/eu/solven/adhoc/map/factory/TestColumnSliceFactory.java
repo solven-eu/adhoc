@@ -39,6 +39,7 @@ import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.AdhocMapUnsafe;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ColumnSliceFactory.MapBuilderPreKeys;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
 
 public class TestColumnSliceFactory {
@@ -175,8 +176,9 @@ public class TestColumnSliceFactory {
 
 	@Test
 	public void testAsyncFreezer() {
-		ColumnSliceFactory sliceFactory =
-				ColumnSliceFactory.builder().options(() -> Set.of(StandardQueryOptions.CONCURRENT)).build();
+		ColumnSliceFactory sliceFactory = ColumnSliceFactory.builder()
+				.options(IHasOptionsAndExecutorService.directExecutor(() -> Set.of(StandardQueryOptions.CONCURRENT)))
+				.build();
 		MapBuilderPreKeys mapBuilder = (MapBuilderPreKeys) sliceFactory.newMapBuilder();
 		Assertions.assertThat(AppendableTableUnsafe.getStrategy(((AAppendableTable) mapBuilder.pageFactory)))
 				.isInstanceOf(AsynchronousFreezingStrategy.class);

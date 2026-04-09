@@ -92,10 +92,12 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.transformator.IHasAggregationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.options.HasOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocBlackHole;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.IStopwatch;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -124,7 +126,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// @Getter is useful for tests. May be useful to help providing a relevant EventBus to other components.
 	@Getter
 	@SuppressWarnings("PMD.UnusedAssignment")
-	final IAdhocFactories factories = AdhocFactories.builder().build();
+	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
 
 	@NonNull
 	@Default
@@ -567,7 +569,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 	// TODO We should ensure this slice is valid given current filter
 	protected ISlice makeErrorSlice(CubeQueryStep queryStep, RuntimeException e) {
 		IMapBuilderPreKeys errorSliceAsMapBuilder = factories.getSliceFactoryFactory()
-				.makeFactory(queryStep)
+				.makeFactory(HasOptionsAndExecutorService.builder().options(queryStep.getOptions()).build())
 				.newMapBuilder(queryStep.getGroupBy().getSortedColumns());
 		queryStep.getGroupBy().getSortedColumns().forEach(groupedByColumn -> {
 			String coordinateForError = e.getClass().getName();

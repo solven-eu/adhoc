@@ -47,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-class PartitionedDispatcher<T> {
+class ShardingDispatcher<T> {
 	private final int nbPartitions;
 	private final int batchSize;
 	private final ToIntFunction<T> partitioner;
@@ -65,7 +65,7 @@ class PartitionedDispatcher<T> {
 	 * Creates a dispatcher from the given parameters.
 	 */
 	@SuppressWarnings("unchecked")
-	public PartitionedDispatcher(PartitionedForEachParameters<T> parameters) {
+	ShardingDispatcher(ForEachShardingParameters<T> parameters) {
 		this.nbPartitions = parameters.getNbPartitions();
 		this.batchSize = parameters.getBatchSize();
 		this.partitioner = parameters.getPartitioner();
@@ -85,7 +85,7 @@ class PartitionedDispatcher<T> {
 	 * every element.
 	 */
 	@SuppressWarnings("unchecked")
-	public void startConsumers() {
+	void startConsumers() {
 		for (int i = 0; i < nbPartitions; i++) {
 			BlockingDeque<List<Object>> queue = queues[i];
 			executor.execute(() -> {
@@ -117,7 +117,7 @@ class PartitionedDispatcher<T> {
 	 * iteration completes (or fails), sends poison pills to all consumer threads.
 	 */
 	@SuppressWarnings("unchecked")
-	public void produce(IConsumingStream<T> stream) {
+	void produce(IConsumingStream<T> stream) {
 		List<Object>[] buffers = new List[nbPartitions];
 		for (int i = 0; i < nbPartitions; i++) {
 			buffers[i] = new ArrayList<>(batchSize);
@@ -151,7 +151,7 @@ class PartitionedDispatcher<T> {
 	/**
 	 * Waits for all consumer threads to finish, then rethrows the first error (if any).
 	 */
-	public void awaitAndRethrow() {
+	void awaitAndRethrow() {
 		try {
 			latch.await();
 		} catch (InterruptedException e) {

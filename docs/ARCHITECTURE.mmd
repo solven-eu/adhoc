@@ -151,7 +151,7 @@ classDiagram
     CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
     TableQueryEngineFactory *-- UnsafeAdhocEventBusHelpers : eventBus
     ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
-    CubeQueryEngine *-- AdhocFactories : factories
+    CubeQueryEngine *-- AdhocFactoriesUnsafe : factories
     TableQueryEngineFactory *-- AdhocFactories : factories
     StandardQueryPreparator *-- AdhocFactoriesUnsafe : factories
     AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory

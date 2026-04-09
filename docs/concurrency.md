@@ -170,3 +170,80 @@ The chunked approach is the current direction. Pre-allocated structures remain i
 | In-memory aggregation  | `adhocCpuPool`                              | pure CPU                 |
 | Cache maintenance      | `maintenancePool`                           | background, daemon       |
 
+---
+
+## Sharding strategy for partitioned aggregation
+
+When `PARTITIONED` is active, the engine splits aggregation into N independent partitions.
+Each record is routed to a partition by a **shard key** so that all records belonging to the
+same slice land in the same partition, eliminating write contention.
+
+### Current approach: slice hashCode
+
+The current implementation shards on `slice.hashCode() % nbPartitions` (see
+`PartitioningHelpers.getPartitionIndex`). This is simple and works when the groupBy is stable
+across the DAG, but **the shard assignment changes whenever the groupBy changes**.
+
+A `Partitionor` measure, for example, computes a sub-query with a finer groupBy
+(e.g. `row_index`), then aggregates up to a coarser groupBy (e.g. `l`). The slice hashCode
+differs at each level, so partitioned data from the sub-query cannot be consumed
+partition-by-partition at the parent level — the partitioning boundary is broken and requires
+a full re-shuffle.
+
+### Alternatives considered
+
+|                                                 Strategy                                                 |                           Pros                           |                                                              Cons                                                              |
+|----------------------------------------------------------------------------------------------------------|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **Slice hashCode** (current)                                                                             | Simple, no configuration                                 | Shard key changes with groupBy; breaks partition locality across DAG levels                                                    |
+| **Hardcoded columns** (e.g. always shard on column `"l"`)                                                | Stable across DAG levels if the column is always present | Column may not exist in every groupBy; requires user configuration                                                             |
+| **DAG-inferred common columns** — find columns present in every GROUP BY and shard on their intersection | Automatic, stable when a common column exists            | Cumbersome; fragile if a filter pins a column to a single value (all records land in one partition); may find no common column |
+| **Table-level shard key** — `ITableWrapper` declares which columns are good shard keys                   | Domain-aware, stable                                     | Requires API extension; not all tables have a natural shard key                                                                |
+
+### Design constraints
+
+- **Deterministic:** same slice always maps to the same partition.
+- **Stable across DAG levels:** ideally a record partitioned at the table-scan level stays in the same partition when consumed by a combinator one level up, enabling partition-local processing without re-shuffling.
+- **Uniform distribution:** skewed keys (e.g. a column filtered to a single value) degrade to sequential processing.
+- **Cheap to compute:** evaluated once per record on the hot path.
+
+### Re-sharding at DAG boundaries (groupBy changes)
+
+When a DAG step changes the groupBy (e.g. `Partitionor` projects from a finer groupBy to a coarser one), the input partitions cannot be consumed directly as output partitions — the shard key changes and records must be re-distributed. Two strategies are considered:
+
+#### Strategy A: P x P partitions
+
+Each of P input partitions produces P output partitions (re-sharded by the new key), yielding P x P intermediate partitions. These are then merged pairwise into P final output partitions.
+
+- **Pro:** fully parallel at every step, no contention.
+- **Con:** P x P intermediate structures (e.g. 256 small columns for P=16); high memory fragmentation; complex merge step.
+
+#### Strategy B: P partitions + re-sharding forEach (chosen direction)
+
+Each of P input partitions produces a single output partition (mono-thread, no contention within a partition). This yields P intermediate partitions whose shard keys are based on the *input* groupBy — they are not yet sharded by the output key. A second pass (`shardingForEach`) re-distributes these P intermediate results into P final output partitions sharded by the output key.
+
+- **Pro:** only P intermediate structures; simpler; better cache locality.
+- **Con:** two sequential passes over the data (partition-local processing + re-sharding).
+
+Strategy B is the chosen direction because:
+1. Per-element work in aggregation steps is typically cheap, so the re-sharding pass adds little overhead.
+2. P intermediate columns are smaller and more cache-friendly than P x P tiny columns.
+3. It maps cleanly to two distinct operations: `shardedForEach` (process each input partition into its own output) and `shardingForEach` (re-distribute by the new shard key).
+
+#### Two flavours of partitioned forEach
+
+|     Operation     |                                                     Semantics                                                     |                        Concurrency                        |
+|-------------------|-------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| `shardingForEach` | Routes each element to one of P consumer threads by shard key. Elements from different partitions may interleave. | P consumer threads + 1 producer thread                    |
+| `shardedForEach`  | Iterates each input partition sequentially into its own dedicated output. No cross-partition interaction.         | P independent sequential iterations (can be parallelised) |
+
+A DAG step that changes the groupBy uses `shardedForEach` to produce P unsharded outputs, then `shardingForEach` to re-shard them into P outputs aligned with the new key.
+
+A DAG step that preserves the groupBy (e.g. `Combinator` with the same groupBy) can consume input partitions directly with `shardedForEach` — no re-sharding needed.
+
+### Open questions
+
+1. Should shard keys be configurable per query, per table, or per measure?
+2. Can we detect at query-planning time that a shard key will be skewed (e.g. filtered to a single value) and fall back to non-partitioned execution?
+3. Is there value in supporting re-partitioning at DAG boundaries (explicit shuffle step, similar to MapReduce/Spark), rather than requiring a single stable key?
+4. Can the `shardedForEach` + `shardingForEach` two-pass approach be fused into a single pass when the re-sharding function is known upfront?
+

@@ -46,7 +46,7 @@ import eu.solven.adhoc.engine.tabular.splitter.adder.IAddSharedNodes;
 import eu.solven.adhoc.engine.tabular.splitter.merger.IMergeInducers;
 import eu.solven.adhoc.engine.tabular.splitter.merger.MergeInducersStrictGroupBy;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -88,7 +88,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 
 	@SuppressWarnings("PMD.CloseResource")
 	@Override
-	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		// 1. Add inference between existing nodes
 		// If we add such links, we tell the induced will be inferred by Adhoc and there will be less inducers for
@@ -153,7 +153,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	}
 
 	@Override
-	public IAdhocDag<TableQueryStep> getLazyGraph(IHasQueryOptionsAndExecutorService hasOptions,
+	public IAdhocDag<TableQueryStep> getLazyGraph(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		// 4. Now, we want to add some additional sharing nodes: these are never inducers but in the middle of the DAG.
 		// They will help computing only once elements of inference (e.g. some filter or some groupBy)
@@ -170,7 +170,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 *            current DAG
 	 * @return a DAG fragment containing any newly added shared nodes
 	 */
-	protected IAdhocDag<TableQueryStep> addSharedNodes(IHasQueryOptionsAndExecutorService hasOptions,
+	protected IAdhocDag<TableQueryStep> addSharedNodes(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		IAddSharedNodes sharedNodesAdder = makeSharedNodesAdder(hasOptions, filterBundle);
 		return sharedNodesAdder.addSharedNodes(inducedToInducer);
@@ -209,7 +209,7 @@ public class InduceByAdhoc extends AInduceByAdhocParent {
 	 *            query-scoped filter tools
 	 * @return a configured shared-node adder
 	 */
-	protected IAddSharedNodes makeSharedNodesAdder(IHasQueryOptionsAndExecutorService hasOptions,
+	protected IAddSharedNodes makeSharedNodesAdder(IHasOptionsAndExecutorService hasOptions,
 			IFilterQueryBundle queryBundle) {
 		return sharedNodesAdderFactory.make(hasOptions, queryBundle);
 	}

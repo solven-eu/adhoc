@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.encoding.page;
 
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 
 /**
  * Holds the logic to make {@link IAppendableTable}.
@@ -31,5 +31,5 @@ import eu.solven.adhoc.options.IHasQueryOptions;
  */
 @FunctionalInterface
 public interface IAppendableTableFactory {
-	IAppendableTable makeTable(IHasQueryOptions options);
+	IAppendableTable makeTable(IHasOptionsAndExecutorService options);
 }

@@ -35,7 +35,7 @@ import eu.solven.adhoc.encoding.page.ITableRowWrite;
 import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -62,7 +62,7 @@ public class ColumnSliceFactory extends ASliceFactory {
 	@Default
 	@NonNull
 	@Getter(AccessLevel.PROTECTED)
-	protected final IHasQueryOptions options = IHasQueryOptions.noOption();
+	protected final IHasOptionsAndExecutorService options = IHasOptionsAndExecutorService.noOption();
 
 	@Default
 	@NonNull

@@ -36,8 +36,8 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.dataframe.aggregating.PartitionedMultitypeMergeableGrid;
+import eu.solven.adhoc.dataframe.column.partitioned.ForEachShardingParameters;
 import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
-import eu.solven.adhoc.dataframe.column.partitioned.PartitionedForEachParameters;
 import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
@@ -177,22 +177,18 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 				if (grid instanceof IPartitioned<?> partitioned) {
 					int nbPartitions = partitioned.getNbPartitions();
-					PartitioningHelpers
-							.forEachPartitioned(PartitionedForEachParameters.<GroupByAndTabularRecord>builder()
-									.stream(records2)
-									.nbPartitions(nbPartitions)
-									.partitioner(input -> {
-										ISlice slice = input.retainedRecord().asSlice();
-										return PartitioningHelpers.getPartitionIndex(slice, nbPartitions);
-									})
-									.consumer(input -> {
-										forEachMeasure(input.groupByMarker(),
-												input.retainedRecord(),
-												peekOnCoordinate,
-												grid);
-									})
-									.executor(queryPod.getExecutorService())
-									.build());
+					PartitioningHelpers.forEachSharding(ForEachShardingParameters.<GroupByAndTabularRecord>builder()
+							.stream(records2)
+							.nbPartitions(nbPartitions)
+							.partitioner(input -> {
+								ISlice slice = input.retainedRecord().asSlice();
+								return PartitioningHelpers.getPartitionIndex(slice, nbPartitions);
+							})
+							.consumer(input -> {
+								forEachMeasure(input.groupByMarker(), input.retainedRecord(), peekOnCoordinate, grid);
+							})
+							.executor(queryPod.getExecutorService())
+							.build());
 				} else {
 					// synchronized: when CONCURRENT is active, Arrow batches may be processed
 					// concurrently, so multiple threads can call forEachMeasure simultaneously

@@ -40,7 +40,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -79,7 +79,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 */
 	@Override
 	@SuppressWarnings("PMD.CloseResource")
-	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> steps = inducedToInducer.vertexSet();
 		if (steps.isEmpty()) {

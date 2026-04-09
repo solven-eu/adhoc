@@ -26,10 +26,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Booleans;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -37,10 +38,12 @@ import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
 import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
+import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.stream.partitioned.PartitionedConsumingStream;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,39 +70,54 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 */
 	public static IConsumingStream<SliceAndMeasures> distinctSlices(CubeQueryStep queryStep,
 			List<? extends ICuboid> underlyings) {
-		int commonPartitions = commonPartitionCount(underlyings);
-		if (commonPartitions > 1) {
+		OptionalInt commonPartitions = PartitioningHelpers.commonPartitionCount(underlyings);
+		if (commonPartitions.isPresent()) {
 			// Process each partition independently and concatenate the results
 			List<IConsumingStream<SliceAndMeasures>> perPartition = new ArrayList<>();
-			for (int p = 0; p < commonPartitions; p++) {
+			for (int p = 0; p < commonPartitions.getAsInt(); p++) {
 				int partitionIndex = p;
 				List<ICuboid> partitionCuboids = underlyings.stream()
 						.map(c -> ((IPartitioned<ICuboid>) c).getPartition(partitionIndex))
 						.toList();
 				perPartition.add(distinctSlicesAsStream(queryStep, partitionCuboids));
 			}
-			return IConsumingStream.concat(perPartition);
+			return PartitionedConsumingStream.<SliceAndMeasures>builder().partitions(perPartition).build();
 		} else {
 			return distinctSlicesAsStream(queryStep, underlyings);
 		}
 	}
 
 	/**
-	 * @return the common partition count if all cuboids are partitioned with the same count, or -1 otherwise.
+	 * Pre-computed per-cuboid data: the lazy unsorted stream (from {@code stream(SORTED_SUB_COMPLEMENT)}, obtained
+	 * exactly once), and the value-lookup function for the unsorted pass.
+	 *
+	 * <p>
+	 * {@code valueLookup} returns {@link IValueProvider#NULL} for fully-sorted cuboids (whose unsorted stream is
+	 * empty), and delegates to {@code cuboid::onValue} otherwise.
+	 *
+	 * @param unsortedStream
+	 *            the lazy stream of unsorted slices — consumed at most once during the unsorted pass
+	 * @param valueLookup
+	 *            maps a slice to its value provider for this cuboid
 	 */
-	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
-	protected static int commonPartitionCount(List<? extends ICuboid> underlyings) {
-		int[] distinct = underlyings.stream()
-				.mapToInt(c -> c instanceof IPartitioned<?> p ? p.getNbPartitions() : -1)
-				.distinct()
-				.toArray();
+	private record CuboidUnsortedLeg(IConsumingStream<SliceAndMeasure<ISlice>> unsortedStream,
+			Function<ISlice, IValueProvider> valueLookup) {
+	}
 
-		if (distinct.length == 1 && distinct[0] > 1) {
-			// May be `-1`
-			return distinct[0];
-		} else {
-			return -1;
+	/**
+	 * Builds the unsorted leg for each cuboid, calling {@code stream(SORTED_SUB_COMPLEMENT)} exactly once per cuboid.
+	 * The stream remains lazy — it is consumed later by {@link #unsortedStreams}.
+	 */
+	@SuppressWarnings("PMD.CloseResource")
+	private static List<CuboidUnsortedLeg> buildUnsortedLegs(List<? extends ICuboid> underlyings) {
+		List<CuboidUnsortedLeg> legs = new ArrayList<>(underlyings.size());
+		for (ICuboid cuboid : underlyings) {
+			IConsumingStream<SliceAndMeasure<ISlice>> unsorted = cuboid.stream(StreamStrategy.SORTED_SUB_COMPLEMENT);
+			// We cannot know cheaply if the stream is empty without consuming it.
+			// Assume it may have content; empty streams simply produce nothing when consumed.
+			legs.add(new CuboidUnsortedLeg(unsorted, cuboid::onValue));
 		}
+		return legs;
 	}
 
 	/**
@@ -122,42 +140,28 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 			});
 		}
 
-		IConsumingStream<SliceAndMeasures> sortedSlices = mergeSortedStreamDistinct(queryStep, underlyings);
+		IConsumingStream<SliceAndMeasures> sortedSlicesStream = mergeSortedStreamDistinct(queryStep, underlyings);
 
-		boolean[] indexToNotSorted = new boolean[underlyings.size()];
+		// Build unsorted legs once — each cuboid's stream(SORTED_SUB_COMPLEMENT) is called exactly once
+		List<CuboidUnsortedLeg> unsortedLegs = buildUnsortedLegs(underlyings);
 
-		for (int i = 0; i < underlyings.size(); i++) {
-			// TODO We may have count the number of notSorted processed slices, to know if there is no more pending
-			// slices
-			if (underlyings.get(i).stream(StreamStrategy.SORTED_SUB_COMPLEMENT).findAny().isPresent()) {
-				indexToNotSorted[i] = true;
-			}
-		}
-
-		if (!Booleans.contains(indexToNotSorted, true)) {
-			// Not a single notSorted leg
-			return sortedSlices;
-		}
-
-		// This is expensive: collected all sorted slices, to skip them from notSorted legs
-		Set<ISlice> sortedSlicesAsSet = new LinkedHashSet<>();
+		// Collect sorted slices lazily, so unsorted streams can skip already-processed slices
+		Set<ISlice> sortedSlices = new LinkedHashSet<>();
 
 		// BEWARE: This will fill `sortedSlicesAsSet` lazily, while iterating along sortedSlices, before processing
-		// notSorted slices. This relies on IConsumingStream being sequential (push-based).
-		sortedSlices = sortedSlices.peek(s -> {
-			sortedSlicesAsSet.add(s.getSlice().getSlice());
-		});
+		// unsorted slices. This relies on IConsumingStream being sequential (push-based).
+		sortedSlicesStream = sortedSlicesStream.peek(s -> sortedSlices.add(s.getSlice().getSlice()));
 
 		List<IConsumingStream<SliceAndMeasures>> unsortedStreams =
-				unsortedStreams(queryStep, underlyings, sortedSlicesAsSet);
+				unsortedStreams(queryStep, unsortedLegs, sortedSlices);
 
 		// Process ordered slices in priority. Good for MultitypeNavigableElseHashColumn
-		// unsortedStreams requires sortedSlices to be consumed first: IConsumingStream.fromStream(List)
+		// unsortedStreams requires sortedSlices to be consumed first: IConsumingStream.concat(List)
 		// concatenates sequentially, so this invariant holds.
-		List<IConsumingStream<SliceAndMeasures>> allStreams = new ArrayList<>();
-		allStreams.add(sortedSlices);
-		allStreams.addAll(unsortedStreams);
-		return IConsumingStream.concat(allStreams);
+		return IConsumingStream.concat(ImmutableList.<IConsumingStream<SliceAndMeasures>>builder()
+				.add(sortedSlicesStream)
+				.addAll(unsortedStreams)
+				.build());
 	}
 
 	/**
@@ -186,16 +190,17 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	}
 
 	/**
-	 * Builds one {@link IConsumingStream} per unsorted cuboid, each filtering out slices already seen by the sorted
-	 * pass or by previous unsorted cuboids.
-	 * 
-	 * BEWARE The output has to be processed sequentially as it relies on a state build by the iteration (i.e. the slice
-	 * already processed).
+	 * Builds one {@link IConsumingStream} per unsorted leg, each filtering out slices already seen by the sorted pass
+	 * or by previous unsorted legs.
+	 *
+	 * <p>
+	 * BEWARE The output has to be processed sequentially as it relies on state built by iteration (the slices already
+	 * processed).
 	 *
 	 * @param queryStep
 	 *            the considered queryStep.
-	 * @param underlyings
-	 *            a List of unsorted {@link ICuboid}
+	 * @param unsortedLegs
+	 *            pre-computed unsorted data for each cuboid
 	 * @param sortedSlicesAsSet
 	 *            the Set of slices which were already processed by the sorted streams. May be filled lazily, which is
 	 *            fine as long as unsorted streams are consumed strictly after the sorted streams.
@@ -203,71 +208,63 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 */
 	@SuppressWarnings("PMD.CloseResource")
 	private static List<IConsumingStream<SliceAndMeasures>> unsortedStreams(CubeQueryStep queryStep,
-			List<? extends ICuboid> underlyings,
+			List<CuboidUnsortedLeg> unsortedLegs,
 			Set<ISlice> sortedSlicesAsSet) {
 		Set<ISlice> unsortedSlicesAsSet = new LinkedHashSet<>();
 
-		int size = underlyings.size();
+		int size = unsortedLegs.size();
 		List<IConsumingStream<SliceAndMeasures>> unsortedStreams = new ArrayList<>(size);
 
-		// Iterate through unsorted stream of slices, considering each of them at a time, and skipping previously
-		// considered slices
 		for (int rawUnsortedIndex = 0; rawUnsortedIndex < size; rawUnsortedIndex++) {
 			int unsortedIndex = rawUnsortedIndex;
-			ICuboid cuboid = underlyings.get(unsortedIndex);
+			CuboidUnsortedLeg leg = unsortedLegs.get(unsortedIndex);
 
-			// Register the slices being added by current cuboid
-			// BEWARE We do that in a temporary Set so that current cuboid iteration does not check for the slice it
-			// added itself in current iteration
-			Set<ISlice> unsortedSlicesAsSetCurrent = new LinkedHashSet<>();
-
-			IConsumingStream<SliceAndMeasures> unsortedStream = cuboid.stream(StreamStrategy.SORTED_SUB_COMPLEMENT)
+			// The stream may be empty for fully-sorted cuboids — that's fine, it simply produces nothing
+			IConsumingStream<SliceAndMeasures> unsortedStream = leg.unsortedStream()
 					// Skip the slices already processed by sorted iterators
 					.filter(s -> !sortedSlicesAsSet.contains(s.getSlice()))
-					// Skip the slices processed by unsorted iterators
+					// Skip the slices processed by previous unsorted iterators
 					.filter(s -> !unsortedSlicesAsSet.contains(s.getSlice()))
 					.map(sliceAndMeasure -> {
 						List<IValueProvider> valueProviders =
-								makeValueProviders(underlyings, size, unsortedIndex, sliceAndMeasure);
+								makeValueProviders(unsortedLegs, unsortedIndex, sliceAndMeasure);
 
-						// If this is not the last unsorted stream
+						// If this is not the last unsorted stream, prevent this slice from being
+						// considered by next unsorted cuboids
 						if (unsortedIndex < size - 1) {
-							// Prevent this slice to be considered by next unsorted cuboids
-							unsortedSlicesAsSetCurrent.add(sliceAndMeasure.getSlice());
+							unsortedSlicesAsSet.add(sliceAndMeasure.getSlice());
 						}
 
 						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders);
 					});
 
 			unsortedStreams.add(unsortedStream);
-			unsortedSlicesAsSet.addAll(unsortedSlicesAsSetCurrent);
 		}
 		return unsortedStreams;
 	}
 
-	private static List<IValueProvider> makeValueProviders(List<? extends ICuboid> underlyings,
-			int size,
+	/**
+	 * Builds the value-provider list for a given slice across all cuboids. Uses each leg's pre-computed
+	 * {@link CuboidUnsortedLeg#valueLookup()} — returns {@link IValueProvider#NULL} for legs with no unsorted content
+	 * (i.e. fully sorted columns whose slices were already processed).
+	 */
+	private static List<IValueProvider> makeValueProviders(List<CuboidUnsortedLeg> unsortedLegs,
 			int unsortedIndex,
 			SliceAndMeasure<ISlice> sliceAndMeasure) {
+		int size = unsortedLegs.size();
 		ImmutableList.Builder<IValueProvider> valueProviders = ImmutableList.builderWithExpectedSize(size);
 
-		// No point in processing previous columns as their slices are already processed
+		// Previous columns' slices are already processed
 		for (int ii = 0; ii < unsortedIndex; ii++) {
 			valueProviders.add(IValueProvider.NULL);
 		}
 		for (int ii = unsortedIndex; ii < size; ii++) {
 			if (ii == unsortedIndex) {
-				// Current column
+				// Current column — use the value from the slice itself
 				valueProviders.add(sliceAndMeasure.getValueProvider());
 			} else {
-				ICuboid underlying = underlyings.get(ii);
-				if (underlying.isSorted()) {
-					// sorted columns got all their slices processed previously
-					valueProviders.add(IValueProvider.NULL);
-				} else {
-					// Only unsorted columns are candidate
-					valueProviders.add(underlying.onValue(sliceAndMeasure.getSlice()));
-				}
+				// Other columns — valueLookup returns NULL for fully-sorted legs, onValue otherwise
+				valueProviders.add(unsortedLegs.get(ii).valueLookup().apply(sliceAndMeasure.getSlice()));
 			}
 		}
 		return valueProviders.build();
