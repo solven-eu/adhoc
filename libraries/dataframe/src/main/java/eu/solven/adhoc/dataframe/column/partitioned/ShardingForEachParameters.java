@@ -33,7 +33,7 @@ import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Parameters for {@link PartitioningHelpers#forEachSharding(PartitionedForEachParameters)}.
+ * Parameters for {@link PartitioningHelpers#shardingForEach(PartitionedForEachParameters)}.
  *
  * @param <T>
  *            the element type
@@ -41,7 +41,7 @@ import lombok.Value;
  */
 @Value
 @Builder
-public class ForEachShardingParameters<T> {
+public class ShardingForEachParameters<T> {
 
 	/**
 	 * The source stream to consume.

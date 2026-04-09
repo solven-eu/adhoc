@@ -54,8 +54,8 @@ public interface IAdhocMap extends SequencedMap<String, Object>, IImmutable, Com
 	ISliceFactory getFactory();
 
 	/**
-	 * BEWARE the output keep its order, minus the not retained keys. In other words, the input does NOT define a new
-	 * order.
+	 * BEWARE the output has the input order, minus the not retained keys. In other words, the input columns does NOT
+	 * define a new order.
 	 * 
 	 * @param columns
 	 *            SHOULD be a subset of the existing columns.

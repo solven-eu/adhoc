@@ -380,6 +380,11 @@ public class ColumnsManager implements IColumnsManager {
 		return new IColumnValueTranscoder() {
 
 			@Override
+			public Set<String> mayTranscode() {
+				return mayBeTypeTranscoded;
+			}
+
+			@Override
 			public Set<String> mayTranscode(Set<String> recordColumns) {
 				return Sets.intersection(mayBeTypeTranscoded, recordColumns);
 			}

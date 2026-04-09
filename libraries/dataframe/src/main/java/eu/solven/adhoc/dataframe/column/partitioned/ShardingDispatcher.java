@@ -65,7 +65,7 @@ class ShardingDispatcher<T> {
 	 * Creates a dispatcher from the given parameters.
 	 */
 	@SuppressWarnings("unchecked")
-	ShardingDispatcher(ForEachShardingParameters<T> parameters) {
+	ShardingDispatcher(ShardingForEachParameters<T> parameters) {
 		this.nbPartitions = parameters.getNbPartitions();
 		this.batchSize = parameters.getBatchSize();
 		this.partitioner = parameters.getPartitioner();

@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link IGroupBy} based on a {@link Set} of {@link IAdhocColumn}.
- * 
+ *
  * It has similar semantic with ImmutableSet (e.g. SequencedSet) even if some methods returned Ordered information.
  *
  * @author Benoit Lacelle
@@ -177,8 +177,7 @@ public class GroupByColumns implements IGroupBy {
 		}
 
 		return retainedToGroupBy.computeIfAbsent(columns, ks -> {
-			List<IAdhocColumn> retainedColumns =
-					getColumns().stream().filter(c -> columns.contains(c.getName())).toList();
+			List<IAdhocColumn> retainedColumns = getColumns().stream().filter(c -> ks.contains(c.getName())).toList();
 
 			if (retainedColumns.size() == this.columns.size()) {
 				return this;

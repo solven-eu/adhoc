@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,41 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.transcoder.value;
+package eu.solven.adhoc.dataframe.row;
 
-import java.time.LocalDate;
-import java.util.Set;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
- * Enable transcoding from a raw column coordinate to a proper column coordinate.
- * 
- * This is typically used to transcode from {@link String} to {@link LocalDate}.
+ * An empty {@link ITabularRecordStream}
  * 
  * @author Benoit Lacelle
  */
-public interface IColumnValueTranscoder {
+public class EmptyTabularRecordStream implements ITabularRecordStream {
 
-	/**
-	 * The columns which may be transcoded.
-	 *
-	 * @return candidate for transcoding.
-	 */
-	Set<String> mayTranscode();
+	@Override
+	public IConsumingStream<ITabularRecord> records() {
+		return IConsumingStream.empty();
+	}
 
-	/**
-	 * A sub-Set of columns which are eligible for transcoding.
-	 * 
-	 * @param columns
-	 *            the columns of current records
-	 * @return candidate for transcoding. Should be a sub-set of input columns
-	 */
-	Set<String> mayTranscode(Set<String> columns);
+	@Override
+	public boolean isDistinctSlices() {
+		return true;
+	}
 
-	/**
-	 * 
-	 * @param column
-	 * @param value
-	 * @return the transcoded value.
-	 */
-	Object transcodeValue(String column, Object value);
+	@Override
+	public void close() {
+		// nothing to close
+	}
+
 }

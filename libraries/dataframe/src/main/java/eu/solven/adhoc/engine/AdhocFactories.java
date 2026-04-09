@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.engine;
 
-import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;

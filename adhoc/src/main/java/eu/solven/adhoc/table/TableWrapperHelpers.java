@@ -25,13 +25,11 @@ package eu.solven.adhoc.table;
 import java.util.List;
 import java.util.stream.Stream;
 
-import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import eu.solven.adhoc.dataframe.row.CompositeTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.stream.ConsumingStream;
-import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -48,7 +46,7 @@ public class TableWrapperHelpers {
 		List<ITabularRecordStream> underlyings =
 				tableQuery.flatMap(TableQueryV4::streamV3).map(v3 -> tableWrapper.streamSlices(queryPod, v3)).toList();
 
-		return composite(underlyings);
+		return CompositeTabularRecordStream.builder().underlyings(underlyings).build();
 	}
 
 	public static ITabularRecordStream v3TovV2(QueryPod queryPod,
@@ -57,52 +55,7 @@ public class TableWrapperHelpers {
 		List<ITabularRecordStream> underlyings =
 				tableQuery.flatMap(TableQueryV3::streamV2).map(v2 -> tableWrapper.streamSlices(queryPod, v2)).toList();
 
-		return composite(underlyings);
-	}
-
-	private static ITabularRecordStream composite(List<ITabularRecordStream> underlyings) {
-		return new ITabularRecordStream() {
-
-			@Override
-			public IConsumingStream<ITabularRecord> records() {
-				return ConsumingStream.<ITabularRecord>builder().source(consumer -> {
-					underlyings.stream().forEach(s -> s.records().forEach(consumer));
-				}).build();
-			}
-
-			@Override
-			public boolean isDistinctSlices() {
-				return false;
-			}
-
-			@Override
-			public void close() {
-				closeAll(underlyings);
-			}
-		};
-	}
-
-	// Relates with Guava Closer, but needed as Closed does not handle AutoCloseable
-	// https://github.com/google/guava/issues/3068
-	@SuppressWarnings("PMD.CloseResource")
-	protected static void closeAll(List<ITabularRecordStream> streams) {
-		Throwable firstThrown = null;
-		for (ITabularRecordStream stream : streams) {
-			try {
-				stream.close();
-			} catch (Exception e) {
-				if (firstThrown == null) {
-					firstThrown = e;
-				} else {
-					firstThrown.addSuppressed(e);
-				}
-			}
-		}
-		if (firstThrown instanceof RuntimeException re) {
-			throw re;
-		} else if (firstThrown != null) {
-			throw new RuntimeException(firstThrown);
-		}
+		return CompositeTabularRecordStream.builder().underlyings(underlyings).build();
 	}
 
 }

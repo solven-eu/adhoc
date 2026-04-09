@@ -60,6 +60,11 @@ public class TestAdhocMapHelpers {
 			public Set<String> mayTranscode(Set<String> columns) {
 				return Set.of();
 			}
+
+			@Override
+			public Set<String> mayTranscode() {
+				return Set.of();
+			}
 		});
 
 		Assertions.assertThat(transcoded).isNotSameAs(originalRecord).isEqualTo(originalRecord);

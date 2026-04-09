@@ -85,7 +85,7 @@ public class PartitioningHelpers {
 	 * @param parameters
 	 *            all configuration for the partitioned consumption
 	 */
-	public static <T> void forEachSharding(ForEachShardingParameters<T> parameters) {
+	public static <T> void shardingForEach(ShardingForEachParameters<T> parameters) {
 		ShardingDispatcher<T> dispatcher = new ShardingDispatcher<>(parameters);
 		dispatcher.startConsumers();
 		dispatcher.produce(parameters.getStream());

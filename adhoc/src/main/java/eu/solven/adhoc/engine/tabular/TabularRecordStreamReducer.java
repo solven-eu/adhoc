@@ -36,9 +36,9 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.dataframe.aggregating.PartitionedMultitypeMergeableGrid;
-import eu.solven.adhoc.dataframe.column.partitioned.ForEachShardingParameters;
 import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
 import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
+import eu.solven.adhoc.dataframe.column.partitioned.ShardingForEachParameters;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
@@ -177,7 +177,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 
 				if (grid instanceof IPartitioned<?> partitioned) {
 					int nbPartitions = partitioned.getNbPartitions();
-					PartitioningHelpers.forEachSharding(ForEachShardingParameters.<GroupByAndTabularRecord>builder()
+					PartitioningHelpers.shardingForEach(ShardingForEachParameters.<GroupByAndTabularRecord>builder()
 							.stream(records2)
 							.nbPartitions(nbPartitions)
 							.partitioner(input -> {
