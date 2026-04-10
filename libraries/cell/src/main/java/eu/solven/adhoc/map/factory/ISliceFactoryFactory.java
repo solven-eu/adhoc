@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 
 /**
  * Some {@link ISliceFactory} will rely on some shared data-structure. This enables creating a context for given
@@ -33,5 +33,5 @@ import eu.solven.adhoc.options.IHasQueryOptions;
 @FunctionalInterface
 public interface ISliceFactoryFactory {
 
-	ISliceFactory makeFactory(IHasQueryOptions queryOptions);
+	ISliceFactory makeFactory(IHasOptionsAndExecutorService queryOptions);
 }

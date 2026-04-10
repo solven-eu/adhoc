@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -46,6 +45,7 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasName;
+import eu.solven.adhoc.util.cache.LastLookupCache;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * {@link IGroupBy} based on a {@link Set} of {@link IAdhocColumn}.
- * 
+ *
  * It has similar semantic with ImmutableSet (e.g. SequencedSet) even if some methods returned Ordered information.
  *
  * @author Benoit Lacelle
@@ -67,7 +67,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-@EqualsAndHashCode(exclude = { "cachedNameToColumn", "retainedToGroupBy" })
+@EqualsAndHashCode(exclude = { "cachedNameToColumn" })
 public class GroupByColumns implements IGroupBy {
 
 	@Singular
@@ -81,9 +81,9 @@ public class GroupByColumns implements IGroupBy {
 	final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn =
 			Suppliers.memoize(() -> namedColumns(getColumns()));
 
-	// Used a cache as this may be called once per ITabularRecord
-	@JsonIgnore
-	final Map<Set<String>, IGroupBy> retainedToGroupBy = new ConcurrentHashMap<>();
+	// Static thread-local cache: reference-equality fast path on (this, columns) avoids
+	// hashCode on Set<String> on the hot path (called once per ITabularRecord).
+	private static final LastLookupCache<IGroupBy> RETAIN_CACHE = new LastLookupCache<>(2);
 
 	@Override
 	public String toString() {
@@ -171,20 +171,27 @@ public class GroupByColumns implements IGroupBy {
 	}
 
 	@Override
-	public @NonNull IGroupBy retainAll(Set<String> columns) {
-		if (this.columns.isEmpty() || columns.isEmpty()) {
+	public @NonNull IGroupBy retainAll(Set<String> retainedColumns) {
+		if (this.columns.isEmpty() || retainedColumns.isEmpty()) {
 			return GRAND_TOTAL;
 		}
 
-		return retainedToGroupBy.computeIfAbsent(columns, ks -> {
-			List<IAdhocColumn> retainedColumns =
-					getColumns().stream().filter(c -> columns.contains(c.getName())).toList();
+		// Fast path: reference equality on (this, columns)
+		IGroupBy cached = RETAIN_CACHE.getByRef(this, retainedColumns);
+		if (cached != null) {
+			return cached;
+		}
 
-			if (retainedColumns.size() == this.columns.size()) {
+		// Slow path
+		return RETAIN_CACHE.slowComputeIfAbsent(new Object[] { this, retainedColumns }, () -> {
+			List<IAdhocColumn> retainedCs =
+					getColumns().stream().filter(c -> retainedColumns.contains(c.getName())).toList();
+
+			if (retainedCs.size() == this.columns.size()) {
 				return this;
 			}
 
-			return of(retainedColumns);
+			return of(retainedCs);
 		});
 	}
 

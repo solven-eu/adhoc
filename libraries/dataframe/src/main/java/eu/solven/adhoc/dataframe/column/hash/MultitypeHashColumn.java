@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.dataframe.column.hash;
 
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -43,6 +42,8 @@ import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
@@ -232,15 +233,9 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		// it would require searching the column providing given type
 
 		// https://github.com/vigna/fastutil/issues/279
-		Object2LongMaps.fastForEach(sliceToL, entry -> {
-			rowScanner.onKey(entry.getKey()).onLong(entry.getLongValue());
-		});
-		Object2DoubleMaps.fastForEach(sliceToD, entry -> {
-			rowScanner.onKey(entry.getKey()).onDouble(entry.getDoubleValue());
-		});
-		Object2ObjectMaps.fastForEach(sliceToO, entry -> {
-			rowScanner.onKey(entry.getKey()).onObject(entry.getValue());
-		});
+		Object2LongMaps.fastForEach(sliceToL, e -> rowScanner.onKey(e.getKey()).onLong(e.getLongValue()));
+		Object2DoubleMaps.fastForEach(sliceToD, e -> rowScanner.onKey(e.getKey()).onDouble(e.getDoubleValue()));
+		Object2ObjectMaps.fastForEach(sliceToO, e -> rowScanner.onKey(e.getKey()).onObject(e.getValue()));
 	}
 
 	@Override
@@ -256,24 +251,15 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
-		Stream<SliceAndMeasure<T>> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(sliceToL))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onLong(entry.getLongValue()))
-						.build());
-		Stream<SliceAndMeasure<T>> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(sliceToD))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onDouble(entry.getDoubleValue()))
-						.build());
-		Stream<SliceAndMeasure<T>> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(sliceToO))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onObject(entry.getValue()))
-						.build());
-
-		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
+		return ConsumingStream.<SliceAndMeasure<T>>builder().source(consumer -> {
+			sliceToL.forEach((slice, o) -> consumer
+					.accept(SliceAndMeasure.<T>builder().slice(slice).valueProvider(vc -> vc.onLong(o)).build()));
+			sliceToD.forEach((slice, o) -> consumer
+					.accept(SliceAndMeasure.<T>builder().slice(slice).valueProvider(vc -> vc.onDouble(o)).build()));
+			sliceToO.forEach((slice, o) -> consumer
+					.accept(SliceAndMeasure.<T>builder().slice(slice).valueProvider(vc -> vc.onObject(o)).build()));
+		}).build();
 	}
 
 	@Override
@@ -294,10 +280,13 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
-	public Stream<T> keyStream() {
-		return Stream.of(sliceToD.keySet(), sliceToL.keySet(), sliceToO.keySet())
-				// No need for .distinct as each key is guaranteed to appear in a single column
-				.flatMap(Collection::stream);
+	public IConsumingStream<T> keyStream() {
+		// No need for .distinct as each key is guaranteed to appear in a single column
+		return ConsumingStream.<T>builder().source(consumer -> {
+			sliceToL.keySet().stream().forEach(consumer::accept);
+			sliceToD.keySet().stream().forEach(consumer::accept);
+			sliceToO.keySet().stream().forEach(consumer::accept);
+		}).build();
 
 	}
 
@@ -316,7 +305,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keyStream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
+		keyStream().toList().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
 
 			onValue(key).acceptReceiver(o -> {
 				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));

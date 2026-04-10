@@ -23,24 +23,27 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
-import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.encoding.page.IAppendableTable;
 import eu.solven.adhoc.encoding.page.IAppendableTableFactory;
 import eu.solven.adhoc.encoding.page.ITableRowRead;
 import eu.solven.adhoc.encoding.page.ITableRowWrite;
-import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTable;
 import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 
@@ -59,16 +62,16 @@ public class ColumnSliceFactory extends ASliceFactory {
 
 	@Default
 	@NonNull
-	protected final IHasQueryOptions options = IHasQueryOptions.noOption();
+	@Getter(AccessLevel.PROTECTED)
+	protected final IHasOptionsAndExecutorService options = IHasOptionsAndExecutorService.noOption();
 
 	@Default
 	@NonNull
+	@Getter(AccessLevel.PROTECTED)
 	protected final IAppendableTableFactory appendableTableFactory = new ThreadLocalAppendableTableFactory();
 
-	@Default
-	@NonNull
-	protected final IAppendableTable appendableTable =
-			ThreadLocalAppendableTable.builder().capacity(AdhocColumnUnsafe.getPageSize()).build();
+	protected final Supplier<IAppendableTable> pageFactorySupplier =
+			Suppliers.memoize(() -> getAppendableTableFactory().makeTable(getOptions()));
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
@@ -157,7 +160,7 @@ public class ColumnSliceFactory extends ASliceFactory {
 		 */
 		public static class MapBuilderPreKeysBuilder {
 			public MapBuilderPreKeysBuilder keys(Collection<? extends String> keys) {
-				return keysLikeList(factory.internKeyset(keys));
+				return keysLikeList(SequencedSetUnsafe.internKeyset(keys));
 			}
 		}
 	}
@@ -168,7 +171,7 @@ public class ColumnSliceFactory extends ASliceFactory {
 
 		return MapBuilderPreKeys.builder()
 				.factory(this)
-				.pageFactory(appendableTable)
+				.pageFactory(pageFactorySupplier.get())
 				.keys(ImmutableHelpers.copyOf(keys))
 				.build();
 	}

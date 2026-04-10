@@ -38,7 +38,7 @@ import eu.solven.adhoc.engine.tabular.grouper.TableStepsGrouper;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhocComplete;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV4;
@@ -70,7 +70,7 @@ public class TestTableQueryFactory {
 				.aggregator(Aggregator.sum("m1"))
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(2)
@@ -140,7 +140,7 @@ public class TestTableQueryFactory {
 				.build();
 
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 		// Check default is safe
 		optimizer.sanityChecks(split);
 

@@ -23,7 +23,6 @@
 package eu.solven.adhoc.dataframe.join;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -33,6 +32,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * Wraps the strategy to store results from {@link IMeasureQueryStep}, and to merge underlyings
@@ -86,5 +86,5 @@ public interface IDagBottomUpStrategy {
 	 * @return a {@link Stream} of {@link SliceAndMeasure}, which each {@link SliceAndMeasure} have a distinct
 	 *         {@link Slice}, and the relevant value from underlyings.
 	 */
-	Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
+	IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
 }

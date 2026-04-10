@@ -28,7 +28,7 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.splitter.InduceByAdhoc;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,7 +54,7 @@ public class MergeInducersLaxGroupBy extends MergeInducersStrictGroupBy {
 	protected void mergeGroups(LinkedHashMultimap<TableQueryStep, TableQueryStep> mergingToSteps) {
 		InduceByAdhoc inferrer = InduceByAdhoc.builder().build();
 		IAdhocDag<TableQueryStep> dag =
-				inferrer.splitInducedAsDag(IHasQueryOptionsAndExecutorService.noOption(), mergingToSteps.keySet());
+				inferrer.splitInducedAsDag(IHasOptionsAndExecutorService.noOption(), mergingToSteps.keySet());
 
 		log.warn("TODO Dispatch dag={}", dag);
 

@@ -20,38 +20,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.stream;
+package eu.solven.adhoc.stream;
 
 import java.util.function.Consumer;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
-import eu.solven.adhoc.dataframe.row.ITabularRecord;
+import lombok.Builder;
 import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Use a {@link Predicate} to filter {@link ITabularRecord}.
- * 
+ * Use a {@link Function} to map elements of one type to another, supporting cross-type transformations.
+ *
+ * @param <S>
+ *            the element type of the upstream stream
+ * @param <T>
+ *            the element type produced by this stream
  * @author Benoit Lacelle
  */
 @Slf4j
-@SuperBuilder
-public class FilteringConsumingStream<T> extends ConsumingStream<T> {
+@Builder(toBuilder = true)
+public class MappingConsumingStream<S, T> implements IConsumingStream<T> {
 
 	@NonNull
-	Predicate<? super T> predicate;
+	IConsumingStream<S> upstream;
+
+	@NonNull
+	Function<? super S, T> function;
 
 	@Override
 	public void forEach(Consumer<T> consumer) {
-		source.accept(tabularRecord -> {
-			if (!predicate.test(tabularRecord)) {
-				return;
-			}
+		try {
+			upstream.forEach(in -> {
+				T mapped = function.apply(in);
 
-			consumer.accept(tabularRecord);
-
-			peekers.forEach(peeker -> peeker.accept(tabularRecord));
-		});
+				consumer.accept(mapped);
+			});
+		} finally {
+			// Always close on exit, mirroring ConsumingStream semantics.
+			// upstream.close() is idempotent so a surrounding try-with-resources is still safe.
+			close();
+		}
 	}
+
+	@Override
+	public void close() {
+		upstream.close();
+	}
+
 }

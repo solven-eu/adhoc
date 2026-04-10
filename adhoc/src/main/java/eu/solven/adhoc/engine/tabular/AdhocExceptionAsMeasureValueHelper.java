@@ -36,6 +36,8 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps.TabularRecordOverMaps
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -49,8 +51,7 @@ public class AdhocExceptionAsMeasureValueHelper {
 	public static ITabularRecordStream makeErrorStream(TableQueryV4 transcodedQuery, Throwable e) {
 		return new ITabularRecordStream() {
 
-			@Override
-			public Stream<ITabularRecord> records() {
+			protected Stream<ITabularRecord> recordsAsStream() {
 				TabularRecordOverMapsBuilder errorRecordBuilder = TabularRecordOverMaps.builder();
 
 				return transcodedQuery.getGroupByToAggregators().asMap().entrySet().stream().map(e -> {
@@ -66,6 +67,13 @@ public class AdhocExceptionAsMeasureValueHelper {
 			}
 
 			@Override
+			public IConsumingStream<ITabularRecord> records() {
+				return ConsumingStream.<ITabularRecord>builder()
+						.source(consumer -> recordsAsStream().forEach(consumer))
+						.build();
+			}
+
+			@Override
 			public boolean isDistinctSlices() {
 				// Single error slice, hence distinct==true
 				return true;
@@ -76,10 +84,6 @@ public class AdhocExceptionAsMeasureValueHelper {
 				// nothing to close
 			}
 
-			@Override
-			public Object getTableQuery() {
-				return transcodedQuery;
-			}
 		};
 	}
 

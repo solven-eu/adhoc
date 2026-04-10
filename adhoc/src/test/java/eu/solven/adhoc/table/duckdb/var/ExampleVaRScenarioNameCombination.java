@@ -29,7 +29,7 @@ import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * Enabling a mapping from the column specifying a scenarioIndex to a column specifying a scenarioName.
@@ -48,21 +48,21 @@ public class ExampleVaRScenarioNameCombination implements ICombination {
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		ISliceReader sliceReader = slice.sliceReader();
 		IValueMatcher filteredScenarioIndex = sliceReader.getValueMatcher(IExampleVaRConstants.C_SCENARIOINDEX);
 
 		if (IValueMatcher.MATCH_ALL.equals(filteredScenarioIndex)) {
-			return vc -> vc.onObject(noScenario());
+			valueReceiver.onObject(noScenario());
 		} else {
 			if (filteredScenarioIndex instanceof Number filteredScenarioIndexAsNumber) {
 				int indexAsInt = filteredScenarioIndexAsNumber.intValue();
 
 				Object scenarioName = indexToName(indexAsInt);
-				return vc -> vc.onObject(scenarioName);
+				valueReceiver.onObject(scenarioName);
 			} else {
 				// BEWARE Unclear case: some measure generated an unexpected scenarioIndex
-				return vc -> vc.onObject(filteredScenarioIndex);
+				valueReceiver.onObject(filteredScenarioIndex);
 			}
 		}
 	}

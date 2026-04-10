@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.jooq.Field;
 import org.jooq.Record;
-import org.jooq.exception.InvalidResultException;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -35,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
+import eu.solven.adhoc.util.HotPath;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,13 +47,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JooqTabularRecordFactory {
 
+	@HotPath("once per record for ITableWrapper")
 	public static ITabularRecord makeRecord(ITabularRecordFactory tabularRecordFactory, Record r) {
-
-		Set<String> absentColumns = tabularRecordFactory.getOptionalColumns().stream().filter(c -> {
-			Field<?> groupingField = r.field(JooqTableQueryFactory.groupingAlias(c));
-
-			return !Integer.valueOf(0).equals(groupingField.getValue(r));
-		}).collect(ImmutableSet.toImmutableSet());
+		Set<String> absentColumns = getAbsentColumns(tabularRecordFactory, r);
 
 		TabularRecordBuilder recordBuilder = tabularRecordFactory.makeTabularRecordBuilder(absentColumns);
 
@@ -67,11 +63,7 @@ public class JooqTabularRecordFactory {
 				Object value = r.get(columnShift + i);
 				if (value != null) {
 					String columnName = aggregateFields.get(i);
-					Object previousValue = recordBuilder.appendAggregate(columnName, value);
-
-					if (previousValue != null) {
-						throw new InvalidResultException("Field " + columnName + " is not unique in Record : " + r);
-					}
+					recordBuilder.appendAggregate(columnName, value);
 				}
 			}
 
@@ -101,6 +93,27 @@ public class JooqTabularRecordFactory {
 		}
 
 		return recordBuilder.build();
+	}
+
+	@HotPath("once per record for ITableWrapper")
+	private static Set<String> getAbsentColumns(ITabularRecordFactory tabularRecordFactory, Record r) {
+		if (tabularRecordFactory.getOptionalColumns().isEmpty()) {
+			return ImmutableSet.of();
+		} else {
+			// TODO Could we cache this branch?
+			ImmutableSet.Builder<String> absentColumns =
+					ImmutableSet.builderWithExpectedSize(tabularRecordFactory.getOptionalColumns().size());
+
+			tabularRecordFactory.getOptionalColumns().forEach(optionalColumn -> {
+				Field<?> groupingField = r.field(JooqTableQueryFactory.groupingAlias(optionalColumn));
+
+				if (!Integer.valueOf(0).equals(groupingField.getValue(r))) {
+					absentColumns.add(optionalColumn);
+				}
+			});
+
+			return absentColumns.build();
+		}
 	}
 
 }

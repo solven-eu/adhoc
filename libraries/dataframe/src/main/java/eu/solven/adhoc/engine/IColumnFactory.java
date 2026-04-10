@@ -23,7 +23,6 @@
 package eu.solven.adhoc.engine;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
@@ -33,6 +32,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * Holds the strategy to create {@link IMultitypeColumn} and {@link Cuboid}.
@@ -89,5 +89,5 @@ public interface IColumnFactory {
 	 * @param underlyings
 	 * @return
 	 */
-	Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
+	IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
 }

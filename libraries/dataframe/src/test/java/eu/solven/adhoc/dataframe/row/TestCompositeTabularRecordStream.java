@@ -20,35 +20,73 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table;
+package eu.solven.adhoc.dataframe.row;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.dataframe.row.ITabularRecord;
-import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 
-public class TestTableWrapperHelpers {
+/**
+ * Tests for {@link CompositeTabularRecordStream}.
+ *
+ * @author Benoit Lacelle
+ */
+public class TestCompositeTabularRecordStream {
+
+	@Test
+	public void testIsDistinctSlices_empty() {
+		CompositeTabularRecordStream composite = CompositeTabularRecordStream.builder().build();
+
+		Assertions.assertThat(composite.isDistinctSlices()).isTrue();
+	}
+
+	@Test
+	public void testIsDistinctSlices_singleDistinct() {
+		ITabularRecordStream distinct = new SuppliedTabularRecordConsumingStream("s", true, IConsumingStream::empty);
+
+		CompositeTabularRecordStream composite = CompositeTabularRecordStream.builder().underlying(distinct).build();
+
+		Assertions.assertThat(composite.isDistinctSlices()).isTrue();
+	}
+
+	@Test
+	public void testIsDistinctSlices_singleNonDistinct() {
+		ITabularRecordStream nonDistinct =
+				new SuppliedTabularRecordConsumingStream("s", false, IConsumingStream::empty);
+
+		CompositeTabularRecordStream composite = CompositeTabularRecordStream.builder().underlying(nonDistinct).build();
+
+		Assertions.assertThat(composite.isDistinctSlices()).isFalse();
+	}
+
+	@Test
+	public void testIsDistinctSlices_twoDistinct() {
+		ITabularRecordStream distinct1 = new SuppliedTabularRecordConsumingStream("s1", true, IConsumingStream::empty);
+		ITabularRecordStream distinct2 = new SuppliedTabularRecordConsumingStream("s2", true, IConsumingStream::empty);
+
+		CompositeTabularRecordStream composite =
+				CompositeTabularRecordStream.builder().underlying(distinct1).underlying(distinct2).build();
+
+		// Two distinct streams may have overlapping slices, so the composite is not guaranteed distinct
+		Assertions.assertThat(composite.isDistinctSlices()).isFalse();
+	}
 
 	static ITabularRecordStream streamThatClosesNormally(AtomicInteger closeCount) {
 		return new ITabularRecordStream() {
+
 			@Override
-			public Stream<ITabularRecord> records() {
-				return Stream.empty();
+			public IConsumingStream<ITabularRecord> records() {
+				return IConsumingStream.empty();
 			}
 
 			@Override
 			public boolean isDistinctSlices() {
 				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return null;
 			}
 
 			@Override
@@ -61,18 +99,13 @@ public class TestTableWrapperHelpers {
 	static ITabularRecordStream streamThatThrowsOnClose(AtomicInteger closeCount, String message) {
 		return new ITabularRecordStream() {
 			@Override
-			public Stream<ITabularRecord> records() {
-				return Stream.empty();
+			public IConsumingStream<ITabularRecord> records() {
+				return IConsumingStream.empty();
 			}
 
 			@Override
 			public boolean isDistinctSlices() {
 				return false;
-			}
-
-			@Override
-			public Object getTableQuery() {
-				return null;
 			}
 
 			@Override
@@ -86,13 +119,14 @@ public class TestTableWrapperHelpers {
 	@Test
 	public void testCloseAll_noStreams() {
 		// Should not throw
-		TableWrapperHelpers.closeAll(List.of());
+		CompositeTabularRecordStream.closeAll(List.of());
 	}
 
 	@Test
 	public void testCloseAll_allSucceed() {
 		AtomicInteger closed = new AtomicInteger();
-		TableWrapperHelpers.closeAll(List.of(streamThatClosesNormally(closed), streamThatClosesNormally(closed)));
+		CompositeTabularRecordStream
+				.closeAll(List.of(streamThatClosesNormally(closed), streamThatClosesNormally(closed)));
 
 		Assertions.assertThat(closed).hasValue(2);
 	}
@@ -102,7 +136,7 @@ public class TestTableWrapperHelpers {
 		AtomicInteger closed = new AtomicInteger();
 
 		Assertions
-				.assertThatThrownBy(() -> TableWrapperHelpers
+				.assertThatThrownBy(() -> CompositeTabularRecordStream
 						.closeAll(List.of(streamThatThrowsOnClose(closed, "first"), streamThatClosesNormally(closed))))
 				.isInstanceOf(RuntimeException.class)
 				.hasMessage("first");
@@ -115,7 +149,7 @@ public class TestTableWrapperHelpers {
 		AtomicInteger closed = new AtomicInteger();
 
 		Assertions
-				.assertThatThrownBy(() -> TableWrapperHelpers.closeAll(
+				.assertThatThrownBy(() -> CompositeTabularRecordStream.closeAll(
 						List.of(streamThatThrowsOnClose(closed, "first"), streamThatThrowsOnClose(closed, "second"))))
 				.isInstanceOf(RuntimeException.class)
 				.hasMessage("first")

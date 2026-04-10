@@ -72,6 +72,7 @@ public enum StandardQueryOptions implements IQueryOption {
 	/**
 	 * Enable partitioning of queries. Typically based on a modulo over the hash of `ISlice`.
 	 */
+	@Deprecated(since = "Not ready")
 	PARTITIONED,
 
 	/**

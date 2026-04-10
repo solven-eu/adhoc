@@ -24,11 +24,13 @@ package eu.solven.adhoc.measure.combination;
 
 import java.util.List;
 
+import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.SlicedRecordFromArray;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * An {@link ICombination} can turn a {@link List} of values (typically from {@link Combinator}) into a new value. As a
@@ -41,8 +43,8 @@ import eu.solven.adhoc.primitive.IValueProvider;
 public interface ICombination {
 
 	// TODO This shall become the optimal API, not to require to provide Objects
-	default IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		return vc -> vc.onObject(combine(slice, slicedRecord.asList()));
+	default void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver receiver) {
+		receiver.onObject(combine(slice, slicedRecord.asList()));
 	}
 
 	/**
@@ -51,11 +53,12 @@ public interface ICombination {
 	 *            the underlying measures values for current slice.
 	 * @return the combined result at given slice.
 	 */
+	// BEWARE This default implementation is useful for edge-cases like unit-tests
 	default Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		SlicedRecordFromArray slicedRecord = SlicedRecordFromArray.builder().measures(underlyingValues).build();
-		IValueProvider valueProvider = combine(slice, slicedRecord);
 
-		return IValueProvider.getValue(valueProvider);
+		ProxyValueReceiver vr = ProxyValueReceiver.builder().build();
+		combine(slice, slicedRecord, vr);
+		return IValueProvider.getValue(vr.asValueProvider());
 	}
-
 }

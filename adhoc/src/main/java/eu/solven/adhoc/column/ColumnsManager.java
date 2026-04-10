@@ -71,6 +71,8 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.GroupByColumns.GroupByColumnsBuilder;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.IHasAliasedColumns;
@@ -268,11 +270,6 @@ public class ColumnsManager implements IColumnsManager {
 		return new ITabularRecordStream() {
 
 			@Override
-			public Object getTableQuery() {
-				return tabularRecordStream.getTableQuery();
-			}
-
-			@Override
 			public boolean isDistinctSlices() {
 				// TODO Study how this flag could be impacted by transcoding
 				if (transcodingContext.getNameToCalculated().isEmpty()) {
@@ -286,26 +283,13 @@ public class ColumnsManager implements IColumnsManager {
 			}
 
 			@Override
-			public Stream<ITabularRecord> records() {
-				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
-				ITableReverseAliaser columnTranscoder = prepareColumnTranscoder(transcodingContext);
-				FilterMatcher postFilterer = FilterMatcher.builder()
-						.filter(postFilter)
-						.onMissingColumn(FilterMatcher.failOnMissing())
-						.build();
-
-				return tabularRecordStream.records()
-						.map(row -> transcodeTypes(valueTranscoder, row))
-						// TODO Should we transcode type before or after columnNames?
-						.map(notTranscoded -> notTranscoded.transcode(columnTranscoder))
-						// calculate columns after transcoding, as these expression are generally table-independent
-						.map(row -> evaluateCalculated(transcodingContext, row))
-						// TODO Filter
-						.filter(row -> filterCalculatedColumns(postFilterer, row));
+			public IConsumingStream<ITabularRecord> records() {
+				// Push-based implementation that delegates to forEach, which is
+				// concurrent-safe (e.g. Arrow CONCURRENT batches).
+				return ConsumingStream.<ITabularRecord>builder().source(this::forEach).build();
 			}
 
-			@Override
-			public void forEach(Consumer<ITabularRecord> consumer) {
+			protected void forEach(Consumer<ITabularRecord> consumer) {
 				IColumnValueTranscoder valueTranscoder = prepareTypeTranscoder(transcodingContext);
 				ITableReverseAliaser columnTranscoder = prepareColumnTranscoder(transcodingContext);
 				FilterMatcher postFilterer = FilterMatcher.builder()
@@ -313,7 +297,7 @@ public class ColumnsManager implements IColumnsManager {
 						.onMissingColumn(FilterMatcher.failOnMissing())
 						.build();
 
-				tabularRecordStream.forEach(rawRecord -> {
+				tabularRecordStream.records().forEach(rawRecord -> {
 					ITabularRecord typeTranscoded = transcodeTypes(valueTranscoder, rawRecord);
 
 					// TODO Should we transcode type before or after columnNames?
@@ -394,6 +378,11 @@ public class ColumnsManager implements IColumnsManager {
 				.collect(ImmutableSet.toImmutableSet());
 
 		return new IColumnValueTranscoder() {
+
+			@Override
+			public Set<String> mayTranscode() {
+				return mayBeTypeTranscoded;
+			}
 
 			@Override
 			public Set<String> mayTranscode(Set<String> recordColumns) {

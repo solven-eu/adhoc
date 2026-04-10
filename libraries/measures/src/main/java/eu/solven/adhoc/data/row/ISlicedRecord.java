@@ -53,6 +53,10 @@ public interface ISlicedRecord {
 	 */
 	IValueProvider read(int index);
 
+	default boolean isNull(int index) {
+		return IValueProvider.isNull(read(index));
+	}
+
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
 	default List<?> asList() {
 		return IntStream.range(0, size()).mapToObj(index -> IValueProvider.getValue(read(index))).toList();

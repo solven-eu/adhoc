@@ -22,13 +22,18 @@
  */
 package eu.solven.adhoc.dataframe.column.partitioned;
 
+import java.util.List;
+import java.util.OptionalInt;
+
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility methods for hash-based partitioning as used by {@link IPartitioned} implementations.
  *
  * @author Benoit Lacelle
  */
+@Slf4j
 @UtilityClass
 public class PartitioningHelpers {
 
@@ -47,5 +52,43 @@ public class PartitioningHelpers {
 	 */
 	public static int getPartitionIndex(Object key, int nbPartitions) {
 		return Math.floorMod(key.hashCode(), nbPartitions);
+	}
+
+	/**
+	 * @return the common partition count if all inputs are partitioned with the same count >= 2.
+	 */
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
+	public static OptionalInt commonPartitionCount(List<?> underlyings) {
+		int[] distinct = underlyings.stream()
+				.mapToInt(c -> c instanceof IPartitioned<?> p ? p.getNbPartitions() : -1)
+				.distinct()
+				.toArray();
+
+		if (distinct.length == 1 && distinct[0] >= 2) {
+			return OptionalInt.of(distinct[0]);
+		} else {
+			return OptionalInt.empty();
+		}
+	}
+
+	/**
+	 * Partition-aware terminal operation: each element from the source stream is routed by the partitioner to one of N
+	 * dedicated consumer threads, so that all elements sharing the same partition index are processed sequentially by
+	 * the same thread. This eliminates write contention across partitions.
+	 *
+	 * <p>
+	 * This is conceptually similar to {@link java.util.stream.Stream#parallel()}, but deterministic: the partition
+	 * assignment is controlled by the caller, and each partition's elements are consumed in encounter order.
+	 *
+	 * @param <T>
+	 *            the element type
+	 * @param parameters
+	 *            all configuration for the partitioned consumption
+	 */
+	public static <T> void shardingForEach(ShardingForEachParameters<T> parameters) {
+		ShardingDispatcher<T> dispatcher = new ShardingDispatcher<>(parameters);
+		dispatcher.startConsumers();
+		dispatcher.produce(parameters.getStream());
+		dispatcher.awaitAndRethrow();
 	}
 }

@@ -47,7 +47,7 @@ import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQuery;

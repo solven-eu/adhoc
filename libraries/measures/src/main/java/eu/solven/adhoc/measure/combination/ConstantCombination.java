@@ -27,6 +27,7 @@ import java.util.Map;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
 /**
@@ -45,7 +46,7 @@ public class ConstantCombination implements ICombination {
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
-		return constantProvider;
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
+		constantProvider.acceptReceiver(valueReceiver);
 	}
 }

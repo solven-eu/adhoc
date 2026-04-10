@@ -35,6 +35,13 @@ import java.util.Set;
 public interface IColumnValueTranscoder {
 
 	/**
+	 * The columns which may be transcoded.
+	 *
+	 * @return candidate for transcoding.
+	 */
+	Set<String> mayTranscode();
+
+	/**
 	 * A sub-Set of columns which are eligible for transcoding.
 	 * 
 	 * @param columns

@@ -29,7 +29,7 @@ import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MarketDataShiftCombination implements ICombination, IExamplePnLExplainConstant {
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		ISliceReader sliceReader = slice.sliceReader();
 		// if (ISliceFilter.MATCH_NONE.equals(filter)) {
 		// return IValueProvider.NULL;
@@ -49,12 +49,12 @@ public class MarketDataShiftCombination implements ICombination, IExamplePnLExpl
 
 		Optional<String> optTenor = EqualsMatcher.extractOperand(sliceReader.getValueMatcher(K_TENOR), String.class);
 		if (optTenor.isEmpty()) {
-			return IValueProvider.setValue("Lack tenor");
+			valueReceiver.onObject("Lack tenor");
 		}
 		Optional<String> optMaturity =
 				EqualsMatcher.extractOperand(sliceReader.getValueMatcher(K_MATURITY), String.class);
 		if (optMaturity.isEmpty()) {
-			return IValueProvider.setValue("Lack maturity");
+			valueReceiver.onObject("Lack maturity");
 		}
 
 		// [-99, 99]
@@ -62,6 +62,6 @@ public class MarketDataShiftCombination implements ICombination, IExamplePnLExpl
 		// [-9.9, 9.9]
 		double deterministicRandomMarketDataShift = deterministicRandomHash / 10D;
 
-		return IValueProvider.setValue(deterministicRandomMarketDataShift);
+		valueReceiver.onDouble(deterministicRandomMarketDataShift);
 	}
 }

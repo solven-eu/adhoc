@@ -22,18 +22,27 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
+import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
+import eu.solven.adhoc.dataframe.column.partitioned.PartitionedMergeableColumn;
+import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
@@ -44,6 +53,7 @@ import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.AMeasureQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
 import lombok.AccessLevel;
@@ -99,6 +109,18 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 			return Cuboid.empty();
 		}
 
+		OptionalInt commonPartitions = PartitioningHelpers.commonPartitionCount(underlyings);
+		if (commonPartitions.isPresent()) {
+			return produceOutputColumnPartitioned(underlyings, commonPartitions.getAsInt());
+		} else {
+			return produceOutputColumnSequential(underlyings);
+		}
+	}
+
+	/**
+	 * Standard non-partitioned path: single output column, sequential iteration.
+	 */
+	protected ICuboid produceOutputColumnSequential(List<? extends ICuboid> underlyings) {
 		IAggregation agg = getMakeAggregation();
 		IMultitypeMergeableColumn<ISlice> values = makeColumn(agg, underlyings);
 
@@ -107,6 +129,66 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		forEachDistinctSlice(underlyings, combinator, values::merge);
 
 		return Cuboid.forGroupBy(step).values(values).build();
+	}
+
+	/**
+	 * Partitioned path (Strategy B from CONCURRENCY.md):
+	 * <ol>
+	 * <li>Each of P input partitions is processed independently into its own output column (mono-thread, no
+	 * contention). The output keys are projected to the coarser groupBy, so they are <em>not</em> sharded correctly.
+	 * <li>The P unsharded output columns are re-sharded into a properly partitioned {@link PartitionedMergeableColumn}
+	 * via a sequential merge pass.
+	 * </ol>
+	 */
+	protected ICuboid produceOutputColumnPartitioned(List<? extends ICuboid> underlyings, int nbPartitions) {
+		// Step 1: process each input partition independently into its own unsharded output column (concurrent)
+		List<ICuboid> unshardedColumns = produceOutputPerInputPartition(underlyings, nbPartitions);
+
+		// Step 2: re-shard the P unsharded outputs into a PartitionedMergeableColumn keyed by the output slice hashCode
+		return produceOutputPerOutputPartitions(nbPartitions, unshardedColumns);
+	}
+
+	protected ICuboid produceOutputPerOutputPartitions(int nbPartitions, List<ICuboid> unshardedColumns) {
+		IAggregation agg = getMakeAggregation();
+
+		List<IMultitypeMergeableColumn<ISlice>> shardedColumns = new ArrayList<>(nbPartitions);
+		for (int i = 0; i < nbPartitions; i++) {
+			shardedColumns.add(factories.getColumnFactory().makeColumnRandomInsertions(agg, 0));
+		}
+
+		// Iterate all unsharded output columns and route each entry to its correct output shard
+		for (ICuboid unsharded : unshardedColumns) {
+			unsharded.stream().forEach(sliceAndMeasure -> {
+				ISlice slice = sliceAndMeasure.getSlice();
+				int targetShard = PartitioningHelpers.getPartitionIndex(slice, nbPartitions);
+				sliceAndMeasure.getValueProvider().acceptReceiver(shardedColumns.get(targetShard).merge(slice));
+			});
+		}
+
+		IMultitypeMergeableColumn<ISlice> values =
+				PartitionedMergeableColumn.<ISlice>builder().partitions(shardedColumns).aggregation(agg).build();
+
+		return Cuboid.forGroupBy(step).values(values).build();
+	}
+
+	@SuppressWarnings("PMD.CloseResource")
+	protected List<ICuboid> produceOutputPerInputPartition(List<? extends ICuboid> underlyings, int nbPartitions) {
+		ListeningExecutorService executor = factories.getExecutorService();
+
+		List<ListenableFuture<ICuboid>> futures = new ArrayList<>(nbPartitions);
+		for (int p = 0; p < nbPartitions; p++) {
+			int partitionIndex = p;
+			futures.add(executor.submit(() -> {
+				List<ICuboid> partitionCuboids = underlyings.stream()
+						.map(c -> ((IPartitioned<ICuboid>) c).getPartition(partitionIndex))
+						.toList();
+
+				return produceOutputColumnSequential(partitionCuboids);
+			}));
+		}
+
+		// Collect results — each future is independent, no contention
+		return Futures.getUnchecked(Futures.allAsList(futures));
 	}
 
 	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg, List<? extends ICuboid> underlyings) {
@@ -140,28 +222,27 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	@Override
 	protected void onSlice(SliceAndMeasures contributionSlice, ICombination combinator, ISliceAndValueConsumer output) {
 		try {
-			IValueProvider valueProvider =
-					combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures());
+			ISlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
+
+			IValueReceiver receiver = output.putSlice(partitionSlice);
 
 			if (isDebug()) {
+				ProxyValueReceiver proxyReceiver = new ProxyValueReceiver(receiver);
+
+				combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures(), proxyReceiver);
+
+				Object combinedValue = IValueProvider.getValue(proxyReceiver.asValueProvider());
 				log.info("[DEBUG] m={} c={} transformed {} into {} at {}",
 						partitionor.getName(),
 						partitionor.getCombinationKey(),
 						contributionSlice.getMeasures(),
-						IValueProvider.getValue(valueProvider),
+						combinedValue,
 						contributionSlice);
+
+				log.info("[DEBUG] m={} contributed {} into {}", partitionor.getName(), combinedValue, partitionSlice);
+			} else {
+				combinator.combine(contributionSlice.getSlice(), contributionSlice.getMeasures(), receiver);
 			}
-
-			ISlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
-
-			if (isDebug()) {
-				log.info("[DEBUG] m={} contributed {} into {}",
-						partitionor.getName(),
-						IValueProvider.getValue(valueProvider),
-						partitionSlice);
-			}
-
-			valueProvider.acceptReceiver(output.putSlice(partitionSlice));
 		} catch (RuntimeException e) {
 			List<?> underlyingVs = contributionSlice.getMeasures().asList();
 			throw new IllegalArgumentException(

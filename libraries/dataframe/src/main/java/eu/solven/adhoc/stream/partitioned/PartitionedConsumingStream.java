@@ -20,52 +20,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.stream;
+package eu.solven.adhoc.stream.partitioned;
 
+import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
+import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Singular;
 
 /**
- * Use a {@link Function} to map elements of one type to another, supporting cross-type transformations.
- *
- * @param <S>
- *            the element type of the upstream stream
+ * Wraps a {@link List} of partitions of {@link IConsumingStream}.
+ * 
  * @param <T>
- *            the element type produced by this stream
  * @author Benoit Lacelle
  */
-@Slf4j
-@Builder(toBuilder = true)
-public class MappingConsumingStream<S, T> implements IConsumingStream<T> {
+@Builder
+public class PartitionedConsumingStream<T> implements IConsumingStream<T>, IPartitioned<IConsumingStream<T>> {
+	@Singular
+	ImmutableList<IConsumingStream<T>> partitions;
 
-	@NonNull
-	IConsumingStream<S> upstream;
+	@Override
+	public int getNbPartitions() {
+		return partitions.size();
+	}
 
-	@NonNull
-	Function<? super S, T> function;
+	@Override
+	public IConsumingStream<T> getPartition(int index) {
+		return partitions.get(index);
+	}
 
 	@Override
 	public void forEach(Consumer<T> consumer) {
-		try {
-			upstream.forEach(in -> {
-				T mapped = function.apply(in);
-
-				consumer.accept(mapped);
-			});
-		} finally {
-			// Always close on exit, mirroring ConsumingStream semantics.
-			// upstream.close() is idempotent so a surrounding try-with-resources is still safe.
-			close();
-		}
+		partitions.forEach(p -> p.forEach(consumer));
 	}
 
 	@Override
 	public void close() {
-		upstream.close();
+		partitions.forEach(IConsumingStream::close);
 	}
 
 }

@@ -52,7 +52,7 @@ public class ThreadLocalAppendableTable extends AAppendableTable {
 
 	@Override
 	protected IAppendableTablePage getCurrentPage(List<String> keysAsList) {
-		return keyToPage.get().computeIfAbsent(keysAsList, k -> makePage());
+		return keyToPage.get().computeIfAbsent(keysAsList, _ -> makePage());
 	}
 
 	@Override

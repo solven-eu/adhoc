@@ -62,7 +62,7 @@ public class TabularRecordLogger {
 	}
 
 	public BiConsumer<ITabularRecord, ISlice> prepareStreamLogger(IHasQueryOptions tableQuery) {
-		return (input, optCoordinates) -> {
+		return (input, _) -> {
 			int currentIn = nbIn.incrementAndGet();
 			if (currentIn == 1 && StandardQueryOptions.EXPLAIN.isActive(options)) {
 				log.info("[EXPLAIN] Aggregates from table accepted a first row (table={})", table);

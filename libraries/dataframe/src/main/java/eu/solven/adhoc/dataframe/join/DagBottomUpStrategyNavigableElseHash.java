@@ -38,6 +38,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Shiftor;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * This `v1` improves `v0` by relying on {@link MultitypeNavigableElseHashColumn}, which can handle a large number of
@@ -88,7 +89,7 @@ public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrateg
 	}
 
 	@Override
-	public Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
+	public IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
 		return UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(step, underlyings);
 	}
 

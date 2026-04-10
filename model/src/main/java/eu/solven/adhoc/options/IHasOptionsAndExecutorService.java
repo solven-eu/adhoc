@@ -27,20 +27,32 @@ import java.util.Set;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import eu.solven.adhoc.util.AdhocUnsafe;
+
 /**
  * Relevant as we often check for {@link StandardQueryOptions#CONCURRENT}, in which case we would need the relevant
  * {@link ListeningExecutorService} to submit tasks.
  * 
  * @author Benoit Lacelle
  */
-public interface IHasQueryOptionsAndExecutorService extends IHasQueryOptions {
+public interface IHasOptionsAndExecutorService extends IHasQueryOptions {
 	ListeningExecutorService getExecutorService();
 
-	static IHasQueryOptionsAndExecutorService noOption() {
-		IHasQueryOptions options = IHasQueryOptions.noOption();
+	static IHasOptionsAndExecutorService noOption() {
+		return directExecutor(IHasQueryOptions.noOption());
+	}
+
+	static IHasOptionsAndExecutorService concurrent() {
+		return HasOptionsAndExecutorService.builder()
+				.option(StandardQueryOptions.CONCURRENT)
+				.executorService(AdhocUnsafe.adhocMixedPool)
+				.build();
+	}
+
+	static IHasOptionsAndExecutorService directExecutor(IHasQueryOptions options) {
 		ListeningExecutorService les = MoreExecutors.newDirectExecutorService();
 
-		return new IHasQueryOptionsAndExecutorService() {
+		return new IHasOptionsAndExecutorService() {
 
 			@Override
 			public Set<IQueryOption> getOptions() {

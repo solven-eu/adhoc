@@ -33,11 +33,11 @@ import org.jooq.conf.ParamType;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
-import eu.solven.adhoc.dataframe.stream.ConsumingStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
@@ -67,7 +67,7 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	protected IConsumingStream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
-		return IConsumingStream.fromStream(sqlQuery.getQueries().stream().map(oneQuery -> {
+		return IConsumingStream.concat(sqlQuery.getQueries().stream().map(oneQuery -> {
 			ITabularRecordFactory tabularRecordFactory =
 					makeTabularRecordFactory(queryPod, mergedGroupBy, sqlQuery, oneQuery);
 			return toArrowStream(queryPod, oneQuery, tabularRecordFactory);

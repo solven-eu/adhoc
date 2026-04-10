@@ -52,6 +52,7 @@ import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import eu.solven.adhoc.util.AdhocBenchmark;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.IStopwatchFactory;
 import lombok.extern.slf4j.Slf4j;
 
@@ -157,6 +158,7 @@ public class TestTransformator_Partitionor_Perf_DuckDb extends ADuckDbJooqTest i
 
 		long sum = LongStream.range(0, maxCardinality).map(i -> i * (i % 9)).sum();
 
+		AdhocUnsafe.setParallelism(2);
 		ITabularView output = cube().execute(CubeQuery.builder()
 				.measure(m)
 				.groupByAlso("l")

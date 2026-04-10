@@ -34,6 +34,8 @@ classDiagram
         ISliceFactoryFactory sliceFactoryFactory
         IStopwatchFactory stopwatchFactory
     }
+    class AdhocFactoriesUnsafe {
+    }
     class AdhocFilterUnsafe {
     }
     class AtotiAliaser {
@@ -96,6 +98,7 @@ classDiagram
         ICoordinateNormalizer coordinateNormalizer
     }
     class StandardQueryPreparator {
+        IAdhocFactories factories
         IImplicitFilter implicitFilter
         IImplicitOptions implicitOptions
         IQueryStepCache queryStepCache
@@ -148,8 +151,9 @@ classDiagram
     CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
     TableQueryEngineFactory *-- UnsafeAdhocEventBusHelpers : eventBus
     ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
-    CubeQueryEngine *-- AdhocFactories : factories
+    CubeQueryEngine *-- AdhocFactoriesUnsafe : factories
     TableQueryEngineFactory *-- AdhocFactories : factories
+    StandardQueryPreparator *-- AdhocFactoriesUnsafe : factories
     AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
     JooqTableWrapperParameters *-- IFilterOptimizerFactory : filterOptimizerFactory
     AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory

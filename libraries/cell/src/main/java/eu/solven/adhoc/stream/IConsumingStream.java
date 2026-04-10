@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.stream;
+package eu.solven.adhoc.stream;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -147,7 +147,7 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 	default long count() {
 		AtomicLong counter = new AtomicLong();
 
-		this.forEach(__ -> counter.incrementAndGet());
+		this.forEach(_ -> counter.incrementAndGet());
 
 		return counter.get();
 	}
@@ -165,7 +165,7 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 		return ConsumingStream.<T>builder().source(stream::forEach).build();
 	}
 
-	static <T> IConsumingStream<T> fromStream(List<IConsumingStream<T>> list) {
+	static <T> IConsumingStream<T> concat(List<IConsumingStream<T>> list) {
 		// TODO Enable concurrency
 		return ConsumingStream.<T>builder().source(s -> list.forEach(c -> c.forEach(s))).build();
 	}

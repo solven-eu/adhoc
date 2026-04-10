@@ -22,8 +22,8 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -56,7 +56,7 @@ public final class CubeQueryStep extends ACubeQueryStep {
 			IGroupBy groupBy,
 			Object customMarker,
 			@Singular ImmutableSet<IQueryOption> options,
-			Map<Object, Object> cache,
+			ConcurrentMap<Object, Object> cache,
 			@NonNull IMeasure measure) {
 		super(filter, groupBy, customMarker, options, cache);
 		this.measure = measure;
@@ -66,7 +66,7 @@ public final class CubeQueryStep extends ACubeQueryStep {
 	 * Returns a builder pre-populated with all fields of this step (cache is reset, preserving the transverse cache).
 	 */
 	public CubeQueryStepBuilder toBuilder() {
-		Map<Object, Object> newCache = new ConcurrentHashMap<>();
+		ConcurrentMap<Object, Object> newCache = new ConcurrentHashMap<>();
 		if (getCache().containsKey(KEY_CACHE_TRANSVERSE)) {
 			newCache.put(KEY_CACHE_TRANSVERSE, getTransverseCache());
 		}

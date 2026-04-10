@@ -37,8 +37,10 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.measure.aggregation.comparable.MaxCombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestTransformator_Partitionor extends ADagTest implements IAdhocTestConstants {
@@ -220,6 +222,36 @@ public class TestTransformator_Partitionor extends ADagTest implements IAdhocTes
 		forest.addMeasure(k2Sum);
 
 		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").andFilter("a", "a2").build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.hasSize(1)
+				.containsEntry(Map.of(), Map.of("maxK1K2", 0L + 234 + 567));
+	}
+
+	@Test
+	public void testSumOfSum_filterA1_partitionByB_partitionedExecution() {
+		AdhocUnsafe.setParallelism(2);
+
+		forest.addMeasure(Partitionor.builder()
+				.name("maxK1K2")
+				.underlyings(Arrays.asList("k1", "k2"))
+				.groupBy(GroupByColumns.named("b"))
+				.combinationKey(MaxCombination.KEY)
+				.aggregationKey(SumAggregation.KEY)
+				.tag("debug")
+				.build());
+
+		forest.addMeasure(k1Sum);
+		forest.addMeasure(k2Sum);
+
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure("maxK1K2")
+				.andFilter("a", "a2")
+				.option(StandardQueryOptions.CONCURRENT)
+				.option(StandardQueryOptions.PARTITIONED)
+				.build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

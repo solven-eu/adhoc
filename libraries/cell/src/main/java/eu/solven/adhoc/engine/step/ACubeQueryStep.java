@@ -22,11 +22,11 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -74,15 +74,14 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 	private final IGroupBy groupBy;
 	private final Object customMarker;
 	private final ImmutableSet<IQueryOption> options;
-	// Should be a threadSafe implementation
-	private final Map<Object, Object> cache;
+	private final ConcurrentMap<Object, Object> cache;
 
 	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	protected ACubeQueryStep(ISliceFilter filter,
 			IGroupBy groupBy,
 			Object customMarker,
 			ImmutableSet<IQueryOption> options,
-			Map<Object, Object> cache) {
+			ConcurrentMap<Object, Object> cache) {
 		this.filter = filter != null ? filter : ISliceFilter.MATCH_ALL;
 		this.groupBy = groupBy != null ? groupBy : IGroupBy.GRAND_TOTAL;
 		// Unwrap Optional so the stored value is never Optional
@@ -99,20 +98,21 @@ public abstract class ACubeQueryStep implements ICubeQueryStep {
 		return getOptions().contains(StandardQueryOptions.DEBUG) || getMeasure().getTags().contains(IHasTags.TAG_DEBUG);
 	}
 
-	public void setCrossStepsCache(Map<Object, Object> transverseCache) {
+	public void setCrossStepsCache(ConcurrentMap<Object, Object> transverseCache) {
 		getCache().put(KEY_CACHE_TRANSVERSE, transverseCache);
 	}
 
 	@Override
 	public void invalidateAll() {
-		Map<Object, Object> transverseCache = getTransverseCache();
+		ConcurrentMap<Object, Object> transverseCache = getTransverseCache();
 		cache.clear();
 		setCrossStepsCache(transverseCache);
 	}
 
 	@Override
-	public Map<Object, Object> getTransverseCache() {
-		Map<Object, Object> transverseCache = (Map<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
+	public ConcurrentMap<Object, Object> getTransverseCache() {
+		ConcurrentMap<Object, Object> transverseCache =
+				(ConcurrentMap<Object, Object>) getCache().get(KEY_CACHE_TRANSVERSE);
 
 		if (transverseCache == null) {
 			throw new IllegalStateException("Missing call to `setCrossStepsCache` on %s".formatted(this));

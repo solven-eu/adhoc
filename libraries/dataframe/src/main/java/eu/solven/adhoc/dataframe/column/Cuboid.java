@@ -38,9 +38,11 @@ import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByHelpers;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -56,7 +58,7 @@ import lombok.ToString;
 // methods/processes like `.purgeAggregationCarriers()`. This is also immutable (by interface).
 @ToString
 @Builder(toBuilder = true)
-public class Cuboid implements ICuboid {
+public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	@NonNull
 	// Getter for testing
 	@Getter
@@ -77,13 +79,13 @@ public class Cuboid implements ICuboid {
 	}
 
 	@Override
-	public Stream<ISlice> slices() {
+	public IConsumingStream<ISlice> slices() {
 		return values.keyStream();
 	}
 
 	@Override
 	public Set<ISlice> slicesSet() {
-		return values.keyStream().collect(ImmutableSet.toImmutableSet());
+		return ImmutableSet.copyOf(values.keyStream().toList());
 	}
 
 	@Override
@@ -97,7 +99,7 @@ public class Cuboid implements ICuboid {
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<ISlice>> stream() {
+	public IConsumingStream<SliceAndMeasure<ISlice>> stream() {
 		return values.stream();
 	}
 
@@ -112,15 +114,7 @@ public class Cuboid implements ICuboid {
 	}
 
 	@Override
-	public boolean isSorted() {
-		if (values instanceof IIsSorted) {
-			return true;
-		}
-		return false;
-	}
-
-	@Override
-	public Stream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy) {
+	public IConsumingStream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy) {
 		return values.stream(strategy);
 	}
 
@@ -138,6 +132,28 @@ public class Cuboid implements ICuboid {
 
 	public static CuboidBuilder forGroupBy(IHasGroupBy hasGroupBy) {
 		return Cuboid.builder().columns(hasGroupBy.getGroupBy().getSortedColumns());
+	}
+
+	@Override
+	public int getNbPartitions() {
+		if (values instanceof IPartitioned<?> partitioned) {
+			return partitioned.getNbPartitions();
+		}
+		return 1;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public ICuboid getPartition(int index) {
+		if (values instanceof IPartitioned<?> partitioned) {
+			IMultitypeColumnFastGet<ISlice> partitionValues =
+					(IMultitypeColumnFastGet<ISlice>) partitioned.getPartition(index);
+			return toBuilder().values(partitionValues).build();
+		} else if (index != 0) {
+			throw new IndexOutOfBoundsException("Non-partitioned cuboid only has partition 0, requested " + index);
+		} else {
+			return this;
+		}
 	}
 
 	@Override

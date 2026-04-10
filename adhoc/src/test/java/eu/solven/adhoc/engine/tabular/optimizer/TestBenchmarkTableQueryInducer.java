@@ -45,6 +45,7 @@ import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.inducer.TableQueryInducer;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -113,8 +114,8 @@ public class TestBenchmarkTableQueryInducer extends ABenchmarkable {
 
 			// inducerABC is navigable as we do nice inserts
 			IMultitypeColumnFastGet<ISlice> inducerColumn = MultitypeNavigableElseHashColumn.<ISlice>builder().build();
-			ISliceFactory mapFactory =
-					AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption());
+			ISliceFactory mapFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory()
+					.makeFactory(IHasOptionsAndExecutorService.noOption());
 
 			int cardinalityPerKey = 16;
 			int maxDigits = 3;

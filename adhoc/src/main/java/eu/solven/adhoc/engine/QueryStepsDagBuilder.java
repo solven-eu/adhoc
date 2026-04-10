@@ -33,6 +33,7 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
@@ -106,7 +107,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	// Should be a threadSafe implementation
 	// It is a unique instance, available to all CubeQuerySteps
 	@NonNull
-	Map<Object, Object> crossStepsCache = new ConcurrentHashMap<>();
+	ConcurrentMap<Object, Object> crossStepsCache = new ConcurrentHashMap<>();
 
 	final IMeasureResolver measureResolver;
 

@@ -34,7 +34,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
  *            typically {@link Slice}
  * @author Benoit Lacelle
  */
-public interface IMultitypeColumnFastGetSorted<T> extends IMultitypeColumnFastGet<T>, IIsSorted {
+public interface IMultitypeColumnFastGetSorted<T> extends IMultitypeColumnFastGet<T> {
 
 	Optional<IValueReceiver> appendIfOptimal(T key);
 

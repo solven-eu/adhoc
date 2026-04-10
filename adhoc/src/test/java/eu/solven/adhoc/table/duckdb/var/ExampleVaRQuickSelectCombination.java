@@ -30,6 +30,7 @@ import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 import eu.solven.pepper.core.PepperLogHelper;
 import smile.math.MathEx;
@@ -79,11 +80,12 @@ public class ExampleVaRQuickSelectCombination implements ICombination {
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		Object rawArray = IValueProvider.getValue(slicedRecord.read(0));
 		if (rawArray instanceof int[] array) {
 			if (array.length == 0) {
-				return vc -> vc.onObject(null);
+				valueReceiver.onObject(null);
+				return;
 			}
 
 			long output;
@@ -96,10 +98,11 @@ public class ExampleVaRQuickSelectCombination implements ICombination {
 				output = QuickSelect.select(array, index);
 			}
 
-			return vc -> vc.onLong(output);
+			valueReceiver.onLong(output);
 		} else if (rawArray instanceof double[] array) {
 			if (array.length == 0) {
-				return vc -> vc.onObject(null);
+				valueReceiver.onObject(null);
+				return;
 			}
 
 			double output;
@@ -112,7 +115,7 @@ public class ExampleVaRQuickSelectCombination implements ICombination {
 				output = QuickSelect.select(array, index);
 			}
 
-			return vc -> vc.onDouble(output);
+			valueReceiver.onDouble(output);
 		} else {
 			throw new IllegalArgumentException(
 					"Unexpected underlying: %s".formatted(PepperLogHelper.getObjectAndClass(rawArray)));

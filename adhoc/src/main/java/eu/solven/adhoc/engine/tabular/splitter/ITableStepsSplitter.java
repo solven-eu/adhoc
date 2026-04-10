@@ -29,7 +29,7 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
@@ -52,7 +52,7 @@ public interface ITableStepsSplitter {
 	 * @param inducedToInducer
 	 * @return
 	 */
-	IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
+	IAdhocDag<TableQueryStep> splitInducedAsDag(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer);
 
 	/**
@@ -61,14 +61,14 @@ public interface ITableStepsSplitter {
 	 * 
 	 * @return
 	 */
-	default IAdhocDag<TableQueryStep> getLazyGraph(IHasQueryOptionsAndExecutorService hasOptions,
+	default IAdhocDag<TableQueryStep> getLazyGraph(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> withoutShared) {
 		// By default, do not add any node
 		return GraphHelpers.immutable(withoutShared);
 	}
 
 	@Deprecated(since = "Unit-Tests")
-	default IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
+	default IAdhocDag<TableQueryStep> splitInducedAsDag(IHasOptionsAndExecutorService hasOptions,
 			Set<TableQueryStep> steps) {
 		IAdhocDag<TableQueryStep> dag = GraphHelpers.makeGraph();
 

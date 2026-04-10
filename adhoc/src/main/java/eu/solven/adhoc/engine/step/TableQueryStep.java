@@ -22,7 +22,7 @@
  */
 package eu.solven.adhoc.engine.step;
 
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -59,7 +59,7 @@ public final class TableQueryStep extends ACubeQueryStep {
 			IGroupBy groupBy,
 			Object customMarker,
 			@Singular ImmutableSet<IQueryOption> options,
-			Map<Object, Object> cache,
+			ConcurrentMap<Object, Object> cache,
 			@NonNull Aggregator aggregator) {
 		super(filter, groupBy, customMarker, options, cache);
 		this.aggregator = aggregator;

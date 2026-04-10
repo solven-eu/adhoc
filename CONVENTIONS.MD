@@ -57,7 +57,11 @@ All checkers are informational — they never block the build.
   ```
   This is a *soft* rule: clarity always wins over line count. Do not sacrifice naming, readability, or correctness just to save lines.
 
-- **Exclusive branches**: when a chain of `if` blocks are mutually exclusive (each branch returns or throws), write them as `if / else if / … / else` rather than a sequence of independent `if` statements. The chained form communicates the exclusivity to the reader and lets the compiler/JIT skip the remaining checks once a branch is taken.
+- **Exclusive branches**: when two or more code paths are mutually exclusive, always use `if / else if / … / else` to make the exclusivity explicit. This applies equally to:
+  - a chain of `if` blocks that each return or throw, and
+  - an `if` block that returns early followed by a "default" path at the end of the method.
+
+  The chained form communicates the exclusivity to the reader and lets the compiler/JIT skip the remaining checks once a branch is taken.
   ```java
   // ✓ preferred — communicates mutual exclusivity
   if (x instanceof Foo f) {
@@ -76,7 +80,25 @@ All checkers are informational — they never block the build.
       return handleBar(b);
   }
   throw new IllegalArgumentException("unknown: " + x);
+
+  // ✗ avoid — early return hides the else relationship
+  if (condition) {
+      return specialized();
+  }
+  return defaultPath();
+
+  // ✓ preferred — else makes the two paths visually parallel
+  if (condition) {
+      return specialized();
+  } else {
+      return defaultPath();
+  }
   ```
+
+- **Comment every branch in complex control flow**: when a method has deep nesting (loops inside `if`/`else`, `instanceof` checks) or mid-method `return` statements, add a short `//` comment on each branch — including the implicit fall-through and the `else` that "does nothing special". The goal is to let a reader understand the intent of every path without mentally simulating the whole method. In particular:
+  - Comment early `return` statements to explain *why* the method exits.
+  - Comment `else` branches and fall-through paths, even when they simply continue the loop or reach the end of the method.
+  - A missing comment on a branch forces the reader to re-derive the logic; a one-line comment prevents that.
 
 ---
 

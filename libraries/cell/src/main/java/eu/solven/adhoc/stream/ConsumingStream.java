@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.stream;
+package eu.solven.adhoc.stream;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
