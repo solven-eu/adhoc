@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+import eu.solven.adhoc.util.HotPath;
+
 /**
  * A two-layer cache: a thread-local last-entry fast path checked by <strong>reference equality</strong> on N key parts,
  * backed by a {@link ConcurrentHashMap} slow path keyed by the same parts wrapped in a {@link List}.
@@ -49,18 +51,7 @@ public class LastLookupCache<V> {
 
 	private final int keyLength;
 	private final ConcurrentMap<List<Object>, V> delegate;
-	private final ThreadLocal<CacheEntry<V>> lastEntry;
-
-	/**
-	 * Mutable holder for the thread-local last-entry. Avoids allocating new objects on each cache update.
-	 */
-	protected static class CacheEntry<V> {
-		/** The reference-key parts from the last successful lookup. */
-		protected Object[] refKeys;
-
-		/** The cached value from the last successful lookup. */
-		protected V value;
-	}
+	private final ThreadLocal<CacheEntry<Object[], V>> lastEntry;
 
 	/**
 	 * Creates a cache backed by the given map.
@@ -76,12 +67,9 @@ public class LastLookupCache<V> {
 		}
 		this.keyLength = keyLength;
 		this.delegate = delegate;
-		this.lastEntry = ThreadLocal.withInitial(() -> {
-			CacheEntry<V> entry = new CacheEntry<>();
-			// Sentinel array of the right length, filled with null — guarantees the first call misses.
-			entry.refKeys = new Object[keyLength];
-			return entry;
-		});
+		// Sentinel array of the right length, filled with null — guarantees the first call misses.
+		CacheEntry<Object[], V> initial = new CacheEntry<>(new Object[keyLength], null);
+		this.lastEntry = ThreadLocal.withInitial(() -> initial);
 	}
 
 	/**
@@ -113,12 +101,13 @@ public class LastLookupCache<V> {
 	 *            the individual key parts for reference equality check — must be of length {@link #getKeyLength()}
 	 * @return the cached value, or {@code null} on miss
 	 */
+	@HotPath("optimistic lookup is often used in tight-loop")
 	public V getByRef(Object... refKeys) {
 		assert refKeys.length == keyLength : "Expected " + keyLength + " key parts, got " + refKeys.length;
 
-		CacheEntry<V> entry = lastEntry.get();
+		CacheEntry<Object[], V> entry = lastEntry.get();
 
-		if (referenceKeysMatch(entry.refKeys, refKeys)) {
+		if (referenceKeysMatch(entry.key, refKeys)) {
 			return entry.value;
 		}
 
@@ -142,10 +131,8 @@ public class LastLookupCache<V> {
 		List<Object> key = Arrays.asList(refKeys);
 		V value = delegate.computeIfAbsent(key, k -> valueSupplier.get());
 
-		// Update thread-local cache for future fast-path hits
-		CacheEntry<V> entry = lastEntry.get();
-		entry.refKeys = refKeys;
-		entry.value = value;
+		// Publish a fresh immutable entry for future fast-path hits
+		lastEntry.set(new CacheEntry<>(refKeys, value));
 
 		return value;
 	}

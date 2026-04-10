@@ -46,18 +46,15 @@ import java.util.function.Supplier;
  */
 public class LastLookupCache1<V> {
 
+	/** Sentinel initial entry — {@code null} key guarantees the first {@link #getByRef} call misses. */
+	private static final CacheEntry<Object, Object> EMPTY = new CacheEntry<>(null, null);
+
 	private final ConcurrentMap<Object, V> delegate;
-	private final ThreadLocal<CacheEntry<V>> lastEntry = ThreadLocal.withInitial(CacheEntry::new);
+	private final ThreadLocal<CacheEntry<Object, V>> lastEntry = ThreadLocal.withInitial(LastLookupCache1::emptyEntry);
 
-	/**
-	 * Mutable holder for the thread-local last-entry. Avoids allocating new objects on each cache update.
-	 */
-	protected static class CacheEntry<V> {
-		/** The reference-key from the last successful lookup. {@code null} until first populated. */
-		protected Object refKey;
-
-		/** The cached value from the last successful lookup. */
-		protected V value;
+	@SuppressWarnings("unchecked")
+	private static <V> CacheEntry<Object, V> emptyEntry() {
+		return (CacheEntry<Object, V>) EMPTY;
 	}
 
 	/**
@@ -88,9 +85,9 @@ public class LastLookupCache1<V> {
 	// Reference equality is intentional (the whole point of the fast-path cache).
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	public V getByRef(Object refKey) {
-		CacheEntry<V> entry = lastEntry.get();
+		CacheEntry<Object, V> entry = lastEntry.get();
 
-		if (entry.refKey == refKey) {
+		if (entry.key == refKey) {
 			return entry.value;
 		}
 
@@ -111,10 +108,8 @@ public class LastLookupCache1<V> {
 	public V slowComputeIfAbsent(Object refKey, Supplier<V> valueSupplier) {
 		V value = delegate.computeIfAbsent(refKey, k -> valueSupplier.get());
 
-		// Update thread-local cache for future fast-path hits
-		CacheEntry<V> entry = lastEntry.get();
-		entry.refKey = refKey;
-		entry.value = value;
+		// Publish a fresh immutable entry for future fast-path hits
+		lastEntry.set(new CacheEntry<>(refKey, value));
 
 		return value;
 	}

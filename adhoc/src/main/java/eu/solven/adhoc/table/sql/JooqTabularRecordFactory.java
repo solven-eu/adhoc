@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
+import eu.solven.adhoc.util.HotPath;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 

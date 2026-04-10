@@ -50,33 +50,22 @@ import java.util.function.Supplier;
  */
 public class LastLookupCache1Volatile<V> {
 
+	/** Sentinel initial/cleared entry — {@code null} key guarantees a fast-path miss. */
+	private static final CacheEntry<Object, Object> EMPTY = new CacheEntry<>(null, null);
+
 	private final ConcurrentMap<Object, V> delegate;
 
 	/**
-	 * Shared, racy last-entry. Both fields are read/written together via {@link #lastEntry} so we only need one
-	 * volatile hop.
+	 * Shared, racy last-entry. The holder is immutable so a racing reader never sees a half-published entry (fresh key
+	 * paired with stale value).
 	 */
 	// Intentional: a single shared volatile slot is the whole point of this variant.
 	@SuppressWarnings("PMD.AvoidUsingVolatile")
-	private volatile CacheEntry<V> lastEntry = new CacheEntry<>();
+	private volatile CacheEntry<Object, V> lastEntry = emptyEntry();
 
-	/**
-	 * Immutable holder so that a racing reader never sees a half-published entry (refKey from a new put, value from the
-	 * previous put). Allocated on each slow-path update — cheap given the slow path already builds more objects.
-	 */
-	protected static final class CacheEntry<V> {
-		private final Object refKey;
-		private final V value;
-
-		protected CacheEntry() {
-			this.refKey = null;
-			this.value = null;
-		}
-
-		protected CacheEntry(Object refKey, V value) {
-			this.refKey = refKey;
-			this.value = value;
-		}
+	@SuppressWarnings("unchecked")
+	private static <V> CacheEntry<Object, V> emptyEntry() {
+		return (CacheEntry<Object, V>) EMPTY;
 	}
 
 	/**
@@ -104,8 +93,8 @@ public class LastLookupCache1Volatile<V> {
 	// Reference equality is intentional (the whole point of the fast-path cache).
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	public V getByRef(Object refKey) {
-		CacheEntry<V> entry = lastEntry;
-		if (entry.refKey == refKey) {
+		CacheEntry<Object, V> entry = lastEntry;
+		if (entry.key == refKey) {
 			return entry.value;
 		}
 		return null;
@@ -135,6 +124,6 @@ public class LastLookupCache1Volatile<V> {
 	 */
 	public void clear() {
 		delegate.clear();
-		lastEntry = new CacheEntry<>();
+		lastEntry = emptyEntry();
 	}
 }
