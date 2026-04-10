@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.dataframe.row;
 
-import java.util.Map;
-
 import org.jspecify.annotations.Nullable;
+
+import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TabularRecordBuilder {
 	final IGroupBy groupBy;
-	final Map<String, Object> aggregates;
+	final ImmutableMap.Builder<String, Object> aggregates;
 	final IMapBuilderPreKeys sliceBuilder;
 
 	protected Object cleanAggregateValue(Object value) {
@@ -47,8 +47,8 @@ public class TabularRecordBuilder {
 		return AdhocPrimitiveHelpers.normalizeValue(value);
 	}
 
-	public Object appendAggregate(String columnName, Object value) {
-		return aggregates.put(columnName, cleanAggregateValue(value));
+	public void appendAggregate(String columnName, Object value) {
+		aggregates.put(columnName, cleanAggregateValue(value));
 	}
 
 	public void appendGroupBy(@Nullable Object coordinate) {
@@ -56,10 +56,9 @@ public class TabularRecordBuilder {
 	}
 
 	public ITabularRecord build() {
-		return TabularRecordOverMaps.builder()
-				.aggregates(aggregates)
-				.slice(groupBy, sliceBuilder.build().asSlice())
-				.build();
+		// BEWARE Do not use `TabularRecordOverMaps.builder()` else the ImmutableMap would be fully rebuilt
+		return new TabularRecordOverMaps(TabularRecordOverMaps.groupByRecord(groupBy, sliceBuilder.build().asSlice()),
+				aggregates.buildOrThrow());
 	}
 
 }

@@ -24,11 +24,8 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -36,11 +33,10 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasCache;
 import eu.solven.adhoc.util.NotYetImplementedException;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 
@@ -70,8 +66,6 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 		NOT_SEQUENCED_CLASSES = builder.build();
 	}
 
-	final ConcurrentMap<List<String>, SequencedSetLikeList> listToKeyset = new ConcurrentHashMap<>();
-
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
@@ -89,7 +83,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 	@Override
 	public void invalidateAll() {
-		listToKeyset.clear();
+		SequencedSetUnsafe.invalidateAll();
 	}
 
 	@Override
@@ -132,19 +126,6 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 		return false;
 	}
 
-	@Override
-	public SequencedSetLikeList internKeyset(Collection<? extends String> keys) {
-		List<String> keysAsList = copyAsList(keys);
-
-		return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
-	}
-
-	protected List<String> copyAsList(Collection<? extends String> keys) {
-		assert !isNotSequenced(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
-
-		return ImmutableList.copyOf(keys);
-	}
-
 	protected IAdhocMap buildMapNaively(IHasEntries hasEntries) {
 		Collection<? extends String> keys = hasEntries.getKeys();
 		Collection<?> values = hasEntries.getValues();
@@ -156,7 +137,7 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 		return MapOverLists.builder()
 				.factory(this)
-				.keys(internKeyset(keys))
+				.keys(SequencedSetUnsafe.internKeyset(keys))
 				.sequencedValues(ImmutableList.copyOf(values))
 				.build();
 	}

@@ -8,6 +8,9 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - `StandardQueryOptions.PARTITIONED`: new query option that splits the output column into N hash partitions (one per available core) during aggregation. Each partition is an independent `PartitionedMergeableColumn`, reducing per-partition map size and enabling future parallel reduction across cores.
 - `IConsumingStream.forEachPartitioned`: partition-aware terminal operation that routes elements to dedicated per-partition consumer threads, eliminating write contention. Used by `TabularRecordStreamReducer` when the `PARTITIONED` option is active.
+- `LastLookupCache1`: new length-1 specialization of `LastLookupCache` for hot-path callers that only need a single reference key. Avoids the `Object[]` varargs allocation and list wrapping on the slow path.
+- `LastLookupCache1Volatile`: alternative length-1 cache using a single `volatile` shared slot instead of a `ThreadLocal`. Eliminates the `ThreadLocal.get()` map lookup at the cost of cross-thread contention on the slot. A JMH benchmark in `jmh/.../BenchmarkLastLookupCache` compares both variants against a plain `ConcurrentHashMap` baseline.
+- `SequencedSetUnsafe.internKeyset(Collection)`: new static utility that interns a column keyset into a `SequencedSetLikeList`, backed by a shared two-layer cache.
 
 ### Fixed
 - `FilterHelpers.filterComparator()`: now correctly returns 0 for semantically equivalent filters with different operand order (e.g., `AND(a,b)` vs `AND(b,a)`). Type ranking: AND > OR > NOT > COLUMN.
@@ -23,6 +26,8 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DuckDBHelper.parametersBuilder(IDSLSupplier)`: new factory method returning a `JooqTableWrapperParameters` builder pre-wired with `AdhocDuckDBUnsafe.duckDBSemaphore`.
 - `TableQueryEngineBootstrapped` → `TableQueryEngine`; `TableQueryEngine` → `TableQueryEngineFactory` (rename).
 - `ICombination`: signature changed from returning an `IValueProvider` to accepting an `IValueReceiver` as input, enabling push-based value delivery and avoiding intermediate allocations.
+- `LastLookupCache`: single generic parameter `<V>` (dropped the custom map-key type parameter); a required `keyLength` is now passed to the constructor; `slowComputeIfAbsent` takes only a `Supplier<V>` and uses `Arrays.asList(refKeys)` as the delegate map key.
+- `ISliceFactory.internKeyset(Collection)`: removed from the interface — replaced by `SequencedSetUnsafe.internKeyset(Collection)` (static). Callers that previously called `sliceFactory.internKeyset(keys)` should now call `SequencedSetUnsafe.internKeyset(keys)`.
 
 ## [0.0.18]
 

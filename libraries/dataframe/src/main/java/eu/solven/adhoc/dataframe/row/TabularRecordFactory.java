@@ -22,18 +22,18 @@
  */
 package eu.solven.adhoc.dataframe.row;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -77,12 +77,12 @@ public class TabularRecordFactory implements ITabularRecordFactory {
 
 	@Override
 	public TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns) {
-		Map<String, Object> aggregates = LinkedHashMap.newLinkedHashMap(getAggregates().size());
+		ImmutableMap.Builder<String, Object> aggregates = ImmutableMap.builderWithExpectedSize(getAggregates().size());
 
 		Iterable<? extends String> presentColumns = getColumns(absentColumns);
 		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(presentColumns);
 
-		SequencedSetLikeList columns = sliceFactory.internKeyset(ImmutableSet.copyOf(presentColumns));
+		SequencedSetLikeList columns = SequencedSetUnsafe.internKeyset(ImmutableSet.copyOf(presentColumns));
 
 		return new TabularRecordBuilder(globalGroupBy.retainAll(columns.sortedSet()), aggregates, sliceBuilder);
 	}

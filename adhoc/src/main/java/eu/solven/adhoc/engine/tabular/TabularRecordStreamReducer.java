@@ -51,6 +51,7 @@ import eu.solven.adhoc.engine.tabular.groupingset.UniqueGroupingSetAnalyzer;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -123,7 +124,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		if (singleGroupBy.isPresent()) {
 			IGroupBy groupBy = singleGroupBy.get();
 			NavigableSet<String> groupedByColumns = groupBy.getSortedColumns();
-			SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
+			SequencedSetLikeList sequencedKeyset = SequencedSetUnsafe.internKeyset(groupedByColumns);
 			return UniqueGroupingSetAnalyzer.builder()
 					.sequencedKeyset(new GroupByMarker(groupBy, sequencedKeyset))
 					.build();
@@ -132,7 +133,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					.stream()
 					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getSortedColumns, gb -> {
 						Set<String> groupedByColumns = gb.getSortedColumns();
-						SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
+						SequencedSetLikeList sequencedKeyset = SequencedSetUnsafe.internKeyset(groupedByColumns);
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
 

@@ -174,7 +174,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	@SuppressWarnings("PMD.CloseResource")
 	protected List<ICuboid> produceOutputPerInputPartition(List<? extends ICuboid> underlyings, int nbPartitions) {
 		ListeningExecutorService executor = factories.getExecutorService();
-		
+
 		List<ListenableFuture<ICuboid>> futures = new ArrayList<>(nbPartitions);
 		for (int p = 0; p < nbPartitions; p++) {
 			int partitionIndex = p;

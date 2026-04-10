@@ -43,6 +43,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -55,6 +56,7 @@ import lombok.With;
  * @author Benoit Lacelle
  */
 @Builder(toBuilder = true)
+@AllArgsConstructor
 @EqualsAndHashCode
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull

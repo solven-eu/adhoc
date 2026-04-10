@@ -35,6 +35,7 @@ import eu.solven.adhoc.encoding.page.ITableRowWrite;
 import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
@@ -159,7 +160,7 @@ public class ColumnSliceFactory extends ASliceFactory {
 		 */
 		public static class MapBuilderPreKeysBuilder {
 			public MapBuilderPreKeysBuilder keys(Collection<? extends String> keys) {
-				return keysLikeList(factory.internKeyset(keys));
+				return keysLikeList(SequencedSetUnsafe.internKeyset(keys));
 			}
 		}
 	}

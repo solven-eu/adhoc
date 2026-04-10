@@ -33,7 +33,6 @@ import java.util.SequencedMap;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -49,9 +48,10 @@ import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.util.cache.LastLookupCache;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
-import eu.solven.adhoc.util.map.LastLookupCache;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -99,8 +99,10 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	transient Set<Map.Entry<String, Object>> entrySet;
 
 	// Thread-local reference-equality fast path + ConcurrentHashMap slow path.
-	// Key parts for reference equality: (retainedColumns, sequencedKeysList, factory).
-	static final LastLookupCache<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new LastLookupCache<>();
+	// Key parts for reference equality: (retainedColumns, sequencedKeysList).
+	// BEWARE The factory is intentionally excluded from the cache key to avoid retaining factory instances
+	// (typically ColumnSliceFactory) in this static cache.
+	static final LastLookupCache<RetainedKeySet> CACHE_RETAINEDKEYS = new LastLookupCache<>(2);
 
 	public AbstractAdhocMap(ISliceFactory factory, SequencedSetLikeList sequencedKeys) {
 		this.factory = factory;
@@ -439,15 +441,6 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	}
 
 	/**
-	 *
-	 * @param retainedColumns
-	 *            a Set of columns to retains
-	 * @param sequencedKeys
-	 */
-	private record RetainedKeysetCacheKey(Set<String> retainedColumns, List<String> sequencedKeys) {
-	}
-
-	/**
 	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
 	 */
 	@Value
@@ -469,16 +462,16 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
 		List<String> keyList = sequencedKeys.asList();
 
-		// Fast path: zero allocation, reference equality on (retainedColumns, keyList, factory)
-		RetainedKeySet cached = CACHE_RETAINEDKEYS.getByRef(retainedColumns, keyList, factory);
+		// Fast path: zero allocation, reference equality on (retainedColumns, keyList)
+		RetainedKeySet cached = CACHE_RETAINEDKEYS.getByRef(keyList, retainedColumns);
 		if (cached != null) {
 			return cached;
 		}
 
-		// Slow path: build composite key, compute if absent
-		return CACHE_RETAINEDKEYS.slowComputeIfAbsent(new Object[] { retainedColumns, keyList, factory },
-				() -> new RetainedKeysetCacheKey(retainedColumns, keyList),
-				_ -> computeRetainKeyset(retainedColumns, sequencedKeys, factory));
+		// Slow path: wrap refKeys as the composite map key, compute if absent.
+		// The factory is captured by the lambda but NOT included in the cache key (see CACHE_RETAINEDKEYS field).
+		return CACHE_RETAINEDKEYS.slowComputeIfAbsent(new Object[] { keyList, retainedColumns },
+				() -> computeRetainKeyset(retainedColumns, sequencedKeys));
 	}
 
 	/**
@@ -486,8 +479,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 * capture {@code this}.
 	 */
 	protected static RetainedKeySet computeRetainKeyset(Set<String> retainedColumns,
-			SequencedSetLikeList sequencedKeys,
-			ISliceFactory factory) {
+			SequencedSetLikeList sequencedKeys) {
 		Set<String> intersection;
 		if (sequencedKeys.containsAll(retainedColumns)) {
 			// In most cases, we retain a subSet
@@ -496,7 +488,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 			// `Sets.intersection` necessarily creates a new Set
 			intersection = Sets.intersection(sequencedKeys, retainedColumns);
 		}
-		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
+		SequencedSetLikeList retainedKeyset = SequencedSetUnsafe.internKeyset(intersection);
 
 		List<String> sequencedKeysAsList = sequencedKeys.asList();
 		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {

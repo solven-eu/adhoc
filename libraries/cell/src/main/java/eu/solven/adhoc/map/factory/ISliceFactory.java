@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.Collection;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
@@ -30,7 +29,6 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.query.cube.IGroupBy;
 
 /**
@@ -63,7 +61,5 @@ public interface ISliceFactory {
 
 	@Deprecated(since = "not used anymore", forRemoval = true)
 	IAdhocMap buildMap(IHasEntries hasEntries);
-
-	SequencedSetLikeList internKeyset(Collection<? extends String> keys);
 
 }
