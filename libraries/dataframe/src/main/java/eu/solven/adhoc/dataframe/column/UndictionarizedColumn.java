@@ -49,6 +49,8 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	private final IntFunction<T> indexToSlice;
 	@NonNull
 	private final ToIntFunction<T> sliceToIndex;
+	// TODO May we record an index up to which this is sorted?
+	// For now, UndictionarizedColumn completely breaks sorting, hence a big downside from AggregatingColumnsDistinct
 	@NonNull
 	private final IMultitypeColumnFastGet<Integer> column;
 
@@ -95,6 +97,15 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 						.build());
 	}
 
+	// @Override
+	// public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy strategy) {
+	// return column.stream(strategy)
+	// .map(sliceAndMeasure -> SliceAndMeasure.<T>builder()
+	// .slice(indexToSlice.apply(sliceAndMeasure.getSlice()))
+	// .valueProvider(sliceAndMeasure.getValueProvider())
+	// .build());
+	// }
+
 	@Override
 	public IConsumingStream<T> keyStream() {
 		return column.keyStream().map(indexToSlice::apply);
@@ -104,6 +115,18 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	public IValueProvider onValue(T key) {
 		return column.onValue(sliceToIndex.applyAsInt(key));
 	}
+
+	// @Override
+	// public IValueProvider onValueSortedSubComplement(T key) {
+	// int actualKey = sliceToIndex.applyAsInt(key);
+	//
+	// if (column instanceof ICanReadSortedSubComplement sortedSubComplement) {
+	// // Requested for a value known to be in the SortedSubComplement
+	// return sortedSubComplement.onValueSortedSubComplement(actualKey);
+	// } else {
+	// return column.onValue(actualKey);
+	// }
+	// }
 
 	@Override
 	public String toString() {

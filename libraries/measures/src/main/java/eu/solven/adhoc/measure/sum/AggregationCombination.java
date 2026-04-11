@@ -117,7 +117,7 @@ public class AggregationCombination implements ICombination {
 
 		int size = slicedRecord.size();
 		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptReceiver(proxyValueReceiver);
+			slicedRecord.read(i, proxyValueReceiver);
 		}
 
 		if (customIfAnyNullOperand && hasNull.get()) {

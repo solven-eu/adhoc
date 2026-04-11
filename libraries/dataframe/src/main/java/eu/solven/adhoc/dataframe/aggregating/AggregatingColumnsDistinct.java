@@ -106,7 +106,12 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
 		// No capacity strategy given `ITabularRecordStream` has no insights about the number of coming rows
-		return factories.getColumnFactory().makeColumn(IAdhocCapacityConstants.ZERO_THEN_MAX);
+		// BEWARE This column is sorted by growing indices, which means nothing in term of order of slices: it is actual
+		// not sorted. Hence, even if we will push indices in growing order, we should expect reads (e.g. in cuboid
+		// joins) to happen in random order.
+		// TODO We may check if slices are sorted or not, or push indices in hash or navigable given the slice order
+		// (and not the indices order)
+		return factories.getColumnFactory().makeColumnRandomInsertions(IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override
@@ -124,7 +129,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 		return aggregator -> {
 			IMultitypeColumnFastGet<Integer> column =
-					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), k -> makePreColumn());
+					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn());
 
 			// TODO Could be skipped for not-object aggregate?
 			IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());

@@ -22,9 +22,12 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * For {@link IMultitypeColumn} which enables fast `.get` operations.
@@ -34,6 +37,39 @@ import eu.solven.adhoc.primitive.IValueReceiver;
  * @author Benoit Lacelle
  */
 public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
+
+	IConsumingStream<SliceAndMeasure<T>> stream();
+
+	/**
+	 *
+	 * @param strategy
+	 * @return an {@link IConsumingStream} with the requested strategy
+	 */
+	default IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy strategy) {
+		return defaultStream(this, strategy);
+	}
+
+	/**
+	 *
+	 * @param <T>
+	 * @param column
+	 * @param strategy
+	 * @return a valid (yet possibly not optimal) {@link IConsumingStream} given the strategy, making no assumption on
+	 *         the column.
+	 */
+	static <T> IConsumingStream<SliceAndMeasure<T>> defaultStream(IMultitypeColumnFastGet<T> column,
+			StreamStrategy strategy) {
+		return switch (strategy) {
+		case StreamStrategy.ALL:
+			yield column.stream();
+		case StreamStrategy.SORTED_SUB:
+			// Assume there is no sorted leg
+			yield IConsumingStream.empty();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			// As we assume there is no sorted leg, the complement is all
+			yield column.stream();
+		};
+	}
 
 	/**
 	 * Similar to a `.get` but the value is available through a {@link IValueReceiver}
@@ -53,6 +89,20 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	 *         without effect.
 	 */
 	IValueProvider onValue(T key);
+
+	default IValueProvider onValue(T key, StreamStrategy strategy) {
+
+		return switch (strategy) {
+		case StreamStrategy.ALL:
+			yield onValue(key);
+		case StreamStrategy.SORTED_SUB:
+			// Assume there is no sorted leg
+			yield IValueProvider.NULL;
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			// As we assume there is no sorted leg, the complement is all
+			yield onValue(key);
+		};
+	}
 
 	@Override
 	IMultitypeColumnFastGet<T> purgeAggregationCarriers();

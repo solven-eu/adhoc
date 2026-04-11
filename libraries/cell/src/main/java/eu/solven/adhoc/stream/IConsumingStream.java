@@ -24,9 +24,13 @@ package eu.solven.adhoc.stream;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,7 +39,12 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
+import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
+
+import eu.solven.adhoc.util.AdhocUnsafe;
 
 /**
  * A lazy, sequential, closeable stream of elements of type {@code T}.
@@ -72,7 +81,7 @@ import com.google.common.collect.ImmutableList;
  *            the element type
  * @author Benoit Lacelle
  */
-public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseable {
+public interface IConsumingStream<T> extends AutoCloseable {
 
 	/**
 	 * Passes each element to {@code consumer}, in encounter order.
@@ -88,19 +97,14 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 	void forEach(Consumer<T> consumer);
 
 	@Override
-	default void accept(Consumer<T> t) {
-		forEach(t);
-	}
-
-	@Override
 	void close();
 
 	default IConsumingStream<T> peek(Consumer<? super T> peeker) {
-		return ConsumingStream.<T>builder().source(this).peeker(peeker).build();
+		return ConsumingStream.<T>builder().source(this::forEach).peeker(peeker).build();
 	}
 
 	default IConsumingStream<T> onClose(Runnable closeHandler) {
-		return ConsumingStream.<T>builder().source(this).closeHandler(closeHandler).build();
+		return ConsumingStream.<T>builder().source(this::forEach).closeHandler(closeHandler).build();
 	}
 
 	/**
@@ -116,7 +120,7 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 	 * @return a new {@code IAdhocStream} that emits only the matching elements
 	 */
 	default IConsumingStream<T> filter(Predicate<? super T> predicate) {
-		return FilteringConsumingStream.<T>builder().source(this).predicate(predicate).build();
+		return FilteringConsumingStream.<T>builder().source(this::forEach).predicate(predicate).build();
 	}
 
 	/**
@@ -172,6 +176,42 @@ public interface IConsumingStream<T> extends Consumer<Consumer<T>>, AutoCloseabl
 
 	static <T> IConsumingStream<T> empty() {
 		return ConsumingStream.<T>builder().source(ImmutableList.<T>of()::forEach).build();
+	}
+
+	/**
+	 * 
+	 * @param executor
+	 * @return a Iterator based on the input {@link ExecutorService} to turn from push-based into pull-based.
+	 */
+	default Iterator<T> iterator(ExecutorService executor) {
+		BlockingQueue<T> queue = new ArrayBlockingQueue<>(AdhocUnsafe.getQueueCapacity());
+		@SuppressWarnings("unchecked")
+		T poison = (T) new Object();
+
+		executor.submit(() -> {
+			this.forEach(queue::add);
+			queue.add(poison);
+		});
+
+		return new AbstractIterator<>() {
+
+			@Override
+			protected @Nullable T computeNext() {
+				T next;
+				try {
+					next = queue.take();
+
+					if (next == poison) {
+						return null;
+					} else {
+						return next;
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException(e);
+				}
+			}
+		};
 	}
 
 	default List<T> toList() {

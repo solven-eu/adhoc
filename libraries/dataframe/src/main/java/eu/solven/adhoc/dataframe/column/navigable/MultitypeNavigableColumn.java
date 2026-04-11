@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -47,8 +48,11 @@ import eu.solven.adhoc.cuboid.IColumnValueConverter;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
+import eu.solven.adhoc.dataframe.collection.ChunkedList;
+import eu.solven.adhoc.dataframe.column.ICanReadSortedSubComplement;
 import eu.solven.adhoc.dataframe.column.IMultitypeArray;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.MultitypeArray;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
@@ -76,7 +80,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class MultitypeNavigableColumn<T extends Comparable<T>>
-		implements IMultitypeColumnFastGetSorted<T>, ICompactable {
+		implements IMultitypeColumnFastGetSorted<T>, ICompactable, ICanReadSortedSubComplement<T> {
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 
 		@Override
@@ -92,7 +96,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	// This List has only distinct elements
 	@Default
 	@NonNull
-	final List<T> keys = new ObjectArrayList<>(0);
+	final List<T> keys = new ChunkedList<>();
 
 	@Default
 	@NonNull
@@ -111,6 +115,43 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	// Used to clean lazily a null insertion
 	final AtomicInteger lastInsertionIndex = new AtomicInteger(-1);
+
+	/**
+	 * Factory for the lazily-built {@link IKeyPresencePreScreen}, called once with the column's {@code capacity}.
+	 * Default is {@link BloomKeyPresencePreScreenFactory#INSTANCE} which produces a Bloom-backed pre-screen at the
+	 * default tuning.
+	 *
+	 * <p>
+	 * Override via the builder to plug in a different implementation, e.g.
+	 * {@link NoopKeyPresencePreScreenFactory#INSTANCE} to disable the optimization (legacy behavior of always falling
+	 * through to the exact binary search), or a domain-specific factory tuned for the actual key type.
+	 */
+	@Default
+	@NonNull
+	final IKeyPresencePreScreenFactory presenceFilterFactory = BloomKeyPresencePreScreenFactory.INSTANCE;
+
+	/**
+	 * Lazily initialized {@link IKeyPresencePreScreen} used by {@link #appendIfOptimal} as a fast pre-check before the
+	 * binary-search slow path: if the pre-screen returns {@code mightContain == false}, the key is definitely not
+	 * present and we can reject the insertion immediately without paying for the {@link Collections#binarySearch} call.
+	 *
+	 * <p>
+	 * The reference holder is {@code final} so this field is excluded from the {@link SuperBuilder} (it is not a
+	 * caller-tunable knob — pass a {@link #presenceFilterFactory} to customise the implementation); the wrapped
+	 * pre-screen is created on first call to {@link #appendIfOptimal} and updated by every subsequent insertion via
+	 * {@link #onAppendLast} and {@link #onRandomInsertion}.
+	 *
+	 * <p>
+	 * <strong>BEWARE</strong> the pre-screen is <em>never</em> cleared or rebuilt by {@link #lazyClearLastWrite()} (nor
+	 * by {@link #clearKey(Comparable)}). {@link #lazyClearLastWrite} purges a key from {@code keys}/{@code values} but
+	 * {@link IKeyPresencePreScreen} implementations are not required to support removal (and the default Bloom
+	 * implementation by definition cannot). This is harmless because the pre-screen is only a fast-reject filter: a
+	 * false positive ({@code mightContain == true} for a key that was actually purged) just falls through to the exact
+	 * {@link #getIndex} binary search, which then either finds the key or rejects the append. The pre-screen never
+	 * excludes a real entry, so correctness is preserved; the only downside is a slightly lower hit rate on the
+	 * optimization after many cleared writes.
+	 */
+	final AtomicReference<IKeyPresencePreScreen<T>> presenceFilter = new AtomicReference<>();
 
 	protected IValueReceiver merge(int index) {
 		if (index < 0) {
@@ -208,12 +249,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			comparedWithLast = key.compareTo(keys.getLast());
 		}
 		if (keysIsEmpty || comparedWithLast > 0) {
-			checkSizeBeforeAdd();
-
-			// In most cases, we append a greater key, because we process sorted keys
-			lastInsertionIndex.set(keys.size());
-			keys.add(key);
-			valueConsumer = values.add();
+			valueConsumer = onAppendLast(key);
 		} else if (comparedWithLast == 0) {
 			// In many cases, we accumulate in the greater/latest key, because we induce by removing columns
 			int index = keys.size() - 1;
@@ -223,7 +259,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 				valueConsumer = set(index);
 			}
 		} else {
-			int index = getIndex(key);
+			int index = getIndex(key, insertEvenIfNotLast);
 
 			if (index >= 0) {
 				if (mergeElseSet) {
@@ -233,9 +269,12 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 				}
 			} else {
 				if (insertEvenIfNotLast) {
-					checkSizeBeforeAdd();
 					valueConsumer = onRandomInsertion(key, index);
 				} else {
+					// Pre-screen pre-check for the appendIfOptimal path: if the pre-screen says definitely-not-present,
+					// skip the binary-search slow path and reject immediately. The pre-screen never excludes a real
+					// entry,
+					// so a positive result still falls through to the exact `getIndex` lookup below.
 					valueConsumer = INSERTION_REJECTED;
 				}
 			}
@@ -248,6 +287,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	 * written value if it is null.
 	 */
 	// BEWARE This is a very awkward design. This is due to making sure we do not leave any `null` in the column.
+	// BEWARE This does NOT clear the entry from `presenceFilter` — IKeyPresencePreScreen implementations are not
+	// required to support removal (and the default Bloom-backed impl by definition cannot). The purged key remains
+	// in the pre-screen and may produce a `mightContain == true` false positive on a subsequent `appendIfOptimal`,
+	// which then falls through to the exact `getIndex` lookup. See `presenceFilter` field Javadoc.
 	protected void lazyClearLastWrite() {
 		if (lastInsertionIndex.get() >= 0) {
 			if (IValueProvider.isNull(values.read(lastInsertionIndex.get()))) {
@@ -259,7 +302,56 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		}
 	}
 
+	protected IValueReceiver onAppendLast(T key) {
+		checkSizeBeforeAdd();
+
+		// In most cases, we append a greater key, because we process sorted keys
+		lastInsertionIndex.set(keys.size());
+		keys.add(key);
+		recordPresenceKey(key);
+		return values.add();
+	}
+
+	/**
+	 * Records {@code key} in the {@link #presenceFilter} if it has been initialized. No-op when the pre-screen has
+	 * never been queried (no {@link #appendIfOptimal} call has occurred yet) — in that case it will be lazily built
+	 * from the current {@code keys} list on first access.
+	 */
+	protected void recordPresenceKey(T key) {
+		IKeyPresencePreScreen<T> pf = presenceFilter.get();
+		if (pf != null) {
+			pf.add(key);
+		}
+	}
+
+	/**
+	 * Returns the lazily-initialized {@link #presenceFilter}, building it from the current {@code keys} list on first
+	 * access via the {@link #presenceFilterFactory}.
+	 */
+	protected IKeyPresencePreScreen<T> getOrCreatePresenceFilter() {
+		IKeyPresencePreScreen<T> pf = presenceFilter.get();
+		if (pf == null) {
+			pf = presenceFilterFactory.create(capacity);
+			// Seed with any keys already present (the column may have been populated before the first
+			// appendIfOptimal call).
+			for (T existing : keys) {
+				pf.add(existing);
+			}
+			presenceFilter.set(pf);
+		}
+		return pf;
+	}
+
+	/**
+	 *
+	 * @param key
+	 * @param index
+	 *            a negative index representing the insertion index.
+	 * @return
+	 */
 	protected IValueReceiver onRandomInsertion(T key, int index) {
+		assert index < 0;
+
 		// BEWARE This case should be rare. For now, we try handling it smoothly
 		// It typically happens if it is used to receive table aggregates while the table does not provide
 		// sorted results.
@@ -267,9 +359,12 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		if (Integer.bitCount(slowPath.incrementAndGet()) == 1) {
 			log.warn("Unordered insertion count={} {} < {}", slowPath, key, keys.getLast());
 		}
+		checkSizeBeforeAdd();
+
 		int insertionIndex = -index - 1;
 		lastInsertionIndex.set(insertionIndex);
 		keys.add(insertionIndex, key);
+		recordPresenceKey(key);
 		return values.add(insertionIndex);
 	}
 
@@ -290,12 +385,23 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		lazyClearLastWrite();
 	}
 
-	protected int getIndex(T key) {
+	/**
+	 *
+	 * @param key
+	 * @return the index of the key, or either `insertEvenIfNotLast==true` and return insertionIndex, else any negative
+	 *         value.
+	 */
+	protected int getIndex(T key, boolean insertEvenIfNotLast) {
 		lazyClearLastWrite();
 
 		if (keys.isEmpty()) {
 			return -1;
+		} else if (!insertEvenIfNotLast && !getOrCreatePresenceFilter().mightContain(key)) {
+			// Not interested in insertionIndex, and we know the key is not present
+			return -1;
 		}
+
+		// BEWARE Can not rely on presenceFilter as, in case of absence, we return the insertionIndex
 		int compareWithLast = keys.getLast().compareTo(key);
 
 		if (compareWithLast == 0) {
@@ -349,10 +455,9 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			// The whole column is sorted
 			yield stream();
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
-
 			yield IConsumingStream.empty();
 		default:
-			yield IMultitypeColumn.defaultStream(this, stragegy);
+			yield IMultitypeColumnFastGet.defaultStream(this, stragegy);
 		};
 	}
 
@@ -395,6 +500,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 		AtomicInteger index = new AtomicInteger();
 
+		boolean currentLocked = this.locked;
 		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v))
 				.limit(AdhocUnsafe.getLimitOrdinalToString())
 				.forEach(sliceToValue -> {
@@ -402,6 +508,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 					Object o = sliceToValue.getValue();
 					toStringHelper.add("#" + index.getAndIncrement(), k + "->" + PepperLogHelper.getObjectAndClass(o));
 				});
+		// Restore the locked status so that `.toString` in debug does not lock the instance
+		this.locked = currentLocked;
 
 		return toStringHelper.toString();
 	}
@@ -429,13 +537,18 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	@Override
 	public IValueProvider onValue(T key) {
-		int index = getIndex(key);
+		int index = getIndex(key, false);
 
 		if (index < 0) {
 			return IValueProvider.NULL;
 		} else {
 			return valueConsumer -> onValue(index, valueConsumer);
 		}
+	}
+
+	@Override
+	public IValueProvider onValueSortedSubComplement(T key) {
+		return IValueProvider.NULL;
 	}
 
 	protected void onValue(int index, IValueReceiver valueConsumer) {
@@ -449,7 +562,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	@Deprecated(since = "For unitTest purposes")
 	public void clearKey(T key) {
-		int index = getIndex(key);
+		int index = getIndex(key, false);
 		if (index >= 0) {
 			keys.remove(index);
 			values.remove(index);

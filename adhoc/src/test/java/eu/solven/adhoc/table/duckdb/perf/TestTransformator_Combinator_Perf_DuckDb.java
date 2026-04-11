@@ -62,7 +62,8 @@ public class TestTransformator_Combinator_Perf_DuckDb extends ADuckDbJooqTest im
 	// This will be edited by registerMeasures
 	String timesN = k1Sum.getName();
 
-	final int height = 16;
+	// TODO Add a parameter to choose the number of children per node (currently hard-coded to 2)
+	final int height = 23;
 
 	String tableName = "someTableName";
 

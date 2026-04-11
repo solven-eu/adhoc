@@ -31,7 +31,7 @@ import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
-import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
+import eu.solven.adhoc.dataframe.column.ICanReadSortedSubComplement;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ToString
 public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
-		implements IMultitypeColumnFastGet<T>, ICompactable {
+		implements IMultitypeColumnFastGet<T>, ICompactable, ICanReadSortedSubComplement<T> {
 	@Default
 	@NonNull
 	final IMultitypeColumnFastGetSorted<T> navigable = MultitypeNavigableColumn.<T>builder().build();
@@ -155,6 +155,11 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 		};
 	}
 
+	@Override
+	public IValueProvider onValueSortedSubComplement(T key) {
+		return hash.onValue(key);
+	}
+
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	@Override
 	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
@@ -162,7 +167,7 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 		case StreamStrategy.ALL -> this.stream();
 		case StreamStrategy.SORTED_SUB -> navigable.stream();
 		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.stream();
-		default -> IMultitypeColumn.defaultStream(this, stragegy);
+		default -> IMultitypeColumnFastGet.defaultStream(this, stragegy);
 		};
 	}
 

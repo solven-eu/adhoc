@@ -58,14 +58,16 @@ public class SliceAndMeasures {
 	 *            underlyingStep index to a value provider
 	 * @return
 	 */
-	public static SliceAndMeasures from(CubeQueryStep queryStep, ISlice slice, List<IValueProvider> valueProviders) {
+	public static SliceAndMeasures fromProviders(CubeQueryStep queryStep,
+			ISlice slice,
+			List<IValueProvider> valueProviders) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
 				.measures(SlicedRecordFromSlices.builder().valueProviders(valueProviders).build())
 				.build();
 	}
 
-	public static SliceAndMeasures from(ISlice slice, CubeQueryStep queryStep, List<?> underlyingVs) {
+	public static SliceAndMeasures fromValues(CubeQueryStep queryStep, ISlice slice, List<?> underlyingVs) {
 		return SliceAndMeasures.builder()
 				.slice(SliceAsMapWithStep.builder().slice(slice).queryStep(queryStep).build())
 				.measures(SlicedRecordFromArray.builder().measures(underlyingVs).build())

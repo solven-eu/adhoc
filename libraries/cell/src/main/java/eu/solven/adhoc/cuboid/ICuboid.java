@@ -68,6 +68,8 @@ public interface ICuboid extends ICompactable {
 
 	IValueProvider onValue(ISlice slice);
 
+	IValueProvider onValue(ISlice slice, StreamStrategy hint);
+
 	void forEachSlice(IColumnScanner<ISlice> columnScanner);
 
 	/**

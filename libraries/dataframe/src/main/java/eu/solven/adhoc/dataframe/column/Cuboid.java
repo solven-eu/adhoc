@@ -78,6 +78,18 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 		return values.onValue(slice);
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public IValueProvider onValue(ISlice slice, StreamStrategy hint) {
+		if (hint == StreamStrategy.SORTED_SUB_COMPLEMENT
+				&& values instanceof ICanReadSortedSubComplement sortedSubComplement) {
+			// Requested for a value known to be in the SortedSubComplement
+			return sortedSubComplement.onValueSortedSubComplement(slice);
+		} else {
+			return values.onValue(slice);
+		}
+	}
+
 	@Override
 	public IConsumingStream<ISlice> slices() {
 		return values.keyStream();

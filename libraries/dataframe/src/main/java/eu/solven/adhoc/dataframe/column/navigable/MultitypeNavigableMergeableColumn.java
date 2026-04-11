@@ -107,7 +107,8 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 
 	@Override
 	public IValueReceiver merge(T key) {
-		int index = getIndex(key);
+		// TODO If the key is absent, current implementation should look for insertionIndex right away
+		int index = getIndex(key, false);
 
 		if (index < 0) {
 			return append(key);

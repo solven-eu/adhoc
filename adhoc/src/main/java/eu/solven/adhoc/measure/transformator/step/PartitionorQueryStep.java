@@ -222,6 +222,9 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 	@Override
 	protected void onSlice(SliceAndMeasures contributionSlice, ICombination combinator, ISliceAndValueConsumer output) {
 		try {
+			// TODO Next partitionSlice is often the same as previous partitionSlice
+			// If so, we want to keep the same reference, which will faster later process (like detecting where to
+			// contribute)
 			ISlice partitionSlice = queriedSlice(step.getGroupBy(), contributionSlice.getSlice());
 
 			IValueReceiver receiver = output.putSlice(partitionSlice);
