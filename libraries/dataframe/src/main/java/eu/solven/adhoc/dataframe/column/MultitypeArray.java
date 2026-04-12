@@ -228,6 +228,15 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 	}
 
 	@Override
+	public boolean isNull(int rowIndex) {
+		if (valuesType == IMultitypeConstants.MASK_OBJECT && rowIndex < valuesO.size()
+				&& valuesO.get(rowIndex) == null) {
+			return true;
+		}
+		return false;
+	}
+
+	@Override
 	public <U> U apply(int rowIndex, IValueFunction<U> valueFunction) {
 		if (valuesType == IMultitypeConstants.MASK_EMPTY) {
 			throw new IndexOutOfBoundsException(rowIndex);

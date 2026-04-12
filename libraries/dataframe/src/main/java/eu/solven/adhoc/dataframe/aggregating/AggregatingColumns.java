@@ -26,11 +26,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.roaringbitmap.RoaringBitmap;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
@@ -86,6 +88,11 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	@Default
 	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
 
+	// Built once (on first `closeColumn` call) and shared across all per-aggregator close calls. Mirrors
+	// `AggregatingColumnsDistinct.memoizeSliceToIndex`. Reversing the slice→index map is O(N); without
+	// memoisation each `closeColumn` call (one per aggregator) would rebuild it.
+	final Supplier<Int2ObjectFunction<T>> memoizeIndexToSlice = Suppliers.memoize(this::indexToSlice);
+
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
 	// Also, even if we hit a single aggregate, it should not be returned as-is, but returns as aggregated with null
@@ -100,7 +107,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	public IOpenedSlice openSlice(T key) {
 		int keyIndex = dictionarize(key);
 		return aggregator -> {
-			IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
+			IAggregation agg = aggregations.get().get(aggregator.getAlias());
 			IMultitypeMergeableColumn<Integer> column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn(agg));
 
@@ -158,16 +165,22 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
 
-		// TODO PERFORMANCE Is this process duplicated for each column?!
-		// Reverse from `slice->index` to `index->slice`
-		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
-		// `.parallelStream()`?
-		sliceToIndex.object2IntEntrySet().forEach((e) -> indexToSlice.put(e.getIntValue(), e.getKey()));
-
 		long nbSorted = getNbSorted(aggregatorName, column);
 
-		// Turn the columnByIndex to a columnBySlice
-		return undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get, nbSorted);
+		// Turn the columnByIndex to a columnBySlice. The reverse `index->slice` map is built once (memoised) and
+		// shared across all per-aggregator close calls — see `memoizeIndexToSlice`.
+		return undictionarizeColumn(column, sliceToIndex::getInt, memoizeIndexToSlice.get(), nbSorted);
+	}
+
+	/**
+	 * Builds the {@code index → slice} reverse map from {@code sliceToIndex}. Called at most once per
+	 * {@link AggregatingColumns} instance via {@link #memoizeIndexToSlice}.
+	 */
+	protected Int2ObjectFunction<T> indexToSlice() {
+		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
+		// `.parallelStream()`?
+		sliceToIndex.object2IntEntrySet().forEach(e -> indexToSlice.put(e.getIntValue(), e.getKey()));
+		return indexToSlice::get;
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")

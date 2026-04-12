@@ -117,6 +117,11 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	}
 
 	@Override
+	public long size(StreamStrategy strategy) {
+		return values.size(strategy);
+	}
+
+	@Override
 	public boolean isEmpty() {
 		return values.isEmpty();
 	}

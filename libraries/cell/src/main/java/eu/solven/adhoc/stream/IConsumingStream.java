@@ -224,6 +224,7 @@ public interface IConsumingStream<T> extends AutoCloseable {
 		return list;
 	}
 
+	@Deprecated(since = "Useful?")
 	default Optional<T> min() {
 		AtomicReference<Comparable> refMin = new AtomicReference<>();
 
@@ -238,6 +239,6 @@ public interface IConsumingStream<T> extends AutoCloseable {
 			}
 		});
 
-		return Optional.ofNullable(refMin.get());
+		return Optional.ofNullable((T) refMin.get());
 	}
 }

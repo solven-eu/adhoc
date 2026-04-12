@@ -76,6 +76,17 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	}
 
 	@Override
+	public long size(StreamStrategy strategy) {
+		return switch (strategy) {
+		case StreamStrategy.ALL -> size();
+		// The navigable side IS the sorted leg.
+		case StreamStrategy.SORTED_SUB -> navigable.size();
+		// The hash side IS the unordered complement.
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.size();
+		};
+	}
+
+	@Override
 	public boolean isEmpty() {
 		return navigable.isEmpty() && hash.isEmpty();
 	}

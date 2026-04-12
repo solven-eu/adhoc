@@ -29,14 +29,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -57,6 +54,7 @@ import eu.solven.adhoc.dataframe.column.MultitypeArray;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -292,7 +290,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	// which then falls through to the exact `getIndex` lookup. See `presenceFilter` field Javadoc.
 	protected void lazyClearLastWrite() {
 		if (lastInsertionIndex.get() >= 0) {
-			if (IValueProvider.isNull(values.read(lastInsertionIndex.get()))) {
+			if (values.isNull(lastInsertionIndex.get())) {
 				keys.remove(lastInsertionIndex.get());
 				values.remove(lastInsertionIndex.get());
 			}
@@ -395,9 +393,6 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 		if (keys.isEmpty()) {
 			return -1;
-		} else if (!insertEvenIfNotLast && !getOrCreatePresenceFilter().mightContain(key)) {
-			// Not interested in insertionIndex, and we know the key is not present
-			return -1;
 		}
 
 		// BEWARE Can not rely on presenceFilter as, in case of absence, we return the insertionIndex
@@ -414,7 +409,12 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			return -keys.size();
 		} else {
 			// slow path: merge with an existing element
-			return Collections.binarySearch(keys, key, Comparator.naturalOrder());
+			if (!insertEvenIfNotLast && !getOrCreatePresenceFilter().mightContain(key)) {
+				// Not interested in insertionIndex, and we know the key is not present
+				return -1;
+			} else {
+				return Collections.binarySearch(keys, key, Comparator.naturalOrder());
+			}
 		}
 	}
 
@@ -467,8 +467,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	@Override
-	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
-		return switch (stragegy) {
+	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy strategy) {
+		return switch (strategy) {
 		case StreamStrategy.ALL:
 		case StreamStrategy.SORTED_SUB:
 			// The whole column is sorted
@@ -476,7 +476,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 			yield IConsumingStream.empty();
 		default:
-			yield IMultitypeColumnFastGet.defaultStream(this, stragegy);
+			yield IMultitypeColumnFastGet.defaultStream(this, strategy);
 		};
 	}
 
@@ -485,6 +485,22 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		lazyClearLastWrite();
 
 		return keys.size();
+	}
+
+	@Override
+	public long size(StreamStrategy strategy) {
+		lazyClearLastWrite();
+
+		return switch (strategy) {
+		case StreamStrategy.ALL:
+		case StreamStrategy.SORTED_SUB:
+			// The whole column is sorted
+			yield size();
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			yield 0;
+		default:
+			yield 0;
+		};
 	}
 
 	@Override
@@ -498,17 +514,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	public IConsumingStream<T> keyStream() {
 		doLock();
 
-		// No need for .distinct as each key is guaranteed to appear in a single column
-		return IConsumingStream.fromStream(StreamSupport.stream(Spliterators.spliterator(keys, // keys is guaranteed to
-																								// hold distinct value
-				Spliterator.DISTINCT
-						// keys are sorted naturally
-						| Spliterator.ORDERED
-						| Spliterator.SORTED
-						// When read, this can not be edited anymore
-						| Spliterator.IMMUTABLE),
-				false));
-
+		return ConsumingStream.<T>builder().source(keys::forEach).build();
 	}
 
 	@Override

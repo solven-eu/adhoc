@@ -24,17 +24,24 @@ package eu.solven.adhoc.dataframe.aggregating;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.navigable.IHasSortedLeg;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import lombok.Builder.Default;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,6 +58,11 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 	@NonNull
 	@Default
 	protected IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
+
+	@Singular
+	protected ImmutableSet<IAliasedAggregator> aggregators;
+
+	final Supplier<Map<String, IAggregation>> aggregations = Suppliers.memoize(this::makeAggregations);
 
 	/**
 	 * Number of leading dictionarization indices for which the corresponding slices were inserted in strictly
@@ -156,5 +168,11 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 		}
 
 		return size;
+	}
+
+	protected Map<String, IAggregation> makeAggregations() {
+		return aggregators.stream()
+				.collect(ImmutableMap.toImmutableMap(a -> a.getAlias(),
+						a -> operatorFactory.makeAggregation(a.getAggregator())));
 	}
 }

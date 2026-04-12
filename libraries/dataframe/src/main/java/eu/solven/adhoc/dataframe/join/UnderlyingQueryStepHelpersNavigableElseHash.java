@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -102,7 +103,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 *            maps a slice to its value provider for this cuboid
 	 */
 	private record CuboidUnsortedLeg(IConsumingStream<SliceAndMeasure<ISlice>> unsortedStream,
-			Function<ISlice, IValueProvider> valueLookup) {
+			Function<ISlice, IValueProvider> valueLookup,
+			long unsortedSize) {
 	}
 
 	/**
@@ -117,7 +119,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 			// We cannot know cheaply if the stream is empty without consuming it.
 			// Assume it may have content; empty streams simply produce nothing when consumed.
 			legs.add(new CuboidUnsortedLeg(unsorted,
-					slice -> cuboid.onValue(slice, StreamStrategy.SORTED_SUB_COMPLEMENT)));
+					slice -> cuboid.onValue(slice, StreamStrategy.SORTED_SUB_COMPLEMENT),
+					cuboid.size(StreamStrategy.SORTED_SUB_COMPLEMENT)));
 		}
 		return legs;
 	}
@@ -218,7 +221,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		for (int rawUnsortedIndex = 0; rawUnsortedIndex < size; rawUnsortedIndex++) {
 			int unsortedIndex = rawUnsortedIndex;
 			CuboidUnsortedLeg leg = unsortedLegs.get(unsortedIndex);
-			Set<ISlice> unsortedSlicesAsSetI = new ObjectOpenHashSet<>();
+			Set<ISlice> unsortedSlicesAsSetI = new ObjectOpenHashSet<>(Ints.checkedCast(leg.unsortedSize()));
 
 			// The stream may be empty for fully-sorted cuboids — that's fine, it simply produces nothing
 			IConsumingStream<SliceAndMeasures> unsortedStream = leg.unsortedStream()

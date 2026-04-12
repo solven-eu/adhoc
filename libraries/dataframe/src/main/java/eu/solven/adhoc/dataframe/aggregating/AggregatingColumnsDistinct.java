@@ -87,7 +87,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	@Default
 	final Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
 
-	final Supplier<Object2IntFunction<T>> memoizeSliceToIndex = Suppliers.memoize(this::sliceToindex);
+	final Supplier<Object2IntFunction<T>> memoizeSliceToIndex = Suppliers.memoize(this::sliceToIndex);
 
 	// Set to true on the first closeColumn() call; subsequent openSlice() calls are rejected.
 	// non-final: set lazily on close, not at construction time
@@ -132,8 +132,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			IMultitypeColumnFastGet<Integer> column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn());
 
-			// TODO Could be skipped for not-object aggregate?
-			IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
+			IAggregation agg = aggregations.get().get(aggregator.getAlias());
 
 			if (agg instanceof IHasCarriers hasCarriers) {
 				return hasCarriers.wrap(column.append(keyIndex));
@@ -187,7 +186,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 				getNbSorted(aggregatorName, column));
 	}
 
-	protected Object2IntFunction<T> sliceToindex() {
+	protected Object2IntFunction<T> sliceToIndex() {
 		AdhocCollectionHelpers.trimToSize(indexToSlice);
 
 		// Reverse from `slice->index` to `index->slice`

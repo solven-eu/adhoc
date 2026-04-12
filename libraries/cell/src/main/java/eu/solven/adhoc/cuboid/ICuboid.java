@@ -53,6 +53,8 @@ public interface ICuboid extends ICompactable {
 
 	long size();
 
+	long size(StreamStrategy strategy);
+
 	boolean isEmpty();
 
 	/**
@@ -108,5 +110,4 @@ public interface ICuboid extends ICompactable {
 	ICuboid purgeCarriers();
 
 	ICuboid mask(Map<String, ?> mask);
-
 }

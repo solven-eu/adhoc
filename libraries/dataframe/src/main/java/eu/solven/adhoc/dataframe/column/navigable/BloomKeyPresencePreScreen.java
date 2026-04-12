@@ -26,6 +26,8 @@ import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.PrimitiveSink;
 
+import eu.solven.adhoc.cuboid.slice.ISlice;
+
 /**
  * {@link IKeyPresencePreScreen} backed by a Guava {@link BloomFilter}. Probabilistic: a positive
  * {@link #mightContain(Object)} result may be a false positive whose rate is bounded by the {@code fpp} parameter.
@@ -57,7 +59,17 @@ public class BloomKeyPresencePreScreen<T> implements IKeyPresencePreScreen<T> {
 
 		@Override
 		public void funnel(Object from, PrimitiveSink into) {
-			into.putUnencodedChars(String.valueOf(from));
+			if (from instanceof Integer fromInt) {
+				// AAggregatingColumns
+				into.putInt(fromInt.intValue());
+			} else if (from instanceof ISlice slice) {
+				// AMeasureQueryStep
+				// TODO hashCode is generally not good. How to efficiently stream the objects? Knowing it is costly to
+				// decode some values (e.g. FSST)
+				into.putInt(slice.hashCode());
+			} else {
+				into.putUnencodedChars(String.valueOf(from));
+			}
 		}
 	}
 

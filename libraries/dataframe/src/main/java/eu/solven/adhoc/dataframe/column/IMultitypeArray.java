@@ -64,6 +64,8 @@ public interface IMultitypeArray {
 
 	IValueProvider read(int rowIndex);
 
+	boolean isNull(int rowIndex);
+
 	<U> U apply(int rowIndex, IValueFunction<U> valueFunction);
 
 	// BEWARE Should rely on IValueConsumer

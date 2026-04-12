@@ -154,6 +154,17 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	}
 
 	@Override
+	public long size(StreamStrategy strategy) {
+		return switch (strategy) {
+		case StreamStrategy.ALL -> size();
+		// The sorted leg is at the beginning of the column
+		case StreamStrategy.SORTED_SUB -> sortedLength;
+		// The complement of the sorted leg is after the sorted leg
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> column.size() - sortedLength;
+		};
+	}
+
+	@Override
 	public IConsumingStream<T> keyStream() {
 		return column.keyStream().map(indexToSlice::apply);
 	}

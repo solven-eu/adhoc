@@ -30,6 +30,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -89,13 +90,13 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	TableQueryV4 tableQuery;
 
-	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream, Set<FilteredAggregator> aggregators) {
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
 
 		if (stream.isDistinctSlices()) {
-			gridFactory = () -> AggregatingColumnsDistinct.<ISlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory = () -> AggregatingColumnsDistinct.<ISlice>builder().operatorFactory(operatorFactory).aggregators(aggregators).build();
 		} else {
-			gridFactory = () -> AggregatingColumns.<ISlice>builder().operatorFactory(operatorFactory).build();
+			gridFactory = () -> AggregatingColumns.<ISlice>builder().operatorFactory(operatorFactory).aggregators(aggregators).build();
 		}
 
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory2;
@@ -147,7 +148,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@SuppressWarnings({ "PMD.AvoidSynchronizedStatement", "PMD.CloseResource", "PMD.UselessQualifiedThis" })
 	@Override
 	public IMultitypeMergeableGrid<ISlice> reduce(ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream);
+		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream, tableQuery.getAggregators());
 
 		// Useful to log on the last row, to have the number of row actually streamed
 		TabularRecordLogger aggregatedRecordLogger = TabularRecordLogger.builder()

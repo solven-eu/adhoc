@@ -65,13 +65,12 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 			StreamStrategy strategy) {
 		return switch (strategy) {
 		case StreamStrategy.ALL:
+			// As we assume there is no sorted leg, the complement is all
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 			yield column.stream();
 		case StreamStrategy.SORTED_SUB:
 			// Assume there is no sorted leg
 			yield IConsumingStream.empty();
-		case StreamStrategy.SORTED_SUB_COMPLEMENT:
-			// As we assume there is no sorted leg, the complement is all
-			yield column.stream();
 		};
 	}
 
@@ -95,16 +94,26 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 	IValueProvider onValue(T key);
 
 	default IValueProvider onValue(T key, StreamStrategy strategy) {
-
 		return switch (strategy) {
 		case StreamStrategy.ALL:
+			// As we assume there is no sorted leg, the complement is all
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 			yield onValue(key);
 		case StreamStrategy.SORTED_SUB:
 			// Assume there is no sorted leg
 			yield IValueProvider.NULL;
-		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+		};
+	}
+
+	default long size(StreamStrategy strategy) {
+		return switch (strategy) {
+		case StreamStrategy.ALL:
 			// As we assume there is no sorted leg, the complement is all
-			yield onValue(key);
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			yield size();
+		case StreamStrategy.SORTED_SUB:
+			// Assume there is no sorted leg
+			yield 0;
 		};
 	}
 
