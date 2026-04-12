@@ -31,10 +31,10 @@ import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
-import eu.solven.adhoc.dataframe.column.ICanReadSortedSubComplement;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.navigable.IHasSortedLeg;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -57,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ToString
 public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
-		implements IMultitypeColumnFastGet<T>, ICompactable, ICanReadSortedSubComplement<T> {
+		implements IMultitypeColumnFastGet<T>, ICompactable, IHasSortedLeg {
 	@Default
 	@NonNull
 	final IMultitypeColumnFastGetSorted<T> navigable = MultitypeNavigableColumn.<T>builder().build();
@@ -65,12 +65,6 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	@Default
 	@NonNull
 	final IMultitypeColumnFastGet<T> hash = MultitypeHashColumn.<T>builder().build();
-
-	// UnderlyingQueryStepHelpers.distinctSlices(CubeQueryStep, List<? extends ICuboid>) may provide not sorted
-	// Stream. Still, it is expected to start with sorted stream first. And finish with the unordered slices.
-	// Similarly, this column shall accept sorted slices into navigable, and switch into hash by default once we
-	// encounter unordered slices.
-	// final AtomicBoolean inputAreNotOrderedAnymore = new AtomicBoolean();
 
 	/**
 	 *
@@ -84,6 +78,11 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	@Override
 	public boolean isEmpty() {
 		return navigable.isEmpty() && hash.isEmpty();
+	}
+
+	@Override
+	public long sortedPrefixLength() {
+		return navigable.size();
 	}
 
 	@Override
@@ -111,6 +110,22 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	@Override
 	public IConsumingStream<SliceAndMeasure<T>> stream() {
 		return IConsumingStream.concat(List.of(navigable.stream(), hash.stream()));
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		if (limit > navigable.size()) {
+			throw new IllegalArgumentException("limit=%s navigable.size=%s".formatted(limit, navigable.size()));
+		}
+		return navigable.limit(limit);
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		if (skip > navigable.size()) {
+			throw new IllegalArgumentException("skip=%s navigable.size=%s".formatted(skip, navigable.size()));
+		}
+		return IConsumingStream.concat(List.of(navigable.skip(skip), hash.stream()));
 	}
 
 	@Override
@@ -156,8 +171,14 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>>
 	}
 
 	@Override
-	public IValueProvider onValueSortedSubComplement(T key) {
-		return hash.onValue(key);
+	public IValueProvider onValue(T key, StreamStrategy strategy) {
+		return switch (strategy) {
+		case StreamStrategy.ALL -> onValue(key);
+		// The navigable side IS the sorted leg.
+		case StreamStrategy.SORTED_SUB -> navigable.onValue(key);
+		// The hash side IS the unordered complement.
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.onValue(key);
+		};
 	}
 
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")

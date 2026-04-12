@@ -45,6 +45,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
@@ -248,6 +249,16 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 				.map(entry -> converter.prepare(entry.getKey()).onObject(entry.getValue()));
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
 	}
 
 	@Override

@@ -45,6 +45,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.ints.Int2DoubleMap;
 import it.unimi.dsi.fastutil.ints.Int2DoubleMaps;
@@ -65,7 +66,6 @@ import lombok.extern.slf4j.Slf4j;
  *
  * Each key may have different types.
  *
- * @param
  * @author Benoit Lacelle
  */
 @SuperBuilder
@@ -263,6 +263,16 @@ public class MultitypeHashIntColumn implements IMultitypeIntColumnFastGet, IComp
 	}
 
 	@Override
+	public IConsumingStream<SliceAndMeasure<Integer>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<Integer>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
 	public long size() {
 		long size = 0;
 
@@ -274,6 +284,7 @@ public class MultitypeHashIntColumn implements IMultitypeIntColumnFastGet, IComp
 		return size;
 	}
 
+	@SuppressWarnings("CPD-START")
 	@Override
 	public boolean isEmpty() {
 		return size() == 0;

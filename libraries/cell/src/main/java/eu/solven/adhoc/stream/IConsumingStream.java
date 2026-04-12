@@ -183,6 +183,8 @@ public interface IConsumingStream<T> extends AutoCloseable {
 	 * @param executor
 	 * @return a Iterator based on the input {@link ExecutorService} to turn from push-based into pull-based.
 	 */
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	@Deprecated(since = "Demonstrates the issue (push vs pull) and how to workaround it")
 	default Iterator<T> iterator(ExecutorService executor) {
 		BlockingQueue<T> queue = new ArrayBlockingQueue<>(AdhocUnsafe.getQueueCapacity());
 		@SuppressWarnings("unchecked")
@@ -220,5 +222,22 @@ public interface IConsumingStream<T> extends AutoCloseable {
 		forEach(list::add);
 
 		return list;
+	}
+
+	default Optional<T> min() {
+		AtomicReference<Comparable> refMin = new AtomicReference<>();
+
+		forEach(k -> {
+			Comparable currentMin = refMin.get();
+			Comparable comparableK = (Comparable) k;
+
+			if (currentMin == null) {
+				refMin.set(comparableK);
+			} else if (comparableK.compareTo(currentMin) < 0) {
+				refMin.set(comparableK);
+			}
+		});
+
+		return Optional.ofNullable(refMin.get());
 	}
 }

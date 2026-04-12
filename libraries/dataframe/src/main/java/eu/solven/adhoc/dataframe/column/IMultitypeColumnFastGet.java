@@ -40,6 +40,10 @@ public interface IMultitypeColumnFastGet<T> extends IMultitypeColumn<T> {
 
 	IConsumingStream<SliceAndMeasure<T>> stream();
 
+	IConsumingStream<SliceAndMeasure<T>> limit(int limit);
+
+	IConsumingStream<SliceAndMeasure<T>> skip(int skip);
+
 	/**
 	 *
 	 * @param strategy

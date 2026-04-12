@@ -78,16 +78,12 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 		return values.onValue(slice);
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public IValueProvider onValue(ISlice slice, StreamStrategy hint) {
-		if (hint == StreamStrategy.SORTED_SUB_COMPLEMENT
-				&& values instanceof ICanReadSortedSubComplement sortedSubComplement) {
-			// Requested for a value known to be in the SortedSubComplement
-			return sortedSubComplement.onValueSortedSubComplement(slice);
-		} else {
-			return values.onValue(slice);
-		}
+		// Strategy-aware lookup: each IMultitypeColumnFastGet implementation knows whether it represents the
+		// sorted leg, the unordered complement, or both — and the default in IMultitypeColumnFastGet falls back
+		// to the all-keys behavior for columns that have nothing strategy-specific to offer.
+		return values.onValue(slice, hint);
 	}
 
 	@Override

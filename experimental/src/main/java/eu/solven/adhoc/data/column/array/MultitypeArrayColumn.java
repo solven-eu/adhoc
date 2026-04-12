@@ -43,6 +43,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -236,6 +237,16 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 				.mapToObj(i -> converter.prepare(toBoxedKey(i)).onObject(measureToAggregateO.get(i)));
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
 	}
 
 	private IntStream objectIndexStream() {

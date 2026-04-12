@@ -33,6 +33,7 @@ import java.util.Random;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.MultitypeColumnHelpers;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
@@ -259,12 +260,12 @@ public class TestMultitypeNavigableColumn {
 
 		column.append("k").onLong(7L);
 
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(584);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(616);
 		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(1192L);
 
 		column.compact();
 
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(584);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(616);
 		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(176L);
 
 	}
@@ -382,5 +383,32 @@ public class TestMultitypeNavigableColumn {
 		column.append("d").onLong(4L);
 		Assertions.assertThat(column.size()).isEqualTo(3);
 		Assertions.assertThat(IValueProvider.getValue(column.onValue("d"))).isEqualTo(4L);
+	}
+
+	// ---- onValue(T, StreamStrategy) — replaces the deprecated ICanReadSortedSubComplement contract ----
+	// MultitypeNavigableColumn IS the sorted leg, so SORTED_SUB returns the value and SORTED_SUB_COMPLEMENT is
+	// always empty (returns NULL for any key).
+
+	@Test
+	public void testOnValueStrategy_navigableIsTheSortedLeg() {
+		column.append("a").onLong(1L);
+		column.append("b").onLong(2L);
+		column.append("c").onLong(3L);
+
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.ALL))).isEqualTo(2L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.SORTED_SUB))).isEqualTo(2L);
+		// Complement is empty: a navigable column has no unordered tail.
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
+	}
+
+	@Test
+	public void testOnValueStrategy_unknownKey_returnsNullForEveryStrategy() {
+		column.append("a").onLong(1L);
+
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("z", StreamStrategy.ALL))).isNull();
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("z", StreamStrategy.SORTED_SUB))).isNull();
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("z", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
 	}
 }

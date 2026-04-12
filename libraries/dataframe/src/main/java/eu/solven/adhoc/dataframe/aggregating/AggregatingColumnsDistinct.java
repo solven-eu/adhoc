@@ -104,14 +104,15 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
-		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		// No capacity strategy given `ITabularRecordStream` has no insights about the number of coming rows
-		// BEWARE This column is sorted by growing indices, which means nothing in term of order of slices: it is actual
-		// not sorted. Hence, even if we will push indices in growing order, we should expect reads (e.g. in cuboid
-		// joins) to happen in random order.
-		// TODO We may check if slices are sorted or not, or push indices in hash or navigable given the slice order
-		// (and not the indices order)
-		return factories.getColumnFactory().makeColumnRandomInsertions(IAdhocCapacityConstants.ZERO_THEN_MAX);
+		// Sequential dictionarization indices (0, 1, 2, ...) always arrive in ascending order, so the navigable
+		// side of the MultitypeNavigableElseHashColumn is always taken — no hash fallback, no 1M-default-capacity
+		// allocation from MultitypeHashColumn (whose `ensureCapacity` would otherwise pre-allocate
+		// `AdhocColumnUnsafe#getDefaultColumnCapacity()` slots on first write).
+		// BEWARE This column ends up "sorted" by Integer index — which is the dictionarization-insertion order,
+		// NOT the slice order. Downstream code MUST NOT propagate that ordering as slice-sortedness; the wrapping
+		// UndictionarizedColumn carries an explicit `sortedPrefixLength` field for that purpose, populated from
+		// AAggregatingColumns#sortedPrefixLength.
+		return factories.getColumnFactory().makeColumn(IAdhocCapacityConstants.ZERO_THEN_MAX);
 	}
 
 	@Override
@@ -144,6 +145,8 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 
 	@Override
 	protected int dictionarize(T key) {
+		// recordNewSlice expects the new slice not to be in storage
+		recordNewSlice(key);
 		indexToSlice.add(key);
 
 		// e.g. On first item, we return 0
@@ -151,11 +154,17 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	}
 
 	@Override
+	protected int sliceCount() {
+		return indexToSlice.size();
+	}
+
+	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		// Freeze on first closeColumn: all slices have been ingested; further openSlice calls are invalid.
 		frozen = true;
 
-		IMultitypeColumnFastGet<Integer> column = getColumn(aggregator.getAlias());
+		String aggregatorName = aggregator.getAlias();
+		IMultitypeColumnFastGet<Integer> column = getColumn(aggregatorName);
 
 		if (column == null) {
 			// Typically happens when a filter reject completely one of the underlying
@@ -170,8 +179,12 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			compactable.compact();
 		}
 
-		// Turn the columnByIndex to a columnBySlice
-		return AggregatingColumns.undictionarizeColumn(column, memoizeSliceToIndex.get(), indexToSlice::get);
+		// Turn the columnByIndex to a columnBySlice. Pass the prefix length so the wrapper exposes the leading
+		// slice-sorted run via stream(SORTED_SUB) / onValue(slice, SORTED_SUB).
+		return AggregatingColumns.undictionarizeColumn(column,
+				memoizeSliceToIndex.get(),
+				indexToSlice::get,
+				getNbSorted(aggregatorName, column));
 	}
 
 	protected Object2IntFunction<T> sliceToindex() {

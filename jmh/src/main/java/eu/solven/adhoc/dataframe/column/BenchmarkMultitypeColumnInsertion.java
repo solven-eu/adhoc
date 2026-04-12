@@ -105,6 +105,9 @@ public class BenchmarkMultitypeColumnInsertion {
 	private MultitypeNavigableElseHashColumn<String> navigableElseHash;
 	private MultitypeNavigableElseHashColumn<String> navigableElseHashBloom;
 
+	/**
+	 * Benchmarks over different input topology.
+	 */
 	public enum Order {
 		SORTED, RANDOM
 	}
@@ -133,13 +136,16 @@ public class BenchmarkMultitypeColumnInsertion {
 				.presenceFilterFactory(NoopKeyPresencePreScreenFactory.INSTANCE)
 				.build();
 		hash = MultitypeHashColumn.<String>builder().capacity(size).build();
-		navigableElseHash = MultitypeNavigableElseHashColumn.<String>builder().hash(MultitypeHashColumn.<String>builder().capacity(size).build()).build();
-		navigableElseHashBloom =  MultitypeNavigableElseHashColumn.<String>builder()
+		navigableElseHash = MultitypeNavigableElseHashColumn.<String>builder()
+				.hash(MultitypeHashColumn.<String>builder().capacity(size).build())
+				.build();
+		navigableElseHashBloom = MultitypeNavigableElseHashColumn.<String>builder()
 				.hash(MultitypeHashColumn.<String>builder().capacity(size).build())
 				.navigable(MultitypeNavigableColumn.<String>builder()
-				.capacity(size)
-				.presenceFilterFactory(NoopKeyPresencePreScreenFactory.INSTANCE)
-				.build()).build();
+						.capacity(size)
+						.presenceFilterFactory(NoopKeyPresencePreScreenFactory.INSTANCE)
+						.build())
+				.build();
 	}
 
 	@Benchmark

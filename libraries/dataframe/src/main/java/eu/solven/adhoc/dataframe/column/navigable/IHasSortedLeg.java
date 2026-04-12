@@ -20,26 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.column;
-
-import eu.solven.adhoc.cuboid.StreamStrategy;
-import eu.solven.adhoc.primitive.IValueProvider;
+package eu.solven.adhoc.dataframe.column.navigable;
 
 /**
- * Typically implemented by some {@link IMultitypeColumnFastGet}.
+ * Implemented by data-structure which has a sorted leg, which is generally used as prefix.
  * 
  * @author Benoit Lacelle
  */
-@Deprecated(since = "Should we go for `IValueProvider onValue(ISlice slice, StreamStrategy hint)`?")
 @FunctionalInterface
-public interface ICanReadSortedSubComplement<T> {
+public interface IHasSortedLeg {
 
-	/**
-	 * Relates with {@link StreamStrategy#SORTED_SUB_COMPLEMENT}.
-	 * 
-	 * @param key
-	 * @return
-	 */
-	IValueProvider onValueSortedSubComplement(T key);
+	long sortedPrefixLength();
 
 }

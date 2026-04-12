@@ -49,7 +49,6 @@ import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
-import eu.solven.adhoc.dataframe.column.ICanReadSortedSubComplement;
 import eu.solven.adhoc.dataframe.column.IMultitypeArray;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
@@ -80,7 +79,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 public class MultitypeNavigableColumn<T extends Comparable<T>>
-		implements IMultitypeColumnFastGetSorted<T>, ICompactable, ICanReadSortedSubComplement<T> {
+		implements IMultitypeColumnFastGetSorted<T>, ICompactable, IHasSortedLeg {
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 
 		@Override
@@ -446,6 +445,26 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 						.build()));
 	}
 
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		return IConsumingStream.fromStream(IntStream.range(0, Ints.checkedCast(size()))
+				.limit(limit)
+				.mapToObj(i -> SliceAndMeasure.<T>builder()
+						.slice(keys.get(i))
+						.valueProvider(values.read(i)::acceptReceiver)
+						.build()));
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		return IConsumingStream.fromStream(IntStream.range(0, Ints.checkedCast(size()))
+				.skip(skip)
+				.mapToObj(i -> SliceAndMeasure.<T>builder()
+						.slice(keys.get(i))
+						.valueProvider(values.read(i)::acceptReceiver)
+						.build()));
+	}
+
 	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
 	@Override
 	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy stragegy) {
@@ -547,8 +566,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	}
 
 	@Override
-	public IValueProvider onValueSortedSubComplement(T key) {
-		return IValueProvider.NULL;
+	public IValueProvider onValue(T key, StreamStrategy strategy) {
+		return switch (strategy) {
+		// MultitypeNavigableColumn IS the sorted leg, so the SORTED_SUB result equals the regular onValue.
+		case StreamStrategy.ALL, StreamStrategy.SORTED_SUB -> onValue(key);
+		// The complement (unordered tail) is empty for a fully-sorted navigable column.
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> IValueProvider.NULL;
+		};
 	}
 
 	protected void onValue(int index, IValueReceiver valueConsumer) {
@@ -579,5 +603,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		if (values instanceof ICompactable compactable) {
 			compactable.compact();
 		}
+	}
+
+	@Override
+	public long sortedPrefixLength() {
+		return size();
 	}
 }

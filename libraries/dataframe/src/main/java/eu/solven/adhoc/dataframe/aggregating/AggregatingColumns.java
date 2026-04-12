@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.roaringbitmap.RoaringBitmap;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 
@@ -49,6 +51,7 @@ import eu.solven.pepper.core.PepperStreamHelper;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
@@ -121,12 +124,24 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// BEWARE This happens even if the aggregates is null and then should be skipped,
 		// which is sub-optimal (but IValueReceiver API leads to this). It is acceptable as we expect at least one
 		// aggregate to have a value for given slice.
-		return sliceToIndex.computeIfAbsent(key, _ -> sliceToIndex.size());
+		// One should also not given key may not contribute along all aggregators, and some aggregator may actually
+		// receive given slice later (given AggregatingColumns does not required keys to be distinct).
+		return sliceToIndex.computeIfAbsent(key, _ -> {
+			// `recordNewSlice(...)` has to be called before `sliceToIndex` actual update
+			recordNewSlice(key);
+			return sliceToIndex.size();
+		});
+	}
+
+	@Override
+	protected int sliceCount() {
+		return sliceToIndex.size();
 	}
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
-		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator.getAlias());
+		String aggregatorName = aggregator.getAlias();
+		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregatorName);
 
 		if (notFinalColumn == null) {
 			// Typically happens when a filter reject completely one of the underlying
@@ -149,17 +164,32 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// `.parallelStream()`?
 		sliceToIndex.object2IntEntrySet().forEach((e) -> indexToSlice.put(e.getIntValue(), e.getKey()));
 
+		long nbSorted = getNbSorted(aggregatorName, column);
+
 		// Turn the columnByIndex to a columnBySlice
-		return undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
+		return undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get, nbSorted);
 	}
 
+	@SuppressWarnings("PMD.LooseCoupling")
 	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column,
 			Object2IntFunction<T> sliceToIndex,
-			Int2ObjectFunction<T> indexToSlice) {
+			Int2ObjectFunction<T> indexToSlice,
+			long nbSorted) {
+
+		// BEWARE In edge-cases, the navigable column may be interlaced with the hash column. TODO Improve the detection
+		// of this case to skip the bitmap creation.
+		int nbSortedInt = (int) nbSorted;
+		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
+		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));
+
+		RoaringBitmap bitmap = RoaringBitmap.bitmapOf(intArrayList.elements());
+
 		return UndictionarizedColumn.<T>builder()
 				.indexToSlice(indexToSlice)
 				.sliceToIndex(sliceToIndex)
 				.column(column)
+				.sortedLength(nbSortedInt)
+				.sortedLeg(bitmap::contains)
 				.build();
 	}
 

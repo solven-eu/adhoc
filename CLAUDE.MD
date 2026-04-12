@@ -144,3 +144,28 @@ These rules exist because slow sessions have been observed and root-caused here.
 - **Don't re-read files already in context.** If a file was written or fully read earlier in the same session, edit it directly without a preceding `Read` call.
 - **Combine Maven goals** to avoid redundant JVM startups: e.g. `mvn spotless:apply pmd:check --file pom.xml --batch-mode` instead of two separate invocations.
 - **Scope Maven to the affected module** with `-pl <module>` when only one module was changed (e.g. `-pl adhoc`), rather than running the full reactor.
+
+---
+
+## Investigating query-engine bugs
+
+When a `CubeQuery`-based test fails with an unexpected aggregation result (missing slice, wrong sum, etc.), the
+fastest way to see what the engine is actually doing is to flip the query into debug mode and re-read the surefire
+log. Two complementary techniques:
+
+- **`CubeQuery.builder()...debug(true)...build()`** — enables `[DEBUG]` and `[EXPLAIN]` log lines that print the
+  table-side rows received, the per-slice aggregator contributions, the merged step DAG, and each combinator's
+  per-slice writes. The trace alone usually pinpoints which slice is being dropped/duplicated and at which step.
+  Even if the test does not currently set `debug(true)`, temporarily wrapping the query with `debug(true)` (or
+  the equivalent `StandardQueryOptions.DEBUG` in the options set) is the cheapest first step before reaching for
+  a debugger.
+- **`TabularRecordLogger`** prints `Accepted row #N: slice=... aggregates=...` for each row the table emits, and
+  `TabularRecordStreamReducer` prints `Table contributes <aggregator>=<value> -> <slice>` for each per-aggregator
+  contribution. Together they make it obvious whether a missing value comes from the table side, the aggregator
+  side, or further downstream (combinator / join / merger).
+
+Example: the Phase-3 sparse-keyspace bug in `UndictionarizedColumn.stream(StreamStrategy)` was diagnosed
+end-to-end from a single `debug(true)` run of `TestAggregations_GroupBys#testSumOfSum_groupBy1String_notAlwaysPresent`.
+The log showed the table emitting all 4 rows correctly and the per-aggregator contributions arriving as expected,
+but the combinator's `Processing slice=...` lines only emitted 2 of the 3 distinct slices — proving the loss was
+in the join layer, not in the table or the aggregator.

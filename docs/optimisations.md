@@ -102,7 +102,7 @@ We rely on data-structure enabling mapping from a slice to a `long`/`double`/`Ob
 - `MultitypeNavigableElseHashColumn` is a tree-based append-only structures, efficiently storing inputs of diverse types.
 - `MultitypeNavigableElseHashMergeableColumn` extends `MultitypeNavigableElseHashColumn` by enabling merging into existing slices.
 
-Tree-based structures are useful as some computations needs to iterate along multiple structures at the same time (e.g. a `CubeQueryStep` iterates along its underlyings on a per-slice basis).
+Tree-based structures are useful as some computations needs to iterate along multiple structures at the same time (e.g. a `CubeQueryStep` iterates along its underlyings on a per-slice basis). See [research.md § Joining Cuboids](research.md#joining-cuboids) for the algorithmic background on how Adhoc merges cuboids with mixed sorted / unsorted legs.
 
 # Cache
 

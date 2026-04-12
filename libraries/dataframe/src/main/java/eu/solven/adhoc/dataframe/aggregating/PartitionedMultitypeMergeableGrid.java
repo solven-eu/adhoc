@@ -87,6 +87,11 @@ public class PartitionedMultitypeMergeableGrid<T extends Comparable<T>, K> exten
 	}
 
 	@Override
+	protected int sliceCount() {
+		throw new UnsupportedOperationException("Partitioning");
+	}
+
+	@Override
 	protected IMultitypeColumn<K> getColumn(String aggregator) {
 		throw new UnsupportedOperationException("Partitioning");
 	}
