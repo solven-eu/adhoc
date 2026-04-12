@@ -30,7 +30,7 @@
 	</modules>
 
 	<properties>
-		<springdoc-openapi.version>3.0.2</springdoc-openapi.version>
+		<springdoc-openapi.version>3.0.3</springdoc-openapi.version>
 	</properties>
 
 	<dependencyManagement>
