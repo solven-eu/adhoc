@@ -8,7 +8,7 @@ import { defineConfig, devices } from "@playwright/test";
  */
 // require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
-const webmode = process.env.WEBMODE ? process.env.WEBMODE : 'webflux';
+const webmode = process.env.WEBMODE ? process.env.WEBMODE : "webflux";
 
 // `../../` as we're in `./pivotable/js`
 const commandSpringBoot = `(mvn -f ../server-${webmode}/pom.xml -Pfast spring-boot:run -Dspring-boot.run.profiles=${process.env.SPRING_ACTIVE_PROFILES};)`;
