@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,27 +23,20 @@
 package eu.solven.adhoc.encoding.page;
 
 /**
- * Represents a row in a table.
- *
- * <p>
- * Extends {@link IInt2ObjectReader} so instances can be passed directly wherever an {@code int -> Object} reader is
- * required, without allocating a bound method reference (e.g. {@code frozen::readValue}) at every call site.
+ * Minimal {@code int -> Object} reader. Project-local equivalent of {@link java.util.function.IntFunction} without the
+ * {@code java.util.function} dependency in hot paths, so that domain types can directly implement this interface and be
+ * passed where an {@code int}-indexed reader is required — avoiding the bound-method-reference allocation (e.g.
+ * {@code frozen::readValue}) at call sites that would otherwise adapt them to {@code IntFunction}.
  *
  * @author Benoit Lacelle
  */
-public interface ITableRowRead extends IInt2ObjectReader {
+@FunctionalInterface
+public interface IInt2ObjectReader {
 
-	int size();
-
-	Object readValue(int columnIndex);
-
-	@Override
-	default Object read(int index) {
-		return readValue(index);
-	}
-
-	static ITableRowRead empty() {
-		return TableRowHelpers.emptyRead();
-	}
-
+	/**
+	 * @param index
+	 *            the position to read
+	 * @return the value at {@code index}
+	 */
+	Object read(int index);
 }

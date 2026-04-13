@@ -30,7 +30,9 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -57,12 +59,23 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class ForestAsGraphvizDag {
+	// https://graphviz.org/doc/info/shapes.html
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOSHAPE =
-			ImmutableList.of(Map.entry(Partitionor.class, "star"));
+			ImmutableList.<Map.Entry<Class<?>, String>>builder()
+					.add(Map.entry(Partitionor.class, "star"))
+					.add(Map.entry(Filtrator.class, "invhouse"))
+					.add(Map.entry(Dispatchor.class, "msquare"))
+					.add(Map.entry(Aggregator.class, "tripleoctagon"))
+					.build();
+	// https://graphviz.org/doc/info/colors.html
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOCOLOR =
-			ImmutableList.of(Map.entry(Partitionor.class, "yellow"),
-					Map.entry(Filtrator.class, "grey"),
-					Map.entry(Combinator.class, "cyan"));
+			ImmutableList.<Map.Entry<Class<?>, String>>builder()
+					.add(Map.entry(Partitionor.class, "yellow"))
+					.add(Map.entry(Filtrator.class, "darkseagreen"))
+					.add(Map.entry(Combinator.class, "cyan"))
+					.add(Map.entry(Dispatchor.class, "grey"))
+					.add(Map.entry(Aggregator.class, "coral"))
+					.build();
 
 	@Builder.Default
 	private final List<Map.Entry<Class<?>, String>> classToShape = DEFAULT_CLASSTOSHAPE;

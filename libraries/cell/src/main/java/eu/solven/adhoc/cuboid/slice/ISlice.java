@@ -77,7 +77,9 @@ public interface ISlice extends Comparable<ISlice>, ITabularGroupBySlice, IHasAd
 	@Deprecated(since = "Is this good design?")
 	ISlice addColumns(Map<String, ?> masks);
 
-	ISliceFactory getFactory();
+	default ISliceFactory getFactory() {
+		return asAdhocMap().getFactory();
+	}
 
 	/**
 	 * Make an immutable copy, where only given columns are retained.
