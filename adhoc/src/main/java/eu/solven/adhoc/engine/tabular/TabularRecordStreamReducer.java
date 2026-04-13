@@ -30,7 +30,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -53,6 +52,7 @@ import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -90,13 +90,14 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	TableQueryV4 tableQuery;
 
-	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream, Set<FilteredAggregator> aggregators) {
+	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream,
+			Set<FilteredAggregator> aggregators) {
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
 
 		if (stream.isDistinctSlices()) {
-			gridFactory = () -> AggregatingColumnsDistinct.<ISlice>builder().operatorFactory(operatorFactory).aggregators(aggregators).build();
+			gridFactory = () -> AggregatingColumnsDistinct.<ISlice>builder().operatorFactory(operatorFactory).build();
 		} else {
-			gridFactory = () -> AggregatingColumns.<ISlice>builder().operatorFactory(operatorFactory).aggregators(aggregators).build();
+			gridFactory = () -> AggregatingColumns.<ISlice>builder().operatorFactory(operatorFactory).build();
 		}
 
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory2;
@@ -236,7 +237,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		// the caller wraps this method in a synchronized block.
 		IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
 
-		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
+		for (IAliasedAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
 			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);

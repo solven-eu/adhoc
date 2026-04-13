@@ -105,8 +105,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output =
-				cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("b").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("b").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -128,8 +127,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(Aggregator.builder().name("k1").aggregationKey(MaxAggregation.KEY).build());
 		forest.addMeasure(Aggregator.builder().name("k2").aggregationKey(MaxAggregation.KEY).build());
 
-		ITabularView output =
-				cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("sumK1K2").groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
@@ -150,8 +148,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k2Sum);
 
-		ITabularView output =
-				cube().execute(CubeQuery.builder().measure("maxK1K2").groupByAlso("a").build());
+		ITabularView output = cube().execute(CubeQuery.builder().measure("maxK1K2").groupByAlso("a").build());
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 

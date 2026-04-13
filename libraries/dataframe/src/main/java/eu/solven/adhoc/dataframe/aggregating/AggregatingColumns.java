@@ -107,7 +107,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	public IOpenedSlice openSlice(T key) {
 		int keyIndex = dictionarize(key);
 		return aggregator -> {
-			IAggregation agg = aggregations.get().get(aggregator.getAlias());
+			IAggregation agg = getAggregation(aggregator);
 			IMultitypeMergeableColumn<Integer> column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn(agg));
 

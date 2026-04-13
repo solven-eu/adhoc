@@ -239,7 +239,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 * Computes hash code consistent with {@link java.util.Map.Entry#hashCode()}.
 	 */
 	@Override
-	@SuppressWarnings("PMD.CompareObjectsWithEquals")
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	public int hashCode() {
 		// hashCode caching like String.hashCode
 		if (hash == 0 && !hashIsZero) {

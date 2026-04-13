@@ -23,7 +23,6 @@
 package eu.solven.adhoc.measure.graphviz;
 
 import org.assertj.core.api.Assertions;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.measure.examples.RatioOverCurrentColumnValueCompositor;
@@ -35,7 +34,6 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.resource.MeasureForests;
 import guru.nidi.graphviz.model.MutableGraph;
 
 public class TestForestAsGraphvizDag {

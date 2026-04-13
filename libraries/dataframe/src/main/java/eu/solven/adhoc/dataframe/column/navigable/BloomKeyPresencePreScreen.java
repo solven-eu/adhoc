@@ -61,7 +61,7 @@ public class BloomKeyPresencePreScreen<T> implements IKeyPresencePreScreen<T> {
 		public void funnel(Object from, PrimitiveSink into) {
 			if (from instanceof Integer fromInt) {
 				// AAggregatingColumns
-				into.putInt(fromInt.intValue());
+				into.putInt(fromInt);
 			} else if (from instanceof ISlice slice) {
 				// AMeasureQueryStep
 				// TODO hashCode is generally not good. How to efficiently stream the objects? Knowing it is costly to

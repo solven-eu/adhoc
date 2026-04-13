@@ -498,8 +498,6 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			yield size();
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 			yield 0;
-		default:
-			yield 0;
 		};
 	}
 

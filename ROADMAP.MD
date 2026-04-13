@@ -16,9 +16,7 @@
 - [SECURITY] Ability to hide some measures/columns from some Users
 - [Performance] Enable querying multiple `CubeQuery` in a single call, enabling further queryStep sharing for large reports.
 - [Composite] `getCoordinates` should be executed once per underlying cube
-- [Concurrency][DuckDB] DuckDB serializes concurrent writes and has limited benefit from highly parallel reads on a single connection. Consider wrapping the `dbExecutorService` (or the DuckDB `ITableWrapper`) with a `Semaphore` to cap the number of in-flight DuckDB queries, preventing thread-pile-up and reducing lock contention inside DuckDB itself.
 - [Composite] Enable a failing sub-query not to break the composite query (`StandardQueryOption.EXCEPTIONS_AS_MEASURE_VALUE`)
-- [Feature] Enable a measure chain to be automatically injected in the measures DAG.
 - [Feature] Break rowspan on right columns
 - [Feature] Improve rowspan when very high. Related issue: selecting a rowspan scroll automatically to the top
 - [Feature] Enable not adding/stripping some JOINs depending on requested columns/measures/filters.

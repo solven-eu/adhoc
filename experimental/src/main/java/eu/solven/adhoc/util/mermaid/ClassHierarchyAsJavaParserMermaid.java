@@ -173,7 +173,7 @@ public class ClassHierarchyAsJavaParserMermaid {
 		@Override
 		public String toString() {
 			if (kind == EdgeKind.HAS_FIELD) {
-				return "HAS_FIELD(" + fieldName + ")";
+				return "HAS_FIELD(" + fieldName + "_" + declaredType + ")";
 			} else {
 				return kind.name();
 			}

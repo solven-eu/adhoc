@@ -132,7 +132,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 			IMultitypeColumnFastGet<Integer> column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn());
 
-			IAggregation agg = aggregations.get().get(aggregator.getAlias());
+			IAggregation agg = getAggregation(aggregator);
 
 			if (agg instanceof IHasCarriers hasCarriers) {
 				return hasCarriers.wrap(column.append(keyIndex));
