@@ -25,14 +25,16 @@ package eu.solven.adhoc.dataframe.aggregating;
 import java.lang.reflect.Field;
 
 import org.assertj.core.api.Assertions;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
+import org.openjdk.jol.info.GraphStats;
 import org.springframework.util.ReflectionUtils;
 
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.UndictionarizedColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
-import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
+import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableIntColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -128,21 +130,24 @@ public class TestAggregatingColumns {
 
 		Assertions.assertThat(aggregatingColumns.sliceToIndex)
 				.isInstanceOfSatisfying(Object2IntOpenHashMap.class, openHashMap -> {
-					Field field = ReflectionUtils.findField(Object2IntOpenHashMap.class, "value");
-					field.setAccessible(true);
-					int[] value = (int[]) ReflectionUtils.getField(field, openHashMap);
-					Assertions.assertThat(value).hasSizeGreaterThan(1024);
+					// TODO Writing a single row allocated the maximum size: it feels bad
+					Assertions.assertThat(GraphStats.parseInstance(openHashMap).totalSize())
+							.isCloseTo(16777376L, Percentage.withPercentage(5D));
 				});
+
+		// Aggregation-time storage is still the generic MultitypeNavigableElseHashMergeableColumn (the default
+		// mergeable column type). closeColumn() then copies it into a MultitypeNavigableIntColumn, which is what
+		// the returned UndictionarizedColumn actually holds.
+		Assertions.assertThat(aggregatingColumns.getColumn("a"))
+				.isInstanceOf(MultitypeNavigableElseHashMergeableIntColumn.class);
 
 		IMultitypeColumnFastGet<String> closed =
 				aggregatingColumns.closeColumn(CubeQueryStep.builder().measure("m").build(), a);
 		Assertions.assertThat(closed).isInstanceOfSatisfying(UndictionarizedColumn.class, closed2 -> {
-			Field field = ReflectionUtils.findField(UndictionarizedColumn.class, "column");
-			field.setAccessible(true);
-			MultitypeNavigableElseHashMergeableColumn<?> sliceToValueL =
-					(MultitypeNavigableElseHashMergeableColumn<?>) ReflectionUtils.getField(field, closed2);
-			Assertions.assertThat(sliceToValueL.getClass().getName())
-					.hasToString(MultitypeNavigableElseHashMergeableColumn.class.getName());
+			Field columnField = ReflectionUtils.findField(UndictionarizedColumn.class, "column");
+			columnField.setAccessible(true);
+			Object inner = ReflectionUtils.getField(columnField, closed2);
+			Assertions.assertThat(inner).isInstanceOf(MultitypeNavigableElseHashMergeableIntColumn.class);
 		});
 	}
 

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
-import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableIntColumn;
 import eu.solven.adhoc.primitive.IValueProvider;
 
 public class TestUndictionarizedColumn {
@@ -43,7 +43,7 @@ public class TestUndictionarizedColumn {
 			int sortedLength) {
 		Assertions.assertThat(slicesInInsertionOrder).hasSameSizeAs(valuesInInsertionOrder);
 
-		MultitypeNavigableColumn<Integer> dict = MultitypeNavigableColumn.<Integer>builder().build();
+		MultitypeNavigableIntColumn dict = MultitypeNavigableIntColumn.builder().build();
 		for (int i = 0; i < slicesInInsertionOrder.size(); i++) {
 			dict.append(i).onLong(valuesInInsertionOrder.get(i));
 		}
@@ -136,6 +136,58 @@ public class TestUndictionarizedColumn {
 		Assertions.assertThat(purged.stream(StreamStrategy.SORTED_SUB).toList())
 				.extracting(SliceAndMeasure::getSlice)
 				.containsExactly("a", "b");
+	}
+
+	// ---- int-specialized inner column: values are read without Integer boxing ----
+
+	@Test
+	public void testWrapsIntSpecializedColumn_onValueReadsCorrectly() {
+		MultitypeNavigableIntColumn intDict = MultitypeNavigableIntColumn.builder().build();
+		intDict.append(0).onLong(100L);
+		intDict.append(1).onLong(200L);
+		intDict.append(2).onLong(300L);
+
+		List<String> slices = List.of("alpha", "beta", "gamma");
+		UndictionarizedColumn<String> col = UndictionarizedColumn.<String>builder()
+				.column(intDict)
+				.indexToSlice(slices::get)
+				.sliceToIndex(slices::indexOf)
+				.sortedLength(3)
+				.sortedLeg(i -> i < 3)
+				.build();
+
+		Assertions.assertThat(IValueProvider.getValue(col.onValue("alpha"))).isEqualTo(100L);
+		Assertions.assertThat(IValueProvider.getValue(col.onValue("beta"))).isEqualTo(200L);
+		Assertions.assertThat(IValueProvider.getValue(col.onValue("gamma"))).isEqualTo(300L);
+
+		// Strategy overrides also go through the primitive path.
+		Assertions.assertThat(IValueProvider.getValue(col.onValue("alpha", StreamStrategy.SORTED_SUB))).isEqualTo(100L);
+		Assertions.assertThat(IValueProvider.getValue(col.onValue("alpha", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
+		Assertions.assertThat(IValueProvider.getValue(col.onValue("gamma", StreamStrategy.ALL))).isEqualTo(300L);
+	}
+
+	@Test
+	public void testWrapsIntSpecializedColumn_purgeAggregationCarriersRetainsSpecialization() {
+		MultitypeNavigableIntColumn intDict = MultitypeNavigableIntColumn.builder().build();
+		intDict.append(0).onLong(1L);
+		intDict.append(1).onLong(2L);
+
+		List<String> slices = List.of("a", "b");
+		UndictionarizedColumn<String> col = UndictionarizedColumn.<String>builder()
+				.column(intDict)
+				.indexToSlice(slices::get)
+				.sliceToIndex(slices::indexOf)
+				.sortedLength(2)
+				.sortedLeg(i -> i < 2)
+				.build();
+
+		// Round-trip through purgeAggregationCarriers must keep producing correct values — the re-wrapped inner
+		// column is still the int-specialized variant, so the builder's custom column() setter re-detects it.
+		IMultitypeColumnFastGet<String> purged = col.purgeAggregationCarriers();
+
+		Assertions.assertThat(IValueProvider.getValue(purged.onValue("a"))).isEqualTo(1L);
+		Assertions.assertThat(IValueProvider.getValue(purged.onValue("b"))).isEqualTo(2L);
 	}
 
 }

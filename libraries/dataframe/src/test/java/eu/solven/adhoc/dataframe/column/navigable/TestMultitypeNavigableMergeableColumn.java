@@ -70,6 +70,15 @@ public class TestMultitypeNavigableMergeableColumn {
 	}
 
 	@Test
+	public void testInt() {
+		column.merge("k1", 123);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(123L);
+		});
+	}
+
+	@Test
 	public void testIntAndLong() {
 		column.merge("k1", 123);
 		column.merge("k1", 234L);

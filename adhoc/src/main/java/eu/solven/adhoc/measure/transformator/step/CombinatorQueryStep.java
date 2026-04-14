@@ -127,7 +127,8 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<ISlice> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
+		IMultitypeColumnFastGet<ISlice> values =
+				factories.getColumnFactory().makeColumn(p -> p.initialCapacity(sumSizes(underlyings)));
 
 		forEachDistinctSlice(underlyings, combination, values::append);
 

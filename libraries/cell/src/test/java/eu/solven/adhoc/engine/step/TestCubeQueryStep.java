@@ -198,4 +198,15 @@ public class TestCubeQueryStep {
 		CubeQueryStep editKeepCustom = CubeQueryStep.edit(stepHasCustom).build();
 		Assertions.assertThat((Optional) editKeepCustom.optCustomMarker()).contains("someCustomMarker");
 	}
+
+	@Test
+	public void testToString() {
+		CubeQueryStep stepHasCustom = CubeQueryStep.builder()
+				.measure(Mockito.mock(IMeasure.class))
+				.filter(ISliceFilter.MATCH_ALL)
+				.groupBy(IGroupBy.GRAND_TOTAL)
+				.customMarker(Optional.of("someCustomMarker"))
+				.build();
+		Assertions.assertThat(stepHasCustom).hasToString("");
+	}
 }

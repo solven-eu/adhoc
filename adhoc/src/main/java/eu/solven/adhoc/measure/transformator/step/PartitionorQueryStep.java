@@ -153,7 +153,7 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 
 		List<IMultitypeMergeableColumn<ISlice>> shardedColumns = new ArrayList<>(nbPartitions);
 		for (int i = 0; i < nbPartitions; i++) {
-			shardedColumns.add(factories.getColumnFactory().makeColumnRandomInsertions(agg, 0));
+			shardedColumns.add(factories.getColumnFactory().makeMergeableColumn(p -> p.isRandomAccess(true).agg(agg)));
 		}
 
 		// Iterate all unsharded output columns and route each entry to its correct output shard
@@ -201,11 +201,13 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		// generally much smaller. (e.g. We
 		// may receive 100 different CCYs, but output a single value cross CCYs).
 		int initialCapacity = CombinatorQueryStep.sumSizes(underlyings);
-		if (breakSorting) {
-			return factories.getColumnFactory().makeColumnRandomInsertions(agg, initialCapacity);
-		} else {
-			return factories.getColumnFactory().makeColumn(agg, initialCapacity);
-		}
+
+		return factories.getColumnFactory().makeMergeableColumn(p -> {
+			p.agg(agg).initialCapacity(initialCapacity);
+			if (breakSorting) {
+				p.isRandomAccess(true);
+			}
+		});
 
 	}
 

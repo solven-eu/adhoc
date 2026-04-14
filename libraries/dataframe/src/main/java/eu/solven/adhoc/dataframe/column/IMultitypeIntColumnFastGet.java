@@ -22,12 +22,13 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
+import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * {@link IMultitypeColumnFastGet} specialized for {@link Integer} key.
- * 
+ *
  * @author Benoit Lacelle
  */
 public interface IMultitypeIntColumnFastGet extends IMultitypeColumnFastGet<Integer> {
@@ -39,10 +40,35 @@ public interface IMultitypeIntColumnFastGet extends IMultitypeColumnFastGet<Inte
 		return onValue(key.intValue());
 	}
 
+	default IValueProvider onValue(int key, StreamStrategy strategy) {
+		return switch (strategy) {
+		case StreamStrategy.ALL:
+			// As we assume there is no sorted leg, the complement is all
+		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+			yield onValue(key);
+		case StreamStrategy.SORTED_SUB:
+			// Assume there is no sorted leg
+			yield IValueProvider.NULL;
+		};
+	}
+
+	@Override
+	default IValueProvider onValue(Integer key, StreamStrategy strategy) {
+		return onValue(key.intValue());
+	}
+
 	IValueReceiver append(int key);
 
 	@Override
 	default IValueReceiver append(Integer key) {
 		return append(key.intValue());
 	}
+
+	/**
+	 * Covariant narrowing of {@link IMultitypeColumnFastGet#purgeAggregationCarriers}: the purge of an int-specialized
+	 * column is always itself int-specialized. Callers (notably {@code UndictionarizedColumn.purgeAggregationCarriers})
+	 * can therefore re-wrap the result without a secondary instance-check.
+	 */
+	@Override
+	IMultitypeIntColumnFastGet purgeAggregationCarriers();
 }

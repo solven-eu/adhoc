@@ -35,11 +35,13 @@ import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.collection.ICompactable;
-import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
 import eu.solven.adhoc.dataframe.column.UndictionarizedColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashIntColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
@@ -86,7 +88,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 	@NonNull
 	@Default
-	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
+	Map<String, IMultitypeMergeableIntColumn> aggregatorToAggregates = new LinkedHashMap<>();
 
 	// Built once (on first `closeColumn` call) and shared across all per-aggregator close calls. Mirrors
 	// `AggregatingColumnsDistinct.memoizeSliceToIndex`. Reversing the slice→index map is O(N); without
@@ -99,7 +101,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	@Override
-	protected IMultitypeMergeableColumn<Integer> getColumn(String aggregator) {
+	protected IMultitypeMergeableIntColumn getColumn(String aggregator) {
 		return aggregatorToAggregates.get(aggregator);
 	}
 
@@ -108,7 +110,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		int keyIndex = dictionarize(key);
 		return aggregator -> {
 			IAggregation agg = getAggregation(aggregator);
-			IMultitypeMergeableColumn<Integer> column =
+			IMultitypeMergeableIntColumn column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn(agg));
 
 			if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
@@ -120,9 +122,9 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		};
 	}
 
-	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
+	protected IMultitypeMergeableIntColumn makePreColumn(IAggregation agg) {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return factories.getColumnFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
+		return (IMultitypeMergeableIntColumn) factories.getColumnFactory().makeIntColumn(p -> p.agg(agg));
 	}
 
 	@Override
@@ -148,12 +150,12 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
 		String aggregatorName = aggregator.getAlias();
-		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregatorName);
+		IMultitypeIntColumnFastGet notFinalColumn = getColumn(aggregatorName);
 
 		if (notFinalColumn == null) {
 			// Typically happens when a filter reject completely one of the underlying
 			// measure, and not a single aggregate was written
-			notFinalColumn = MultitypeHashColumn.empty();
+			notFinalColumn = MultitypeHashIntColumn.empty();
 		}
 
 		if (notFinalColumn.isEmpty()) {
@@ -163,7 +165,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			compactable.compact();
 		}
 
-		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
+		IMultitypeIntColumnFastGet column = notFinalColumn;
 
 		long nbSorted = getNbSorted(aggregatorName, column);
 
@@ -184,13 +186,17 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	}
 
 	@SuppressWarnings("PMD.LooseCoupling")
-	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column,
+	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeIntColumnFastGet column,
 			Object2IntFunction<T> sliceToIndex,
 			Int2ObjectFunction<T> indexToSlice,
 			long nbSorted) {
 
 		// BEWARE In edge-cases, the navigable column may be interlaced with the hash column. TODO Improve the detection
 		// of this case to skip the bitmap creation.
+		// Snapshot the sorted-prefix index set from the source column's natural stream order *before* copying, so the
+		// bitmap reflects which original indices belong to the slice-ascending head of the dictionarization. The
+		// wrapper then uses this bitmap as its sortedLeg predicate, independent of the destination column's own key
+		// ordering.
 		int nbSortedInt = (int) nbSorted;
 		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
 		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));

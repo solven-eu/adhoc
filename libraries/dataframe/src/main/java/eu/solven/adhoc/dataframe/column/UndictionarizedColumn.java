@@ -28,6 +28,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -61,13 +62,22 @@ import lombok.NonNull;
  * @author Benoit Lacelle
  */
 @Builder
-public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
+public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T>, ICompactable {
 	@NonNull
 	private final IntFunction<T> indexToSlice;
 	@NonNull
 	private final ToIntFunction<T> sliceToIndex;
+	/**
+	 * The dictionarized inner column, always typed through the int-specialized interface so the hot-path
+	 * {@link #onValue(Object)} / {@link #onValue(Object, StreamStrategy)} lookups call {@code column.onValue(int)}
+	 * directly without paying {@link Integer#valueOf} allocation. Callers whose storage is not natively int-specialized
+	 * must adapt through {@link IMultitypeIntColumnFastGet#wrap(IMultitypeColumnFastGet)}; when the inner column
+	 * <em>is</em> already int-specialized (e.g. {@code MultitypeNavigableIntColumn} from
+	 * {@code AggregatingColumnsDistinct}), the {@code wrap} call returns the same reference with no adapter
+	 * indirection.
+	 */
 	@NonNull
-	private final IMultitypeColumnFastGet<Integer> column;
+	private final IMultitypeIntColumnFastGet column;
 
 	/**
 	 * Number of leading indices for which the wrapped column's slices were inserted in strictly increasing slice order.
@@ -91,6 +101,8 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 
 	@Override
 	public IMultitypeColumnFastGet<T> purgeAggregationCarriers() {
+		// `column` is an IMultitypeIntColumnFastGet; its covariant `purgeAggregationCarriers()` override guarantees
+		// the purged copy is still int-specialized, so the builder accepts it without any adaptation.
 		return UndictionarizedColumn.<T>builder()
 				.indexToSlice(indexToSlice)
 				.sliceToIndex(sliceToIndex)
@@ -138,14 +150,18 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 	public IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy strategy) {
 		return switch (strategy) {
 		case StreamStrategy.ALL -> stream();
-		// The sorted leg is at the beginning of the column
-		case StreamStrategy.SORTED_SUB -> column.limit(sortedLength)
+		// The inner column is keyed by dictionarization index and (post-refactor) iterates in index order, which
+		// is NOT the slice-sorted order when the original source had interlaced storage. The `sortedLeg` bitmap,
+		// however, is authoritative regardless of iteration order — so filter by it rather than relying on a
+		// positional prefix/suffix split.
+		case StreamStrategy.SORTED_SUB -> column.stream()
+				.filter(s -> sortedLeg.test(s.getSlice()))
 				.map(s -> SliceAndMeasure.<T>builder()
 						.slice(indexToSlice.apply(s.getSlice()))
 						.valueProvider(s.getValueProvider())
 						.build());
-		// The complement of the sorted leg is after the sorted leg
-		case StreamStrategy.SORTED_SUB_COMPLEMENT -> column.skip(sortedLength)
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> column.stream()
+				.filter(s -> !sortedLeg.test(s.getSlice()))
 				.map(s -> SliceAndMeasure.<T>builder()
 						.slice(indexToSlice.apply(s.getSlice()))
 						.valueProvider(s.getValueProvider())
@@ -192,6 +208,20 @@ public class UndictionarizedColumn<T> implements IMultitypeColumnFastGet<T> {
 		case StreamStrategy.SORTED_SUB_COMPLEMENT ->
 			!sortedLeg.test(index) ? column.onValue(index) : IValueProvider.NULL;
 		};
+	}
+
+	/**
+	 * Forwards {@link ICompactable#compact()} to the wrapped inner column when it supports compaction. This lets the
+	 * dictionarized aggregation pipeline (e.g. {@code AggregatingColumnsDistinct}) trim its storage to the tight
+	 * post-population layout without the caller having to unwrap the {@link UndictionarizedColumn}. When the inner
+	 * column is not itself {@link ICompactable} (or is the adapter around a non-compactable generic column), this is a
+	 * no-op.
+	 */
+	@Override
+	public void compact() {
+		if (column instanceof ICompactable compactable) {
+			compactable.compact();
+		}
 	}
 
 	@Override

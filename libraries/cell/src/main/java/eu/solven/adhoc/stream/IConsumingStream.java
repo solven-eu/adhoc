@@ -204,7 +204,9 @@ public interface IConsumingStream<T> extends AutoCloseable {
 					next = queue.take();
 
 					if (next == poison) {
-						return null;
+						// Must call endOfData() so Guava's AbstractIterator transitions to DONE;
+						// otherwise a subsequent hasNext() would block forever on queue.take().
+						return endOfData();
 					} else {
 						return next;
 					}

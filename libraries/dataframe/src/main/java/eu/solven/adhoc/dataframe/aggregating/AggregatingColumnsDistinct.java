@@ -38,11 +38,12 @@ import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.collection.IFreezable;
-import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -50,7 +51,6 @@ import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier.IHasCarri
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.primitive.IValueProvider;
-import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import it.unimi.dsi.fastutil.objects.Object2IntFunction;
@@ -72,9 +72,10 @@ import lombok.extern.slf4j.Slf4j;
 // NotThreadSafe
 public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggregatingColumns<T, Integer>
 		implements IFreezable {
+
 	@NonNull
 	@Default
-	final IAdhocFactories factories = AdhocFactoriesUnsafe.factories;
+	IAdhocFactories factories = AdhocFactories.builder().build();
 
 	// This dictionarize the slice, with a common dictionary to all aggregators. This is expected to be efficient as, in
 	// most cases, all aggregators covers the same slices. But this design enables sorting the slices only once (for all
@@ -83,9 +84,10 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	@Default
 	final List<T> indexToSlice = new ChunkedList<>();
 
+	// Natively int-specialized: dictionarization indices are pushed as primitive ints, no Integer boxing.
 	@NonNull
 	@Default
-	final Map<String, IMultitypeColumnFastGet<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
+	final Map<String, IMultitypeIntColumnFastGet> aggregatorToAggregates = new LinkedHashMap<>();
 
 	final Supplier<Object2IntFunction<T>> memoizeSliceToIndex = Suppliers.memoize(this::sliceToIndex);
 
@@ -103,20 +105,17 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 	// Also, even if we hit a single aggregate, it should not be returned as-is, but returns as aggregated with null
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
-	protected IMultitypeColumnFastGet<Integer> makePreColumn() {
+	protected IMultitypeIntColumnFastGet makePreColumn() {
 		// Sequential dictionarization indices (0, 1, 2, ...) always arrive in ascending order, so the navigable
-		// side of the MultitypeNavigableElseHashColumn is always taken — no hash fallback, no 1M-default-capacity
-		// allocation from MultitypeHashColumn (whose `ensureCapacity` would otherwise pre-allocate
-		// `AdhocColumnUnsafe#getDefaultColumnCapacity()` slots on first write).
-		// BEWARE This column ends up "sorted" by Integer index — which is the dictionarization-insertion order,
-		// NOT the slice order. Downstream code MUST NOT propagate that ordering as slice-sortedness; the wrapping
-		// UndictionarizedColumn carries an explicit `sortedPrefixLength` field for that purpose, populated from
-		// AAggregatingColumns#sortedPrefixLength.
-		return factories.getColumnFactory().makeColumn(IAdhocCapacityConstants.ZERO_THEN_MAX);
+		// int column's append-last fast path is hit on every write, with no Integer boxing. The column is keyed
+		// by index (NOT by slice); the wrapping UndictionarizedColumn carries an explicit `sortedPrefixLength`
+		// field for slice-sortedness, populated from AAggregatingColumns#sortedPrefixLength.
+		return factories.getColumnFactory().makeIntColumn(_ -> {
+		});
 	}
 
 	@Override
-	protected IMultitypeColumnFastGet<Integer> getColumn(String aggregator) {
+	protected IMultitypeIntColumnFastGet getColumn(String aggregator) {
 		return aggregatorToAggregates.get(aggregator);
 	}
 
@@ -129,7 +128,7 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		int keyIndex = dictionarize(key);
 
 		return aggregator -> {
-			IMultitypeColumnFastGet<Integer> column =
+			IMultitypeIntColumnFastGet column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn());
 
 			IAggregation agg = getAggregation(aggregator);
@@ -163,23 +162,21 @@ public class AggregatingColumnsDistinct<T extends Comparable<T>> extends AAggreg
 		frozen = true;
 
 		String aggregatorName = aggregator.getAlias();
-		IMultitypeColumnFastGet<Integer> column = getColumn(aggregatorName);
+		IMultitypeIntColumnFastGet column = getColumn(aggregatorName);
 
-		if (column == null) {
-			// Typically happens when a filter reject completely one of the underlying
-			// measure, and not a single aggregate was written
-			column = MultitypeHashColumn.empty();
+		if (column == null || column.isEmpty()) {
+			// Typically happens when a filter rejected the underlying measure completely, or when an empty
+			// dictionary was produced. Return a tight empty column rather than the int-specialized one.
+			return MultitypeHashColumn.empty();
 		}
 
-		if (column.isEmpty()) {
-			// RAM optimization
-			return MultitypeHashColumn.empty();
-		} else if (column instanceof ICompactable compactable) {
+		if (column instanceof ICompactable compactable) {
 			compactable.compact();
 		}
 
 		// Turn the columnByIndex to a columnBySlice. Pass the prefix length so the wrapper exposes the leading
-		// slice-sorted run via stream(SORTED_SUB) / onValue(slice, SORTED_SUB).
+		// slice-sorted run via stream(SORTED_SUB) / onValue(slice, SORTED_SUB). The inner column is already
+		// int-specialized: `AggregatingColumns.undictionarizeColumn`'s `asNavigableInt` short-circuits to identity.
 		return AggregatingColumns.undictionarizeColumn(column,
 				memoizeSliceToIndex.get(),
 				indexToSlice::get,
