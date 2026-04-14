@@ -57,6 +57,7 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 		return aggregation.aggregate(v, null);
 	}
 
+	// Merge strategy is: read (required) existing value, aggregate with input value, write new aggregate
 	@Override
 	protected IValueReceiver merge(int index) {
 		checkNotLocked(keys.get(index));

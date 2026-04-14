@@ -168,4 +168,22 @@ public class TestMultitypeArray {
 		Assertions.assertThat(array.toString()).isEqualTo("type=object values=[345, 345]");
 	}
 
+	@Test
+	public void isNull() {
+		Assertions.assertThat(array.isNull(-1)).isTrue();
+		Assertions.assertThat(array.isNull(0)).isTrue();
+		Assertions.assertThat(array.isNull(1)).isTrue();
+
+		array.add().onObject(null);
+
+		Assertions.assertThat(array.isNull(-1)).isTrue();
+		Assertions.assertThat(array.isNull(0)).isTrue();
+		Assertions.assertThat(array.isNull(1)).isTrue();
+
+		array.set(0).onLong(123);
+
+		Assertions.assertThat(array.isNull(-1)).isTrue();
+		Assertions.assertThat(array.isNull(0)).isFalse();
+		Assertions.assertThat(array.isNull(1)).isTrue();
+	}
 }

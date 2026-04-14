@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -51,6 +50,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.MultitypeArray;
+import eu.solven.adhoc.dataframe.column.hash.ACleaningValueReceiver;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -97,11 +97,13 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	@Default
 	@NonNull
-	final IMultitypeArray values = MultitypeArray.builder().build();
+	// cleanIfDirty is false as we need to write the null, to later remove it with the key
+	// BEWARE The design is wrong.
+	final IMultitypeArray values = MultitypeArray.builder().cleanDirty(false).build();
 
+	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
 	@Default
-	@NonNull
-	final IntFunction<IMultitypeArray> valuesGenerator = i -> MultitypeArray.builder().capacity(i).build();
+	boolean cleanDirty = ACleaningValueReceiver.DEFAULT;
 
 	// Once locked, this can not be written, hence not unlocked
 	@Default
@@ -276,7 +278,27 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 				}
 			}
 		}
-		return valueConsumer;
+		if (!cleanDirty || valueConsumer == INSERTION_REJECTED) {
+			return valueConsumer;
+		} else {
+			return new ACleaningValueReceiver(true) {
+
+				@Override
+				public void onLong(long v) {
+					valueConsumer.onLong(v);
+				}
+
+				@Override
+				public void onDouble(double v) {
+					valueConsumer.onDouble(v);
+				}
+
+				@Override
+				protected void onNonnullObject(Object v) {
+					valueConsumer.onObject(v);
+				}
+			};
+		}
 	}
 
 	/**

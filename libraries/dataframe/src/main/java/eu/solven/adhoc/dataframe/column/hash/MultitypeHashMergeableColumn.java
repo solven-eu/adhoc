@@ -51,6 +51,7 @@ public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> impl
 	@Getter
 	IAggregation aggregation;
 
+	// Merge strategy is: read (optional) existing value, aggregate with input value, write new aggregate
 	@Override
 	public IValueReceiver merge(T key) {
 		return new IValueReceiver() {

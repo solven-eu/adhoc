@@ -70,6 +70,16 @@ public class TestMultitypeNavigableMergeableColumn {
 	}
 
 	@Test
+	public void testNullDouble() {
+		column.merge("k1", null);
+		column.merge("k1", 12.34);
+
+		column.onValue("k1", o -> {
+			Assertions.assertThat(o).isEqualTo(123L);
+		});
+	}
+
+	@Test
 	public void testInt() {
 		column.merge("k1", 123);
 
@@ -104,8 +114,11 @@ public class TestMultitypeNavigableMergeableColumn {
 		column.merge("k1", "234");
 		column.merge("k1", 345);
 
+		// First entry is cleaned into a long by ACleaningValueReceiver
+		// Second entry triggers wrapping into a List
+		// Third entry is added to the list, leaving normalization (or its absence) to the aggregation
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(List.of(123, "234", 345));
+			Assertions.assertThat(o).isEqualTo(List.of(123L, "234", 345));
 		});
 	}
 

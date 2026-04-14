@@ -30,6 +30,7 @@ import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.collection.ChunkedDoubleList;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
 import eu.solven.adhoc.dataframe.collection.ChunkedLongList;
+import eu.solven.adhoc.dataframe.column.hash.ACleaningValueReceiver;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueFunction;
@@ -82,6 +83,10 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 	@Setter
 	int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
 
+	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
+	@Default
+	boolean cleanDirty = ACleaningValueReceiver.DEFAULT;
+
 	/**
 	 * To be called before a guaranteed `add` operation.
 	 */
@@ -115,7 +120,7 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 
 	@Override
 	public IValueReceiver add(int insertionIndex) {
-		return new IValueReceiver() {
+		return new ACleaningValueReceiver(cleanDirty) {
 			@Override
 			public void onLong(long v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
@@ -126,7 +131,7 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 				} else if (valuesType == IMultitypeConstants.MASK_LONG) {
 					valuesL.add(insertionIndex, v);
 				} else {
-					onObject(v);
+					onNonnullObject(v);
 				}
 			}
 
@@ -139,23 +144,18 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
 					valuesD.add(insertionIndex, v);
 				} else {
-					onObject(v);
+					onNonnullObject(v);
 				}
 			}
 
 			@Override
-			public void onObject(Object v) {
-				if (v == null) {
-					// BEWARE We may want to remove the key
-					// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
-					log.trace("TODO Improve null management");
-				}
-
+			protected void onNonnullObject(Object v) {
 				ensureObject();
 
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 				valuesO.add(insertionIndex, v);
 			}
+
 		};
 	}
 
