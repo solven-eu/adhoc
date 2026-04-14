@@ -27,8 +27,8 @@ import java.util.List;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.merge.MergingNavigableValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Getter;
 import lombok.NonNull;
@@ -52,58 +52,14 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 	@Getter
 	IAggregation aggregation;
 
-	// When writing the value, we need to ensure it is prepared by the aggregation function
-	protected Object cleanValue(Object v) {
-		return aggregation.aggregate(v, null);
-	}
-
 	// Merge strategy is: read (required) existing value, aggregate with input value, write new aggregate
 	@Override
 	protected IValueReceiver merge(int index) {
 		checkNotLocked(keys.get(index));
 
-		return new IValueReceiver() {
-			@Override
-			public void onLong(long input) {
-				onValue(index, new IValueReceiver() {
+		IValueReceiver receiver = values.set(index);
 
-					@Override
-					public void onLong(long existingAggregate) {
-						if (aggregation instanceof ILongAggregation longAggregation) {
-							long newAggregate = longAggregation.aggregateLongs(existingAggregate, input);
-							values.set(index).onLong(newAggregate);
-						} else {
-							Object newAggregate = aggregation.aggregate(existingAggregate, input);
-							values.set(index).onObject(newAggregate);
-						}
-					}
-
-					@Override
-					public void onObject(Object existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, input);
-						values.set(index).onObject(newAggregate);
-					}
-				});
-			}
-
-			@Override
-			public void onObject(Object input) {
-				onValue(index, new IValueReceiver() {
-
-					@Override
-					public void onLong(long existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, input);
-						values.set(index).onObject(newAggregate);
-					}
-
-					@Override
-					public void onObject(Object existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, input);
-						values.set(index).onObject(newAggregate);
-					}
-				});
-			}
-		};
+		return new MergingNavigableValueReceiver(aggregation, receiver, r -> onValue(index, r));
 	}
 
 	@Override

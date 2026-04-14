@@ -23,8 +23,8 @@
 package eu.solven.adhoc.dataframe.column.navigable;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
+import eu.solven.adhoc.dataframe.column.merge.MergingNavigableValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Getter;
 import lombok.NonNull;
@@ -37,12 +37,6 @@ import lombok.extern.slf4j.Slf4j;
  * {@link Integer} boxing that the generic mergeable variant otherwise incurs on every {@code append} / {@code merge}
  * call. Designed as the storage column of {@code AggregatingColumns} when the dictionarization indices are guaranteed
  * to fit into an {@code int}.
- *
- * <p>
- * Trade-off vs. the generic {@link MultitypeNavigableMergeableColumn}: this class has no hash fallback for out-of-order
- * writes — random insertions go through the {@link MultitypeNavigableIntColumn#onRandomInsertion} slow path. For the
- * typical aggregation workload, dictionarization indices arrive in monotonically-ascending order so the append-last
- * fast path is hit on every write.
  *
  * @author Benoit Lacelle
  */
@@ -58,10 +52,6 @@ public class MultitypeNavigableMergeableIntColumn extends MultitypeNavigableIntC
 	IAggregation aggregation;
 
 	/**
-	 * Override of {@link MultitypeNavigableIntColumn#merge(int, int)}: the parent throws on a duplicate write because
-	 * it is append-only; this class instead aggregates the incoming value with the existing one via the configured
-	 * {@link IAggregation}, mirroring {@link MultitypeNavigableMergeableColumn#merge(int)}.
-	 *
 	 * @param index
 	 *            the index of the existing entry whose value is being merged into.
 	 * @param key
@@ -73,48 +63,9 @@ public class MultitypeNavigableMergeableIntColumn extends MultitypeNavigableIntC
 	protected IValueReceiver merge(int index, int key) {
 		checkNotLocked(key);
 
-		return new IValueReceiver() {
-			@Override
-			public void onLong(long input) {
-				onValue(index, new IValueReceiver() {
+		IValueReceiver receiver = values.set(index);
 
-					@Override
-					public void onLong(long existingAggregate) {
-						if (aggregation instanceof ILongAggregation longAggregation) {
-							long newAggregate = longAggregation.aggregateLongs(existingAggregate, input);
-							values.set(index).onLong(newAggregate);
-						} else {
-							Object newAggregate = aggregation.aggregate(existingAggregate, input);
-							values.set(index).onObject(newAggregate);
-						}
-					}
-
-					@Override
-					public void onObject(Object existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, input);
-						values.set(index).onObject(newAggregate);
-					}
-				});
-			}
-
-			@Override
-			public void onObject(Object input) {
-				onValue(index, new IValueReceiver() {
-
-					@Override
-					public void onLong(long existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, input);
-						values.set(index).onObject(newAggregate);
-					}
-
-					@Override
-					public void onObject(Object existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, input);
-						values.set(index).onObject(newAggregate);
-					}
-				});
-			}
-		};
+		return new MergingNavigableValueReceiver(aggregation, receiver, r -> onValue(index, r));
 	}
 
 	@Override

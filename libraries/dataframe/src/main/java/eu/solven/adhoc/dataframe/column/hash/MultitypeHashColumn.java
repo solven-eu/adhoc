@@ -91,7 +91,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
 	// BEWARE Default to true as we prefer safety over optimizations
 	@Default
-	boolean cleanDirty = ACleaningValueReceiver.DEFAULT;
+	boolean cleanDirty = CleaningValueReceiver.DEFAULT;
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -165,7 +165,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	 * @return
 	 */
 	protected IValueReceiver unsafePut(T key, boolean safe) {
-		return new ACleaningValueReceiver(cleanDirty) {
+		return CleaningValueReceiver.cleaning(cleanDirty, true, new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
@@ -190,7 +190,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 			}
 
 			@Override
-			protected void onNonnullObject(Object v) {
+			public void onObject(Object v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 				sliceToO.put(key, v);
 
@@ -199,7 +199,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 					sliceToD.removeDouble(key);
 				}
 			}
-		};
+		});
 	}
 
 	protected IValueReceiver merge(T key) {

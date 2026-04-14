@@ -22,14 +22,9 @@
  */
 package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.collection.ICompactable;
-import eu.solven.adhoc.cuboid.IColumnScanner;
-import eu.solven.adhoc.cuboid.IColumnValueConverter;
-import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
@@ -40,8 +35,9 @@ import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableIntColumn;
 import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
-import eu.solven.adhoc.stream.IConsumingStream;
+import lombok.AccessLevel;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
@@ -56,111 +52,40 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 @ToString
-public class MultitypeNavigableElseHashIntColumn implements IMultitypeIntColumnFastGet, ICompactable, IHasSortedLeg {
+public class MultitypeNavigableElseHashIntColumn extends AMultitypeNavigableElseHashColumn<Integer>
+		implements IMultitypeIntColumnFastGet, ICompactable, IHasSortedLeg {
 	@Default
 	@NonNull
+	@Getter(AccessLevel.PROTECTED)
 	final IMultitypeIntColumnFastGetSorted navigable = MultitypeNavigableIntColumn.builder().build();
 
 	@Default
 	@NonNull
+	@Getter(AccessLevel.PROTECTED)
 	final IMultitypeIntColumnFastGet hash = MultitypeHashIntColumn.builder().build();
-
-	/**
-	 *
-	 * @return the sum of the underlying sizes as we each slice can only be present in one of the underlying.
-	 */
-	@Override
-	public long size() {
-		return navigable.size() + hash.size();
-	}
-
-	@Override
-	public long size(StreamStrategy strategy) {
-		return switch (strategy) {
-		case StreamStrategy.ALL -> size();
-		// The navigable side IS the sorted leg.
-		case StreamStrategy.SORTED_SUB -> navigable.size();
-		// The hash side IS the unordered complement.
-		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.size();
-		};
-	}
-
-	@Override
-	public boolean isEmpty() {
-		return navigable.isEmpty() && hash.isEmpty();
-	}
-
-	@Override
-	public long sortedPrefixLength() {
-		return navigable.size();
-	}
 
 	@Override
 	public IMultitypeIntColumnFastGet purgeAggregationCarriers() {
-		navigable.purgeAggregationCarriers();
-		hash.purgeAggregationCarriers();
-
 		return MultitypeNavigableElseHashIntColumn.builder()
-				.navigable(navigable.purgeAggregationCarriers())
-				.hash(hash.purgeAggregationCarriers())
+				.navigable(getNavigable().purgeAggregationCarriers())
+				.hash(getHash().purgeAggregationCarriers())
 				.build();
 	}
 
 	@Override
-	public void scan(IColumnScanner<Integer> rowScanner) {
-		navigable.scan(rowScanner);
-		hash.scan(rowScanner);
-	}
-
-	@Override
-	public <U> Stream<U> stream(IColumnValueConverter<Integer, U> converter) {
-		return Stream.concat(navigable.stream(converter), hash.stream(converter));
-	}
-
-	@Override
-	public IConsumingStream<SliceAndMeasure<Integer>> stream() {
-		return IConsumingStream.concat(List.of(navigable.stream(), hash.stream()));
-	}
-
-	@Override
-	public IConsumingStream<SliceAndMeasure<Integer>> limit(int limit) {
-		if (limit > navigable.size()) {
-			throw new IllegalArgumentException("limit=%s navigable.size=%s".formatted(limit, navigable.size()));
-		}
-		return navigable.limit(limit);
-	}
-
-	@Override
-	public IConsumingStream<SliceAndMeasure<Integer>> skip(int skip) {
-		if (skip > navigable.size()) {
-			throw new IllegalArgumentException("skip=%s navigable.size=%s".formatted(skip, navigable.size()));
-		}
-		return IConsumingStream.concat(List.of(navigable.skip(skip), hash.stream()));
-	}
-
-	@Override
-	public IConsumingStream<Integer> keyStream() {
-		return IConsumingStream.concat(List.of(navigable.keyStream(), hash.keyStream()));
-	}
-
-	@Override
-	public IValueReceiver append(Integer slice) {
-		return append(slice.intValue());
-	}
-
-	@Override
 	public IValueReceiver append(int slice) {
-		Optional<IValueReceiver> navigableReceiver = navigable.appendIfOptimal(slice);
+		Optional<IValueReceiver> navigableReceiver = getNavigable().appendIfOptimal(slice);
 
-		return navigableReceiver.orElseGet(() -> hash.append(slice));
+		return navigableReceiver.orElseGet(() -> getHash().append(slice));
 	}
 
+	@SuppressWarnings("CPD-START")
 	@Override
 	public IValueProvider onValue(int key) {
 		return valueReceiver -> {
 			// We assume navigable has a higher probably to hold the value
 			// TODO Have some strategy (e.g. based on size)
-			navigable.onValue(key).acceptReceiver(new IValueReceiver() {
+			getNavigable().onValue(key).acceptReceiver(new IValueReceiver() {
 
 				@Override
 				public void onLong(long v) {
@@ -176,7 +101,7 @@ public class MultitypeNavigableElseHashIntColumn implements IMultitypeIntColumnF
 				public void onObject(Object v) {
 					if (v == null) {
 						// No value from navigable: let's try from hash
-						hash.onValue(key).acceptReceiver(valueReceiver);
+						getHash().onValue(key).acceptReceiver(valueReceiver);
 					} else {
 						valueReceiver.onObject(v);
 					}
@@ -190,30 +115,9 @@ public class MultitypeNavigableElseHashIntColumn implements IMultitypeIntColumnF
 		return switch (strategy) {
 		case StreamStrategy.ALL -> onValue(key);
 		// The navigable side IS the sorted leg.
-		case StreamStrategy.SORTED_SUB -> navigable.onValue(key);
+		case StreamStrategy.SORTED_SUB -> getNavigable().onValue(key);
 		// The hash side IS the unordered complement.
-		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.onValue(key);
+		case StreamStrategy.SORTED_SUB_COMPLEMENT -> getHash().onValue(key);
 		};
-	}
-
-	@SuppressWarnings("PMD.ExhaustiveSwitchHasDefault")
-	@Override
-	public IConsumingStream<SliceAndMeasure<Integer>> stream(StreamStrategy stragegy) {
-		return switch (stragegy) {
-		case StreamStrategy.ALL -> this.stream();
-		case StreamStrategy.SORTED_SUB -> navigable.stream();
-		case StreamStrategy.SORTED_SUB_COMPLEMENT -> hash.stream();
-		default -> IMultitypeColumnFastGet.defaultStream(this, stragegy);
-		};
-	}
-
-	@Override
-	public void compact() {
-		if (navigable instanceof ICompactable compactable) {
-			compactable.compact();
-		}
-		if (hash instanceof ICompactable compactable) {
-			compactable.compact();
-		}
 	}
 }

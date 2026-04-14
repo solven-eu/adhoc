@@ -70,12 +70,12 @@ public class TestMultitypeNavigableMergeableColumn {
 	}
 
 	@Test
-	public void testNullDouble() {
+	public void testNullFloat() {
 		column.merge("k1", null);
-		column.merge("k1", 12.34);
+		column.merge("k1", 12.34F);
 
 		column.onValue("k1", o -> {
-			Assertions.assertThat(o).isEqualTo(123L);
+			Assertions.assertThat(o).isEqualTo((double) 12.34F);
 		});
 	}
 

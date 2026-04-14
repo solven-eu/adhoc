@@ -23,11 +23,9 @@
 package eu.solven.adhoc.dataframe.column.hash;
 
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.merge.IColumnPutter;
+import eu.solven.adhoc.dataframe.column.merge.MergingColumnValueReceiver;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.Getter;
 import lombok.NonNull;
@@ -45,114 +43,32 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T> implements IMultitypeMergeableColumn<T> {
+public class MultitypeHashMergeableColumn<T> extends MultitypeHashColumn<T>
+		implements IMultitypeMergeableColumn<T>, IColumnPutter<T> {
 
 	@NonNull
 	@Getter
 	IAggregation aggregation;
 
+	@Override
+	public IValueReceiver unsafePut(T key, boolean safe) {
+		// from protected to public
+		return super.unsafePut(key, safe);
+	}
+
+	@Override
+	public void removeLong(T key) {
+		sliceToL.removeLong(key);
+	}
+
+	@Override
+	public void removeDouble(T key) {
+		sliceToD.removeDouble(key);
+	}
+
 	// Merge strategy is: read (optional) existing value, aggregate with input value, write new aggregate
 	@Override
 	public IValueReceiver merge(T key) {
-		return new IValueReceiver() {
-			@Override
-			public void onLong(long v) {
-				onValue(key).acceptReceiver(new IValueReceiver() {
-					@Override
-					public void onLong(long existingAggregate) {
-						if (aggregation instanceof ILongAggregation longAggregation) {
-							long newAggregate = longAggregation.aggregateLongs(existingAggregate, v);
-
-							// No need to clear as we replace a long with a long
-							unsafePut(key, false).onLong(newAggregate);
-						} else {
-							Object newAggregate = aggregation.aggregate(existingAggregate, v);
-
-							if (AdhocPrimitiveHelpers.isLongLike(newAggregate)) {
-								long newAggregateAsLong = AdhocPrimitiveHelpers.asLong(newAggregate);
-								unsafePut(key, false).onLong(newAggregateAsLong);
-							} else {
-								// Clear long
-								sliceToL.removeLong(key);
-								unsafePut(key, false).onObject(newAggregate);
-							}
-						}
-					}
-
-					// @Override
-					protected void onNull() {
-						if (aggregation instanceof ILongAggregation longAggregation) {
-							long newAggregate = longAggregation.aggregateLongs(longAggregation.neutralLong(), v);
-
-							// No need to clear as we replace a long with a long
-							unsafePut(key, false).onLong(newAggregate);
-						} else {
-							Object newAggregate = aggregation.aggregate(null, v);
-
-							if (AdhocPrimitiveHelpers.isLongLike(newAggregate)) {
-								long newAggregateAsLong = AdhocPrimitiveHelpers.asLong(newAggregate);
-								unsafePut(key, false).onLong(newAggregateAsLong);
-							} else {
-								// Clear long
-								sliceToL.removeLong(key);
-								unsafePut(key, false).onObject(newAggregate);
-							}
-						}
-					}
-
-					@Override
-					public void onObject(Object existingAggregate) {
-						if (existingAggregate == null) {
-							onNull();
-						} else {
-							Object newAggregate = aggregation.aggregate(existingAggregate, v);
-
-							boolean clearKey = existingAggregate != null;
-							unsafePut(key, clearKey).onObject(newAggregate);
-						}
-					}
-				});
-			}
-
-			@Override
-			public void onDouble(double v) {
-				onValue(key).acceptReceiver(new IValueReceiver() {
-					@Override
-					public void onDouble(double existingAggregate) {
-						if (aggregation instanceof IDoubleAggregation doubleAggregation) {
-							double newAggregate = doubleAggregation.aggregateDoubles(existingAggregate, v);
-
-							// No need to clear as we replace a double with a double
-							unsafePut(key, false).onDouble(newAggregate);
-						} else {
-							Object newAggregate = aggregation.aggregate(existingAggregate, v);
-
-							if (AdhocPrimitiveHelpers.isDoubleLike(newAggregate)) {
-								double newAggregateAsDouble = AdhocPrimitiveHelpers.asDouble(newAggregate);
-								unsafePut(key, false).onDouble(newAggregateAsDouble);
-							} else {
-								// Clear double
-								sliceToD.removeDouble(key);
-								unsafePut(key, false).onObject(newAggregate);
-							}
-						}
-					}
-
-					@Override
-					public void onObject(Object existingAggregate) {
-						Object newAggregate = aggregation.aggregate(existingAggregate, v);
-
-						boolean clearKey = existingAggregate != null;
-						unsafePut(key, clearKey).onObject(newAggregate);
-					}
-				});
-			}
-
-			@Override
-			public void onObject(Object v) {
-				IValueProvider existingAggregate = onValue(key);
-				aggregation.aggregate(existingAggregate, vc -> vc.onObject(v)).acceptReceiver(unsafePut(key, true));
-			}
-		};
+		return new MergingColumnValueReceiver<>(aggregation, this, key);
 	}
 }

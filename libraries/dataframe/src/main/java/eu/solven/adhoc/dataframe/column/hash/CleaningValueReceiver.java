@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.column.hash;
 
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -33,39 +35,51 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public abstract class ACleaningValueReceiver implements IValueReceiver {
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+public final class CleaningValueReceiver implements IValueReceiver {
 	public static final boolean DEFAULT = true;
 
 	boolean cleanIfDirty;
+	boolean cleanIfNull;
 
-	public ACleaningValueReceiver() {
-		this.cleanIfDirty = DEFAULT;
+	final IValueReceiver decorated;
+
+	public static IValueReceiver cleaning(boolean cleanIfDirty, boolean cleanIfNull, IValueReceiver decorated) {
+		if (cleanIfDirty || cleanIfNull) {
+			return new CleaningValueReceiver(cleanIfDirty, cleanIfNull, decorated);
+		} else {
+			return decorated;
+		}
 	}
 
-	public ACleaningValueReceiver(boolean cleanIfDirty) {
-		this.cleanIfDirty = cleanIfDirty;
+	@Override
+	public void onLong(long v) {
+		decorated.onLong(v);
+	}
+
+	@Override
+	public void onDouble(double v) {
+		decorated.onDouble(v);
 	}
 
 	@Override
 	public void onObject(Object v) {
 		if (v == null) {
-			// BEWARE We may want to remove the key
-			// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
-			log.trace("TODO Improve null management");
-		} else if (cleanIfDirty) {
-			if (AdhocPrimitiveHelpers.isLongLike(v)) {
-				long vAsPrimitive = AdhocPrimitiveHelpers.asLong(v);
-				onLong(vAsPrimitive);
-			} else if (AdhocPrimitiveHelpers.isDoubleLike(v)) {
-				double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
-				onDouble(vAsPrimitive);
+			if (cleanIfNull) {
+				// BEWARE We may want to remove the key
+				// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
+				log.trace("TODO Improve null management");
 			} else {
-				onNonnullObject(v);
+				decorated.onObject(v);
 			}
+		} else if (AdhocPrimitiveHelpers.isLongLike(v)) {
+			long vAsPrimitive = AdhocPrimitiveHelpers.asLong(v);
+			decorated.onLong(vAsPrimitive);
+		} else if (AdhocPrimitiveHelpers.isDoubleLike(v)) {
+			double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
+			decorated.onDouble(vAsPrimitive);
 		} else {
-			onNonnullObject(v);
+			decorated.onObject(v);
 		}
 	}
-
-	protected abstract void onNonnullObject(Object v);
 }

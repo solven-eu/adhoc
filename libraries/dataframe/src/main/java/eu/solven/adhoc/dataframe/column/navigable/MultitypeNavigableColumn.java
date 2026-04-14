@@ -50,7 +50,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.MultitypeArray;
-import eu.solven.adhoc.dataframe.column.hash.ACleaningValueReceiver;
+import eu.solven.adhoc.dataframe.column.hash.CleaningValueReceiver;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -103,7 +103,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
 	@Default
-	boolean cleanDirty = ACleaningValueReceiver.DEFAULT;
+	boolean cleanDirty = CleaningValueReceiver.DEFAULT;
 
 	// Once locked, this can not be written, hence not unlocked
 	@Default
@@ -281,7 +281,8 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		if (!cleanDirty || valueConsumer == INSERTION_REJECTED) {
 			return valueConsumer;
 		} else {
-			return new ACleaningValueReceiver(true) {
+			// BEWARE Must not clean nulls, as we need to detect after hand a null to also clear the key
+			return CleaningValueReceiver.cleaning(cleanDirty, false, new IValueReceiver() {
 
 				@Override
 				public void onLong(long v) {
@@ -294,10 +295,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 				}
 
 				@Override
-				protected void onNonnullObject(Object v) {
+				public void onObject(Object v) {
 					valueConsumer.onObject(v);
 				}
-			};
+			});
 		}
 	}
 

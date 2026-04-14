@@ -36,7 +36,7 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 
 public class TestMultitypeArray {
-	MultitypeArray array = MultitypeArray.builder().build();
+	MultitypeArray array = MultitypeArray.builder().cleanDirty(false).build();
 
 	@Test
 	public void testCrossTypes_longThenDouble() {
@@ -170,20 +170,20 @@ public class TestMultitypeArray {
 
 	@Test
 	public void isNull() {
-		Assertions.assertThat(array.isNull(-1)).isTrue();
-		Assertions.assertThat(array.isNull(0)).isTrue();
-		Assertions.assertThat(array.isNull(1)).isTrue();
+		Assertions.assertThat(array.isNull(-1)).isFalse();
+		Assertions.assertThat(array.isNull(0)).isFalse();
+		Assertions.assertThat(array.isNull(1)).isFalse();
 
 		array.add().onObject(null);
 
-		Assertions.assertThat(array.isNull(-1)).isTrue();
+		Assertions.assertThat(array.isNull(-1)).isFalse();
 		Assertions.assertThat(array.isNull(0)).isTrue();
-		Assertions.assertThat(array.isNull(1)).isTrue();
+		Assertions.assertThat(array.isNull(1)).isFalse();
 
 		array.set(0).onLong(123);
 
-		Assertions.assertThat(array.isNull(-1)).isTrue();
+		Assertions.assertThat(array.isNull(-1)).isFalse();
 		Assertions.assertThat(array.isNull(0)).isFalse();
-		Assertions.assertThat(array.isNull(1)).isTrue();
+		Assertions.assertThat(array.isNull(1)).isFalse();
 	}
 }
