@@ -24,14 +24,23 @@ package eu.solven.adhoc.encoding.page;
 
 /**
  * Represents a row in a table.
- * 
+ *
+ * <p>
+ * Extends {@link IInt2ObjectReader} so instances can be passed directly wherever an {@code int -> Object} reader is
+ * required, without allocating a bound method reference (e.g. {@code frozen::readValue}) at every call site.
+ *
  * @author Benoit Lacelle
  */
-public interface ITableRowRead {
+public interface ITableRowRead extends IInt2ObjectReader {
 
 	int size();
 
 	Object readValue(int columnIndex);
+
+	@Override
+	default Object read(int index) {
+		return readValue(index);
+	}
 
 	static ITableRowRead empty() {
 		return TableRowHelpers.emptyRead();

@@ -27,11 +27,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.MultitypeColumnHelpers;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
@@ -219,7 +221,7 @@ public class TestMultitypeNavigableColumn {
 
 		Assertions.assertThat(column.toString())
 				.isEqualTo(
-						"MultitypeNavigableColumn{size=2, #0=bar->2025-05-11(java.time.LocalDate), #1=foo->123(java.lang.Long)}");
+						"MultitypeNavigableColumn{size=2, #0-bar=2025-05-11(java.time.LocalDate), #1-foo=123(java.lang.Long)}");
 	}
 
 	@Test
@@ -258,12 +260,12 @@ public class TestMultitypeNavigableColumn {
 
 		column.append("k").onLong(7L);
 
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(584);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(616);
 		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(1192L);
 
 		column.compact();
 
-		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(584);
+		Assertions.assertThat(PepperFootprintHelper.deepSize(column.keys)).isEqualTo(616);
 		Assertions.assertThat(PepperFootprintHelper.deepSize(column.values)).isEqualTo(176L);
 
 	}
@@ -273,5 +275,140 @@ public class TestMultitypeNavigableColumn {
 		column.append("k").onObject(null);
 		column.compact();
 		Assertions.assertThat(column.size()).isEqualTo(0);
+	}
+
+	// `.toString` is called from debuggers and log statements; it must NOT lock the instance, otherwise subsequent
+	// writes would throw IllegalStateException simply because the column was inspected.
+	@Test
+	public void testToString_doesNotLock() {
+		column.append("k1").onLong(1L);
+		column.append("k2").onLong(2L);
+		Assertions.assertThat(column.locked).isFalse();
+
+		String asString = column.toString();
+		Assertions.assertThat(asString).contains("k1", "k2");
+
+		// The crucial assertion: `.toString` must have restored the unlocked state.
+		Assertions.assertThat(column.locked).isFalse();
+
+		// And further writes must still succeed.
+		column.append("k3").onLong(3L);
+		Assertions.assertThat(column.size()).isEqualTo(3);
+	}
+
+	// `.toString` on an already-locked instance must keep it locked.
+	@Test
+	public void testToString_keepsLocked_whenAlreadyLocked() {
+		column.append("k1").onLong(1L);
+		// `.scan` triggers `doLock`
+		column.scan(slice -> v -> {
+			// no-op
+		});
+		Assertions.assertThat(column.locked).isTrue();
+
+		column.toString();
+
+		Assertions.assertThat(column.locked).isTrue();
+	}
+
+	// `appendIfOptimal` for a key that's never been seen and is not at the end (would require a random insertion)
+	// must reject without paying for the binary search. The bloom filter is the fast path for this rejection.
+	@Test
+	public void testAppendIfOptimal_unseenKey_rejected() {
+		column.append("a").onLong(1L);
+		column.append("c").onLong(3L);
+
+		// "b" sorts between existing keys → would require a slow random insertion → appendIfOptimal must reject.
+		Assertions.assertThat(column.appendIfOptimal("b")).isEmpty();
+
+		// Existing entries are unchanged.
+		Assertions.assertThat(column.size()).isEqualTo(2);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("a"))).isEqualTo(1L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("c"))).isEqualTo(3L);
+	}
+
+	// `appendIfOptimal` for a key that's already present (and not at the end) must NOT be silently rejected by the
+	// bloom filter — it must reach the exact getIndex path, which finds the key and routes to merge(). The base
+	// MultitypeNavigableColumn rejects merging via an IllegalArgumentException; that throw proves the bloom did
+	// NOT short-circuit the lookup for a key that was actually present.
+	@Test
+	public void testAppendIfOptimal_existingKey_reachesMergePath() {
+		column.append("a").onLong(1L);
+		column.append("b").onLong(2L);
+		column.append("c").onLong(3L);
+
+		Assertions.assertThatThrownBy(() -> column.appendIfOptimal("b"))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("does not allow merging");
+	}
+
+	// `appendIfOptimal` for a key strictly greater than the last key must succeed (the append-last branch is taken
+	// before the bloom check, so this exercises the "fast append" path).
+	@Test
+	public void testAppendIfOptimal_appendLast_accepted() {
+		column.append("a").onLong(1L);
+		column.append("b").onLong(2L);
+
+		Optional<IValueReceiver> receiver = column.appendIfOptimal("c");
+		Assertions.assertThat(receiver).isPresent();
+		receiver.orElseThrow().onLong(3L);
+
+		Assertions.assertThat(column.size()).isEqualTo(3);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("c"))).isEqualTo(3L);
+	}
+
+	// The presence pre-screen is NOT cleared when a null write is purged by lazyClearLastWrite. After the purge,
+	// the pre-screen may still report `mightContain == true` for the purged key, but a subsequent append of THAT
+	// key must still succeed (the binary search via getIndex finds nothing and falls through to the regular
+	// append path).
+	@Test
+	public void testPresenceFilter_notClearedByLazyClearLastWrite() {
+		column.append("a").onLong(1L);
+		column.append("c").onLong(3L);
+
+		// Force the pre-screen to be created by calling appendIfOptimal on a key not present.
+		Assertions.assertThat(column.appendIfOptimal("b")).isEmpty();
+		Assertions.assertThat(column.presenceFilter.get()).isNotNull();
+
+		// Append "d" with a null value — lazyClearLastWrite will purge it on the next operation.
+		column.append("d").onObject(null);
+		// `.size()` triggers lazyClearLastWrite — "d" is removed from `keys`/`values` but stays in the pre-screen.
+		Assertions.assertThat(column.size()).isEqualTo(2);
+
+		// Pre-screen still considers "d" as a potential member (false positive after purge).
+		Assertions.assertThat(column.presenceFilter.get().mightContain("d")).isTrue();
+
+		// A subsequent regular append of "d" must still work — the pre-screen is only consulted by
+		// appendIfOptimal, and even there it would correctly fall through to the exact getIndex lookup.
+		column.append("d").onLong(4L);
+		Assertions.assertThat(column.size()).isEqualTo(3);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("d"))).isEqualTo(4L);
+	}
+
+	// ---- onValue(T, StreamStrategy) — replaces the deprecated ICanReadSortedSubComplement contract ----
+	// MultitypeNavigableColumn IS the sorted leg, so SORTED_SUB returns the value and SORTED_SUB_COMPLEMENT is
+	// always empty (returns NULL for any key).
+
+	@Test
+	public void testOnValueStrategy_navigableIsTheSortedLeg() {
+		column.append("a").onLong(1L);
+		column.append("b").onLong(2L);
+		column.append("c").onLong(3L);
+
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.ALL))).isEqualTo(2L);
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.SORTED_SUB))).isEqualTo(2L);
+		// Complement is empty: a navigable column has no unordered tail.
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("b", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
+	}
+
+	@Test
+	public void testOnValueStrategy_unknownKey_returnsNullForEveryStrategy() {
+		column.append("a").onLong(1L);
+
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("z", StreamStrategy.ALL))).isNull();
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("z", StreamStrategy.SORTED_SUB))).isNull();
+		Assertions.assertThat(IValueProvider.getValue(column.onValue("z", StreamStrategy.SORTED_SUB_COMPLEMENT)))
+				.isNull();
 	}
 }

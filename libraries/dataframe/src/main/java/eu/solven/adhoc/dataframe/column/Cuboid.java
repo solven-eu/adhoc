@@ -79,6 +79,14 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	}
 
 	@Override
+	public IValueProvider onValue(ISlice slice, StreamStrategy hint) {
+		// Strategy-aware lookup: each IMultitypeColumnFastGet implementation knows whether it represents the
+		// sorted leg, the unordered complement, or both — and the default in IMultitypeColumnFastGet falls back
+		// to the all-keys behavior for columns that have nothing strategy-specific to offer.
+		return values.onValue(slice, hint);
+	}
+
+	@Override
 	public IConsumingStream<ISlice> slices() {
 		return values.keyStream();
 	}
@@ -106,6 +114,11 @@ public class Cuboid implements ICuboid, IPartitioned<ICuboid> {
 	@Override
 	public long size() {
 		return values.size();
+	}
+
+	@Override
+	public long size(StreamStrategy strategy) {
+		return values.size(strategy);
 	}
 
 	@Override

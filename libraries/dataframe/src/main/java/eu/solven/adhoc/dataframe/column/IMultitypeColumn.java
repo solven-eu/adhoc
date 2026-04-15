@@ -27,8 +27,6 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
-import eu.solven.adhoc.cuboid.SliceAndMeasure;
-import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.IConsumingStream;
@@ -83,39 +81,6 @@ public interface IMultitypeColumn<T> {
 
 	@Deprecated(since = "It seems useless", forRemoval = true)
 	<U> Stream<U> stream(IColumnValueConverter<T, U> converter);
-
-	IConsumingStream<SliceAndMeasure<T>> stream();
-
-	/**
-	 *
-	 * @param strategy
-	 * @return an {@link IConsumingStream} with the requested strategy
-	 */
-	default IConsumingStream<SliceAndMeasure<T>> stream(StreamStrategy strategy) {
-		return defaultStream(this, strategy);
-	}
-
-	/**
-	 *
-	 * @param <T>
-	 * @param column
-	 * @param stragegy
-	 * @return a valid (yet possibly not optimal) {@link IConsumingStream} given the strategy, making no assumption on
-	 *         the column.
-	 */
-	static <T> IConsumingStream<SliceAndMeasure<T>> defaultStream(IMultitypeColumn<T> column,
-			StreamStrategy stragegy) {
-		return switch (stragegy) {
-		case StreamStrategy.ALL:
-			yield column.stream();
-		case StreamStrategy.SORTED_SUB:
-			// Assume there is no sorted leg
-			yield IConsumingStream.empty();
-		case StreamStrategy.SORTED_SUB_COMPLEMENT:
-			// As we assume there is no sorted leg, the complement is all
-			yield column.stream();
-		};
-	}
 
 	IConsumingStream<T> keyStream();
 

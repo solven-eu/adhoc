@@ -116,6 +116,26 @@ public class ConstantMaskMultitypeColumn implements IMultitypeColumnFastGet<ISli
 	}
 
 	@Override
+	public IConsumingStream<SliceAndMeasure<ISlice>> limit(int limit) {
+		return masked.limit(limit).map(maskedSliceAndMeasure -> {
+			return SliceAndMeasure.<ISlice>builder()
+					.slice(extendSlice(maskedSliceAndMeasure.getSlice()))
+					.valueProvider(maskedSliceAndMeasure.getValueProvider())
+					.build();
+		});
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<ISlice>> skip(int skip) {
+		return masked.skip(skip).map(maskedSliceAndMeasure -> {
+			return SliceAndMeasure.<ISlice>builder()
+					.slice(extendSlice(maskedSliceAndMeasure.getSlice()))
+					.valueProvider(maskedSliceAndMeasure.getValueProvider())
+					.build();
+		});
+	}
+
+	@Override
 	public IValueProvider onValue(ISlice key) {
 		IAdhocMap keyAsMap = key.asAdhocMap();
 		if (!keyAsMap.entrySet().containsAll(masks.entrySet())) {

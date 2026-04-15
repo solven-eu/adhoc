@@ -52,6 +52,7 @@ import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
+import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -89,7 +90,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	TableQueryV4 tableQuery;
 
-	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream,
+			Set<FilteredAggregator> aggregators) {
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
 
 		if (stream.isDistinctSlices()) {
@@ -147,7 +149,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@SuppressWarnings({ "PMD.AvoidSynchronizedStatement", "PMD.CloseResource", "PMD.UselessQualifiedThis" })
 	@Override
 	public IMultitypeMergeableGrid<ISlice> reduce(ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream);
+		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream, tableQuery.getAggregators());
 
 		// Useful to log on the last row, to have the number of row actually streamed
 		TabularRecordLogger aggregatedRecordLogger = TabularRecordLogger.builder()
@@ -235,7 +237,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		// the caller wraps this method in a synchronized block.
 		IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
 
-		for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
+		for (IAliasedAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
 			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);

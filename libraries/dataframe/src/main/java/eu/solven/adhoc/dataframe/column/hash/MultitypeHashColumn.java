@@ -25,6 +25,7 @@ package eu.solven.adhoc.dataframe.column.hash;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -38,13 +39,13 @@ import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
@@ -87,6 +88,11 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 
 	@Default
 	protected int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+
+	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
+	// BEWARE Default to true as we prefer safety over optimizations
+	@Default
+	boolean cleanDirty = CleaningValueReceiver.DEFAULT;
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -160,7 +166,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	 * @return
 	 */
 	protected IValueReceiver unsafePut(T key, boolean safe) {
-		return new IValueReceiver() {
+		return CleaningValueReceiver.cleaning(cleanDirty, true, new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
@@ -186,29 +192,22 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 
 			@Override
 			public void onObject(Object v) {
-				if (AdhocPrimitiveHelpers.isLongLike(v)) {
-					long vAsPrimitive = AdhocPrimitiveHelpers.asLong(v);
-					onLong(vAsPrimitive);
-				} else if (AdhocPrimitiveHelpers.isDoubleLike(v)) {
-					double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
-					onDouble(vAsPrimitive);
-				} else if (v != null) {
-					checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
-					sliceToO.put(key, v);
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
+				sliceToO.put(key, v);
 
-					if (safe) {
-						sliceToL.removeLong(key);
-						sliceToD.removeDouble(key);
-					}
+				if (safe) {
+					sliceToL.removeLong(key);
+					sliceToD.removeDouble(key);
 				}
 			}
-		};
+		});
 	}
 
 	protected IValueReceiver merge(T key) {
 		throw new UnsupportedOperationException("%s can not merge %s".formatted(this, key));
 	}
 
+	@VisibleForTesting
 	protected void clearKey(T key) {
 		sliceToL.removeLong(key);
 		sliceToD.removeDouble(key);
@@ -248,6 +247,16 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 				.map(entry -> converter.prepare(entry.getKey()).onObject(entry.getValue()));
 
 		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
 	}
 
 	@Override

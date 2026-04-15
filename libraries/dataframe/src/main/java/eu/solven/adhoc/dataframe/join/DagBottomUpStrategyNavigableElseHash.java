@@ -27,13 +27,23 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashIntColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableColumn;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashMergeableIntColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableIntColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableColumn;
+import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableMergeableIntColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashColumn;
+import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashIntColumn;
 import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableColumn;
+import eu.solven.adhoc.dataframe.column.navigable_else_hash.MultitypeNavigableElseHashMergeableIntColumn;
+import eu.solven.adhoc.engine.IColumnFactory.ColumnParams;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.model.Dispatchor;
@@ -60,37 +70,85 @@ import eu.solven.adhoc.stream.IConsumingStream;
 // sorted or not, while MultitypeNavigableElseHashColumn is partially sorted.
 public class DagBottomUpStrategyNavigableElseHash implements IDagBottomUpStrategy {
 
-	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity) {
-		MultitypeNavigableColumn navigable = MultitypeNavigableColumn.builder().capacity(initialCapacity).build();
-		MultitypeHashColumn<T> hash = MultitypeHashColumn.<T>builder().capacity(initialCapacity).build();
-		return MultitypeNavigableElseHashColumn.builder().navigable(navigable).hash(hash).build();
-	}
-
-	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumnRandomInserts(int initialCapacity) {
-		return MultitypeHashColumn.<T>builder().capacity(initialCapacity).build();
-	}
-
-	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
-		MultitypeNavigableMergeableColumn navigable =
-				MultitypeNavigableMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build();
-		IMultitypeMergeableColumn<Object> hash = makeColumnRandomInserts(agg, initialCapacity);
-		return (IMultitypeMergeableColumn) MultitypeNavigableElseHashMergeableColumn.mergeable(agg)
-				.navigable(navigable)
-				.hash(hash)
-				.build();
-	}
-
-	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInserts(IAggregation agg, int initialCapacity) {
-		return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).capacity(initialCapacity).build();
-	}
+	// protected IMultitypeMergeableIntColumn makeIntColumnRandomInserts(IAggregation agg, int initialCapacity) {
+	// }
 
 	@Override
 	public IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
 		return UnderlyingQueryStepHelpersNavigableElseHash.distinctSlices(step, underlyings);
+	}
+
+	@Override
+	public <T> IMultitypeColumnFastGet<T> makeColumn(ColumnParams<T> params) {
+		int initialCapacity = params.getInitialCapacity();
+
+		if (params.getAgg() != null) {
+			return makeMergeable(params);
+		} else {
+			if (params.isRandomAccess()) {
+				return MultitypeHashColumn.<T>builder().capacity(initialCapacity).build();
+			} else if (params.isInt()) {
+				IMultitypeIntColumnFastGetSorted navigable =
+						MultitypeNavigableIntColumn.builder().capacity(initialCapacity).build();
+				IMultitypeIntColumnFastGet hash = MultitypeHashIntColumn.builder().capacity(initialCapacity).build();
+				return (IMultitypeColumnFastGet<T>) MultitypeNavigableElseHashIntColumn.builder()
+						.navigable(navigable)
+						.hash(hash)
+						.build();
+			} else {
+				MultitypeNavigableColumn navigable =
+						MultitypeNavigableColumn.builder().capacity(initialCapacity).build();
+				MultitypeHashColumn<T> hash = MultitypeHashColumn.<T>builder().capacity(initialCapacity).build();
+				return MultitypeNavigableElseHashColumn.builder().navigable(navigable).hash(hash).build();
+			}
+		}
+	}
+
+	protected <T> IMultitypeColumnFastGet<T> makeMergeable(ColumnParams<T> params) {
+		IAggregation agg = params.getAgg();
+		int initialCapacity = params.getInitialCapacity();
+
+		if (params.isRandomAccess()) {
+			if (params.isInt()) {
+				// Random && int
+				return (IMultitypeColumnFastGet<T>) MultitypeHashMergeableIntColumn.builder()
+						.aggregation(agg)
+						.capacity(initialCapacity)
+						.build();
+			} else {
+				// Random && !int
+				return MultitypeHashMergeableColumn.<T>builder().aggregation(agg).capacity(initialCapacity).build();
+			}
+		} else if (params.isInt()) {
+			// !Random && int
+			MultitypeNavigableMergeableIntColumn navigable =
+					MultitypeNavigableMergeableIntColumn.builder().aggregation(agg).capacity(initialCapacity).build();
+			IMultitypeMergeableIntColumn hash =
+					MultitypeHashMergeableIntColumn.builder().aggregation(agg).capacity(initialCapacity).build();
+			return (IMultitypeColumnFastGet<T>) MultitypeNavigableElseHashMergeableIntColumn.mergeable(agg)
+					.navigable(navigable)
+					.hash(hash)
+					.build();
+		} else {
+			// !Random && !int
+			MultitypeNavigableMergeableColumn navigable =
+					MultitypeNavigableMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build();
+			IMultitypeMergeableColumn<Object> hash =
+					MultitypeHashMergeableColumn.builder().aggregation(agg).capacity(initialCapacity).build();
+			return (IMultitypeMergeableColumn) MultitypeNavigableElseHashMergeableColumn.mergeable(agg)
+					.navigable(navigable)
+					.hash(hash)
+					.build();
+		}
+	}
+
+	@Override
+	public <T> IMultitypeMergeableColumn<T> makeMergeableColumn(ColumnParams<T> params) {
+		if (params.getAgg() == null) {
+			throw new IllegalArgumentException("IAggregation is required for mergeable");
+		}
+
+		return (IMultitypeMergeableColumn<T>) makeColumn(params);
 	}
 
 }

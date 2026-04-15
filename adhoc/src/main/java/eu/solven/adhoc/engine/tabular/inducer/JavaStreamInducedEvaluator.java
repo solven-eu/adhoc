@@ -108,13 +108,16 @@ public class JavaStreamInducedEvaluator implements IInducedEvaluator {
 		int capacity = CombinatorQueryStep.sumSizes(ImmutableSet.of(inducerValues));
 		IColumnFactory columnFactory = factories.getColumnFactory();
 
-		if (doesBreakSorting) {
-			log.debug("random-insert for {} -> {}", inducerColumns, inducedColumns);
-			return columnFactory.makeColumnRandomInsertions(aggregation, capacity);
-		} else {
-			log.debug("sorted-insert for {} -> {}", inducerColumns, inducedColumns);
-			return columnFactory.makeColumn(aggregation, capacity);
-		}
+		return columnFactory.makeMergeableColumn(c -> {
+			c.agg(aggregation).initialCapacity(capacity);
+
+			if (doesBreakSorting) {
+				log.debug("random-insert for {} -> {}", inducerColumns, inducedColumns);
+				c.isRandomAccess(true);
+			} else {
+				log.debug("sorted-insert for {} -> {}", inducerColumns, inducedColumns);
+			}
+		});
 	}
 
 	/**

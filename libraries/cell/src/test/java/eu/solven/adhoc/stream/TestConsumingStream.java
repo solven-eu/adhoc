@@ -23,7 +23,11 @@
 package eu.solven.adhoc.stream;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -198,6 +202,80 @@ public class TestConsumingStream {
 				.forEach(result::add);
 
 		Assertions.assertThat(result).containsExactly("HELLO", "WORLD");
+	}
+
+	@Test
+	public void min_emptyStream_returnsEmpty() {
+		Assertions.assertThat(streamOfInts().min()).isEmpty();
+	}
+
+	@Test
+	public void min_singleElement_returnsElement() {
+		Assertions.assertThat(streamOfInts(42).min()).contains(42);
+	}
+
+	@Test
+	public void min_multipleElements_returnsSmallest() {
+		Assertions.assertThat(streamOfInts(5, 2, 8, 1, 9, 3).min()).contains(1);
+	}
+
+	@Test
+	public void min_withStrings_returnsLexicographicallySmallest() {
+		Assertions.assertThat(streamOf("banana", "apple", "cherry").min()).contains("apple");
+	}
+
+	@Test
+	public void min_afterFilter_returnsSmallestOfFiltered() {
+		Optional<Integer> min = streamOfInts(5, 2, 8, 1, 9, 3).filter(i -> i > 2).min();
+
+		Assertions.assertThat(min).contains(3);
+	}
+
+	@Test
+	public void iterator_emptyStream_hasNoElements() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			Iterator<String> iterator = streamOf().iterator(executor);
+
+			Assertions.assertThat(iterator.hasNext()).isFalse();
+		} finally {
+			executor.shutdown();
+		}
+	}
+
+	@Test
+	public void iterator_returnsElementsInOrder() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			Iterator<String> iterator = streamOf("a", "b", "c").iterator(executor);
+
+			List<String> collected = new ArrayList<>();
+			while (iterator.hasNext()) {
+				collected.add(iterator.next());
+			}
+
+			Assertions.assertThat(collected).containsExactly("a", "b", "c");
+		} finally {
+			executor.shutdown();
+		}
+	}
+
+	@Test
+	public void iterator_afterFilterAndMap_returnsTransformedElements() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			Iterator<String> iterator =
+					streamOfInts(1, 2, 3, 4).filter(i -> i % 2 == 0).map(i -> "item-" + i).iterator(executor);
+
+			List<String> collected = new ArrayList<>();
+			while (iterator.hasNext()) {
+				collected.add(iterator.next());
+			}
+
+			Assertions.assertThat(collected).containsExactly("item-2", "item-4");
+		} finally {
+			executor.shutdown();
+		}
 	}
 
 }

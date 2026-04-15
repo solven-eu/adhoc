@@ -52,7 +52,11 @@ public class SliceAsMapWithStep implements ISliceWithStep {
 	@Getter
 	final CubeQueryStep queryStep;
 
-	// This cache is relevant as some transformator may request the filter multiple times, to extract multiple columns
+	// This cache is relevant as some transformator may request the filter multiple times, to extract multiple columns.
+	// Excluded from @ToString: the field holds a Guava memoize wrapper whose default toString leaks a Lambda
+	// reference (`Suppliers.memoize(…$$Lambda/0x…@hash)`) which is noisy and adds no information beyond what
+	// `slice` and `queryStep` already convey — the filter is entirely derived from those two fields.
+	@ToString.Exclude
 	final Supplier<ISliceFilter> filterSupplier = Suppliers.memoize(this::asFilterNoCache);
 
 	@Override

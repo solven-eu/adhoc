@@ -53,6 +53,8 @@ public interface ICuboid extends ICompactable {
 
 	long size();
 
+	long size(StreamStrategy strategy);
+
 	boolean isEmpty();
 
 	/**
@@ -67,6 +69,8 @@ public interface ICuboid extends ICompactable {
 	Set<ISlice> slicesSet();
 
 	IValueProvider onValue(ISlice slice);
+
+	IValueProvider onValue(ISlice slice, StreamStrategy hint);
 
 	void forEachSlice(IColumnScanner<ISlice> columnScanner);
 
@@ -106,5 +110,4 @@ public interface ICuboid extends ICompactable {
 	ICuboid purgeCarriers();
 
 	ICuboid mask(Map<String, ?> mask);
-
 }

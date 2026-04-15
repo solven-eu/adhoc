@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
@@ -44,12 +45,13 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.stream.partitioned.PartitionedConsumingStream;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Helper around {@link ICuboid}.
- * 
+ *
  * @author Benoit Lacelle
  * @see MultitypeNavigableElseHashColumn
  */
@@ -61,7 +63,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 * Returns distinct slices from the given cuboids. If all cuboids are partitioned with the same partition count,
 	 * produces one {@link IConsumingStream} per partition and concatenates them, enabling per-partition parallelism
 	 * downstream.
-	 * 
+	 *
 	 * @param queryStep
 	 *            the considered queryStep.
 	 * @param underlyings
@@ -101,7 +103,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 *            maps a slice to its value provider for this cuboid
 	 */
 	private record CuboidUnsortedLeg(IConsumingStream<SliceAndMeasure<ISlice>> unsortedStream,
-			Function<ISlice, IValueProvider> valueLookup) {
+			Function<ISlice, IValueProvider> valueLookup,
+			long unsortedSize) {
 	}
 
 	/**
@@ -115,7 +118,9 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 			IConsumingStream<SliceAndMeasure<ISlice>> unsorted = cuboid.stream(StreamStrategy.SORTED_SUB_COMPLEMENT);
 			// We cannot know cheaply if the stream is empty without consuming it.
 			// Assume it may have content; empty streams simply produce nothing when consumed.
-			legs.add(new CuboidUnsortedLeg(unsorted, cuboid::onValue));
+			legs.add(new CuboidUnsortedLeg(unsorted,
+					slice -> cuboid.onValue(slice, StreamStrategy.SORTED_SUB_COMPLEMENT),
+					cuboid.size(StreamStrategy.SORTED_SUB_COMPLEMENT)));
 		}
 		return legs;
 	}
@@ -134,9 +139,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 			// Fast track
 			ICuboid underlying = underlyings.getFirst();
 			return underlying.stream().map(slice -> {
-				Object value = IValueProvider.getValue(slice.getValueProvider());
-
-				return SliceAndMeasures.from(slice.getSlice(), queryStep, ImmutableList.of(value));
+				ImmutableList<IValueProvider> valueProviders = ImmutableList.of(slice.getValueProvider());
+				return SliceAndMeasures.fromProviders(queryStep, slice.getSlice(), valueProviders);
 			});
 		}
 
@@ -169,24 +173,22 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	 *
 	 * @param queryStep
 	 *            the considered queryStep.
-	 * @param underlyings
+	 * @param cuboids
 	 *            {@link ICuboid} required to be sorted.
 	 * @return a merged {@link IConsumingStream}, based on the input sorted ICuboid
 	 */
 	private static IConsumingStream<SliceAndMeasures> mergeSortedStreamDistinct(CubeQueryStep queryStep,
-			List<? extends ICuboid> underlyings) {
+			List<? extends ICuboid> cuboids) {
 		// Exclude the notSortedIterators: they will be processed in a later step
-		List<Iterator<SliceAndMeasure<ISlice>>> sortedIterators = underlyings.stream().map(s -> {
-			return s.stream(StreamStrategy.SORTED_SUB).toList().iterator();
+		List<Iterator<SliceAndMeasure<ISlice>>> sortedIterators = cuboids.stream().map(cuboid -> {
+			return cuboid.stream(StreamStrategy.SORTED_SUB).toList().iterator();
 		}).toList();
 
 		Iterator<SliceAndMeasures> mergedIterator =
-				new MergedSlicesIteratorNavigableElseHash(queryStep, sortedIterators, underlyings);
+				new MergedSlicesIteratorNavigableElseHash(queryStep, sortedIterators, cuboids);
 
 		// Push-based: drain the iterator into the consumer
-		return ConsumingStream.<SliceAndMeasures>builder().source(consumer -> {
-			mergedIterator.forEachRemaining(consumer::accept);
-		}).build();
+		return ConsumingStream.<SliceAndMeasures>builder().source(mergedIterator::forEachRemaining).build();
 	}
 
 	/**
@@ -210,7 +212,8 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 	private static List<IConsumingStream<SliceAndMeasures>> unsortedStreams(CubeQueryStep queryStep,
 			List<CuboidUnsortedLeg> unsortedLegs,
 			Set<ISlice> sortedSlicesAsSet) {
-		Set<ISlice> unsortedSlicesAsSet = new LinkedHashSet<>();
+		// Use a FastUtil expected to have better performance than HashSet
+		Set<ISlice> unsortedSlicesAsSet = new ObjectOpenHashSet<>();
 
 		int size = unsortedLegs.size();
 		List<IConsumingStream<SliceAndMeasures>> unsortedStreams = new ArrayList<>(size);
@@ -218,6 +221,7 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 		for (int rawUnsortedIndex = 0; rawUnsortedIndex < size; rawUnsortedIndex++) {
 			int unsortedIndex = rawUnsortedIndex;
 			CuboidUnsortedLeg leg = unsortedLegs.get(unsortedIndex);
+			Set<ISlice> unsortedSlicesAsSetI = new ObjectOpenHashSet<>(Ints.checkedCast(leg.unsortedSize()));
 
 			// The stream may be empty for fully-sorted cuboids — that's fine, it simply produces nothing
 			IConsumingStream<SliceAndMeasures> unsortedStream = leg.unsortedStream()
@@ -232,12 +236,14 @@ public class UnderlyingQueryStepHelpersNavigableElseHash {
 						// If this is not the last unsorted stream, prevent this slice from being
 						// considered by next unsorted cuboids
 						if (unsortedIndex < size - 1) {
-							unsortedSlicesAsSet.add(sliceAndMeasure.getSlice());
+							// TODO Write into an intermediate Set not to pollute current iteration
+							unsortedSlicesAsSetI.add(sliceAndMeasure.getSlice());
 						}
 
-						return SliceAndMeasures.from(queryStep, sliceAndMeasure.getSlice(), valueProviders);
-					});
-
+						return SliceAndMeasures.fromProviders(queryStep, sliceAndMeasure.getSlice(), valueProviders);
+					})
+					// Registration of encountered slices needs to be delayed on close-time
+					.onClose(() -> unsortedSlicesAsSet.addAll(unsortedSlicesAsSetI));
 			unsortedStreams.add(unsortedStream);
 		}
 		return unsortedStreams;

@@ -282,7 +282,8 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy scenarioName
 	@Test
 	public void testGroupByScenarioName_mArray() {
-		ITabularView result = cube().execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
+		ITabularView result =
+				cube().execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).debug(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())

@@ -183,10 +183,12 @@ public class ColumnSliceFactory extends ASliceFactory {
 
 			ITableRowRead frozen = values.freeze();
 
+			// `frozen` IS-A IInt2ObjectReader (via ITableRowRead default method), so pass it directly to avoid
+			// allocating a bound method reference adapter per `buildMap` call.
 			return MapOverIntFunction.builder()
 					.factory(this)
 					.keys(preKeys.keysLikeList)
-					.unorderedValues(frozen::readValue)
+					.unorderedValues(frozen)
 					.build();
 		} else {
 			return buildMapNaively(hasEntries);

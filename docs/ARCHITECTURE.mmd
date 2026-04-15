@@ -169,6 +169,6 @@ classDiagram
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache
     AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
     AdhocFactories *-- IStopwatchFactory : stopwatchFactory
-    CubeWrapper *-- ITableWrapper : table
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
     CubeQueryEngine *-- ITableQueryEngineFactory : tableQueryEngine
+    CubeWrapper *-- ITableWrapper : table

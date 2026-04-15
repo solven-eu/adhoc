@@ -252,6 +252,10 @@ A dedicated workflow (`.github/workflows/infer.yml`) runs on every push/PR to `m
 
 ## Comments & Documentation
 
+- **Be synthetic, not verbose.** Long comments are harder to keep accurate than short ones and add visual noise. Default to the tightest form that still conveys the intent; expand only when the non-obvious context genuinely needs more words.
+  - **`//` comments**: aim for **1 line, occasionally 2**. Use more lines only for genuinely subtle invariants (an algorithmic trick the reader cannot re-derive, a hidden ordering requirement, a workaround for a specific upstream bug). If the comment grows past 2 lines, ask yourself whether the explanation belongs in the method's Javadoc instead.
+  - **Javadoc**: aim for **2–5 lines most of the time** — one sentence for the contract, optionally one more for the return value and one for a non-obvious parameter. Longer Javadoc is justified for public API on entry-point classes, for methods whose semantics diverge from their name, or when documenting thread-safety / failure modes. An unnecessarily long Javadoc is a failure mode equivalent to a missing one.
+  - Prefer removing a comment over rewriting it tersely when the code already says the same thing with a better-named identifier.
 - **Inline URL references**: when writing comments, Javadoc, or YAML workflow steps, add URLs that explain *why* the code is written the way it is.
   - Preferred sources (in order): official documentation, GitHub issues/PRs, StackOverflow answers.
   - Example: `// See https://github.com/foo/bar/issues/42`

@@ -37,4 +37,8 @@ public class SliceAndMeasure<T> {
 	T slice;
 	IValueProvider valueProvider;
 
+	@Override
+	public String toString() {
+		return slice + "=" + IValueProvider.getValue(valueProvider);
+	}
 }

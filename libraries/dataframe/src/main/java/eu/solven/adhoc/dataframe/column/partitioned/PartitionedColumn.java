@@ -22,7 +22,10 @@
  */
 package eu.solven.adhoc.dataframe.column.partitioned;
 
+import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -41,5 +44,14 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 public class PartitionedColumn<T> extends APartitionedColumn<T, IMultitypeColumnFastGet<T>> {
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
+	}
 
 }

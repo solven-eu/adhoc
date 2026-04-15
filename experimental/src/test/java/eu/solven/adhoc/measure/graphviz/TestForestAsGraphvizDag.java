@@ -31,6 +31,7 @@ import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import guru.nidi.graphviz.model.MutableGraph;
@@ -67,8 +68,8 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"count(*)"
-				"simplestSum"
+				"count(*)" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
+				"simplestSum" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
 				}""");
 	}
 
@@ -100,7 +101,7 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"count(*)"
+				"count(*)" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
 				"count(*)_x2" ["fillcolor"="cyan","style"="filled"]
 				"count(*)_x4" ["fillcolor"="cyan","style"="filled"]
 				"count(*)_x8" ["fillcolor"="cyan","style"="filled"]
@@ -132,9 +133,9 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"d"
+				"d" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
 				"d_country=FR_ratio" ["fillcolor"="cyan","style"="filled"]
-				"d_country=FR_slice" ["fillcolor"="grey","style"="filled"]
+				"d_country=FR_slice" ["shape"="invhouse","fixedsize"="true","fillcolor"="darkseagreen","style"="filled"]
 				"d_country=FR_ratio" -> "d_country=FR_slice"
 				"d_country=FR_ratio" -> "d_country=FR_whole"
 				"d_country=FR_slice" -> "d"
@@ -161,7 +162,7 @@ public class TestForestAsGraphvizDag {
 				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
 				node ["fontname"="arial"]
 				edge ["class"="link-class"]
-				"d"
+				"d" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
 				"d_country=current_ratio_postcheck" ["fillcolor"="cyan","style"="filled"]
 				"d_country=current_slice" ["shape"="star","fixedsize"="true","fillcolor"="yellow","style"="filled"]
 				"d_country=current_ratio" -> "d_country=current_ratio_postcheck"
@@ -169,6 +170,32 @@ public class TestForestAsGraphvizDag {
 				"d_country=current_ratio_postcheck" -> "d_country=current_whole"
 				"d_country=current_slice" -> "d"
 				"d_country=current_whole" -> "d_country=current_slice"
+				}""");
+	}
+
+	@Test
+	public void testDispatchor() {
+		ForestAsGraphvizDag graphviz = ForestAsGraphvizDag.builder().build();
+
+		MeasureForest.MeasureForestBuilder measureForestBuilder =
+				MeasureForest.builder().name(this.getClass().getSimpleName());
+
+		measureForestBuilder.measure(Aggregator.builder().name("d").aggregationKey(SumAggregation.KEY).build());
+
+		measureForestBuilder.measure(
+				Dispatchor.builder().name("dispatched").decompositionKey("dispatchKey").underlying("d").build());
+
+		MeasureForest forest = measureForestBuilder.build();
+		MutableGraph graph = graphviz.asGraph(forest);
+
+		Assertions.assertThat(graph.toString()).isEqualTo("""
+				digraph "forest=TestForestAsGraphvizDag" {
+				graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
+				node ["fontname"="arial"]
+				edge ["class"="link-class"]
+				"d" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
+				"dispatched" ["shape"="msquare","fixedsize"="true","fillcolor"="grey","style"="filled"]
+				"dispatched" -> "d"
 				}""");
 	}
 }

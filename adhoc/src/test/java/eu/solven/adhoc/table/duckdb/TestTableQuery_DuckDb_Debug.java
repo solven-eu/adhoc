@@ -63,7 +63,7 @@ public class TestTableQuery_DuckDb_Debug extends ADuckDbJooqTest implements IAdh
 		forest.addMeasure(k1Sum);
 		forest.addMeasure(k1SumSquared);
 
-		ITabularView result = cube().execute(CubeQuery.builder().measure(k1SumSquared.getName()).debug(true).build());
+		ITabularView result = cube().execute(CubeQuery.builder().measure(k1SumSquared.getName()).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
