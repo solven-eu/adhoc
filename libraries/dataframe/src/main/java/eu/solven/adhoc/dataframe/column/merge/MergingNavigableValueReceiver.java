@@ -25,6 +25,7 @@ package eu.solven.adhoc.dataframe.column.merge;
 import java.util.function.Consumer;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
@@ -52,6 +53,29 @@ public class MergingNavigableValueReceiver implements IValueReceiver {
 				if (aggregation instanceof ILongAggregation longAggregation) {
 					long newAggregate = longAggregation.aggregateLongs(existingAggregate, input);
 					receiver.onLong(newAggregate);
+				} else {
+					Object newAggregate = aggregation.aggregate(existingAggregate, input);
+					receiver.onObject(newAggregate);
+				}
+			}
+
+			@Override
+			public void onObject(Object existingAggregate) {
+				Object newAggregate = aggregation.aggregate(existingAggregate, input);
+				receiver.onObject(newAggregate);
+			}
+		});
+	}
+
+	@Override
+	public void onDouble(double input) {
+		consumer.accept(new IValueReceiver() {
+
+			@Override
+			public void onDouble(double existingAggregate) {
+				if (aggregation instanceof IDoubleAggregation doubleAggregation) {
+					double newAggregate = doubleAggregation.aggregateDoubles(existingAggregate, input);
+					receiver.onDouble(newAggregate);
 				} else {
 					Object newAggregate = aggregation.aggregate(existingAggregate, input);
 					receiver.onObject(newAggregate);

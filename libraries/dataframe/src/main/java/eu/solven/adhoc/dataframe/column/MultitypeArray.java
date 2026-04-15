@@ -201,6 +201,18 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 			}
 
 			@Override
+			public void onDouble(double v) {
+				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					valuesType = IMultitypeConstants.MASK_DOUBLE;
+					valuesD.set(index, v);
+				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+					valuesD.set(index, v);
+				} else {
+					onObject(v);
+				}
+			}
+
+			@Override
 			public void onObject(Object v) {
 				ensureObject();
 				valuesO.set(index, v);

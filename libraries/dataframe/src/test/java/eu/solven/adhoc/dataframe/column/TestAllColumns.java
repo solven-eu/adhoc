@@ -90,16 +90,21 @@ public class TestAllColumns {
 	}
 
 	@Test
-	public void testNormal() {
-		columns.forEach(column -> {
+	public void testNominal() {
+		allColumns().forEach(column -> {
 			Assertions.assertThat(column.isEmpty()).isTrue();
 
 			column.append(0).onLong(123);
 			Assertions.assertThat(IValueProviderTestHelpers.getLong(column.onValue(0))).isEqualTo(123L);
 
 			column.append(1).onObject(null);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(1))).isEqualTo(null);
+
 			column.append(2).onDouble(12.34);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(2))).isEqualTo(12.34);
+
 			column.append(3).onObject("foo");
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(3))).isEqualTo("foo");
 
 			Assertions.assertThat(column.keyStream().toList()).containsExactly(0, 2, 3);
 
@@ -114,24 +119,63 @@ public class TestAllColumns {
 	}
 
 	@Test
-	public void testMergeable() {
+	public void merge_long() {
 		mergeableColumns.forEach(column -> {
-			Assertions.assertThat(column.isEmpty()).isTrue();
-
 			column.append(0).onLong(123);
 			Assertions.assertThat(IValueProviderTestHelpers.getLong(column.onValue(0))).isEqualTo(123L);
 			column.merge(0).onLong(234);
 			Assertions.assertThat(IValueProviderTestHelpers.getLong(column.onValue(0))).isEqualTo(123L + 234L);
+		});
+	}
 
-			column.append(1).onObject(null);
-			column.append(2).onDouble(12.34);
-			column.append(3).onObject("foo");
+	@Test
+	public void merge_double() {
+		mergeableColumns.forEach(column -> {
+			column.append(0).onDouble(123);
+			Assertions.assertThat(IValueProviderTestHelpers.getDouble(column.onValue(0))).isEqualTo(123L);
+			column.merge(0).onDouble(234);
+			Assertions.assertThat(IValueProviderTestHelpers.getDouble(column.onValue(0))).isEqualTo(123L + 234L);
+		});
+	}
 
-			Assertions.assertThat(column.keyStream().toList()).containsExactly(0, 2, 3);
+	@Test
+	public void merge_nullThenLong() {
+		mergeableColumns.forEach(column -> {
+			column.append(0).onObject(null);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(null);
+			column.merge(0).onLong(123);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(123L);
+		});
+	}
 
-			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(123L + 234L);
-			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(2))).isEqualTo(12.34D);
-			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(3))).isEqualTo("foo");
+	@Test
+	public void merge_nullThenDouble() {
+		mergeableColumns.forEach(column -> {
+			column.append(0).onObject(null);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(null);
+			column.merge(0).onDouble(12.34);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(12.34);
+		});
+	}
+
+	@Test
+	public void merge_nullThenString() {
+		mergeableColumns.forEach(column -> {
+			column.append(0).onObject(null);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(null);
+			column.merge(0).onObject("foo");
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo("foo");
+		});
+	}
+
+	@Test
+	public void merge_longThenString() {
+		mergeableColumns.forEach(column -> {
+			column.append(0).onLong(123);
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0))).isEqualTo(123L);
+			column.merge(0).onObject("foo");
+			Assertions.assertThat(IValueProviderTestHelpers.getObject(column.onValue(0)))
+					.isEqualTo(List.of(123L, "foo"));
 		});
 	}
 
