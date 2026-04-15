@@ -48,7 +48,7 @@ import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -72,7 +72,7 @@ public class PivotableEndpointsController {
 	private static final int DEFAULT_LIMIT_COORDINATES = 100;
 
 	final PivotableEndpointsRegistry endpointsRegistry;
-	final PivotableAdhocSchemaRegistry schemasRegistry;
+	final PivotableSchemaRegistry schemasRegistry;
 
 	/**
 	 * @param endpointId
@@ -256,7 +256,7 @@ public class PivotableEndpointsController {
 		if (holderColumns != null) {
 			UUID endpointId = schemaMetadata.getEndpoint().getId();
 
-			AdhocSchema schema = schemasRegistry.getSchema(endpointId);
+			IAdhocSchema schema = schemasRegistry.getSchema(endpointId);
 
 			Map<String, ? extends Map<String, ?>> columnToDetails = holderColumns.getColumns();
 

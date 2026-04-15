@@ -49,6 +49,74 @@ More specifically, this repository follows guidelines provided in:
 > The released artifacts can be found on ActiveViam's JFrog Artifactory (https://activeviam.jfrog.io/artifactory/mvn/), with a different folder for each stable version.
 
 
+## How Adhoc relates to a typical ActivePivot architecture
+
+ActivePivot is an in-memory OLAP cube. A typical deployment flows from left to right:
+
+```mermaid
+flowchart LR
+    CSV["CSV files"]
+    SQL[("SQL database")]
+    Sources["XXXSources<br/>(ingestion)"]
+    TP["TuplePublishers<br/>(ETL)"]
+
+    subgraph DS["In-memory Datastore"]
+        direction TB
+        Fact["Fact tables<br/>(large, aggregated)"]
+        Enrich["Enrichment tables<br/>(snowflake / recursive)"]
+        Sibling["Standalone stores<br/>(PP sibling inputs)"]
+    end
+
+    Commit{{"Transaction commit<br/>(minutes → hours)"}}
+    Cube[["Cube<br/>flat, pre-aggregated<br/>LEFT JOIN of fact + enrichments"]]
+    PP["PostProcessors<br/>tree of measures"]
+
+    CSV --> Sources
+    SQL --> Sources
+    Sources --> TP
+    TP --> Fact
+    TP --> Enrich
+    TP --> Sibling
+    Fact --> Commit
+    Enrich --> Commit
+    Commit --> Cube
+    Cube --> PP
+    Sibling -.-> PP
+```
+
+Key steps:
+
+- **Sources → ETL → Datastore**: raw rows are ingested and routed by `TuplePublishers` into in-memory stores. Some stores are **fact tables** (very large, with aggregated columns), some are **enrichment tables** that decorate the facts (possibly through a snowflake schema or recursive joins), and some are **standalone stores** that are *not* JOINed into the cube — they stay as sibling inputs that PostProcessors read directly.
+- **Transaction commit → cube build**: on commit, ActivePivot materializes the cube. This is conceptually a single large denormalizing query — `SELECT ... FROM factTable LEFT JOIN enrichment1 ... LEFT JOIN enrichmentN` — producing a flat, pre-aggregated table where rows sharing the same coordinates are merged into a single cell. On real projects this takes minutes to hours.
+- **PostProcessors**: a tree of measures executed over the flat cube, optionally pulling sibling data from the standalone stores.
+
+### Adhoc replaces only the PostProcessor layer
+
+**Adhoc is not a drop-in replacement for ActivePivot as a whole** — it owns none of the ingestion, ETL, in-memory storage, or cube-build stages above. Adhoc is the equivalent of just the **PostProcessor** layer: a tree of measures evaluated over a single tabular source.
+
+```mermaid
+flowchart LR
+    SQL[("SQL database<br/>(or DuckDB, Arrow, ...)")]
+    View["Flat view<br/>FROM fact LEFT JOIN enrich1 ... LEFT JOIN enrichN<br/>(e.g. via JooqSnowflakeSchemaBuilder)"]
+    subgraph Adhoc["Adhoc scope"]
+        Forest["Tree of measures<br/>Combinator / Partitionor / Filtrator / Dispatchor"]
+    end
+    SQL --> View --> Forest
+```
+
+Architectural trade-off on *when* denormalization happens:
+
+- **ActivePivot**: eager, once per commit, produces the flat pre-aggregated cube up-front (the slow commit step).
+- **Adhoc + JooQ**: lazy — the `LEFT JOIN` is executed on-the-fly at each query, skipping the multi-hour commit cost at the price of re-running JOINs per query.
+
+**Migration path** from an ActivePivot project to Adhoc — note that ingestion, ETL, and the Datastore itself are *out of scope*; only the two rightmost boxes of the first diagram are migrated:
+
+- **Tree of measures**: translated automatically via `AtotiMeasureToAdhoc` (see [Translating PostProcessors](#translating-postprocessors) below). The translator produces an Adhoc forest but not the PostProcessor implementations.
+- **Business logic**: each PostProcessor must be manually rewritten as a `Combinator`, `Partitionor`, `Filtrator`, or `Dispatchor`. See the per-class migration strategy below.
+- **Data layer**: the project must expose a view equivalent to the flat pre-aggregated cube. For JDBC backends this is typically a SQL clause `FROM <factTable> LEFT JOIN <enrichment1> ... LEFT JOIN <enrichmentN>` — see `JooqSnowflakeSchemaBuilder` for a builder helper that mirrors a snowflake schema.
+- **Sibling in-memory stores** (the standalone stores the Datastore holds but does not JOIN into the cube) become sibling Adhoc measures or external tables referenced from a `Combinator`.
+
+
 ## Major differences
 
 1. Atoti maintains in-memory all or part of the considered data, while Adhoc does not keep any data In-Memory.

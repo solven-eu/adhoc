@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
 import eu.solven.adhoc.dataframe.tabular.ITabularViewArrowSerializer;
@@ -60,7 +61,7 @@ import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeId;
 import eu.solven.adhoc.pivotable.cube.PivotableCubeMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.query.AsynchronousStatus;
 import eu.solven.adhoc.pivotable.query.CancellationStatus;
 import eu.solven.adhoc.pivotable.query.PivotableAsynchronousQueriesManager;
@@ -86,7 +87,7 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 	public static final MediaType ARROW_STREAM_MEDIA_TYPE =
 			MediaType.parseMediaType("application/vnd.apache.arrow.stream");
 
-	final PivotableAdhocSchemaRegistry schemaRegistry;
+	final PivotableSchemaRegistry schemaRegistry;
 	final AdhocCubesRegistry cubesRegistry;
 
 	final PivotableAsynchronousQueriesManager asynchronousQueriesManager = new PivotableAsynchronousQueriesManager();
@@ -174,7 +175,7 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 	 */
 	@PostMapping(value = R_CUBE_QUERY, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ListBasedTabularView executeQuery(@RequestBody TargetedCubeQuery query) {
-		AdhocSchema schema = schemaRegistry.getSchema(query.getEndpointId());
+		IAdhocSchema schema = schemaRegistry.getSchema(query.getEndpointId());
 		IReadableTabularView view = schema.execute(query.getCube(), query.getQuery());
 		// ListBasedTabularView is serializable with Jackson
 		return ListBasedTabularView.load(view);
@@ -190,7 +191,7 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 	 */
 	@PostMapping(value = R_CUBE_QUERY, produces = "application/vnd.apache.arrow.stream")
 	public ResponseEntity<StreamingResponseBody> executeQueryAsArrow(@RequestBody TargetedCubeQuery query) {
-		AdhocSchema schema = schemaRegistry.getSchema(query.getEndpointId());
+		IAdhocSchema schema = schemaRegistry.getSchema(query.getEndpointId());
 		IReadableTabularView view = schema.execute(query.getCube(), query.getQuery());
 
 		StreamingResponseBody stream = outputStream -> serializeToArrow(view, outputStream);
@@ -207,7 +208,7 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 	 */
 	@PostMapping(value = "/cubes/query/asynchronous", produces = MediaType.APPLICATION_JSON_VALUE)
 	public UUID executeAsynchronousQuery(@RequestBody TargetedCubeQuery query) {
-		AdhocSchema schema = schemaRegistry.getSchema(query.getEndpointId());
+		IAdhocSchema schema = schemaRegistry.getSchema(query.getEndpointId());
 		return asynchronousQueriesManager.executeAsync(schema, query);
 	}
 

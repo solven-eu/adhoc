@@ -83,13 +83,17 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-public class AdhocSchema implements IAdhocSchema {
+public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	@NonNull
 	final Environment env;
 
 	@Builder.Default
 	@NonNull
 	final ICubeQueryEngine engine = CubeQueryEngine.builder().build();
+
+	@Builder.Default
+	@NonNull
+	final ICustomMarkerTranscoder customMarkerCleaner = (_, raw) -> raw;
 
 	final Map<String, ITableWrapper> nameToTable = new ConcurrentHashMap<>();
 
@@ -168,6 +172,7 @@ public class AdhocSchema implements IAdhocSchema {
 		cacheCubeToColumnToType.invalidateAll();
 	}
 
+	@Override
 	public CubeWrapper registerCube(String cubeName, String tableName, String forestName) {
 		ITableWrapper table = nameToTable.get(tableName);
 		if (table == null) {
@@ -337,7 +342,14 @@ public class AdhocSchema implements IAdhocSchema {
 	 * @return
 	 */
 	protected ICubeQuery transcodeQuery(ICubeWrapper cubeWrapper, ICubeQuery query) {
-		return CubeQuery.edit(query).filter(transcodeFilter(cubeWrapper, query.getFilter())).build();
+		return CubeQuery.edit(query)
+				.filter(transcodeFilter(cubeWrapper, query.getFilter()))
+				.customMarker(transcodeCustomMarker(cubeWrapper, query.getCustomMarker()))
+				.build();
+	}
+
+	protected Object transcodeCustomMarker(ICubeWrapper cubeWrapper, Object customMarker) {
+		return customMarkerCleaner.transcodeCustomMarker(cubeWrapper, customMarker);
 	}
 
 	protected ISliceFilter transcodeFilter(ICubeWrapper cubeWrapper, ISliceFilter filter) {
@@ -355,14 +367,17 @@ public class AdhocSchema implements IAdhocSchema {
 		return CubeWrapperTypeTranscoder.builder().columnToTypes(columnToType).build();
 	}
 
+	@Override
 	public void registerCube(ICubeWrapper cube) {
 		nameToCube.put(cube.getName(), cube);
 	}
 
+	@Override
 	public void registerTable(ITableWrapper table) {
 		nameToTable.put(table.getName(), table);
 	}
 
+	@Override
 	public void registerForest(IMeasureForest forest) {
 		nameToForest.put(forest.getName(), forest);
 	}
@@ -413,16 +428,24 @@ public class AdhocSchema implements IAdhocSchema {
 		return nameToCube.values();
 	}
 
+	@Override
 	public CubeWrapperBuilder openCubeWrapperBuilder() {
 		return CubeWrapper.builder().engine(engine).queryPreparator(makeQueryPreparator());
 	}
 
+	@Override
 	public void tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags) {
 		columnToTags.computeIfAbsent(columnIdentifier, k -> new ConcurrentSkipListSet<>()).addAll(tags);
 	}
 
+	@Override
 	public void tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags) {
 		measureToTags.computeIfAbsent(measureIdentifier, k -> new ConcurrentSkipListSet<>()).addAll(tags);
+	}
+
+	@Override
+	public IAdhocSchemaRegistrer getRegistrer() {
+		return this;
 	}
 
 	// public void registerQuery(String name, IAdhocQuery query) {

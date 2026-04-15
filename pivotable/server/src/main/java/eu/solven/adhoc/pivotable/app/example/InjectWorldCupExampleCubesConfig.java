@@ -28,7 +28,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
@@ -48,7 +49,7 @@ public class InjectWorldCupExampleCubesConfig {
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
-	public Void initWorldCupCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {
+	public Void initWorldCupCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) IAdhocSchema schema) {
 		log.info("Registering the {} dataset", IPivotableSpringProfiles.P_SIMPLE_DATASETS);
 
 		registerWorldCupPlayers(schema);
@@ -56,15 +57,16 @@ public class InjectWorldCupExampleCubesConfig {
 		return null;
 	}
 
-	protected void registerWorldCupPlayers(AdhocSchema schema) {
+	protected void registerWorldCupPlayers(IAdhocSchema schema) {
 		WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema();
 		ITableWrapper table = worldCupSchema.getTable(worldCupSchema.getName());
-		schema.registerTable(table);
+		IAdhocSchemaRegistrer registrer = schema.getRegistrer();
+		registrer.registerTable(table);
 
 		IMeasureForest forest = worldCupSchema.getForest(worldCupSchema.getName());
-		schema.registerForest(forest);
-		CubeWrapper cube = worldCupSchema.makeCube(schema, worldCupSchema, table, forest).build();
-		schema.registerCube(cube);
+		registrer.registerForest(forest);
+		CubeWrapper cube = worldCupSchema.makeCube(registrer, worldCupSchema, table, forest).build();
+		registrer.registerCube(cube);
 
 	}
 

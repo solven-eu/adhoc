@@ -45,7 +45,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -282,7 +282,7 @@ public class WorldCupPlayersSchema {
 		return "CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName, parquetPathAsString);
 	}
 
-	public CubeWrapperBuilder makeCube(AdhocSchema schema,
+	public CubeWrapperBuilder makeCube(IAdhocSchemaRegistrer schema,
 			WorldCupPlayersSchema worldCupSchema,
 			ITableWrapper table,
 			IMeasureForest forest) {

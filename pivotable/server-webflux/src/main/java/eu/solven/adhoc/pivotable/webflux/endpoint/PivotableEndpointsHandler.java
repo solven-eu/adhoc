@@ -33,7 +33,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.ColumnarMetadata;
@@ -46,7 +45,7 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.pivotable.webflux.api.AdhocHandlerHelper;
@@ -69,7 +68,7 @@ public class PivotableEndpointsHandler {
 	private static final int DEFAULT_LIMIT_COORDINATES = 100;
 
 	final PivotableEndpointsRegistry endpointsRegistry;
-	final PivotableAdhocSchemaRegistry schemasRegistry;
+	final PivotableSchemaRegistry schemasRegistry;
 
 	private List<PivotableAdhocEndpointMetadata> matchingEndpoints(ServerRequest request) {
 		AdhocEndpointSearch.AdhocEndpointSearchBuilder parameters = AdhocEndpointSearch.builder();
@@ -209,7 +208,7 @@ public class PivotableEndpointsHandler {
 		if (holderColumns != null) {
 			UUID endpointId = schemaMetadata.getEndpoint().getId();
 
-			AdhocSchema schema = schemasRegistry.getSchema(endpointId);
+			IAdhocSchema schema = schemasRegistry.getSchema(endpointId);
 
 			Map<String, ? extends Map<String, ?>> columnToDetails = holderColumns.getColumns();
 
