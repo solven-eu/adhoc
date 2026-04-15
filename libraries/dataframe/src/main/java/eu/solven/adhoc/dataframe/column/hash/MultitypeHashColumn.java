@@ -25,6 +25,7 @@ package eu.solven.adhoc.dataframe.column.hash;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -206,6 +207,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		throw new UnsupportedOperationException("%s can not merge %s".formatted(this, key));
 	}
 
+	@VisibleForTesting
 	protected void clearKey(T key) {
 		sliceToL.removeLong(key);
 		sliceToD.removeDouble(key);

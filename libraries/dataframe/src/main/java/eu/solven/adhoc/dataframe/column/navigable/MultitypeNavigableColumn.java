@@ -550,9 +550,10 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v))
 				.limit(AdhocUnsafe.getLimitOrdinalToString())
 				.forEach(sliceToValue -> {
-					T k = sliceToValue.getKey();
+					T key = sliceToValue.getKey();
 					Object o = sliceToValue.getValue();
-					toStringHelper.add("#" + index.getAndIncrement(), k + "->" + PepperLogHelper.getObjectAndClass(o));
+					String toStringKey = "#" + index.getAndIncrement() + "-" + key;
+					toStringHelper.add(toStringKey, PepperLogHelper.getObjectAndClass(o));
 				});
 		// Restore the locked status so that `.toString` in debug does not lock the instance
 		this.locked = currentLocked;

@@ -221,7 +221,7 @@ public class TestMultitypeNavigableColumn {
 
 		Assertions.assertThat(column.toString())
 				.isEqualTo(
-						"MultitypeNavigableColumn{size=2, #0=bar->2025-05-11(java.time.LocalDate), #1=foo->123(java.lang.Long)}");
+						"MultitypeNavigableColumn{size=2, #0-bar=2025-05-11(java.time.LocalDate), #1-foo=123(java.lang.Long)}");
 	}
 
 	@Test

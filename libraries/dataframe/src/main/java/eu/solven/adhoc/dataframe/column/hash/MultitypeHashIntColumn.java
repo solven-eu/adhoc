@@ -209,12 +209,6 @@ public class MultitypeHashIntColumn implements IMultitypeIntColumnFastGet, IComp
 		throw new UnsupportedOperationException("%s can not merge %s".formatted(this, key));
 	}
 
-	protected void clearKey(int key) {
-		sliceToL.remove(key);
-		sliceToD.remove(key);
-		sliceToO.remove(key);
-	}
-
 	@Override
 	public IValueProvider onValue(int key) {
 		if (sliceToL.containsKey(key)) {
@@ -319,7 +313,8 @@ public class MultitypeHashIntColumn implements IMultitypeIntColumnFastGet, IComp
 		keyStream().toList().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
 
 			onValue(key).acceptReceiver(o -> {
-				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));
+				String toStringKey = "#" + index.getAndIncrement() + "-" + key;
+				toStringHelper.add(toStringKey, PepperLogHelper.getObjectAndClass(o));
 			});
 		});
 

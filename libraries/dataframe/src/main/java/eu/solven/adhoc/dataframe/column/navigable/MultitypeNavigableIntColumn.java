@@ -451,9 +451,10 @@ public class MultitypeNavigableIntColumn
 		stream((slice) -> v -> new AbstractMap.SimpleImmutableEntry<>(slice, v))
 				.limit(AdhocUnsafe.getLimitOrdinalToString())
 				.forEach(sliceToValue -> {
-					Integer k = sliceToValue.getKey();
+					Integer key = sliceToValue.getKey();
 					Object o = sliceToValue.getValue();
-					toStringHelper.add("#" + index.getAndIncrement(), k + "->" + PepperLogHelper.getObjectAndClass(o));
+					String toStringKey = "#" + index.getAndIncrement() + "-" + key;
+					toStringHelper.add(toStringKey, PepperLogHelper.getObjectAndClass(o));
 				});
 		this.locked = currentLocked;
 
