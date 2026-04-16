@@ -55,8 +55,11 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class AMultitypeNavigableElseHashColumn<T extends Comparable<T>>
 		implements IMultitypeColumnFastGet<T>, ICompactable, IHasSortedLeg {
 
+	// A first leg where slices are sorted
 	protected abstract IMultitypeColumnFastGetSorted<T> getNavigable();
 
+	// A second leg where slices are in random order
+	// It must not contain any slice present is the navigable leg
 	protected abstract IMultitypeColumnFastGet<T> getHash();
 
 	/**
@@ -128,7 +131,7 @@ public abstract class AMultitypeNavigableElseHashColumn<T extends Comparable<T>>
 
 	@Override
 	public IValueReceiver append(T slice) {
-		Optional<IValueReceiver> navigableReceiver = getNavigable().appendIfOptimal(slice);
+		Optional<IValueReceiver> navigableReceiver = getNavigable().appendIfOptimal(slice, false);
 
 		return navigableReceiver.orElseGet(() -> getHash().append(slice));
 	}

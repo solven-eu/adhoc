@@ -35,6 +35,7 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IAppendOnlyMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
@@ -130,7 +131,13 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 		IMultitypeColumnFastGet<ISlice> values =
 				factories.getColumnFactory().makeColumn(p -> p.initialCapacity(sumSizes(underlyings)));
 
-		forEachDistinctSlice(underlyings, combination, values::append);
+		ISliceAndValueConsumer output;
+		if (values instanceof IAppendOnlyMultitypeColumn appendOnly) {
+			output = appendOnly::appendNew;
+		} else {
+			output = values::append;
+		}
+		forEachDistinctSlice(underlyings, combination, output);
 
 		return Cuboid.forGroupBy(step).values(values).build();
 	}

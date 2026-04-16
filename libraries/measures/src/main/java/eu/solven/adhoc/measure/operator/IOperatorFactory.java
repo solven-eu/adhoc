@@ -72,7 +72,11 @@ public interface IOperatorFactory {
 	IFilterEditor makeEditor(String key, Map<String, ?> options);
 
 	/**
-	 * Useful for {@link CompositeOperatorFactory} and {@link StandardOperatorFactory#enrichOptions(Map)}
+	 * Useful for {@link CompositeOperatorFactory} and {@link StandardOperatorFactory#enrichOptions(Map)}.
+	 * 
+	 * The root {@link IOperatorFactory} is the one to inject into options (e.g. when an {@link ICombination} will have
+	 * to generate more operators: we need to provide it the root {@link IOperatorFactory} in case current
+	 * {@link IOperatorFactory} is some sub-component (e.g. in a composite).
 	 * 
 	 * @param rootOperatorFactory
 	 * @return

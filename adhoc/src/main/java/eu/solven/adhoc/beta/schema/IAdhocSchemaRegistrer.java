@@ -20,21 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.column;
+package eu.solven.adhoc.beta.schema;
 
-import java.util.Optional;
+import java.util.Set;
 
-import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.cube.CubeWrapper;
+import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.table.ITableWrapper;
 
 /**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
+ * Enables modifying an {@link IAdhocSchema}.
  * 
  * @author Benoit Lacelle
  */
-public interface IMultitypeIntColumnFastGetSorted extends IMultitypeColumnFastGetSorted<Integer> {
+public interface IAdhocSchemaRegistrer {
 
-	Optional<IValueReceiver> appendIfOptimal(int key, boolean distinct);
+	void registerForest(IMeasureForest fromMeasures);
 
-	@Override
-	IMultitypeIntColumnFastGetSorted purgeAggregationCarriers();
+	void registerCustomMarker(String cube,
+			IValueMatcher matchEq,
+			CustomMarkerMetadataGenerator customMarkerMetadataGenerator);
+
+	void registerTable(ITableWrapper table);
+
+	void registerCube(ICubeWrapper cube);
+
+	CubeWrapper registerCube(String cubeName, String tableName, String forestName);
+
+	CubeWrapper.CubeWrapperBuilder openCubeWrapperBuilder();
+
+	void tagColumn(ColumnIdentifier columnIdentifier, Set<String> tags);
+
+	void tagMeasure(MeasureIdentifier measureIdentifier, Set<String> tags);
+
 }

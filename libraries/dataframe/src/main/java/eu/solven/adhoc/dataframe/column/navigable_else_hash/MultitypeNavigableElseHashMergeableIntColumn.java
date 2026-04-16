@@ -56,7 +56,7 @@ public class MultitypeNavigableElseHashMergeableIntColumn extends MultitypeNavig
 
 	@Override
 	public IValueReceiver merge(int slice) {
-		Optional<IValueReceiver> navigableReceiver = navigable.appendIfOptimal(slice);
+		Optional<IValueReceiver> navigableReceiver = navigable.appendIfOptimal(slice, false);
 
 		return navigableReceiver.orElseGet(() -> hash.append(slice));
 	}

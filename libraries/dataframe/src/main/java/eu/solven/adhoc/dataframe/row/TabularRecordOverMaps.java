@@ -36,6 +36,7 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.map.AdhocMapHelpers;
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -136,12 +137,17 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		return withGroupBy(groupByRecord(groupBy.getGroupBy(), AdhocMapHelpers.fromMap(factory, slice).asSlice()));
 	}
 
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	@Override
 	public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
-		Map<String, ?> transcoded =
-				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.asSlice().asAdhocMap());
+		IAdhocMap inputMap = groupBy.asSlice().asAdhocMap();
+		Map<String, ?> outputMap = AdhocTranscodingHelper.transcodeColumns(transcodingContext, inputMap);
 
-		return withSlice(groupBy.asSlice().getFactory(), transcoded);
+		if (outputMap == inputMap) {
+			return this;
+		}
+
+		return withSlice(groupBy.asSlice().getFactory(), outputMap);
 	}
 
 	@Override

@@ -63,7 +63,6 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 	 * {@code UndictionarizedColumn}) reads it via {@link #getSortedPrefixLength()} to expose proper sorted-leg
 	 * semantics on the closed column.
 	 */
-	// protected int sortedPrefixLength;
 	protected final Map<String, Long> aggregatorToSortedLength = new LinkedHashMap<>();
 
 	/**

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.column;
+package eu.solven.adhoc.pivotable.app;
 
-import java.util.Optional;
-
-import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.beta.schema.AdhocSchema;
 
 /**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
+ * Customizer that can be used to modify the auto-configured {@link AdhocSchema} when its type matches.
+ *
+ * @param <B>
+ *            the builder type
  * 
  * @author Benoit Lacelle
  */
-public interface IMultitypeIntColumnFastGetSorted extends IMultitypeColumnFastGetSorted<Integer> {
+@FunctionalInterface
+public interface IAdhocSchemaCustomizer<B extends AdhocSchema.AdhocSchemaBuilder> {
 
-	Optional<IValueReceiver> appendIfOptimal(int key, boolean distinct);
+	/**
+	 * Customize the given builder.
+	 * 
+	 * @param builder
+	 *            the builder to customize
+	 * @return the customized builder
+	 */
+	B customize(B builder);
 
-	@Override
-	IMultitypeIntColumnFastGetSorted purgeAggregationCarriers();
 }

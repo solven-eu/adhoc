@@ -22,19 +22,26 @@
  */
 package eu.solven.adhoc.dataframe.column;
 
-import java.util.Optional;
+import java.util.Spliterator;
 
 import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
+ * Some {@link IMultitypeColumn} may have fast-pathes if one can guarantee the key is new. It relates with
+ * {@link Spliterator#DISTINCT}.
  * 
+ * @param <T>
  * @author Benoit Lacelle
  */
-public interface IMultitypeIntColumnFastGetSorted extends IMultitypeColumnFastGetSorted<Integer> {
+public interface IAppendOnlyMultitypeColumn<T> extends IMultitypeColumn<T> {
 
-	Optional<IValueReceiver> appendIfOptimal(int key, boolean distinct);
+	/**
+	 * Append-else-unspecified.
+	 * 
+	 * @param slice
+	 * @return the {@link IValueReceiver} into which the value has to be written. It assumes the slice is NECESSARILY
+	 *         new. If not new, the behavior is not specified.
+	 */
+	IValueReceiver appendNew(T slice);
 
-	@Override
-	IMultitypeIntColumnFastGetSorted purgeAggregationCarriers();
 }

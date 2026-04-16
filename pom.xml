@@ -443,6 +443,25 @@
 					</executions>
 				</plugin>
 				<plugin>
+					<!-- https://github.com/CycloneDX/cyclonedx-maven-plugin -->
+					<!-- Generates a CycloneDX SBOM (Software Bill of Materials) in target/bom.json.
+					     Bound to the verify phase so it runs after tests but before install/deploy. -->
+					<groupId>org.cyclonedx</groupId>
+					<artifactId>cyclonedx-maven-plugin</artifactId>
+					<configuration>
+						<skipNotDeployed>false</skipNotDeployed>
+					</configuration>
+					<executions>
+						<execution>
+							<id>sbom</id>
+							<goals>
+								<goal>makeBom</goal>
+							</goals>
+							<phase>verify</phase>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
 					<!--
 					https://maven.apache.org/plugins/maven-checkstyle-plugin/ -->
 					<groupId>org.apache.maven.plugins</groupId>
@@ -872,6 +891,10 @@
 			<plugin>
 				<groupId>com.github.spotbugs</groupId>
 				<artifactId>spotbugs-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-maven-plugin</artifactId>
 			</plugin>
 
 			<plugin>

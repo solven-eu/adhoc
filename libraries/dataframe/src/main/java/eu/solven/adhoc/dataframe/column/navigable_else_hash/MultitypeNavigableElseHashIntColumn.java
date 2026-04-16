@@ -74,7 +74,7 @@ public class MultitypeNavigableElseHashIntColumn extends AMultitypeNavigableElse
 
 	@Override
 	public IValueReceiver append(int slice) {
-		Optional<IValueReceiver> navigableReceiver = getNavigable().appendIfOptimal(slice);
+		Optional<IValueReceiver> navigableReceiver = getNavigable().appendIfOptimal(slice, false);
 
 		return navigableReceiver.orElseGet(() -> getHash().append(slice));
 	}

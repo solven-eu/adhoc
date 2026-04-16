@@ -319,7 +319,7 @@ public class TestMultitypeNavigableColumn {
 		column.append("c").onLong(3L);
 
 		// "b" sorts between existing keys → would require a slow random insertion → appendIfOptimal must reject.
-		Assertions.assertThat(column.appendIfOptimal("b")).isEmpty();
+		Assertions.assertThat(column.appendIfOptimal("b", false)).isEmpty();
 
 		// Existing entries are unchanged.
 		Assertions.assertThat(column.size()).isEqualTo(2);
@@ -337,7 +337,7 @@ public class TestMultitypeNavigableColumn {
 		column.append("b").onLong(2L);
 		column.append("c").onLong(3L);
 
-		Assertions.assertThatThrownBy(() -> column.appendIfOptimal("b"))
+		Assertions.assertThatThrownBy(() -> column.appendIfOptimal("b", false))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("does not allow merging");
 	}
@@ -349,7 +349,7 @@ public class TestMultitypeNavigableColumn {
 		column.append("a").onLong(1L);
 		column.append("b").onLong(2L);
 
-		Optional<IValueReceiver> receiver = column.appendIfOptimal("c");
+		Optional<IValueReceiver> receiver = column.appendIfOptimal("c", false);
 		Assertions.assertThat(receiver).isPresent();
 		receiver.orElseThrow().onLong(3L);
 
@@ -367,7 +367,7 @@ public class TestMultitypeNavigableColumn {
 		column.append("c").onLong(3L);
 
 		// Force the pre-screen to be created by calling appendIfOptimal on a key not present.
-		Assertions.assertThat(column.appendIfOptimal("b")).isEmpty();
+		Assertions.assertThat(column.appendIfOptimal("b", false)).isEmpty();
 		Assertions.assertThat(column.presenceFilter.get()).isNotNull();
 
 		// Append "d" with a null value — lazyClearLastWrite will purge it on the next operation.

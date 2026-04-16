@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.primitive;
 
+import java.util.function.Function;
+
 /**
  * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
  * 
@@ -52,5 +54,28 @@ public interface IValueReceiver {
 	}
 
 	void onObject(Object v);
+
+	@Deprecated(since = "Good API?")
+	default IValueReceiver interceptOnObject(Function<Object, ?> onObject) {
+		IValueReceiver thisThis = this;
+
+		return new IValueReceiver() {
+
+			@Override
+			public void onLong(long v) {
+				thisThis.onLong(v);
+			}
+
+			@Override
+			public void onDouble(double v) {
+				thisThis.onDouble(v);
+			}
+
+			@Override
+			public void onObject(Object v) {
+				thisThis.onObject(onObject.apply(v));
+			}
+		};
+	}
 
 }

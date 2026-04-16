@@ -49,7 +49,6 @@ public class AdhocTranscodingHelper {
 
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
-	// TODO Should return original Map is there is no actual transcoding
 	public static Map<String, ?> transcodeColumns(ITableReverseAliaser reverseAliaser, Map<String, ?> underlyingMap) {
 		if (reverseAliaser.isIdentity()) {
 			return underlyingMap;

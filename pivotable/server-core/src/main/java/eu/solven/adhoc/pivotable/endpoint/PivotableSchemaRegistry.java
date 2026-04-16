@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,17 +42,17 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class PivotableAdhocSchemaRegistry {
+public class PivotableSchemaRegistry {
 	// One day, we could register externalized games, interacting by API. It will be a way not to concentrate all Games
 	// in this project.
-	final Map<UUID, AdhocSchema> idToSchema = new ConcurrentHashMap<>();
+	final Map<UUID, IAdhocSchema> idToSchema = new ConcurrentHashMap<>();
 
-	public void registerEntrypoint(UUID endpointId, AdhocSchema schema) {
+	public void registerEntrypoint(UUID endpointId, IAdhocSchema schema) {
 		if (endpointId == null) {
 			throw new IllegalArgumentException("Missing endpointId: " + schema);
 		}
 
-		AdhocSchema alreadyIn = idToSchema.putIfAbsent(endpointId, schema);
+		IAdhocSchema alreadyIn = idToSchema.putIfAbsent(endpointId, schema);
 		if (alreadyIn != null) {
 			throw new IllegalArgumentException(
 					"schema for endpointId=%s already registered: %s".formatted(endpointId, schema));
@@ -59,16 +60,16 @@ public class PivotableAdhocSchemaRegistry {
 		log.info("Registering schema for endpointId={}", endpointId);
 	}
 
-	public AdhocSchema getSchema(UUID endpointId) {
-		AdhocSchema schema = idToSchema.get(endpointId);
+	public IAdhocSchema getSchema(UUID endpointId) {
+		IAdhocSchema schema = idToSchema.get(endpointId);
 		if (schema == null) {
 			throw new IllegalArgumentException("No schema registered for id=" + endpointId);
 		}
 		return schema;
 	}
 
-	public List<AdhocSchema> search(AdhocEndpointSearch search) {
-		Stream<AdhocSchema> metaStream;
+	public List<IAdhocSchema> search(AdhocEndpointSearch search) {
+		Stream<IAdhocSchema> metaStream;
 
 		if (search.getEndpointId().isPresent()) {
 			UUID uuid = search.getEndpointId().get();
@@ -85,7 +86,7 @@ public class PivotableAdhocSchemaRegistry {
 		return metaStream.collect(Collectors.toList());
 	}
 
-	public Stream<? extends AdhocSchema> getSchemas() {
+	public Stream<? extends IAdhocSchema> getSchemas() {
 		return idToSchema.values().stream();
 	}
 }

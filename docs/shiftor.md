@@ -100,7 +100,8 @@ public ISliceFilter editFilter(FilterEditorContext ctx) {
 ```
 
 The `customMarker` is set on the `CubeQueryStep` and is typically passed in by a wrapping
-`Dispatchor` or by the query itself.
+`Dispatchor` or by the query itself. See [Custom Markers](custom-marker.md) for the full lifecycle
+(query → DAG propagation → reader patterns → schema-side transcoding via `ICustomMarkerTranscoder`).
 
 ---
 

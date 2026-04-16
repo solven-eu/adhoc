@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,21 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.dataframe.column;
+package eu.solven.adhoc.beta.schema;
 
-import java.util.Optional;
-
-import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.cube.ICubeWrapper;
 
 /**
- * For {@link IMultitypeColumn} which enables fast `.get` operations.
+ * Useful to convert from a raw object (e.g. a Map from Jackson) into a custom object.
  * 
  * @author Benoit Lacelle
  */
-public interface IMultitypeIntColumnFastGetSorted extends IMultitypeColumnFastGetSorted<Integer> {
+@FunctionalInterface
+public interface ICustomMarkerTranscoder {
 
-	Optional<IValueReceiver> appendIfOptimal(int key, boolean distinct);
+	Object transcodeCustomMarker(ICubeWrapper cubeWrapper, Object customMarker);
 
-	@Override
-	IMultitypeIntColumnFastGetSorted purgeAggregationCarriers();
 }

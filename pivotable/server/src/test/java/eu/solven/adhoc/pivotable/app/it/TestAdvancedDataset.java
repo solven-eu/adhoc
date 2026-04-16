@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.app.it;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,12 +39,13 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.webnone.app.PivotableServerWebnoneApplication;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +76,7 @@ public class TestAdvancedDataset {
 	PivotableEndpointsRegistry endpointsRegistry;
 
 	@Autowired
-	PivotableAdhocSchemaRegistry schemasRegistry;
+	PivotableSchemaRegistry schemasRegistry;
 
 	@Autowired
 	AdhocCubesRegistry cubesRegistry;
@@ -90,7 +92,7 @@ public class TestAdvancedDataset {
 		AtomicReference<ITabularView> lastView = new AtomicReference<>();
 
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
-			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
+			IAdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
 			CubeQuery query = CubeQuery.builder().build();
 			ITabularView view = schema.execute("ban", query);
@@ -111,26 +113,18 @@ public class TestAdvancedDataset {
 	@Test
 	public void testQueryMetadata() {
 		AtomicInteger nbViews = new AtomicInteger();
-		// AtomicReference<ITabularView> lastView = new AtomicReference<>();
 
 		endpointsRegistry.getEndpoints().forEach(endpoint -> {
-			AdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
-
-			// PivotableCubeMetadata cube2 = cubesRegistry.getCube(PivotableCubeId.of(endpoint.getId(),
-			// cube.getName()));
+			IAdhocSchema schema = schemasRegistry.getSchema(endpoint.getId());
 
 			nbViews.incrementAndGet();
 
-			Assertions.assertThat(schema.getCubeColumns("ban")).hasSize(21);
+			EndpointSchemaMetadata metadata =
+					schema.getMetadata(IAdhocSchema.AdhocSchemaQuery.builder().cube(Optional.of("ban")).build(), false);
+			Assertions.assertThat(metadata.getCubes().get("ban").getColumns().getColumns()).hasSize(21);
 		});
 
 		Assertions.assertThat(nbViews.get()).isGreaterThan(0);
-
-		// MapBasedTabularView mapBased = MapBasedTabularView.load(lastView.get());
-		//
-		// Assertions.assertThat(mapBased.getCoordinatesToValues())
-		// .hasSize(1)
-		// .containsEntry(Map.of(), Map.of("count(*)", 26_045_333L));
 	}
 
 }
