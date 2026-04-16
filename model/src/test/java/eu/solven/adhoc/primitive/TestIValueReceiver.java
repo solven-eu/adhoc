@@ -47,4 +47,39 @@ public class TestIValueReceiver {
 
 		Assertions.assertThat(list).containsExactly("foo", 123L, 12.34D);
 	}
+
+	@Test
+	public void testInterceptOnObject_transformsObjectOnly() {
+		List<Object> received = new ArrayList<>();
+
+		IValueReceiver base = received::add;
+
+		// Intercept: uppercase any String that arrives via onObject.
+		IValueReceiver intercepted = base.interceptOnObject(v -> v instanceof String s ? s.toUpperCase() : v);
+
+		intercepted.onObject("hello");
+		intercepted.onLong(42L);
+		intercepted.onDouble(3.14D);
+		intercepted.onObject(999);
+
+		// onObject values are transformed; onLong/onDouble pass through untouched (they skip the interceptor).
+		Assertions.assertThat(received).containsExactly("HELLO", 42L, 3.14D, 999);
+	}
+
+	@Test
+	public void testInterceptOnObject_longFallbackGoesThrough() {
+		// When the base receiver does NOT override onLong, the default routes to onObject.
+		// interceptOnObject must still intercept that routed call.
+		List<Object> received = new ArrayList<>();
+
+		// Base receiver that ONLY implements onObject — onLong/onDouble fall through to onObject.
+		IValueReceiver base = received::add;
+
+		IValueReceiver intercepted = base.interceptOnObject(v -> "wrapped:" + v);
+
+		intercepted.onObject("direct");
+
+		// onObject goes through the interceptor.
+		Assertions.assertThat(received).containsExactly("wrapped:direct");
+	}
 }
