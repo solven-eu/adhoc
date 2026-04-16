@@ -36,7 +36,7 @@ jobs:
     # Workflow-scoped cache avoids cross-workflow cache pollution.
     # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows
     - name: Cache Maven local repository
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ~/.m2/repository
         key: maven-js-integration-tests-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
@@ -55,7 +55,7 @@ jobs:
       # Playwright browser binaries (~300 MB) are keyed on the lockfile so the
       # cache is invalidated automatically when the Playwright version changes.
       # See https://playwright.dev/docs/ci#caching-browsers
-      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       id: playwright-cache
       with:
         path: ~/.cache/ms-playwright
