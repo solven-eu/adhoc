@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,18 +20,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.beta.schema;
+package eu.solven.adhoc.dataframe.column;
 
-import eu.solven.adhoc.cube.ICubeWrapper;
+import java.util.Spliterator;
+
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
- * Useful to convert from a raw object (e.g. a Map from Jackson) into a custom object.
+ * Some {@link IMultitypeColumn} may have fast-pathes if one can guarantee the key is new. It relates with
+ * {@link Spliterator#DISTINCT}.
  * 
+ * @param <T>
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ICustomMarkerTranscoder {
+public interface IAppendOnlyMultitypeColumn<T> extends IMultitypeColumn<T> {
 
-	Object transcodeCustomMarker(ICubeWrapper cubeWrapper, Object customMarker);
+	/**
+	 * Append-else-unspecified.
+	 * 
+	 * @param slice
+	 * @return the {@link IValueReceiver} into which the value has to be written. It assumes the slice is NECESSARILY
+	 *         new. If not new, the behavior is not specified.
+	 */
+	IValueReceiver appendNew(T slice);
 
 }

@@ -39,14 +39,13 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
-import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.webnone.app.PivotableServerWebnoneApplication;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;

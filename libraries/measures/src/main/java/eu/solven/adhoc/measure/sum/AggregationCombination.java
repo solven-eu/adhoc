@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * An {@link ICombination} define as the aggregation of underlying value with given {@link IAggregation}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor

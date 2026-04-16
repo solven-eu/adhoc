@@ -123,6 +123,10 @@ public enum StandardQueryOptions implements IQueryOption {
 		return StandardQueryOptions.valueOf(value.toUpperCase(Locale.US));
 	}
 
+	public boolean isActive(IHasQueryOptions hasOptions) {
+		return isActive(hasOptions.getOptions());
+	}
+
 	public boolean isActive(Set<IQueryOption> options) {
 		if (this == CONCURRENT) {
 			// SEQUENTIAL will force disabling of CONCURRENT

@@ -52,6 +52,17 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 	@Getter
 	IAggregation aggregation;
 
+	@Override
+	public IValueReceiver merge(T key) {
+		// TODO If the key is absent, current implementation should look for insertionIndex right away
+		int index = getIndex(key, false, false);
+
+		if (index < 0) {
+			return append(key);
+		}
+		return merge(index);
+	}
+
 	// Merge strategy is: read (required) existing value, aggregate with input value, write new aggregate
 	@Override
 	protected IValueReceiver merge(int index) {
@@ -60,16 +71,5 @@ public class MultitypeNavigableMergeableColumn<T extends Comparable<T>> extends 
 		IValueReceiver receiver = values.set(index);
 
 		return new MergingNavigableValueReceiver(aggregation, receiver, r -> onValue(index, r));
-	}
-
-	@Override
-	public IValueReceiver merge(T key) {
-		// TODO If the key is absent, current implementation should look for insertionIndex right away
-		int index = getIndex(key, false);
-
-		if (index < 0) {
-			return append(key);
-		}
-		return merge(index);
 	}
 }

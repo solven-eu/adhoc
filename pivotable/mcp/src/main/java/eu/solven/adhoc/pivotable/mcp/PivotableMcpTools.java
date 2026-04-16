@@ -29,13 +29,12 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.ListBasedTabularView;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,7 +59,7 @@ import tools.jackson.databind.ObjectMapper;
 public class PivotableMcpTools {
 
 	final PivotableEndpointsRegistry endpointsRegistry;
-	final PivotableAdhocSchemaRegistry schemasRegistry;
+	final PivotableSchemaRegistry schemasRegistry;
 	final ObjectMapper objectMapper;
 
 	@Tool(description = "List available OLAP endpoints. " + "Returns one line per endpoint: '<uuid> <name>'. "
@@ -74,7 +73,7 @@ public class PivotableMcpTools {
 	@Tool(description = "Get the schema for an endpoint: cubes, measures, dimension columns and sample coordinates. "
 			+ "Call listEndpoints first to obtain a valid endpointId.")
 	public String getSchema(@ToolParam(description = "Endpoint UUID returned by listEndpoints") String endpointId) {
-		AdhocSchema schema = schemasRegistry.getSchema(UUID.fromString(endpointId));
+		IAdhocSchema schema = schemasRegistry.getSchema(UUID.fromString(endpointId));
 		EndpointSchemaMetadata metadata = schema.getMetadata(IAdhocSchema.AdhocSchemaQuery.builder().build(), true);
 		return toJson(metadata);
 	}
@@ -87,7 +86,7 @@ public class PivotableMcpTools {
 			@ToolParam(description = "Cube name returned by getSchema") String cubeName,
 			@ToolParam(description = "CubeQuery as JSON") String queryJson) {
 		CubeQuery query = objectMapper.readValue(queryJson, CubeQuery.class);
-		AdhocSchema schema = schemasRegistry.getSchema(UUID.fromString(endpointId));
+		IAdhocSchema schema = schemasRegistry.getSchema(UUID.fromString(endpointId));
 
 		log.info("MCP executeQuery endpointId={} cube={} query={}", endpointId, cubeName, query);
 

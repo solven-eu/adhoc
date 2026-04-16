@@ -29,7 +29,6 @@ import java.util.function.BiConsumer;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import lombok.Builder;
@@ -44,6 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Builder
 public class TabularRecordLogger {
+	// nbIn counts the number of considered records
+	// it is updated only if EXPLAIN or DEBUG
 	final AtomicInteger nbIn = new AtomicInteger();
 
 	final String table;
@@ -55,27 +56,38 @@ public class TabularRecordLogger {
 		return () -> {
 			if (StandardQueryOptions.EXPLAIN.isActive(options)) {
 				log.info("[EXPLAIN] Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
-			} else {
+			} else if (StandardQueryOptions.DEBUG.isActive(options)) {
 				log.debug("[DEBUG] Aggregates from table completed accepting {} rows (table={})", nbIn.get(), table);
+			} else {
+				log.debug("[DEBUG] Aggregates from table completed (table={})", table);
 			}
 		};
 	}
 
-	public BiConsumer<ITabularRecord, ISlice> prepareStreamLogger(IHasQueryOptions tableQuery) {
-		return (input, _) -> {
-			int currentIn = nbIn.incrementAndGet();
-			if (currentIn == 1 && StandardQueryOptions.EXPLAIN.isActive(options)) {
-				log.info("[EXPLAIN] Aggregates from table accepted a first row (table={})", table);
-			}
-			if (logAboutRow(tableQuery, currentIn)) {
-				log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
-			}
-		};
+	public BiConsumer<ITabularRecord, ISlice> prepareStreamLogger() {
+		boolean isDebug = StandardQueryOptions.DEBUG.isActive(options);
+		boolean isExplain = StandardQueryOptions.EXPLAIN.isActive(options);
+
+		if (isDebug || isExplain) {
+			return (input, _) -> {
+				int currentIn = nbIn.incrementAndGet();
+				if (currentIn == 1 && isExplain) {
+					log.info("[EXPLAIN] Aggregates from table accepted a first row (table={})", table);
+				}
+				if (logAboutRow(isDebug, currentIn)) {
+					log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
+				}
+			};
+		} else {
+			// no-op
+			return (_, _) -> {
+			};
+		}
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")
-	protected boolean logAboutRow(IHasQueryOptions tableQuery, int currentOut) {
-		return tableQuery.isDebug() && (currentOut <= 16 || Integer.bitCount(currentOut) == 1);
+	protected boolean logAboutRow(boolean isDebug, int currentOut) {
+		return isDebug && (currentOut <= 16 || Integer.bitCount(currentOut) == 1);
 	}
 
 }

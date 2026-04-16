@@ -46,7 +46,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -85,5 +86,7 @@ public interface IAdhocSchema {
 	ITabularView execute(String cube, ICubeQuery query);
 
 	CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher orElse, int limitCoordinates);
+
+	Collection<ICubeWrapper> getCubes();
 
 }

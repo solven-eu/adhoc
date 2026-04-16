@@ -34,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.ColumnarMetadata;
@@ -48,8 +47,8 @@ import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.TargetedEndpointSchemaMetadata;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;

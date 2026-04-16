@@ -170,12 +170,12 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	 */
 	@Override
 	public IValueReceiver append(T key) {
-		return write(key, true, true);
+		return write(key, true, true, false);
 	}
 
 	@Override
-	public Optional<IValueReceiver> appendIfOptimal(T key) {
-		IValueReceiver valueReceiver = write(key, true, false);
+	public Optional<IValueReceiver> appendIfOptimal(T key, boolean distinct) {
+		IValueReceiver valueReceiver = write(key, true, false, distinct);
 
 		if (INSERTION_REJECTED == valueReceiver) {
 			return Optional.empty();
@@ -216,9 +216,11 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	 * @param insertEvenIfNotLast
 	 *            if true, and given key is new but not last, we do an random insertion (which is slow as it requires
 	 *            shitfing following keys and values). If false, returns a null IValueReceiver.
+	 * @param distinct
+	 *            if true, we are guaranteed given key is new in current data-structure.
 	 * @return
 	 */
-	protected IValueReceiver write(T key, boolean mergeElseSet, boolean insertEvenIfNotLast) {
+	protected IValueReceiver write(T key, boolean mergeElseSet, boolean insertEvenIfNotLast, boolean distinct) {
 		int size = keys.size();
 		int valuesSize = values.size();
 		if (size != valuesSize) {
@@ -258,7 +260,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 				valueConsumer = set(index);
 			}
 		} else {
-			int index = getIndex(key, insertEvenIfNotLast);
+			int index = getIndex(key, insertEvenIfNotLast, distinct);
 
 			if (index >= 0) {
 				if (mergeElseSet) {
@@ -411,7 +413,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	 * @return the index of the key, or either `insertEvenIfNotLast==true` and return insertionIndex, else any negative
 	 *         value.
 	 */
-	protected int getIndex(T key, boolean insertEvenIfNotLast) {
+	protected int getIndex(T key, boolean insertEvenIfNotLast, boolean distinct) {
 		lazyClearLastWrite();
 
 		if (keys.isEmpty()) {
@@ -432,11 +434,20 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			return -keys.size();
 		} else {
 			// slow path: merge with an existing element
-			if (!insertEvenIfNotLast && !getOrCreatePresenceFilter().mightContain(key)) {
-				// Not interested in insertionIndex, and we know the key is not present
-				return -1;
-			} else {
+			if (insertEvenIfNotLast) {
 				return Collections.binarySearch(keys, key, Comparator.naturalOrder());
+			} else {
+				// Not interested in insertionIndex
+				if (distinct) {
+					// Not interested in insertionIndex, and the key is new
+					return -1;
+				} else if (getOrCreatePresenceFilter().mightContain(key)) {
+					// key might be present
+					return Collections.binarySearch(keys, key, Comparator.naturalOrder());
+				} else {
+					// Not interested in insertionIndex, and the key is not present
+					return -1;
+				}
 			}
 		}
 	}
@@ -497,6 +508,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			// The whole column is sorted
 			yield stream();
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
+
 			yield IConsumingStream.empty();
 		default:
 			yield IMultitypeColumnFastGet.defaultStream(this, strategy);
@@ -521,6 +533,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 			yield size();
 		case StreamStrategy.SORTED_SUB_COMPLEMENT:
 			yield 0;
+
 		};
 	}
 
@@ -584,7 +597,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	@Override
 	public IValueProvider onValue(T key) {
-		int index = getIndex(key, false);
+		int index = getIndex(key, false, false);
 
 		if (index < 0) {
 			return IValueProvider.NULL;
@@ -614,7 +627,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 
 	@Deprecated(since = "For unitTest purposes")
 	public void clearKey(T key) {
-		int index = getIndex(key, false);
+		int index = getIndex(key, false, false);
 		if (index >= 0) {
 			keys.remove(index);
 			values.remove(index);

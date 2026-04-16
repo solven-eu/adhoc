@@ -21,9 +21,9 @@ at evaluation time.
 
 ```java
 CubeQuery query = CubeQuery.builder()
-        .measure("amount.in_target_ccy")
-        .customMarker(Map.of("targetCcy", "USD"))
-        .build();
+		.measure("amount.in_target_ccy")
+		.customMarker(Map.of("targetCcy", "USD"))
+		.build();
 ```
 
 ## Adhoc is *not* in the business of typing the marker
@@ -43,15 +43,15 @@ contract is "an `Object` (not an `Optional`) that is part of the step's identity
 
 ```java
 public class MyCombination implements ICombination {
-    @Override
-    public Object combine(ISliceWithStep slice, List<?> underlyings) {
-        Object marker = slice.getQueryStep().getCustomMarker();
-        if (marker instanceof Map<?, ?> map) {
-            String targetCcy = (String) map.get("targetCcy");
-            // ... use targetCcy
-        }
-        return underlyings.getFirst();
-    }
+	@Override
+	public Object combine(ISliceWithStep slice, List<?> underlyings) {
+		Object marker = slice.getQueryStep().getCustomMarker();
+		if (marker instanceof Map<?, ?> map) {
+			String targetCcy = (String) map.get("targetCcy");
+			// ... use targetCcy
+		}
+		return underlyings.getFirst();
+	}
 }
 ```
 
@@ -63,15 +63,15 @@ and just declare the path:
 
 ```java
 class TargetCcyCombination extends ACustomMarkerCombination {
-    @Override
-    protected String getJoinedMapPath() {
-        return "$.targetCcy";
-    }
+	@Override
+	protected String getJoinedMapPath() {
+		return "$.targetCcy";
+	}
 
-    @Override
-    protected Object getDefault() {
-        return "EUR";
-    }
+	@Override
+	protected Object getDefault() {
+		return "EUR";
+	}
 }
 ```
 
@@ -107,9 +107,9 @@ the DAG, so the FX combination reads the same marker regardless of its position 
 
 ```java
 CubeQuery query = CubeQuery.builder()
-        .measure("amount.CCY")
-        .customMarker("JPY") // ← the reference currency for this query
-        .build();
+		.measure("amount.CCY")
+		.customMarker("JPY") // ← the reference currency for this query
+		.build();
 ```
 
 ```java
@@ -132,18 +132,18 @@ DAG is expanded further down:
 ```java
 // Dynamic measure: reads whatever the user sent as `customMarker`.
 forest.addMeasure(Partitionor.builder()
-        .name("k1.CCY")
-        .underlyings(List.of("k1.SUM"))
-        .groupBy(GroupByColumns.named("ccyFrom"))
-        .combinationKey(ForeignExchangeCombination.KEY)
-        .build());
+		.name("k1.CCY")
+		.underlyings(List.of("k1.SUM"))
+		.groupBy(GroupByColumns.named("ccyFrom"))
+		.combinationKey(ForeignExchangeCombination.KEY)
+		.build());
 
 // Forced measure: always reports in EUR, regardless of what the user selected.
 forest.addMeasure(CustomMarkerEditor.builder()
-        .name("k1.EUR")
-        .underlying("k1.CCY")
-        .customMarkerEditor(opt -> Optional.of("EUR"))
-        .build());
+		.name("k1.EUR")
+		.underlying("k1.CCY")
+		.customMarkerEditor(opt -> Optional.of("EUR"))
+		.build());
 ```
 
 - User sets `customMarker = "JPY"` on the query.
@@ -173,15 +173,15 @@ to convert the raw map into the typed form before the engine hands it to the mea
 
 ```java
 AdhocSchema schema = AdhocSchema.builder()
-        .env(env)
-        .engine(engine)
-        .customMarkerCleaner((cubeWrapper, raw) -> {
-            if (raw instanceof Map<?, ?> map) {
-                return new MyMarker((String) map.get("targetCcy"), (Boolean) map.get("debug"));
-            }
-            return raw;
-        })
-        .build();
+		.env(env)
+		.engine(engine)
+		.customMarkerCleaner((cubeWrapper, raw) -> {
+			if (raw instanceof Map<?, ?> map) {
+				return new MyMarker((String) map.get("targetCcy"), (Boolean) map.get("debug"));
+			}
+			return raw;
+		})
+		.build();
 ```
 
 `AdhocSchema.execute(...)` runs the transcoder once at query entry; the resulting typed marker is
@@ -213,17 +213,17 @@ to the schema's builder before `build()` is called, so each customizer can insta
 ```java
 @Bean
 public IAdhocSchemaCustomizer<AdhocSchemaBuilder> myProjectCustomizer() {
-    return builder -> builder
-            .customMarkerCleaner(MyProjectCustomizer::transcodeMarker)
-            // also: tagColumn / registerCustomMarker / ...
-            ;
+	return builder -> builder
+			.customMarkerCleaner(MyProjectCustomizer::transcodeMarker)
+			// also: tagColumn / registerCustomMarker / ...
+			;
 }
 
 private static Object transcodeMarker(ICubeWrapper cube, Object raw) {
-    if (raw instanceof Map<?, ?> map) {
-        return new MyMarker((String) map.get("targetCcy"));
-    }
-    return raw;
+	if (raw instanceof Map<?, ?> map) {
+		return new MyMarker((String) map.get("targetCcy"));
+	}
+	return raw;
 }
 ```
 
@@ -240,15 +240,15 @@ cache-relevant subset before caching — see `CachingTableWrapper`.
 
 ## Summary
 
-| Question                                                 | Answer                                                                              |
-|----------------------------------------------------------|-------------------------------------------------------------------------------------|
-| Where does the user set it?                              | `CubeQueryBuilder.customMarker(Object)`                                             |
-| Where is it stored?                                      | On every `CubeQueryStep` in the DAG                                                 |
-| How does a measure read it?                              | `slice.getQueryStep().getCustomMarker()` / `optCustomMarker()`                      |
-| What type can it be?                                     | Any `Object` except `Optional` (it is unwrapped). Typically a `Map` or a record.    |
-| How to convert a raw `Map` (from JSON) into a POJO?      | `AdhocSchema.builder().customMarkerCleaner(ICustomMarkerTranscoder)`                |
-| How to advertise the supported markers to a UI?          | `AdhocSchema.registerCustomMarker(name, cubeMatcher, CustomMarkerMetadataGenerator)`|
-| How to install all of the above from a Spring context?   | One or more `IAdhocSchemaCustomizer` beans, picked up by `registerSelfSchema(...)`  |
+|                        Question                        |                                        Answer                                        |
+|--------------------------------------------------------|--------------------------------------------------------------------------------------|
+| Where does the user set it?                            | `CubeQueryBuilder.customMarker(Object)`                                              |
+| Where is it stored?                                    | On every `CubeQueryStep` in the DAG                                                  |
+| How does a measure read it?                            | `slice.getQueryStep().getCustomMarker()` / `optCustomMarker()`                       |
+| What type can it be?                                   | Any `Object` except `Optional` (it is unwrapped). Typically a `Map` or a record.     |
+| How to convert a raw `Map` (from JSON) into a POJO?    | `AdhocSchema.builder().customMarkerCleaner(ICustomMarkerTranscoder)`                 |
+| How to advertise the supported markers to a UI?        | `AdhocSchema.registerCustomMarker(name, cubeMatcher, CustomMarkerMetadataGenerator)` |
+| How to install all of the above from a Spring context? | One or more `IAdhocSchemaCustomizer` beans, picked up by `registerSelfSchema(...)`   |
 
 ## See also
 
@@ -257,3 +257,4 @@ cache-relevant subset before caching — see `CachingTableWrapper`.
 - [Partitionor](partitionor.md) — splits the slice and dispatches to a per-partition combination,
   often parameterised by a marker.
 - [CubeQueryEngine](cube-query-engine.md) — where the `customMarker` field lives on `CubeQueryStep`.
+

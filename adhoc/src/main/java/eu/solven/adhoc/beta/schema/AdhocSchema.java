@@ -389,6 +389,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	 * @param cubeMatcher
 	 * @param customMarker
 	 */
+	@Override
 	public void registerCustomMarker(String name,
 			IValueMatcher cubeMatcher,
 			CustomMarkerMetadataGenerator customMarker) {
@@ -411,6 +412,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	 *            if `-1` no limit, else the maximum number of coordinates to return.
 	 * @return
 	 */
+	@Override
 	public CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher valueMatcher, int limit) {
 		if (columnId.isCubeElseTable()) {
 			return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
@@ -424,6 +426,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 		return nameToCube.get(cube).getColumnsAsMap();
 	}
 
+	@Override
 	public Collection<ICubeWrapper> getCubes() {
 		return nameToCube.values();
 	}

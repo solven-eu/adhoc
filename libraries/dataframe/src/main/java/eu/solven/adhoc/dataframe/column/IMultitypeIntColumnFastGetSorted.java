@@ -33,7 +33,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
  */
 public interface IMultitypeIntColumnFastGetSorted extends IMultitypeColumnFastGetSorted<Integer> {
 
-	Optional<IValueReceiver> appendIfOptimal(int key);
+	Optional<IValueReceiver> appendIfOptimal(int key, boolean distinct);
 
 	@Override
 	IMultitypeIntColumnFastGetSorted purgeAggregationCarriers();

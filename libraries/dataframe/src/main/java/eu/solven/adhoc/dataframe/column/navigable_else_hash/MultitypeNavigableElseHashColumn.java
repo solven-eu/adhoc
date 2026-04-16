@@ -22,11 +22,15 @@
  */
 package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
+import java.util.Optional;
+
+import eu.solven.adhoc.dataframe.column.IAppendOnlyMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableColumn;
 import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.AccessLevel;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -45,7 +49,8 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @Slf4j
 @ToString
-public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> extends AMultitypeNavigableElseHashColumn<T> {
+public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> extends AMultitypeNavigableElseHashColumn<T>
+		implements IAppendOnlyMultitypeColumn<T> {
 	@Default
 	@NonNull
 	@Getter(AccessLevel.PROTECTED)
@@ -62,6 +67,13 @@ public class MultitypeNavigableElseHashColumn<T extends Comparable<T>> extends A
 				.navigable(getNavigable().purgeAggregationCarriers())
 				.hash(getHash().purgeAggregationCarriers())
 				.build();
+	}
+
+	@Override
+	public IValueReceiver appendNew(T slice) {
+		Optional<IValueReceiver> navigableReceiver = getNavigable().appendIfOptimal(slice, true);
+
+		return navigableReceiver.orElseGet(() -> getHash().append(slice));
 	}
 
 }

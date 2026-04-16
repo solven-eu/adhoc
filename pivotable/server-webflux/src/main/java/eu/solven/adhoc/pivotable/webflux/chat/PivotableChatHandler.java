@@ -38,7 +38,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;

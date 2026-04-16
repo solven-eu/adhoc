@@ -123,7 +123,7 @@ public class TestMultitypeNavigableIntColumn {
 
 		column.append(1).onLong(10L);
 
-		Optional<IValueReceiver> optimal = column.appendIfOptimal(2);
+		Optional<IValueReceiver> optimal = column.appendIfOptimal(2, false);
 		Assertions.assertThat(optimal).isPresent();
 		optimal.get().onLong(20L);
 
@@ -138,7 +138,7 @@ public class TestMultitypeNavigableIntColumn {
 		column.append(5).onLong(50L);
 		column.append(10).onLong(100L);
 
-		Optional<IValueReceiver> rejected = column.appendIfOptimal(3);
+		Optional<IValueReceiver> rejected = column.appendIfOptimal(3, false);
 		Assertions.assertThat(rejected).isEmpty();
 
 		Assertions.assertThat(column.size()).isEqualTo(2);
@@ -154,11 +154,11 @@ public class TestMultitypeNavigableIntColumn {
 
 		// appendIfOptimal on the last key routes through the merge path, which is unsupported on an append-only
 		// column.
-		Assertions.assertThatThrownBy(() -> column.appendIfOptimal(3))
+		Assertions.assertThatThrownBy(() -> column.appendIfOptimal(3, false))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("does not allow merging");
 		// Same for a key present but not at the end: exact lookup finds the key, then hits merge and throws.
-		Assertions.assertThatThrownBy(() -> column.appendIfOptimal(1))
+		Assertions.assertThatThrownBy(() -> column.appendIfOptimal(1, false))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("does not allow merging");
 	}

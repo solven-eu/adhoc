@@ -52,7 +52,6 @@ import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
-import eu.solven.adhoc.measure.model.IAliasedAggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -157,7 +156,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				.options(queryPod.getOptions())
 				.build();
 
-		BiConsumer<ITabularRecord, ISlice> peekOnCoordinate = aggregatedRecordLogger.prepareStreamLogger(tableQuery);
+		BiConsumer<ITabularRecord, ISlice> peekOnCoordinate = aggregatedRecordLogger.prepareStreamLogger();
 
 		IGroupingSetAnalyzer groupingSetAnalyzer = makeGroupingSetAnalyzer();
 
@@ -237,12 +236,12 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		// the caller wraps this method in a synchronized block.
 		IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
 
-		for (IAliasedAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
+		tableQuery.getAggregators(sequencedKeyset.groupBy()).forEach(filteredAggregator -> {
 			// We received a pre-aggregated measure
 			// DB has seemingly done the aggregation for us
 			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
 
-			if (queryPod.isDebug()) {
+			if (StandardQueryOptions.DEBUG.isActive(queryPod)) {
 				Object aggregateValue = IValueProvider.getValue(tableRecord.onAggregate(filteredAggregator.getAlias()));
 				log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, slice);
 			}
@@ -253,7 +252,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			} else {
 				tableRecord.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
 			}
-		}
+		});
 	}
 
 	/**

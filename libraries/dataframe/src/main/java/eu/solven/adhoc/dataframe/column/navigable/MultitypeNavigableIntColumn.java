@@ -123,8 +123,8 @@ public class MultitypeNavigableIntColumn
 	}
 
 	@Override
-	public Optional<IValueReceiver> appendIfOptimal(Integer key) {
-		return appendIfOptimal(key.intValue());
+	public Optional<IValueReceiver> appendIfOptimal(Integer key, boolean distinct) {
+		return appendIfOptimal(key.intValue(), distinct);
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class MultitypeNavigableIntColumn
 	 *         existing entry; an empty {@link Optional} when the key would require a random insertion.
 	 */
 	@Override
-	public Optional<IValueReceiver> appendIfOptimal(int key) {
+	public Optional<IValueReceiver> appendIfOptimal(int key, boolean distinct) {
 		IValueReceiver valueReceiver = write(key, true, false);
 
 		if (INSERTION_REJECTED == valueReceiver) {
