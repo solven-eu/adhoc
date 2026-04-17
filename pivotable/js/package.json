@@ -6,7 +6,7 @@
     "devDependencies": {
         "@playwright/test": "1.59.1",
         "@types/node": "24.12.2",
-        "@vitejs/plugin-vue": "6.0.5",
+        "@vitejs/plugin-vue": "6.0.6",
         "@vitest/ui": "^4.0.0",
         "eslint": "9.39.4",
         "eslint-config-prettier": "10.1.8",
