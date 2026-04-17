@@ -72,10 +72,10 @@ public class TabularRecordLogger {
 			return (input, _) -> {
 				int currentIn = nbIn.incrementAndGet();
 				if (currentIn == 1 && isExplain) {
-					log.info("[EXPLAIN] Aggregates from table accepted a first row (table={})", table);
+					log.info("[EXPLAIN] Records from table={} accepted a first row", table);
 				}
 				if (logAboutRow(isDebug, currentIn)) {
-					log.info("[DEBUG] Accepted row #{}: {} (table={})", currentIn, input, table);
+					log.info("[DEBUG] Records from table={} accepted row #{}: {}", table, currentIn, input);
 				}
 			};
 		} else {

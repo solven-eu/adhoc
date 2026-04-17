@@ -931,7 +931,35 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 												.build())
 								.build())
 				.hasSize(2);
+	}
 
+	@Test
+	public void testMakeSubQueries_unknownMeasure_singleSubCube_throws() {
+		InMemoryTable table1 = InMemoryTable.builder().name("t1").build();
+		table1.add(Map.of("k1", 1));
+
+		UnsafeMeasureForest forest1 = UnsafeMeasureForest.builder().name("t1").build();
+		forest1.addMeasure(k1Sum);
+
+		CubeWrapper cube1 = wrapInCube(forest1, table1);
+
+		// Composite with a single subCube that only knows k1.
+		CompositeCubesTableWrapper composite = CompositeCubesTableWrapper.builder().cube(cube1).build();
+
+		// Composite forest references a measure unknown to the single subCube.
+		UnsafeMeasureForest compositeForest = UnsafeMeasureForest.builder().name("composite").build();
+		compositeForest.addMeasure(Aggregator.sum("unknownMeasure"));
+
+		CubeWrapper compositeCube = makeComposite(composite, compositeForest);
+
+		// Querying the unknown measure: makeSubQueries should throw because no subCube recognises it.
+		Assertions
+				.assertThatThrownBy(() -> compositeCube.execute(CubeQuery.builder().measure("unknownMeasure").build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.rootCause()
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("unknownMeasure")
+				.hasMessageContaining("not known by any subCube");
 	}
 
 }

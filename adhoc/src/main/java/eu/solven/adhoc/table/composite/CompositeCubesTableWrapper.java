@@ -204,6 +204,18 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 compositeQuery) {
+		Map<String, ICubeQuery> cubeToQuery = makeSubQueries(queryPod, compositeQuery);
+
+		// Actual execution is the only concurrent section
+		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
+
+		// not distinct slices as different subCubes may refer to the same slices
+		return new SuppliedTabularRecordConsumingStream(compositeQuery,
+				false,
+				() -> IConsumingStream.fromStream(openStream(compositeQuery, cubeToView)));
+	}
+
+	protected Map<String, ICubeQuery> makeSubQueries(QueryPod queryPod, TableQueryV2 compositeQuery) {
 		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
@@ -221,19 +233,39 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			}
 		});
 
-		// Actual execution is the only concurrent section
-		final Map<String, ITabularView> cubeToView = executeSubQueries(queryPod, cubeToQuery);
+		checkAllMeasuresHaveSubQuery(compositeQuery, cubeToQuery);
 
-		// not distinct slices as different subCubes may refer to the same slices
-		return new SuppliedTabularRecordConsumingStream(compositeQuery,
-				false,
-				() -> IConsumingStream.fromStream(openStream(compositeQuery, cubeToView)));
+		return cubeToQuery;
+	}
+
+	/**
+	 * Throws if a queried measure has no subQuery — meaning no subCube recognises it.
+	 */
+	protected void checkAllMeasuresHaveSubQuery(TableQueryV2 compositeQuery, Map<String, ICubeQuery> cubeToQuery) {
+		if (EmptyAggregation.isEmpty(compositeQuery.getAggregators())) {
+			return;
+		}
+
+		Set<String> coveredMeasures = cubeToQuery.values()
+				.stream()
+				.flatMap(q -> q.getMeasures().stream().map(IMeasure::getName))
+				.collect(Collectors.toSet());
+
+		Set<String> queriedMeasures =
+				compositeQuery.getAggregators().stream().map(FilteredAggregator::getAlias).collect(Collectors.toSet());
+
+		// BEWARE Do not check only for cubeToQuery emptyness as we may have both a valid measure and an unknown measure
+		Set<String> orphans = Sets.difference(queriedMeasures, coveredMeasures);
+		if (!orphans.isEmpty()) {
+			throw new IllegalArgumentException(
+					"Measures %s are not known by any subCube — check measure definitions.".formatted(orphans));
+		}
 	}
 
 	/**
 	 * This method will check the columns in the compositeQuery are valid. This is done early as in later phase, each
 	 * subCube will discard unknown columns, supposing another cube will take it in charge.
-	 * 
+	 *
 	 * @param compositeQuery
 	 */
 	protected void checkColumns(TableQueryV2 compositeQuery) {
