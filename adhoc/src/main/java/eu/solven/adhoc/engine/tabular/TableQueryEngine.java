@@ -932,7 +932,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	protected Map<String, ?> valuesForSuppressedColumns(Set<String> suppressedColumns, TableQueryStep queryStep) {
 		return suppressedColumns.stream()
 				.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
-						c -> IColumnGenerator.COORDINATE_GENERATED));
+						_ -> IColumnGenerator.COORDINATE_GENERATED));
 	}
 
 	/**
