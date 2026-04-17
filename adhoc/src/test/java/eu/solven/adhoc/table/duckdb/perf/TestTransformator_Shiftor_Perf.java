@@ -101,26 +101,18 @@ public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements I
 
 			DuckDBAppender appender = duckDBC.createAppender(tableName);
 
-			for (int i = 0; i < maxCardinality; i++) {
-				for (int d = 0; d < nbDays; d++) {
+			for (int d = 0; d < nbDays; d++) {
+				LocalDate dayToInsert = today.minusDays(d);
+				for (int i = 0; i < maxCardinality; i++) {
 					appender.beginRow();
 
 					appender.append("A");
 					// Write as long to reduce the effect of ICoordinateNormalizer
 					appender.append((long) i);
-					appender.append(today.minusDays(d));
+					appender.append(dayToInsert);
 					appender.append((i + (nbDays - d) * (nbDays - d)));
 
 					appender.endRow();
-					// dsl.insertInto(DSL.table(tableName))
-					// .set(ImmutableMap.<String, Object>builder()
-					// .put("l", "A")
-					// // Write as long to reduce the effect of ICoordinateNormalizer
-					// .put("row_index", (long) i)
-					// .put("d", today.minusDays(d))
-					// .put("k1", (i + (nbDays - d) * (nbDays - d)))
-					// .build())
-					// .execute();
 				}
 			}
 		});
