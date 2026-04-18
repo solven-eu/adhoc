@@ -56,3 +56,4 @@ See [Calculated Columns](calculated-columns.md) for the full reference.
 - [Calculated Columns](calculated-columns.md)
 - [Tables](tables.md)
 - [Debug / Investigations](debug.md)
+

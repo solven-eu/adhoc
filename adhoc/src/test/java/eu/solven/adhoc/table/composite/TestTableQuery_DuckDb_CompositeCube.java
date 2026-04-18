@@ -168,11 +168,11 @@ public class TestTableQuery_DuckDb_CompositeCube extends ADuckDbJooqTest impleme
 				.containsEntry(k2Sum.getColumnName(), Integer.class)
 				.containsEntry(k3Sum.getColumnName(), Integer.class)
 				.containsEntry("k4", Number.class)
-				.containsEntry("~CompositeSlicer", String.class)
+				.containsEntry(CompositeCubesTableWrapper.DEFAULT_SLICER, String.class)
 				.hasSize(8);
 
 		Assertions.assertThat(cube3.getColumns()).anySatisfy(c -> {
-			Assertions.assertThat(c.getName()).isEqualTo("~CompositeSlicer");
+			Assertions.assertThat(c.getName()).isEqualTo(CompositeCubesTableWrapper.DEFAULT_SLICER);
 			Assertions.assertThat(c.getTags()).contains("meta");
 		}).hasSize(8);
 

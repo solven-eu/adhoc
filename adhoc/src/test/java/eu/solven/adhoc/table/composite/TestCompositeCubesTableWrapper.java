@@ -424,7 +424,8 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 		CompositeCubesTableWrapper compositeCubesTable =
 				CompositeCubesTableWrapper.builder().cube(cube1).cube(cube2).build();
 
-		Assertions.assertThat(compositeCubesTable.getColumnTypes()).containsKey("~CompositeSlicer");
+		Assertions.assertThat(compositeCubesTable.getColumnTypes())
+				.containsKey(CompositeCubesTableWrapper.DEFAULT_SLICER);
 	}
 
 	@Test
@@ -845,9 +846,9 @@ public class TestCompositeCubesTableWrapper extends ARawDagTest implements IAdho
 									.build())
 					.containsEntry("k1",
 							ColumnMetadata.builder().name("k1").tag("composite-full").type(Integer.class).build())
-					.containsEntry("~CompositeSlicer",
+					.containsEntry(CompositeCubesTableWrapper.DEFAULT_SLICER,
 							ColumnMetadata.builder()
-									.name("~CompositeSlicer")
+									.name(CompositeCubesTableWrapper.DEFAULT_SLICER)
 									.tag("meta")
 									.tag("composite-full")
 									.type(String.class)

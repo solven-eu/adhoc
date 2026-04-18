@@ -108,6 +108,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
 
+	/**
+	 * Default name for the virtual column (see {@link #optCubeSlicer}) exposed by the composite cube to let a user
+	 * slice through underlying cubes. The leading {@code ~} ensures it sorts after most standard column names.
+	 */
+	public static final String DEFAULT_SLICER = "~CompositeSlicer";
+
 	@NonNull
 	@Default
 	@Getter
@@ -125,8 +131,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	// Useful to let a user slice through underlying cubes
 	@NonNull
 	@Default
-	// Default name starts with `~` to ensure it is after most standard column names
-	final Optional<String> optCubeSlicer = Optional.of("~CompositeSlicer");
+	final Optional<String> optCubeSlicer = Optional.of(DEFAULT_SLICER);
 
 	@Override
 	public List<ColumnMetadata> getColumns() {
