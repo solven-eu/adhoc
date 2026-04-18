@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
-import org.duckdb.DuckDBAppender;
-import org.duckdb.DuckDBConnection;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -96,26 +94,16 @@ public class TestTransformator_Shiftor_Perf extends ADuckDbJooqTest implements I
 				.column("k1", SQLDataType.INTEGER)
 				.execute();
 
-		dsl.connection(c -> {
-			DuckDBConnection duckDBC = c.unwrap(DuckDBConnection.class);
-
-			DuckDBAppender appender = duckDBC.createAppender(tableName);
-
-			for (int d = 0; d < nbDays; d++) {
-				LocalDate dayToInsert = today.minusDays(d);
-				for (int i = 0; i < maxCardinality; i++) {
-					appender.beginRow();
-
-					appender.append("A");
-					// Write as long to reduce the effect of ICoordinateNormalizer
-					appender.append((long) i);
-					appender.append(dayToInsert);
-					appender.append((i + (nbDays - d) * (nbDays - d)));
-
-					appender.endRow();
-				}
-			}
-		});
+		// k1 = row_index + (nbDays - dayOffset)^2
+		dsl.execute("""
+				INSERT INTO %s (l, row_index, d, k1)
+				SELECT 'A',
+				       i,
+				       CURRENT_DATE - CAST(day_offset AS INTEGER),
+				       i + ({0} - day_offset) * ({0} - day_offset)
+				FROM generate_series(0, {1}) AS gs1(day_offset),
+				     generate_series(0, {2}) AS gs2(i)
+				""".formatted(tableName), nbDays, nbDays - 1, maxCardinality - 1);
 	}
 
 	public IStopwatchFactory makeStopwatchFactory() {

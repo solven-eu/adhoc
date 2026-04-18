@@ -50,6 +50,7 @@ import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -307,6 +308,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	protected Stream<ITabularRecord> openStream(TableQueryV2 compositeQuery,
 			final Map<String, ITabularView> cubeToView) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
+		Set<String> crossCubeCalculated = computeCrossCubeCalculatedColumns();
 
 		return cubeToView.entrySet().stream().flatMap(e -> {
 			ICubeWrapper subCube = nameToCube.get(e.getKey());
@@ -323,7 +325,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				missingColumnsAsmask = Map.of();
 			} else {
 				missingColumnsAsmask = LinkedHashMap.newLinkedHashMap(subMissingColumns.size());
-				subMissingColumns.forEach(column -> missingColumnsAsmask.put(column, missingColumn(subCube, column)));
+				subMissingColumns.forEach(column -> missingColumnsAsmask.put(column,
+						missingColumnMask(subCube, column, crossCubeCalculated)));
 			}
 
 			ITabularView subView = e.getValue();
@@ -334,6 +337,19 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				};
 			});
 		});
+	}
+
+	/**
+	 * Resolves the value to mask into a sub-cube's slice for a missing groupBy column. Cross-cube calculated columns
+	 * (see {@link #computeCrossCubeCalculatedColumns()}) collapse to {@link IColumnGenerator#COORDINATE_GENERATED} so
+	 * the sub-cube's row merges with rows from cubes that declare the calculated column; other missing columns fall
+	 * back to {@link #missingColumn(ICubeWrapper, String)} (typically the sub-cube name).
+	 */
+	protected Object missingColumnMask(ICubeWrapper subCube, String column, Set<String> crossCubeCalculated) {
+		if (crossCubeCalculated.contains(column)) {
+			return IColumnGenerator.COORDINATE_GENERATED;
+		}
+		return missingColumn(subCube, column);
 	}
 
 	protected Map<String, ICubeWrapper> getNameToCube() {
@@ -534,6 +550,32 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	/**
+	 * A column is <em>cross-cube calculated</em> if at least one sub-cube exposes it with the {@code generated} or
+	 * {@code calculated} tag in {@link ICubeWrapper#getColumns()} — i.e. it is produced by an {@link IColumnGenerator}
+	 * (e.g. an {@code IDecomposition} inside a Dispatchor) or by a {@code FunctionCalculatedColumn} /
+	 * {@code EvaluatedExpressionColumn} registered on a {@code ColumnsManager}.
+	 *
+	 * When such a column appears in a composite query, sub-cubes that do NOT declare it must treat filters / groupBys
+	 * on it as orthogonal (the column is calculated from their perspective too), rather than translating them to
+	 * {@code matchNone} or a cube-name fallback coordinate. This preserves the same semantics as a declaring sub-cube,
+	 * where a filter on a calculated column is auto-suppressed for measures that do not flow through it, and a groupBy
+	 * collapses to {@link IColumnGenerator#COORDINATE_GENERATED}.
+	 *
+	 * @return the set of column names calculated in at least one sub-cube.
+	 */
+	protected Set<String> computeCrossCubeCalculatedColumns() {
+		Set<String> calculated = new LinkedHashSet<>();
+		cubes.forEach(cube -> cube.getColumns().forEach(metadata -> {
+			Set<String> tags = metadata.getTags();
+			// Tag strings are produced by CubeWrapper.getColumnsWithoutAliases; no shared constant exists today.
+			if (tags.contains("generated") || tags.contains("calculated")) {
+				calculated.add(metadata.getName());
+			}
+		}));
+		return calculated;
+	}
+
+	/**
 	 *
 	 * @param subCube
 	 * @param filter
@@ -543,8 +585,15 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * @return the equivalent {@link ISliceFilter} given the subset of columns
 	 */
 	protected ISliceFilter filterForColumns(ICubeWrapper subCube, ISliceFilter filter, Predicate<String> isSubColumn) {
-		return SimpleFilterEditor
-				.suppressColumn(filter, isSubColumn.negate(), f -> onMissingFilterColumn(subCube, f), Optional.empty());
+		Set<String> crossCubeCalculated = computeCrossCubeCalculatedColumns();
+		return SimpleFilterEditor.suppressColumn(filter, isSubColumn.negate(), f -> {
+			if (crossCubeCalculated.contains(f.getColumn())) {
+				// The column is calculated in some other sub-cube; treat it as calculated for this sub-cube too,
+				// so the filter is auto-suppressed rather than translated to matchNone.
+				return ISliceFilter.MATCH_ALL;
+			}
+			return onMissingFilterColumn(subCube, f);
+		}, Optional.empty());
 	}
 
 	protected ISliceFilter onMissingFilterColumn(ICubeWrapper subCube, IColumnFilter columnFilter) {

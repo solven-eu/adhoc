@@ -67,25 +67,20 @@ public class InMemoryJoinDefinition implements IJoinDefinition {
 
 	@Override
 	public Collection<ColumnMetadata> getColumns() {
-		SetMultimap<String, Class<?>> columnToClasses = MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+		SetMultimap<String, ColumnMetadata> columnToMetadata =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
 
 		data.values().forEach(joined -> {
 			joined.forEach((column, value) -> {
 				if (value != null) {
-					columnToClasses.put(column, value.getClass());
+					columnToMetadata.put(column,
+							ColumnMetadata.builder().name(column).type(value.getClass()).tag("joined").build());
 				}
 			});
 		});
 
-		return Multimaps.asMap(columnToClasses)
-				.entrySet()
-				.stream()
-				.map(r -> ColumnMetadata.builder()
-						.name(r.getKey())
-						// TODO Merge classes
-						.type(r.getValue().iterator().next())
-						.tag("joined")
-						.build())
-				.toList();
+		// Delegate class unification to `ColumnMetadata.merge`, which computes the common ancestor of observed types
+		// rather than picking an arbitrary one.
+		return Multimaps.asMap(columnToMetadata).values().stream().map(ColumnMetadata::merge).toList();
 	}
 }

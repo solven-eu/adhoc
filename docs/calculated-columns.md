@@ -104,4 +104,5 @@ bug — it should be done for any `ICalculatedColumn`. Track the fix via the TOD
 - [Partitionor](partitionor.md) — GROUP BY widening, which often pairs with a calculated column.
 - [Custom Measures](custom-measure.md) — arbitrary measure evaluation logic.
 - [Tables](tables.md) — the `ITableWrapper` that calculated columns post-process.
+- [FAQ](faq.md) — recurrent cases, including columns missing from the database.
 
