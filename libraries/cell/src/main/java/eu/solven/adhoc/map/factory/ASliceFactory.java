@@ -69,18 +69,6 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
-	// // Supplier as the sliceFactory may be configured lazily
-	// private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> MapOverLists.builder()
-	// .factory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()))
-	// .keys(SequencedSetLikeList.fromSet(Set.of()))
-	// .sequencedValues(ImmutableList.of())
-	// .build());
-	//
-	public static IAdhocMap of() {
-		// return EMPTY.get();
-		throw new NotYetImplementedException("TODO");
-	}
-
 	@Override
 	public void invalidateAll() {
 		SequencedSetUnsafe.invalidateAll();
@@ -89,19 +77,6 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 	@Override
 	public Object normalizeCoordinate(Object raw) {
 		return valueNormalizer.normalizeCoordinate(raw);
-	}
-
-	/**
-	 * Describe a {@link Map}-like structure by its keys and its values. The keySet and values can be zipped together
-	 * (i.e. iterated concurrently).
-	 *
-	 * @author Benoit Lacelle
-	 */
-	@Deprecated(since = "not used anymore", forRemoval = true)
-	public interface IHasEntries {
-		Collection<? extends String> getKeys();
-
-		Collection<?> getValues();
 	}
 
 	/**
@@ -124,21 +99,5 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 		// Assume other Set are ordered
 		return false;
-	}
-
-	protected IAdhocMap buildMapNaively(IHasEntries hasEntries) {
-		Collection<? extends String> keys = hasEntries.getKeys();
-		Collection<?> values = hasEntries.getValues();
-
-		if (keys.size() != values.size()) {
-			throw new IllegalArgumentException(
-					"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
-		}
-
-		return MapOverLists.builder()
-				.factory(this)
-				.keys(SequencedSetUnsafe.internKeyset(keys))
-				.sequencedValues(ImmutableList.copyOf(values))
-				.build();
 	}
 }

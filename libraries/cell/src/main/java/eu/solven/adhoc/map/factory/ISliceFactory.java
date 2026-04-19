@@ -29,8 +29,6 @@ import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.map.IAdhocMap;
-import eu.solven.adhoc.map.factory.ASliceFactory.IHasEntries;
 import eu.solven.adhoc.query.cube.IGroupBy;
 
 /**
@@ -60,9 +58,6 @@ public interface ISliceFactory {
 	default IMapBuilderPreKeys newMapBuilder(String... keys) {
 		return newMapBuilder(ImmutableList.copyOf(keys));
 	}
-
-	@Deprecated(since = "not used anymore", forRemoval = true)
-	IAdhocMap buildMap(IHasEntries hasEntries);
 
 	/**
 	 * Runs {@code body} with any per-thread scopes required by this slice factory's backing storage. The default is a
