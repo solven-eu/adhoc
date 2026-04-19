@@ -41,7 +41,7 @@ import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ColumnSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.testutil.MapVerifier;
+import eu.solven.pepper.unittest.MapVerifier;
 
 public class TestColumnSliceFactory {
 

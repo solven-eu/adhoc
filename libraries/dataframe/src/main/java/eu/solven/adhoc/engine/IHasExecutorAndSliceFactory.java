@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,42 +20,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.map.factory;
+package eu.solven.adhoc.engine;
 
-import java.util.Map;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
-import com.google.common.collect.ImmutableList;
-
-import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.map.factory.ISliceFactory;
 
 /**
- * Enable building {@link Map} and {@link ISlice} in Adhoc context.
- * 
- * In Adhoc, we generate tons of {@link Map}-like for a given {@link IGroupBy}. Which means a tons of {@link Map}-like
- * for a predefined keySet. Given {@link Map} may be sorted, to enable faster merging (see
- * {@link IDagBottomUpStrategy}).
- * 
+ * Marker for contexts exposing both a {@link ISliceFactory} (for building {@code IAdhocMap}s) and a
+ * {@link ListeningExecutorService} (for dispatching parallel work). Implemented by {@link IAdhocFactories} and
+ * {@code QueryPod} so helpers — notably {@link PodExecutors} — can accept either transparently and centralise
+ * scope-binding around dispatched tasks.
+ *
  * @author Benoit Lacelle
  */
-@FunctionalInterface
-public interface ISliceFactory {
+public interface IHasExecutorAndSliceFactory {
 
 	/**
-	 * BEWARE The input {@link Iterable} must be sequenced. Typically, `Set.of` is rejected as not sequenced.
-	 * 
-	 * @param keys
-	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
+	 * @return the slice factory used to allocate {@code IAdhocMap} instances.
 	 */
-	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
+	ISliceFactory getSliceFactory();
 
 	/**
-	 * 
-	 * @param keys
-	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
+	 * @return the executor service onto which parallel work should be dispatched.
 	 */
-	default IMapBuilderPreKeys newMapBuilder(String... keys) {
-		return newMapBuilder(ImmutableList.copyOf(keys));
-	}
+	ListeningExecutorService getExecutorService();
 
 }

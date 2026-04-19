@@ -58,7 +58,7 @@ public class MyCombination implements ICombination {
 ### `ACustomMarkerCombination` (JSONPath-style lookup)
 
 For combinations that read a single value at a known path inside a `Map<String, ?>` marker, extend
-[`ACustomMarkerCombination`](../adhoc/src/main/java/eu/solven/adhoc/measure/custom_marker/ACustomMarkerCombination.java)
+[`ACustomMarkerCombination`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/main/java/eu/solven/adhoc/measure/custom_marker/ACustomMarkerCombination.java)
 and just declare the path:
 
 ```java
@@ -117,10 +117,10 @@ String ccyTo = (String) slice.getQueryStep().getCustomMarker();
 ```
 
 The full referential implementation lives in
-[`ForeignExchangeCombination`](../adhoc/src/test/java/eu/solven/adhoc/query/foreignexchange/ForeignExchangeCombination.java)
+[`ForeignExchangeCombination`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/test/java/eu/solven/adhoc/query/foreignexchange/ForeignExchangeCombination.java)
 (it accepts either a raw `String` like `"USD"` or a `Map` with a `ccyTo` key, and falls back to a
 default when neither is present) and is exercised end-to-end in
-[`TestCubeQueryFx`](../adhoc/src/test/java/eu/solven/adhoc/query/foreignexchange/TestCubeQueryFx.java).
+[`TestCubeQueryFx`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/test/java/eu/solven/adhoc/query/foreignexchange/TestCubeQueryFx.java).
 
 ### Forcing a currency for a specific measure
 
@@ -154,10 +154,10 @@ forest.addMeasure(CustomMarkerEditor.builder()
   marker is part of the step's `equals`/`hashCode` — see [§ What it is](#what-it-is)).
 
 The referential implementation is
-[`CustomMarkerEditor`](../adhoc/src/test/java/eu/solven/adhoc/query/custommarker/CustomMarkerEditor.java)
+[`CustomMarkerEditor`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/test/java/eu/solven/adhoc/query/custommarker/CustomMarkerEditor.java)
 (a test-scope `IHasUnderlyingMeasures` measure type demonstrating the pattern), and the end-to-end
 behaviour — including the three-column "dynamic / forced-EUR / forced-USD" matrix — is covered by
-[`TestCustomMarkerEnforcer`](../adhoc/src/test/java/eu/solven/adhoc/query/custommarker/TestCustomMarkerEnforcer.java).
+[`TestCustomMarkerEnforcer`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/test/java/eu/solven/adhoc/query/custommarker/TestCustomMarkerEnforcer.java).
 
 The pattern generalises beyond FX: any time a measure needs to run its subtree *as if* the user
 had configured a different marker (scenario override, "what-if" toggle, frozen snapshot date, ...),
@@ -168,7 +168,7 @@ an editor measure in front of the subtree is the simplest tool.
 When a query is received over the wire (e.g. as JSON), the marker arrives as a raw `Map<String,
 Object>` — Jackson has no way to know which POJO to deserialise it into. If the measure expects a
 typed object, the schema can install an
-[`ICustomMarkerTranscoder`](../adhoc/src/main/java/eu/solven/adhoc/beta/schema/ICustomMarkerTranscoder.java)
+[`ICustomMarkerTranscoder`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/main/java/eu/solven/adhoc/beta/schema/ICustomMarkerTranscoder.java)
 to convert the raw map into the typed form before the engine hands it to the measures:
 
 ```java
@@ -189,7 +189,7 @@ then placed on the `CubeQueryStep` and seen by every measure in the DAG. The tra
 the target `ICubeWrapper` so a single schema can apply different transcoding rules per cube.
 
 A unit-test of this end-to-end flow lives in
-[`TestAdhocSchema.testCustomMarker_rawMapToTypedRecord`](../adhoc/src/test/java/eu/solven/adhoc/beta/schema/TestAdhocSchema.java).
+[`TestAdhocSchema.testCustomMarker_rawMapToTypedRecord`](https://github.com/solven-eu/adhoc/blob/master/adhoc/src/test/java/eu/solven/adhoc/beta/schema/TestAdhocSchema.java).
 
 ## Schema-side metadata for UIs — `CustomMarkerMetadata`
 
@@ -204,9 +204,9 @@ and `AdhocSchema.CustomMarkerMatchingKey`.
 ## Customising `AdhocSchema` from a Spring application — `IAdhocSchemaCustomizer`
 
 `AdhocSchema` is built by Pivotable's `InjectPivotableSelfEndpointConfig.registerSelfSchema(...)`
-([source](../pivotable/server-core/src/main/java/eu/solven/adhoc/pivotable/app/InjectPivotableSelfEndpointConfig.java)).
+([source](https://github.com/solven-eu/adhoc/blob/master/pivotable/server-core/src/main/java/eu/solven/adhoc/pivotable/app/InjectPivotableSelfEndpointConfig.java)).
 That bean walks the application context and applies every registered
-[`IAdhocSchemaCustomizer`](../pivotable/server-core/src/main/java/eu/solven/adhoc/pivotable/app/IAdhocSchemaCustomizer.java)
+[`IAdhocSchemaCustomizer`](https://github.com/solven-eu/adhoc/blob/master/pivotable/server-core/src/main/java/eu/solven/adhoc/pivotable/app/IAdhocSchemaCustomizer.java)
 to the schema's builder before `build()` is called, so each customizer can install its own
 `customMarkerCleaner`, register `CustomMarkerMetadata` entries, or add tables / forests / cubes.
 

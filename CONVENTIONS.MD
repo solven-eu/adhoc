@@ -267,6 +267,14 @@ A dedicated workflow (`.github/workflows/infer.yml`) runs on every push/PR to `m
 - **What to cover**: at minimum the nominal path and the most likely edge cases (null/empty input, boundary values, mixed types). Pure interfaces and Lombok-generated code (`@Value`, `@Builder`) do not need dedicated tests.
 - **Test placement**: test classes live in the same Maven module under `src/test/java/`, named `Test<ProductionClass>` in the same package.
 
+## Test Utilities & JPMS
+
+Cross-module test helpers (like `MapVerifier`) are shared via the `-tests.jar` classifier Maven ships for every module. That classifier is consumed as an **automatic module** (`<automatic.module.name>.tests`) by downstream modules, which creates one structural trap:
+
+- **Never place a test-utility class in a package that the module's main `module-info.java` exports.** The main module and the test-jar automatic module would both claim the package, triggering a JPMS split-package error at the downstream consumer's compile time (often only reproduced when the consumer builds in isolation against `~/.m2`, not in a full reactor build — easy to miss in CI).
+- **Do not reserve packages in `module-info.java` for future test-utilities.** Declaring `exports eu.solven.adhoc.xxx.testutil;` with only a placeholder class in main sets the same trap; add the export only when real production code needs it.
+- **Convention for test-util package names**: keep them under a `testutil` or similar test-only package root that main does **not** export (e.g. `eu.solven.adhoc.testutil.map`, `eu.solven.adhoc.testutil.slice`). This guarantees the package is owned exclusively by the test-jar automatic module and that `-tests.jar` consumers resolve it cleanly.
+
 ## Comments & Documentation
 
 - **Be synthetic, not verbose.** Long comments are harder to keep accurate than short ones and add visual noise. Default to the tightest form that still conveys the intent; expand only when the non-obvious context genuinely needs more words.

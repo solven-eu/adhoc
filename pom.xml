@@ -70,7 +70,7 @@
 
 		<lombok.version>1.18.44</lombok.version>
 
-		<pepper.version>5.6</pepper.version>
+		<pepper.version>5.7-SNAPSHOT</pepper.version>
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will
@@ -1024,6 +1024,9 @@
 				<!-- Dependency will be checked with style -->
 				<enforcer.skip>true</enforcer.skip>
 
+				<!-- SBOM generation is slow and not needed for fast recompiles -->
+				<cyclonedx.skip>true</cyclonedx.skip>
+
 				<skipTests>true</skipTests>
 				<skipITs>true</skipITs>
 				<jacoco.skip>true</jacoco.skip>
@@ -1048,6 +1051,9 @@
 
 				<!-- Dependency will be checked with style -->
 				<enforcer.skip>true</enforcer.skip>
+
+				<!-- SBOM generation is slow and not needed when skipping style checks -->
+				<cyclonedx.skip>true</cyclonedx.skip>
 			</properties>
 		</profile>
 

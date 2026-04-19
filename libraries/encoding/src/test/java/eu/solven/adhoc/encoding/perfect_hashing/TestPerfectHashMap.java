@@ -30,7 +30,7 @@ import java.util.SequencedSet;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.testutil.MapVerifier;
+import eu.solven.pepper.unittest.MapVerifier;
 
 public class TestPerfectHashMap {
 

@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,40 +22,34 @@
  */
 package eu.solven.adhoc.map.factory;
 
-import java.util.Map;
-
-import com.google.common.collect.ImmutableList;
-
-import eu.solven.adhoc.cuboid.slice.ISlice;
-import eu.solven.adhoc.query.cube.IGroupBy;
+import java.util.concurrent.Callable;
 
 /**
- * Enable building {@link Map} and {@link ISlice} in Adhoc context.
- * 
- * In Adhoc, we generate tons of {@link Map}-like for a given {@link IGroupBy}. Which means a tons of {@link Map}-like
- * for a predefined keySet. Given {@link Map} may be sorted, to enable faster merging (see
- * {@link IDagBottomUpStrategy}).
- * 
+ * Binds any per-thread scopes required by a scoped resource (e.g. a {@code ScopedValue}-backed storage layer) around a
+ * body. {@link ISliceFactory} implementations that need per-thread scope binding (typically a backing
+ * {@code ScopedValueAppendableTable}) should implement this interface — call sites then dispatch through
+ * {@code PodExecutors} rather than reaching into {@link ISliceFactory} directly.
+ *
+ * The default flow for factories not implementing this interface is a plain no-op (just call the body).
+ *
  * @author Benoit Lacelle
  */
 @FunctionalInterface
-public interface ISliceFactory {
+public interface IScopeBinder {
 
 	/**
-	 * BEWARE The input {@link Iterable} must be sequenced. Typically, `Set.of` is rejected as not sequenced.
-	 * 
-	 * @param keys
-	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
+	 * Invokes {@code body} with any per-thread scopes required by this implementation bound.
+	 *
+	 * @param <R>
+	 *            the body's return type
+	 * @param body
+	 *            the body to run
+	 * @return the value returned by {@code body}
+	 * @throws Exception
+	 *             any checked exception propagated from {@code body}
 	 */
-	IMapBuilderPreKeys newMapBuilder(Iterable<? extends String> keys);
-
-	/**
-	 * 
-	 * @param keys
-	 * @return a {@link IMapBuilderPreKeys} for given set of keys.
-	 */
-	default IMapBuilderPreKeys newMapBuilder(String... keys) {
-		return newMapBuilder(ImmutableList.copyOf(keys));
-	}
+	// Mirrors Callable.call's `throws Exception` so checked exceptions from the body propagate transparently.
+	@SuppressWarnings("PMD.SignatureDeclareThrowsException")
+	<R> R bindScope(Callable<R> body) throws Exception;
 
 }

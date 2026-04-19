@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.AtomicLongMap;
 import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.fsst.IFsstConstants;

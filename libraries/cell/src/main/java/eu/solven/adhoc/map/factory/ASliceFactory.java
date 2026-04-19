@@ -27,16 +27,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasCache;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 

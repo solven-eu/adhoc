@@ -29,12 +29,26 @@ import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.testutil.MapVerifier;
+import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
+import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.pepper.unittest.MapVerifier;
 
 public class TestMutablePerfectHashMap {
 
 	@Test
 	public void testMapContract() {
+		IValueProvider p = new IValueProvider() {
+
+			@Override
+			public void acceptReceiver(IValueReceiver valueReceiver) {
+				// TODO Auto-generated method stub
+
+			}
+		};
+
+		IValueProviderTestHelpers.getDouble(p);
+
 		MapVerifier.<String, Integer>forSupplier(MutablePerfectHashMap::new)
 				.withSampleKeys("a", "b", "c", "d")
 				.withSampleValues(1, 2, 3)

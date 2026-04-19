@@ -1,5 +1,6 @@
 # AdHoc - Formulas for OLAP
 
+[![Documentation](https://img.shields.io/badge/docs-solven.eu%2Fadhoc-blue)](https://www.solven.eu/adhoc/)
 [![Maven Central](https://img.shields.io/maven-central/v/eu.solven.adhoc/adhoc)](https://central.sonatype.com/artifact/eu.solven.adhoc/adhoc)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=adhoc)
 [![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=adhoc&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=adhoc)
@@ -118,6 +119,10 @@ Assertions.assertThat(mapBased.getCoordinatesToValues())
 ```
 
 7. Execute your query
+
+# Documentation
+
+The full documentation is deployed at [https://www.solven.eu/adhoc/](https://www.solven.eu/adhoc/).
 
 # Concepts
 

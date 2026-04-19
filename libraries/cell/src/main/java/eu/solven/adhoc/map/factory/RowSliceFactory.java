@@ -82,7 +82,6 @@ public class RowSliceFactory extends ASliceFactory {
 			return this;
 		}
 
-
 		@Override
 		public IAdhocMap build() {
 			return factory.buildMap(this);
@@ -98,7 +97,13 @@ public class RowSliceFactory extends ASliceFactory {
 
 	public IAdhocMap buildMap(MapBuilderPreKeys hasEntries) {
 		Collection<? extends String> keys = hasEntries.getKeys();
-		Collection<?> values = hasEntries.getValues().build();
+		ImmutableList.Builder<Object> valuesBuilder = hasEntries.getValues();
+		Collection<?> values;
+		if (valuesBuilder == null) {
+			values = ImmutableList.of();
+		} else {
+			values = valuesBuilder.build();
+		}
 
 		if (keys.size() != values.size()) {
 			throw new IllegalArgumentException(

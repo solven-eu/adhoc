@@ -58,7 +58,7 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class ColumnSliceFactory extends ASliceFactory {
+public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 
 	@Default
 	@NonNull
@@ -163,7 +163,7 @@ public class ColumnSliceFactory extends ASliceFactory {
 	}
 
 	@Override
-	public <R> R callWithScope(Callable<R> body) throws Exception {
+	public <R> R bindScope(Callable<R> body) throws Exception {
 		// Delegate to the backing table when it requires per-thread scope binding (e.g. ScopedValueAppendableTable).
 		// ThreadLocal-backed tables inherit the no-op default.
 		IAppendableTable table = pageFactorySupplier.get();

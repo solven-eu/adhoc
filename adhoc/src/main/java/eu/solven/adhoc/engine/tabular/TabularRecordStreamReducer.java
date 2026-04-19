@@ -44,6 +44,7 @@ import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid.IOpenedSlice;
+import eu.solven.adhoc.engine.PodExecutors;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.groupingset.GroupingSetMergeableGrid;
 import eu.solven.adhoc.engine.tabular.groupingset.IGroupingSetAnalyzer;
@@ -192,9 +193,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					// Wrap the per-partition worker task with the slice-factory scope on the virtual thread that
 					// actually consumes the queue (once per partition, for the whole drain loop — so scope setup
 					// is paid once per consumer, not per element).
-					// TODO Should `queryPod.getExecutorService()` automatically wrap `queryPod.getSliceFactory()`?
-					Executor scopedExecutor = task -> queryPod.getExecutorService()
-							.execute(() -> queryPod.getSliceFactory().runWithScope(task));
+					Executor scopedExecutor = PodExecutors.scopedExecutor(queryPod);
 					PartitioningHelpers.shardingForEach(ShardingForEachParameters.<GroupByAndTabularRecord>builder()
 							.stream(records2)
 							.nbPartitions(nbPartitions)
