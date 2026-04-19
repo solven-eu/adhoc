@@ -40,7 +40,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class TestGroupByColumns {
 	@Test
 	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn").verify();
+		EqualsVerifier.forClass(GroupByColumns.class).withIgnoredFields("cachedNameToColumn", "retainCache").verify();
 	}
 
 	@Test

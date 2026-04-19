@@ -23,6 +23,8 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableList;
 
@@ -61,5 +63,52 @@ public interface ISliceFactory {
 
 	@Deprecated(since = "not used anymore", forRemoval = true)
 	IAdhocMap buildMap(IHasEntries hasEntries);
+
+	/**
+	 * Runs {@code body} with any per-thread scopes required by this slice factory's backing storage. The default is a
+	 * no-op (just invokes the body). Implementations backed by a scoped resource (e.g.
+	 * {@link eu.solven.adhoc.encoding.page.ScopedValueAppendableTable}) override this to bind their scope around the
+	 * body. Every dispatch site that pushes work onto a fresh thread (e.g. a virtual-thread {@code supplyAsync}) should
+	 * wrap its submitted task with {@link #callWithScope} / {@link #runWithScope}.
+	 *
+	 * @return the value returned by {@code body}.
+	 */
+	// Mirrors Callable.call's `throws Exception` to propagate the body's checked exceptions transparently.
+	@Deprecated(since = "Unclear design")
+	@SuppressWarnings("PMD.SignatureDeclareThrowsException")
+	default <R> R callWithScope(Callable<R> body) throws Exception {
+		return body.call();
+	}
+
+	/**
+	 * Runnable variant of {@link #callWithScope(Callable)}.
+	 */
+	@Deprecated(since = "Unclear design")
+	default void runWithScope(Runnable body) {
+		getWithScope(() -> {
+			body.run();
+			return null;
+		});
+	}
+
+	/**
+	 * Supplier variant of {@link #callWithScope(Callable)} — returns a value without declaring checked exceptions. Any
+	 * checked exception thrown by {@link #callWithScope} (should not happen for a {@link Supplier} body) is rewrapped
+	 * as {@link IllegalStateException}.
+	 *
+	 * @return the value returned by {@code body}.
+	 */
+	@Deprecated(since = "Unclear design")
+	default <R> R getWithScope(Supplier<R> body) {
+		try {
+			return callWithScope(body::get);
+		} catch (RuntimeException | Error e) {
+			throw e;
+		} catch (Exception e) {
+			// Unreachable for a Supplier body, but protects against custom callWithScope overrides that wrap the
+			// body in a way that exposes checked exceptions.
+			throw new IllegalStateException(e);
+		}
+	}
 
 }

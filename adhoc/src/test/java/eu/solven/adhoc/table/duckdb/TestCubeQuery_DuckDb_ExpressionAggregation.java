@@ -153,21 +153,12 @@ public class TestCubeQuery_DuckDb_ExpressionAggregation extends ADuckDbJooqTest 
 				.execute();
 	}
 
-	/**
-	 * Adhoc sees the four physical columns <em>plus</em> the two aliased expression names — because the
-	 * {@link MapTableAliaser} treats every registered alias as a virtual column, regardless of whether the alias target
-	 * is a physical column or an aggregate SQL expression.
-	 * <p>
-	 * This means {@code delta_latest} and {@code delta_earliest} are advertised both as <em>measures</em> (through the
-	 * {@link #forest}) and as <em>columns</em> (through the aliaser). Querying them via a group-by would produce a SQL
-	 * error because the rewritten expression is an aggregate, not a scalar — an arguable edge-case of using the aliaser
-	 * for SQL-expression injection rather than true column aliasing.
-	 */
 	@Test
 	public void testGetColumns() {
 		Assertions.assertThat(cube().getColumns())
 				.extracting(c -> c.getName())
-				.containsExactlyInAnyOrder("country", "color", "version", "delta", "delta_latest", "delta_earliest");
+				.containsExactlyInAnyOrder("country", "color", "version", "delta")
+				.doesNotContain("delta_latest", "delta_earliest");
 	}
 
 	/**

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
@@ -32,6 +33,7 @@ import eu.solven.adhoc.encoding.page.IAppendableTable;
 import eu.solven.adhoc.encoding.page.IAppendableTableFactory;
 import eu.solven.adhoc.encoding.page.ITableRowRead;
 import eu.solven.adhoc.encoding.page.ITableRowWrite;
+import eu.solven.adhoc.encoding.page.ScopedValueAppendableTable;
 import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
@@ -174,6 +176,17 @@ public class ColumnSliceFactory extends ASliceFactory {
 				.pageFactory(pageFactorySupplier.get())
 				.keys(ImmutableHelpers.copyOf(keys))
 				.build();
+	}
+
+	@Override
+	public <R> R callWithScope(Callable<R> body) throws Exception {
+		// Delegate to the backing table when it requires per-thread scope binding (e.g. ScopedValueAppendableTable).
+		// ThreadLocal-backed tables inherit the no-op default.
+		IAppendableTable table = pageFactorySupplier.get();
+		if (table instanceof ScopedValueAppendableTable scoped) {
+			return scoped.callInScope(body);
+		}
+		return body.call();
 	}
 
 	@Override

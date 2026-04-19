@@ -124,6 +124,23 @@ All checkers are informational — they never block the build.
 - **Builder factory from existing instance**: use a static `edit(ExistingType)` method (not `from()`, `copy()`, or `of()`) to return a pre-populated Lombok builder.
   - `CubeQuery.edit(existingQuery)`
   - `Aggregator.edit(existingAggregator)`
+- **Always qualify nested class references**: refer to a nested class as `Outer.Nested`, never as a bare `Nested` import. The qualified form makes it immediately obvious that the type is nested (and where it lives) and avoids ambiguity when several outer classes expose a nested type with the same name. Applies in code, parameter types, return types, and Javadoc `{@link}` references.
+  ```java
+  // ✓ preferred
+  Map.Entry<String, V> entry = ...
+  Set<Map.Entry<String, V>> entrySet = ...
+  PerfectHashKeyset.Builder<V> builder = keys.newBuilder();
+
+  // ✗ avoid — `Entry` and `Builder` look like top-level types and force the reader to scan imports
+  Entry<String, V> entry = ...
+  Set<Entry<String, V>> entrySet = ...
+  Builder<V> builder = keys.newBuilder();
+  ```
+  No deterministic checker enforces this today: PMD's `UnnecessaryFullyQualifiedName` and Checkstyle's `AvoidStaticImport` both target the *opposite* direction (over-qualified or static imports) rather than the under-qualified case. Closest existing options if we ever decide to enforce it:
+  - PMD does not ship a built-in rule. A custom XPath rule on the `ImportDeclaration` AST could flag any import whose target is a nested type (i.e. `import a.b.Outer.Nested;`).
+  - Checkstyle has no direct rule either. The `IllegalImport` module can blacklist specific nested-type imports as they appear, but cannot enforce the rule generically.
+
+  Until a checker exists, this rule is enforced manually during review.
 
 ---
 

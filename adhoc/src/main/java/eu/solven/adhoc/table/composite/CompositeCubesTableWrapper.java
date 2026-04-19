@@ -106,6 +106,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+// GodClass: large class kept whole because the methods coordinate composite-cube dispatch and splitting them would
+// require leaking many private invariants. Refactor tracked separately.
+@SuppressWarnings("PMD.GodClass")
 public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
 
 	/**

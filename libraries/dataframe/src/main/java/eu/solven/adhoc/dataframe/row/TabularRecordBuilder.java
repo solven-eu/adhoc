@@ -24,8 +24,7 @@ package eu.solven.adhoc.dataframe.row;
 
 import org.jspecify.annotations.Nullable;
 
-import com.google.common.collect.ImmutableMap;
-
+import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashMap;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -33,13 +32,17 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Helps creating an {@link ITabularRecord}.
- * 
+ *
+ * Aggregates are accumulated into a {@link PerfectHashMap.Builder} so that the resulting Map shares its perfect-hash
+ * keyset with every other record built from the same {@link ITabularRecordFactory} (the keyset is computed once and
+ * reused).
+ *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
 public class TabularRecordBuilder {
 	final IGroupBy groupBy;
-	final ImmutableMap.Builder<String, Object> aggregates;
+	final PerfectHashMap.Builder<Object> aggregates;
 	final IMapBuilderPreKeys sliceBuilder;
 
 	protected Object cleanAggregateValue(Object value) {
@@ -47,8 +50,8 @@ public class TabularRecordBuilder {
 		return AdhocPrimitiveHelpers.normalizeValue(value);
 	}
 
-	public void appendAggregate(String columnName, Object value) {
-		aggregates.put(columnName, cleanAggregateValue(value));
+	public void appendAggregate(Object value) {
+		aggregates.append(cleanAggregateValue(value));
 	}
 
 	public void appendGroupBy(@Nullable Object coordinate) {
@@ -56,9 +59,8 @@ public class TabularRecordBuilder {
 	}
 
 	public ITabularRecord build() {
-		// BEWARE Do not use `TabularRecordOverMaps.builder()` else the ImmutableMap would be fully rebuilt
 		return new TabularRecordOverMaps(TabularRecordOverMaps.groupByRecord(groupBy, sliceBuilder.build().asSlice()),
-				aggregates.buildOrThrow());
+				aggregates.build());
 	}
 
 }

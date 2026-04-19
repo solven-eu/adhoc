@@ -45,7 +45,7 @@ import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.ReferencedColumn;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasName;
-import eu.solven.adhoc.util.cache.LastLookupCache;
+import eu.solven.adhoc.util.cache.LastLookupCache1;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -67,7 +67,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-@EqualsAndHashCode(exclude = { "cachedNameToColumn" })
+@EqualsAndHashCode(exclude = { "cachedNameToColumn", "retainCache" })
 public class GroupByColumns implements IGroupBy {
 
 	@Singular
@@ -81,9 +81,13 @@ public class GroupByColumns implements IGroupBy {
 	final Supplier<NavigableMap<String, IAdhocColumn>> cachedNameToColumn =
 			Suppliers.memoize(() -> namedColumns(getColumns()));
 
-	// Static thread-local cache: reference-equality fast path on (this, columns) avoids
-	// hashCode on Set<String> on the hot path (called once per ITabularRecord).
-	private static final LastLookupCache<IGroupBy> RETAIN_CACHE = new LastLookupCache<>(2);
+	// Per-instance thread-local cache: reference-equality fast path on `retainedColumns` avoids the hashCode on
+	// Set<String> on the hot path (called once per ITabularRecord). Per-instance instead of static because the
+	// former cache keyed on (this, retainedColumns) — `this` is redundant when the cache lives inside the
+	// GroupByColumns, letting us use the length-1 LastLookupCache1 and skip the Object[] allocation on the slow
+	// path.
+	@JsonIgnore
+	final LastLookupCache1<IGroupBy> retainCache = new LastLookupCache1<>();
 
 	@Override
 	public String toString() {
@@ -176,14 +180,14 @@ public class GroupByColumns implements IGroupBy {
 			return GRAND_TOTAL;
 		}
 
-		// Fast path: reference equality on (this, columns)
-		IGroupBy cached = RETAIN_CACHE.getByRef(this, retainedColumns);
+		// Fast path: reference equality on `retainedColumns` (the cache is already scoped to this instance).
+		IGroupBy cached = retainCache.getByRef(retainedColumns);
 		if (cached != null) {
 			return cached;
 		}
 
 		// Slow path
-		return RETAIN_CACHE.slowComputeIfAbsent(new Object[] { this, retainedColumns }, () -> {
+		return retainCache.slowComputeIfAbsent(retainedColumns, () -> {
 			List<IAdhocColumn> retainedCs =
 					getColumns().stream().filter(c -> retainedColumns.contains(c.getName())).toList();
 

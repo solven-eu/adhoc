@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.AtomicLongMap;
 import com.google.errorprone.annotations.ThreadSafe;
 
 import eu.solven.adhoc.encoding.fsst.IFsstConstants;
@@ -66,7 +67,7 @@ public class SimplePerfectHash<T> implements IHasIndexOf<T>, IImmutable {
 		int n = keys.size();
 		if (keys.stream().distinct().count() < n) {
 			// Invalid input, else we would always encounter a collision, preventing a perfect hash
-			throw new IllegalArgumentException("Inputs must be distinct");
+			throw new IllegalArgumentException("Inputs must be distinct: keys=%s".formatted(keys));
 		} else if (keys.stream().mapToInt(Object::hashCode).distinct().count() < n) {
 			return HashMapIndexOf.make(keys);
 		}

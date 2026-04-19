@@ -179,11 +179,16 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		for (int p = 0; p < nbPartitions; p++) {
 			int partitionIndex = p;
 			futures.add(executor.submit(() -> {
-				List<ICuboid> partitionCuboids = underlyings.stream()
-						.map(c -> ((IPartitioned<ICuboid>) c).getPartition(partitionIndex))
-						.toList();
+				// Each virtual-thread task re-establishes the slice-factory scope required by scoped backings
+				// (no-op on ThreadLocal-backed factories).
+				// TODO `callWithScope` should probably be a method of `factories`
+				return factories.getSliceFactory().callWithScope(() -> {
+					List<ICuboid> partitionCuboids = underlyings.stream()
+							.map(c -> ((IPartitioned<ICuboid>) c).getPartition(partitionIndex))
+							.toList();
 
-				return produceOutputColumnSequential(partitionCuboids);
+					return produceOutputColumnSequential(partitionCuboids);
+				});
 			}));
 		}
 

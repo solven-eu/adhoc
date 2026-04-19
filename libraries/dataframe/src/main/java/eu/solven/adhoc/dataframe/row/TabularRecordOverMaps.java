@@ -30,8 +30,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
@@ -63,10 +61,12 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@With
 	final ITabularGroupByRecord groupBy;
-	// BEWARE: ImmutableMap will forbid null value
+	// BEWARE: the field type is Map (not ImmutableMap) so callers can pass non-Guava immutable maps such as
+	// PerfectHashMap. Lombok @Singular still accumulates into an ImmutableMap when the builder API is used,
+	// preserving the prior `forbid null value` semantics for that path.
 	@NonNull
 	@Singular
-	final ImmutableMap<String, ?> aggregates;
+	final Map<String, ?> aggregates;
 
 	@Override
 	public IGroupBy getGroupBy() {

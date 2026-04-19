@@ -17,6 +17,7 @@ module eu.solven.adhoc.model {
 	exports eu.solven.adhoc.util;
 	exports eu.solven.adhoc.util.cache;
 	exports eu.solven.adhoc.util.immutable;
+	exports eu.solven.adhoc.testutil;
 
 	// Jackson needs reflective access to Lombok-generated builders for deserialization
 	opens eu.solven.adhoc.measure to tools.jackson.databind;

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -168,17 +169,32 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
 			// reasonable to prefer doing as many computations in a single pass).
 			try {
+				// Reference equality is intentional: PerfectHashMap.keySet() returns the shared PerfectHashKeyset
+				// instance when the map is fully populated, so `==` detects the zero-work fast path without an
+				// element-by-element Set#equals walk.
+				@SuppressWarnings("PMD.CompareObjectsWithEquals")
 				IConsumingStream<GroupByAndTabularRecord> records2 = stream.records().map(input -> {
 					GroupByMarker groupByMarker = groupingSetAnalyzer.getGroupingSet(input);
 
-					// Typically useful to discard the column underlying a calculated column
-					ITabularRecord retainedRecord = input.retainAll(groupByMarker.keySet().sortedSet());
+					if (groupByMarker.keySet() == input.columnsKeySet()) {
+						return new GroupByAndTabularRecord(groupByMarker, input);
+					} else {
+						// Typically useful to discard the column underlying a calculated column
+						ITabularRecord retainedRecord = input.retainAll(groupByMarker.keySet().sortedSet());
 
-					return new GroupByAndTabularRecord(groupByMarker, retainedRecord);
+						return new GroupByAndTabularRecord(groupByMarker, retainedRecord);
+					}
+
 				});
 
 				if (grid instanceof IPartitioned<?> partitioned) {
 					int nbPartitions = partitioned.getNbPartitions();
+					// Wrap the per-partition worker task with the slice-factory scope on the virtual thread that
+					// actually consumes the queue (once per partition, for the whole drain loop — so scope setup
+					// is paid once per consumer, not per element).
+					// TODO Should `queryPod.getExecutorService()` automatically wrap `queryPod.getSliceFactory()`?
+					Executor scopedExecutor = task -> queryPod.getExecutorService()
+							.execute(() -> queryPod.getSliceFactory().runWithScope(task));
 					PartitioningHelpers.shardingForEach(ShardingForEachParameters.<GroupByAndTabularRecord>builder()
 							.stream(records2)
 							.nbPartitions(nbPartitions)
@@ -189,7 +205,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 							.consumer(input -> {
 								forEachMeasure(input.groupByMarker(), input.retainedRecord(), peekOnCoordinate, grid);
 							})
-							.executor(queryPod.getExecutorService())
+							.executor(scopedExecutor)
 							.build());
 				} else {
 					// synchronized: when CONCURRENT is active, Arrow batches may be processed
