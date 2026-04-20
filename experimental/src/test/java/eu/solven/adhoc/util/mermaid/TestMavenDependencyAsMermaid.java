@@ -126,6 +126,8 @@ public class TestMavenDependencyAsMermaid {
 		Path outputFile = projectRoot.resolve("docs/DEPENDENCIES.mmd");
 		Files.createDirectories(outputFile.getParent());
 		Files.writeString(outputFile, diagram);
+
+		log.info("Updated {}", outputFile.toAbsolutePath().normalize());
 		Assertions.assertThat(outputFile).isNotEmptyFile();
 	}
 
