@@ -454,9 +454,8 @@ public class TestMeasureForestConcealer {
 	// factories. Here we override only the aggregation whitelist.
 	@Test
 	public void testCustomStandardKeys_overrideDefault() {
-		MeasureForestConcealer custom = MeasureForestConcealer.builder()
-				.standardAggregationKeys(java.util.Set.of("myCustomSum"))
-				.build();
+		MeasureForestConcealer custom =
+				MeasureForestConcealer.builder().standardAggregationKeys(java.util.Set.of("myCustomSum")).build();
 		Aggregator withCustom = Aggregator.builder().name("m1").columnName("c").aggregationKey("myCustomSum").build();
 		Aggregator withSum = Aggregator.builder().name("m2").columnName("c2").aggregationKey("SUM").build();
 		IMeasureForest forest = MeasureForest.builder().name("myForest").measure(withCustom).measure(withSum).build();
@@ -477,9 +476,8 @@ public class TestMeasureForestConcealer {
 	@Test
 	public void testStandardKeys_perKindIndependence() {
 		// Keep "SUM" standard for aggregations only.
-		MeasureForestConcealer aggOnly = MeasureForestConcealer.builder()
-				.standardCombinationKeys(java.util.Set.of())
-				.build();
+		MeasureForestConcealer aggOnly =
+				MeasureForestConcealer.builder().standardCombinationKeys(java.util.Set.of()).build();
 		Aggregator agg = Aggregator.builder().name("a").columnName("c").aggregationKey("SUM").build();
 		Combinator comb = Combinator.builder().name("c1").underlying("a").combinationKey("SUM").build();
 		IMeasureForest forest = MeasureForest.builder().name("f").measure(agg).measure(comb).build();
@@ -590,7 +588,8 @@ public class TestMeasureForestConcealer {
 
 	private static final Map<String, Map<String, ?>> AGG_OPTIONS_PER_KEY = Map.of("RANK", Map.of("rank", 1));
 
-	private static final Map<String, Map<String, ?>> EDITOR_OPTIONS_PER_KEY = Map.of("simple", Map.of("shifted", Map.of()));
+	private static final Map<String, Map<String, ?>> EDITOR_OPTIONS_PER_KEY =
+			Map.of("simple", Map.of("shifted", Map.of()));
 
 	@org.junit.jupiter.params.ParameterizedTest
 	@org.junit.jupiter.params.provider.MethodSource("defaultStandardAggregationKeys")

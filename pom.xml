@@ -70,7 +70,7 @@
 
 		<lombok.version>1.18.44</lombok.version>
 
-		<pepper.version>5.7-SNAPSHOT</pepper.version>
+		<pepper.version>5.7</pepper.version>
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will

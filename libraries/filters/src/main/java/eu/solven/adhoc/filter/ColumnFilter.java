@@ -93,7 +93,7 @@ public class ColumnFilter implements IColumnFilter {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	protected Boolean jsonNullIfAbsent() {
 		if (valueMatcher != null && valueMatcher.match(null)) {
-			return Boolean.valueOf(nullIfAbsent);
+			return nullIfAbsent;
 		}
 		return null;
 	}

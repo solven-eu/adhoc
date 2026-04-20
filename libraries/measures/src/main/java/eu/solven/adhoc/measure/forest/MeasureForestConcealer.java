@@ -106,14 +106,15 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Builder
 @Slf4j
+@SuppressWarnings("PMD.GodClass")
 public class MeasureForestConcealer {
 
 	private static final int BITS_PER_HEXDIGIT = 4;
 
 	/**
 	 * Aggregation keys natively recognised by {@code StandardOperatorFactory.makeAggregation} — each one hits an
-	 * explicit switch case there (not the {@code default} → {@code Class.forName} branch). They carry no secret and
-	 * are kept verbatim during concealment.
+	 * explicit switch case there (not the {@code default} → {@code Class.forName} branch). They carry no secret and are
+	 * kept verbatim during concealment.
 	 */
 	public static final ImmutableSet<String> DEFAULT_STANDARD_AGGREGATION_KEYS = ImmutableSet.of("SUM",
 			"SUM_NOT_NAN",
@@ -128,9 +129,9 @@ public class MeasureForestConcealer {
 			"COALESCE");
 
 	/**
-	 * Combination keys natively recognised by {@code StandardOperatorFactory.makeCombination} — either through one
-	 * of the {@code isSum} / {@code isProduct} / {@code isDivide} / {@code isSubstraction} helpers or through an
-	 * explicit switch case. {@code EXPRESSION} (EvaluatedExpressionCombination) is intentionally absent because its
+	 * Combination keys natively recognised by {@code StandardOperatorFactory.makeCombination} — either through one of
+	 * the {@code isSum} / {@code isProduct} / {@code isDivide} / {@code isSubstraction} helpers or through an explicit
+	 * switch case. {@code EXPRESSION} (EvaluatedExpressionCombination) is intentionally absent because its
 	 * instantiation requires the optional {@code com.ezylang.evalex} dependency.
 	 */
 	public static final ImmutableSet<String> DEFAULT_STANDARD_COMBINATION_KEYS =
@@ -139,7 +140,8 @@ public class MeasureForestConcealer {
 	/**
 	 * Decomposition keys natively recognised by {@code StandardOperatorFactory.makeDecomposition}.
 	 */
-	public static final ImmutableSet<String> DEFAULT_STANDARD_DECOMPOSITION_KEYS = ImmutableSet.of("identity", "linear");
+	public static final ImmutableSet<String> DEFAULT_STANDARD_DECOMPOSITION_KEYS =
+			ImmutableSet.of("identity", "linear");
 
 	/**
 	 * Filter-editor keys natively recognised by {@code StandardOperatorFactory.makeEditor}.
@@ -470,9 +472,9 @@ public class MeasureForestConcealer {
 	}
 
 	/**
-	 * Collects every operator key declared by the given measure that is <em>not</em> in the matching per-kind
-	 * whitelist ({@link #standardAggregationKeys}, {@link #standardCombinationKeys}, etc.). Each key is checked
-	 * against the kind of the field it lives on — so {@code "SUM"} on an {@code aggregationKey} is recognised via
+	 * Collects every operator key declared by the given measure that is <em>not</em> in the matching per-kind whitelist
+	 * ({@link #standardAggregationKeys}, {@link #standardCombinationKeys}, etc.). Each key is checked against the kind
+	 * of the field it lives on — so {@code "SUM"} on an {@code aggregationKey} is recognised via
 	 * {@link #standardAggregationKeys} while {@code "SUM"} on a {@code combinationKey} is recognised via
 	 * {@link #standardCombinationKeys}.
 	 */
