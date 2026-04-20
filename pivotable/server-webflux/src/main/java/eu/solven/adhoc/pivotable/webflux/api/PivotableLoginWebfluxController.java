@@ -46,6 +46,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
@@ -57,7 +59,6 @@ import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenServic
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
-import graphql.com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -100,8 +101,8 @@ public class PivotableLoginWebfluxController {
 	// This API enables fetching the login status without getting a 401/generating a JS error/generating an exception.
 	@GetMapping("/json")
 	public Mono<? extends Map<String, ?>> loginStatus() {
-		return userMayEmpty().map(user -> Map.of("login", HttpStatus.OK.value()))
-				.switchIfEmpty(Mono.just(Map.of("login", HttpStatus.UNAUTHORIZED.value())));
+		return userMayEmpty().map(user -> ImmutableMap.of("login", HttpStatus.OK.value()))
+				.switchIfEmpty(Mono.just(ImmutableMap.of("login", HttpStatus.UNAUTHORIZED.value())));
 	}
 
 	// BASIC login is available for fakeUser
@@ -206,7 +207,7 @@ public class PivotableLoginWebfluxController {
 
 		return csrfToken.map(csrf -> ResponseEntity.ok()
 				.header(csrf.getHeaderName(), csrf.getToken())
-				.body(Map.of("header", csrf.getHeaderName())));
+				.body(ImmutableMap.of("header", csrf.getHeaderName())));
 	}
 
 	/**
@@ -215,7 +216,7 @@ public class PivotableLoginWebfluxController {
 	 */
 	@GetMapping("/logout")
 	public Map<String, String> logout() {
-		return Map.of(HttpHeaders.LOCATION, "/html/login?logout");
+		return ImmutableMap.of(HttpHeaders.LOCATION, "/html/login?logout");
 	}
 
 }

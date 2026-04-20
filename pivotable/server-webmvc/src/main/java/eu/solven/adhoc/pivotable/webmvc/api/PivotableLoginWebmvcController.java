@@ -49,6 +49,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.collect.ImmutableMap;
+
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.PivotableUserDetails;
 import eu.solven.adhoc.pivotable.account.PivotableUserRawRaw;
@@ -60,7 +62,6 @@ import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenServic
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
-import graphql.com.google.common.collect.ImmutableMap;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
@@ -111,9 +112,9 @@ public class PivotableLoginWebmvcController {
 	public Map<String, ?> loginStatus() {
 		Optional<PivotableUser> user = userMayEmpty();
 		if (user.isPresent()) {
-			return Map.of("login", HttpStatus.OK.value());
+			return ImmutableMap.of("login", HttpStatus.OK.value());
 		} else {
-			return Map.of("login", HttpStatus.UNAUTHORIZED.value());
+			return ImmutableMap.of("login", HttpStatus.UNAUTHORIZED.value());
 		}
 	}
 
@@ -235,7 +236,7 @@ public class PivotableLoginWebmvcController {
 
 		return ResponseEntity.ok()
 				.header(csrfToken.getHeaderName(), csrfToken.getToken())
-				.body(Map.of("header", csrfToken.getHeaderName()));
+				.body(ImmutableMap.of("header", csrfToken.getHeaderName()));
 	}
 
 	/**
@@ -245,7 +246,7 @@ public class PivotableLoginWebmvcController {
 	@GetMapping("/logout")
 	@ResponseBody
 	public Map<String, String> logout() {
-		return Map.of(HttpHeaders.LOCATION, "/html/login?logout");
+		return ImmutableMap.of(HttpHeaders.LOCATION, "/html/login?logout");
 	}
 
 	private Optional<PivotableUser> userMayEmpty() {

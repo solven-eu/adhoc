@@ -128,7 +128,7 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 
 		String[] measures = request.getParameterValues("measure");
 		if (measures != null) {
-			queryBuilder.measureNames(List.of(measures));
+			queryBuilder.measureNames(ImmutableList.copyOf(measures));
 		}
 		String[] groupBys = request.getParameterValues("group_by");
 		if (groupBys != null) {
