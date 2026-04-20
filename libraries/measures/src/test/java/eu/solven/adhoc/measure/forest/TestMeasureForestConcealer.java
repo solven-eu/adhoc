@@ -66,6 +66,16 @@ public class TestMeasureForestConcealer {
 		return "t_" + String.format("%08x", originalTag.hashCode() & 0xFFFFFFFFL);
 	}
 
+	/** Returns the concealed operator key (k_ prefix). */
+	private static String kn(String originalKey) {
+		return "k_" + String.format("%08x", originalKey.hashCode() & 0xFFFFFFFFL);
+	}
+
+	/** Returns the concealed value token (v_ prefix). */
+	private static String vn(Object originalValue) {
+		return "v_" + String.format("%08x", java.util.Objects.hashCode(originalValue) & 0xFFFFFFFFL);
+	}
+
 	// ── Aggregator ────────────────────────────────────────────────────────────
 
 	// The Aggregator type is preserved. The measure name and columnName are both hashed.
@@ -88,8 +98,8 @@ public class TestMeasureForestConcealer {
 		Aggregator concealedAgg = (Aggregator) result;
 		Assertions.assertThat(concealedAgg.getName()).isEqualTo(mn("revenue"));
 		Assertions.assertThat(concealedAgg.getColumnName()).isEqualTo(cn("raw_revenue_col"));
-		// aggregation key preserved
-		Assertions.assertThat(concealedAgg.getAggregationKey()).isEqualTo("customAggKey");
+		// custom aggregationKey is concealed (not in the standard-keys whitelist)
+		Assertions.assertThat(concealedAgg.getAggregationKey()).isEqualTo(kn("customAggKey"));
 		// no options were set, none appear
 		Assertions.assertThat(concealedAgg.getAggregationOptions()).isEmpty();
 	}
@@ -124,8 +134,8 @@ public class TestMeasureForestConcealer {
 		Assertions.assertThat(concealedComb.getName()).isEqualTo(mn("ratio"));
 		// underlyings renamed to hashed measure names
 		Assertions.assertThat(concealedComb.getUnderlyings()).containsExactly(mn("numerator"), mn("denominator"));
-		// combinationKey preserved; options cleared
-		Assertions.assertThat(concealedComb.getCombinationKey()).isEqualTo("customDivideKey");
+		// custom combinationKey is concealed; options cleared
+		Assertions.assertThat(concealedComb.getCombinationKey()).isEqualTo(kn("customDivideKey"));
 		Assertions.assertThat(concealedComb.getCombinationOptions()).isEmpty();
 	}
 
@@ -152,8 +162,8 @@ public class TestMeasureForestConcealer {
 		Filtrator concealedFil = (Filtrator) result;
 		Assertions.assertThat(concealedFil.getName()).isEqualTo(mn("revenueEur"));
 		Assertions.assertThat(concealedFil.getUnderlying()).isEqualTo(mn("revenue"));
-		// column name in the filter is concealed
-		Assertions.assertThat(concealedFil.getFilter()).isEqualTo(ColumnFilter.matchEq(cn("ccy"), "EUR"));
+		// column name AND operand value are concealed in the filter
+		Assertions.assertThat(concealedFil.getFilter()).isEqualTo(ColumnFilter.matchEq(cn("ccy"), vn("EUR")));
 	}
 
 	// Filtrator with a composite filter: AND(col1=v1, OR(col2=v2), NOT(col3=v3)).
@@ -200,8 +210,8 @@ public class TestMeasureForestConcealer {
 		Shiftor concealedShiftor = (Shiftor) result;
 		Assertions.assertThat(concealedShiftor.getName()).isEqualTo(mn("shiftedRevenue"));
 		Assertions.assertThat(concealedShiftor.getUnderlying()).isEqualTo(mn("revenue"));
-		// editorKey preserved (not a column or value); editorOptions cleared
-		Assertions.assertThat(concealedShiftor.getEditorKey()).isEqualTo("someEditorKey");
+		// custom editorKey is concealed; editorOptions cleared
+		Assertions.assertThat(concealedShiftor.getEditorKey()).isEqualTo(kn("someEditorKey"));
 		Assertions.assertThat(concealedShiftor.getEditorOptions()).isEmpty();
 	}
 
@@ -242,8 +252,8 @@ public class TestMeasureForestConcealer {
 		Combinator concealedParent = (Combinator) concealed.getNameToMeasure().get(mn("adjustedRevenue"));
 		// underlying reference points to the hashed leaf name
 		Assertions.assertThat(concealedParent.getUnderlyings()).containsExactly(mn("rawRevenue"));
-		// formula preserved
-		Assertions.assertThat(concealedParent.getCombinationKey()).isEqualTo("secretFormula");
+		// custom combinationKey is concealed
+		Assertions.assertThat(concealedParent.getCombinationKey()).isEqualTo(kn("secretFormula"));
 	}
 
 	// ── Forest name ───────────────────────────────────────────────────────────
@@ -417,11 +427,218 @@ public class TestMeasureForestConcealer {
 		Dispatchor concealedDis = (Dispatchor) result;
 		Assertions.assertThat(concealedDis.getName()).isEqualTo(mn("dispatched"));
 		Assertions.assertThat(concealedDis.getUnderlying()).isEqualTo(mn("revenue"));
-		// structural keys preserved
-		Assertions.assertThat(concealedDis.getDecompositionKey()).isEqualTo("percentBucket");
-		Assertions.assertThat(concealedDis.getAggregationKey()).isNotEmpty();
+		// custom decompositionKey is concealed; default aggregationKey (SUM) is in the standard whitelist
+		Assertions.assertThat(concealedDis.getDecompositionKey()).isEqualTo(kn("percentBucket"));
+		Assertions.assertThat(concealedDis.getAggregationKey()).isEqualTo("SUM");
 		// options cleared
 		Assertions.assertThat(concealedDis.getDecompositionOptions()).isEmpty();
 		Assertions.assertThat(concealedDis.getAggregationOptions()).isEmpty();
+	}
+
+	// ── Operator-key whitelist ───────────────────────────────────────────────
+
+	// Standard keys (SUM, COUNT, identity, …) are left verbatim because they refer to public operators with no
+	// secret payload. Only custom keys (e.g. fully-qualified class names) are hashed.
+	@Test
+	public void testAggregator_standardKeyPreserved() {
+		Aggregator secret = Aggregator.builder().name("revenue").columnName("col").aggregationKey("SUM").build();
+		IMeasureForest forest = MeasureForest.builder().name("myForest").measure(secret).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Aggregator concealedAgg = (Aggregator) concealed.getNameToMeasure().get(mn("revenue"));
+		Assertions.assertThat(concealedAgg.getAggregationKey()).isEqualTo("SUM");
+	}
+
+	// A user-supplied per-kind whitelist fully replaces the default, enabling integration with custom operator
+	// factories. Here we override only the aggregation whitelist.
+	@Test
+	public void testCustomStandardKeys_overrideDefault() {
+		MeasureForestConcealer custom = MeasureForestConcealer.builder()
+				.standardAggregationKeys(java.util.Set.of("myCustomSum"))
+				.build();
+		Aggregator withCustom = Aggregator.builder().name("m1").columnName("c").aggregationKey("myCustomSum").build();
+		Aggregator withSum = Aggregator.builder().name("m2").columnName("c2").aggregationKey("SUM").build();
+		IMeasureForest forest = MeasureForest.builder().name("myForest").measure(withCustom).measure(withSum).build();
+
+		IMeasureForest concealed = custom.conceal(forest);
+
+		Aggregator mappedCustom = (Aggregator) concealed.getNameToMeasure().get(mn("m1"));
+		Aggregator mappedSum = (Aggregator) concealed.getNameToMeasure().get(mn("m2"));
+		// "myCustomSum" is now in the aggregation whitelist → kept verbatim
+		Assertions.assertThat(mappedCustom.getAggregationKey()).isEqualTo("myCustomSum");
+		// "SUM" is no longer in the aggregation whitelist → hashed
+		Assertions.assertThat(mappedSum.getAggregationKey()).isEqualTo(kn("SUM"));
+	}
+
+	// The same key string ("SUM") is a standard aggregation AND a standard combination key. The per-kind whitelist
+	// makes sure the context determines which branch is applied: concealing an aggregator-SUM still leaves a
+	// combinator-SUM untouched, and vice-versa.
+	@Test
+	public void testStandardKeys_perKindIndependence() {
+		// Keep "SUM" standard for aggregations only.
+		MeasureForestConcealer aggOnly = MeasureForestConcealer.builder()
+				.standardCombinationKeys(java.util.Set.of())
+				.build();
+		Aggregator agg = Aggregator.builder().name("a").columnName("c").aggregationKey("SUM").build();
+		Combinator comb = Combinator.builder().name("c1").underlying("a").combinationKey("SUM").build();
+		IMeasureForest forest = MeasureForest.builder().name("f").measure(agg).measure(comb).build();
+
+		IMeasureForest concealed = aggOnly.conceal(forest);
+
+		Aggregator mappedAgg = (Aggregator) concealed.getNameToMeasure().get(mn("a"));
+		Combinator mappedComb = (Combinator) concealed.getNameToMeasure().get(mn("c1"));
+		Assertions.assertThat(mappedAgg.getAggregationKey()).isEqualTo("SUM");
+		Assertions.assertThat(mappedComb.getCombinationKey()).isEqualTo(kn("SUM"));
+	}
+
+	// ── IValueMatcher operand concealment ───────────────────────────────────
+
+	// EqualsMatcher operand is concealed via the v_ prefix.
+	@Test
+	public void testFiltrator_equalsOperandConcealed() {
+		Filtrator fil = Filtrator.builder()
+				.name("usdRevenue")
+				.underlying("revenue")
+				.filter(ColumnFilter.matchEq("ccy", "USD"))
+				.build();
+		IMeasureForest forest =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(fil).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Filtrator concealedFil = (Filtrator) concealed.getNameToMeasure().get(mn("usdRevenue"));
+		Assertions.assertThat(concealedFil.getFilter()).isEqualTo(ColumnFilter.matchEq(cn("ccy"), vn("USD")));
+	}
+
+	// InMatcher operands are concealed one by one.
+	@Test
+	public void testFiltrator_inOperandsConcealed() {
+		Filtrator fil = Filtrator.builder()
+				.name("g7Revenue")
+				.underlying("revenue")
+				.filter(ColumnFilter.builder().column("country").matchIn(java.util.List.of("FR", "DE", "US")).build())
+				.build();
+		IMeasureForest forest =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(fil).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Filtrator concealedFil = (Filtrator) concealed.getNameToMeasure().get(mn("g7Revenue"));
+		ColumnFilter concealedCF = (ColumnFilter) concealedFil.getFilter();
+		Assertions.assertThat(concealedCF.getColumn()).isEqualTo(cn("country"));
+		Assertions.assertThat(concealedCF.getValueMatcher()).isInstanceOf(eu.solven.adhoc.filter.value.InMatcher.class);
+		eu.solven.adhoc.filter.value.InMatcher im =
+				(eu.solven.adhoc.filter.value.InMatcher) concealedCF.getValueMatcher();
+		Assertions.assertThat(new LinkedHashSet<Object>(im.getOperands()))
+				.containsExactlyInAnyOrder(vn("FR"), vn("DE"), vn("US"));
+	}
+
+	// NotMatcher recursively conceals its negated matcher's operand.
+	@Test
+	public void testFiltrator_notWrappedOperandConcealed() {
+		ISliceFilter notEurope = ColumnFilter.builder()
+				.column("country")
+				.valueMatcher(eu.solven.adhoc.filter.value.NotMatcher.notEqualTo("FR"))
+				.build();
+		Filtrator fil = Filtrator.builder().name("nonFr").underlying("revenue").filter(notEurope).build();
+		IMeasureForest forest =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(fil).build();
+
+		IMeasureForest concealed = concealer.conceal(forest);
+
+		Filtrator concealedFil = (Filtrator) concealed.getNameToMeasure().get(mn("nonFr"));
+		ColumnFilter concealedCF = (ColumnFilter) concealedFil.getFilter();
+		Assertions.assertThat(concealedCF.getValueMatcher())
+				.isInstanceOf(eu.solven.adhoc.filter.value.NotMatcher.class);
+		eu.solven.adhoc.filter.value.NotMatcher nm =
+				(eu.solven.adhoc.filter.value.NotMatcher) concealedCF.getValueMatcher();
+		// Inner EqualsMatcher now carries a v_-token operand rather than the literal "FR".
+		Assertions.assertThat(nm.getNegated()).isEqualTo(eu.solven.adhoc.filter.value.EqualsMatcher.matchEq(vn("FR")));
+	}
+
+	// Roundtrip with an InMatcher: conceal then restore recovers the original operand set with correct types.
+	@Test
+	public void testRestoration_inMatcherRoundtrip() {
+		Filtrator fil = Filtrator.builder()
+				.name("g7Revenue")
+				.underlying("revenue")
+				.filter(ColumnFilter.builder().column("country").matchIn(java.util.List.of("FR", "DE", "US")).build())
+				.build();
+		IMeasureForest original =
+				MeasureForest.builder().name("myForest").measure(Aggregator.sum("revenue")).measure(fil).build();
+
+		ConcealingResult result = concealer.concealWithDefinition(original);
+		IMeasureForest restored = concealer.restore(result.getConcealedForest(), result.getDefinition());
+
+		Filtrator restoredFil = (Filtrator) restored.getNameToMeasure().get("g7Revenue");
+		ColumnFilter restoredCF = (ColumnFilter) restoredFil.getFilter();
+		eu.solven.adhoc.filter.value.InMatcher im =
+				(eu.solven.adhoc.filter.value.InMatcher) restoredCF.getValueMatcher();
+		Assertions.assertThat(new LinkedHashSet<Object>(im.getOperands())).containsExactlyInAnyOrder("FR", "DE", "US");
+	}
+
+	// ── Pact with StandardOperatorFactory ────────────────────────────────────
+	//
+	// Every key exposed by a DEFAULT_STANDARD_*_KEYS constant MUST be instantiable by StandardOperatorFactory's
+	// matching factory method (makeAggregation / makeCombination / makeDecomposition / makeEditor). If a key lands
+	// in the default `Class.forName` branch, the factory will throw IllegalArgumentException("Unexpected value:")
+	// — which is how we catch drift between the whitelist and the factory's actual switch cases.
+	//
+	// Some keys require a minimal option map to construct (e.g. RANK → "rank" int, SimpleFilterEditor → "shifted").
+	// These are provided per-key below; everything else is called with Map.of().
+
+	private static final Map<String, Map<String, ?>> AGG_OPTIONS_PER_KEY = Map.of("RANK", Map.of("rank", 1));
+
+	private static final Map<String, Map<String, ?>> EDITOR_OPTIONS_PER_KEY = Map.of("simple", Map.of("shifted", Map.of()));
+
+	@org.junit.jupiter.params.ParameterizedTest
+	@org.junit.jupiter.params.provider.MethodSource("defaultStandardAggregationKeys")
+	public void testDefaultStandardAggregationKey_instantiable(String key) {
+		eu.solven.adhoc.measure.operator.StandardOperatorFactory factory =
+				eu.solven.adhoc.measure.operator.StandardOperatorFactory.builder().build();
+		Map<String, ?> options = AGG_OPTIONS_PER_KEY.getOrDefault(key, Map.of());
+		Assertions.assertThat(factory.makeAggregation(key, options)).as("aggregation key=%s", key).isNotNull();
+	}
+
+	@org.junit.jupiter.params.ParameterizedTest
+	@org.junit.jupiter.params.provider.MethodSource("defaultStandardCombinationKeys")
+	public void testDefaultStandardCombinationKey_instantiable(String key) {
+		eu.solven.adhoc.measure.operator.StandardOperatorFactory factory =
+				eu.solven.adhoc.measure.operator.StandardOperatorFactory.builder().build();
+		Assertions.assertThat(factory.makeCombination(key, Map.of())).as("combination key=%s", key).isNotNull();
+	}
+
+	@org.junit.jupiter.params.ParameterizedTest
+	@org.junit.jupiter.params.provider.MethodSource("defaultStandardDecompositionKeys")
+	public void testDefaultStandardDecompositionKey_instantiable(String key) {
+		eu.solven.adhoc.measure.operator.StandardOperatorFactory factory =
+				eu.solven.adhoc.measure.operator.StandardOperatorFactory.builder().build();
+		Assertions.assertThat(factory.makeDecomposition(key, Map.of())).as("decomposition key=%s", key).isNotNull();
+	}
+
+	@org.junit.jupiter.params.ParameterizedTest
+	@org.junit.jupiter.params.provider.MethodSource("defaultStandardEditorKeys")
+	public void testDefaultStandardEditorKey_instantiable(String key) {
+		eu.solven.adhoc.measure.operator.StandardOperatorFactory factory =
+				eu.solven.adhoc.measure.operator.StandardOperatorFactory.builder().build();
+		Map<String, ?> options = EDITOR_OPTIONS_PER_KEY.getOrDefault(key, Map.of());
+		Assertions.assertThat(factory.makeEditor(key, options)).as("editor key=%s", key).isNotNull();
+	}
+
+	static java.util.stream.Stream<String> defaultStandardAggregationKeys() {
+		return MeasureForestConcealer.DEFAULT_STANDARD_AGGREGATION_KEYS.stream();
+	}
+
+	static java.util.stream.Stream<String> defaultStandardCombinationKeys() {
+		return MeasureForestConcealer.DEFAULT_STANDARD_COMBINATION_KEYS.stream();
+	}
+
+	static java.util.stream.Stream<String> defaultStandardDecompositionKeys() {
+		return MeasureForestConcealer.DEFAULT_STANDARD_DECOMPOSITION_KEYS.stream();
+	}
+
+	static java.util.stream.Stream<String> defaultStandardEditorKeys() {
+		return MeasureForestConcealer.DEFAULT_STANDARD_EDITOR_KEYS.stream();
 	}
 }

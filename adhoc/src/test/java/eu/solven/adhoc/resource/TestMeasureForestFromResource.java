@@ -238,7 +238,6 @@ public class TestMeasureForestFromResource {
 					      type: "column"
 					      column: "c"
 					      valueMatcher: "someString"
-					      nullIfAbsent: true
 					    underlying: "k1"
 					""");
 
@@ -573,7 +572,6 @@ public class TestMeasureForestFromResource {
 				.containsEntry("filter",
 						ImmutableMap.builder()
 								.put("column", "a")
-								.put("nullIfAbsent", true)
 								.put("type", "column")
 								.put("valueMatcher", "a1")
 								.build())

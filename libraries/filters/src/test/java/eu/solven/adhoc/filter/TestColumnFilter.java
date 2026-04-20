@@ -37,7 +37,6 @@ import eu.solven.adhoc.filter.value.NotMatcher;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.filter.value.SameMatcher;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 public class TestColumnFilter {
 
@@ -45,15 +44,39 @@ public class TestColumnFilter {
 	public void testJackson_equals() {
 		ISliceFilter ksEqualsV = ColumnFilter.matchEq("k", "v");
 
-		ObjectMapper objectMapper = JsonMapper.builder().build();
+		ObjectMapper objectMapper = AdhocPublicJackson.makeObjectMapper();
 
 		String asString = objectMapper.writeValueAsString(ksEqualsV);
 		Assertions.assertThat(asString).isEqualTo("""
-				{"type":"column","column":"k","valueMatcher":"v","nullIfAbsent":true}
-				""".strip());
+				{
+				  "type" : "column",
+				  "column" : "k",
+				  "valueMatcher" : "v"
+				}""");
 		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
 
 		Assertions.assertThat(fromString).isEqualTo(ksEqualsV);
+	}
+
+	@Test
+	public void testJackson_null() {
+		ISliceFilter columnIsNull = ColumnFilter.match("k", NullMatcher.matchNull());
+
+		ObjectMapper objectMapper = AdhocPublicJackson.makeObjectMapper();
+
+		String asString = objectMapper.writeValueAsString(columnIsNull);
+		Assertions.assertThat(asString).isEqualTo("""
+				{
+				  "type" : "column",
+				  "column" : "k",
+				  "valueMatcher" : {
+				    "type" : "null"
+				  },
+				  "nullIfAbsent" : true
+				}""");
+		ISliceFilter fromString = objectMapper.readValue(asString, ISliceFilter.class);
+
+		Assertions.assertThat(fromString).isEqualTo(columnIsNull);
 	}
 
 	@Test

@@ -162,8 +162,7 @@ public class TestCubeQueryBuilder {
 				  "filter" : {
 				    "type" : "column",
 				    "column" : "c2",
-				    "valueMatcher" : "v2",
-				    "nullIfAbsent" : true
+				    "valueMatcher" : "v2"
 				  },
 				  "groupBy" : {
 				    "columns" : [ "c1" ]
