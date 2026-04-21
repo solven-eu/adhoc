@@ -41,8 +41,10 @@ jobs:
     # Generate the SBOM. -Pfast skips tests and static analysis; the cyclonedx plugin
     # is bound to verify so we need at least that phase. JaCoCo is skipped explicitly
     # because -Pfast sets maven.test.skip but JaCoCo's check goal still runs.
+    # cyclonedx.skip=false re-enables the SBOM generation that -Pfast now disables
+    # by default (see CHANGES.MD for 0.0.19).
     - name: Generate CycloneDX SBOM
-      run: mvn verify -Pfast -Djacoco.skip=true --file pom.xml --batch-mode
+      run: mvn verify -Pfast -Djacoco.skip=true -Dcyclonedx.skip=false --file pom.xml --batch-mode
 
     - name: Scan SBOM with Grype
       uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0

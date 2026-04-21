@@ -11,7 +11,7 @@
 
 - **Language / runtime**: Java 21, multi-module Maven project
 - **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks; **note**: `-Pfast` also skips tests via `maven.test.skip=true`)
-- **Running tests without static analysis**: `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode` — use this instead of `-Pfast` when you need to run tests while skipping only static analysis
+- **Running tests without static analysis**: `mvn test -Pnostyle --file pom.xml --batch-mode` — the `-Pnostyle` profile skips Checkstyle / PMD / SpotBugs / Spotless / license / enforcer but keeps tests enabled. Prefer this over manually passing `-Dcheckstyle.skip -Dpmd.skip -Dspotbugs.skip …`.
 - **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
 - **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`. When reading PMD output, use the `Grep` tool to filter for `org.apache.maven.plugins.pmd.PmdViolationCheckMojo` to quickly locate violations.
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok
@@ -84,7 +84,7 @@ Improve test coverage for production classes that are critically under-tested (b
    ```
 2. Filter out pure interfaces and Lombok-generated-only classes (they require no tests).
 3. For each remaining class, read the source and write a `Test<ClassName>` in the same module under `src/test/java/`, in the same package. Cover at least: nominal path, null/empty inputs, and the most likely edge cases.
-4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode`.
+4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Pnostyle --file pom.xml --batch-mode`.
 
 **Scope**: at most 10 classes per session to keep PRs reviewable.
 
@@ -123,7 +123,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** modify test files (`src/test/java/**`) to change test assertions or business logic. You **may** fix resource leaks, compilation errors, or other clear bugs in existing test files.
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
 - Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
-- Do **NOT** modify anything under `pivotable/js/` (JS/TS handled by Prettier separately).
+- Modifying files under `pivotable/js/` (Vue.js front-end, e2e/unit tests) is allowed. After edits, run `cd pivotable/js && npm run format && mvn spotless:apply` so Prettier reformats JS/HTML.
 - **Simple tasks** (Javadoc, comments, coverage tests, formatting): do **NOT** change method/constructor signatures, rename classes/methods/fields/variables, or alter business logic.
 - **Complex tasks** (new features, refactoring requested by the user): signature changes, renames, and logic changes are allowed when they are part of the requested work. Prefer adding new methods/fields over modifying existing signatures; when an existing signature must change, confirm with the user first.
 - Do **NOT** reorder imports (Spotless handles that).

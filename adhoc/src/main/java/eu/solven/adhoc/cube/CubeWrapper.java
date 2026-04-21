@@ -164,9 +164,9 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 			}
 
 			if (originalMetadata == null) {
-				log.debug("Unclear alias=%s as it has no underlying column", columnAlias);
-				columnToType.put(columnAlias,
-						ColumnMetadata.builder().name(columnAlias).tag("alias").type(Object.class).build());
+				// Discard: a shared ColumnsManager may carry aliases relevant only to a subset of cubes, so an alias
+				// with no underlying column on this cube is not necessarily a bug — but still worth warning about.
+				log.warn("Discarding alias={} as it has no underlying column on cube={}", columnAlias, getName());
 			} else {
 				columnToType.put(originalMetadata.getName(), originalMetadata.toBuilder().alias(columnAlias).build());
 			}

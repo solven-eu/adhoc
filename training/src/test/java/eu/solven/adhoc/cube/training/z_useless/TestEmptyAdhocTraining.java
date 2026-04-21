@@ -20,12 +20,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.training;
+package eu.solven.adhoc.cube.training.z_useless;
 
-/**
- * Helps to prevent this jar to be empty.
- *
- * @author Benoit Lacelle
- */
-public class EmptyAdhocTraining {
+import org.junit.jupiter.api.Test;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+
+public class TestEmptyAdhocTraining {
+	@Test
+	public void testHashcodeEquals() {
+		EqualsVerifier.forClass(EmptyAdhocTraining.class).verify();
+	}
+
 }

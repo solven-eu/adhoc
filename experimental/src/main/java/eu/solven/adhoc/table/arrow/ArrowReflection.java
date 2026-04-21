@@ -202,9 +202,7 @@ public final class ArrowReflection {
 
 		for (int i = 0; i < aggregates.size(); i++, vectorIndex++) {
 			Object value = getVectorValue(vectors, vectorIndex, rowIndex);
-			if (value != null) {
-				builder.appendAggregate(aggregates.get(i), value);
-			}
+			builder.appendAggregate(value);
 		}
 
 		int nbToAppend = columns.size() - absentColumns.size();

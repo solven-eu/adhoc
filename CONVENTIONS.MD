@@ -124,6 +124,23 @@ All checkers are informational — they never block the build.
 - **Builder factory from existing instance**: use a static `edit(ExistingType)` method (not `from()`, `copy()`, or `of()`) to return a pre-populated Lombok builder.
   - `CubeQuery.edit(existingQuery)`
   - `Aggregator.edit(existingAggregator)`
+- **Always qualify nested class references**: refer to a nested class as `Outer.Nested`, never as a bare `Nested` import. The qualified form makes it immediately obvious that the type is nested (and where it lives) and avoids ambiguity when several outer classes expose a nested type with the same name. Applies in code, parameter types, return types, and Javadoc `{@link}` references.
+  ```java
+  // ✓ preferred
+  Map.Entry<String, V> entry = ...
+  Set<Map.Entry<String, V>> entrySet = ...
+  PerfectHashKeyset.Builder<V> builder = keys.newBuilder();
+
+  // ✗ avoid — `Entry` and `Builder` look like top-level types and force the reader to scan imports
+  Entry<String, V> entry = ...
+  Set<Entry<String, V>> entrySet = ...
+  Builder<V> builder = keys.newBuilder();
+  ```
+  No deterministic checker enforces this today: PMD's `UnnecessaryFullyQualifiedName` and Checkstyle's `AvoidStaticImport` both target the *opposite* direction (over-qualified or static imports) rather than the under-qualified case. Closest existing options if we ever decide to enforce it:
+  - PMD does not ship a built-in rule. A custom XPath rule on the `ImportDeclaration` AST could flag any import whose target is a nested type (i.e. `import a.b.Outer.Nested;`).
+  - Checkstyle has no direct rule either. The `IllegalImport` module can blacklist specific nested-type imports as they appear, but cannot enforce the rule generically.
+
+  Until a checker exists, this rule is enforced manually during review.
 
 ---
 
@@ -249,6 +266,14 @@ A dedicated workflow (`.github/workflows/infer.yml`) runs on every push/PR to `m
 - **Full SonarCloud view**: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc
 - **What to cover**: at minimum the nominal path and the most likely edge cases (null/empty input, boundary values, mixed types). Pure interfaces and Lombok-generated code (`@Value`, `@Builder`) do not need dedicated tests.
 - **Test placement**: test classes live in the same Maven module under `src/test/java/`, named `Test<ProductionClass>` in the same package.
+
+## Test Utilities & JPMS
+
+Cross-module test helpers (like `MapVerifier`) are shared via the `-tests.jar` classifier Maven ships for every module. That classifier is consumed as an **automatic module** (`<automatic.module.name>.tests`) by downstream modules, which creates one structural trap:
+
+- **Never place a test-utility class in a package that the module's main `module-info.java` exports.** The main module and the test-jar automatic module would both claim the package, triggering a JPMS split-package error at the downstream consumer's compile time (often only reproduced when the consumer builds in isolation against `~/.m2`, not in a full reactor build — easy to miss in CI).
+- **Do not reserve packages in `module-info.java` for future test-utilities.** Declaring `exports eu.solven.adhoc.xxx.testutil;` with only a placeholder class in main sets the same trap; add the export only when real production code needs it.
+- **Convention for test-util package names**: keep them under a `testutil` or similar test-only package root that main does **not** export (e.g. `eu.solven.adhoc.testutil.map`, `eu.solven.adhoc.testutil.slice`). This guarantees the package is owned exclusively by the test-jar automatic module and that `-tests.jar` consumers resolve it cleanly.
 
 ## Comments & Documentation
 

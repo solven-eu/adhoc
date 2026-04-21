@@ -29,8 +29,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -96,8 +98,9 @@ public class InduceByAdhocCompleteInner {
 				makeInducerFilterToStricterInducedFilters(distinctFilters, filterToStripper);
 
 		// Phase 4: index steps by groupBy for O(1) candidate lookup
-		Map<IGroupBy, List<TableQueryStep>> groupByToSteps = contextSteps.stream()
-				.collect(Collectors.groupingBy(TableQueryStep::getGroupBy, LinkedHashMap::new, Collectors.toList()));
+		ImmutableListMultimap<IGroupBy, TableQueryStep> groupByToSteps = contextSteps.stream()
+				.collect(
+						ImmutableListMultimap.toImmutableListMultimap(TableQueryStep::getGroupBy, Function.identity()));
 
 		// Phase 5: for each inducer step, use the indices to enumerate only valid induced candidates.
 		// The inducer is the OUTER loop so its IFilterStripper (built in Phase 3) is fetched once and

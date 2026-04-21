@@ -41,10 +41,29 @@ import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ColumnSliceFactory.MapBuilderPreKeys;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.pepper.unittest.MapVerifier;
 
 public class TestColumnSliceFactory {
 
 	ColumnSliceFactory factory = ColumnSliceFactory.builder().build();
+
+	@Test
+	public void testMapContract_twoEntries() {
+		IAdhocMap aAndB = factory.newMapBuilder(List.of("a", "b")).append("a1").append("b1").build();
+		MapVerifier.forInstance(aAndB).preservesInsertionOrder().verify();
+	}
+
+	@Test
+	public void testMapContract_nullValue() {
+		IAdhocMap aAndNull = factory.newMapBuilder(List.of("a", "b")).append("a1").append(null).build();
+		MapVerifier.forInstance(aAndNull).preservesInsertionOrder().verify();
+	}
+
+	@Test
+	public void testMapContract_singleEntry() {
+		IAdhocMap onlyA = factory.newMapBuilder(List.of("a")).append("a1").build();
+		MapVerifier.forInstance(onlyA).preservesInsertionOrder().verify();
+	}
 
 	@Test
 	public void testRetainAll() {

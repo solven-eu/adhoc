@@ -21,7 +21,7 @@ module eu.solven.adhoc.cell {
 	// adhoc-encoding: IAppendableTable, IHasIndexOf, encoding.*
 	requires eu.solven.adhoc.encoding;
 	// adhoc-filters: ISliceFilter, FilterBuilder, filter.value.*
-	requires eu.solven.adhoc.query.filters;
+	requires eu.solven.adhoc.filters;
 
 	// ── Named third-party modules ────────────────────────────────────────────
 	requires com.google.common;

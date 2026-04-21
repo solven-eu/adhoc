@@ -106,8 +106,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@Builder.Default
 	final IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
+	/**
+	 * Optional per-query table provider. When set, {@link #prepareQuery(TableQueryV4)} substitutes the {@link #table}
+	 * field with {@link IJooqTableSupplier#tableFor(TableQueryV4)}. When {@code null}, the constant {@link #table} is
+	 * always used (current behaviour).
+	 */
 	@NonNull
-	final TableLike<?> table;
+	final IJooqTableSupplier tableSupplier;
 
 	@NonNull
 	final DSLContext dslContext;
@@ -131,6 +136,28 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	@Default
 	final IQueryPartitionor queryPartitionor = IQueryPartitionor.SINGLE_PARTITION;
 
+	/**
+	 * Manually-declared inner builder class. Lombok's {@link lombok.experimental.SuperBuilder} merges the
+	 * auto-generated setters and fields with the members declared here; the only member we declare is the migration
+	 * helper {@link #table(TableLike)}.
+	 */
+	@SuppressWarnings("PMD.AbstractClassWithoutAbstractMethod")
+	public abstract static class JooqTableQueryFactoryBuilder<C extends JooqTableQueryFactory,
+			B extends JooqTableQueryFactoryBuilder<C, B>> {
+		/**
+		 * Migration helper: accepts a constant {@link TableLike} and wires it as
+		 * {@code tableSupplier(IJooqTableSupplier.constant(table))}. Prefer {@link #tableSupplier(IJooqTableSupplier)}
+		 * directly when the {@code FROM} clause must vary per query.
+		 *
+		 * @param table
+		 *            the constant {@link TableLike} to place in the {@code FROM} clause
+		 * @return this builder, for chaining
+		 */
+		public B table(TableLike<?> table) {
+			return this.tableSupplier(IJooqTableSupplier.constant(table));
+		}
+	}
+
 	// BEWARE This is Delombokized. It customizes the case `capabilities == null`
 	protected JooqTableQueryFactory(JooqTableQueryFactoryBuilder<?, ?> b) {
 		if (b.operatorFactory$set) {
@@ -138,7 +165,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		} else {
 			this.operatorFactory = $default$operatorFactory();
 		}
-		this.table = b.table;
+		this.tableSupplier = b.tableSupplier;
 		this.dslContext = b.dslContext;
 
 		if (b.capabilities == null) {
@@ -204,10 +231,26 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					percentEfficiency,
 					v3);
 		}
-		return prepareQuery(v3);
+		return prepareQuery(v3, resolveTable(tableQuery));
+	}
+
+	/**
+	 * Resolves the {@link TableLike} to use in the {@code FROM} clause for a given query. Defaults to the constant
+	 * {@link #table} unless an {@link IJooqTableSupplier} was wired via the builder, in which case it is consulted.
+	 * Subclasses may override to plug in their own per-query logic.
+	 */
+	protected TableLike<?> resolveTable(TableQueryV4 tableQuery) {
+		// if (tableSupplier != null) {
+		return tableSupplier.tableFor(tableQuery);
+		// }
+		// return table;
 	}
 
 	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
+		return prepareQuery(tableQuery, resolveTable(TableQueryV4.edit(tableQuery).build()));
+	}
+
+	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery, TableLike<?> fromTable) {
 		ISliceToJooqCondition toCondition = makeToCondition();
 
 		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);
@@ -236,7 +279,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(toCondition, tableQuery, fields);
 
 		// `FROM ...`
-		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(table);
+		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(fromTable);
 
 		// `WHERE ...`
 		SelectConnectByStep<Record> selectFromWhere;

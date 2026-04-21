@@ -32,13 +32,14 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.junit.jupiter.api.Test;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordBuilder;
+import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashKeyset;
+import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashMap;
 import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
@@ -72,7 +73,8 @@ public class TestJooqTabularRecordFactory {
 
 	@Test
 	public void testMakeRecord_duplicateAggregateColumnName() {
-		// Two aggregates with the same column name — ImmutableMap.Builder.buildOrThrow will reject this
+		// Two aggregates with the same column name — PerfectHashKeyset rejects this at factory construction time
+		// (previously rejected per-record by ImmutableMap.Builder.buildOrThrow with a different message).
 		ITabularRecordFactory factory = makeFactory(List.of("sumV", "sumV"), ImmutableSet.of("k1"));
 
 		Record r = DSL.using(org.jooq.SQLDialect.DEFAULT)
@@ -85,7 +87,7 @@ public class TestJooqTabularRecordFactory {
 
 		Assertions.assertThatThrownBy(() -> JooqTabularRecordFactory.makeRecord(factory, r))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Multiple entries with same key: sumV=20 and sumV=10");
+				.hasMessage("Inputs must be distinct: keys=[sumV, sumV]");
 	}
 
 	@Test
@@ -127,7 +129,7 @@ public class TestJooqTabularRecordFactory {
 			@Override
 			public TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns) {
 				return new TabularRecordBuilder(groupBy,
-						ImmutableMap.builderWithExpectedSize(aggregates.size()),
+						PerfectHashMap.<Object>newBuilder(PerfectHashKeyset.of(aggregates)),
 						sliceFactory.newMapBuilder(Sets.difference(columns, absentColumns)));
 			}
 		};

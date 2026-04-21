@@ -95,7 +95,8 @@ public class HelloCompositeCubes {
 				.anySatisfy(c -> Assertions.assertThat(c.getName()).isEqualTo("c"))
 				.anySatisfy(c -> Assertions.assertThat(c.getName()).isEqualTo("v3"))
 				// a special column enabling to differentiate the underlying cubes
-				.anySatisfy(c -> Assertions.assertThat(c.getName()).isEqualTo("~CompositeSlicer"));
+				.anySatisfy(
+						c -> Assertions.assertThat(c.getName()).isEqualTo(CompositeCubesTableWrapper.DEFAULT_SLICER));
 
 		UnsafeMeasureForest withoutUnderlyings = UnsafeMeasureForest.builder().name("composite").build();
 

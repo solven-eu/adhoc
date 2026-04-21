@@ -38,7 +38,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  *
  * @author Benoit Lacelle
  */
-public interface IAdhocFactories extends IFilterFactories {
+public interface IAdhocFactories extends IFilterFactories, IHasExecutorAndSliceFactory {
 
 	IOperatorFactory getOperatorFactory();
 
@@ -46,6 +46,7 @@ public interface IAdhocFactories extends IFilterFactories {
 
 	ISliceFactoryFactory getSliceFactoryFactory();
 
+	@Override
 	default ISliceFactory getSliceFactory() {
 		return getSliceFactoryFactory().makeFactory(IHasOptionsAndExecutorService.noOption());
 	}
@@ -57,6 +58,7 @@ public interface IAdhocFactories extends IFilterFactories {
 	 *         executor; override in production contexts (e.g. {@code AdhocFactoriesUnsafe}) to use
 	 *         {@code AdhocUnsafe.adhocMixedPool}.
 	 */
+	@Override
 	default ListeningExecutorService getExecutorService() {
 		return MoreExecutors.newDirectExecutorService();
 	}

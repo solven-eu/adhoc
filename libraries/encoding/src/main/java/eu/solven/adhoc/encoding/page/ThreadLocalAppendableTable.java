@@ -22,21 +22,25 @@
  */
 package eu.solven.adhoc.encoding.page;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.errorprone.annotations.ThreadSafe;
 
+import eu.solven.adhoc.encoding.perfect_hashing.MutablePerfectHashMap;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Standard {@link IAppendableTable}.
- * 
+ *
  * It is thread-safe by creating an {@link IAppendableTablePage} per calling thread. Given page should then write in a
  * mono-threaded way.
- * 
+ *
+ * The per-thread map uses {@link MutablePerfectHashMap} instead of {@link java.util.LinkedHashMap}: the usage pattern
+ * is a handful of {@code computeIfAbsent}-driven inserts (one per column combination seen by the thread) and then many
+ * {@code get} calls (one per row), so a perfect-hash-backed map pays back the per-insert rehash many times over.
+ *
  * @author Benoit Lacelle
  */
 @SuperBuilder
@@ -46,7 +50,7 @@ public class ThreadLocalAppendableTable extends AAppendableTable {
 	protected final ThreadLocal<Map<List<String>, IAppendableTablePage>> keyToPage = new ThreadLocal<>() {
 		@Override
 		protected Map<List<String>, IAppendableTablePage> initialValue() {
-			return new LinkedHashMap<>();
+			return new MutablePerfectHashMap<>();
 		}
 	};
 

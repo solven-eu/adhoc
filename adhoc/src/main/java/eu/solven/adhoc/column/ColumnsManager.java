@@ -125,6 +125,10 @@ public class ColumnsManager implements IColumnsManager {
 	@Singular
 	final ImmutableSet<ICalculatedColumn> calculatedColumns;
 
+	// TODO Unify `columnGenerator` with `calculatedColumns`: an IColumnGenerator registered here overlaps with the
+	// ICalculatedColumn mechanism (both advertise column names + types and get merged into `cube.getColumns()`).
+	// Ideally, IColumnGenerator-registered columns should be handled through the calculatedColumns path so there is
+	// a single surface for manually-declared columns.
 	@Default
 	@NonNull
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();

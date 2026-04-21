@@ -40,6 +40,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 - [Unfiltrator](unfiltrator.md) — widening a filter to a coarser granularity; share-of-total and hierarchical totals
 - [Shiftor](shiftor.md) — fetching data from a different slice via `IFilterEditor`; previous-day and business-day patterns
 - [Custom Markers](custom-marker.md) — per-query user context propagated to every `CubeQueryStep`; raw-map → typed-POJO transcoding via `ICustomMarkerTranscoder`; Spring-side wiring through `IAdhocSchemaCustomizer`
+- [Calculated Columns](calculated-columns.md) — `IColumnGenerator` / `IDecomposition` (EXPLODE), `FunctionCalculatedColumn` (per-record function), `EvaluatedExpressionColumn` (user-authored expression), and `ColumnsManager` auto-propagation
 - [Hierarchies](hierarchies.md) — modelling multi-level dimensions today and the roadmap for native hierarchy support
 - [Many-to-many](many-to-many.md) — how a single fact can contribute to multiple coordinates via `Dispatchor`
 - [Custom Measures](custom-measure.md) — implementing `IHasUnderlyingMeasures` + `AMeasureQueryStep` for arbitrary evaluation logic; `RouterMeasure` example
@@ -50,5 +51,6 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 
 - [Module Dependencies](dependencies.md) — inter-module Maven dependency graph
 - [Debug / Investigations](debug.md) — debug/explain query options and automated documentation tools
+- [FAQ](faq.md) — recurrent cases with one or more solutions
 - [Research](research.md) — background reading and algorithmic references
 

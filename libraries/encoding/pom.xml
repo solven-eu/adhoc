@@ -28,6 +28,14 @@
 			<artifactId>adhoc-model</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<!-- MapVerifier -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-model</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>

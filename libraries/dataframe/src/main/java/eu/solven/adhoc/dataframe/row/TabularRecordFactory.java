@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.encoding.perfect_hashing.PerfectHashMap;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
@@ -77,7 +77,9 @@ public class TabularRecordFactory implements ITabularRecordFactory {
 
 	@Override
 	public TabularRecordBuilder makeTabularRecordBuilder(Set<String> absentColumns) {
-		ImmutableMap.Builder<String, Object> aggregates = ImmutableMap.builderWithExpectedSize(getAggregates().size());
+		// PerfectHashKeyset is memoized inside `fields` so the hash table is computed only once per
+		// AggregatedRecordFields and reused by every record this factory produces.
+		PerfectHashMap.Builder<Object> aggregates = PerfectHashMap.newBuilder(fields.getAggregatesKeyset());
 
 		Iterable<? extends String> presentColumns = getColumns(absentColumns);
 		IMapBuilderPreKeys sliceBuilder = sliceFactory.newMapBuilder(presentColumns);

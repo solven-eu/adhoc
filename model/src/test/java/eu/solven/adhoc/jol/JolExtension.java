@@ -25,6 +25,8 @@ package eu.solven.adhoc.jol;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * JUnit 5 extension that suppresses the JOL HotSpot SA attach warning before any test in the class runs.
  *
@@ -43,10 +45,12 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  *
  * @see <a href="https://bugs.openjdk.org/browse/CODETOOLS-7903447">CODETOOLS-7903447</a>
  */
+@Slf4j
 public class JolExtension implements BeforeAllCallback {
 
 	@Override
 	public void beforeAll(ExtensionContext context) {
+		log.info("Setting {} to {}", "jol.skipHotspotSAAttach", "true");
 		System.setProperty("jol.skipHotspotSAAttach", "true");
 	}
 }

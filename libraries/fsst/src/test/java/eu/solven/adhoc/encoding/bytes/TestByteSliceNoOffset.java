@@ -72,4 +72,68 @@ public class TestByteSliceNoOffset {
 
 		Assertions.assertThat(suboptimal.crop()).isSameAs(suboptimal.buffer());
 	}
+
+	@Test
+	public void testSub_withOffset_returnsOffsetSlice() {
+		byte[] buf = "hello".getBytes(StandardCharsets.UTF_8);
+		IByteSlice slice = new ByteSliceNoOffset(buf, buf.length);
+
+		// sub with non-zero offset should produce a ByteSlice (with offset), not ByteSliceNoOffset
+		IByteSlice sub = slice.sub(1, 3);
+		Assertions.assertThat(sub.asString(StandardCharsets.UTF_8)).isEqualTo("ell");
+	}
+
+	@Test
+	public void testSub_tooLong_throws() {
+		byte[] buf = "hi".getBytes(StandardCharsets.UTF_8);
+		IByteSlice slice = new ByteSliceNoOffset(buf, buf.length);
+
+		Assertions.assertThatThrownBy(() -> slice.sub(0, buf.length + 1)).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void testEquals_null_returnsFalse() {
+		IByteSlice slice = new ByteSliceNoOffset("a".getBytes(StandardCharsets.UTF_8), 1);
+
+		Assertions.assertThat(slice.equals(null)).isFalse();
+	}
+
+	@Test
+	public void testEquals_sameInstance_returnsTrue() {
+		IByteSlice slice = new ByteSliceNoOffset("a".getBytes(StandardCharsets.UTF_8), 1);
+
+		Assertions.assertThat(slice.equals(slice)).isTrue();
+	}
+
+	@Test
+	public void testEquals_nonByteSlice_returnsFalse() {
+		IByteSlice slice = new ByteSliceNoOffset("a".getBytes(StandardCharsets.UTF_8), 1);
+
+		Assertions.assertThat("a".equals(slice)).isFalse();
+	}
+
+	@Test
+	public void testIsFastCrop_exactLength_returnsTrue() {
+		byte[] buf = "abc".getBytes(StandardCharsets.UTF_8);
+		IByteSlice slice = new ByteSliceNoOffset(buf, buf.length);
+
+		Assertions.assertThat(slice.isFastCrop()).isTrue();
+	}
+
+	@Test
+	public void testIsFastCrop_shorterLength_returnsFalse() {
+		byte[] buf = "abc".getBytes(StandardCharsets.UTF_8);
+		IByteSlice slice = new ByteSliceNoOffset(buf, 2);
+
+		Assertions.assertThat(slice.isFastCrop()).isFalse();
+	}
+
+	@Test
+	public void testRead_returnsCorrectByte() {
+		byte[] buf = "abc".getBytes(StandardCharsets.UTF_8);
+		IByteSlice slice = new ByteSliceNoOffset(buf, buf.length);
+
+		Assertions.assertThat(slice.read(0)).isEqualTo((byte) 'a');
+		Assertions.assertThat(slice.read(1)).isEqualTo((byte) 'b');
+	}
 }

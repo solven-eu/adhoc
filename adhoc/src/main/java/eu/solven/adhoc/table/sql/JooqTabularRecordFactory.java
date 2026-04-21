@@ -61,10 +61,7 @@ public class JooqTabularRecordFactory {
 
 			for (int i = 0; i < size; i++) {
 				Object value = r.get(columnShift + i);
-				if (value != null) {
-					String columnName = aggregateFields.get(i);
-					recordBuilder.appendAggregate(columnName, value);
-				}
+				recordBuilder.appendAggregate(value);
 			}
 
 			columnShift += size;

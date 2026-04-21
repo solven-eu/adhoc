@@ -34,7 +34,9 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.util.mermaid.ClassHierarchyAsJavaParserMermaid.ClassEdge;
 import eu.solven.adhoc.util.mermaid.ClassHierarchyAsJavaParserMermaid.ClassNode;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class TestClassHierarchyAsJavaParserMermaid {
 
 	/**
@@ -113,6 +115,7 @@ public class TestClassHierarchyAsJavaParserMermaid {
 		Path outputFile = projectRoot.resolve("docs/ARCHITECTURE.mmd");
 		Files.createDirectories(outputFile.getParent());
 		Files.writeString(outputFile, diagram);
+		log.info("Updated {}", outputFile.toAbsolutePath().normalize());
 
 		Assertions.assertThat(outputFile).isNotEmptyFile();
 	}

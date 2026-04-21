@@ -23,21 +23,21 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.encoding.page.IAppendableTable;
 import eu.solven.adhoc.encoding.page.IAppendableTableFactory;
 import eu.solven.adhoc.encoding.page.ITableRowRead;
 import eu.solven.adhoc.encoding.page.ITableRowWrite;
+import eu.solven.adhoc.encoding.page.ScopedValueAppendableTable;
 import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
 import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.AccessLevel;
@@ -58,7 +58,7 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class ColumnSliceFactory extends ASliceFactory {
+public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 
 	@Default
 	@NonNull
@@ -82,9 +82,9 @@ public class ColumnSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
-	public static class MapBuilderPreKeys implements IMapBuilderPreKeys, IHasEntries {
+	public static class MapBuilderPreKeys implements IMapBuilderPreKeys {
 		@NonNull
-		protected final ASliceFactory factory;
+		protected final ColumnSliceFactory factory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@NonNull
@@ -94,11 +94,6 @@ public class ColumnSliceFactory extends ASliceFactory {
 		protected final IAppendableTable pageFactory;
 
 		protected ITableRowWrite row;
-
-		@Override
-		public Collection<? extends String> getKeys() {
-			return keysLikeList;
-		}
 
 		protected String peekNextKey() {
 			int currentSize;
@@ -131,15 +126,6 @@ public class ColumnSliceFactory extends ASliceFactory {
 			row.add(peekNextKey(), normalizedValue);
 
 			return this;
-		}
-
-		@Override
-		public Collection<?> getValues() {
-			if (row == null) {
-				return ImmutableList.of();
-			} else {
-				throw new NotYetImplementedException("Undictionarize");
-			}
 		}
 
 		public ITableRowWrite getDictionarizedValues() {
@@ -177,22 +163,24 @@ public class ColumnSliceFactory extends ASliceFactory {
 	}
 
 	@Override
-	public IAdhocMap buildMap(IHasEntries hasEntries) {
-		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			ITableRowWrite values = preKeys.getDictionarizedValues();
-
-			ITableRowRead frozen = values.freeze();
-
-			// `frozen` IS-A IInt2ObjectReader (via ITableRowRead default method), so pass it directly to avoid
-			// allocating a bound method reference adapter per `buildMap` call.
-			return MapOverIntFunction.builder()
-					.factory(this)
-					.keys(preKeys.keysLikeList)
-					.unorderedValues(frozen)
-					.build();
-		} else {
-			return buildMapNaively(hasEntries);
+	public <R> R bindScope(Callable<R> body) throws Exception {
+		// Delegate to the backing table when it requires per-thread scope binding (e.g. ScopedValueAppendableTable).
+		// ThreadLocal-backed tables inherit the no-op default.
+		IAppendableTable table = pageFactorySupplier.get();
+		if (table instanceof ScopedValueAppendableTable scoped) {
+			return scoped.callInScope(body);
 		}
+		return body.call();
+	}
+
+	public IAdhocMap buildMap(MapBuilderPreKeys preKeys) {
+		ITableRowWrite values = preKeys.getDictionarizedValues();
+
+		ITableRowRead frozen = values.freeze();
+
+		// `frozen` IS-A IInt2ObjectReader (via ITableRowRead default method), so pass it directly to avoid
+		// allocating a bound method reference adapter per `buildMap` call.
+		return MapOverIntFunction.builder().factory(this).keys(preKeys.keysLikeList).unorderedValues(frozen).build();
 	}
 
 }

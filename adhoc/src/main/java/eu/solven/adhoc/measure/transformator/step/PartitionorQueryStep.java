@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -45,6 +44,7 @@ import eu.solven.adhoc.dataframe.column.partitioned.PartitionedMergeableColumn;
 import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.PodExecutors;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.engine.tabular.inducer.JavaStreamInducedEvaluator;
@@ -171,14 +171,13 @@ public class PartitionorQueryStep extends AMeasureQueryStep {
 		return Cuboid.forGroupBy(step).values(values).build();
 	}
 
-	@SuppressWarnings("PMD.CloseResource")
 	protected List<ICuboid> produceOutputPerInputPartition(List<? extends ICuboid> underlyings, int nbPartitions) {
-		ListeningExecutorService executor = factories.getExecutorService();
-
 		List<ListenableFuture<ICuboid>> futures = new ArrayList<>(nbPartitions);
 		for (int p = 0; p < nbPartitions; p++) {
 			int partitionIndex = p;
-			futures.add(executor.submit(() -> {
+			// Each virtual-thread task re-establishes the slice-factory scope required by scoped backings
+			// (no-op on ThreadLocal-backed factories).
+			futures.add(PodExecutors.submitScoped(factories, () -> {
 				List<ICuboid> partitionCuboids = underlyings.stream()
 						.map(c -> ((IPartitioned<ICuboid>) c).getPartition(partitionIndex))
 						.toList();
