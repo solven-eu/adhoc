@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.table.sql.join;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +39,7 @@ import org.jooq.impl.DSL;
 
 import com.google.common.collect.Lists;
 
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

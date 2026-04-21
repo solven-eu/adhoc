@@ -24,6 +24,7 @@ package eu.solven.adhoc.measure.graphviz;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -83,6 +84,14 @@ public class ForestAsGraphvizDag {
 	@Builder.Default
 	private final List<Map.Entry<Class<?>, String>> classToColor = DEFAULT_CLASSTOCOLOR;
 
+	/**
+	 * Names of measures to highlight visually in the generated graph (e.g. to let a human quickly locate specific
+	 * measures in a large DAG). Highlighted nodes receive a thick red double-perimeter border, applied on top of the
+	 * regular shape/fill-color styling so the node type remains readable.
+	 */
+	@Builder.Default
+	private final Set<String> highlightedMeasures = Set.of();
+
 	private MutableGraph defaultproperties(MutableGraph named) {
 		return named.setDirected(true)
 				.graphAttrs()
@@ -139,6 +148,13 @@ public class ForestAsGraphvizDag {
 					.ifPresent(color -> node.add("fillcolor", color)
 							// https://stackoverflow.com/questions/17252630/why-doesnt-fillcolor-work-with-graphviz
 							.add("style", "filled"));
+
+			if (highlightedMeasures.contains(measure.getName())) {
+				// `color` is the border color (independent from `fillcolor`), and `peripheries=2` draws a double
+				// outline: together they produce a distinctive marker without touching `style` (which is already used
+				// for `filled`, and is a single-valued attribute).
+				node.add("color", "red").add("penwidth", "3").add("peripheries", "2");
+			}
 
 			g.add(node);
 		});

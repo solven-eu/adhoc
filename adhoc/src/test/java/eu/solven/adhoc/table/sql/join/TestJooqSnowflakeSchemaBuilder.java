@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.table.sql;
+package eu.solven.adhoc.table.sql.join;
 
 import java.util.List;
 import java.util.Map;
@@ -30,6 +30,8 @@ import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 
 public class TestJooqSnowflakeSchemaBuilder {
 	static {

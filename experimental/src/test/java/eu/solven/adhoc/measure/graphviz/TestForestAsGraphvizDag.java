@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.graphviz;
 
+import java.util.Set;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -171,6 +173,30 @@ public class TestForestAsGraphvizDag {
 				"d_country=current_slice" -> "d"
 				"d_country=current_whole" -> "d_country=current_slice"
 				}""");
+	}
+
+	@Test
+	public void testHighlightedMeasures() {
+		ForestAsGraphvizDag graphviz =
+				ForestAsGraphvizDag.builder().highlightedMeasures(Set.of("simplestSum", "notInForest")).build();
+
+		IMeasureForest forest = MeasureForest.builder()
+				.name(this.getClass().getSimpleName())
+				.measure(Aggregator.countAsterisk())
+				.measure(Aggregator.sum("simplestSum"))
+				.build();
+		MutableGraph graph = graphviz.asGraph(forest);
+
+		Assertions.assertThat(graph.toString())
+				.isEqualTo(
+						"""
+								digraph "forest=TestForestAsGraphvizDag" {
+								graph ["rankdir"="LR","label"="forest=TestForestAsGraphvizDag"]
+								node ["fontname"="arial"]
+								edge ["class"="link-class"]
+								"count(*)" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled"]
+								"simplestSum" ["shape"="tripleoctagon","fixedsize"="true","fillcolor"="coral","style"="filled","color"="red","penwidth"="3","peripheries"="2"]
+								}""");
 	}
 
 	@Test
