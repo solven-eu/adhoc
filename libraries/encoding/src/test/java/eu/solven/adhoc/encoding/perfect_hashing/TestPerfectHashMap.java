@@ -30,15 +30,26 @@ import java.util.SequencedSet;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.pepper.unittest.MapVerifier;
 
 public class TestPerfectHashMap {
 
 	@Test
-	public void testMapContract() {
+	public void testMapContract_random() {
 		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of("a", "b", "c"));
 		PerfectHashMap<Object> map =
 				PerfectHashMap.<Object>newBuilderRandom(keys).put("a", 1).put("b", "two").put("c", 3.0).build();
+
+		MapVerifier.forInstance(map).preservesInsertionOrder().verify();
+	}
+
+	@Test
+	public void testMapContract_ordered() {
+		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of("a", "b", "c"));
+		PerfectHashMap<Object> map =
+				PerfectHashMap.<Object>newBuilder(keys).append(1).append("two").append(3.0).build();
 
 		MapVerifier.forInstance(map).preservesInsertionOrder().verify();
 	}
@@ -229,5 +240,84 @@ public class TestPerfectHashMap {
 		Assertions.assertThat(keys).isEmpty();
 		Assertions.assertThat(keys.size()).isZero();
 		Assertions.assertThat(keys.contains("a")).isFalse();
+	}
+
+	// ── PerfectHashMap.wrap ─────────────────────────────────────────────────
+
+	/** Nominal wrap: values aligned with the keyset produce a fully-populated map. */
+	@Test
+	public void testWrap_fullyPopulated() {
+		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of("a", "b", "c"));
+		PerfectHashMap<Object> map = PerfectHashMap.wrap(keys, ImmutableList.of(1, "two", 3.0));
+
+		Assertions.assertThat(map.size()).isEqualTo(3);
+		Assertions.assertThat(map.isEmpty()).isFalse();
+		Assertions.assertThat(map.get("a")).isEqualTo(1);
+		Assertions.assertThat(map.get("b")).isEqualTo("two");
+		Assertions.assertThat(map.get("c")).isEqualTo(3.0);
+		Assertions.assertThat(map.containsKey("a")).isTrue();
+		Assertions.assertThat(map.containsKey("missing")).isFalse();
+		Assertions.assertThat(map.getKeyset()).isSameAs(keys);
+	}
+
+	/** ABSENT sentinels encode `not in this map`: size / containsKey / get ignore those slots. */
+	@Test
+	public void testWrap_withAbsentSentinels() {
+		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of("a", "b", "c"));
+		PerfectHashMap<Object> map =
+				PerfectHashMap.wrap(keys, ImmutableList.of(PerfectHashMap.ABSENT, 42, PerfectHashMap.ABSENT));
+
+		Assertions.assertThat(map.size()).isEqualTo(1);
+		Assertions.assertThat(map.isEmpty()).isFalse();
+		Assertions.assertThat(map.get("a")).isNull();
+		Assertions.assertThat(map.get("b")).isEqualTo(42);
+		Assertions.assertThat(map.get("c")).isNull();
+		Assertions.assertThat(map.containsKey("a")).isFalse();
+		Assertions.assertThat(map.containsKey("b")).isTrue();
+		Assertions.assertThat(map.containsKey("c")).isFalse();
+		Assertions.assertThat(map).containsExactlyInAnyOrderEntriesOf(Map.of("b", 42));
+	}
+
+	/** An empty keyset paired with an empty values list produces an empty map. */
+	@Test
+	public void testWrap_emptyKeyset() {
+		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of());
+		PerfectHashMap<Object> map = PerfectHashMap.wrap(keys, ImmutableList.of());
+
+		Assertions.assertThat(map).isEmpty();
+		Assertions.assertThat(map.size()).isZero();
+		Assertions.assertThat(map.get("anything")).isNull();
+		Assertions.assertThat(map.containsKey("anything")).isFalse();
+	}
+
+	/** Size mismatch is a contract violation and must fail fast with {@link IllegalArgumentException}. */
+	@Test
+	public void testWrap_sizeMismatch_throws() {
+		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of("a", "b", "c"));
+
+		// Too few values
+		Assertions.assertThatThrownBy(() -> PerfectHashMap.wrap(keys, ImmutableList.of(1, 2)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("values.size=2")
+				.hasMessageContaining("keyFields.size=3");
+
+		// Too many values
+		Assertions.assertThatThrownBy(() -> PerfectHashMap.wrap(keys, ImmutableList.of(1, 2, 3, 4)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("values.size=4")
+				.hasMessageContaining("keyFields.size=3");
+	}
+
+	/** The same values list can be wrapped twice under the same shared keyset — both maps must be equal. */
+	@Test
+	public void testWrap_sharesKeysetAcrossMaps() {
+		PerfectHashKeyset keys = PerfectHashKeyset.of(List.of("a", "b"));
+		ImmutableList<?> values = ImmutableList.of("x", "y");
+
+		PerfectHashMap<Object> first = PerfectHashMap.wrap(keys, values);
+		PerfectHashMap<Object> second = PerfectHashMap.wrap(keys, values);
+
+		Assertions.assertThat(first).isEqualTo(second).hasSameHashCodeAs(second);
+		Assertions.assertThat(first.getKeyset()).isSameAs(second.getKeyset()).isSameAs(keys);
 	}
 }

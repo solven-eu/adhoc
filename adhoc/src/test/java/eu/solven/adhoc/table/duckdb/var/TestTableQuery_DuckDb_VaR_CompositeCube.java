@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.duckdb.var;
 
+import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.Wrapper;
 import java.util.AbstractMap;
@@ -117,26 +118,37 @@ public class TestTableQuery_DuckDb_VaR_CompositeCube extends ADuckDbJooqTest
 	 * length expected to match {@link #arrayLength}.
 	 */
 	private void createAndFeedPhysicalTable(String tableName, List<Map.Entry<String, float[]>> rows) {
+		// `tableName` is interpolated into the DDL/DML string (JDBC cannot bind identifiers), so validate it against
+		// a whitelist before the INSERT is prepared. Data values (color, doubles) are bound through the
+		// PreparedStatement to keep untrusted strings out of the SQL.
+		if (!tableName1.equals(tableName) && !tableName2.equals(tableName) && !tableNameSimple.equals(tableName)) {
+			throw new IllegalArgumentException("Unexpected table name: " + tableName);
+		}
+
 		dslSupplier.getDSLContext().connection(c -> {
 			DuckDBConnection duckDbConnection = ((Wrapper) c).unwrap(DuckDBConnection.class);
-			try (Statement s = duckDbConnection.createStatement()) {
-				s.execute("CREATE TABLE " + tableName + " (color VARCHAR, doubles FLOAT[]);");
-
+			try (Statement ddl = duckDbConnection.createStatement()) {
+				ddl.execute("CREATE TABLE " + tableName + " (color VARCHAR, doubles FLOAT[]);");
+			}
+			try (PreparedStatement ps =
+					duckDbConnection.prepareStatement("INSERT INTO " + tableName + " VALUES (?, ?);")) {
 				for (Map.Entry<String, float[]> row : rows) {
-					float[] arr = row.getValue();
-					StringBuilder arrayLiteral = new StringBuilder("[");
-					for (int i = 0; i < arr.length; i++) {
-						if (i > 0) {
-							arrayLiteral.append(", ");
-						}
-						arrayLiteral.append(arr[i]);
-					}
-					arrayLiteral.append("]::FLOAT[]");
-
-					s.execute("INSERT INTO " + tableName + " VALUES ('" + row.getKey() + "', " + arrayLiteral + ");");
+					ps.setString(1, row.getKey());
+					ps.setArray(2, duckDbConnection.createArrayOf("FLOAT", boxFloats(row.getValue())));
+					ps.addBatch();
 				}
+				ps.executeBatch();
 			}
 		});
+	}
+
+	/** Copies a primitive {@code float[]} into a boxed {@code Float[]} for JDBC {@code setArray} binding. */
+	private static Float[] boxFloats(float[] src) {
+		Float[] out = new Float[src.length];
+		for (int i = 0; i < src.length; i++) {
+			out[i] = src[i];
+		}
+		return out;
 	}
 
 	/**

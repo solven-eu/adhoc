@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure.forest;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,6 +35,15 @@ import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.NotFilter;
 import eu.solven.adhoc.filter.OrFilter;
+import eu.solven.adhoc.filter.value.AndMatcher;
+import eu.solven.adhoc.filter.value.ComparingMatcher;
+import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
+import eu.solven.adhoc.filter.value.LikeMatcher;
+import eu.solven.adhoc.filter.value.NotMatcher;
+import eu.solven.adhoc.filter.value.NullMatcher;
+import eu.solven.adhoc.filter.value.OrMatcher;
+import eu.solven.adhoc.filter.value.StringMatcher;
 import eu.solven.adhoc.measure.forest.MeasureForestConcealer.ConcealingDefinition;
 import eu.solven.adhoc.measure.forest.MeasureForestConcealer.ConcealingResult;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -525,9 +535,8 @@ public class TestMeasureForestConcealer {
 		Filtrator concealedFil = (Filtrator) concealed.getNameToMeasure().get(mn("g7Revenue"));
 		ColumnFilter concealedCF = (ColumnFilter) concealedFil.getFilter();
 		Assertions.assertThat(concealedCF.getColumn()).isEqualTo(cn("country"));
-		Assertions.assertThat(concealedCF.getValueMatcher()).isInstanceOf(eu.solven.adhoc.filter.value.InMatcher.class);
-		eu.solven.adhoc.filter.value.InMatcher im =
-				(eu.solven.adhoc.filter.value.InMatcher) concealedCF.getValueMatcher();
+		Assertions.assertThat(concealedCF.getValueMatcher()).isInstanceOf(InMatcher.class);
+		InMatcher im = (InMatcher) concealedCF.getValueMatcher();
 		Assertions.assertThat(new LinkedHashSet<Object>(im.getOperands()))
 				.containsExactlyInAnyOrder(vn("FR"), vn("DE"), vn("US"));
 	}
@@ -547,10 +556,8 @@ public class TestMeasureForestConcealer {
 
 		Filtrator concealedFil = (Filtrator) concealed.getNameToMeasure().get(mn("nonFr"));
 		ColumnFilter concealedCF = (ColumnFilter) concealedFil.getFilter();
-		Assertions.assertThat(concealedCF.getValueMatcher())
-				.isInstanceOf(eu.solven.adhoc.filter.value.NotMatcher.class);
-		eu.solven.adhoc.filter.value.NotMatcher nm =
-				(eu.solven.adhoc.filter.value.NotMatcher) concealedCF.getValueMatcher();
+		Assertions.assertThat(concealedCF.getValueMatcher()).isInstanceOf(NotMatcher.class);
+		NotMatcher nm = (NotMatcher) concealedCF.getValueMatcher();
 		// Inner EqualsMatcher now carries a v_-token operand rather than the literal "FR".
 		Assertions.assertThat(nm.getNegated()).isEqualTo(eu.solven.adhoc.filter.value.EqualsMatcher.matchEq(vn("FR")));
 	}
@@ -571,8 +578,7 @@ public class TestMeasureForestConcealer {
 
 		Filtrator restoredFil = (Filtrator) restored.getNameToMeasure().get("g7Revenue");
 		ColumnFilter restoredCF = (ColumnFilter) restoredFil.getFilter();
-		eu.solven.adhoc.filter.value.InMatcher im =
-				(eu.solven.adhoc.filter.value.InMatcher) restoredCF.getValueMatcher();
+		InMatcher im = (InMatcher) restoredCF.getValueMatcher();
 		Assertions.assertThat(new LinkedHashSet<Object>(im.getOperands())).containsExactlyInAnyOrder("FR", "DE", "US");
 	}
 
@@ -639,5 +645,106 @@ public class TestMeasureForestConcealer {
 
 	static java.util.stream.Stream<String> defaultStandardEditorKeys() {
 		return MeasureForestConcealer.DEFAULT_STANDARD_EDITOR_KEYS.stream();
+	}
+
+	// ── collectFilterOperands ────────────────────────────────────────────────
+	// Covers every branch of collectFilterOperands + collectMatcherOperands.
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_equalsMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.matchEq("c", "eq"), values);
+		Assertions.assertThat(values).containsExactly("eq");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_inMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		// matchIn keeps its InMatcher only when there are 2+ distinct non-null operands.
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.match("c", InMatcher.matchIn(List.of("a", "b"))),
+				values);
+		Assertions.assertThat(values).containsExactlyInAnyOrder("a", "b");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_notMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(
+				ColumnFilter.match("c", NotMatcher.not(EqualsMatcher.matchEq("n"), false)),
+				values);
+		Assertions.assertThat(values).containsExactly("n");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_andMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		// AndMatcher.copyOf avoids the simplification path that AndMatcher.and may trigger.
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.match("c",
+				AndMatcher.copyOf(List.of(EqualsMatcher.matchEq("x"), EqualsMatcher.matchEq("y")))), values);
+		Assertions.assertThat(values).containsExactlyInAnyOrder("x", "y");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_orMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.match("c",
+				OrMatcher.copyOf(List.of(EqualsMatcher.matchEq("p"), EqualsMatcher.matchEq("q")))), values);
+		Assertions.assertThat(values).containsExactlyInAnyOrder("p", "q");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_comparingMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.match("c", ComparingMatcher.strictlyGreaterThan(42)),
+				values);
+		// ComparingMatcher normalizes integer operands to Long.
+		Assertions.assertThat(values).containsExactly(42L);
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_likeMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.match("c", LikeMatcher.matching("foo%")), values);
+		Assertions.assertThat(values).containsExactly("foo%");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_stringMatcher() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer
+				.collectFilterOperands(ColumnFilter.match("c", StringMatcher.builder().string("s").build()), values);
+		Assertions.assertThat(values).containsExactly("s");
+	}
+
+	@Test
+	public void testCollectFilterOperands_columnFilter_structuralMatcher_noOperand() {
+		// NullMatcher has no concealable operand — the ColumnFilter branch is entered but nothing is added.
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(ColumnFilter.match("c", NullMatcher.matchNull()), values);
+		Assertions.assertThat(values).isEmpty();
+	}
+
+	@Test
+	public void testCollectFilterOperands_andFilter_recurses() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(
+				AndFilter.and(ColumnFilter.matchEq("c1", "a"), ColumnFilter.matchEq("c2", "b")),
+				values);
+		Assertions.assertThat(values).containsExactlyInAnyOrder("a", "b");
+	}
+
+	@Test
+	public void testCollectFilterOperands_orFilter_recurses() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer.collectFilterOperands(OrFilter.or("c1", "a", "c2", "b"), values);
+		Assertions.assertThat(values).containsExactlyInAnyOrder("a", "b");
+	}
+
+	@Test
+	public void testCollectFilterOperands_notFilter_recurses() {
+		Set<Object> values = new LinkedHashSet<>();
+		MeasureForestConcealer
+				.collectFilterOperands(NotFilter.builder().negated(ColumnFilter.matchEq("c", "n")).build(), values);
+		Assertions.assertThat(values).containsExactly("n");
 	}
 }

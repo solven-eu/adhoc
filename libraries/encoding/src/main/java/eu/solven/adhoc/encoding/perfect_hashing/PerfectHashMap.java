@@ -447,13 +447,15 @@ public final class PerfectHashMap<V> implements Map<String, V>, IImmutable {
 			this.values = ImmutableList.builderWithExpectedSize(keys.size());
 		}
 
-		public void append(Object value) {
+		public Builder<V> append(Object value) {
 			if (value == null) {
 				values.add(ABSENT);
 				nbAbsent.incrementAndGet();
 			} else {
 				values.add(value);
 			}
+
+			return this;
 		}
 
 		/**
