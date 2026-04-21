@@ -123,7 +123,6 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** modify test files (`src/test/java/**`) to change test assertions or business logic. You **may** fix resource leaks, compilation errors, or other clear bugs in existing test files.
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
 - Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
-- Modifying files under `pivotable/js/` (Vue.js front-end, e2e/unit tests) is allowed. After edits, run `cd pivotable/js && npm run format && mvn spotless:apply` so Prettier reformats JS/HTML.
 - **Simple tasks** (Javadoc, comments, coverage tests, formatting): do **NOT** change method/constructor signatures, rename classes/methods/fields/variables, or alter business logic.
 - **Complex tasks** (new features, refactoring requested by the user): signature changes, renames, and logic changes are allowed when they are part of the requested work. Prefer adding new methods/fields over modifying existing signatures; when an existing signature must change, confirm with the user first.
 - Do **NOT** reorder imports (Spotless handles that).

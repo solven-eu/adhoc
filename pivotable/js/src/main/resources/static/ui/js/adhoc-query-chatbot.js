@@ -140,11 +140,14 @@ export default {
 			}
 		}
 
-		return { isOpen, isSending, userInput, history, messagesContainer, sendMessage };
+		return { isAvailable, isOpen, isSending, userInput, history, messagesContainer, sendMessage };
 	},
 	template: /* HTML */ `
-        <!-- Floating toggle button (bottom-right corner) -->
+        <!-- Floating toggle button (bottom-right corner). Self-hides when the probe
+             /api/v1/cubes/chat/enabled did not return 2xx (typically: no Anthropic API
+             key set, or MCP server down). -->
         <button
+            v-if="isAvailable"
             class="btn btn-primary rounded-circle position-fixed shadow"
             style="bottom: 1.5rem; right: 1.5rem; width: 3.5rem; height: 3.5rem; font-size: 1.4rem; z-index: 1050;"
             :title="isOpen ? 'Close AI assistant' : 'Open AI query assistant'"
@@ -155,7 +158,7 @@ export default {
 
         <!-- Chat panel -->
         <div
-            v-if="isOpen"
+            v-if="isAvailable && isOpen"
             class="card position-fixed shadow-lg"
             style="bottom: 5.5rem; right: 1.5rem; width: 22rem; height: 28rem; z-index: 1049; display: flex; flex-direction: column;"
         >
