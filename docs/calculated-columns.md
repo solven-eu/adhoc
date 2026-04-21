@@ -69,7 +69,7 @@ A `FunctionCalculatedColumn` can be provided in two ways:
 
 `EvaluatedExpressionColumn` also implements `ICalculatedColumn`. Instead of a `Function`, it
 takes a `String` expression evaluated at runtime by [EvalEx](https://github.com/ezylang/EvalEx)
-(optional dependency — see [SECURITY.MD § EvalEx](../SECURITY.MD#evalex--expression-evaluation-optional-dependency)).
+(optional dependency — see [SECURITY.MD § EvalEx](https://github.com/solven-eu/adhoc/blob/master/SECURITY.MD#evalex--expression-evaluation-optional-dependency)).
 
 ```java
 EvaluatedExpressionColumn quarter = EvaluatedExpressionColumn.builder()
