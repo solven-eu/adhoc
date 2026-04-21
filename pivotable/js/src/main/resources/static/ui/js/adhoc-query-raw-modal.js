@@ -114,43 +114,43 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <!-- Button trigger modal -->
-        <button type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#queryJsonRaw">JSON</button>
+		<!-- Button trigger modal -->
+		<button type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#queryJsonRaw">JSON</button>
 
-        <!-- Modal -->
-        <div class="modal fade" id="queryJsonRaw" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Query as JSON</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <!-- https://stackoverflow.com/questions/4611591/code-vs-pre-vs-samp-for-inline-and-block-code-snippets -->
-                    <div class="modal-body">
-                        <div class="vh-50">
-                            <pre
-                                class="border text-start h-100 w-100"
-                                style=" overflow-y: scroll;"
-                                v-if="isEditing"
-                            ><textarea class="h-100 w-100 px-0 py-0 border-0" style="box-sizing: content-box;" v-model="editedJson">irrelevant</textarea></pre>
-                            <pre class="border text-start h-100 w-100" style="overflow-y: scroll;" v-else>{{queryJson}}</pre>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <span v-if="isEditing">
-                            <button type="button" class="btn btn-success" @click="loadFromJson">Save</button>
-                            <button type="button" class="btn btn-warning" @click="toggleEdit">Cancel</button>
-                            <div v-if="errorWithJson.length >= 1">{{errorWithJson}}</div>
-                        </span>
-                        <span v-else>
-                            <button type="button" class="btn btn-primary" @click="toggleEdit">Edit JSON</button>
-                        </span>
+		<!-- Modal -->
+		<div class="modal fade" id="queryJsonRaw" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered modal-xl">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="exampleModalLabel">Query as JSON</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<!-- https://stackoverflow.com/questions/4611591/code-vs-pre-vs-samp-for-inline-and-block-code-snippets -->
+					<div class="modal-body">
+						<div class="vh-50">
+							<pre
+								class="border text-start h-100 w-100"
+								style=" overflow-y: scroll;"
+								v-if="isEditing"
+							><textarea class="h-100 w-100 px-0 py-0 border-0" style="box-sizing: content-box;" v-model="editedJson">irrelevant</textarea></pre>
+							<pre class="border text-start h-100 w-100" style="overflow-y: scroll;" v-else>{{queryJson}}</pre>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<span v-if="isEditing">
+							<button type="button" class="btn btn-success" @click="loadFromJson">Save</button>
+							<button type="button" class="btn btn-warning" @click="toggleEdit">Cancel</button>
+							<div v-if="errorWithJson.length >= 1">{{errorWithJson}}</div>
+						</span>
+						<span v-else>
+							<button type="button" class="btn btn-primary" @click="toggleEdit">Edit JSON</button>
+						</span>
 
-                        <button type="button" class="btn btn-light" @click="copyToClipboard"><i class="bi bi-clipboard"></i>{{copyToClipboardStatus}}</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
+						<button type="button" class="btn btn-light" @click="copyToClipboard"><i class="bi bi-clipboard"></i>{{copyToClipboardStatus}}</button>
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	`,
 };

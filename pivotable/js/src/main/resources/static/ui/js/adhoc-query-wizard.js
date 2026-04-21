@@ -140,32 +140,32 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-                </div>
-            </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
-        <div v-else>
-            <form class="text-break">
-                <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
-                <AdhocQueryWizardSearch :searchOptions="searchOptions" />
+		<div v-if="(!endpoint || !cube)">
+			<div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
+				<div class="spinner-border" role="status">
+					<span class="visually-hidden">Loading cubeId={{cubeId}}</span>
+				</div>
+			</div>
+			<div v-else>
+				<span>Issue loading cubeId={{cubeId}}</span>
+			</div>
+		</div>
+		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+		<div v-else>
+			<form class="text-break">
+				<AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
+				<AdhocQueryWizardSearch :searchOptions="searchOptions" />
 
-                <AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
+				<AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
 
-                <div class="accordion" id="accordionWizard">
-                    <AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
-                    <AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
+				<div class="accordion" id="accordionWizard">
+					<AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
+					<AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
 
-                    <AdhocAccordionItemCustoms :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
-                    <AdhocAccordionItemOptions :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />
-                </div>
-            </form>
-        </div>
-    `,
+					<AdhocAccordionItemCustoms :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
+					<AdhocAccordionItemOptions :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />
+				</div>
+			</form>
+		</div>
+	`,
 };

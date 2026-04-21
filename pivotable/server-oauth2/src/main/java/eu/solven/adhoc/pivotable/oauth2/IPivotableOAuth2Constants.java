@@ -33,18 +33,18 @@ public interface IPivotableOAuth2Constants {
 	String KEY_JWT_SIGNINGKEY = "adhoc.pivotable.oauth2.signing-key";
 
 	/**
-	 * Validity of an issued {@code access_token}, as an ISO-8601 duration string (e.g. {@code "PT1H"}). Default is
-	 * one hour — short enough that a leaked token has a small blast radius, long enough that refreshes are rare in
-	 * normal UX. Override to a few seconds under a test profile (e.g. {@code pivotable-e2e-shorttoken}) to exercise
-	 * the refresh path end-to-end without waiting the real hour.
+	 * Validity of an issued {@code access_token}, as an ISO-8601 duration string (e.g. {@code "PT1H"}). Default is one
+	 * hour — short enough that a leaked token has a small blast radius, long enough that refreshes are rare in normal
+	 * UX. Override to a few seconds under a test profile (e.g. {@code pivotable-e2e-shorttoken}) to exercise the
+	 * refresh path end-to-end without waiting the real hour.
 	 */
 	String KEY_ACCESS_TOKEN_VALIDITY = "adhoc.pivotable.oauth2.access-token.validity";
 	String DEFAULT_ACCESS_TOKEN_VALIDITY = "PT1H";
 
 	/**
 	 * Validity of an issued {@code refresh_token}, as an ISO-8601 duration string (e.g. {@code "P365D"}). Default is
-	 * 365 days (~remember-me semantics: stay logged in for a year). Override to a few seconds under a test profile
-	 * to exercise the "must re-login" path without running the test for days.
+	 * 365 days (~remember-me semantics: stay logged in for a year). Override to a few seconds under a test profile to
+	 * exercise the "must re-login" path without running the test for days.
 	 */
 	String KEY_REFRESH_TOKEN_VALIDITY = "adhoc.pivotable.oauth2.refresh-token.validity";
 	String DEFAULT_REFRESH_TOKEN_VALIDITY = "P365D";

@@ -114,37 +114,37 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-            <label class="form-check-label  text-wrap" :for="'column_' + column" v-html="mark(column)"></label>
-        </div>
+		<div class="form-check form-switch">
+			<input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
+			<label class="form-check-label  text-wrap" :for="'column_' + column" v-html="mark(column)"></label>
+		</div>
 
-        <small>{{type}}</small>
+		<small>{{type}}</small>
 
-        <small>
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" :id="'columnWithStar_' + column" v-model="queryModel.withStarColumns[column]" />
-                <label class="form-check-label  text-wrap" :for="'columnWithStar_' + column">grandTotal</label>
-            </div>
-        </small>
+		<small>
+			<div class="form-check form-switch">
+				<input class="form-check-input" type="checkbox" role="switch" :id="'columnWithStar_' + column" v-model="queryModel.withStarColumns[column]" />
+				<label class="form-check-label  text-wrap" :for="'columnWithStar_' + column">grandTotal</label>
+			</div>
+		</small>
 
-        <button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
-            <span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
-            <!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
-            <span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
-            <span v-if="loadingCoordinates">
-                <div class="spinner-grow" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </span>
-        </button>
+		<button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
+			<span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
+			<!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
+			<span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
+			<span v-if="loadingCoordinates">
+				<div class="spinner-grow" role="status">
+					<span class="visually-hidden">Loading...</span>
+				</div>
+			</span>
+		</button>
 
-        <AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
-        <button type="button" @click="openFilterModal()" class="btn btn-outline-primary position-relative">
-            <i class="bi bi-filter"></i>
-            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" v-if="isFiltered()">
-                <span class="visually-hidden">is filtered</span>
-            </span>
-        </button>
-    `,
+		<AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+		<button type="button" @click="openFilterModal()" class="btn btn-outline-primary position-relative">
+			<i class="bi bi-filter"></i>
+			<span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" v-if="isFiltered()">
+				<span class="visually-hidden">is filtered</span>
+			</span>
+		</button>
+	`,
 };

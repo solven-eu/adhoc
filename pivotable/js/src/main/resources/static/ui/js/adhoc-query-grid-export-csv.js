@@ -79,11 +79,11 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <span v-if="array.length >= 1">
-            <button type="button" class="btn btn-primary" @click="downloadAsCsv">Download CSV</button>
-            <button type="button" class="btn btn-primary" @click="copyToClipboard">
-                <i class="bi bi-clipboard"></i>Copy to clipboard {{copyToClipboardStatus}}
-            </button>
-        </span>
-    `,
+		<span v-if="array.length >= 1">
+			<button type="button" class="btn btn-primary" @click="downloadAsCsv">Download CSV</button>
+			<button type="button" class="btn btn-primary" @click="copyToClipboard">
+				<i class="bi bi-clipboard"></i>Copy to clipboard {{copyToClipboardStatus}}
+			</button>
+		</span>
+	`,
 };

@@ -1,0 +1,65 @@
+# pivotable-e2e-shorttoken — test-only profile that shortens JWT lifetimes so
+# e2e scenarios can exercise the real token-refresh / re-login paths in seconds
+# instead of the default one hour / one year.
+#
+# Why it exists
+# -------------
+# The default production-like lifetimes are `PT1H` for the access_token and
+# `P365D` for the refresh_token (see
+# `IPivotableOAuth2Constants.DEFAULT_ACCESS_TOKEN_VALIDITY` /
+# `DEFAULT_REFRESH_TOKEN_VALIDITY`). Waiting those out in a test is impractical.
+# `PivotableTokenService` reads both values from config at token-mint time, so
+# this profile simply overrides them.
+#
+# Most fast UI tests should still mock the 401 via `page.route(...)` in
+# Playwright (see `e2e-tests/localhost8080-token-expiry.spec.js`); this profile
+# is for the one or two tests that want to verify the REAL refresh round-trip.
+#
+# Lifetimes
+# ---------
+#   access_token : PT3S  — long enough to complete a page load + one data call,
+#                          short enough that a wait of 4–5s reliably makes the
+#                          next API call 401 and triggers the JS refresh flow.
+#   refresh_token: PT30S — long enough to test the "silent refresh succeeds"
+#                          path; short enough that a wait of 35s reliably makes
+#                          the refresh ALSO fail, triggering `needsToLogin=true`.
+#
+# Usage
+# -----
+# Append to the environment profile you normally run, for example:
+#
+#     SPRING_ACTIVE_PROFILES=pivotable-unsafe,pivotable-e2e-shorttoken \
+#       mvn -f pivotable/server-webflux/pom.xml -Pfast spring-boot:run
+#
+# Or in Playwright:
+#
+#     SPRING_ACTIVE_PROFILES=pivotable-unsafe,pivotable-e2e-shorttoken \
+#       npx playwright test localhost8080-token-expiry-real
+#
+# Do NOT enable in production: three-second access_tokens would trigger a
+# refresh on almost every API call and burn CPU / logs for nothing.
+adhoc.pivotable.oauth2:
+    access-token:
+        validity: PT3S
+    refresh-token:
+        validity: PT30S
+
+# Session (SESSION / JSESSIONID cookie) sliding-idle timeout.
+#
+# The token lifetimes above only affect the Pivotable JWT. The underlying Spring Security
+# SESSION is what gates `/api/login/v1/oauth2/token` — once the session idles out, even
+# silent refresh fails and the SPA is forced into a full re-login.
+#
+# Default is 30 minutes; we shorten it to 1 minute so the "session expired → re-login
+# keeps the current view" scenario is observable in seconds.
+#
+# `server.reactive.session.timeout` is read by Spring Boot's WebFlux auto-config and
+# applied to InMemoryWebSessionStore#setMaxIdleTime. `server.servlet.session.timeout`
+# is read by Tomcat for webmvc. We set both so the profile works for either runtime.
+server:
+    reactive:
+        session:
+            timeout: PT1M
+    servlet:
+        session:
+            timeout: PT1M

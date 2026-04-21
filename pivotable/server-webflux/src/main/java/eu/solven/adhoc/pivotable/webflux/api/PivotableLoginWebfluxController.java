@@ -98,10 +98,35 @@ public class PivotableLoginWebfluxController {
 	}
 
 	// This API enables fetching the login status without getting a 401/generating a JS error/generating an exception.
+	// When logged-in, the response is also enriched with session-lifetime info so the SPA can display "session idles
+	// out in N seconds" without having to read the HttpOnly SESSION cookie (which it can't).
 	@GetMapping("/json")
-	public Mono<? extends Map<String, ?>> loginStatus() {
-		return userMayEmpty().map(user -> Map.of("login", HttpStatus.OK.value()))
+	public Mono<Map<String, Object>> loginStatus(ServerWebExchange exchange) {
+		return userMayEmpty()
+				.flatMap(user -> exchange.getSession()
+						.map(session -> ImmutableMap.<String, Object>builder()
+								.put("login", HttpStatus.OK.value())
+								.put("session", sessionInfo(session))
+								.build()))
+				.<Map<String, Object>>map(m -> m)
 				.switchIfEmpty(Mono.just(Map.of("login", HttpStatus.UNAUTHORIZED.value())));
+	}
+
+	/**
+	 * Describes the current {@link org.springframework.web.server.WebSession} as a plain JSON-friendly map, so the SPA
+	 * can render a sliding-idle countdown without reading the (HttpOnly) SESSION cookie. All time fields are epoch
+	 * milliseconds (UTC); the idle duration is seconds.
+	 *
+	 * @param session
+	 *            the current WebSession.
+	 * @return a map with keys {@code maxIdleSeconds}, {@code creationEpochMs}, {@code lastAccessEpochMs}.
+	 */
+	private Map<String, Object> sessionInfo(org.springframework.web.server.WebSession session) {
+		return ImmutableMap.<String, Object>builder()
+				.put("maxIdleSeconds", session.getMaxIdleTime().toSeconds())
+				.put("creationEpochMs", session.getCreationTime().toEpochMilli())
+				.put("lastAccessEpochMs", session.getLastAccessTime().toEpochMilli())
+				.build();
 	}
 
 	// BASIC login is available for fakeUser

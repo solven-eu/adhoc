@@ -143,64 +143,64 @@ export default {
 		return { isAvailable, isOpen, isSending, userInput, history, messagesContainer, sendMessage };
 	},
 	template: /* HTML */ `
-        <!-- Floating toggle button (bottom-right corner). Self-hides when the probe
+		<!-- Floating toggle button (bottom-right corner). Self-hides when the probe
              /api/v1/cubes/chat/enabled did not return 2xx (typically: no Anthropic API
              key set, or MCP server down). -->
-        <button
-            v-if="isAvailable"
-            class="btn btn-primary rounded-circle position-fixed shadow"
-            style="bottom: 1.5rem; right: 1.5rem; width: 3.5rem; height: 3.5rem; font-size: 1.4rem; z-index: 1050;"
-            :title="isOpen ? 'Close AI assistant' : 'Open AI query assistant'"
-            @click="isOpen = !isOpen"
-        >
-            <!-- U+1F4AC SPEECH BALLOON emoji -->&#x1F4AC;
-        </button>
+		<button
+			v-if="isAvailable"
+			class="btn btn-primary rounded-circle position-fixed shadow"
+			style="bottom: 1.5rem; right: 1.5rem; width: 3.5rem; height: 3.5rem; font-size: 1.4rem; z-index: 1050;"
+			:title="isOpen ? 'Close AI assistant' : 'Open AI query assistant'"
+			@click="isOpen = !isOpen"
+		>
+			<!-- U+1F4AC SPEECH BALLOON emoji -->&#x1F4AC;
+		</button>
 
-        <!-- Chat panel -->
-        <div
-            v-if="isAvailable && isOpen"
-            class="card position-fixed shadow-lg"
-            style="bottom: 5.5rem; right: 1.5rem; width: 22rem; height: 28rem; z-index: 1049; display: flex; flex-direction: column;"
-        >
-            <div class="card-header d-flex justify-content-between align-items-center py-2">
-                <span class="fw-semibold">AI Query Assistant</span>
-                <button class="btn-close" @click="isOpen = false" aria-label="Close"></button>
-            </div>
+		<!-- Chat panel -->
+		<div
+			v-if="isAvailable && isOpen"
+			class="card position-fixed shadow-lg"
+			style="bottom: 5.5rem; right: 1.5rem; width: 22rem; height: 28rem; z-index: 1049; display: flex; flex-direction: column;"
+		>
+			<div class="card-header d-flex justify-content-between align-items-center py-2">
+				<span class="fw-semibold">AI Query Assistant</span>
+				<button class="btn-close" @click="isOpen = false" aria-label="Close"></button>
+			</div>
 
-            <!-- Message history -->
-            <div class="card-body overflow-auto flex-grow-1 p-2" ref="messagesContainer">
-                <p v-if="history.length === 0" class="text-muted small mt-2 text-center">
-                    Ask me to build a query.<br />
-                    e.g. <em>"Show revenue by country"</em>
-                </p>
-                <div v-for="(msg, i) in history" :key="i" class="mb-2">
-                    <div :class="msg.role === 'user' ? 'text-end' : 'text-start'">
-                        <span
-                            :class="['badge', 'text-wrap', 'text-start', 'lh-base', msg.role === 'user' ? 'bg-primary' : 'bg-secondary']"
-                            style="max-width: 88%; white-space: pre-wrap; font-weight: normal; font-size: 0.82rem;"
-                            >{{ msg.content || '…' }}</span
-                        >
-                    </div>
-                </div>
-            </div>
+			<!-- Message history -->
+			<div class="card-body overflow-auto flex-grow-1 p-2" ref="messagesContainer">
+				<p v-if="history.length === 0" class="text-muted small mt-2 text-center">
+					Ask me to build a query.<br />
+					e.g. <em>"Show revenue by country"</em>
+				</p>
+				<div v-for="(msg, i) in history" :key="i" class="mb-2">
+					<div :class="msg.role === 'user' ? 'text-end' : 'text-start'">
+						<span
+							:class="['badge', 'text-wrap', 'text-start', 'lh-base', msg.role === 'user' ? 'bg-primary' : 'bg-secondary']"
+							style="max-width: 88%; white-space: pre-wrap; font-weight: normal; font-size: 0.82rem;"
+							>{{ msg.content || '…' }}</span
+						>
+					</div>
+				</div>
+			</div>
 
-            <!-- Input bar -->
-            <div class="card-footer p-2">
-                <div class="input-group input-group-sm">
-                    <input
-                        type="text"
-                        class="form-control"
-                        v-model="userInput"
-                        @keydown.enter="sendMessage()"
-                        :disabled="isSending"
-                        placeholder="Ask about this cube…"
-                    />
-                    <button class="btn btn-primary" @click="sendMessage()" :disabled="isSending || !userInput.trim()">
-                        <span v-if="isSending" class="spinner-border spinner-border-sm" role="status"></span>
-                        <span v-else>Send</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `,
+			<!-- Input bar -->
+			<div class="card-footer p-2">
+				<div class="input-group input-group-sm">
+					<input
+						type="text"
+						class="form-control"
+						v-model="userInput"
+						@keydown.enter="sendMessage()"
+						:disabled="isSending"
+						placeholder="Ask about this cube…"
+					/>
+					<button class="btn btn-primary" @click="sendMessage()" :disabled="isSending || !userInput.trim()">
+						<span v-if="isSending" class="spinner-border spinner-border-sm" role="status"></span>
+						<span v-else>Send</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	`,
 };

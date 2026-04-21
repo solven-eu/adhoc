@@ -59,17 +59,17 @@ export default {
 	},
 
 	template: /* HTML */ `
-        <div v-if="!isLoggedIn"><LoginRef /></div>
-        <div v-else-if="Object.values(contests).length == 0 && nbCubeFetching > 0">Loading cubes</div>
-        <div v-else class="container">
-            <div class="row border" v-for="contest in contests">
-                <AdhocCube
-                    :endpointId="contest.constantMetadata.endpointId"
-                    :contestId="contest.contestId"
-                    :showEndpoint="showEndpoint"
-                    :showLeaderboard="showLeaderboard"
-                />
-            </div>
-        </div>
-    `,
+		<div v-if="!isLoggedIn"><LoginRef /></div>
+		<div v-else-if="Object.values(contests).length == 0 && nbCubeFetching > 0">Loading cubes</div>
+		<div v-else class="container">
+			<div class="row border" v-for="contest in contests">
+				<AdhocCube
+					:endpointId="contest.constantMetadata.endpointId"
+					:contestId="contest.contestId"
+					:showEndpoint="showEndpoint"
+					:showLeaderboard="showLeaderboard"
+				/>
+			</div>
+		</div>
+	`,
 };

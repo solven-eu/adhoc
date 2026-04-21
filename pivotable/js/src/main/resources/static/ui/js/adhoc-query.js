@@ -148,24 +148,24 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
-        <div class="row">
-            <div class="col-3">
-                <div class="row">
-                    <AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :recentlyUsed="recentlyUsed" :loading="loading" />
-                </div>
+		<AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
+		<div class="row">
+			<div class="col-3">
+				<div class="row">
+					<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :recentlyUsed="recentlyUsed" :loading="loading" />
+				</div>
 
-                <div class="row">
-                    <AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
-                </div>
-            </div>
-            <div class="col-9">
-                <AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" :cube="cube" />
-            </div>
+				<div class="row">
+					<AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
+				</div>
+			</div>
+			<div class="col-9">
+				<AdhocQueryGrid :tabularView="tabularView" :loading="loading" :queryModel="queryModel" :domId="domId" :cube="cube" />
+			</div>
 
-            <AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
-            <AdhocQueryWizardColumnFilterModalSingleton :columnFilterModel="columnFilterModel" />
-            <AdhocQueryChatbot :endpointId="endpointId" :cubeId="cubeId" />
-        </div>
-    `,
+			<AdhocMeasuresDag :measuresDagModel="measuresDagModel" />
+			<AdhocQueryWizardColumnFilterModalSingleton :columnFilterModel="columnFilterModel" />
+			<AdhocQueryChatbot :endpointId="endpointId" :cubeId="cubeId" />
+		</div>
+	`,
 };

@@ -36,23 +36,23 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!endpoint || endpoint.error">
-            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-        </div>
-        <div v-else>
-            <span>
-                <span v-if="withDescription">
-                    <h1>
-                        <AdhocEndpointRef :endpointId="endpointId" />
-                    </h1>
-                    Endpoint-Description: {{endpoint.name}}
-                </span>
-                <span v-else>
-                    <h5>
-                        <AdhocEndpointRef :endpointId="endpointId" />
-                    </h5>
-                </span>
-            </span>
-        </div>
-    `,
+		<div v-if="!endpoint || endpoint.error">
+			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+		</div>
+		<div v-else>
+			<span>
+				<span v-if="withDescription">
+					<h1>
+						<AdhocEndpointRef :endpointId="endpointId" />
+					</h1>
+					Endpoint-Description: {{endpoint.name}}
+				</span>
+				<span v-else>
+					<h5>
+						<AdhocEndpointRef :endpointId="endpointId" />
+					</h5>
+				</span>
+			</span>
+		</div>
+	`,
 };

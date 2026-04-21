@@ -424,34 +424,34 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-                </div>
-            </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
-        <div v-else>
-            <span>
-                <div>
-                    <button type="button" @click="sendQuery()" class="btn btn-outline-primary">Submit</button>
-                    <span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
-                </div>
+		<div v-if="(!endpoint || !cube)">
+			<div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
+				<div class="spinner-border" role="status">
+					<span class="visually-hidden">Loading cubeId={{cubeId}}</span>
+				</div>
+			</div>
+			<div v-else>
+				<span>Issue loading cubeId={{cubeId}}</span>
+			</div>
+		</div>
+		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+		<div v-else>
+			<span>
+				<div>
+					<button type="button" @click="sendQuery()" class="btn btn-outline-primary">Submit</button>
+					<span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
+				</div>
 
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
-                    <label class="form-check-label" for="autoQuery">autoQuery</label>
-                </div>
-            </span>
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
+					<label class="form-check-label" for="autoQuery">autoQuery</label>
+				</div>
+			</span>
 
-            <AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
-            <AdhocQueryReset :queryModel="queryModel" />
-            <AdhocQueryFavorite :queryModel="queryModel" />
-            <AdhocQueryFavorites :queryModel="queryModel" />
-        </div>
-    `,
+			<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
+			<AdhocQueryReset :queryModel="queryModel" />
+			<AdhocQueryFavorite :queryModel="queryModel" />
+			<AdhocQueryFavorites :queryModel="queryModel" />
+		</div>
+	`,
 };

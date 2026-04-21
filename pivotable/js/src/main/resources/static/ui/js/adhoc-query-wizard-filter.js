@@ -66,22 +66,22 @@ export default {
 		return { childrenPath, removeFilter };
 	},
 	template: /* HTML */ `
-        <div v-if="!filter">NULL?</div>
-        <div v-else-if="filter.type === 'and'">
-            AND<button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
-            <ul>
-                <li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
-            </ul>
-        </div>
-        <div v-else-if="filter.type === 'or'">
-            OR<button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
-            <ul>
-                <li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
-            </ul>
-        </div>
-        <span v-else-if="filter.type==='column'">
-            {{filter.column}}={{filter.valueMatcher}} <button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
-        </span>
-        <div v-else>{{filter}}</div>
-    `,
+		<div v-if="!filter">NULL?</div>
+		<div v-else-if="filter.type === 'and'">
+			AND<button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
+			<ul>
+				<li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
+			</ul>
+		</div>
+		<div v-else-if="filter.type === 'or'">
+			OR<button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
+			<ul>
+				<li v-for="(operand, index) in filter.filters"><AdhocQueryWizardFilter :filter="operand" :path="childrenPath(index)" /></li>
+			</ul>
+		</div>
+		<span v-else-if="filter.type==='column'">
+			{{filter.column}}={{filter.valueMatcher}} <button type="button" class="btn"><i class="bi bi-x-circle" @click="removeFilter"></i></button>
+		</span>
+		<div v-else>{{filter}}</div>
+	`,
 };

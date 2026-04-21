@@ -184,38 +184,38 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div>
-            column={{column}} filterType={{filterType}}
-            <select class="form-select" aria-label="Filter type" v-model="filterType">
-                <option value="no_filter">No filtering</option>
-                <option v-for="value in filterTypes" :value="value">{{value}}</option>
-            </select>
+		<div>
+			column={{column}} filterType={{filterType}}
+			<select class="form-select" aria-label="Filter type" v-model="filterType">
+				<option value="no_filter">No filtering</option>
+				<option v-for="value in filterTypes" :value="value">{{value}}</option>
+			</select>
 
-            <div v-if="filterType == 'no_filter'"></div>
-            <div v-else-if="filterType == 'equals'">
-                <input v-model="equalsValue" placeholder="single value" />
+			<div v-if="filterType == 'no_filter'"></div>
+			<div v-else-if="filterType == 'equals'">
+				<input v-model="equalsValue" placeholder="single value" />
 
-                <select class="form-select" aria-label="Filter type" v-model="equalsValue">
-                    <option disabled value="no_value">Please select a value</option>
-                    <option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
-                </select>
-            </div>
-            <div v-else-if="filterType == 'not_equals'">
-                <input v-model="equalsValue" placeholder="single value" />
+				<select class="form-select" aria-label="Filter type" v-model="equalsValue">
+					<option disabled value="no_value">Please select a value</option>
+					<option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
+				</select>
+			</div>
+			<div v-else-if="filterType == 'not_equals'">
+				<input v-model="equalsValue" placeholder="single value" />
 
-                <select class="form-select" aria-label="Filter type" v-model="equalsValue">
-                    <option disabled value="no_value">Please select a value</option>
-                    <option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
-                </select>
-            </div>
-            <div v-else-if="filterType == 'like'">
-                <input v-model="likePattern" placeholder="Like (e.g. 'FRA%')" />
-            </div>
-            <div v-else>
-                <textarea v-model="rawFilterAsJson" placeholder="raw filter as json"></textarea>
-            </div>
+				<select class="form-select" aria-label="Filter type" v-model="equalsValue">
+					<option disabled value="no_value">Please select a value</option>
+					<option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
+				</select>
+			</div>
+			<div v-else-if="filterType == 'like'">
+				<input v-model="likePattern" placeholder="Like (e.g. 'FRA%')" />
+			</div>
+			<div v-else>
+				<textarea v-model="rawFilterAsJson" placeholder="raw filter as json"></textarea>
+			</div>
 
-            pending={{pendingChanges}}
-        </div>
-    `,
+			pending={{pendingChanges}}
+		</div>
+	`,
 };

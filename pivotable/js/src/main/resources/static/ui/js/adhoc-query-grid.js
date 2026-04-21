@@ -367,37 +367,37 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div>
-            <div class="spinner-grow" role="status" v-if="loading">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+		<div>
+			<div class="spinner-grow" role="status" v-if="loading">
+				<span class="visually-hidden">Loading...</span>
+			</div>
 
-            <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
+			<AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 
-            <span style="width:100%;" class="position-relative">
-                <div :id="domId" class="vh-75 slickgrid-grid"></div>
+			<span style="width:100%;" class="position-relative">
+				<div :id="domId" class="vh-75 slickgrid-grid"></div>
 
-                <div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
-                    <div
-                        class="progress"
-                        role="progressbar"
-                        aria-label="Animated striped example"
-                        :aria-valuenow="loadingPercent()"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                        v-if="isLoading()"
-                    >
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
-                            {{loadingMessage()}}
-                        </div>
-                    </div>
-                </div>
-            </span>
-            <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
-            <div>props.tabularView.timing={{tabularView.timing}}</div>
-            <AdhocGridExportCsv :array="data.array" />
+				<div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
+					<div
+						class="progress"
+						role="progressbar"
+						aria-label="Animated striped example"
+						:aria-valuenow="loadingPercent()"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						v-if="isLoading()"
+					>
+						<div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
+							{{loadingMessage()}}
+						</div>
+					</div>
+				</div>
+			</span>
+			<div hidden>props.tabularView.loading={{tabularView.loading}}</div>
+			<div>props.tabularView.timing={{tabularView.timing}}</div>
+			<AdhocGridExportCsv :array="data.array" />
 
-            <AdhocGridFormatModal :formatOptions="formatOptions" />
-        </div>
-    `,
+			<AdhocGridFormatModal :formatOptions="formatOptions" />
+		</div>
+	`,
 };

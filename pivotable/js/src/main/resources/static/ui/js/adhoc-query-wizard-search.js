@@ -33,38 +33,38 @@ export default {
 		return { onSearchedText, removeTag };
 	},
 	template: /* HTML */ `
-        <div>
-            <input
-                class="form-control mr-sm-2"
-                type="search"
-                placeholder="Search"
-                aria-label="Search"
-                id="search"
-                v-model="searchOptions.text_debounced"
-                @input="onSearchedText"
-            />
-            <small>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchOptions.caseSensitive" />
-                    <label class="form-check-label" for="searchCaseSensitive">Aa</label>
-                </div>
-            </small>
-            <small>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchOptions.throughJson" />
-                    <label class="form-check-label" for="searchJson">JSON</label>
-                </div>
-            </small>
-            <small>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="searchQuery" v-model="searchOptions.filterQueried" />
-                    <label class="form-check-label" for="searchQuery">Queried</label>
-                </div>
-            </small>
+		<div>
+			<input
+				class="form-control mr-sm-2"
+				type="search"
+				placeholder="Search"
+				aria-label="Search"
+				id="search"
+				v-model="searchOptions.text_debounced"
+				@input="onSearchedText"
+			/>
+			<small>
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" role="switch" id="searchCaseSensitive" v-model="searchOptions.caseSensitive" />
+					<label class="form-check-label" for="searchCaseSensitive">Aa</label>
+				</div>
+			</small>
+			<small>
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" role="switch" id="searchJson" v-model="searchOptions.throughJson" />
+					<label class="form-check-label" for="searchJson">JSON</label>
+				</div>
+			</small>
+			<small>
+				<div class="form-check form-switch">
+					<input class="form-check-input" type="checkbox" role="switch" id="searchQuery" v-model="searchOptions.filterQueried" />
+					<label class="form-check-label" for="searchQuery">Queried</label>
+				</div>
+			</small>
 
-            <small v-for="tag in searchOptions.tags" type="button" class="badge text-bg-primary" @click="removeTag(tag)">
-                {{tag}} <i class="bi bi-x-circle"></i>
-            </small>
-        </div>
-    `,
+			<small v-for="tag in searchOptions.tags" type="button" class="badge text-bg-primary" @click="removeTag(tag)">
+				{{tag}} <i class="bi bi-x-circle"></i>
+			</small>
+		</div>
+	`,
 };

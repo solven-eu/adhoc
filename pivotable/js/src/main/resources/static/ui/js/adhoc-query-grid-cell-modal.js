@@ -89,40 +89,40 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div class="modal fade" id="cellModal" tabindex="-1" aria-labelledby="cellModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="cellModalLabel">Cell Filter Editor</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <ul>
-                            <li v-for="(coordinate, column) in clickedCell">
-                                {{ column }}: {{ coordinate }}
-                                <span v-if="columnIsFilterable(column)">
-                                    <button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
-                                        <i class="bi bi-filter-circle"></i>
-                                    </button>
-                                    <button type="button" class="btn" @click="applyNotEqualsFilter(column, coordinate)">
-                                        <i class="bi bi-filter-circle-fill"></i>
-                                    </button>
-                                </span>
-                                <ul v-if="getUnderlyingsIfMeasure(column)">
-                                    <li v-for="underlying in getUnderlyingsIfMeasure(column)">
-                                        <button type="button" class="btn" @click="addMeasure(underlying)">
-                                            {{underlying}} <i class="bi bi-plus-circle"></i>
-                                        </button>
-                                    </li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `,
+		<div class="modal fade" id="cellModal" tabindex="-1" aria-labelledby="cellModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="cellModalLabel">Cell Filter Editor</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<ul>
+							<li v-for="(coordinate, column) in clickedCell">
+								{{ column }}: {{ coordinate }}
+								<span v-if="columnIsFilterable(column)">
+									<button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
+										<i class="bi bi-filter-circle"></i>
+									</button>
+									<button type="button" class="btn" @click="applyNotEqualsFilter(column, coordinate)">
+										<i class="bi bi-filter-circle-fill"></i>
+									</button>
+								</span>
+								<ul v-if="getUnderlyingsIfMeasure(column)">
+									<li v-for="underlying in getUnderlyingsIfMeasure(column)">
+										<button type="button" class="btn" @click="addMeasure(underlying)">
+											{{underlying}} <i class="bi bi-plus-circle"></i>
+										</button>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	`,
 };

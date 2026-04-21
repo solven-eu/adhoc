@@ -12,7 +12,7 @@
 - **Language / runtime**: Java 21, multi-module Maven project
 - **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks; **note**: `-Pfast` also skips tests via `maven.test.skip=true`)
 - **Running tests without static analysis**: `mvn test -Pnostyle --file pom.xml --batch-mode` — the `-Pnostyle` profile skips Checkstyle / PMD / SpotBugs / Spotless / license / enforcer but keeps tests enabled. Prefer this over manually passing `-Dcheckstyle.skip -Dpmd.skip -Dspotbugs.skip …`.
-- **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
+- **Formatting**: Spotless (Java + JS via Biome) + Prettier (JS/TS under `pivotable/js/`). For JS: **prettier runs first, Spotless/Biome second — Biome is the final authority on style**. Both are configured for tabs + 160 columns (`.prettierrc.yml` → `useTabs: true`, `.cleanthat/biome.json` → `"indentStyle": "tab"`, `"lineWidth": 160`). If you run prettier *after* spotless you may re-introduce wrap differences that spotless would otherwise rewrite — so always chain them as `npm run format && mvn spotless:apply`, never the other way.
 - **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`. When reading PMD output, use the `Grep` tool to filter for `org.apache.maven.plugins.pmd.PmdViolationCheckMojo` to quickly locate violations.
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok
 
@@ -52,11 +52,13 @@ Each job below is **atomic** — run only one job per session. Cover the whole c
 mvn spotless:apply --file pom.xml --batch-mode
 ```
 
-If there are changes in HTML/JS resources in `pivotable/js`, also run:
+If there are changes in HTML/JS resources in `pivotable/js`, also run (order matters — prettier first, spotless last):
 
 ```bash
 cd pivotable/js && npm run format && mvn spotless:apply
 ```
+
+After this chain the tree is stable: a second `mvn spotless:apply` reports 0 changes. **Do not run `npm run format` *after* `mvn spotless:apply`** — prettier and biome use different line-wrap algorithms for expressions exceeding the 160-column limit, so running prettier last will reintroduce rewrites that spotless would normalise again on the next `mvn` run.
 
 ---
 

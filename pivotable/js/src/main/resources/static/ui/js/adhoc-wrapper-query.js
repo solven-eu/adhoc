@@ -87,14 +87,14 @@ export default {
 		return { store };
 	},
 	template: /* HTML */ `
-        <div v-if="!isLoggedIn"><LoginRef /></div>
-        <div v-else-if="!endpoint || endpoint.error || !cube || cube.error">
-            <AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
-            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-            <AdhocLoading id="login" type="login" :loading="nbLoginLoading > 0" :error="!isLoggedIn ? 'needsToLogin' : null" />
-        </div>
-        <div v-else>
-            <AdhocQuery :endpointId="endpointId" :cubeId="cubeId" :cube="cube" />
-        </div>
-    `,
+		<div v-if="!isLoggedIn"><LoginRef /></div>
+		<div v-else-if="!endpoint || endpoint.error || !cube || cube.error">
+			<AdhocLoading :id="cubeId" type="cube" :loading="nbSchemaFetching > 0" :error="cube.error" />
+			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+			<AdhocLoading id="login" type="login" :loading="nbLoginLoading > 0" :error="!isLoggedIn ? 'needsToLogin' : null" />
+		</div>
+		<div v-else>
+			<AdhocQuery :endpointId="endpointId" :cubeId="cubeId" :cube="cube" />
+		</div>
+	`,
 };

@@ -750,7 +750,7 @@
 								<!-- Do not include HTML and Vue files -->
 								<!--
 								https://biomejs.dev/internals/language-support/#html-super-languages-support -->
-								<include>src/**/*.js</include>
+								<include>**/*.js</include>
 							</includes>
 							<excludes>
 								<exclude>**/node_modules/**</exclude>
