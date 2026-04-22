@@ -109,7 +109,7 @@ export default {
 										<input type="text" v-model="queryModels[preferencesStore.currentQueryId].name"></input>
 									 </span>
 								</div>
-								 <div>name = 
+								 <div>path =
 								 	<span v-if="!editPathFlag" @click="editPathFlag = true" > {{queryModels[preferencesStore.currentQueryId].path}}</span>
 								 	<span v-else>
 								 		<input type="text" v-model="queryModels[preferencesStore.currentQueryId].path"></input>

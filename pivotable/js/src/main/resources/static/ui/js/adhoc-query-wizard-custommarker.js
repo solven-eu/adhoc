@@ -19,16 +19,25 @@ export default {
 			{{customMarker.path}}
 			<label :for="'customMarker_' + customMarker.name" class="form-label">{{customMarker.name}}</label>
 
-			<span :id="'customMarker_' + customMarker.name">
-				<span v-if="customMarker.possibleValues.length >= 1">
-					<select class="form-select" :aria-label="customMarker.defaultValue" v-model="queryModel.customMarkers[customMarker.path]">
-						<option :value="customMarker.defaultValue" selected v-if="customMarker.defaultValue">{{customMarker.defaultValue}}</option>
-						<option :value="possibleValue" v-for="possibleValue in customMarker.possibleValues">{{possibleValue}}</option>
-					</select>
-				</span>
-				<span v-else>
-					<input type="text" class="form-control" :placeholder="customMarker.defaultValue" v-model="queryModel.customMarkers[customMarker.name]" />
-				</span>
+			<span v-if="customMarker.possibleValues.length >= 1">
+				<select
+					:id="'customMarker_' + customMarker.name"
+					class="form-select"
+					:aria-label="customMarker.defaultValue"
+					v-model="queryModel.customMarkers[customMarker.path]"
+				>
+					<option :value="customMarker.defaultValue" selected v-if="customMarker.defaultValue">{{customMarker.defaultValue}}</option>
+					<option :value="possibleValue" v-for="possibleValue in customMarker.possibleValues">{{possibleValue}}</option>
+				</select>
+			</span>
+			<span v-else>
+				<input
+					:id="'customMarker_' + customMarker.name"
+					type="text"
+					class="form-control"
+					:placeholder="customMarker.defaultValue"
+					v-model="queryModel.customMarkers[customMarker.name]"
+				/>
 			</span>
 		</div>
 	`,

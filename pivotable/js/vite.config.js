@@ -49,6 +49,27 @@ function importmapExternalsPlugin() {
 	};
 }
 
+// Shared proxy target for every path that belongs to the Spring Boot backend.
+// `changeOrigin` rewrites the outbound Host header to the backend (otherwise Netty
+// sometimes bins requests whose Host does not match its binding). `xfwd` adds
+// X-Forwarded-{For,Port,Proto}; we add X-Forwarded-Host manually since http-proxy
+// omits it. With `server.forward-headers-strategy=framework` on the backend (enabled
+// only under the `pivotable-unsafe` profile), Spring Security / OAuth2 then build
+// redirects against `localhost:5173` instead of the proxied `127.0.0.1:8080`, so the
+// browser stays on the Vite dev server across login flows.
+const backendProxy = {
+	target: "http://127.0.0.1:8080",
+	changeOrigin: true,
+	xfwd: true,
+	configure: (proxy) => {
+		proxy.on("proxyReq", (proxyReq, req) => {
+			if (req.headers.host) {
+				proxyReq.setHeader("X-Forwarded-Host", req.headers.host);
+			}
+		});
+	},
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
 	if (command === "serve") {
@@ -74,13 +95,13 @@ export default defineConfig(({ command }) => {
 			server: {
 				port: 5173,
 				proxy: {
-					"/api": "http://127.0.0.1:8080",
-					"/webjars": "http://127.0.0.1:8080",
-					"/login": "http://127.0.0.1:8080",
+					"/api": backendProxy,
+					"/webjars": backendProxy,
+					"/login": backendProxy,
 					// `/logout` is registered by Spring Security at the root (not under `/api`),
 					// so it needs its own proxy entry — otherwise the POST falls through to the
 					// Vite static handler, which returns index.html and breaks `await response.json()`.
-					"/logout": "http://127.0.0.1:8080",
+					"/logout": backendProxy,
 				},
 			},
 		};

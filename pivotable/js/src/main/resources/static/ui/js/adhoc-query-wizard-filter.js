@@ -69,6 +69,19 @@ export default {
 						filterSubObject = drilledFilterSubObject;
 					}
 				}
+
+				// Collapse the top-level AND/OR to `{}` (matchAll) when removing the last
+				// child emptied the group. Otherwise the sidebar would render an "empty AND"
+				// pill — the render-time guard in the template also catches this, but the
+				// model is cleaner without the stale `{type:'and', filters:[]}` husk.
+				if (
+					queryModel.filter &&
+					(queryModel.filter.type === "and" || queryModel.filter.type === "or") &&
+					Array.isArray(queryModel.filter.filters) &&
+					queryModel.filter.filters.length === 0
+				) {
+					queryModel.filter = {};
+				}
 			}
 		};
 
@@ -120,6 +133,23 @@ export default {
 			</div>
 		</div>
 
+		<!--
+			Empty AND with no children is semantically matchAll (empty conjunction is true).
+			We branch to the matchAll pill BEFORE the generic AND/OR branch so the user
+			sees the same infinity icon as the plain-{} case — this happens after removing
+			the last filter from a group, when the save/remove paths leave
+			{type:"and", filters:[]} in the model. (An empty OR is logically matchNone, but
+			we treat it the same here: it should never occur in practice since OR groups are
+			authored deliberately.)
+		-->
+		<span
+			v-else-if="(filter.type === 'and' || filter.type === 'or') && (!filter.filters || filter.filters.length === 0)"
+			class="badge rounded-pill text-bg-secondary opacity-75"
+			title="No filter — matches all rows (matchAll)"
+		>
+			<i class="bi bi-infinity me-1"></i>matchAll
+		</span>
+
 		<div v-else-if="filter.type === 'and' || filter.type === 'or'" class="d-inline-block" :class="filter.disabled ? 'text-muted' : ''">
 			<span
 				class="badge rounded-pill me-1"
@@ -161,6 +191,20 @@ export default {
 			<button type="button" class="btn btn-sm btn-link p-0 text-danger align-baseline" title="Remove" @click="removeFilter">
 				<i class="bi bi-x-circle"></i>
 			</button>
+		</span>
+
+		<!--
+			Empty filter object ({}) is the "no filter" state — semantically equivalent to
+			the backend's matchAll filter, meaning every row is kept. Rendered as a muted
+			pill with an infinity icon instead of the raw {} that Vue would otherwise emit
+			via the generic {{filter}} fallback below.
+		-->
+		<span
+			v-else-if="Object.keys(filter).length === 0"
+			class="badge rounded-pill text-bg-secondary opacity-75"
+			title="No filter — matches all rows (matchAll)"
+		>
+			<i class="bi bi-infinity me-1"></i>matchAll
 		</span>
 
 		<span v-else class="small text-muted">{{filter}}</span>

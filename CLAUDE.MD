@@ -25,6 +25,16 @@
 | `pivotable/` | Spring Boot server + Vue.js front-end |
 | `jmh/` | JMH micro-benchmarks |
 
+### Local dev stack (Pivotable)
+
+The **dev stack** is the pair of processes needed to run Pivotable locally: a Spring Boot **backend** on `:8080` and a **Vite frontend** dev server on `:5173` that proxies `/api`, `/webjars`, `/login`, `/logout` to the backend. Canonical entry points, all from `pivotable/js/`:
+
+- `npm run backend` — backend only (Spring Boot via `mvn spring-boot:run`, profile `pivotable-unsafe` by default). Honours `$WEBMODE` (`webflux`/`webmvc`) and `$SPRING_ACTIVE_PROFILES`.
+- `npm run dev_frontend` — Vite dev server only (HMR, assumes a backend is already running on `:8080`).
+- `npm run dev_stack` — both together; Ctrl-C kills both. This is also what Playwright's `webServer` ultimately invokes via `npm run backend`, so `npx playwright test` auto-starts the backend if none is running.
+
+When a task needs a running backend+frontend pair, refer to it as "the dev stack" and start it with `npm run dev_stack`.
+
 ---
 
 ## Coding Conventions
