@@ -68,7 +68,7 @@
 	<properties>
 		<java.version>25</java.version>
 
-		<lombok.version>1.18.44</lombok.version>
+		<lombok.version>1.18.46</lombok.version>
 
 		<pepper.version>5.7</pepper.version>
 
