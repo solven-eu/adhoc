@@ -557,13 +557,21 @@ export default {
 						<input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
 						<label class="form-check-label" for="autoQuery">autoQuery</label>
 					</div>
+
+					<!--
+						Secondary action buttons (JSON inspector, Reset query, Favorite, Favorites).
+						They live INSIDE the Submit block so they float along when the wizard accordion
+						is open — otherwise they'd stay stranded below the wizard and force the user to
+						scroll past the tall accordion body to reach them.
+					-->
+					<div class="d-flex flex-wrap gap-2 mt-2">
+						<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" />
+						<AdhocQueryReset :queryModel="queryModel" />
+						<AdhocQueryFavorite :queryModel="queryModel" />
+						<AdhocQueryFavorites :queryModel="queryModel" />
+					</div>
 				</span>
 			</Transition>
-
-			<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" />
-			<AdhocQueryReset :queryModel="queryModel" />
-			<AdhocQueryFavorite :queryModel="queryModel" />
-			<AdhocQueryFavorites :queryModel="queryModel" />
 		</div>
 	`,
 };

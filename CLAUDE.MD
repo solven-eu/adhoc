@@ -143,6 +143,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** merge pull requests, or offer to merge them. PRs are always reviewed and merged by a human through the GitHub UI.
 - Do **NOT** duplicate what Checkstyle / PMD / SpotBugs / Spotless already enforce deterministically (whitespace, brace style, unused imports, etc.).
 - Do **NOT** pipe Bash commands through `head`, `tail`, `grep`, `sed`, `awk`, or `echo`. Run commands directly and let the full output be captured. Use the dedicated `Grep` tool for content searches.
+- Do **NOT** write a backtick character (`` ` ``) anywhere inside a Vue `template: /* HTML */ \`…\`` literal — **not even inside an `<!-- HTML comment -->`**. The template is a JavaScript template literal, and every backtick terminates the string mid-way, producing a `biome` parse error whose message (`LINE_UNDEFINED`, `Code formatting aborted due to parsing errors`) does not point at the real location. When the comment would naturally want to highlight a code fragment (a class name, a tag name, a CSS selector), use plain prose, single-quotes, or `&#96;` — never raw backticks. The same rule applies to interpolation-like fragments such as `${foo}`: they must not appear inside the template literal at all, even in comments. If you see `Code formatting aborted due to parsing errors` on a `*.js` file with a Vue template, this rule is the first thing to check.
 
 ---
 

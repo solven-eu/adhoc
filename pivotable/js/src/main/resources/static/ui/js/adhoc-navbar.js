@@ -85,7 +85,28 @@ export default {
 						/>
 						<Logout />
 					</span>
-					needsToLogin={{needsToLogin}} needsToRefreshAccessToken={{needsToRefreshAccessToken}} expires_in={{expiresIn}}
+					<!--
+						Session status indicator. The raw needsToLogin / needsToRefreshAccessToken
+						values used to be dumped verbatim next to the user block — useful for
+						debugging but noisy for end-users. We now expose only:
+							- a small countdown until the access-token expires (the one useful bit);
+							- a muted warning badge when the token needs a refresh;
+							- a strong warning badge when the user must log in again.
+						Everything is muted / small so the nav stays compact.
+					-->
+					<span class="small text-muted ms-auto" :title="'Access token expires in ' + expiresIn">
+						<i class="bi bi-clock-history me-1"></i>expires in {{expiresIn}}
+					</span>
+					<span v-if="needsToLogin" class="badge rounded-pill text-bg-warning ms-2" title="Session expired — please log in again">
+						Login required
+					</span>
+					<span
+						v-else-if="needsToRefreshAccessToken"
+						class="badge rounded-pill text-bg-secondary ms-2"
+						title="The access token is stale — a refresh will be issued on the next call"
+					>
+						refresh pending
+					</span>
 				</div>
 			</div>
 		</nav>

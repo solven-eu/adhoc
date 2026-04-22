@@ -102,6 +102,13 @@ export default defineConfig(({ command }) => {
 					// so it needs its own proxy entry — otherwise the POST falls through to the
 					// Vite static handler, which returns index.html and breaks `await response.json()`.
 					"/logout": backendProxy,
+					// Spring Security's OAuth2 authorization-request endpoints live at
+					// `/oauth2/authorization/{provider}` (kicks off the external login flow) and
+					// `/login/oauth2/code/{provider}` (callback — already covered by `/login`).
+					// Without this entry, clicking a social-login provider returns Vite's
+					// index.html instead of the 302 to github.com/google.com, and the SPA router
+					// throws a no-route error on `/oauth2/authorization/github`.
+					"/oauth2": backendProxy,
 				},
 			},
 		};

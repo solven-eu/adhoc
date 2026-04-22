@@ -200,3 +200,67 @@ test("no measures, no columns, no filter, empty cube name: minimal SELECT * FROM
 	const sql = queryModelToSql(model(), "");
 	expect(sql).toEqual(["SELECT *", 'FROM ""'].join("\n"));
 });
+
+test("Aggregator measure (SUM) renders as SUM(col) AS measureName", () => {
+	const q = model();
+	q.selectedMeasures.deltaSum = true;
+	const measures = { deltaSum: { type: ".Aggregator", name: "deltaSum", aggregationKey: "SUM", columnName: "delta" } };
+	const sql = queryModelToSql(q, "simple", measures);
+	expect(sql).toEqual(["SELECT", '  SUM("delta") AS "deltaSum"', 'FROM "simple"'].join("\n"));
+});
+
+test("Aggregator measure without matching def falls back to bare identifier", () => {
+	const q = model();
+	q.selectedMeasures.foo = true;
+	const sql = queryModelToSql(q, "simple", {});
+	expect(sql).toEqual(["SELECT", '  "foo"', 'FROM "simple"'].join("\n"));
+});
+
+test("non-Aggregator measure (.Combinator) falls back to bare identifier", () => {
+	const q = model();
+	q.selectedMeasures.ratio = true;
+	const measures = { ratio: { type: ".Combinator", name: "ratio", combinationKey: "DIVIDE", underlyings: ["a", "b"] } };
+	const sql = queryModelToSql(q, "simple", measures);
+	expect(sql).toEqual(["SELECT", '  "ratio"', 'FROM "simple"'].join("\n"));
+});
+
+test("Aggregator with AVG/MIN/MAX/COUNT renders the canonical SQL spelling", () => {
+	const cases = [
+		["AVG", "AVG"],
+		["MIN", "MIN"],
+		["MAX", "MAX"],
+		["COUNT", "COUNT"],
+	];
+	for (const [key, sqlAgg] of cases) {
+		const q = model();
+		q.selectedMeasures.m = true;
+		const measures = { m: { type: ".Aggregator", name: "m", aggregationKey: key, columnName: "c" } };
+		const sql = queryModelToSql(q, "t", measures);
+		expect(sql).toContain(sqlAgg + '("c") AS "m"');
+	}
+});
+
+test("Aggregator with COUNT_DISTINCT renders as COUNT(DISTINCT col)", () => {
+	const q = model();
+	q.selectedMeasures.users = true;
+	const measures = { users: { type: ".Aggregator", name: "users", aggregationKey: "COUNT_DISTINCT", columnName: "userId" } };
+	const sql = queryModelToSql(q, "simple", measures);
+	expect(sql).toContain('COUNT(DISTINCT "userId") AS "users"');
+});
+
+test("Aggregator with unknown aggregationKey passes the key through verbatim", () => {
+	const q = model();
+	q.selectedMeasures.m = true;
+	const measures = { m: { type: ".Aggregator", name: "m", aggregationKey: "BITAND", columnName: "c" } };
+	const sql = queryModelToSql(q, "simple", measures);
+	expect(sql).toContain('BITAND("c") AS "m"');
+});
+
+test("Aggregator with missing columnName falls back to bare identifier (cannot build SQL expression)", () => {
+	const q = model();
+	q.selectedMeasures.m = true;
+	const measures = { m: { type: ".Aggregator", name: "m", aggregationKey: "SUM" } };
+	const sql = queryModelToSql(q, "simple", measures);
+	expect(sql).toContain('  "m"');
+	expect(sql).not.toContain("SUM");
+});

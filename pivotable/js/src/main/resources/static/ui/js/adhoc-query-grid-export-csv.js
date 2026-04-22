@@ -79,11 +79,37 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-		<span v-if="array.length >= 1">
-			<button type="button" class="btn btn-primary" @click="downloadAsCsv">Download CSV</button>
-			<button type="button" class="btn btn-primary" @click="copyToClipboard">
-				<i class="bi bi-clipboard"></i>Copy to clipboard {{copyToClipboardStatus}}
+		<!--
+			Export entry point. Wraps the two export channels (download as a .csv file /
+			copy CSV text to the clipboard) behind a single dropdown so the grid's bottom
+			control strip stays compact. The component is self-contained: the btn-group
+			below uses Bootstrap's native dropdown JS, auto-initialised via the HTML
+			attribute data-bs-toggle=dropdown (bootstrap.esm.js is already loaded via the
+			import-map in index.html).
+		-->
+		<div v-if="array.length >= 1" class="btn-group">
+			<button
+				type="button"
+				class="btn btn-primary btn-sm dropdown-toggle"
+				data-bs-toggle="dropdown"
+				aria-expanded="false"
+				title="Export the current grid"
+			>
+				<i class="bi bi-box-arrow-up me-1"></i>Export
 			</button>
-		</span>
+			<ul class="dropdown-menu">
+				<li>
+					<button type="button" class="dropdown-item" @click="downloadAsCsv">
+						<i class="bi bi-download me-1"></i>Download CSV
+					</button>
+				</li>
+				<li>
+					<button type="button" class="dropdown-item" @click="copyToClipboard">
+						<i class="bi bi-clipboard me-1"></i>Copy CSV to clipboard
+						<span v-if="copyToClipboardStatus" class="small text-muted ms-1">{{copyToClipboardStatus}}</span>
+					</button>
+				</li>
+			</ul>
+		</div>
 	`,
 };

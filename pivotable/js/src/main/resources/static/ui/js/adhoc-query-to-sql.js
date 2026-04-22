@@ -100,9 +100,39 @@ const filterToSql = function (f) {
 	return null;
 };
 
+// Format a single measure for the SELECT list. When `measureDefs` has a `.Aggregator` entry
+// matching the measure name, render as `<AGG>("column") AS "measure"` — much closer to actual
+// SQL than a bare identifier, since the Aggregator measure's semantics ARE a SQL aggregate.
+// Otherwise fall back to the bare-identifier projection (the caller is expected to wrap it with
+// the right SQL aggregate for their schema — same contract as before). Recognized aggregation
+// keys (SUM, AVG, MIN, MAX, COUNT, COUNT_DISTINCT) are mapped to their SQL spelling; anything
+// else is passed through as-is so non-standard aggregators still read sensibly.
+const SQL_AGG_SPELLING = {
+	SUM: "SUM",
+	AVG: "AVG",
+	MIN: "MIN",
+	MAX: "MAX",
+	COUNT: "COUNT",
+	COUNT_DISTINCT: "COUNT(DISTINCT",
+};
+const formatMeasure = function (measureName, measureDefs) {
+	const def = measureDefs && measureDefs[measureName];
+	if (def && def.type === ".Aggregator" && def.columnName) {
+		const agg = SQL_AGG_SPELLING[def.aggregationKey] || def.aggregationKey || "AGG";
+		const col = quoteId(def.columnName);
+		// `COUNT_DISTINCT` maps to `COUNT(DISTINCT col)` — the only spelling that needs a trailing
+		// `)` rather than the default `<AGG>(<col>)`.
+		const expr = agg === "COUNT(DISTINCT" ? agg + " " + col + ")" : agg + "(" + col + ")";
+		return expr + " AS " + quoteId(measureName);
+	}
+	return quoteId(measureName);
+};
+
 // Main entry point. `queryModel` carries selectedMeasures / selectedColumnsOrdered /
-// withStarColumns / filter; `cubeName` is embedded as the FROM target.
-export const queryModelToSql = function (queryModel, cubeName) {
+// withStarColumns / filter; `cubeName` is embedded as the FROM target. `measureDefs` is an
+// optional `{ [measureName]: measureDef }` map (typically `cube.measures` from the schema
+// store) used to render `.Aggregator` measures as their SQL aggregate (SUM/AVG/…).
+export const queryModelToSql = function (queryModel, cubeName, measureDefs) {
 	const measures = Object.keys(queryModel.selectedMeasures || {}).filter((k) => queryModel.selectedMeasures[k] === true);
 	const columns = (queryModel.selectedColumnsOrdered || []).slice();
 	const withStar = queryModel.withStarColumns || {};
@@ -111,7 +141,7 @@ export const queryModelToSql = function (queryModel, cubeName) {
 	// "dimensions on the left, measures on the right"), then measures.
 	const selectItems = [];
 	for (const c of columns) selectItems.push("  " + quoteId(c));
-	for (const m of measures) selectItems.push("  " + quoteId(m));
+	for (const m of measures) selectItems.push("  " + formatMeasure(m, measureDefs));
 
 	const lines = [];
 	if (selectItems.length === 0) {

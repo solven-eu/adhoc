@@ -46,6 +46,7 @@ function buildPayload(state) {
 		queryModels: state.queryModels,
 		latestQueryIds: state.latestQueryIds,
 		currentQueryId: state.currentQueryId,
+		wizardHidden: state.wizardHidden,
 	};
 }
 
@@ -111,6 +112,11 @@ const store = defineStore("preferences", {
 		// id of the active query.
 		// TODO Should this be rather a URL parameter? (with a getter and a setter)
 		currentQueryId: undefined,
+
+		// When true, the query view hides the left-column wizard and expands the grid to
+		// full width. Persisted so the preference survives reloads. Toggled from a button
+		// in the grid column header (see adhoc-query.js).
+		wizardHidden: false,
 	}),
 	getters: {
 		isDraft: (store) => !store.currentQueryId,
@@ -276,6 +282,9 @@ export const usePreferencesStore = function () {
 			theStore.latestQueryIds = migrated.latestQueryIds || [];
 			if (migrated.currentQueryId) {
 				theStore.currentQueryId = migrated.currentQueryId;
+			}
+			if (typeof migrated.wizardHidden === "boolean") {
+				theStore.wizardHidden = migrated.wizardHidden;
 			}
 		}
 

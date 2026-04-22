@@ -15,7 +15,15 @@ export default {
 	},
 	template: /* HTML */ `
 		<!-- Button trigger modal -->
-		<button type="button" class="btn btn-primary  btn-sm" data-bs-toggle="modal" data-bs-target="#gridFormatOptions">Formatting Options</button>
+		<button
+			type="button"
+			class="btn btn-primary  btn-sm"
+			data-bs-toggle="modal"
+			data-bs-target="#gridFormatOptions"
+			title="Open number / currency / date formatting options"
+		>
+			<i class="bi bi-type me-1"></i>Formatting Options
+		</button>
 
 		<!-- Modal -->
 		<div class="modal fade" id="gridFormatOptions" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">

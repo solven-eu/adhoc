@@ -1,6 +1,10 @@
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, inject } from "vue";
 
+import mermaid from "mermaid";
+
+import { useAdhocStore } from "./store-adhoc.js";
 import { queryModelToMdx } from "./adhoc-query-to-mdx.js";
+import { queryModelToMermaid } from "./adhoc-query-to-mermaid.js";
 import { queryModelToSql } from "./adhoc-query-to-sql.js";
 
 export default {
@@ -47,8 +51,60 @@ export default {
 		// model changes, so the modal can stay open while the user edits the wizard.
 		const mdxString = computed(() => queryModelToMdx(props.queryModel, props.cubeId));
 
+		// Resolve the cube's measure definitions (lazy — may be missing on first render if the
+		// schema hasn't loaded yet) so the SQL converter can upgrade `.Aggregator` measures from
+		// bare identifiers to their real SQL aggregate (SUM("col") AS "name", …). `ids` is
+		// provided by `adhoc-query.js` one level up.
+		const ids = inject("ids", null);
+		const store = useAdhocStore();
+		const measureDefs = computed(() => {
+			if (!ids) return {};
+			return store.schemas[ids.endpointId]?.cubes[ids.cubeId]?.measures || {};
+		});
+
 		// Live SQL projection of the current queryModel — same informative-only contract as MDX.
-		const sqlString = computed(() => queryModelToSql(props.queryModel, props.cubeId));
+		const sqlString = computed(() => queryModelToSql(props.queryModel, props.cubeId, measureDefs.value));
+
+		// Live Mermaid flowchart projection — a sandwich of Filter → Cube → GroupBy → Measures.
+		// Informative-only: the diagram is a reading aid for the current queryModel, NOT an
+		// execution plan.
+		const mermaidSource = computed(() => queryModelToMermaid(props.queryModel, props.cubeId));
+
+		// Mermaid is a one-off initialisation per page load. `startOnLoad: false` keeps the
+		// library passive — we call `render()` ourselves below so the SVG lives in a Vue-managed
+		// fragment rather than Mermaid hunting for `.mermaid` elements in the DOM.
+		mermaid.initialize({ startOnLoad: false, securityLevel: "loose", logLevel: 5 });
+
+		// Rendered SVG as a reactive ref. Recomputes whenever the Mermaid tab becomes active OR
+		// the mermaidSource changes — both triggers are wired via the watcher below.
+		const mermaidSvg = ref("");
+		const mermaidError = ref("");
+		let mermaidRenderId = 0;
+		const renderMermaid = async function (source) {
+			if (!source) {
+				mermaidSvg.value = "";
+				mermaidError.value = "";
+				return;
+			}
+			try {
+				// Fresh id per render so Mermaid doesn't reuse a stale SVG node. Monotonic
+				// counter avoids DOM-id collisions when the user switches tabs quickly.
+				const id = "queryMermaid_" + ++mermaidRenderId;
+				const res = await mermaid.render(id, source);
+				mermaidSvg.value = res.svg;
+				mermaidError.value = "";
+			} catch (e) {
+				mermaidError.value = String(e.message || e);
+				mermaidSvg.value = "";
+			}
+		};
+		watch(
+			[activeTab, mermaidSource],
+			([tab, source]) => {
+				if (tab === "mermaid") renderMermaid(source);
+			},
+			{ immediate: false },
+		);
 
 		const toggleEdit = function () {
 			copyToClipboardStatus.value = "";
@@ -112,6 +168,10 @@ export default {
 				value = mdxString.value;
 			} else if (activeTab.value === "sql") {
 				value = sqlString.value;
+			} else if (activeTab.value === "mermaid") {
+				// Copy the Mermaid source (not the rendered SVG) so the user can paste at
+				// mermaid.live or into markdown for sharing.
+				value = mermaidSource.value;
 			} else if (isEditing.value) {
 				value = editedJson.value;
 			} else {
@@ -141,6 +201,9 @@ export default {
 			activeTab,
 			mdxString,
 			sqlString,
+			mermaidSource,
+			mermaidSvg,
+			mermaidError,
 
 			isEditing,
 			toggleEdit,
@@ -180,6 +243,11 @@ export default {
 							</li>
 							<li class="nav-item">
 								<button type="button" class="nav-link" :class="activeTab === 'sql' ? 'active' : ''" @click="activeTab = 'sql'">SQL</button>
+							</li>
+							<li class="nav-item">
+								<button type="button" class="nav-link" :class="activeTab === 'mermaid' ? 'active' : ''" @click="activeTab = 'mermaid'">
+									Mermaid
+								</button>
 							</li>
 						</ul>
 						<!-- JSON tab: original view + edit mode. -->
@@ -249,6 +317,33 @@ export default {
 {{mdxString}}</pre
 								>
 							</div>
+						</div>
+
+						<!--
+							Mermaid tab: visual sandwich of Filter -> Cube -> GroupBy -> Measures.
+							Renders the SVG lazily when the tab is activated (see watcher in setup).
+							The Mermaid source text is shown below the rendered SVG so the user can
+							copy it to mermaid.live or into markdown for sharing — same informative-
+							only contract as the MDX / SQL tabs.
+						-->
+						<div v-else-if="activeTab === 'mermaid'">
+							<div class="alert alert-info py-2 mb-2 small" role="alert">
+								<i class="bi bi-info-circle me-1"></i>
+								<strong>Informative only.</strong>
+								A visual projection of the current query model — Filter -> Cube -> GroupBy -> Measures. Useful to read complex filter trees at a
+								glance. The source text below the diagram can be pasted at
+								<a href="https://mermaid.live" target="_blank" rel="noopener">mermaid.live</a>
+								or into any markdown viewer that supports Mermaid.
+							</div>
+							<div v-if="mermaidError.length >= 1" class="alert alert-warning small">Mermaid render error: {{mermaidError}}</div>
+							<div class="border p-2 mb-2 text-center bg-body-secondary" style="overflow-x: auto;" v-html="mermaidSvg"></div>
+							<pre
+								class="border text-start w-100 bg-body-secondary small"
+								style="max-height: 200px; overflow-y: scroll; cursor: not-allowed;"
+								title="Read-only — Mermaid source derived from the queryModel (informative only)"
+							>
+{{mermaidSource}}</pre
+							>
 						</div>
 
 						<!--

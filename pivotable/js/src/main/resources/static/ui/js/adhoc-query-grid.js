@@ -1,8 +1,10 @@
-import { ref, watch, onMounted, reactive, provide, inject } from "vue";
+import { ref, watch, onMounted, reactive, provide, inject, computed } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
 import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
+
+import { usePreferencesStore } from "./store-preferences.js";
 
 // Formatters
 import { SlickGrid, SlickDataView } from "slickgrid";
@@ -375,6 +377,50 @@ export default {
 			return "Unclear but not done yet";
 		}
 
+		// Human-readable view of the per-stage timings emitted by the executor / grid hooks.
+		// The raw `tabularView.timing` object — shape `{ sending, executing, downloading,
+		// preparingGrid, sorting, rowSpanning, rendering, … }`, values in milliseconds — used
+		// to be rendered as-is under the grid which looked like dev debug output. We now surface
+		// it as an ordered list of `<stage>: <ms>ms` pills plus a total, muted because these are
+		// operational metrics, not part of the query's functional result.
+		const TIMING_ORDER = ["sending", "executing", "downloading", "preparingGrid", "sorting", "rowSpanning", "rendering"];
+		const formattedTimings = computed(() => {
+			const timing = props.tabularView && props.tabularView.timing;
+			if (!timing) return null;
+
+			const entries = [];
+			let total = 0;
+			// Ordered entries first so the display reads in execution order.
+			for (const stage of TIMING_ORDER) {
+				const ms = timing[stage];
+				if (typeof ms === "number" && Number.isFinite(ms)) {
+					entries.push({ stage, ms });
+					total += ms;
+				}
+			}
+			// Any unknown keys get appended after in insertion order — keeps forward-compat
+			// when the executor starts reporting new stages without needing a UI change.
+			for (const stage of Object.keys(timing)) {
+				if (TIMING_ORDER.includes(stage)) continue;
+				const ms = timing[stage];
+				if (typeof ms === "number" && Number.isFinite(ms)) {
+					entries.push({ stage, ms });
+					total += ms;
+				}
+			}
+			if (entries.length === 0) return null;
+			return { entries, total };
+		});
+
+		// Shared preferences store — exposes `wizardHidden` for the full-screen-grid toggle.
+		// Toggled from a small button rendered next to the Formatting Options / Export buttons
+		// at the bottom of the grid area (keeps the toggle close to the other grid-level
+		// controls and avoids eating vertical space at the top).
+		const preferencesStore = usePreferencesStore();
+		const toggleWizardHidden = function () {
+			preferencesStore.wizardHidden = !preferencesStore.wizardHidden;
+		};
+
 		return {
 			rendering,
 			gridMetadata,
@@ -384,8 +430,12 @@ export default {
 			loadingMessage,
 
 			formatOptions,
+			formattedTimings,
 
 			data,
+
+			preferencesStore,
+			toggleWizardHidden,
 		};
 	},
 	template: /* HTML */ `
@@ -416,10 +466,41 @@ export default {
 				</div>
 			</span>
 			<div hidden>props.tabularView.loading={{tabularView.loading}}</div>
-			<div>props.tabularView.timing={{tabularView.timing}}</div>
-			<AdhocGridExportCsv :array="data.array" />
-
-			<AdhocGridFormatModal :formatOptions="formatOptions" />
+			<!--
+				Per-stage query timings. These are operational metrics (non-functional) — they
+				describe how long each phase of the round-trip took, not anything about the data
+				itself — hence the muted styling and the explicit "Performance" label so users
+				don't confuse them with results. Hidden entirely when no timings are available
+				(first render, cached views).
+			-->
+			<div v-if="formattedTimings" class="small text-muted mt-1" title="Operational metrics — not part of the query result">
+				<i class="bi bi-speedometer2 me-1"></i>
+				<span class="fw-semibold me-1">Performance:</span>
+				<span v-for="(entry, i) in formattedTimings.entries" :key="entry.stage" class="me-2">
+					{{entry.stage}}={{entry.ms}}ms<span v-if="i < formattedTimings.entries.length - 1">,</span>
+				</span>
+				<span class="ms-1">(total: {{formattedTimings.total}}ms)</span>
+			</div>
+			<!--
+				Grid-level controls grouped on a single horizontal strip at the bottom: export
+				to CSV, formatting options, and the full-screen-grid toggle (hide the wizard
+				to let the grid use the full viewport width). The toggle lives here rather
+				than at the top of the grid column so it doesn't push the data down by a row
+				that would stay empty most of the time.
+			-->
+			<div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+				<AdhocGridExportCsv :array="data.array" />
+				<AdhocGridFormatModal :formatOptions="formatOptions" />
+				<button
+					type="button"
+					class="btn btn-outline-secondary btn-sm"
+					@click="toggleWizardHidden"
+					:title="preferencesStore.wizardHidden ? 'Show the wizard (exit full-screen grid)' : 'Hide the wizard (full-screen grid)'"
+				>
+					<i :class="preferencesStore.wizardHidden ? 'bi bi-arrows-angle-contract me-1' : 'bi bi-arrows-fullscreen me-1'"></i>
+					{{ preferencesStore.wizardHidden ? "Show wizard" : "Hide wizard" }}
+				</button>
+			</div>
 		</div>
 	`,
 };

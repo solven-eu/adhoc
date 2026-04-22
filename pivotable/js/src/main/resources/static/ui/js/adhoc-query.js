@@ -9,6 +9,7 @@ import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
 
 import { useUserStore } from "./store-user.js";
+import { usePreferencesStore } from "./store-preferences.js";
 
 import AdhocQueryWizard from "./adhoc-query-wizard.js";
 import AdhocQueryExecutor from "./adhoc-query-executor.js";
@@ -233,6 +234,13 @@ export default {
 		const domId = ref("slickgrid_" + Math.floor(Math.random() * 1024));
 		console.log("SlickGrid id is", "#" + domId.value);
 
+		// Full-screen-grid mode. When `preferencesStore.wizardHidden`, the left-column wizard
+		// is hidden and the grid column expands to full width. Only the class bindings live
+		// here — the toggle BUTTON is rendered inside the grid component, next to the other
+		// grid-level controls (Export CSV, Formatting Options). Persisted via
+		// `store-preferences.js:buildPayload`, so the preference survives page reloads.
+		const preferencesStore = usePreferencesStore();
+
 		return {
 			loading,
 			queryModel,
@@ -245,12 +253,19 @@ export default {
 
 			lastSuccessfulQuery,
 			restoreLastSuccessfulQuery,
+
+			preferencesStore,
 		};
 	},
 	template: /* HTML */ `
 		<AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 		<div class="row">
-			<div class="col-3">
+			<!--
+				Wizard column. Hidden when preferencesStore.wizardHidden is true — grid below
+				then expands to col-12 for a "full-screen grid" mode. The toggle button lives in
+				the grid column so it remains reachable even when the wizard is hidden.
+			-->
+			<div :class="preferencesStore.wizardHidden ? 'd-none' : 'col-3'">
 				<div class="row">
 					<AdhocQueryWizard :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :recentlyUsed="recentlyUsed" :loading="loading" />
 				</div>
@@ -259,7 +274,7 @@ export default {
 					<AdhocQueryExecutor :endpointId="endpointId" :cubeId="cubeId" :queryModel="queryModel" :tabularView="tabularView" :loading="loading" />
 				</div>
 			</div>
-			<div class="col-9">
+			<div :class="preferencesStore.wizardHidden ? 'col-12' : 'col-9'">
 				<!--
 					Prominent "query broken" banner. Sticky so it stays visible as the user scrolls the grid.
 					The grid below intentionally keeps rendering the last successful view to preserve the user's
