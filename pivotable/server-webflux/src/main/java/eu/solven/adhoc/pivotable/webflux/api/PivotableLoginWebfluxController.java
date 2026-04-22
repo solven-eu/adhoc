@@ -55,6 +55,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
+import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
 import graphql.com.google.common.collect.ImmutableMap;
@@ -73,8 +74,6 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 @Slf4j
 public class PivotableLoginWebfluxController {
-
-	public static final String P_OAUTH2 = "adhoc.pivotable.login.oauth2.enabled";
 
 	final ApplicationContext appContext;
 
@@ -105,11 +104,11 @@ public class PivotableLoginWebfluxController {
 		return userMayEmpty()
 				.flatMap(user -> exchange.getSession()
 						.map(session -> ImmutableMap.<String, Object>builder()
-								.put("login", HttpStatus.OK.value())
+								.put(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value())
 								.put("session", sessionInfo(session))
 								.build()))
 				.<Map<String, Object>>map(m -> m)
-				.switchIfEmpty(Mono.just(Map.of("login", HttpStatus.UNAUTHORIZED.value())));
+				.switchIfEmpty(Mono.just(Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.UNAUTHORIZED.value())));
 	}
 
 	/**

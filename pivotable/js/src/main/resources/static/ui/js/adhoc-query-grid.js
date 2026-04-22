@@ -95,6 +95,21 @@ export default {
 
 			gridColumns = [];
 
+			// Null view = cleared state (e.g. right after Reset, when queryModel is empty so no
+			// query was fired). Render a blank grid with a single placeholder column and zero
+			// data rows — SlickGrid misbehaves with `setColumns([])`, so keep at least one column.
+			// Bail out before the code below, which dereferences `view.coordinates` and
+			// `tabularView.query.groupBy.columns` (both undefined in this state).
+			if (!view) {
+				gridColumns.push({ id: "empty", name: "", field: "empty", sortable: false });
+				data.array = [];
+				gridMetadata.nb_rows = 0;
+				grid.setColumns(gridColumns);
+				dataView.setItems(data.array, "id");
+				dataView.refresh();
+				return;
+			}
+
 			// Do not allow sorting until it is compatible with rowSpans
 			const sortable = gridHelper.isSortable();
 

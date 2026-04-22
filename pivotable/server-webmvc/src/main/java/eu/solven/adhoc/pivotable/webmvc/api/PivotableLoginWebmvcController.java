@@ -58,6 +58,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
+import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
 import graphql.com.google.common.collect.ImmutableMap;
@@ -119,14 +120,14 @@ public class PivotableLoginWebmvcController {
 			// `false` so we never force-create a session just to answer a status probe.
 			HttpSession session = request.getSession(false);
 			if (session == null) {
-				return Map.of("login", HttpStatus.OK.value());
+				return Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value());
 			}
 			return ImmutableMap.<String, Object>builder()
-					.put("login", HttpStatus.OK.value())
+					.put(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value())
 					.put("session", sessionInfo(session))
 					.build();
 		} else {
-			return Map.of("login", HttpStatus.UNAUTHORIZED.value());
+			return Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.UNAUTHORIZED.value());
 		}
 	}
 

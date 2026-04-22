@@ -13,6 +13,35 @@ test("loadQueryModelFromHash - undefined hash", () => {
 	expect(reloadedQueryModel.selectedColumnsOrdered).toEqual([]);
 });
 
+// Back/forward navigation semantics: decoding a hash must REPLACE the current
+// queryModel state, not be additive. Otherwise clicking back after adding a
+// column would leave the added column stuck — the exact bug this guards against.
+test("loadQueryModelFromHash - replaces prior state (browser back/forward)", () => {
+	// Simulate a "prior view" that the user later edited.
+	const original = queryHelper.makeQueryModel();
+	original.selectedColumns.c1 = true;
+	original.selectedColumnsOrdered.push("c1");
+	original.selectedMeasures.m1 = true;
+
+	const hashForOriginal = queryHelper.queryModelToHash(undefined, original);
+
+	// Current state after edits: the user added c2 and m2, kept c1 and m1.
+	const current = queryHelper.makeQueryModel();
+	current.selectedColumns.c1 = true;
+	current.selectedColumns.c2 = true;
+	current.selectedColumnsOrdered.push("c1", "c2");
+	current.selectedMeasures.m1 = true;
+	current.selectedMeasures.m2 = true;
+
+	// Browser back: decode the original hash on top of the "current" queryModel.
+	queryHelper.hashToQueryModel(decodeURIComponent(hashForOriginal), current);
+
+	// c2 and m2 must be GONE — not merged in.
+	expect(current.selectedColumns).toEqual({ c1: true });
+	expect(current.selectedColumnsOrdered).toEqual(["c1"]);
+	expect(current.selectedMeasures).toEqual({ m1: true });
+});
+
 test("loadQueryModelFromHash - from 2 columns", () => {
 	const originalQueryModel = queryHelper.makeQueryModel();
 	originalQueryModel.selectedColumns.c1 = true;

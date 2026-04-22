@@ -53,7 +53,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
 import eu.solven.adhoc.pivotable.account.fake_user.FakeUser;
 import eu.solven.adhoc.pivotable.webmvc.security.oauth2.PivotableOAuth2UserService;
-import eu.solven.adhoc.pivotable.webnone.api.PivotableLoginWebnoneController;
+import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
 import eu.solven.adhoc.pivotable.webnone.security.PivotableSocialWebnoneSecurity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -237,7 +237,7 @@ public class PivotableSocialWebmvcSecurity {
 			commonConf = configureBasicForFakeUser(commonConf);
 		}
 
-		if (env.getProperty(PivotableLoginWebnoneController.P_OAUTH2, Boolean.class, true)) {
+		if (env.getProperty(IPivotableLoginConstants.P_OAUTH2, Boolean.class, true)) {
 			commonConf = commonConf
 					// How to request prompt=consent for Github?
 					// https://docs.spring.io/spring-security/reference/servlet/oauth2/client/authorization-grants.html

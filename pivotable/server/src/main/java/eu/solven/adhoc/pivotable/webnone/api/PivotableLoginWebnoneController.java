@@ -58,8 +58,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PivotableLoginWebnoneController {
 
-	public static final String P_OAUTH2 = "adhoc.pivotable.login.oauth2.enabled";
-
 	final ApplicationContext appContext;
 
 	@GetMapping("/providers")
@@ -68,7 +66,7 @@ public class PivotableLoginWebnoneController {
 
 		final Environment env = appContext.getEnvironment();
 
-		if (appContext.getEnvironment().getProperty(P_OAUTH2, Boolean.class, true)) {
+		if (appContext.getEnvironment().getProperty(IPivotableLoginConstants.P_OAUTH2, Boolean.class, true)) {
 			Iterable<ClientRegistration> clientRegistrationRepository = getClientRegistration();
 
 			StreamSupport.stream(clientRegistrationRepository.spliterator(), false)

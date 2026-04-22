@@ -36,6 +36,46 @@
 				/* justify-content: center; */
 				/*background-color: lightblue;*/
 			}
+
+			/*
+			 * Submit block transition — animates the block between its docked position (below
+			 * the wizard, bottom-left of the screen) and its floating position (centered over
+			 * the grid when any wizard accordion is open). Driven by Vue
+			 * <Transition name="submit-float"> + mode="out-in" + :key="accordionState.isOpen"
+			 * in adhoc-query-executor.js.
+			 *
+			 * The floating-side enter/leave keyframes start/end near the BOTTOM-LEFT of the
+			 * viewport — this is where the block lives in its docked position, so the motion
+			 * reads as "the Submit block flew up from the sidebar to the center of the grid"
+			 * (and the reverse on close). Position (static <-> fixed) cannot literally be
+			 * interpolated, so this is a directional hint rather than a physically-accurate
+			 * fly-over, but it reads correctly to the eye.
+			 */
+			/*
+			 * Animate ONLY the floating side. Entering the docked state (no .position-fixed)
+			 * has no transition and no hidden "from" state, so the Submit button appears
+			 * instantly under the wizard the moment the leave animation of the floating
+			 * overlay completes — instead of paying a second 0.3s for a fade-in nobody asked
+			 * for.
+			 */
+			.submit-float-enter-active.position-fixed,
+			.submit-float-leave-active.position-fixed {
+				transition:
+					opacity 0.3s ease,
+					transform 0.3s ease;
+			}
+			.submit-float-enter-from.position-fixed,
+			.submit-float-leave-to.position-fixed {
+				opacity: 0;
+				/*
+				 * Compose the centering transform with a (−50vw, +40vh) offset and a scale-down
+				 * so the element starts/ends roughly at the bottom-left of the screen (where
+				 * the docked position sits — below the wizard accordion). The inline
+				 * `transform: translate(-50%, -50%)` on the final state is overridden here via
+				 * `!important` during the transition.
+				 */
+				transform: translate(-50%, -50%) translate(-50vw, 40vh) scale(0.6) !important;
+			}
 		</style>
 	</head>
 	<body>

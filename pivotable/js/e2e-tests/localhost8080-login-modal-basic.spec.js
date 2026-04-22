@@ -9,22 +9,25 @@ test.beforeAll(async ({ request }) => {
 	expect(response.ok()).toBeTruthy();
 });
 
-// Regression test for the BASIC-in-modal bug.
+// Regression test for the BASIC-in-modal bug + full "smooth re-login" UX.
 //
-// When the SPA loginModal is open (e.g. after a session expiry) and the user clicks
-// the BASIC provider, the BASIC username/password form must render IN-PLACE inside
-// the modal. It must NOT trigger a full-page navigation to `/html/login/basic`,
-// which would discard the current view and break the "smooth re-login" UX.
+// Motivation: when the user is on a query view and their JWT access_token expires,
+// the SPA opens the loginModal on top of the current view. The user should be able
+// to re-login IN-PLACE and resume exactly where they were — same URL, same grid,
+// same values. The original bug (fixed in login-providers.js) triggered a full-page
+// navigation to `/html/login/basic` as soon as the user picked BASIC, wiping the
+// view.
 //
-// Root cause of the original bug (fixed in login-providers.js): the modal branch
-// was gated on `item.registration_id == 'BASIC'`, but the backend sets
-// registration_id to the profile name (e.g. `pivotable-unsafe_fakeuser`), so the
-// gate never matched and the template fell through to `<a :href="item.login_url">`
-// which navigated to /html/login/basic. Fix: gate on `item.type == 'basic'`.
-test("BASIC login stays inside loginModal (not full-page redirect)", async ({ page }) => {
-	// Reuse the 401-injection pattern from localhost8080-token-expiry to open the
-	// modal mid-session. We whitelist /api/login/v1/* so that the subsequent
-	// CSRF + BASIC login calls still work if the test wants to complete the flow.
+// Root cause: the modal branch was gated on `item.registration_id == 'BASIC'`, but
+// the backend sets registration_id to the profile name (e.g.
+// `pivotable-unsafe_fakeuser`), so the gate never matched and the template fell
+// through to `<a :href="item.login_url">`. Fix: gate on `item.type == 'basic'`.
+test("BASIC re-login after token expiry stays in modal and preserves the view", async ({ page }) => {
+	// Arm 401 injection AFTER we reach the query view. Flip `expireNext = true` to
+	// make the next functional /api/** call return 401 — triggering the SPA's
+	// silent refresh (also 401) → `needsToLogin = true` → loginModal opens.
+	// Whitelist /api/v1/clear (test fixture) and /api/login/v1/* (so the real
+	// BASIC login inside the modal can still complete).
 	let expireNext = false;
 	await page.route("**/api/**", async (route) => {
 		if (!expireNext) {
@@ -44,27 +47,43 @@ test("BASIC login stays inside loginModal (not full-page redirect)", async ({ pa
 	await page.goto(url);
 	await queryPivotable.queryPivotable(page);
 
-	// Sanity: we are on a query page with data visible.
-	await expect(page.locator(".slick-row").first()).toBeVisible();
+	// ── Snapshot the view the user will be re-entering into after re-login ──
+	// At least one figure must be visible; we remember the URL and the first
+	// cell's text so we can assert the same view is still there after re-login.
+	const firstCell = page.locator(".slick-row").first().locator(".slick-cell").nth(2);
+	await expect(firstCell).toBeVisible();
+	const firstCellBeforeExpiry = await firstCell.textContent();
 	const urlBeforeExpiry = page.url();
+	expect(firstCellBeforeExpiry, "pre-expiry: at least one figure rendered").toMatch(/\d/);
 
-	// Arm 401 injection and fire an API call that triggers the "needsToLogin" flip.
+	// ── Simulate expiry ──
 	expireNext = true;
 	await queryPivotable.addColumn(page, "Shirt Number");
 
+	// ── Modal opens on top of the query view ──
 	const modal = page.locator("#loginModal");
 	await expect(modal).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Login to Pivotable" })).toBeVisible();
 
-	// Click the BASIC entry inside the modal. Before the fix, this was an
-	// `<a href="/html/login/basic">` → full-page navigation. After the fix, it is
-	// a `<a href="#" @click.prevent>` that toggles `selectedProvider` locally.
+	// Clicking BASIC must NOT navigate — regression guard for the original bug.
 	await modal.getByRole("link", { name: /pivotable-unsafe_fakeuser/ }).click();
+	expect(page.url(), "clicking BASIC in modal must not navigate").toBe(urlBeforeExpiry);
 
-	// The BASIC form renders in-place inside the modal.
-	await expect(modal.getByRole("button", { name: /Login fakeUser/ })).toBeVisible();
+	// BASIC form renders in-place inside the modal.
+	const loginButton = modal.getByRole("button", { name: /Login fakeUser/ });
+	await expect(loginButton).toBeVisible();
 
-	// And we did NOT navigate to /html/login/basic — the view underneath is
-	// preserved so the user can resume whatever they were doing after re-login.
-	expect(page.url()).toBe(urlBeforeExpiry);
+	// ── Complete the re-login ──
+	// Disarm the 401 injection so the post-login /api/** traffic (token mint,
+	// data refresh) succeeds. The credentials are the ones pre-filled by
+	// login-basic.js for the fakeUser.
+	expireNext = false;
+	await loginButton.click();
+
+	// Modal closes once `needsToLogin` flips back to false.
+	await expect(modal).toBeHidden();
+
+	// ── Assert the view survived: same URL, same first cell value ──
+	expect(page.url(), "URL preserved across re-login").toBe(urlBeforeExpiry);
+	await expect(page.locator(".slick-row").first().locator(".slick-cell").nth(2)).toHaveText(firstCellBeforeExpiry);
 });

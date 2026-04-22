@@ -18,15 +18,27 @@ export default {
 		};
 
 		queryModel.reset = function () {
-			queryModel.selectedColumns = {};
-			queryModel.selectedColumnsOrdered = [];
+			// IMPORTANT: use `this` rather than the closure-captured `queryModel`.
+			// `makeQueryModel()` returns the raw object, which the parent wraps in `reactive()`
+			// before handing it around as a prop. The closure `queryModel` is the RAW target;
+			// mutating through it does not go through the Proxy, so Vue never sees the changes
+			// and the UI stays frozen. When this method is invoked as `proxy.reset()`, `this`
+			// is the reactive proxy and mutations fire the expected effects.
+			//
+			// Additionally, we clear objects IN-PLACE (via `delete`) instead of reassigning
+			// to fresh `{}`. `v-model="queryModel.selectedMeasures[name]"` checkboxes depend on
+			// per-key reactivity of the nested proxy — replacing the parent reference leaves
+			// those bindings unaffected in practice, whereas deleting each key explicitly
+			// fires the per-key triggers and flips the switches.
+			Object.keys(this.selectedColumns).forEach((k) => delete this.selectedColumns[k]);
+			this.selectedColumnsOrdered.splice(0);
 			// TODO withStarColumns may not be reset as they as some sort of preference
-			// Still, they are resetted i nthis methods as a way to ensure the model is not corrupted
-			queryModel.withStarColumns = {};
-			queryModel.selectedMeasures = {};
-			queryModel.filter = {};
-			queryModel.customMarkers = {};
-			queryModel.selectedOptions = {};
+			// Still, they are resetted in this method as a way to ensure the model is not corrupted.
+			Object.keys(this.withStarColumns).forEach((k) => delete this.withStarColumns[k]);
+			Object.keys(this.selectedMeasures).forEach((k) => delete this.selectedMeasures[k]);
+			Object.keys(this.filter).forEach((k) => delete this.filter[k]);
+			Object.keys(this.customMarkers).forEach((k) => delete this.customMarkers[k]);
+			Object.keys(this.selectedOptions).forEach((k) => delete this.selectedOptions[k]);
 			console.log("queryModel has been reset");
 		};
 
@@ -168,17 +180,25 @@ export default {
 
 	parsedJsonToQueryModel: function (parsedJson, queryModel) {
 		if (parsedJson) {
+			// Reset first so this acts as a full snapshot REPLACEMENT — required for
+			// browser back/forward to restore the exact prior view (otherwise stale
+			// columns/measures/options from the current state would stick).
+			queryModel.reset();
+
 			for (const [columnIndex, columnName] of Object.entries(parsedJson.columns)) {
 				queryModel.selectedColumns[columnName] = true;
 				queryModel.onColumnToggled(columnName);
 			}
-			queryModel.withStarColumns = parsedJson.withStarColumns || {};
+			// In-place copy for the same reactivity reason that drove reset() to in-place
+			// deletes: replacing the parent object breaks any downstream v-model that already
+			// resolved to the previous proxy.
+			Object.assign(queryModel.withStarColumns, parsedJson.withStarColumns || {});
 
 			for (const [measureIndex, measureName] of Object.entries(parsedJson.measures)) {
 				queryModel.selectedMeasures[measureName] = true;
 			}
-			queryModel.filter = parsedJson.filter || {};
-			queryModel.customMarkers = parsedJson.customMarkers || {};
+			Object.assign(queryModel.filter, parsedJson.filter || {});
+			Object.assign(queryModel.customMarkers, parsedJson.customMarkers || {});
 
 			for (const optionName of Object.values(parsedJson.options)) {
 				queryModel.selectedOptions[optionName] = true;

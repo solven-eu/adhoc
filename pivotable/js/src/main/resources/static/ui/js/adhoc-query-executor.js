@@ -1,4 +1,6 @@
-import { computed, ref, reactive, watch } from "vue";
+import { computed, ref, reactive, watch, inject } from "vue";
+
+import { Collapse } from "bootstrap";
 
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
@@ -168,7 +170,8 @@ export default {
 			// We need to couple the columns with the result
 			// as the wizard may have been edited while receiving the result
 			// We need both query and view to be assigned atomically, else some `watch` would trigger on partially updated object
-			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView });
+			// Also clear any previous error so the "query broken" banner goes away on recovery.
+			Object.assign(props.tabularView, { query: queryForApi.query, view: responseTabularView, error: "" });
 			// props.tabularView.value = {query: queryForApi.query, view: responseTabularView};
 		};
 
@@ -384,6 +387,10 @@ export default {
 				} catch (e) {
 					console.error("Issue on Network:", e);
 					sendQueryError.value = e.message;
+					// Surface the error on `tabularView` so the parent can render a prominent "query broken"
+					// banner over the grid. The grid intentionally keeps rendering the last successful view
+					// so the user retains context.
+					props.tabularView.error = e.message;
 				} finally {
 					loadingV2.nbLoading--;
 
@@ -400,27 +407,73 @@ export default {
 			return postFromUrl(`/cubes/query`);
 		}
 
+		// True when the queryModel has nothing to ask the backend about — used to avoid firing
+		// trivial round-trips (e.g. right after a Reset, while the user is still editing). An
+		// empty query with no measures and no columns is not a useful view, and some backends
+		// reject it outright, which would re-populate the "query broken" banner and defeat the
+		// Reset button.
+		const isEmptyQuery = function () {
+			const q = queryJson.value;
+			return (q.measures || []).length === 0 && ((q.groupBy && q.groupBy.columns) || []).length === 0;
+		};
+
 		// Watch for the query as a JSON: if it changes, we may trigger the query
 		watch(
 			() => queryJson.value,
 			() => {
-				if (autoQuery.value) {
-					sendQuery();
+				if (!autoQuery.value) {
+					return;
 				}
+				if (isEmptyQuery()) {
+					// Transition to the "nothing selected" state: drop the previous grid content so
+					// the user lands on a clean view, and clear any lingering error banner.
+					props.tabularView.view = null;
+					props.tabularView.error = "";
+					sendQueryError.value = "";
+					return;
+				}
+				sendQuery();
 			},
 		);
 
-		if (autoQuery.value) {
+		if (autoQuery.value && !isEmptyQuery()) {
 			console.log("Trigger queryExecution on component load");
 			sendQuery();
 		}
+
+		// Shared flag from the parent: true whenever any wizard accordion is expanded. When open,
+		// the Submit block switches to a `position: fixed` overlay so it stays visible without
+		// the user scrolling past a tall accordion body.
+		const accordionState = inject("accordionState", { isOpen: false });
+
+		// Collapse any currently-expanded wizard accordion, which brings the Submit block back to
+		// its normal position below the wizard. Called on Submit click so the user sees the grid
+		// update immediately after the query runs.
+		const closeOpenAccordions = () => {
+			const wizard = document.getElementById("accordionWizard");
+			if (!wizard) {
+				return;
+			}
+			wizard.querySelectorAll(".accordion-collapse.show").forEach((el) => {
+				const instance = Collapse.getInstance(el) || new Collapse(el, { toggle: false });
+				instance.hide();
+			});
+		};
+
+		const submitQuery = () => {
+			closeOpenAccordions();
+			sendQuery();
+		};
 
 		return {
 			queryJson,
 			autoQuery,
 
 			sendQuery,
+			submitQuery,
+			closeOpenAccordions,
 			sendQueryError,
+			accordionState,
 		};
 	},
 	template: /* HTML */ `
@@ -436,17 +489,49 @@ export default {
 		</div>
 		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
 		<div v-else>
-			<span>
-				<div>
-					<button type="button" @click="sendQuery()" class="btn btn-outline-primary">Submit</button>
-					<span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
-				</div>
+			<!--
+				Submit block. When any wizard accordion is expanded, it floats over the grid
+				area via position: fixed so the user doesn't have to scroll a tall accordion
+				body to reach it. Clicking Submit closes the accordion (see submitQuery), which
+				re-docks the block to its normal flow position below the wizard.
 
-				<div class="form-check form-switch">
-					<input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
-					<label class="form-check-label" for="autoQuery">autoQuery</label>
-				</div>
-			</span>
+				<Transition> wrap + :key="accordionState.isOpen" + mode="out-in" gives a subtle
+				fade/scale animation as a visual hint that the block moves between the two
+				positions. The actual position (static -> fixed) cannot be interpolated, so this
+				is a UX hint rather than a literal fly-over. Corresponding CSS classes
+				.submit-float-{enter,leave}-{from,active,to} live in index.html.
+			-->
+			<Transition name="submit-float" mode="out-in">
+				<span
+					:key="accordionState.isOpen"
+					:class="accordionState.isOpen ? 'position-fixed shadow bg-body rounded p-2 border' : ''"
+					:style="accordionState.isOpen ? 'top: 50%; left: 62.5%; transform: translate(-50%, -50%); z-index: 1040;' : ''"
+				>
+					<!--
+					Close button — only visible when the block is floating over the grid. Clicking
+					it dismisses the floating overlay by collapsing the accordion, which re-docks
+					the block to its normal position below the wizard. Does NOT fire the query
+					(unlike Submit), so the user can keep editing without triggering a round-trip.
+				-->
+					<button
+						v-if="accordionState.isOpen"
+						type="button"
+						class="btn-close float-end"
+						aria-label="Close"
+						title="Close (collapse the wizard accordion)"
+						@click="closeOpenAccordions"
+					></button>
+					<div>
+						<button type="button" @click="submitQuery" class="btn btn-outline-primary">Submit</button>
+						<span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
+					</div>
+
+					<div class="form-check form-switch">
+						<input class="form-check-input" type="checkbox" role="switch" id="autoQuery" v-model="autoQuery" />
+						<label class="form-check-label" for="autoQuery">autoQuery</label>
+					</div>
+				</span>
+			</Transition>
 
 			<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
 			<AdhocQueryReset :queryModel="queryModel" />
