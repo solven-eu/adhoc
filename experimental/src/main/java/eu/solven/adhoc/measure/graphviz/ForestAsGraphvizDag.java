@@ -60,6 +60,12 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class ForestAsGraphvizDag {
+	// IMPORTANT — keep in sync with the Pivotable frontend.
+	// The per-class shape/color conventions below are mirrored (as best as Mermaid's flowchart
+	// vocabulary allows) in `pivotable/js/src/main/resources/static/ui/js/adhoc-measures-dag.js`,
+	// so a measure has the same visual identity in the offline GraphViz DAG and in the in-app
+	// Mermaid popup. When you add a new measure class / shape / color here, update that JS file
+	// too (look for the `shapeAndStyleForType` function).
 	// https://graphviz.org/doc/info/shapes.html
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOSHAPE =
 			ImmutableList.<Map.Entry<Class<?>, String>>builder()

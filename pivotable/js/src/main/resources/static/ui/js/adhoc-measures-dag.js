@@ -1,6 +1,39 @@
 import { inject, ref, watch } from "vue";
 import mermaid from "mermaid";
 
+// IMPORTANT — keep in sync with the Java side.
+// The per-type shape/color conventions below mirror (as best as Mermaid allows) the
+// GraphViz shapes / colors in
+// `experimental/src/main/java/eu/solven/adhoc/measure/graphviz/ForestAsGraphvizDag.java`,
+// so a measure has the same visual identity in the offline GraphViz DAG and in this
+// in-app Mermaid popup. When you add a new measure class / shape / color there, update
+// this map too. Reference shapes:
+//    Partitionor  -> GraphViz `star`          -> Mermaid hexagon        {{ ... }}
+//    Filtrator    -> GraphViz `invhouse`      -> Mermaid trapezoid-alt  [\...\]  (wide top)
+//    Dispatchor   -> GraphViz `msquare`       -> Mermaid subroutine     [[...]]
+//    Aggregator   -> GraphViz `tripleoctagon` -> Mermaid cylinder       [(...)]
+//    Combinator   -> (no GraphViz shape)      -> Mermaid rounded        ( ... )
+// Colors track the `DEFAULT_CLASSTOCOLOR` list on the Java side.
+//
+// `measure.type` in the frontend is the JSON-serialized class name (`.Partitionor`, etc.).
+// Matching is exact on the short form; unknown types fall back to the Combinator default.
+const shapeAndStyleForType = function (type) {
+	switch (type) {
+		case ".Partitionor":
+			return { open: "{{", close: "}}", fill: "#ffef8a" /* yellow */ };
+		case ".Filtrator":
+			return { open: "[\\", close: "\\]", fill: "#a6c9a2" /* darkseagreen */ };
+		case ".Dispatchor":
+			return { open: "[[", close: "]]", fill: "#c8c8c8" /* grey */ };
+		case ".Aggregator":
+			return { open: "[(", close: ")]", fill: "#ff9b86" /* coral */ };
+		case ".Combinator":
+			return { open: "(", close: ")", fill: "#a6e3f5" /* cyan */ };
+		default:
+			return { open: "(", close: ")", fill: "pink" };
+	}
+};
+
 export default {
 	props: {
 		measuresDagModel: {
@@ -206,14 +239,20 @@ export default {
 				const id = ensureId(name);
 				if (declaredNodes.has(id)) return;
 				declaredNodes.add(id);
-				markdown.push(`    ${id}("${name}")`);
-				// User-selected nodes get a distinct thick border + highlight fill; "link" nodes
-				// (pulled in by the expand-links option) stay plain so the user can tell them
-				// apart from their own explicit picks.
+
+				// Shape + fill come from the measure type (Partitionor = hexagon/yellow,
+				// Filtrator = trapezoid/green, etc. — mirrored with the Java ForestAsGraphvizDag
+				// class-to-shape/color map). User-selected nodes keep that type-specific fill and
+				// add a thick blue stroke on top — so the node's type (shape+color) AND the user's
+				// selection (border) are both readable at a glance.
+				const measure = cube.measures[name];
+				const style = shapeAndStyleForType(measure && measure.type);
+				markdown.push(`    ${id}${style.open}"${name}"${style.close}`);
+
 				if (userSelected.has(name)) {
-					markdown.push(`    style ${id} fill:#ffe082,stroke:#0d6efd,stroke-width:3px`);
+					markdown.push(`    style ${id} fill:${style.fill},stroke:#0d6efd,stroke-width:3px`);
 				} else {
-					markdown.push(`    style ${id} fill:pink`);
+					markdown.push(`    style ${id} fill:${style.fill}`);
 				}
 			};
 
