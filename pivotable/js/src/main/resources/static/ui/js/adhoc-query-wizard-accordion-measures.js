@@ -1,4 +1,4 @@
-import { inject } from "vue";
+import { ref, inject } from "vue";
 
 import AdhocMeasure from "./adhoc-query-wizard-measure.js";
 import AdhocQueryWizardColumn from "./adhoc-query-wizard-column.js";
@@ -47,11 +47,18 @@ export default {
 			return wizardHelper.clearFilters(props.searchOptions);
 		};
 
+		// Local toggle — controls the grey description line rendered under each measure name.
+		// Default ON to preserve existing behaviour; users who want a denser list can flip it off.
+		// Kept local (not in searchOptions) because it's a pure UI preference with no side effects
+		// on search semantics.
+		const showMeasureDetails = ref(true);
+
 		return {
 			filtered,
 			queried,
 			clearFilters,
 			queryModel,
+			showMeasureDetails,
 		};
 	},
 	template: /* HTML */ `
@@ -75,6 +82,21 @@ export default {
 			</h2>
 			<div id="wizardMeasures" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
 				<div class="accordion-body vh-50 overflow-scroll px-0">
+					<!--
+						UI preference toggle: hide / show the grey description line under each measure.
+						Useful when the list is long and the user just wants to scan names.
+						Right-aligned via flex (justify-content-end) so the group visually separates
+						from the measure rows below (each measure has its own left-aligned switch),
+						and kept with standard form-check layout so Bootstrap's 1.5em internal
+						padding doesn't push the switch off the right edge of the narrow sidebar.
+					-->
+					<div class="d-flex justify-content-end pe-3 mb-1">
+						<div class="form-check form-switch mb-0">
+							<input class="form-check-input" type="checkbox" role="switch" id="showMeasureDetails" v-model="showMeasureDetails" />
+							<label class="form-check-label text-muted small" for="showMeasureDetails">Show descriptions</label>
+						</div>
+					</div>
+
 					<ul v-for="(measure) in filtered(measures)" class="list-group list-group-flush">
 						<li class="list-group-item">
 							<div class="form-check form-switch">
@@ -86,7 +108,7 @@ export default {
 									v-model="queryModel.selectedMeasures[measure.name]"
 								/>
 								<label class="form-check-label" :for="'measure_' + measure.name">
-									<AdhocMeasure :measure="measure" :showDetails="searchOptions.throughJson" :searchOptions="searchOptions" />
+									<AdhocMeasure :measure="measure" :showDetails="showMeasureDetails" :searchOptions="searchOptions" />
 								</label>
 							</div>
 						</li>

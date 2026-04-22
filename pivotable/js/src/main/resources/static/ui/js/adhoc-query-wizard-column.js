@@ -105,46 +105,85 @@ export default {
 			return markMatchingWizard(props.searchOptions, text);
 		};
 
+		// Map the backend-provided type string to a Bootstrap Icon class. Lowercase substring
+		// matching so both SQL-flavoured (`varchar`, `bigint`, `timestamp`) and Java-flavoured
+		// (`String`, `Long`, `Instant`) type names resolve. The actual type string is kept as a
+		// tooltip for power users.
+		const typeIcon = function (type) {
+			if (!type) return "bi-question";
+			const lower = String(type).toLowerCase();
+			if (/bool|bit/.test(lower)) return "bi-toggle-on";
+			if (/date|time|instant/.test(lower)) return "bi-calendar3";
+			// Ordering: check int-family BEFORE floating-point families — `double` should still
+			// resolve to the number icon, but `bigint` must not be mistaken for an int.
+			if (/double|float|decimal|numeric|number/.test(lower)) return "bi-123";
+			if (/int|long|short|byte/.test(lower)) return "bi-hash";
+			if (/varchar|char|text|string/.test(lower)) return "bi-fonts";
+			return "bi-question";
+		};
+
 		return {
 			loadColumnCoordinates,
 			loadingCoordinates,
 			openFilterModal,
 			isFiltered,
 			mark,
+			typeIcon,
 		};
 	},
 	template: /* HTML */ `
-		<div class="form-check form-switch">
+		<!--
+			Two-row compact layout (down from four).
+			Row 1: toggle + name — full row, so long column names wrap cleanly instead of being
+			squeezed to one character per line in the narrow col-3 sidebar.
+			Row 2: secondary controls (type, grandTotal asterisk toggle, cardinality badge,
+			filter button) all on one tight horizontal line.
+		-->
+		<div class="form-check form-switch mb-1">
 			<input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-			<label class="form-check-label  text-wrap" :for="'column_' + column" v-html="mark(column)"></label>
+			<label class="form-check-label text-wrap" :for="'column_' + column" v-html="mark(column)"></label>
 		</div>
 
-		<small>{{type}}</small>
+		<div class="d-flex align-items-center gap-2 flex-wrap">
+			<!-- Type as a Bootstrap Icon; the full type string remains as a tooltip. -->
+			<small class="text-muted" :title="'type: ' + type"><i :class="typeIcon(type)"></i></small>
 
-		<small>
-			<div class="form-check form-switch">
-				<input class="form-check-input" type="checkbox" role="switch" :id="'columnWithStar_' + column" v-model="queryModel.withStarColumns[column]" />
-				<label class="form-check-label  text-wrap" :for="'columnWithStar_' + column">grandTotal</label>
+			<!-- grandTotal: icon-only toggle (bi-asterisk). Title provides the label. -->
+			<div class="form-check form-switch mb-0" :title="'Include grandTotal (*) row for ' + column">
+				<input
+					class="form-check-input"
+					type="checkbox"
+					role="switch"
+					:id="'columnWithStar_' + column"
+					v-model="queryModel.withStarColumns[column]"
+					aria-label="grandTotal"
+				/>
+				<label class="form-check-label" :for="'columnWithStar_' + column"><i class="bi bi-asterisk small"></i></label>
 			</div>
-		</small>
 
-		<button type="button" @click="loadColumnCoordinates()" class="badge bg-secondary rounded-pill">
-			<span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
-			<!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
-			<span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
-			<span v-if="loadingCoordinates">
-				<div class="spinner-grow" role="status">
-					<span class="visually-hidden">Loading...</span>
-				</div>
-			</span>
-		</button>
+			<button
+				type="button"
+				@click="loadColumnCoordinates()"
+				class="badge bg-secondary rounded-pill"
+				:title="'Click to load column cardinality for ' + column"
+			>
+				<span v-if="!(typeof columnMeta.estimatedCardinality === 'number')"> ? </span>
+				<!-- https://stackoverflow.com/questions/10599933/convert-long-number-into-abbreviated-string-in-javascript-with-a-special-shortn -->
+				<span v-else> {{ Intl.NumberFormat('en-US', { notation: "compact", maximumFractionDigits: 1 }).format(columnMeta.estimatedCardinality)}} </span>
+				<span v-if="loadingCoordinates">
+					<span class="spinner-grow spinner-grow-sm" role="status">
+						<span class="visually-hidden">Loading...</span>
+					</span>
+				</span>
+			</button>
 
-		<AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
-		<button type="button" @click="openFilterModal()" class="btn btn-outline-primary position-relative">
-			<i class="bi bi-filter"></i>
-			<span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" v-if="isFiltered()">
-				<span class="visually-hidden">is filtered</span>
-			</span>
-		</button>
+			<AdhocQueryWizardColumnFilterModal :queryModel="queryModel" :column="column" :type="type" :endpointId="endpointId" :cubeId="cubeId" />
+			<button type="button" @click="openFilterModal()" class="btn btn-outline-primary btn-sm position-relative" :title="'Edit filter on ' + column">
+				<i class="bi bi-filter"></i>
+				<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" v-if="isFiltered()">
+					<span class="visually-hidden">is filtered</span>
+				</span>
+			</button>
+		</div>
 	`,
 };
