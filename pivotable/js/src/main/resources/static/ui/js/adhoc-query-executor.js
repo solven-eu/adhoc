@@ -560,7 +560,7 @@ export default {
 				</span>
 			</Transition>
 
-			<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" />
+			<AdhocQueryRawModal :queryJson="queryJson" :queryModel="queryModel" :cubeId="cubeId" />
 			<AdhocQueryReset :queryModel="queryModel" />
 			<AdhocQueryFavorite :queryModel="queryModel" />
 			<AdhocQueryFavorites :queryModel="queryModel" />
