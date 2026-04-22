@@ -186,3 +186,17 @@ The migration strategy is:
 - *Adhoc* defines the underlying CubeQueryStep through `IMeasureQueryStep.getUnderlyingSteps`
 
 - *Atoti* defines the underlying *measure x location* through `IPrefetcher`
+
+# Multi JDK Environment
+
+Given heterogenous requirement on JDK version, you may need to switch from one JDK to another:
+
+```bash
+echo $JAVA21_HOME
+export JAVA_HOME=$JAVA21_HOME
+```
+
+```powershell
+echo $Env:JAVA25_HOME
+[Environment]::SetEnvironmentVariable("JAVA_HOME", $Env:JAVA25_HOME)
+```

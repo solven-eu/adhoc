@@ -94,7 +94,7 @@ public class TestDagExplainerForPerfs {
 
 		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().build()), dag);
 
-		Assertions.assertThat(String.join("\n", messages)).isEqualTo("""
+		Assertions.assertThat(String.join("\n", messages)).isEqualToNormalizingNewlines("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
 				|      No cost info
 				\\-- #1 m=root(Combinator[SUM]) filter=matchAll groupBy=grandTotal

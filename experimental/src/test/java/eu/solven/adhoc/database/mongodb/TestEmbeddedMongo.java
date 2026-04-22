@@ -22,11 +22,16 @@
  */
 package eu.solven.adhoc.database.mongodb;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
 
 import org.assertj.core.api.Assertions;
 import org.bson.Document;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +48,30 @@ import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
 import de.flapdoodle.reverse.TransitionWalker;
 
 public class TestEmbeddedMongo {
+
+	// TODO Replace with the actual MongoDB download mirror URL for your environment
+	private static final String MONGODB_DOWNLOAD_URL = "https://fastdl.mongodb.org";
+
+	/**
+	 * Aborts all tests in this class if the MongoDB binary download server is not reachable (e.g. corporate proxy
+	 * blocking outbound HTTPS). flapdoodle embed-mongo downloads the MongoDB binary on first run; if the download is
+	 * blocked the test hangs or fails with a cryptic error rather than a clear skip.
+	 */
+	@BeforeAll
+	static void checkMongoDownloadConnectivity() {
+		try {
+			HttpURLConnection connection = (HttpURLConnection) new URL(MONGODB_DOWNLOAD_URL).openConnection();
+			connection.setConnectTimeout(3_000);
+			connection.setReadTimeout(3_000);
+			connection.setRequestMethod("HEAD");
+			connection.connect();
+			connection.disconnect();
+		} catch (IOException e) {
+			Assumptions.assumeTrue(false,
+					"MongoDB download server not reachable (%s): %s — skipping embedded-Mongo tests"
+							.formatted(MONGODB_DOWNLOAD_URL, e.getMessage()));
+		}
+	}
 
 	protected TransitionWalker.ReachedState<RunningMongodProcess> running;
 	protected ServerAddress serverAddress;

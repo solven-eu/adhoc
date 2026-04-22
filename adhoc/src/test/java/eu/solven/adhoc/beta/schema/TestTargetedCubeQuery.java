@@ -57,7 +57,7 @@ public class TestTargetedCubeQuery {
 		String asString = PepperJackson3TestHelper
 				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), TargetedCubeQuery.class, query);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "endpointId" : "12345678-1234-1234-1234-12345678abcd",
 				  "cube" : "someCube",

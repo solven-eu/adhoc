@@ -33,7 +33,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestPlayersEvents {
 	@Test
-	public void testHashcodeEauals() {
+	public void testHashcodeEquals() {
 		EqualsVerifier.forClass(PlayersEvents.class).verify();
 	}
 
@@ -44,7 +44,7 @@ public class TestPlayersEvents {
 		String toString = PepperJackson3TestHelper.makeObjectMapper()
 				.writeValueAsString(PlayersEvents.builder().typeToMinuteToCount("G", goalEvents).build());
 
-		Assertions.assertThat(toString).isEqualTo("""
+		Assertions.assertThat(toString).isEqualToNormalizingNewlines("""
 				{
 				  "G" : {
 				    "12" : 23
@@ -71,7 +71,7 @@ public class TestPlayersEvents {
 
 		String toString = PepperJackson3TestHelper.makeObjectMapper().writeValueAsString(merged);
 
-		Assertions.assertThat(toString).isEqualTo("""
+		Assertions.assertThat(toString).isEqualToNormalizingNewlines("""
 				{
 				  "G" : {
 				    "34" : 45,
@@ -102,7 +102,7 @@ public class TestPlayersEvents {
 
 		String toString = PepperJackson3TestHelper.makeObjectMapper().writeValueAsString(merged);
 
-		Assertions.assertThat(toString).isEqualTo("""
+		Assertions.assertThat(toString).isEqualToNormalizingNewlines("""
 				{
 				  "G" : {
 				    "12" : 68

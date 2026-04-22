@@ -49,7 +49,7 @@ public class TestEvaluatedExpressionColumn {
 		String asString = PepperJackson3TestHelper
 				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), IAdhocColumn.class, column);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : ".EvaluatedExpressionColumn",
 				  "name" : "someColumn",
