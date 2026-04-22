@@ -277,7 +277,15 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
-			// Register the watch once the grid is mounted and initialized
+			// Register the watch once the grid is mounted and initialized.
+			//
+			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
+			// `onView` (a fresh server response) or nulled by the empty-query short-circuit;
+			// we never patch it in place. Conversely, `resyncData` itself calls `sortRows`
+			// which mutates `view.coordinates` / `view.values` IN-PLACE — with deep tracking,
+			// that would re-fire this very watcher, causing the grid to render twice per
+			// edit (and logging `Rendering measureNames=` twice). Shallow reference watching
+			// fires exactly once per server response — which is what the UX needs.
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {
@@ -297,7 +305,6 @@ export default {
 						props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
 					}
 				},
-				{ deep: true },
 			);
 		});
 
