@@ -100,13 +100,34 @@ export default {
 			props.queryModel.selectedOptions = {};
 		}
 
+		// Recursively drops sub-filters flagged `disabled: true` from a filter tree. The `disabled`
+		// flag is a Pivotable-side UI preference (pause/resume in the wizard) — the backend does
+		// not know about it and would reject or misinterpret it. Collapsing rules:
+		//   - a disabled node (leaf or AND/OR) is dropped
+		//   - an AND/OR with no remaining children collapses to null (caller substitutes `{}` = matchAll)
+		//   - an AND/OR with a single remaining child is flattened to that child
+		// Returns a fresh object tree — safe to deep-copy afterwards.
+		const stripDisabledFilters = function (f) {
+			if (!f || f.disabled) return null;
+			if (f.type === "and" || f.type === "or") {
+				const keptChildren = (f.filters || []).map(stripDisabledFilters).filter((c) => c !== null);
+				if (keptChildren.length === 0) return null;
+				if (keptChildren.length === 1) return keptChildren[0];
+				return { type: f.type, filters: keptChildren };
+			}
+			return f;
+		};
+
 		// This computed property snapshots of the query
 		const queryJson = computed(() => {
 			//const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
 			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
 
+			// Strip disabled sub-filters BEFORE deep-copying so the wire-level filter tree reflects
+			// only the user-active filters — even though the pivotable-side model keeps everything.
+			const strippedFilter = stripDisabledFilters(props.queryModel.filter) || {};
 			// Deep-Copy as the filter tree may be deep, and we must ensure it can not be edited while being executed
-			const filter = JSON.parse(JSON.stringify(props.queryModel.filter || {}));
+			const filter = JSON.parse(JSON.stringify(strippedFilter));
 
 			// BEWARE This is a workaround to force `compute` to be reactive on all columns state
 			// It is unclear why the reactivity on `props.queryModel.selectedColumnsOrdered` is not working

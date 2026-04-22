@@ -153,10 +153,24 @@ export default {
 		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
 		<div v-else>
 			<form class="text-break">
-				<AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
-				<AdhocQueryWizardSearch :searchOptions="searchOptions" />
+				<!--
+					Three stacked sections with discrete visual separation so the user can tell at
+					a glance where "query definition" (Filter) ends and "UI-side navigation aids"
+					(Search, Tags) begin. Tiny uppercase muted labels act as section titles
+					without eating vertical space.
+				-->
+				<section v-if="queryModel.filter" class="mb-2">
+					<div class="text-uppercase text-muted small fw-semibold mb-1">Filter</div>
+					<AdhocQueryWizardFilter :filter="queryModel.filter" />
+				</section>
 
-				<AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
+				<hr class="my-2" />
+
+				<section>
+					<div class="text-uppercase text-muted small fw-semibold mb-1">Search</div>
+					<AdhocQueryWizardSearch :searchOptions="searchOptions" />
+					<AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
+				</section>
 
 				<div class="accordion" id="accordionWizard">
 					<AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
