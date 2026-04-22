@@ -127,13 +127,40 @@ export default {
 					</div>
 					<!-- https://stackoverflow.com/questions/4611591/code-vs-pre-vs-samp-for-inline-and-block-code-snippets -->
 					<div class="modal-body">
+						<!--
+							Mode indicator bar: makes the read-only vs. editing state unmissable so the
+							JSON <pre> area doesn't look like a broken textarea on desktop, nor like a
+							tappable field on mobile (where hover cursors are absent).
+						-->
+						<div
+							class="d-flex align-items-center justify-content-between border rounded px-2 py-1 mb-2 small"
+							:class="isEditing ? 'bg-warning-subtle text-warning-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'"
+						>
+							<span>
+								<i v-if="isEditing" class="bi bi-pencil-square"></i>
+								<i v-else class="bi bi-lock"></i>
+								{{ isEditing ? "Editing — click Save to apply, Cancel to discard." : "Read-only — click Edit JSON below to modify." }}
+							</span>
+						</div>
+
 						<div class="vh-50">
+							<!--
+								Editing: real textarea, normal cursor. Read-only: cursor: not-allowed
+								+ subtle grey background + user-select: text kept ON so copy-paste still
+								works. The overall styling reads as "disabled field" on every platform.
+							-->
 							<pre
 								class="border text-start h-100 w-100"
 								style=" overflow-y: scroll;"
 								v-if="isEditing"
 							><textarea class="h-100 w-100 px-0 py-0 border-0" style="box-sizing: content-box;" v-model="editedJson">irrelevant</textarea></pre>
-							<pre class="border text-start h-100 w-100" style="overflow-y: scroll;" v-else>{{queryJson}}</pre>
+							<pre
+								v-else
+								class="border text-start h-100 w-100 bg-body-secondary"
+								style="overflow-y: scroll; cursor: not-allowed;"
+								title="Read-only — click Edit JSON to modify"
+								>{{queryJson}}</pre
+							>
 						</div>
 					</div>
 					<div class="modal-footer">

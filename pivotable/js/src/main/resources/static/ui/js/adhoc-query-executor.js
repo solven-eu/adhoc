@@ -115,6 +115,12 @@ export default {
 				if (keptChildren.length === 1) return keptChildren[0];
 				return { type: f.type, filters: keptChildren };
 			}
+			if (f.type === "not") {
+				// NOT without a surviving inner is meaningless — drop the wrapper entirely.
+				const inner = stripDisabledFilters(f.negated);
+				if (!inner) return null;
+				return { type: "not", negated: inner };
+			}
 			return f;
 		};
 
