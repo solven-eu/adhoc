@@ -20,11 +20,12 @@ permissions: read-all
 jobs:
   build:
     name: Build & UnitTests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.continue-on-error == true }}
 
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         java-version: ['25', '26-ea']
 
     steps:
@@ -63,23 +64,23 @@ jobs:
     - name: Report low-coverage classes
       # Informational only — highlights production classes below 20% instruction coverage.
       # Full list: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc
-      if: matrix.java-version == '25'
+      if: matrix.java-version == '25' && matrix.os == 'ubuntu-latest'
       run: perl scripts/check-coverage-low.pl . || true
 
     - name: Check coverage constraints
       # Informational only — compares per-module JaCoCo thresholds (from pom.xml) with actual coverage.
-      if: matrix.java-version == '25'
+      if: matrix.java-version == '25' && matrix.os == 'ubuntu-latest'
       run: perl scripts/check-coverage-constraints.pl . || true
 
     - name: Upload coverage reports to Codecov
-      if: matrix.java-version == '25'
+      if: matrix.java-version == '25' && matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
       with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
     # https://docs.sonarsource.com/sonarqube-cloud/advanced-setup/ci-based-analysis/github-actions-for-sonarcloud/
     - name: SonarQubeScan
-      if: matrix.java-version == '25'
+      if: matrix.java-version == '25' && matrix.os == 'ubuntu-latest'
       uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4 # v7.1.0
       env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
