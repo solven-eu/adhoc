@@ -41,6 +41,11 @@ const config = defineConfig({
 		screenshot: "only-on-failure",
 	},
 
+	// Coverage teardown — only wired when PW_COVERAGE=1, so standard runs aren't delayed.
+	// The teardown flushes the accumulated V8 coverage (gathered by the per-test fixture in
+	// e2e-tests/_coverage-fixture.mjs) to lcov + html via monocart-coverage-reports.
+	globalTeardown: process.env.PW_COVERAGE === "1" ? "./e2e-tests/_coverage-teardown.mjs" : undefined,
+
 	// https://playwright.dev/docs/test-timeouts
 	timeout: 15000,
 	expect: { timeout: 2000 },

@@ -103,11 +103,7 @@ export default {
 			inner collapses the whole NOT (see removeFilter and stripDisabledFilters).
 		-->
 		<div v-else-if="filter.type === 'not'" class="d-inline-block" :class="filter.disabled ? 'text-muted' : ''">
-			<span
-				class="badge rounded-pill text-bg-danger me-1"
-				:class="filter.disabled ? 'text-decoration-line-through opacity-50' : ''"
-				>NOT</span
-			>
+			<span class="badge rounded-pill text-bg-danger me-1" :class="filter.disabled ? 'text-decoration-line-through opacity-50' : ''">NOT</span>
 			<button
 				type="button"
 				class="btn btn-sm btn-link p-0 me-1 align-baseline"

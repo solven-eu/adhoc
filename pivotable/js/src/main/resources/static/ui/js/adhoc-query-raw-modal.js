@@ -1,6 +1,7 @@
 import { ref, computed, watch } from "vue";
 
 import { queryModelToMdx } from "./adhoc-query-to-mdx.js";
+import { queryModelToSql } from "./adhoc-query-to-sql.js";
 
 export default {
 	props: {
@@ -23,9 +24,9 @@ export default {
 	},
 	setup(props) {
 		// Which read-only view to show in the modal body. "json" preserves the original
-		// behaviour (with edit mode); "mdx" shows a derived MDX string for side-by-side
-		// comparison with other MDX clients. MDX is always read-only — we don't convert
-		// back from MDX to queryModel.
+		// behaviour (with edit mode); "mdx" and "sql" show derived strings for side-by-side
+		// comparison with external MDX / SQL clients. Both derived views are informative only
+		// and always read-only — Adhoc executes the JSON model, not the MDX or SQL text.
 		const activeTab = ref("json");
 
 		// By default, we're not editing but just looking at the JSON
@@ -45,6 +46,9 @@ export default {
 		// Live MDX projection of the current queryModel. Recomputes reactively when the
 		// model changes, so the modal can stay open while the user edits the wizard.
 		const mdxString = computed(() => queryModelToMdx(props.queryModel, props.cubeId));
+
+		// Live SQL projection of the current queryModel — same informative-only contract as MDX.
+		const sqlString = computed(() => queryModelToSql(props.queryModel, props.cubeId));
 
 		const toggleEdit = function () {
 			copyToClipboardStatus.value = "";
@@ -101,10 +105,13 @@ export default {
 
 		const copyToClipboard = function () {
 			// Copy whatever the user is currently looking at — editing JSON copies the edited
-			// buffer, viewing JSON copies the serialized queryJson, viewing MDX copies the MDX.
+			// buffer, viewing JSON copies the serialized queryJson, viewing MDX/SQL copies the
+			// derived string.
 			let value;
 			if (activeTab.value === "mdx") {
 				value = mdxString.value;
+			} else if (activeTab.value === "sql") {
+				value = sqlString.value;
 			} else if (isEditing.value) {
 				value = editedJson.value;
 			} else {
@@ -133,6 +140,7 @@ export default {
 		return {
 			activeTab,
 			mdxString,
+			sqlString,
 
 			isEditing,
 			toggleEdit,
@@ -165,24 +173,13 @@ export default {
 						-->
 						<ul class="nav nav-tabs mb-2">
 							<li class="nav-item">
-								<button
-									type="button"
-									class="nav-link"
-									:class="activeTab === 'json' ? 'active' : ''"
-									@click="activeTab = 'json'"
-								>
-									JSON
-								</button>
+								<button type="button" class="nav-link" :class="activeTab === 'json' ? 'active' : ''" @click="activeTab = 'json'">JSON</button>
 							</li>
 							<li class="nav-item">
-								<button
-									type="button"
-									class="nav-link"
-									:class="activeTab === 'mdx' ? 'active' : ''"
-									@click="activeTab = 'mdx'"
-								>
-									MDX
-								</button>
+								<button type="button" class="nav-link" :class="activeTab === 'mdx' ? 'active' : ''" @click="activeTab = 'mdx'">MDX</button>
+							</li>
+							<li class="nav-item">
+								<button type="button" class="nav-link" :class="activeTab === 'sql' ? 'active' : ''" @click="activeTab = 'sql'">SQL</button>
 							</li>
 						</ul>
 						<!-- JSON tab: original view + edit mode. -->
@@ -219,7 +216,8 @@ export default {
 									class="border text-start h-100 w-100 bg-body-secondary"
 									style="overflow-y: scroll; cursor: not-allowed;"
 									title="Read-only — click Edit JSON to modify"
-									>{{queryJson}}</pre
+								>
+{{queryJson}}</pre
 								>
 							</div>
 						</div>
@@ -230,22 +228,53 @@ export default {
 							minimal converter — see adhoc-query-to-mdx.js).
 						-->
 						<div v-else-if="activeTab === 'mdx'">
-							<div class="d-flex align-items-center border rounded px-2 py-1 mb-2 small bg-secondary-subtle text-secondary-emphasis">
-								<i class="bi bi-lock me-1"></i>
-								Read-only — derived from the current queryModel. Use the clipboard button to copy.
+							<!--
+								Informative-only notice. This MDX string is NOT what Adhoc runs — the
+								backend evaluates the JSON queryModel. We surface the MDX projection so
+								the user can copy/paste it into a real MDX client (Excel, Mondrian,
+								Atoti, …) as a starting point when translating the query by hand.
+							-->
+							<div class="alert alert-info py-2 mb-2 small" role="alert">
+								<i class="bi bi-info-circle me-1"></i>
+								<strong>Informative only.</strong>
+								This MDX is derived from the current query model — Adhoc does <em>not</em> execute MDX. Use it as a starting point to build an
+								actual MDX query for an MDX-native client (Excel, Mondrian, Atoti, …).
 							</div>
 							<div class="vh-50">
 								<pre
 									class="border text-start h-100 w-100 bg-body-secondary"
 									style="overflow-y: scroll; cursor: not-allowed;"
-									title="Read-only — MDX derived from the queryModel"
-									>{{mdxString}}</pre
+									title="Read-only — MDX derived from the queryModel (informative only)"
+								>
+{{mdxString}}</pre
+								>
+							</div>
+						</div>
+
+						<!--
+							SQL tab: same informative-only contract as MDX. Recomputes from queryModel
+							via adhoc-query-to-sql.js; no round-trip back to queryModel.
+						-->
+						<div v-else-if="activeTab === 'sql'">
+							<div class="alert alert-info py-2 mb-2 small" role="alert">
+								<i class="bi bi-info-circle me-1"></i>
+								<strong>Informative only.</strong>
+								This SQL is derived from the current query model — Adhoc does <em>not</em> execute SQL. Use it as a starting point to build an
+								actual SQL query for a SQL-native client (DuckDB, Postgres, BigQuery, …).
+							</div>
+							<div class="vh-50">
+								<pre
+									class="border text-start h-100 w-100 bg-body-secondary"
+									style="overflow-y: scroll; cursor: not-allowed;"
+									title="Read-only — SQL derived from the queryModel (informative only)"
+								>
+{{sqlString}}</pre
 								>
 							</div>
 						</div>
 					</div>
 					<div class="modal-footer">
-						<!-- Edit controls only make sense on the JSON tab; hidden on MDX. -->
+						<!-- Edit controls only make sense on the JSON tab; hidden on MDX / SQL. -->
 						<span v-if="activeTab === 'json' && isEditing">
 							<button type="button" class="btn btn-success" @click="loadFromJson">Save</button>
 							<button type="button" class="btn btn-warning" @click="toggleEdit">Cancel</button>

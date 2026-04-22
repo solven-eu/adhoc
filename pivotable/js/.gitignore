@@ -28,3 +28,5 @@ dist-ssr
 /playwright/.cache/
 
 vitest-report
+# Coverage (vitest + playwright)
+coverage/

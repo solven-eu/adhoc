@@ -46,14 +46,7 @@ test("two groupBy columns produce a multi-line NON EMPTY CrossJoin", () => {
 	q.selectedColumnsOrdered.push("city", "country");
 	const mdx = queryModelToMdx(q, "simple");
 	expect(mdx).toEqual(
-		[
-			"SELECT",
-			"  NON EMPTY CrossJoin(",
-			"    {[city].[city].Members},",
-			"    {[country].[country].Members}",
-			"  ) ON ROWS",
-			"FROM [simple]",
-		].join("\n"),
+		["SELECT", "  NON EMPTY CrossJoin(", "    {[city].[city].Members},", "    {[country].[country].Members}", "  ) ON ROWS", "FROM [simple]"].join("\n"),
 	);
 });
 
@@ -62,14 +55,7 @@ test("measures + columns produce both axes, comma-separated", () => {
 	q.selectedMeasures.delta = true;
 	q.selectedColumnsOrdered.push("city");
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(
-		[
-			"SELECT",
-			"  {[Measures].[delta]} ON COLUMNS,",
-			"  NON EMPTY {[city].[city].Members} ON ROWS",
-			"FROM [simple]",
-		].join("\n"),
-	);
+	expect(mdx).toEqual(["SELECT", "  {[Measures].[delta]} ON COLUMNS,", "  NON EMPTY {[city].[city].Members} ON ROWS", "FROM [simple]"].join("\n"));
 });
 
 test("single column=value filter becomes a WHERE tuple with Atoti AllMember path", () => {
@@ -77,14 +63,7 @@ test("single column=value filter becomes a WHERE tuple with Atoti AllMember path
 	q.selectedMeasures.delta = true;
 	q.filter = { type: "column", column: "country", valueMatcher: "France" };
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(
-		[
-			"SELECT",
-			"  {[Measures].[delta]} ON COLUMNS",
-			"FROM [simple]",
-			"WHERE ([country].[AllMember].[France])",
-		].join("\n"),
-	);
+	expect(mdx).toEqual(["SELECT", "  {[Measures].[delta]} ON COLUMNS", "FROM [simple]", "WHERE ([country].[AllMember].[France])"].join("\n"));
 });
 
 test("AND of column=value filters compose into a multi-line WHERE tuple", () => {
@@ -99,15 +78,9 @@ test("AND of column=value filters compose into a multi-line WHERE tuple", () => 
 	};
 	const mdx = queryModelToMdx(q, "simple");
 	expect(mdx).toEqual(
-		[
-			"SELECT",
-			"  {[Measures].[delta]} ON COLUMNS",
-			"FROM [simple]",
-			"WHERE (",
-			"  [country].[AllMember].[France],",
-			"  [ccy].[AllMember].[EUR]",
-			")",
-		].join("\n"),
+		["SELECT", "  {[Measures].[delta]} ON COLUMNS", "FROM [simple]", "WHERE (", "  [country].[AllMember].[France],", "  [ccy].[AllMember].[EUR]", ")"].join(
+			"\n",
+		),
 	);
 });
 
@@ -183,13 +156,7 @@ test("withStarColumns renders as DrillDownMember from the All member", () => {
 	q.selectedColumnsOrdered.push("city");
 	q.withStarColumns.city = true;
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(
-		[
-			"SELECT",
-			"  NON EMPTY DrillDownMember({[city].[city].[AllMember]}, {[city].[city].[AllMember]}) ON ROWS",
-			"FROM [simple]",
-		].join("\n"),
-	);
+	expect(mdx).toEqual(["SELECT", "  NON EMPTY DrillDownMember({[city].[city].[AllMember]}, {[city].[city].[AllMember]}) ON ROWS", "FROM [simple]"].join("\n"));
 });
 
 test("withStarColumns mixes with plain members in a multi-line NON EMPTY CrossJoin", () => {

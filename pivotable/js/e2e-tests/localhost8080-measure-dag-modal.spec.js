@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./_coverage-fixture.mjs";
 
 import queryPivotable from "./query-pivotable.mjs";
 
