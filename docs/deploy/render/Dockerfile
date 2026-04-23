@@ -22,11 +22,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends maven && rm -rf
 # and `node_modules/` so this COPY stays reasonable.
 COPY . .
 
+# Render injects the git SHA of the commit being built as the `RENDER_GIT_COMMIT` env var during
+# build. Forward it to the git-commit-id Maven plugin so the SPA's GitHub link (stamped into
+# `index.html` via @git.commit.id.abbrev@) resolves to the right commit even though the Docker
+# build context does not carry `.git/` (excluded by `.dockerignore` — keeping `.git` out keeps
+# each build-context upload tiny). When the variable is absent (local `docker build`), the
+# plugin silently degrades to an empty stamp thanks to `failOnNoGitDirectory=false` in the
+# parent pom's pluginManagement.
+ARG RENDER_GIT_COMMIT=""
+
 # Build just the deployable server module and its reactor dependencies.
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -pl :pivotable-server-webflux -am package \
         -DskipTests -Dspotless.skip=true -Denforcer.skip=true -Dcyclonedx.skip=true \
-        -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true
+        -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true \
+        -Dgit.commit.id.abbrev="${RENDER_GIT_COMMIT}"
 
 # Spring Boot maven plugin produces an `-exec.jar` classifier — copy it to a stable path so the
 # run stage doesn't need to know the version.
