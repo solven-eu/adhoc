@@ -47,7 +47,7 @@ public class TestColumnFilter {
 		ObjectMapper objectMapper = AdhocPublicJackson.makeObjectMapper();
 
 		String asString = objectMapper.writeValueAsString(ksEqualsV);
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "column",
 				  "column" : "k",
@@ -65,7 +65,7 @@ public class TestColumnFilter {
 		ObjectMapper objectMapper = AdhocPublicJackson.makeObjectMapper();
 
 		String asString = objectMapper.writeValueAsString(columnIsNull);
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : "column",
 				  "column" : "k",
