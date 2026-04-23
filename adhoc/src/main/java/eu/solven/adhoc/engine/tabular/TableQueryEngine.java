@@ -1001,7 +1001,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 					.collect(Collectors.joining(System.lineSeparator()));
 
 			throw new IllegalStateException(
-					"inducer=%s is missing its value-column. May happen on .equals inconsistency in ISliceFilter. Steps are: {}{}"
+					"inducer=%s is missing its value-column. May happen on .equals inconsistency in ISliceFilter. Steps are: %s%s"
 							.formatted(induced, System.lineSeparator(), availableSteps));
 		} else {
 			eventBus.post(QueryStepIsEvaluating.builder().queryStep(induced).source(this).build());

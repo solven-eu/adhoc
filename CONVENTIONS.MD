@@ -5,6 +5,19 @@
 
 ---
 
+## Error Prone static analysis
+
+An **opt-in** Maven profile runs Google's [Error Prone](https://errorprone.info/) over the main compile. Findings surface as `[WARNING]` lines so the profile never breaks the build on its own.
+
+```
+mvn clean compile -Perrorprone
+```
+
+Any `-Perrorprone` run is additive: the profile only extends `maven-compiler-plugin`'s configuration (annotation-processor-path, `-Xplugin:ErrorProne`, JDK `add-exports` needed since JEP 403). The default build is unchanged. Promote individual checks to errors via `-Xep:<CheckName>:ERROR` as the codebase stabilises.
+
+Known caveats (kept in the profile's inline comment in `pom.xml`):
+- `StringConcatToTextBlock` is disabled because 2.49.0 crashes on some of our literals. Drop the override on the next EP bump and re-run.
+
 ## Running Convention Checks
 
 To scan the whole codebase in one shot:

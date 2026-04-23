@@ -57,8 +57,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>
  * Only intra-project dependencies (those sharing the same {@code groupId} as the root module) are shown as edges.
- * External dependencies are ignored. Compile-scope dependencies use a solid arrow ({@code -->}); test-scope
- * dependencies use a dashed arrow ({@code -.->}), making it easy to see which modules are test-only consumers.
+ * External dependencies are ignored. Test-scope dependencies are ignored too by default — opt in via
+ * {@link MavenDependencyAsMermaidBuilder#includeTestScope(boolean)} to bring them back as dashed edges ({@code -.->});
+ * compile-scope dependencies always render as solid arrows ({@code -->}).
  *
  * <p>
  * Modules are grouped into {@code subgraph} blocks by their immediate Maven parent, giving a layered view of the module
@@ -80,6 +81,15 @@ public class MavenDependencyAsMermaid {
 	@Default
 	@SuppressWarnings("checkstyle:MagicNumber")
 	int maxDepth = 10;
+
+	/**
+	 * When {@code false} (the default), test-scope dependencies are omitted from the graph entirely. The typical
+	 * consumer of this diagram — a human reading the module architecture — is interested in the production-path
+	 * couplings; test-jar classifier links add noise without insight. Flip this to {@code true} to bring test edges
+	 * back as dashed arrows.
+	 */
+	@Default
+	boolean includeTestScope = false;
 
 	// ── Inner types ──────────────────────────────────────────────────────────
 
@@ -172,6 +182,10 @@ public class MavenDependencyAsMermaid {
 		for (Map.Entry<String, List<PomDependency>> entry : dependenciesByModule.entrySet()) {
 			String consumer = entry.getKey();
 			for (PomDependency dep : entry.getValue()) {
+				if (!includeTestScope && dep.isTestScope()) {
+					// Test-only coupling — skipped by default so the diagram shows the production architecture.
+					continue;
+				}
 				if (projectGroupId.equals(dep.getGroupId()) && modules.containsKey(dep.getArtifactId())) {
 					graph.addEdge(consumer, dep.getArtifactId(), new DependencyEdge(dep.getScope()));
 				}

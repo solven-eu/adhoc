@@ -69,6 +69,8 @@
 		<java.version>25</java.version>
 
 		<lombok.version>1.18.46</lombok.version>
+		<!-- Error Prone — enabled only under the `errorprone` profile. Kept here so Dependabot can bump a single version token. -->
+		<errorprone.version>2.49.0</errorprone.version>
 
 		<pepper.version>5.7</pepper.version>
 
@@ -1057,6 +1059,85 @@
 			</properties>
 		</profile>
 
+		<profile>
+			<!--
+				Error Prone static analysis (https://errorprone.info/). Opt-in so the default build stays
+				unchanged while the integration settles. Usage:
+					mvn compile -Perrorprone
+				What this does: wires error_prone_core as an annotation-processor-path entry on
+				maven-compiler-plugin, adds the `-Xplugin:ErrorProne` flag, and opens the `com.sun.tools.javac.*`
+				JDK internals that Error Prone reads to walk the AST (javac forbids access by default since
+				JEP 403 "Strongly Encapsulate JDK Internals"). Error Prone's default check set runs at WARNING
+				severity; nothing fails the build yet — once the codebase is clean, promote individual checks
+				to errors via `-Xep:<CheckName>:ERROR` or drop the profile in favour of default-on.
+			-->
+			<id>errorprone</id>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-compiler-plugin</artifactId>
+							<configuration>
+								<!--
+									Fork javac into a dedicated JVM so the `-J...` flags below are honoured.
+									Without forking, javac runs inside Maven's own JVM and the `-J` prefix is
+									ignored, leaving Error Prone unable to access the javac internals it walks
+									(raises IllegalAccessError at plugin init time).
+								-->
+								<fork>true</fork>
+								<annotationProcessorPaths combine.children="append">
+									<path>
+										<groupId>com.google.errorprone</groupId>
+										<artifactId>error_prone_core</artifactId>
+										<version>${errorprone.version}</version>
+									</path>
+								</annotationProcessorPaths>
+								<compilerArgs combine.children="append">
+									<arg>-XDcompilePolicy=simple</arg>
+									<arg>--should-stop=ifError=FLOW</arg>
+									<!--
+										Default severity stands (Error Prone's own ERROR vs WARNING mapping). Two
+										doc-only checks are demoted to WARNING because fixing them would mean
+										retrofitting Javadoc across hundreds of Lombok-flavoured types — tracked
+										separately. All other checks keep their default severity, so real-bug
+										rules block the build.
+										`FunctionalInterfaceMethodChanged` is disabled: the rule flags
+										@FunctionalInterfaces whose `default` methods override an abstract method of
+										a @FunctionalInterface superinterface (surprising lambda-widening semantics).
+										In this codebase all such types are implemented by named classes — the risk
+										is theoretical and the @FunctionalInterface annotation has documentation
+										value we want to keep.
+										Two checks are disabled because Error Prone 2.49.0 crashes internally on
+										patterns present in this codebase — track / drop these overrides on the
+										next EP bump:
+										  - StringConcatToTextBlock: NoSuchElementException on some literals
+										  - Immutable: throws on switch-expressions yielding method references
+									-->
+									<arg>-Xplugin:ErrorProne -Xep:EmptyBlockTag:WARN -Xep:MissingSummary:WARN -Xep:FunctionalInterfaceMethodChanged:OFF -Xep:StringConcatToTextBlock:OFF -Xep:Immutable:OFF</arg>
+									<!--
+										JEP 403: javac internals are strongly encapsulated by default on JDK 16+.
+										Error Prone inspects those internals to traverse the AST, so we re-open them
+										through the javac `add-exports` mechanism. These flags are required verbatim by
+										Error Prone's documentation (https://errorprone.info/docs/installation).
+									-->
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+									<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+									<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+									<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+								</compilerArgs>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
 		<profile>
 			<!-- Used to recompile quickly only the core components -->
 			<id>benchmark-with</id>

@@ -178,7 +178,10 @@ public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn
 	public static Collection<ReferencedColumn> getUnderlyingColumns(FunctionCalculatedColumn calculatedColumn) {
 		RecordingRecord recording = new RecordingRecord();
 
-		calculatedColumn.getRecordToCoordinate().apply(recording);
+		// Invoke solely for its side-effect on `recording`; the computed coordinate is
+		// irrelevant. Assigning to the unnamed variable `_` makes the discard explicit
+		// and satisfies Error Prone's ReturnValueIgnored check.
+		var _ = calculatedColumn.getRecordToCoordinate().apply(recording);
 		return recording.getUsedColumn().stream().map(ReferencedColumn::ref).toList();
 	}
 

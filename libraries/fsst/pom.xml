@@ -43,10 +43,11 @@
 		</dependency>
 
 		<!-- Source: https://mvnrepository.com/artifact/com.google.errorprone/error_prone_annotations -->
+		<!-- Version pinned via the root pom's `errorprone.version` property so the annotations jar and the analyser jar (added by the `errorprone` profile) stay in lock-step. -->
 		<dependency>
 			<groupId>com.google.errorprone</groupId>
 			<artifactId>error_prone_annotations</artifactId>
-			<version>2.48.0</version>
+			<version>${errorprone.version}</version>
 			<scope>compile</scope>
 		</dependency>
 

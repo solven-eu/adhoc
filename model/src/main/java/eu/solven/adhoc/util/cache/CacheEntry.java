@@ -22,8 +22,6 @@
  */
 package eu.solven.adhoc.util.cache;
 
-import com.google.errorprone.annotations.Immutable;
-
 import eu.solven.adhoc.util.immutable.IImmutable;
 
 /**
@@ -32,8 +30,10 @@ import eu.solven.adhoc.util.immutable.IImmutable;
  *
  * <p>
  * The fields are {@code final} and package-private so the enclosing cache classes can read them directly on the fast
- * path, without an accessor call. Immutability guarantees a racing reader never sees a half-published entry (fresh key
- * paired with stale value).
+ * path, without an accessor call. Final fields guarantee safe publication: a racing reader never sees a half-published
+ * entry (fresh key paired with stale value). The {@link IImmutable} marker documents the intent; the Error Prone
+ * {@code @Immutable} annotation is intentionally NOT used because {@code K} (often {@code Object[]}) is mutable in
+ * practice — callers rely on reference equality and never mutate the array once it has been handed to the cache.
  *
  * <p>
  * {@code K} is {@code Object[]} for {@link LastLookupCache} and a plain {@code Object} (typically a single reference
@@ -45,7 +45,6 @@ import eu.solven.adhoc.util.immutable.IImmutable;
  *            the cached value type
  * @author Benoit Lacelle
  */
-@Immutable
 public final class CacheEntry<K, V> implements IImmutable {
 
 	final K key;

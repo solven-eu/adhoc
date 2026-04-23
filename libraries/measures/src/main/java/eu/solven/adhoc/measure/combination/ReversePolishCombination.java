@@ -22,9 +22,9 @@
  */
 package eu.solven.adhoc.measure.combination;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -168,7 +168,10 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 			ISliceWithStep slice,
 			List<?> underlyingValues,
 			AtomicBoolean oneUnderlyingIsNotNull) {
-		List<Object> pendingOperands = new LinkedList<>();
+		// ArrayList's SequencedCollection methods (addLast/removeLast/getFirst since Java 21)
+		// cover every operation used below; stacks are typically short (a handful of operands)
+		// so amortised-O(1) access dominates LinkedList's per-node allocation cost.
+		List<Object> pendingOperands = new ArrayList<>();
 		String[] elements = splitFormula(formula);
 
 		if (underlyingValues.size() < underlyingMeasuresToIndex.size()) {
@@ -235,13 +238,13 @@ public class ReversePolishCombination implements ICombination, IHasSanityChecks 
 		List<Object> operands;
 
 		if (twoOperandsPerOperator || combination instanceof IHasTwoOperands) {
-			operands = new LinkedList<>();
+			operands = new ArrayList<>();
 			// Add at the beginning to reverse the stack
 			operands.add(0, pendingOperands.removeLast());
 			operands.add(0, pendingOperands.removeLast());
 		} else {
 			// No need to reverse the stack for these operators
-			operands = new LinkedList<>(pendingOperands);
+			operands = new ArrayList<>(pendingOperands);
 			pendingOperands.clear();
 		}
 

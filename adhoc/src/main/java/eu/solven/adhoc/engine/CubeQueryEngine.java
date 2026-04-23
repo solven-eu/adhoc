@@ -480,7 +480,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 			// step. Here, we want to process a measure once its underlying steps are completed
 			return;
 		} else if (step.getMeasure() instanceof Aggregator a) {
-			throw new IllegalStateException("Missing a={} cuboid for %s".formatted(a, step));
+			throw new IllegalStateException("Missing a=%s cuboid for %s".formatted(a, step));
 		}
 
 		eventBus.post(QueryStepIsEvaluating.builder().queryStep(step).source(this).build());
