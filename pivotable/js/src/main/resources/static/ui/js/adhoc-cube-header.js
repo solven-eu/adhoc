@@ -40,17 +40,17 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube) && (nbSchemaFetching > 0 || nbCubeFetching > 0)">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
-        <span v-else>
-            <h2>
-                <AdhocCubeRef :cubeId="cubeId" :endpointId="endpointId" />
-                <AdhocEndpointRef :endpointId="endpointId" />
-            </h2>
-        </span>
-    `,
+		<div v-if="(!endpoint || !cube) && (nbSchemaFetching > 0 || nbCubeFetching > 0)">
+			<div class="spinner-border" role="status">
+				<span class="visually-hidden">Loading cubeId={{cubeId}}</span>
+			</div>
+		</div>
+		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+		<span v-else>
+			<h2>
+				<AdhocCubeRef :cubeId="cubeId" :endpointId="endpointId" />
+				<AdhocEndpointRef :endpointId="endpointId" />
+			</h2>
+		</span>
+	`,
 };

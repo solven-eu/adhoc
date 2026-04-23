@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.transformator.iterator;
 
+import java.util.List;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -45,5 +47,36 @@ public class TestSlicedRecordFromArray {
 
 		Assertions.assertThat(IValueProvider.getValue(sliced.read(0))).isEqualTo("a");
 		Assertions.assertThat(IValueProvider.getValue(sliced.read(1))).isNull();
+	}
+
+	@Test
+	public void testAsList_mirrorsMeasures() {
+		int[] arr = { 0, 1, 23 };
+		SlicedRecordFromArray sliced = SlicedRecordFromArray.builder().measure("a").measure(12.34).measure(arr).build();
+
+		List<?> asList = sliced.asList();
+		Assertions.assertThat((List) asList).containsExactly("a", 12.34, arr);
+	}
+
+	@Test
+	public void testAsList_empty() {
+		SlicedRecordFromArray sliced = SlicedRecordFromArray.builder().build();
+
+		Assertions.assertThat(sliced.asList()).isEmpty();
+	}
+
+	@Test
+	public void testAsList_withNull() {
+		SlicedRecordFromArray sliced = SlicedRecordFromArray.builder().measure("a").measure(null).build();
+
+		Assertions.assertThat((List) sliced.asList()).containsExactly("a", null);
+	}
+
+	@Test
+	public void testAsList_isUnmodifiable() {
+		SlicedRecordFromArray sliced = SlicedRecordFromArray.builder().measure("a").measure("b").build();
+
+		List<?> asList = sliced.asList();
+		Assertions.assertThatThrownBy(() -> asList.clear()).isInstanceOf(UnsupportedOperationException.class);
 	}
 }

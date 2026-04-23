@@ -41,6 +41,7 @@ import com.google.common.util.concurrent.AtomicLongMap;
 
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.FilterBuilder;
+import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.options.IQueryOption;
@@ -302,5 +303,19 @@ public class TableQueryV4 implements ITableQuery {
 				.flatMap(gb -> gb.getSortedColumns().stream())
 				.distinct()
 				.collect(ImmutableSet.toImmutableSet());
+	}
+
+	public static Set<String> getColumns(TableQueryV4 tableQuery) {
+		ImmutableSet.Builder<String> columns = ImmutableSet.builder();
+
+		columns.addAll(tableQuery.getGroupedByColumns());
+		columns.addAll(FilterHelpers.getFilteredColumns(tableQuery.getFilter()));
+
+		for (FilteredAggregator fa : tableQuery.getAggregators()) {
+			columns.add(fa.getAggregator().getColumnName());
+			columns.addAll(FilterHelpers.getFilteredColumns(fa.getFilter()));
+		}
+
+		return columns.build();
 	}
 }

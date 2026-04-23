@@ -64,21 +64,21 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!endpoint || endpoint.error">
-            <AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
-        </div>
-        <div v-else>
-            <AdhocEndpointHeader :endpointId="endpointId" />
+		<div v-if="!endpoint || endpoint.error">
+			<AdhocLoading :id="endpointId" type="endpoint" :loading="nbSchemaFetching > 0" :error="endpoint.error" />
+		</div>
+		<div v-else>
+			<AdhocEndpointHeader :endpointId="endpointId" />
 
-            <span v-if="metadata.tags">
-                Tags:
-                <span class="badge text-bg-secondary" v-for="tag in endpoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span>
-            </span>
-            <span v-if="schema">
-                <AdhocEndpointSchema :endpointId="endpointId" :cubeId="cubeId" :showSchema="showSchema" />
-            </span>
+			<span v-if="metadata.tags">
+				Tags:
+				<span class="badge text-bg-secondary" v-for="tag in endpoint.tags" data-bs-toggle="tooltip" :data-bs-title="metadata.tags[tag]">{{tag}}</span>
+			</span>
+			<span v-if="schema">
+				<AdhocEndpointSchema :endpointId="endpointId" :cubeId="cubeId" :showSchema="showSchema" />
+			</span>
 
-            <AdhocCube :endpointId="endpointId" :cubeId="cubeId" v-if="cubeId" />
-        </div>
-    `,
+			<AdhocCube :endpointId="endpointId" :cubeId="cubeId" v-if="cubeId" />
+		</div>
+	`,
 };

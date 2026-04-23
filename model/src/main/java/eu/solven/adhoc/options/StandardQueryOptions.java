@@ -72,6 +72,7 @@ public enum StandardQueryOptions implements IQueryOption {
 	/**
 	 * Enable partitioning of queries. Typically based on a modulo over the hash of `ISlice`.
 	 */
+	@Deprecated(since = "Not ready")
 	PARTITIONED,
 
 	/**
@@ -120,6 +121,10 @@ public enum StandardQueryOptions implements IQueryOption {
 	@JsonCreator
 	public static StandardQueryOptions forValue(String value) {
 		return StandardQueryOptions.valueOf(value.toUpperCase(Locale.US));
+	}
+
+	public boolean isActive(IHasQueryOptions hasOptions) {
+		return isActive(hasOptions.getOptions());
 	}
 
 	public boolean isActive(Set<IQueryOption> options) {

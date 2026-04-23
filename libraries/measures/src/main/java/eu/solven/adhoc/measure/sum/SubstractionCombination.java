@@ -166,17 +166,19 @@ public class SubstractionCombination implements ICombination, IHasTwoOperands, I
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		if (slicedRecord.isEmpty()) {
-			return IValueProvider.NULL;
+			valueReceiver.onObject(null);
 		} else if (slicedRecord.size() == 1) {
-			return slicedRecord.read(0);
+			// TODO API Should make it easy to transfer long-else-double-else-object
+			slicedRecord.read(0).acceptReceiver(valueReceiver);
+			return;
 		}
 
 		IValueProvider left = slicedRecord.read(0);
 		IValueProvider right = slicedRecord.read(1);
 
-		return valueReceiver -> left.acceptReceiver(new IValueReceiver() {
+		left.acceptReceiver(new IValueReceiver() {
 
 			@Override
 			public void onLong(long leftValue) {

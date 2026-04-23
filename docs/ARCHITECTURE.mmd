@@ -10,6 +10,10 @@ classDiagram
     }
     class IImplicitOptions {
     }
+    class IJooqColumnsResolver {
+    }
+    class IJooqTableSupplier {
+    }
     class IMeasureForest {
     }
     class IOperatorFactory {
@@ -33,6 +37,8 @@ classDiagram
         IOperatorFactory operatorFactory
         ISliceFactoryFactory sliceFactoryFactory
         IStopwatchFactory stopwatchFactory
+    }
+    class AdhocFactoriesUnsafe {
     }
     class AdhocFilterUnsafe {
     }
@@ -65,6 +71,9 @@ classDiagram
     }
     class DagBottomUpStrategyNavigableElseHash {
     }
+    class DbProbeResolver {
+        IDSLSupplier dslSupplier
+    }
     class EmptyColumnGenerator {
     }
     class EmptyTableWrapper {
@@ -73,15 +82,27 @@ classDiagram
     }
     class InMemoryTable {
     }
+    class JooqColumnsHelpers {
+    }
+    class JooqFieldsResolver {
+    }
     class JooqTableWrapper {
         JooqTableWrapperParameters tableParameters
     }
     class JooqTableWrapperParameters {
+        IJooqColumnsResolver columnsResolver
         IDSLSupplier dslSupplier
         IFilterOptimizerFactory filterOptimizerFactory
         IOperatorFactory operatorFactory
+        IJooqTableSupplier tableSupplier
     }
     class MeasureForest {
+    }
+    class PrunedJoinsJooqSnowflakeSchemaBuilder {
+    }
+    class PrunedJoinsJooqTableSupplier {
+        IJooqColumnsResolver columnsResolver
+        PrunedJoinsJooqSnowflakeSchemaBuilder schema
     }
     class StandardColumnFactory {
         IDagBottomUpStrategy bottomUpStrategy
@@ -96,6 +117,7 @@ classDiagram
         ICoordinateNormalizer coordinateNormalizer
     }
     class StandardQueryPreparator {
+        IAdhocFactories factories
         IImplicitFilter implicitFilter
         IImplicitOptions implicitOptions
         IQueryStepCache queryStepCache
@@ -129,6 +151,9 @@ classDiagram
     ITableWrapper <|.. InMemoryTable
     ITableWrapper <|.. JooqTableWrapper
     IDSLSupplier <|.. StandardDSLSupplier
+    IJooqTableSupplier <|.. PrunedJoinsJooqTableSupplier
+    IJooqColumnsResolver <|.. DbProbeResolver
+    IJooqColumnsResolver <|.. JooqFieldsResolver
     IMeasureForest <|.. MeasureForest
     IMeasureForest <|.. UnsafeMeasureForest
 
@@ -140,16 +165,20 @@ classDiagram
     ColumnsManager *-- EmptyColumnGenerator : columnGenerator
     CubeWrapper *-- ColumnsManager : columnsManager
     CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
+    JooqTableWrapperParameters *-- IJooqColumnsResolver : columnsResolver
+    PrunedJoinsJooqTableSupplier *-- JooqColumnsHelpers : columnsResolver
     StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
     ColumnsManager *-- StandardCustomTypeManager : customTypeManager
     CachingTableWrapper *-- ITableWrapper : decorated
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
+    DbProbeResolver *-- IDSLSupplier : dslSupplier
     CubeWrapper *-- CubeQueryEngine : engine
     CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
     TableQueryEngineFactory *-- UnsafeAdhocEventBusHelpers : eventBus
     ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
-    CubeQueryEngine *-- AdhocFactories : factories
+    CubeQueryEngine *-- AdhocFactoriesUnsafe : factories
     TableQueryEngineFactory *-- AdhocFactories : factories
+    StandardQueryPreparator *-- AdhocFactoriesUnsafe : factories
     AdhocFactories *-- IFilterOptimizerFactory : filterOptimizerFactory
     JooqTableWrapperParameters *-- IFilterOptimizerFactory : filterOptimizerFactory
     AdhocFactories *-- AdhocFilterUnsafe : filterStripperFactory
@@ -163,8 +192,10 @@ classDiagram
     TableQueryEngineFactory *-- TableQueryFactoryFactory : queryFactoryFactory
     CubeWrapper *-- StandardQueryPreparator : queryPreparator
     StandardQueryPreparator *-- IQueryStepCache : queryStepCache
+    PrunedJoinsJooqTableSupplier *-- PrunedJoinsJooqSnowflakeSchemaBuilder : schema
     AdhocFactories *-- ISliceFactoryFactory : sliceFactoryFactory
     AdhocFactories *-- IStopwatchFactory : stopwatchFactory
-    CubeWrapper *-- ITableWrapper : table
     JooqTableWrapper *-- JooqTableWrapperParameters : tableParameters
     CubeQueryEngine *-- ITableQueryEngineFactory : tableQueryEngine
+    JooqTableWrapperParameters *-- IJooqTableSupplier : tableSupplier
+    CubeWrapper *-- ITableWrapper : table

@@ -40,7 +40,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * An {@link ICombination} define as the aggregation of underlying value with given {@link IAggregation}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @RequiredArgsConstructor
@@ -79,7 +79,7 @@ public class AggregationCombination implements ICombination {
 
 	@Override
 	@SuppressWarnings("PMD.NullAssignment")
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		MultitypeCell refMultitype = makeMultitypeCell();
 
 		IValueReceiver cellValueConsumer = refMultitype.merge();
@@ -117,14 +117,14 @@ public class AggregationCombination implements ICombination {
 
 		int size = slicedRecord.size();
 		for (int i = 0; i < size; i++) {
-			slicedRecord.read(i).acceptReceiver(proxyValueReceiver);
+			slicedRecord.read(i, proxyValueReceiver);
 		}
 
 		if (customIfAnyNullOperand && hasNull.get()) {
-			return oneUnderlyingIsNull();
+			oneUnderlyingIsNull().acceptReceiver(valueReceiver);
+		} else {
+			refMultitype.reduce().acceptReceiver(valueReceiver);
 		}
-
-		return refMultitype.reduce();
 	}
 
 	protected IValueProvider oneUnderlyingIsNull() {

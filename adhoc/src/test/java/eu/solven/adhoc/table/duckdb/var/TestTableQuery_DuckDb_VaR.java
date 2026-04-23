@@ -41,6 +41,8 @@ import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.ColumnWithCalculatedCoordinates;
+import eu.solven.adhoc.column.coordinate.CalculatedCoordinate;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -54,6 +56,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -282,7 +285,8 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 	// groupBy scenarioName
 	@Test
 	public void testGroupByScenarioName_mArray() {
-		ITabularView result = cube().execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).build());
+		ITabularView result =
+				cube().execute(CubeQuery.builder().measure(mArray).groupByAlso(C_SCENARIONAME).debug(true).build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
@@ -402,6 +406,50 @@ public class TestTableQuery_DuckDb_VaR extends ADuckDbJooqTest implements IAdhoc
 
 		Map<String, ?> measureToValue = mapBased.getCoordinatesToValues().get(Map.of(C_SCENARIOINDEX, "generated"));
 		Assertions.assertThat(measureToValue).isEmpty();
+	}
+
+	// groupBy scenarioIndex WITH grandTotal (`*`) on the same column — on a measure that DOES
+	// consume `scenarioIndex` (the Dispatchor's decomposition emits per-scenario rows).
+	// Both slices coexist: 20 per-scenario rows + 1 grand-total `*` row.
+	@Test
+	public void testGroupByScenarioIndex_withStar_mArray() {
+		ITabularView result = cube().execute(CubeQuery.builder()
+				.measure(mArray)
+				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+						.column(C_SCENARIOINDEX)
+						.calculatedCoordinate(CalculatedCoordinate.star())
+						.build()))
+				.build());
+		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsKey(Map.of(C_SCENARIOINDEX, "*"))
+				.containsKey(Map.of(C_SCENARIOINDEX, 0L))
+				.containsKey(Map.of(C_SCENARIOINDEX, 0L + arrayLength - 1))
+				.hasSize(arrayLength + 1);
+	}
+
+	// groupBy scenarioIndex WITH grandTotal (`*`) on the same column — on a measure that does
+	// NOT consume `scenarioIndex` (count(*)): the column is suppressed by the Decomposition path,
+	// so the plain-groupBy branch falls back to the `generated` coordinate (see
+	// `testGroupByScenarioIndex_countAsterisk`), while the grand-total branch emits `*`. The two
+	// slices must not collide on the same key.
+	@Test
+	public void testGroupByScenarioIndex_withStar_countAsterisk() {
+		ITabularView view = cube().execute(CubeQuery.builder()
+				.measure(countAsterisk)
+				.groupBy(GroupByColumns.of(ColumnWithCalculatedCoordinates.builder()
+						.column(C_SCENARIOINDEX)
+						.calculatedCoordinate(CalculatedCoordinate.star())
+						.build()))
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(view);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues())
+				.containsKey(Map.of(C_SCENARIOINDEX, IColumnGenerator.COORDINATE_GENERATED))
+				.containsKey(Map.of(C_SCENARIOINDEX, "*"))
+				.hasSize(2);
 	}
 
 	@Test

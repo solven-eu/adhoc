@@ -35,6 +35,7 @@ import com.google.common.collect.UnmodifiableIterator;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
+import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -58,7 +59,7 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 	// Used to get faster the next/minimum slice
 	final Queue<PeekingIterator<SliceAndMeasure<ISlice>>> queue;
 
-	final List<? extends ICuboid> rawSlices;
+	final List<? extends ICuboid> cuboids;
 
 	public MergedSlicesIteratorNavigableElseHash(CubeQueryStep queryStep,
 			List<? extends Iterator<SliceAndMeasure<ISlice>>> iterators,
@@ -77,7 +78,7 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 				.filter(Iterator::hasNext)
 				.forEach(queue::add);
 
-		this.rawSlices = rawSlices;
+		this.cuboids = rawSlices;
 	}
 
 	@Override
@@ -113,12 +114,14 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 
 				nbMatchingSlice++;
 			} else {
-				valueProviders.add(rawSlices.get(i).onValue(slice));
+				// current slice may be in the cuboid but not in the sorted leg (e.g. it is in the hash leg)
+				ICuboid cuboid = cuboids.get(i);
+				valueProviders.add(cuboid.onValue(slice, StreamStrategy.SORTED_SUB_COMPLEMENT));
 			}
 		}
 
 		if (nbMatchingSlice == 0) {
-			throw new IllegalStateException("nbMatchingSlice should be >0");
+			throw new IllegalStateException("nbMatchingSlice should be strictly positive");
 		}
 
 		// This array buffers the iterators to insert back, in order not to insert them before doing all removals
@@ -141,6 +144,6 @@ public class MergedSlicesIteratorNavigableElseHash extends UnmodifiableIterator<
 
 		queue.addAll(insertBack);
 
-		return SliceAndMeasures.from(queryStep, slice, valueProviders);
+		return SliceAndMeasures.fromProviders(queryStep, slice, valueProviders);
 	}
 }

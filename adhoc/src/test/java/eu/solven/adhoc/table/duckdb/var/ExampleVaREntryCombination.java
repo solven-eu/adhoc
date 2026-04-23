@@ -30,6 +30,7 @@ import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.ints.AbstractInt2DoubleMap;
 import it.unimi.dsi.fastutil.ints.AbstractInt2IntMap;
@@ -76,7 +77,7 @@ public class ExampleVaREntryCombination implements ICombination {
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		Object rawArray = IValueProvider.getValue(slicedRecord.read(0));
 		if (rawArray instanceof int[] array) {
 			int quantileIndex = (int) (array.length * quantile);
@@ -89,7 +90,7 @@ public class ExampleVaREntryCombination implements ICombination {
 				heapSelect.add(new Int2IntEntrySortedByValue(new AbstractInt2IntMap.BasicEntry(index, value)));
 			}
 
-			return onIntArrayQuantile(heapSelect);
+			onIntArrayQuantile(heapSelect).acceptReceiver(valueReceiver);
 		} else if (rawArray instanceof double[] array) {
 			int quantileIndex = (int) (array.length * quantile);
 
@@ -101,7 +102,7 @@ public class ExampleVaREntryCombination implements ICombination {
 				heapSelect.add(new Int2DoubleEntrySortedByValue(new AbstractInt2DoubleMap.BasicEntry(index, value)));
 			}
 
-			return onDoubleArrayQuantile(heapSelect);
+			onDoubleArrayQuantile(heapSelect).acceptReceiver(valueReceiver);
 		} else {
 			throw new IllegalArgumentException(
 					"Unexpected underlying: %s".formatted(PepperLogHelper.getObjectAndClass(rawArray)));

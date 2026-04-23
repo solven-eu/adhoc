@@ -49,7 +49,6 @@ public class AdhocTranscodingHelper {
 
 	static final AtomicLong COUNT_SUBOPTIMAL = new AtomicLong();
 
-	// TODO Should return original Map is there is no actual transcoding
 	public static Map<String, ?> transcodeColumns(ITableReverseAliaser reverseAliaser, Map<String, ?> underlyingMap) {
 		if (reverseAliaser.isIdentity()) {
 			return underlyingMap;
@@ -105,6 +104,15 @@ public class AdhocTranscodingHelper {
 	 * @return a {@link Map} where each value is replaced by the transcoded value.
 	 */
 	public static Map<String, ?> transcodeValues(IColumnValueTranscoder transcoder, Map<String, ?> notTranscoded) {
+		if (transcoder.mayTranscode().isEmpty()) {
+			return notTranscoded;
+		}
+		// TODO We may improve transcoding of values
+		// else if (notTranscoded instanceof IAdhocMap adhocMap) {
+		// adhocMap.replaceAll(transcoder.mayTranscode(), (column, rawValue) -> transcoder.transcodeValue(column,
+		// rawValue) );
+		// }
+
 		// Store in a transient List, which keeps order while skipping any HashMap cost
 		AtomicReference<List<Map.Entry<String, Object>>> columnToTranscodedValue = new AtomicReference<>();
 

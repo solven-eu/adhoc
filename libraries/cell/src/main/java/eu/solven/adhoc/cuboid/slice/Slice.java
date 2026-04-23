@@ -33,14 +33,11 @@ import com.google.common.collect.Sets;
 import eu.solven.adhoc.filter.FlatAndFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.NullMatcher;
-import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.IHasAdhocMap;
 import eu.solven.adhoc.map.MapComparators;
 import eu.solven.adhoc.map.MaskedAdhocMap;
-import eu.solven.adhoc.map.factory.ISliceFactory;
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -51,8 +48,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public final class Slice implements ISlice {
-	@Getter
-	final ISliceFactory factory;
 
 	// This is guaranteed not to contain a null-ref, neither as key nor as value
 	// Value can only be simple values: neither a Collection, not a IValueMatcher
@@ -66,7 +61,7 @@ public final class Slice implements ISlice {
 	 * @return
 	 */
 	public static ISlice fromMapUnsafe(IAdhocMap adhocMap) {
-		return new Slice(adhocMap.getFactory(), adhocMap);
+		return new Slice(adhocMap);
 	}
 
 	@Override
@@ -170,7 +165,7 @@ public final class Slice implements ISlice {
 
 	@Override
 	public ISlice retainAll(NavigableSet<String> columns) {
-		return AdhocMapHelpers.fromMap(factory, asMap.retainAll(columns)).asSlice();
+		return asMap.retainAll(columns).asSlice();
 	}
 
 }

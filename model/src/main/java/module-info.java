@@ -15,6 +15,7 @@ module eu.solven.adhoc.model {
 	exports eu.solven.adhoc.query.groupby;
 	exports eu.solven.adhoc.resource;
 	exports eu.solven.adhoc.util;
+	exports eu.solven.adhoc.util.cache;
 	exports eu.solven.adhoc.util.immutable;
 
 	// Jackson needs reflective access to Lombok-generated builders for deserialization

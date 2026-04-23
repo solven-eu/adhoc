@@ -49,25 +49,25 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div class="container-fluid">
-            <AdhocNavbar />
+		<div class="container-fluid">
+			<AdhocNavbar />
 
-            <main>
-                <RouterView />
-            </main>
+			<main>
+				<RouterView />
+			</main>
 
-            <LoginModal />
-            <span v-if="$route.fullPath !== '/html/login'">
-                <!--LoginRef /-->
-            </span>
+			<LoginModal />
+			<span v-if="$route.fullPath !== '/html/login'">
+				<!--LoginRef /-->
+			</span>
 
-            <div v-else>
-                <ul>
-                    <li v-if="account.accountId">
-                        <AdhocAccountRef :accountId="account.accountId" />
-                    </li>
-                </ul>
-            </div>
-        </div>
-    `,
+			<div v-else>
+				<ul>
+					<li v-if="account.accountId">
+						<AdhocAccountRef :accountId="account.accountId" />
+					</li>
+				</ul>
+			</div>
+		</div>
+	`,
 };

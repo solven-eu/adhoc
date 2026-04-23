@@ -24,10 +24,10 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
+import eu.solven.adhoc.encoding.page.IInt2ObjectReader;
 import eu.solven.adhoc.map.AbstractAdhocMap;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
@@ -36,18 +36,24 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Represents an {@link IAdhocMap} given an {@link IntFunction} representing dictionarized value.
- * 
+ * Represents an {@link IAdhocMap} given an {@link IInt2ObjectReader} representing dictionarized values.
+ *
+ * <p>
+ * Uses the project-local {@link IInt2ObjectReader} interface rather than {@link java.util.function.IntFunction} so
+ * domain types that already know how to read by {@code int} index (e.g.
+ * {@code eu.solven.adhoc.encoding.page.ITableRowRead}) can be passed directly, avoiding the bound-method-reference
+ * allocation (e.g. {@code row::readValue}) at call sites.
+ *
  * @author Benoit Lacelle
- * 
+ *
  */
 public class MapOverIntFunction extends AbstractAdhocMap {
 
 	@NonNull
-	final IntFunction<Object> sequencedValues;
+	final IInt2ObjectReader sequencedValues;
 
 	@Builder
-	public MapOverIntFunction(ISliceFactory factory, SequencedSetLikeList keys, IntFunction<Object> unorderedValues) {
+	public MapOverIntFunction(ISliceFactory factory, SequencedSetLikeList keys, IInt2ObjectReader unorderedValues) {
 		super(factory, keys);
 		this.sequencedValues = unorderedValues;
 	}
@@ -55,7 +61,7 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 	@Builder(builderMethodName = "builderCustomHashcode")
 	public MapOverIntFunction(ISliceFactory factory,
 			SequencedSetLikeList keys,
-			IntFunction<Object> sequencedValues,
+			IInt2ObjectReader sequencedValues,
 			IntSupplier hashcodeSupplier) {
 		super(factory, keys, hashcodeSupplier);
 		this.sequencedValues = sequencedValues;
@@ -63,7 +69,7 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 
 	@Override
 	protected Object getSequencedValueRaw(int index) {
-		return sequencedValues.apply(index);
+		return sequencedValues.read(index);
 	}
 
 	@Override
@@ -72,21 +78,21 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 	}
 
 	@RequiredArgsConstructor
-	final class RetainedIntFunction implements IntFunction<Object> {
+	final class RetainedInt2ObjectReader implements IInt2ObjectReader {
 		final int[] sequencedIndexes;
 
 		@Override
-		public Object apply(int index) {
-			return sequencedValues.apply(sequencedIndexes[index]);
+		public Object read(int index) {
+			return sequencedValues.read(sequencedIndexes[index]);
 		}
 
 		@SuppressWarnings("PMD.UseVarargs")
-		IntFunction<Object> retain(int[] retainedIndexes) {
+		IInt2ObjectReader retain(int[] retainedIndexes) {
 			// TODO Could we unroll the double de-reference from the cache?
 			// It would prevent deep retainAll chains into deep de-reference chains
 			// Need micro-benchmark
-			// return retainedIndex -> this.apply(retainedIndexes[retainedIndex]);
-			return retainedIndex -> sequencedValues.apply(sequencedIndexes[retainedIndexes[retainedIndex]]);
+			// return retainedIndex -> this.read(retainedIndexes[retainedIndex]);
+			return retainedIndex -> sequencedValues.read(sequencedIndexes[retainedIndexes[retainedIndex]]);
 		}
 
 	}
@@ -105,11 +111,11 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 		}
 
 		int[] sequencedIndexes = retainedKeyset.getSequencedIndexes();
-		IntFunction<Object> retainedSequencedValues;
-		if (sequencedValues instanceof RetainedIntFunction retainedIntFunction) {
+		IInt2ObjectReader retainedSequencedValues;
+		if (sequencedValues instanceof RetainedInt2ObjectReader retainedIntFunction) {
 			retainedSequencedValues = retainedIntFunction.retain(sequencedIndexes);
 		} else {
-			retainedSequencedValues = new RetainedIntFunction(sequencedIndexes);
+			retainedSequencedValues = new RetainedInt2ObjectReader(sequencedIndexes);
 		}
 
 		// compute hashCode differentially based on excluded entries

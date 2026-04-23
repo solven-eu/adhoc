@@ -24,9 +24,11 @@ package eu.solven.adhoc.beta.schema;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -36,10 +38,18 @@ import eu.solven.adhoc.beta.schema.IAdhocSchema.AdhocSchemaQuery;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
@@ -259,6 +269,87 @@ public class TestAdhocSchema {
 				Assertions.assertThat(c.getTags()).containsExactly("customTag_m");
 			});
 		});
+	}
+
+	/**
+	 * Typed marker that a measure may want to read instead of the raw {@link Map} the user sent over the wire.
+	 */
+	record TargetCcyMarker(String targetCcy) {
+	}
+
+	/**
+	 * End-to-end check of the {@code ICustomMarkerTranscoder} flow: the user submits a raw {@code Map} as customMarker
+	 * (the typical Jackson deserialisation shape), the schema's {@code customMarkerCleaner} converts it into a typed
+	 * {@link TargetCcyMarker} record, and the combination evaluating the measure observes the typed instance — never
+	 * the raw map.
+	 */
+	@Test
+	public void testCustomMarker_rawMapToTypedRecord() {
+		// Captures the marker as seen by the combination, so the test can assert on its concrete type.
+		AtomicReference<Object> observedByCombination = new AtomicReference<>();
+		String captureKey = "captureCustomMarker";
+
+		// Custom operator factory: registers a combination that reads `slice.getQueryStep().getCustomMarker()`
+		// and stashes it. The factory is wired into the engine, which the schema then uses for execute().
+		IOperatorFactory operatorFactory = new StandardOperatorFactory() {
+			@Override
+			public ICombination makeCombination(String key, Map<String, ?> options) {
+				if (captureKey.equals(key)) {
+					return new ICombination() {
+						@Override
+						public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+							observedByCombination.set(slice.getQueryStep().getCustomMarker());
+							if (underlyingValues.isEmpty()) {
+								return null;
+							} else {
+								return underlyingValues.getFirst();
+							}
+						}
+					};
+				}
+				return super.makeCombination(key, options);
+			}
+		};
+		ICubeQueryEngine engine = CubeQueryEngine.builder()
+				.factories(AdhocFactories.builder().operatorFactory(operatorFactory).build())
+				.build();
+
+		// Schema with a customMarkerCleaner that converts a raw Map<String, Object> into the typed record.
+		AdhocSchema typedSchema =
+				AdhocSchema.builder().env(new MockEnvironment()).engine(engine).customMarkerCleaner((cube, raw) -> {
+					if (raw instanceof Map<?, ?> map) {
+						return new TargetCcyMarker((String) map.get("targetCcy"));
+					}
+					// Unknown shape: hand it through unchanged so the measure sees the original value.
+					return raw;
+				}).build();
+
+		// Minimal table + forest with a Combinator that points at the custom combination key.
+		InMemoryTable table = InMemoryTable.builder().name("t").build();
+		table.add(Map.of("k", 1L));
+
+		Aggregator kSum = Aggregator.sum("k");
+		Combinator capture =
+				Combinator.builder().name("capture").underlying(kSum.getName()).combinationKey(captureKey).build();
+		IMeasureForest forest = MeasureForest.fromMeasures("f", Arrays.asList(kSum, capture));
+
+		typedSchema.registerTable(table);
+		typedSchema.registerForest(forest);
+		typedSchema.registerCube("c", "t", "f");
+
+		// The user submits a RAW Map (as Jackson would produce from JSON), not the typed record.
+		ITabularView view = typedSchema.execute("c",
+				CubeQuery.builder().measure("capture").customMarker(Map.of("targetCcy", "USD")).build());
+
+		// The combination saw the typed marker — proving the customMarkerCleaner ran in transcodeQuery(...) and
+		// the typed instance was propagated down the DAG to every CubeQueryStep.
+		Assertions.assertThat(observedByCombination.get())
+				.isInstanceOf(TargetCcyMarker.class)
+				.isEqualTo(new TargetCcyMarker("USD"));
+
+		// The measure result itself is unaffected — the combination just reflects the underlying sum.
+		Assertions.assertThat(MapBasedTabularView.load(view).getCoordinatesToValues())
+				.containsEntry(Map.of(), Map.of("capture", 1L));
 	}
 
 }

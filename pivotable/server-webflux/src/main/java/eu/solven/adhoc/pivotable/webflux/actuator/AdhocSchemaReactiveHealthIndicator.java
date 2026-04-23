@@ -33,7 +33,7 @@ import org.springframework.boot.health.contributor.ReactiveHealthContributors;
 import org.springframework.boot.health.contributor.ReactiveHealthIndicator;
 import org.springframework.stereotype.Component;
 
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +49,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AdhocSchemaReactiveHealthIndicator implements CompositeReactiveHealthContributor {
 
-	final AdhocSchema schema;
+	final IAdhocSchema schema;
 
 	@Override
 	public ReactiveHealthIndicator getContributor(String name) {

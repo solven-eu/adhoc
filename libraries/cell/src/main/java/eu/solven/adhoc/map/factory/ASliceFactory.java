@@ -24,23 +24,16 @@ package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.ICoordinateNormalizer;
 import eu.solven.adhoc.map.StandardCoordinateNormalizer;
-import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.IHasCache;
-import eu.solven.adhoc.util.NotYetImplementedException;
-import eu.solven.pepper.core.PepperLogHelper;
 import lombok.Builder.Default;
 import lombok.experimental.SuperBuilder;
 
@@ -70,44 +63,17 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 		NOT_SEQUENCED_CLASSES = builder.build();
 	}
 
-	final ConcurrentMap<List<String>, SequencedSetLikeList> listToKeyset = new ConcurrentHashMap<>();
-
 	@Default
 	final ICoordinateNormalizer valueNormalizer = new StandardCoordinateNormalizer();
 
-	// // Supplier as the sliceFactory may be configured lazily
-	// private static final Supplier<IAdhocMap> EMPTY = Suppliers.memoize(() -> MapOverLists.builder()
-	// .factory(AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(IHasQueryOptions.noOption()))
-	// .keys(SequencedSetLikeList.fromSet(Set.of()))
-	// .sequencedValues(ImmutableList.of())
-	// .build());
-	//
-	public static IAdhocMap of() {
-		// return EMPTY.get();
-		throw new NotYetImplementedException("TODO");
-	}
-
 	@Override
 	public void invalidateAll() {
-		listToKeyset.clear();
+		SequencedSetUnsafe.invalidateAll();
 	}
 
 	@Override
 	public Object normalizeCoordinate(Object raw) {
 		return valueNormalizer.normalizeCoordinate(raw);
-	}
-
-	/**
-	 * Describe a {@link Map}-like structure by its keys and its values. The keySet and values can be zipped together
-	 * (i.e. iterated concurrently).
-	 *
-	 * @author Benoit Lacelle
-	 */
-	@Deprecated(since = "not used anymore", forRemoval = true)
-	public interface IHasEntries {
-		Collection<? extends String> getKeys();
-
-		Collection<?> getValues();
 	}
 
 	/**
@@ -130,34 +96,5 @@ public abstract class ASliceFactory implements ISliceFactory, ICoordinateNormali
 
 		// Assume other Set are ordered
 		return false;
-	}
-
-	@Override
-	public SequencedSetLikeList internKeyset(Collection<? extends String> keys) {
-		List<String> keysAsList = copyAsList(keys);
-
-		return listToKeyset.computeIfAbsent(keysAsList, SequencedSetLikeList::fromCollection);
-	}
-
-	protected List<String> copyAsList(Collection<? extends String> keys) {
-		assert !isNotSequenced(keys) : "Invalid keys: %s".formatted(PepperLogHelper.getObjectAndClass(keys));
-
-		return ImmutableList.copyOf(keys);
-	}
-
-	protected IAdhocMap buildMapNaively(IHasEntries hasEntries) {
-		Collection<? extends String> keys = hasEntries.getKeys();
-		Collection<?> values = hasEntries.getValues();
-
-		if (keys.size() != values.size()) {
-			throw new IllegalArgumentException(
-					"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
-		}
-
-		return MapOverLists.builder()
-				.factory(this)
-				.keys(internKeyset(keys))
-				.sequencedValues(ImmutableList.copyOf(values))
-				.build();
 	}
 }

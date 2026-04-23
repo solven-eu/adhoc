@@ -37,6 +37,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
+import eu.solven.adhoc.engine.IHasExecutorAndSliceFactory;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.map.factory.ISliceFactory;
@@ -47,7 +48,8 @@ import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.HasOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -73,7 +75,8 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements IHasQueryOptionsAndExecutorService, IMeasureResolver, IHasMeasures, IIsCancellable {
+public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IMeasureResolver,
+		IHasMeasures, IIsCancellable {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -271,14 +274,18 @@ public class QueryPod implements IHasQueryOptionsAndExecutorService, IMeasureRes
 			if (columnsManager == null) {
 				columnsManager = ColumnsManager.builder().build();
 			}
-			if (sliceFactory == null) {
-				// BEWARE Should inject queryPod but the ref is not available yet
-				sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(query);
-			}
 			if (executorService == null) {
 				// By default, we do not jump into a separate thread/executorService, hence we do not rely on
 				// AdhocUnsafe.adhocCommonPool
 				executorService = MoreExecutors.newDirectExecutorService();
+			}
+			if (sliceFactory == null) {
+				// BEWARE Should inject queryPod but the ref is not available yet
+				HasOptionsAndExecutorService queryOptions = HasOptionsAndExecutorService.builder()
+						.options(query.getOptions())
+						.executorService(executorService)
+						.build();
+				sliceFactory = AdhocFactoriesUnsafe.factories.getSliceFactoryFactory().makeFactory(queryOptions);
 			}
 			if (queryStepCache == null) {
 				queryStepCache = GuavaQueryStepCache.withSize(1);

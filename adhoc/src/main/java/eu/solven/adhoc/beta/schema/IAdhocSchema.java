@@ -22,12 +22,14 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -61,6 +63,8 @@ public interface IAdhocSchema {
 		Optional<String> forest = Optional.empty();
 	}
 
+	IAdhocSchemaRegistrer getRegistrer();
+
 	/**
 	 * 
 	 * @param query
@@ -80,5 +84,9 @@ public interface IAdhocSchema {
 	 * @return an {@link ITabularView} as computed for given query.
 	 */
 	ITabularView execute(String cube, ICubeQuery query);
+
+	CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher orElse, int limitCoordinates);
+
+	Collection<ICubeWrapper> getCubes();
 
 }

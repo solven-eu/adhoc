@@ -32,8 +32,10 @@ import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IAppendOnlyMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
@@ -126,9 +128,16 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 			return underlyings.getFirst();
 		}
 
-		IMultitypeColumnFastGet<ISlice> values = factories.getColumnFactory().makeColumn(sumSizes(underlyings));
+		IMultitypeColumnFastGet<ISlice> values =
+				factories.getColumnFactory().makeColumn(p -> p.initialCapacity(sumSizes(underlyings)));
 
-		forEachDistinctSlice(underlyings, combination, values::append);
+		ISliceAndValueConsumer output;
+		if (values instanceof IAppendOnlyMultitypeColumn appendOnly) {
+			output = appendOnly::appendNew;
+		} else {
+			output = values::append;
+		}
+		forEachDistinctSlice(underlyings, combination, output);
 
 		return Cuboid.forGroupBy(step).values(values).build();
 	}
@@ -138,9 +147,7 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 		ISlicedRecord slicedRecord = slice.getMeasures();
 		IValueReceiver outputSlice = output.putSlice(slice.getSlice().getSlice());
 		try {
-			IValueProvider valueProvider = combine(slice.getSlice(), combination, slicedRecord);
-
-			valueProvider.acceptReceiver(outputSlice);
+			combine(slice.getSlice(), combination, slicedRecord, outputSlice);
 		} catch (RuntimeException e) {
 			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(step.getOptions())) {
 				outputSlice.onObject(e);
@@ -152,21 +159,26 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 		}
 	}
 
-	protected IValueProvider combine(ISliceWithStep slice,
+	protected void combine(ISliceWithStep slice,
 			// ICombinationBinding binded,
 			ICombination combination,
-			ISlicedRecord slicedRecord) {
-		IValueProvider valueProvider = combination.combine(slice, slicedRecord);
+			ISlicedRecord slicedRecord,
+			IValueReceiver outputSlice) {
 
 		if (isDebug()) {
+			ProxyValueReceiver proxyReceiver = new ProxyValueReceiver(outputSlice);
+			combination.combine(slice, slicedRecord, proxyReceiver);
+
 			log.info("[DEBUG] Write {}={} ({} over {}) in {}",
 					combinator.getName(),
-					IValueProvider.getValue(valueProvider),
+					IValueProvider.getValue(proxyReceiver.asValueProvider()),
 					combinator.getCombinationKey(),
 					slicedRecord,
 					slice);
+		} else {
+			combination.combine(slice, slicedRecord, outputSlice);
+
 		}
-		return valueProvider;
 	}
 
 }

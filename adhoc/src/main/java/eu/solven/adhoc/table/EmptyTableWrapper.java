@@ -28,10 +28,10 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;

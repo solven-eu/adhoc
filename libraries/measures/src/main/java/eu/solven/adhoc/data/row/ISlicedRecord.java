@@ -28,6 +28,7 @@ import java.util.stream.IntStream;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 
 /**
  * Used to provide measure values/aggregates given a {@link List} of {@link ICuboid}. The scope is an {@link ISlice}.
@@ -51,7 +52,16 @@ public interface ISlicedRecord {
 	 * @param index
 	 *            the index of the underlying queryStep. From 0 to `.size()` excluded.
 	 */
+	@Deprecated(since = "Prefer `read(int index, IValueReceiver receiver)`")
 	IValueProvider read(int index);
+
+	default void read(int index, IValueReceiver receiver) {
+		read(index).acceptReceiver(receiver);
+	}
+
+	default boolean isNull(int index) {
+		return IValueProvider.isNull(read(index));
+	}
 
 	@Deprecated(since = "Prefer `void read(int index, IValueConsumer valueConsumer)`")
 	default List<?> asList() {

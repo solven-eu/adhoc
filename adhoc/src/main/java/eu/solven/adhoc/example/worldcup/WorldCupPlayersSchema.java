@@ -45,7 +45,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -68,11 +68,11 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableQueryFactory;
-import eu.solven.adhoc.table.sql.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
+import eu.solven.adhoc.table.sql.join.JooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -282,7 +282,7 @@ public class WorldCupPlayersSchema {
 		return "CREATE TABLE %s AS (SELECT * FROM '%s');".formatted(simpleName, parquetPathAsString);
 	}
 
-	public CubeWrapperBuilder makeCube(AdhocSchema schema,
+	public CubeWrapperBuilder makeCube(IAdhocSchemaRegistrer schema,
 			WorldCupPlayersSchema worldCupSchema,
 			ITableWrapper table,
 			IMeasureForest forest) {

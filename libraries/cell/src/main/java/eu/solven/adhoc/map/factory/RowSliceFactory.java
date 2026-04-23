@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -59,7 +60,7 @@ public class RowSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
-	public static class MapBuilderPreKeys implements IMapBuilderPreKeys, IHasEntries {
+	public static class MapBuilderPreKeys implements IMapBuilderPreKeys {
 		@NonNull
 		RowSliceFactory factory;
 
@@ -67,6 +68,7 @@ public class RowSliceFactory extends ASliceFactory {
 		@Getter
 		Collection<? extends String> keys;
 
+		@Getter
 		ImmutableList.Builder<Object> values;
 
 		@Override
@@ -78,15 +80,6 @@ public class RowSliceFactory extends ASliceFactory {
 			values.add(v);
 
 			return this;
-		}
-
-		@Override
-		public Collection<?> getValues() {
-			if (values == null) {
-				return ImmutableList.of();
-			} else {
-				return values.build();
-			}
 		}
 
 		@Override
@@ -102,8 +95,25 @@ public class RowSliceFactory extends ASliceFactory {
 		return MapBuilderPreKeys.builder().factory(this).keys(ImmutableHelpers.copyOf(keys)).build();
 	}
 
-	@Override
-	public IAdhocMap buildMap(IHasEntries hasEntries) {
-		return buildMapNaively(hasEntries);
+	public IAdhocMap buildMap(MapBuilderPreKeys hasEntries) {
+		Collection<? extends String> keys = hasEntries.getKeys();
+		ImmutableList.Builder<Object> valuesBuilder = hasEntries.getValues();
+		Collection<?> values;
+		if (valuesBuilder == null) {
+			values = ImmutableList.of();
+		} else {
+			values = valuesBuilder.build();
+		}
+
+		if (keys.size() != values.size()) {
+			throw new IllegalArgumentException(
+					"keys size (%s) differs from values size (%s)".formatted(keys.size(), values.size()));
+		}
+
+		return MapOverLists.builder()
+				.factory(this)
+				.keys(SequencedSetUnsafe.internKeyset(keys))
+				.sequencedValues(ImmutableList.copyOf(values))
+				.build();
 	}
 }

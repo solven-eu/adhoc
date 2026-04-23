@@ -1,5 +1,9 @@
 # https://prettier.io/docs/en/configuration.html
 
+# Use tabs to match the Biome default applied by Spotless — otherwise prettier
+# and spotless/biome fight each other (prettier writes 4 spaces, biome rewrites
+# to tabs on `mvn spotless:apply`, so whichever tool ran last wins).
+useTabs: true
 tabWidth: 4
 printWidth: 160
 

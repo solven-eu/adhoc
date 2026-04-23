@@ -23,24 +23,27 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Suppliers;
 
-import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.encoding.page.IAppendableTable;
 import eu.solven.adhoc.encoding.page.IAppendableTableFactory;
 import eu.solven.adhoc.encoding.page.ITableRowRead;
 import eu.solven.adhoc.encoding.page.ITableRowWrite;
-import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTable;
+import eu.solven.adhoc.encoding.page.ScopedValueAppendableTable;
 import eu.solven.adhoc.encoding.page.ThreadLocalAppendableTableFactory;
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 
@@ -55,20 +58,20 @@ import lombok.experimental.SuperBuilder;
  * @author Benoit Lacelle
  */
 @SuperBuilder
-public class ColumnSliceFactory extends ASliceFactory {
+public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 
 	@Default
 	@NonNull
-	protected final IHasQueryOptions options = IHasQueryOptions.noOption();
+	@Getter(AccessLevel.PROTECTED)
+	protected final IHasOptionsAndExecutorService options = IHasOptionsAndExecutorService.noOption();
 
 	@Default
 	@NonNull
+	@Getter(AccessLevel.PROTECTED)
 	protected final IAppendableTableFactory appendableTableFactory = new ThreadLocalAppendableTableFactory();
 
-	@Default
-	@NonNull
-	protected final IAppendableTable appendableTable =
-			ThreadLocalAppendableTable.builder().capacity(AdhocColumnUnsafe.getPageSize()).build();
+	protected final Supplier<IAppendableTable> pageFactorySupplier =
+			Suppliers.memoize(() -> getAppendableTableFactory().makeTable(getOptions()));
 
 	/**
 	 * A {@link IHasEntries} in which keys are provided initially, and values are received in a later phase in the same
@@ -79,9 +82,9 @@ public class ColumnSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
-	public static class MapBuilderPreKeys implements IMapBuilderPreKeys, IHasEntries {
+	public static class MapBuilderPreKeys implements IMapBuilderPreKeys {
 		@NonNull
-		protected final ASliceFactory factory;
+		protected final ColumnSliceFactory factory;
 
 		// Remember the ordered keys, as we expect to receive values in the same order
 		@NonNull
@@ -91,11 +94,6 @@ public class ColumnSliceFactory extends ASliceFactory {
 		protected final IAppendableTable pageFactory;
 
 		protected ITableRowWrite row;
-
-		@Override
-		public Collection<? extends String> getKeys() {
-			return keysLikeList;
-		}
 
 		protected String peekNextKey() {
 			int currentSize;
@@ -130,15 +128,6 @@ public class ColumnSliceFactory extends ASliceFactory {
 			return this;
 		}
 
-		@Override
-		public Collection<?> getValues() {
-			if (row == null) {
-				return ImmutableList.of();
-			} else {
-				throw new NotYetImplementedException("Undictionarize");
-			}
-		}
-
 		public ITableRowWrite getDictionarizedValues() {
 			if (row == null) {
 				return ITableRowWrite.empty();
@@ -157,7 +146,7 @@ public class ColumnSliceFactory extends ASliceFactory {
 		 */
 		public static class MapBuilderPreKeysBuilder {
 			public MapBuilderPreKeysBuilder keys(Collection<? extends String> keys) {
-				return keysLikeList(factory.internKeyset(keys));
+				return keysLikeList(SequencedSetUnsafe.internKeyset(keys));
 			}
 		}
 	}
@@ -168,26 +157,30 @@ public class ColumnSliceFactory extends ASliceFactory {
 
 		return MapBuilderPreKeys.builder()
 				.factory(this)
-				.pageFactory(appendableTable)
+				.pageFactory(pageFactorySupplier.get())
 				.keys(ImmutableHelpers.copyOf(keys))
 				.build();
 	}
 
 	@Override
-	public IAdhocMap buildMap(IHasEntries hasEntries) {
-		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			ITableRowWrite values = preKeys.getDictionarizedValues();
-
-			ITableRowRead frozen = values.freeze();
-
-			return MapOverIntFunction.builder()
-					.factory(this)
-					.keys(preKeys.keysLikeList)
-					.unorderedValues(frozen::readValue)
-					.build();
-		} else {
-			return buildMapNaively(hasEntries);
+	public <R> R bindScope(Callable<R> body) throws Exception {
+		// Delegate to the backing table when it requires per-thread scope binding (e.g. ScopedValueAppendableTable).
+		// ThreadLocal-backed tables inherit the no-op default.
+		IAppendableTable table = pageFactorySupplier.get();
+		if (table instanceof ScopedValueAppendableTable scoped) {
+			return scoped.callInScope(body);
 		}
+		return body.call();
+	}
+
+	public IAdhocMap buildMap(MapBuilderPreKeys preKeys) {
+		ITableRowWrite values = preKeys.getDictionarizedValues();
+
+		ITableRowRead frozen = values.freeze();
+
+		// `frozen` IS-A IInt2ObjectReader (via ITableRowRead default method), so pass it directly to avoid
+		// allocating a bound method reference adapter per `buildMap` call.
+		return MapOverIntFunction.builder().factory(this).keys(preKeys.keysLikeList).unorderedValues(frozen).build();
 	}
 
 }

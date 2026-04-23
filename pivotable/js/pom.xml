@@ -21,11 +21,6 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.webjars</groupId>
-			<artifactId>webjars-locator-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.webjars</groupId>
 			<artifactId>jquery</artifactId>
 			<version>3.7.1</version>
 		</dependency>
@@ -45,6 +40,91 @@
 			<groupId>org.webjars.npm</groupId>
 			<artifactId>vue-router</artifactId>
 			<version>4.6.3</version>
+			<!-- See the matching exclusion on pinia below for the rationale. -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.webjars.npm</groupId>
+					<artifactId>vue__devtools-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!--
+			WebJars counterpart of every CDN-loaded module in `src/main/resources/static/index.html`.
+			These artifacts enable the `index.html?webjars` mode which rewrites the SPA importmap to
+			point at `/webjars/...` URLs instead of unpkg / jsdelivr — useful in enterprise /
+			air-gapped setups where outbound CDN traffic is blocked. Versions are kept aligned with
+			the ones hardcoded in the CDN URLs of index.html; when bumping a CDN version, bump the
+			matching WebJar too (and vice-versa) so both modes serve the same library version.
+		-->
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>pinia</artifactId>
+			<version>3.0.4</version>
+			<!--
+				pinia 3.0.4 transitively pulls `@vue/devtools-api:[7.7.7,8.0.0-0)` while
+				vue-router 4.6.3 pulls `[6.6.4,7.0.0-0)` — an unresolvable conflict. DevTools API
+				is only used at runtime when the Vue DevTools browser extension is present, so we
+				exclude both transitive edges and declare a single explicit version below.
+			-->
+			<exclusions>
+				<exclusion>
+					<groupId>org.webjars.npm</groupId>
+					<artifactId>vue__devtools-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>vue-demi</artifactId>
+			<version>0.14.10</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>vue__devtools-api</artifactId>
+			<version>6.6.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>popperjs__core</artifactId>
+			<version>2.11.8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>slickgrid</artifactId>
+			<version>5.18.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>sortablejs</artifactId>
+			<version>1.15.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>lodash-es</artifactId>
+			<version>4.17.21</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>mermaid</artifactId>
+			<version>11.6.0</version>
+			<!--
+				Blanket-exclude transitives: the mermaid WebJar's transitive graph has
+				internally-conflicting version ranges (cytoscape / d3 modules) that Maven
+				cannot resolve. The SPA only imports the single `dist/mermaid.esm.mjs` bundle,
+				which already has everything it needs baked in.
+			-->
+			<exclusions>
+				<exclusion>
+					<groupId>*</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars.npm</groupId>
+			<artifactId>bootstrap-icons</artifactId>
+			<version>1.13.1</version>
 		</dependency>
 	</dependencies>
 

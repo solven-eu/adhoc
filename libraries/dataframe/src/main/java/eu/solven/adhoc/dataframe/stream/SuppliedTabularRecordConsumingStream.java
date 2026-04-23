@@ -22,16 +22,13 @@
  */
 package eu.solven.adhoc.dataframe.stream;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * A {@link ITabularRecordStream} memorizing an underlying `Stream<Map<String, ?>>`
@@ -53,27 +50,8 @@ public class SuppliedTabularRecordConsumingStream implements ITabularRecordStrea
 	}
 
 	@Override
-	public Object getTableQuery() {
-		return source;
-	}
-
-	@Override
-	public Stream<ITabularRecord> records() {
-		List<ITabularRecord> list = new ArrayList<>();
-
-		streamSupplier.get().forEach(list::add);
-
-		return list.stream();
-	}
-
-	@Override
-	public IConsumingStream<ITabularRecord> records2() {
+	public IConsumingStream<ITabularRecord> records() {
 		return streamSupplier.get();
-	}
-
-	@Override
-	public void forEach(Consumer<ITabularRecord> consumer) {
-		streamSupplier.get().forEach(consumer);
 	}
 
 	@Override

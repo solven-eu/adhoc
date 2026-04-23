@@ -11,8 +11,8 @@
 
 - **Language / runtime**: Java 21, multi-module Maven project
 - **Build**: `mvn package -Pfast --file pom.xml --batch-mode` (skips slow checks; **note**: `-Pfast` also skips tests via `maven.test.skip=true`)
-- **Running tests without static analysis**: `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode` — use this instead of `-Pfast` when you need to run tests while skipping only static analysis
-- **Formatting**: Spotless (Java) + Prettier (JS/TS under `pivotable/js/`)
+- **Running tests without static analysis**: `mvn test -Pnostyle --file pom.xml --batch-mode` — the `-Pnostyle` profile skips Checkstyle / PMD / SpotBugs / Spotless / license / enforcer but keeps tests enabled. Prefer this over manually passing `-Dcheckstyle.skip -Dpmd.skip -Dspotbugs.skip …`.
+- **Formatting**: Spotless (Java + JS via Biome) + Prettier (JS/TS under `pivotable/js/`). For JS: **prettier runs first, Spotless/Biome second — Biome is the final authority on style**. Both are configured for tabs + 160 columns (`.prettierrc.yml` → `useTabs: true`, `.cleanthat/biome.json` → `"indentStyle": "tab"`, `"lineWidth": 160`). If you run prettier *after* spotless you may re-introduce wrap differences that spotless would otherwise rewrite — so always chain them as `npm run format && mvn spotless:apply`, never the other way.
 - **Static analysis**: Checkstyle, PMD, SpotBugs — check PMD alone with `mvn pmd:check --file pom.xml --batch-mode`, Checkstyle alone with `mvn checkstyle:check --file pom.xml --batch-mode`, full suite via `mvn verify`. When reading PMD output, use the `Grep` tool to filter for `org.apache.maven.plugins.pmd.PmdViolationCheckMojo` to quickly locate violations.
 - **Key libraries**: Guava, SLF4J/Logback, JUnit 5, AssertJ, Lombok
 
@@ -24,6 +24,16 @@
 | `public/` | Public-facing API / interfaces |
 | `pivotable/` | Spring Boot server + Vue.js front-end |
 | `jmh/` | JMH micro-benchmarks |
+
+### Local dev stack (Pivotable)
+
+The **dev stack** is the pair of processes needed to run Pivotable locally: a Spring Boot **backend** on `:8080` and a **Vite frontend** dev server on `:5173` that proxies `/api`, `/webjars`, `/login`, `/logout` to the backend. Canonical entry points, all from `pivotable/js/`:
+
+- `npm run backend` — backend only (Spring Boot via `mvn spring-boot:run`, profile `pivotable-unsafe` by default). Honours `$WEBMODE` (`webflux`/`webmvc`) and `$SPRING_ACTIVE_PROFILES`.
+- `npm run dev_frontend` — Vite dev server only (HMR, assumes a backend is already running on `:8080`).
+- `npm run dev_stack` — both together; Ctrl-C kills both. This is also what Playwright's `webServer` ultimately invokes via `npm run backend`, so `npx playwright test` auto-starts the backend if none is running.
+
+When a task needs a running backend+frontend pair, refer to it as "the dev stack" and start it with `npm run dev_stack`.
 
 ---
 
@@ -52,11 +62,13 @@ Each job below is **atomic** — run only one job per session. Cover the whole c
 mvn spotless:apply --file pom.xml --batch-mode
 ```
 
-If there are changes in HTML/JS resources in `pivotable/js`, also run:
+If there are changes in HTML/JS resources in `pivotable/js`, also run (order matters — prettier first, spotless last):
 
 ```bash
 cd pivotable/js && npm run format && mvn spotless:apply
 ```
+
+After this chain the tree is stable: a second `mvn spotless:apply` reports 0 changes. **Do not run `npm run format` *after* `mvn spotless:apply`** — prettier and biome use different line-wrap algorithms for expressions exceeding the 160-column limit, so running prettier last will reintroduce rewrites that spotless would normalise again on the next `mvn` run.
 
 ---
 
@@ -84,7 +96,7 @@ Improve test coverage for production classes that are critically under-tested (b
    ```
 2. Filter out pure interfaces and Lombok-generated-only classes (they require no tests).
 3. For each remaining class, read the source and write a `Test<ClassName>` in the same module under `src/test/java/`, in the same package. Cover at least: nominal path, null/empty inputs, and the most likely edge cases.
-4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Dcheckstyle.skip=true -Dpmd.skip=true -Dspotbugs.skip=true --file pom.xml --batch-mode`.
+4. After all edits run `mvn spotless:apply --file pom.xml --batch-mode` then verify with `mvn test -Pnostyle --file pom.xml --batch-mode`.
 
 **Scope**: at most 10 classes per session to keep PRs reviewable.
 
@@ -123,7 +135,6 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** modify test files (`src/test/java/**`) to change test assertions or business logic. You **may** fix resource leaks, compilation errors, or other clear bugs in existing test files.
 - Do **NOT** modify `pom.xml` files (no new dependencies, no version bumps).
 - Do **NOT** modify anything under `.cleanthat/` (build-tool configuration managed separately).
-- Do **NOT** modify anything under `pivotable/js/` (JS/TS handled by Prettier separately).
 - **Simple tasks** (Javadoc, comments, coverage tests, formatting): do **NOT** change method/constructor signatures, rename classes/methods/fields/variables, or alter business logic.
 - **Complex tasks** (new features, refactoring requested by the user): signature changes, renames, and logic changes are allowed when they are part of the requested work. Prefer adding new methods/fields over modifying existing signatures; when an existing signature must change, confirm with the user first.
 - Do **NOT** reorder imports (Spotless handles that).
@@ -132,6 +143,7 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 - Do **NOT** merge pull requests, or offer to merge them. PRs are always reviewed and merged by a human through the GitHub UI.
 - Do **NOT** duplicate what Checkstyle / PMD / SpotBugs / Spotless already enforce deterministically (whitespace, brace style, unused imports, etc.).
 - Do **NOT** pipe Bash commands through `head`, `tail`, `grep`, `sed`, `awk`, or `echo`. Run commands directly and let the full output be captured. Use the dedicated `Grep` tool for content searches.
+- Do **NOT** write a backtick character (`` ` ``) anywhere inside a Vue `template: /* HTML */ \`…\`` literal — **not even inside an `<!-- HTML comment -->`**. The template is a JavaScript template literal, and every backtick terminates the string mid-way, producing a `biome` parse error whose message (`LINE_UNDEFINED`, `Code formatting aborted due to parsing errors`) does not point at the real location. When the comment would naturally want to highlight a code fragment (a class name, a tag name, a CSS selector), use plain prose, single-quotes, or `&#96;` — never raw backticks. The same rule applies to interpolation-like fragments such as `${foo}`: they must not appear inside the template literal at all, even in comments. If you see `Code formatting aborted due to parsing errors` on a `*.js` file with a Vue template, this rule is the first thing to check.
 
 ---
 
@@ -144,3 +156,28 @@ These rules exist because slow sessions have been observed and root-caused here.
 - **Don't re-read files already in context.** If a file was written or fully read earlier in the same session, edit it directly without a preceding `Read` call.
 - **Combine Maven goals** to avoid redundant JVM startups: e.g. `mvn spotless:apply pmd:check --file pom.xml --batch-mode` instead of two separate invocations.
 - **Scope Maven to the affected module** with `-pl <module>` when only one module was changed (e.g. `-pl adhoc`), rather than running the full reactor.
+
+---
+
+## Investigating query-engine bugs
+
+When a `CubeQuery`-based test fails with an unexpected aggregation result (missing slice, wrong sum, etc.), the
+fastest way to see what the engine is actually doing is to flip the query into debug mode and re-read the surefire
+log. Two complementary techniques:
+
+- **`CubeQuery.builder()...debug(true)...build()`** — enables `[DEBUG]` and `[EXPLAIN]` log lines that print the
+  table-side rows received, the per-slice aggregator contributions, the merged step DAG, and each combinator's
+  per-slice writes. The trace alone usually pinpoints which slice is being dropped/duplicated and at which step.
+  Even if the test does not currently set `debug(true)`, temporarily wrapping the query with `debug(true)` (or
+  the equivalent `StandardQueryOptions.DEBUG` in the options set) is the cheapest first step before reaching for
+  a debugger.
+- **`TabularRecordLogger`** prints `Accepted row #N: slice=... aggregates=...` for each row the table emits, and
+  `TabularRecordStreamReducer` prints `Table contributes <aggregator>=<value> -> <slice>` for each per-aggregator
+  contribution. Together they make it obvious whether a missing value comes from the table side, the aggregator
+  side, or further downstream (combinator / join / merger).
+
+Example: the Phase-3 sparse-keyspace bug in `UndictionarizedColumn.stream(StreamStrategy)` was diagnosed
+end-to-end from a single `debug(true)` run of `TestAggregations_GroupBys#testSumOfSum_groupBy1String_notAlwaysPresent`.
+The log showed the table emitting all 4 rows correctly and the per-aggregator contributions arriving as expected,
+but the combinator's `Processing slice=...` lines only emitted 2 of the 3 distinct slices — proving the loss was
+in the join layer, not in the table or the aggregator.

@@ -1,20 +1,21 @@
 import { ref, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
-import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
-import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
+import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
+import AdhocGridControls from "./adhoc-query-grid-controls.js";
 
 // Formatters
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
+import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocCellModal,
-		AdhocGridFormatModal,
-		AdhocGridExportCsv,
+		AdhocGridTimingsBar,
+		AdhocGridControls,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -94,6 +95,21 @@ export default {
 			const view = props.tabularView.view;
 
 			gridColumns = [];
+
+			// Null view = cleared state (e.g. right after Reset, when queryModel is empty so no
+			// query was fired). Render a blank grid with a single placeholder column and zero
+			// data rows — SlickGrid misbehaves with `setColumns([])`, so keep at least one column.
+			// Bail out before the code below, which dereferences `view.coordinates` and
+			// `tabularView.query.groupBy.columns` (both undefined in this state).
+			if (!view) {
+				gridColumns.push({ id: "empty", name: "", field: "empty", sortable: false });
+				data.array = [];
+				gridMetadata.nb_rows = 0;
+				grid.setColumns(gridColumns);
+				dataView.setItems(data.array, "id");
+				dataView.refresh();
+				return;
+			}
 
 			// Do not allow sorting until it is compatible with rowSpans
 			const sortable = gridHelper.isSortable();
@@ -262,7 +278,15 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
-			// Register the watch once the grid is mounted and initialized
+			// Register the watch once the grid is mounted and initialized.
+			//
+			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
+			// `onView` (a fresh server response) or nulled by the empty-query short-circuit;
+			// we never patch it in place. Conversely, `resyncData` itself calls `sortRows`
+			// which mutates `view.coordinates` / `view.values` IN-PLACE — with deep tracking,
+			// that would re-fire this very watcher, causing the grid to render twice per
+			// edit (and logging `Rendering measureNames=` twice). Shallow reference watching
+			// fires exactly once per server response — which is what the UX needs.
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {
@@ -282,76 +306,16 @@ export default {
 						props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
 					}
 				},
-				{ deep: true },
 			);
 		});
 
-		function isLoading() {
-			if (!props.tabularView.loading) {
-				// Not a single flag initialized the loading property
-				return false;
-			}
-
-			// BEWARE some properties are date (like latestFetched)
-			return Object.values(props.tabularView.loading).some((loadingFlag) => typeof loadingFlag === "boolean" && !!loadingFlag);
-		}
-
-		function loadingPercent() {
-			if (!isLoading()) {
-				return 100;
-			}
-
-			if (props.tabularView.loading.sending) {
-				return 10;
-			}
-			if (props.tabularView.loading.executing) {
-				return 20;
-			}
-			if (props.tabularView.loading.downloading) {
-				return 75;
-			}
-			if (props.tabularView.loading.preparingGrid) {
-				return 85;
-			}
-			if (props.tabularView.loading.rendering) {
-				return 90;
-			}
-
-			console.log("Unclear loading state", props.tabularView.loading);
-			return 95;
-		}
-
-		function loadingMessage() {
-			if (!isLoading()) {
-				return "Loaded";
-			}
-
-			if (props.tabularView.loading.sending) {
-				return "Sending the query";
-			}
-			if (props.tabularView.loading.executing) {
-				// The execution phase may be a single synchronous call, or a polling until state of DONE
-				if (props.tabularView.loading.fetching) {
-					return "Executing the query (fetching)";
-				}
-				if (props.tabularView.loading.sleeping) {
-					return "Executing the query (sleeping)";
-				}
-				return "Executing the query (?)";
-			}
-			if (props.tabularView.loading.downloading) {
-				return "Downloading the result";
-			}
-			if (props.tabularView.loading.preparingGrid) {
-				return "Preparing the grid";
-			}
-			if (props.tabularView.loading.rendering) {
-				return "Rendering the grid";
-			}
-
-			console.log("Unclear loading state", props.tabularView.loading);
-			return "Unclear but not done yet";
-		}
+		// Loading-state helpers. All three read from `props.tabularView.loading` and return a
+		// display-layer primitive; they live in `adhoc-query-grid-loading.js` so they can be
+		// unit-tested without a DOM. Thin instance wrappers are kept here because Vue templates
+		// call methods with no args — the wrappers bind `props.tabularView` once.
+		const isLoading = () => isLoadingHelper(props.tabularView);
+		const loadingPercent = () => loadingPercentHelper(props.tabularView);
+		const loadingMessage = () => loadingMessageHelper(props.tabularView);
 
 		return {
 			rendering,
@@ -367,37 +331,35 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div>
-            <div class="spinner-grow" role="status" v-if="loading">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+		<div>
+			<div class="spinner-grow" role="status" v-if="loading">
+				<span class="visually-hidden">Loading...</span>
+			</div>
 
-            <AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
+			<AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
 
-            <span style="width:100%;" class="position-relative">
-                <div :id="domId" class="vh-75 slickgrid-grid"></div>
+			<span style="width:100%;" class="position-relative">
+				<div :id="domId" class="vh-75 slickgrid-grid"></div>
 
-                <div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
-                    <div
-                        class="progress"
-                        role="progressbar"
-                        aria-label="Animated striped example"
-                        :aria-valuenow="loadingPercent()"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                        v-if="isLoading()"
-                    >
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
-                            {{loadingMessage()}}
-                        </div>
-                    </div>
-                </div>
-            </span>
-            <div hidden>props.tabularView.loading={{tabularView.loading}}</div>
-            <div>props.tabularView.timing={{tabularView.timing}}</div>
-            <AdhocGridExportCsv :array="data.array" />
-
-            <AdhocGridFormatModal :formatOptions="formatOptions" />
-        </div>
-    `,
+				<div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
+					<div
+						class="progress"
+						role="progressbar"
+						aria-label="Animated striped example"
+						:aria-valuenow="loadingPercent()"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						v-if="isLoading()"
+					>
+						<div class="progress-bar progress-bar-striped progress-bar-animated" :style="'width: ' + loadingPercent() + '%'">
+							{{loadingMessage()}}
+						</div>
+					</div>
+				</div>
+			</span>
+			<div hidden>props.tabularView.loading={{tabularView.loading}}</div>
+			<AdhocGridTimingsBar :tabularView="tabularView" />
+			<AdhocGridControls :dataArray="data.array" :formatOptions="formatOptions" />
+		</div>
+	`,
 };

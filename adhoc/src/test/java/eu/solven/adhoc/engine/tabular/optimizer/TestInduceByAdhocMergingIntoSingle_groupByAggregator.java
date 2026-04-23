@@ -49,7 +49,7 @@ import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.filter.stripper.FilterStripperFactory;
 import eu.solven.adhoc.filter.stripper.FilterStripperUnsafe;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 
@@ -91,7 +91,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), ImmutableSet.of(tq1, tq2));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), ImmutableSet.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -128,7 +128,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.clearAggregators()
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -166,7 +166,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -208,7 +208,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.build();
 		TableQuery tq3 = TableQuery.edit(step).filter(AndFilter.and("a", "a1")).build();
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2, tq3));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2, tq3));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -235,7 +235,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 		TableQuery tq1 = TableQuery.edit(step).groupBy(GroupByColumns.named("a", "b")).build();
 		TableQuery tq2 = TableQuery.edit(step).groupBy(GroupByColumns.named("a")).build();
 		SplitTableQueries split =
-				optimizer.splitInducedLegacy(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
+				optimizer.splitInducedLegacy(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -252,7 +252,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 		TableQueryStep tqAB = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a", "b")).build();
 		TableQueryStep tqA = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build();
 		SplitTableQueries split =
-				optimizer.splitInduced(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tqAC, tqAB, tqA));
+				optimizer.splitInduced(IHasOptionsAndExecutorService.noOption(), Set.of(tqAC, tqAB, tqA));
 
 		Assertions.assertThat(split.getInducedToInducer().vertexSet()).hasSize(4);
 
@@ -299,7 +299,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInduced(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2, tq3));
+				optimizer.splitInduced(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2, tq3));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -357,7 +357,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInduced(IHasQueryOptionsAndExecutorService.noOption(), Set.of(tq1, tq2, tq3, tq4, tq5));
+				optimizer.splitInduced(IHasOptionsAndExecutorService.noOption(), Set.of(tq1, tq2, tq3, tq4, tq5));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -411,7 +411,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInduced(IHasQueryOptionsAndExecutorService.noOption(), Set.of(b1GroupA, a1GroupB));
+				optimizer.splitInduced(IHasOptionsAndExecutorService.noOption(), Set.of(b1GroupA, a1GroupB));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -433,7 +433,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 
 				.build();
 		SplitTableQueries split =
-				optimizer.splitInduced(IHasQueryOptionsAndExecutorService.noOption(), Set.of(a1GroupA, a2GroupA));
+				optimizer.splitInduced(IHasOptionsAndExecutorService.noOption(), Set.of(a1GroupA, a2GroupA));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)
@@ -454,7 +454,7 @@ public class TestInduceByAdhocMergingIntoSingle_groupByAggregator implements IAd
 				.build();
 		TableQueryStep a2GroupA = TableQueryStep.edit(step).groupBy(GroupByColumns.named("a")).build();
 		SplitTableQueries split =
-				optimizer.splitInduced(IHasQueryOptionsAndExecutorService.noOption(), Set.of(a1GroupA, a2GroupA));
+				optimizer.splitInduced(IHasOptionsAndExecutorService.noOption(), Set.of(a1GroupA, a2GroupA));
 
 		Assertions.assertThat(split.getInducers())
 				.hasSize(1)

@@ -32,6 +32,7 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 
 /**
  * A {@link ICuboid} is an immutable data-structure, expressing the mapping from slices to values, typically computed by
@@ -47,10 +48,12 @@ public interface ICuboid extends ICompactable {
 	 * 
 	 * @return true if `keySetStream` is already sorted
 	 */
-	@Deprecated(since = "Some structures can be mixed (e.g. a section is navigable, another is hash)")
-	boolean isSorted();
+	// @Deprecated(since = "Some structures can be mixed (e.g. a section is navigable, another is hash)")
+	// boolean isSorted();
 
 	long size();
+
+	long size(StreamStrategy strategy);
 
 	boolean isEmpty();
 
@@ -61,16 +64,18 @@ public interface ICuboid extends ICompactable {
 	 */
 	Set<String> getColumns();
 
-	Stream<ISlice> slices();
+	IConsumingStream<ISlice> slices();
 
 	Set<ISlice> slicesSet();
 
 	IValueProvider onValue(ISlice slice);
 
+	IValueProvider onValue(ISlice slice, StreamStrategy hint);
+
 	void forEachSlice(IColumnScanner<ISlice> columnScanner);
 
 	/**
-	 * 
+	 *
 	 * @param <U>
 	 * @param rowConverter
 	 *            knows how to convert a {@link Slice} and a value through a {@link IValueReceiver} into a custom object
@@ -79,14 +84,14 @@ public interface ICuboid extends ICompactable {
 	@Deprecated(since = "It seems useless", forRemoval = true)
 	<U> Stream<U> stream(IColumnValueConverter<ISlice, U> rowConverter);
 
-	Stream<SliceAndMeasure<ISlice>> stream();
+	IConsumingStream<SliceAndMeasure<ISlice>> stream();
 
 	/**
-	 * 
+	 *
 	 * @param strategy
-	 * @return a {@link Stream} with the requested strategy
+	 * @return an {@link IConsumingStream} with the requested strategy
 	 */
-	Stream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy);
+	IConsumingStream<SliceAndMeasure<ISlice>> stream(StreamStrategy strategy);
 
 	/**
 	 * 
@@ -105,5 +110,4 @@ public interface ICuboid extends ICompactable {
 	ICuboid purgeCarriers();
 
 	ICuboid mask(Map<String, ?> mask);
-
 }

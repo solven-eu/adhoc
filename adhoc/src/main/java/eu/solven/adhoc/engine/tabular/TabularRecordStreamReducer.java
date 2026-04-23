@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
@@ -36,10 +37,14 @@ import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumns;
 import eu.solven.adhoc.dataframe.aggregating.AggregatingColumnsDistinct;
 import eu.solven.adhoc.dataframe.aggregating.PartitionedMultitypeMergeableGrid;
+import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
+import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
+import eu.solven.adhoc.dataframe.column.partitioned.ShardingForEachParameters;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid.IOpenedSlice;
+import eu.solven.adhoc.engine.PodExecutors;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.groupingset.GroupingSetMergeableGrid;
 import eu.solven.adhoc.engine.tabular.groupingset.IGroupingSetAnalyzer;
@@ -48,6 +53,7 @@ import eu.solven.adhoc.engine.tabular.groupingset.UniqueGroupingSetAnalyzer;
 import eu.solven.adhoc.exception.AdhocExceptionHelpers;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -56,6 +62,7 @@ import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
@@ -84,7 +91,8 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	@NonNull
 	TableQueryV4 tableQuery;
 
-	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream) {
+	protected IMultitypeMergeableGrid<ISlice> makeAggregatingMeasures(ITabularRecordStream stream,
+			Set<FilteredAggregator> aggregators) {
 		Supplier<IMultitypeMergeableGrid<ISlice>> gridFactory;
 
 		if (stream.isDistinctSlices()) {
@@ -119,7 +127,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		if (singleGroupBy.isPresent()) {
 			IGroupBy groupBy = singleGroupBy.get();
 			NavigableSet<String> groupedByColumns = groupBy.getSortedColumns();
-			SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
+			SequencedSetLikeList sequencedKeyset = SequencedSetUnsafe.internKeyset(groupedByColumns);
 			return UniqueGroupingSetAnalyzer.builder()
 					.sequencedKeyset(new GroupByMarker(groupBy, sequencedKeyset))
 					.build();
@@ -128,7 +136,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 					.stream()
 					.collect(PepperStreamHelper.toLinkedMap(IGroupBy::getSortedColumns, gb -> {
 						Set<String> groupedByColumns = gb.getSortedColumns();
-						SequencedSetLikeList sequencedKeyset = sliceFactory.internKeyset(groupedByColumns);
+						SequencedSetLikeList sequencedKeyset = SequencedSetUnsafe.internKeyset(groupedByColumns);
 						return new GroupByMarker(gb, sequencedKeyset);
 					}));
 
@@ -136,9 +144,13 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		}
 	}
 
+	private record GroupByAndTabularRecord(GroupByMarker groupByMarker, ITabularRecord retainedRecord) {
+	}
+
+	@SuppressWarnings({ "PMD.AvoidSynchronizedStatement", "PMD.CloseResource", "PMD.UselessQualifiedThis" })
 	@Override
 	public IMultitypeMergeableGrid<ISlice> reduce(ITabularRecordStream stream) {
-		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream);
+		IMultitypeMergeableGrid<ISlice> grid = makeAggregatingMeasures(stream, tableQuery.getAggregators());
 
 		// Useful to log on the last row, to have the number of row actually streamed
 		TabularRecordLogger aggregatedRecordLogger = TabularRecordLogger.builder()
@@ -146,7 +158,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 				.options(queryPod.getOptions())
 				.build();
 
-		BiConsumer<ITabularRecord, ISlice> peekOnCoordinate = aggregatedRecordLogger.prepareStreamLogger(tableQuery);
+		BiConsumer<ITabularRecord, ISlice> peekOnCoordinate = aggregatedRecordLogger.prepareStreamLogger();
 
 		IGroupingSetAnalyzer groupingSetAnalyzer = makeGroupingSetAnalyzer();
 
@@ -158,11 +170,51 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			// would prevent some sharing. (e.g. Considering DuckDB reading Parquet files on each SQL, it seems
 			// reasonable to prefer doing as many computations in a single pass).
 			try {
-				stream.forEach(input -> {
-					GroupByMarker sequencedKeyset = groupingSetAnalyzer.getGroupingSet(input);
+				// Reference equality is intentional: PerfectHashMap.keySet() returns the shared PerfectHashKeyset
+				// instance when the map is fully populated, so `==` detects the zero-work fast path without an
+				// element-by-element Set#equals walk.
+				@SuppressWarnings("PMD.CompareObjectsWithEquals")
+				IConsumingStream<GroupByAndTabularRecord> records2 = stream.records().map(input -> {
+					GroupByMarker groupByMarker = groupingSetAnalyzer.getGroupingSet(input);
 
-					forEachMeasure(sequencedKeyset, input, peekOnCoordinate, grid);
+					if (groupByMarker.keySet() == input.columnsKeySet()) {
+						return new GroupByAndTabularRecord(groupByMarker, input);
+					} else {
+						// Typically useful to discard the column underlying a calculated column
+						ITabularRecord retainedRecord = input.retainAll(groupByMarker.keySet().sortedSet());
+
+						return new GroupByAndTabularRecord(groupByMarker, retainedRecord);
+					}
+
 				});
+
+				if (grid instanceof IPartitioned<?> partitioned) {
+					int nbPartitions = partitioned.getNbPartitions();
+					// Wrap the per-partition worker task with the slice-factory scope on the virtual thread that
+					// actually consumes the queue (once per partition, for the whole drain loop — so scope setup
+					// is paid once per consumer, not per element).
+					Executor scopedExecutor = PodExecutors.scopedExecutor(queryPod);
+					PartitioningHelpers.shardingForEach(ShardingForEachParameters.<GroupByAndTabularRecord>builder()
+							.stream(records2)
+							.nbPartitions(nbPartitions)
+							.partitioner(input -> {
+								ISlice slice = input.retainedRecord().asSlice();
+								return PartitioningHelpers.getPartitionIndex(slice, nbPartitions);
+							})
+							.consumer(input -> {
+								forEachMeasure(input.groupByMarker(), input.retainedRecord(), peekOnCoordinate, grid);
+							})
+							.executor(scopedExecutor)
+							.build());
+				} else {
+					// synchronized: when CONCURRENT is active, Arrow batches may be processed
+					// concurrently, so multiple threads can call forEachMeasure simultaneously
+					records2.forEach(input -> {
+						synchronized (TabularRecordStreamReducer.this) {
+							forEachMeasure(input.groupByMarker(), input.retainedRecord(), peekOnCoordinate, grid);
+						}
+					});
+				}
 			} finally {
 				aggregatedRecordLogger.closeHandler().run();
 			}
@@ -186,41 +238,36 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 		return grid;
 	}
 
-	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	protected void forEachMeasure(GroupByMarker sequencedKeyset,
-			ITabularRecord tableRow,
+			ITabularRecord tableRecord,
 			BiConsumer<ITabularRecord, ISlice> peekOnCoordinate,
 			IMultitypeMergeableGrid<ISlice> sliceToAgg) {
-		// Typically useful to discard the column underlying a calculated column
-		ITabularRecord retainedRecord = tableRow.retainAll(sequencedKeyset.keySet().sortedSet());
+		ISlice slice = tableRecord.asSlice();
 
-		ISlice slice = retainedRecord.asSlice();
+		peekOnCoordinate.accept(tableRecord, slice);
 
-		peekOnCoordinate.accept(tableRow, slice);
+		// Thread-safety: when PARTITIONED, forEachPartitioned guarantees each partition is written
+		// by a single thread, so no synchronization is needed. When non-partitioned and CONCURRENT,
+		// the caller wraps this method in a synchronized block.
+		IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
 
-		// TODO Thread-safety
-		synchronized (this) {
-			IOpenedSlice openedSlice = sliceToAgg.openSlice(slice);
+		tableQuery.getAggregators(sequencedKeyset.groupBy()).forEach(filteredAggregator -> {
+			// We received a pre-aggregated measure
+			// DB has seemingly done the aggregation for us
+			IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
 
-			for (FilteredAggregator filteredAggregator : tableQuery.getAggregators(sequencedKeyset.groupBy())) {
-				// We received a pre-aggregated measure
-				// DB has seemingly done the aggregation for us
-				IValueReceiver valueReceiver = openedSlice.contribute(filteredAggregator);
-
-				if (queryPod.isDebug()) {
-					Object aggregateValue =
-							IValueProvider.getValue(tableRow.onAggregate(filteredAggregator.getAlias()));
-					log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, slice);
-				}
-
-				if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
-					// TODO Introduce .onBoolean
-					valueReceiver.onLong(0);
-				} else {
-					tableRow.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
-				}
+			if (StandardQueryOptions.DEBUG.isActive(queryPod)) {
+				Object aggregateValue = IValueProvider.getValue(tableRecord.onAggregate(filteredAggregator.getAlias()));
+				log.info("[DEBUG] Table contributes {}={} -> {}", filteredAggregator, aggregateValue, slice);
 			}
-		}
+
+			if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
+				// TODO Introduce .onBoolean
+				valueReceiver.onLong(0);
+			} else {
+				tableRecord.onAggregate(filteredAggregator.getAlias()).acceptReceiver(valueReceiver);
+			}
+		});
 	}
 
 	/**

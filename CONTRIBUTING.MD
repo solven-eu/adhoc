@@ -2,6 +2,15 @@
 
 `mvn clean install [-Pactiveviam] [-Pfast]`
 
+## Maven profiles for local builds
+
+- `-Pfast` — skips both **style checks** (Checkstyle, PMD, CPD, SpotBugs, Spotless, license, formatter, imports, Cleanthat, enforcer) **and tests** (unit + integration + JaCoCo). Use when you only need a quick `package`/`install`.
+- `-Pnostyle` — skips the **style checks only**; unit and integration tests still run. Use when you want to compile and run tests without waiting for static analysis (equivalent to passing `-Dcheckstyle.skip -Dpmd.skip -Dspotbugs.skip -Dspotless.skip …` by hand).
+
+Example — compile and run unit tests, skipping style:
+
+    mvn test -Pnostyle --file pom.xml --batch-mode
+
 # Corporate Environment
 
 From a Corporate environment with a strong Proxy, it may be difficult to clone/push code from/to Github.com

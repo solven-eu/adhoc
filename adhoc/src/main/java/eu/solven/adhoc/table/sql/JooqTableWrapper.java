@@ -25,7 +25,6 @@ package eu.solven.adhoc.table.sql;
 import java.sql.Connection;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -41,7 +40,6 @@ import java.util.stream.Stream;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Record;
-import org.jooq.Result;
 import org.jooq.ResultQuery;
 import org.jooq.SQLDialect;
 import org.jooq.conf.ParamType;
@@ -65,7 +63,6 @@ import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
@@ -77,6 +74,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
@@ -200,10 +198,15 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	protected List<Field<?>> noCacheGetFields() {
-		Field<?>[] fields;
-
+		// Single source of truth: the parameters' columnsResolver (guaranteed non-null via the custom getter, which
+		// defaults to `JooqColumnsHelpers.dbProbe(dslSupplier)` when the builder did not configure one).
 		try {
-			fields = getResultForFields().fields();
+			List<Field<?>> fields = tableParameters.getColumnsResolver().columnsOf(tableParameters.getTable());
+			if (fields == null) {
+				return Collections.emptyList();
+			} else {
+				return List.copyOf(fields);
+			}
 		} catch (DataAccessException e) {
 			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
 				if (log.isDebugEnabled()) {
@@ -217,23 +220,6 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				throw e;
 			}
 		}
-		return Arrays.asList(fields);
-	}
-
-	/**
-	 * This may be overridden for underlying SQL databases requiring a specific SQL.
-	 * 
-	 * @return a {@link Result} which can be used to fetch the fields of this table.
-	 */
-	protected Result<Record> getResultForFields() {
-		// Log in INFO as this operation maybe a bit slow
-		log.info("Fetching fields of table={}", getName());
-		return tableParameters.getDslSupplier()
-				.getDSLContext()
-				.select()
-				.from(tableParameters.getTable())
-				.limit(0)
-				.fetch();
 	}
 
 	public static JooqTableWrapper newInstance(Map<String, ?> options) {
@@ -375,12 +361,18 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
-		return JooqTableQueryFactory.builder()
+		// `.table(...)` is the migration helper that wires `tableSupplier = IJooqTableSupplier.constant(table)`.
+		// When the parameters carry an explicit supplier (e.g. PrunedJoinsJooqSnowflakeSchemaBuilder.asTableSupplier),
+		// it overrides the constant one below.
+		JooqTableQueryFactory.JooqTableQueryFactoryBuilder<?, ?> builder = JooqTableQueryFactory.builder()
 				.operatorFactory(tableParameters.getOperatorFactory())
 				.table(tableParameters.getTable())
 				.dslContext(dslContext)
-				.filterOptimizer(tableParameters.getFilterOptimizerFactory().makeOptimizerWithCache())
-				.build();
+				.filterOptimizer(tableParameters.getFilterOptimizerFactory().makeOptimizerWithCache());
+		if (tableParameters.getTableSupplier() != null) {
+			builder.tableSupplier(tableParameters.getTableSupplier());
+		}
+		return builder.build();
 	}
 
 	@SuppressWarnings("PMD.CloseResource")

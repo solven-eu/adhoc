@@ -39,11 +39,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
 import eu.solven.adhoc.beta.schema.ColumnIdentifier;
 import eu.solven.adhoc.beta.schema.CustomMarkerMetadataGenerator;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -52,7 +54,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.table.InMemoryTable;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
@@ -71,9 +73,9 @@ public class InjectSimpleExampleCubesConfig {
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
-	public Void initSimpleCubes(PivotableAdhocSchemaRegistry schemaRegistry) {
+	public Void initSimpleCubes(PivotableSchemaRegistry schemaRegistry) {
 		// @Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT)
-		AdhocSchema schema = schemaRegistry.getSchema(PivotableAdhocEndpointMetadata.localhost().getId());
+		IAdhocSchema schema = schemaRegistry.getSchema(PivotableAdhocEndpointMetadata.localhost().getId());
 
 		log.info("Registering the {} dataset", IPivotableSpringProfiles.P_SIMPLE_DATASETS);
 
@@ -88,10 +90,10 @@ public class InjectSimpleExampleCubesConfig {
 		return null;
 	}
 
-	protected void registerSimple(AdhocSchema schema) {
+	protected void registerSimple(IAdhocSchema schema) {
 		InMemoryTable table = prefillInmemoryTable();
 
-		schema.registerTable(table);
+		schema.getRegistrer().registerTable(table);
 
 		List<IMeasure> measures = new ArrayList<>();
 
@@ -125,6 +127,16 @@ public class InjectSimpleExampleCubesConfig {
 				.tags(Arrays.asList("δ"))
 				.build());
 
+		// Always-throwing measure — used by Pivotable e2e / manual tests to exercise the UI's
+		// error-management paths (how a failing measure surfaces in the query grid, the navbar,
+		// server logs, etc.). Underlying is `delta` purely because a Combinator requires at
+		// least one underlying; its value is discarded by ThrowingCombination.
+		measures.add(Combinator.builder()
+				.name("always_throws")
+				.underlying("delta")
+				.combinationKey(ThrowingCombination.class.getName())
+				.build());
+
 		// Helps testing customMarkers
 		measures.add(Combinator.builder()
 				.name("ccyFromCustomMarker_Shallow")
@@ -139,11 +151,12 @@ public class InjectSimpleExampleCubesConfig {
 				.underlying("gamma")
 				.build());
 
-		schema.registerForest(MeasureForest.fromMeasures("simple", measures));
+		IAdhocSchemaRegistrer registrer = schema.getRegistrer();
+		registrer.registerForest(MeasureForest.fromMeasures("simple", measures));
 
-		schema.registerCube("simple", "simple", "simple");
+		registrer.registerCube("simple", "simple", "simple");
 
-		schema.registerCustomMarker("ccy",
+		registrer.registerCustomMarker("ccy",
 				EqualsMatcher.matchEq("simple"),
 				CustomMarkerMetadataGenerator.builder()
 						.path(ReferenceCcyShallowCombination.PATH_SHALLOW_CCY)
@@ -151,7 +164,7 @@ public class InjectSimpleExampleCubesConfig {
 						.defaultValue(() -> Optional.of(ReferenceCcyShallowCombination.CCY_DEFAULT))
 						.build());
 
-		schema.registerCustomMarker("deepCcy",
+		registrer.registerCustomMarker("deepCcy",
 				EqualsMatcher.matchEq("simple"),
 				CustomMarkerMetadataGenerator.builder()
 						.path(ReferenceCcyDeepCombination.PATH_DEEP_CCY)
@@ -159,7 +172,7 @@ public class InjectSimpleExampleCubesConfig {
 						.defaultValue(() -> Optional.of(ReferenceCcyDeepCombination.CCY_DEFAULT))
 						.build());
 
-		schema.tagColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("simple").column("ccy").build(),
+		registrer.tagColumn(ColumnIdentifier.builder().isCubeElseTable(true).holder("simple").column("ccy").build(),
 				ImmutableSet.of("core"));
 	}
 

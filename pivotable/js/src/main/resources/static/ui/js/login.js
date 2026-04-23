@@ -42,19 +42,19 @@ export default {
 		return { userStore, hintLoginSuccess, hintLoggedOut };
 	},
 	template: /* HTML */ `isLoggedIn={{isLoggedIn}} userStore={{userStore.needsToLogin}} user={{user.details.username}}
-        <div v-if="isLoggedIn">
-            Welcome {{user.details.name}}. <Logout />
+		<div v-if="isLoggedIn">
+			Welcome {{user.details.name}}. <Logout />
 
-            <Whatnow />
+			<Whatnow />
 
-            <span v-if="hintLoginSuccess"> Login Success </span>
-            <span v-if="hintLoggedOut"> Logout Success </span>
-        </div>
-        <div v-else-if="isLoggedOut">
-            <LoginOptions />
-        </div>
-        <div v-else>
-            <div v-if="nbLoginLoading > 0">Loading...</div>
-            <div v-else>?</div>
-        </div> `,
+			<span v-if="hintLoginSuccess"> Login Success </span>
+			<span v-if="hintLoggedOut"> Logout Success </span>
+		</div>
+		<div v-else-if="isLoggedOut">
+			<LoginOptions />
+		</div>
+		<div v-else>
+			<div v-if="nbLoginLoading > 0">Loading...</div>
+			<div v-else>?</div>
+		</div> `,
 };

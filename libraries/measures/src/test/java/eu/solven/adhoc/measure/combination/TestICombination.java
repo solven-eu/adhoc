@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.solven.adhoc.data.cell.ProxyValueReceiver;
 import eu.solven.adhoc.data.row.ISlicedRecord;
 import eu.solven.adhoc.data.row.SlicedRecordFromArray;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -47,7 +48,9 @@ public class TestICombination {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 		ISlicedRecord record = SlicedRecordFromArray.builder().measure("inputA").build();
 
-		Object output = IValueProvider.getValue(sliceAndList.combine(slice, record));
+		ProxyValueReceiver proxyReceiver = ProxyValueReceiver.builder().build();
+		sliceAndList.combine(slice, record, proxyReceiver);
+		Object output = IValueProvider.getValue(proxyReceiver.asValueProvider());
 		Assertions.assertThat(output).isEqualTo(List.of("inputA"));
 	}
 
@@ -64,7 +67,9 @@ public class TestICombination {
 		ISliceWithStep slice = Mockito.mock(ISliceWithStep.class);
 		ISlicedRecord record = SlicedRecordFromArray.builder().measure("inputA").build();
 
-		Object output = IValueProvider.getValue(sliceAndList.combine(slice, record));
+		ProxyValueReceiver proxyReceiver = ProxyValueReceiver.builder().build();
+		sliceAndList.combine(slice, record, proxyReceiver);
+		Object output = IValueProvider.getValue(proxyReceiver.asValueProvider());
 		Assertions.assertThat(output).isEqualTo(List.of("inputA"));
 	}
 }

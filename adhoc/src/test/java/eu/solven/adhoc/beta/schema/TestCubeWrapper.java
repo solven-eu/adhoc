@@ -100,7 +100,8 @@ public class TestCubeWrapper {
 					.containsEntry("rawC", ColumnMetadata.builder().name("rawC").type(String.class).build());
 		}
 
-		// with aliaser
+		// with aliaser: the alias points to no underlying column, so it must be discarded (not registered as
+		// Object.class). A shared ColumnsManager may define aliases relevant only for a subset of cubes.
 		{
 			ICubeWrapper cube = CubeWrapperEditor.edit(rawCube)
 					.aliaser(MapTableAliaser.builder().aliasToOriginal("aliasC", "unknownC").build())
@@ -108,10 +109,49 @@ public class TestCubeWrapper {
 
 			Assertions.assertThat(cube.getColumnsAsMap())
 					.containsEntry("rawC", ColumnMetadata.builder().name("rawC").type(String.class).build())
-					.containsEntry("aliasC",
-							ColumnMetadata.builder().name("aliasC").tag("alias").type(Object.class).build())
-					.hasSize(2);
+					.hasSize(1)
+					.doesNotContainKey("aliasC");
 		}
+	}
+
+	// A shared ColumnsManager may carry aliases relevant only for a subset of cubes. Aliases whose underlying
+	// column does not exist on this cube must be silently discarded (with a WARN log), not registered as
+	// dangling Object.class columns, so they do not pollute the schema reported by `getColumns`.
+	@Test
+	public void testAliasedColumns_mixOfResolvedAndUnresolved() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		table.add(Map.of("rawC", "someV"));
+
+		ICubeWrapper rawCube = CubeWrapper.builder()
+				.name(this.getClass().getSimpleName())
+				.forest(MeasureForest.empty())
+				.table(table)
+				.build();
+
+		ICubeWrapper cube = CubeWrapperEditor.edit(rawCube)
+				.aliaser(MapTableAliaser.builder()
+						// Relevant to this cube: `rawC` exists in the table.
+						.aliasToOriginal("aliasC", "rawC")
+						// Irrelevant to this cube: `unknownC` does not exist, and `aliasForUnknown` itself does not
+						// exist. It should be discarded.
+						.aliasToOriginal("aliasForUnknown", "unknownC")
+						.build())
+				.build();
+
+		Assertions.assertThat(cube.getColumnsAsMap())
+				.containsEntry("rawC", ColumnMetadata.builder().name("rawC").type(String.class).alias("aliasC").build())
+				.containsEntry("aliasC",
+						ColumnMetadata.builder()
+								.name("aliasC")
+								.type(String.class)
+								.alias("rawC")
+								.alias("aliasC")
+								.build())
+				// `aliasForUnknown` is absent: its underlying column does not exist on this cube.
+				.doesNotContainKey("aliasForUnknown")
+				.doesNotContainKey("unknownC")
+				.hasSize(2);
 	}
 
 	@Test
@@ -137,11 +177,9 @@ public class TestCubeWrapper {
 
 		Assertions.assertThat(cube.getColumnsAsMap())
 				.containsEntry("rawC", ColumnMetadata.builder().name("rawC").type(String.class).alias("rawC").build())
-				// `aliasC` is dangling with no explicit type as `tableColumn=join.rawC` did not match the unqualified
-				// name `rawC` from table.
-				.containsEntry("aliasC",
-						ColumnMetadata.builder().name("aliasC").type(Object.class).tag("alias").build())
-				.hasSize(2);
+				// `aliasC` is dangling as `tableColumn=join.rawC` did not match the unqualified name `rawC` from the
+				// table, and `aliasC` itself is not a known column either. It is therefore discarded.
+				.hasSize(1);
 	}
 
 	@Test

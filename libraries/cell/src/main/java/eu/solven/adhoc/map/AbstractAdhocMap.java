@@ -33,7 +33,6 @@ import java.util.SequencedMap;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -49,7 +48,9 @@ import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.util.cache.LastLookupCache;
 import eu.solven.adhoc.util.immutable.UnsupportedAsImmutableException;
 import lombok.Builder;
 import lombok.Getter;
@@ -87,6 +88,23 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	// Like String
 	private boolean hashIsZero; // Default to false;
 
+	/**
+	 * Sentinel placeholder for the "default hashcode" path. Reference-compared in {@link #hashCode()}; instances
+	 * constructed via the 2-arg constructor (the common case) share this single static instance, so there is no
+	 * per-instance lambda allocation. Subclasses that plug in their own strategy (e.g.
+	 * {@code MapOverIntFunction.builderCustomHashcode}) pass their own {@link IntSupplier} via the
+	 * {@code @RequiredArgsConstructor}-generated 3-arg constructor, and {@link #hashCode()} then routes through that
+	 * supplier instead.
+	 *
+	 * <p>
+	 * The sentinel's {@link IntSupplier#getAsInt()} throws on purpose: it is only ever reference-compared and never
+	 * invoked. A thrown exception here signals a forgotten short-circuit in {@link #hashCode()}.
+	 */
+	static final IntSupplier DEFAULT_HASHCODE_SUPPLIER = () -> {
+		throw new UnsupportedOperationException("DEFAULT_HASHCODE_SUPPLIER is a sentinel; "
+				+ "AbstractAdhocMap#hashCode() must short-circuit before invoking it.");
+	};
+
 	@NonNull
 	final IntSupplier hashcodeSupplier;
 
@@ -97,14 +115,18 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	transient Set<Map.Entry<String, Object>> entrySet;
 
-	// TODO Purge policy
-	// TODO Compare perf with ThreadLocal
-	static final Map<RetainedKeysetCacheKey, RetainedKeySet> CACHE_RETAINEDKEYS = new ConcurrentHashMap<>();
+	// Thread-local reference-equality fast path + ConcurrentHashMap slow path.
+	// Key parts for reference equality: (retainedColumns, sequencedKeysList).
+	// BEWARE The factory is intentionally excluded from the cache key to avoid retaining factory instances
+	// (typically ColumnSliceFactory) in this static cache.
+	static final LastLookupCache<RetainedKeySet> CACHE_RETAINEDKEYS = new LastLookupCache<>(2);
 
 	public AbstractAdhocMap(ISliceFactory factory, SequencedSetLikeList sequencedKeys) {
 		this.factory = factory;
 		this.sequencedKeys = sequencedKeys;
-		this.hashcodeSupplier = () -> computeHashCode(this);
+		// Every default-constructed instance shares the same static sentinel — no per-instance lambda allocation.
+		// hashCode() reference-compares against this sentinel to take the direct `computeHashCode(this)` path.
+		this.hashcodeSupplier = DEFAULT_HASHCODE_SUPPLIER;
 	}
 
 	/**
@@ -217,10 +239,16 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 * Computes hash code consistent with {@link java.util.Map.Entry#hashCode()}.
 	 */
 	@Override
+	@SuppressWarnings("checkstyle:AvoidInlineConditionals")
 	public int hashCode() {
 		// hashCode caching like String.hashCode
 		if (hash == 0 && !hashIsZero) {
-			int h = hashcodeSupplier.getAsInt();
+			// Default path: reference-compare against the shared sentinel and call the static helper directly
+			// with `this`. This is the common case and spares the per-instance lambda that
+			// `() -> computeHashCode(this)` would otherwise allocate in the constructor. Custom-supplier
+			// subclasses (e.g. MapOverIntFunction's `builderCustomHashcode` path) go through their plugged-in
+			// supplier instead.
+			int h = hashcodeSupplier == DEFAULT_HASHCODE_SUPPLIER ? computeHashCode(this) : hashcodeSupplier.getAsInt();
 
 			if (h == 0) {
 				hashIsZero = true;
@@ -438,15 +466,6 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	}
 
 	/**
-	 *
-	 * @param retainedColumns
-	 *            a Set of columns to retains
-	 * @param sequencedKeys
-	 */
-	private record RetainedKeysetCacheKey(Set<String> retainedColumns, List<String> sequencedKeys) {
-	}
-
-	/**
 	 * Provides relevant information to help implementing {@link IAdhocMap#retainAll(Set)}}
 	 */
 	@Value
@@ -466,12 +485,26 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	}
 
 	protected RetainedKeySet retainKeyset(Set<String> retainedColumns) {
-		return CACHE_RETAINEDKEYS.computeIfAbsent(new RetainedKeysetCacheKey(retainedColumns, sequencedKeys.asList()),
-				k -> noCacheRetainKeyset(retainedColumns));
+		List<String> keyList = sequencedKeys.asList();
 
+		// Fast path: zero allocation, reference equality on (retainedColumns, keyList)
+		RetainedKeySet cached = CACHE_RETAINEDKEYS.getByRef(keyList, retainedColumns);
+		if (cached != null) {
+			return cached;
+		}
+
+		// Slow path: wrap refKeys as the composite map key, compute if absent.
+		// The factory is captured by the lambda but NOT included in the cache key (see CACHE_RETAINEDKEYS field).
+		return CACHE_RETAINEDKEYS.slowComputeIfAbsent(new Object[] { keyList, retainedColumns },
+				() -> computeRetainKeyset(retainedColumns, sequencedKeys));
 	}
 
-	protected RetainedKeySet noCacheRetainKeyset(Set<String> retainedColumns) {
+	/**
+	 * Computes the {@link RetainedKeySet} without caching. This is static so that the cache mapping function does not
+	 * capture {@code this}.
+	 */
+	protected static RetainedKeySet computeRetainKeyset(Set<String> retainedColumns,
+			SequencedSetLikeList sequencedKeys) {
 		Set<String> intersection;
 		if (sequencedKeys.containsAll(retainedColumns)) {
 			// In most cases, we retain a subSet
@@ -480,9 +513,9 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 			// `Sets.intersection` necessarily creates a new Set
 			intersection = Sets.intersection(sequencedKeys, retainedColumns);
 		}
-		SequencedSetLikeList retainedKeyset = factory.internKeyset(intersection);
+		SequencedSetLikeList retainedKeyset = SequencedSetUnsafe.internKeyset(intersection);
 
-		List<String> sequencedKeysAsList = this.sequencedKeys.asList();
+		List<String> sequencedKeysAsList = sequencedKeys.asList();
 		int[] sequencedIndexes = retainedKeyset.stream().mapToInt(retainedColumn -> {
 			int originalIndex = sequencedKeysAsList.indexOf(retainedColumn);
 

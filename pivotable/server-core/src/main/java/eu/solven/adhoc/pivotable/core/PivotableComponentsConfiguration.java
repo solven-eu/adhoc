@@ -34,8 +34,8 @@ import eu.solven.adhoc.pivotable.app.InjectPivotableAccountsConfig;
 import eu.solven.adhoc.pivotable.app.InjectPivotableSelfEndpointConfig;
 import eu.solven.adhoc.pivotable.app.persistence.InMemoryPivotableConfiguration;
 import eu.solven.adhoc.pivotable.cube.AdhocCubesRegistry;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
 import eu.solven.adhoc.pivotable.endpoint.PivotableEndpointsRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import eu.solven.adhoc.pivotable.eventbus.EventBusLogger;
 import eu.solven.adhoc.tools.PivotableRandomConfiguration;
 import eu.solven.adhoc.util.ThrowableAsStackSerializer;
@@ -56,7 +56,7 @@ import tools.jackson.databind.module.SimpleModule;
 		// Holds the Entrypoints definitions (e.g. URLs)
 		PivotableEndpointsRegistry.class,
 		// Holds the Entrypoints schemas
-		PivotableAdhocSchemaRegistry.class,
+		PivotableSchemaRegistry.class,
 		// Holds the Cubes, through endpoints
 		AdhocCubesRegistry.class,
 

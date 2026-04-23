@@ -43,7 +43,6 @@ import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.dataframe.row.TabularGroupByRecordOverMap;
 import eu.solven.adhoc.engine.IAdhocFactories;
-import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
@@ -159,7 +158,7 @@ public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQu
 	protected IMultitypeMergeableColumn<ISlice> makeColumn(IAggregation agg) {
 		// Not MultitypeNavigableColumn as decomposition will prevent writing slices in order.
 		// BEWARE This should be reviewed, as some later IMeasure would expect to receive an ordered slices
-		return factories.getColumnFactory().makeColumnRandomInsertions(agg, IColumnFactory.NO_ESTIMATION);
+		return factories.getColumnFactory().makeMergeableColumn(c -> c.agg(agg));
 	}
 
 	protected void onSlice(List<? extends ICuboid> underlyings,

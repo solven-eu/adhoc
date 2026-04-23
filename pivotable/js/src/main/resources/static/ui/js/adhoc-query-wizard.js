@@ -140,32 +140,46 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div v-if="(!endpoint || !cube)">
-            <div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading cubeId={{cubeId}}</span>
-                </div>
-            </div>
-            <div v-else>
-                <span>Issue loading cubeId={{cubeId}}</span>
-            </div>
-        </div>
-        <div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
-        <div v-else>
-            <form class="text-break">
-                <AdhocQueryWizardFilter :filter="queryModel.filter" v-if="queryModel.filter" />
-                <AdhocQueryWizardSearch :searchOptions="searchOptions" />
+		<div v-if="(!endpoint || !cube)">
+			<div v-if="(nbSchemaFetching > 0 || nbContestFetching > 0)">
+				<div class="spinner-border" role="status">
+					<span class="visually-hidden">Loading cubeId={{cubeId}}</span>
+				</div>
+			</div>
+			<div v-else>
+				<span>Issue loading cubeId={{cubeId}}</span>
+			</div>
+		</div>
+		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
+		<div v-else>
+			<form class="text-break">
+				<!--
+					Three stacked sections with discrete visual separation so the user can tell at
+					a glance where "query definition" (Filter) ends and "UI-side navigation aids"
+					(Search, Tags) begin. Tiny uppercase muted labels act as section titles
+					without eating vertical space.
+				-->
+				<section v-if="queryModel.filter" class="mb-2">
+					<div class="text-uppercase text-muted small fw-semibold mb-1">Filter</div>
+					<AdhocQueryWizardFilter :filter="queryModel.filter" />
+				</section>
 
-                <AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
+				<hr class="my-2" />
 
-                <div class="accordion" id="accordionWizard">
-                    <AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
-                    <AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
+				<section>
+					<div class="text-uppercase text-muted small fw-semibold mb-1">Search</div>
+					<AdhocQueryWizardSearch :searchOptions="searchOptions" />
+					<AdhocWizardTags :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" />
+				</section>
 
-                    <AdhocAccordionItemCustoms :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
-                    <AdhocAccordionItemOptions :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />
-                </div>
-            </form>
-        </div>
-    `,
+				<div class="accordion" id="accordionWizard">
+					<AdhocAccordionItemColumns :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :columns="cube.columns.columns" />
+					<AdhocAccordionItemMeasures :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :measures="cube.measures" />
+
+					<AdhocAccordionItemCustoms :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :customMarkers="cube.customMarkers" />
+					<AdhocAccordionItemOptions :cubeId="cubeId" :endpointId="endpointId" :searchOptions="searchOptions" :options="{}" />
+				</div>
+			</form>
+		</div>
+	`,
 };

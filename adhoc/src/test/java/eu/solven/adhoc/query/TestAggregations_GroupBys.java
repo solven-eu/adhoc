@@ -133,7 +133,7 @@ public class TestAggregations_GroupBys extends ADagTest implements IAdhocTestCon
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(2)
-				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + 345 + 456))
+				.containsEntry(Map.of("a", "a1"), Map.of("sumK1K2", 0L + Math.max(123, 345) + 456))
 				.containsEntry(Map.of("a", "a2"), Map.of("sumK1K2", 0L + 567 + 234));
 	}
 

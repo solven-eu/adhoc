@@ -1,5 +1,12 @@
 # fake_server: we activate various unsafe mecanisms to make the server easier to run for development purposes
 
+# Honor X-Forwarded-* headers so Spring Security / OAuth2 build redirects against the
+# external host (the Vite dev server on :5173) instead of Netty's own :8080. Scoped to
+# the `pivotable-unsafe` profile because in prod the front-end is served by Spring Boot
+# itself and no reverse proxy is involved.
+server:
+    forward-headers-strategy: framework
+
 # The constant seed is useful to push contestsIds to be the same on each run
 adhoc.pivotable:
     random.seed: 0

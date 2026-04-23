@@ -192,7 +192,7 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 		NavigableSet<String> inducedGroupByCols = induced.getGroupBy().getSortedColumns();
 
 		// Probe the first entry to determine schema types
-		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findFirst();
+		Optional<SliceAndMeasure<ISlice>> optFirst = inducerValues.stream().findAny();
 		if (optFirst.isEmpty()) {
 			return Optional.empty();
 		}
@@ -341,8 +341,8 @@ public class DuckDBInducedEvaluator implements IInducedEvaluator {
 			NavigableSet<String> inducedGroupByCols,
 			IAggregation aggregation,
 			ISliceFactory sliceFactory) {
-		IMultitypeMergeableColumn<ISlice> result =
-				factories.getColumnFactory().makeColumnRandomInsertions(aggregation, records.size());
+		IMultitypeMergeableColumn<ISlice> result = factories.getColumnFactory()
+				.makeMergeableColumn(p -> p.agg(aggregation).initialCapacity(records.size()));
 
 		int inducedColCount = inducedGroupByCols.size();
 		for (Record record : records) {

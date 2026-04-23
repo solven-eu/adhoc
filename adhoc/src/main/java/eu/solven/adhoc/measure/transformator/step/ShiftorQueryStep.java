@@ -202,6 +202,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 	}
 
 	protected IMultitypeColumnFastGet<ISlice> makeColumn(List<? extends ICuboid> underlyings) {
-		return factories.getColumnFactory().makeColumnRandomInsertions(ColumnatorQueryStep.sumSizes(underlyings));
+		return factories.getColumnFactory()
+				.makeColumn(p -> p.initialCapacity(ColumnatorQueryStep.sumSizes(underlyings)));
 	}
 }

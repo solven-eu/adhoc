@@ -44,7 +44,6 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.dataframe.stream.IConsumingStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -52,13 +51,13 @@ import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV2.TableQueryV2Builder;
-import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.util.IHasCache;
-import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -227,24 +226,17 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 			return new ITabularRecordStream() {
 
 				@Override
-				public Object getTableQuery() {
-					return TableQueryV3.edit(tableQuery).build();
-				}
-
-				@Override
 				public boolean isDistinctSlices() {
 					// TODO `mergeAggregate` does not distinct slices
 					return false;
 				}
 
 				@Override
-				public Stream<ITabularRecord> records() {
-					return mergeAggregates(tableQuery, customMarkerForCache, fromCache);
-				}
-
-				@Override
-				public IConsumingStream<ITabularRecord> records2() {
-					throw new NotYetImplementedException("Needed?");
+				public IConsumingStream<ITabularRecord> records() {
+					return ConsumingStream.<ITabularRecord>builder()
+							.source(consumer -> mergeAggregates(tableQuery, customMarkerForCache, fromCache)
+									.forEach(consumer))
+							.build();
 				}
 
 				@Override
@@ -269,19 +261,21 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 			return new ITabularRecordStream() {
 
 				@Override
-				public Object getTableQuery() {
-					return tableQuery;
-				}
-
-				@Override
 				public boolean isDistinctSlices() {
 					return distinctSlices;
 				}
 
 				@Override
-				public Stream<ITabularRecord> records() {
-					ImmutableList<ITabularRecord> columns =
-							decoratedRecordsStream.records().collect(ImmutableList.toImmutableList());
+				public IConsumingStream<ITabularRecord> records() {
+					return ConsumingStream.<ITabularRecord>builder()
+							.source(consumer -> this.recordsAsStream().forEach(consumer))
+							.build();
+				}
+
+				protected Stream<ITabularRecord> recordsAsStream() {
+					ImmutableList.Builder<ITabularRecord> columnsBuilder = ImmutableList.builder();
+					decoratedRecordsStream.records().forEach(columnsBuilder::add);
+					ImmutableList<ITabularRecord> columns = columnsBuilder.build();
 
 					decoratedRecordsStream.close();
 
@@ -313,11 +307,6 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 					} else {
 						return mergeAggregates(tableQuery, customMarkerForCache, cachedAndJustInTime);
 					}
-				}
-
-				@Override
-				public IConsumingStream<ITabularRecord> records2() {
-					throw new NotYetImplementedException("Needed?");
 				}
 
 				@Override

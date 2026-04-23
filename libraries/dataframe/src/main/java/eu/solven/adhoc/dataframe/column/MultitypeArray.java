@@ -30,6 +30,7 @@ import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.collection.ChunkedDoubleList;
 import eu.solven.adhoc.dataframe.collection.ChunkedList;
 import eu.solven.adhoc.dataframe.collection.ChunkedLongList;
+import eu.solven.adhoc.dataframe.column.hash.CleaningValueReceiver;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueFunction;
@@ -37,10 +38,10 @@ import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.longs.LongList;
-import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@Builder
+@SuperBuilder
 // concrete field types (LongChunkedList, DoubleChunkedList, ChunkedList) are intentional: compact() is only on the
 // concrete class
 @SuppressWarnings("PMD.LooseCoupling")
@@ -81,6 +82,10 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 	@Default
 	@Setter
 	int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+
+	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
+	@Default
+	boolean cleanDirty = CleaningValueReceiver.DEFAULT;
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -115,7 +120,9 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 
 	@Override
 	public IValueReceiver add(int insertionIndex) {
-		return new IValueReceiver() {
+		// BEWARE Must not clean nulls, as we need to detect after hand a null to also clear the key
+		return CleaningValueReceiver.cleaning(cleanDirty, false, new IValueReceiver() {
+
 			@Override
 			public void onLong(long v) {
 				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
@@ -145,18 +152,13 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 
 			@Override
 			public void onObject(Object v) {
-				if (v == null) {
-					// BEWARE We may want to remove the key
-					// BEWARE We may want to have an optimized storage for `null||long` or `null||double`
-					log.trace("TODO Improve null management");
-				}
-
 				ensureObject();
 
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
 				valuesO.add(insertionIndex, v);
 			}
-		};
+
+		});
 	}
 
 	protected void ensureObject() {
@@ -199,6 +201,18 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 			}
 
 			@Override
+			public void onDouble(double v) {
+				if (valuesType == IMultitypeConstants.MASK_EMPTY) {
+					valuesType = IMultitypeConstants.MASK_DOUBLE;
+					valuesD.set(index, v);
+				} else if (valuesType == IMultitypeConstants.MASK_DOUBLE) {
+					valuesD.set(index, v);
+				} else {
+					onObject(v);
+				}
+			}
+
+			@Override
 			public void onObject(Object v) {
 				ensureObject();
 				valuesO.set(index, v);
@@ -225,6 +239,16 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 				}
 			}
 		};
+	}
+
+	@Override
+	public boolean isNull(int rowIndex) {
+		if (valuesType == IMultitypeConstants.MASK_OBJECT && rowIndex >= 0
+				&& rowIndex < valuesO.size()
+				&& valuesO.get(rowIndex) == null) {
+			return true;
+		}
+		return false;
 	}
 
 	@Override

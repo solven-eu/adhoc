@@ -88,8 +88,8 @@ public class FiltratorQueryStep extends AMeasureQueryStep {
 					"underlyings.size() == %s. It should be 1".formatted(underlyings.size()));
 		}
 
-		IMultitypeColumnFastGet<ISlice> values =
-				factories.getColumnFactory().makeColumn(ColumnatorQueryStep.sumSizes(underlyings));
+		IMultitypeColumnFastGet<ISlice> values = factories.getColumnFactory()
+				.makeColumn(p -> p.initialCapacity(ColumnatorQueryStep.sumSizes(underlyings)));
 
 		forEachDistinctSlice(underlyings, new CoalesceCombination(), values::append);
 

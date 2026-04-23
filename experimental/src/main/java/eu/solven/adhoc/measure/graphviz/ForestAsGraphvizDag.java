@@ -24,13 +24,16 @@ package eu.solven.adhoc.measure.graphviz;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
+import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.Filtrator;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
@@ -57,18 +60,43 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Slf4j
 public class ForestAsGraphvizDag {
+	// IMPORTANT — keep in sync with the Pivotable frontend.
+	// The per-class shape/color conventions below are mirrored (as best as Mermaid's flowchart
+	// vocabulary allows) in `pivotable/js/src/main/resources/static/ui/js/adhoc-measures-dag.js`,
+	// so a measure has the same visual identity in the offline GraphViz DAG and in the in-app
+	// Mermaid popup. When you add a new measure class / shape / color here, update that JS file
+	// too (look for the `shapeAndStyleForType` function).
+	// https://graphviz.org/doc/info/shapes.html
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOSHAPE =
-			ImmutableList.of(Map.entry(Partitionor.class, "star"));
+			ImmutableList.<Map.Entry<Class<?>, String>>builder()
+					.add(Map.entry(Partitionor.class, "star"))
+					.add(Map.entry(Filtrator.class, "invhouse"))
+					.add(Map.entry(Dispatchor.class, "msquare"))
+					.add(Map.entry(Aggregator.class, "tripleoctagon"))
+					.build();
+	// https://graphviz.org/doc/info/colors.html
 	public static final List<Map.Entry<Class<?>, String>> DEFAULT_CLASSTOCOLOR =
-			ImmutableList.of(Map.entry(Partitionor.class, "yellow"),
-					Map.entry(Filtrator.class, "grey"),
-					Map.entry(Combinator.class, "cyan"));
+			ImmutableList.<Map.Entry<Class<?>, String>>builder()
+					.add(Map.entry(Partitionor.class, "yellow"))
+					.add(Map.entry(Filtrator.class, "darkseagreen"))
+					.add(Map.entry(Combinator.class, "cyan"))
+					.add(Map.entry(Dispatchor.class, "grey"))
+					.add(Map.entry(Aggregator.class, "coral"))
+					.build();
 
 	@Builder.Default
 	private final List<Map.Entry<Class<?>, String>> classToShape = DEFAULT_CLASSTOSHAPE;
 
 	@Builder.Default
 	private final List<Map.Entry<Class<?>, String>> classToColor = DEFAULT_CLASSTOCOLOR;
+
+	/**
+	 * Names of measures to highlight visually in the generated graph (e.g. to let a human quickly locate specific
+	 * measures in a large DAG). Highlighted nodes receive a thick red double-perimeter border, applied on top of the
+	 * regular shape/fill-color styling so the node type remains readable.
+	 */
+	@Builder.Default
+	private final Set<String> highlightedMeasures = Set.of();
 
 	private MutableGraph defaultproperties(MutableGraph named) {
 		return named.setDirected(true)
@@ -126,6 +154,13 @@ public class ForestAsGraphvizDag {
 					.ifPresent(color -> node.add("fillcolor", color)
 							// https://stackoverflow.com/questions/17252630/why-doesnt-fillcolor-work-with-graphviz
 							.add("style", "filled"));
+
+			if (highlightedMeasures.contains(measure.getName())) {
+				// `color` is the border color (independent from `fillcolor`), and `peripheries=2` draws a double
+				// outline: together they produce a distinctive marker without touching `style` (which is already used
+				// for `filled`, and is a single-valued attribute).
+				node.add("color", "red").add("penwidth", "3").add("peripheries", "2");
+			}
 
 			g.add(node);
 		});

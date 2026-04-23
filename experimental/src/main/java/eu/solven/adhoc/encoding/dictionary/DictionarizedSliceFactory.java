@@ -26,15 +26,14 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.google.common.collect.ImmutableList;
-
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory;
+import eu.solven.adhoc.map.factory.ColumnSliceFactory;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.MapOverIntFunction;
 import eu.solven.adhoc.map.keyset.SequencedSetLikeList;
-import eu.solven.adhoc.util.NotYetImplementedException;
+import eu.solven.adhoc.map.keyset.SequencedSetUnsafe;
 import eu.solven.adhoc.util.immutable.ImmutableHelpers;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -79,9 +78,9 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
-	public static class MapBuilderPreKeys implements IMapBuilderPreKeys, IHasEntries {
+	public static class MapBuilderPreKeys implements IMapBuilderPreKeys {
 		@NonNull
-		protected final ASliceFactory factory;
+		protected final DictionarizedSliceFactory factory;
 
 		@NonNull
 		protected final IDictionarizerFactory dictionaryFactory;
@@ -90,11 +89,6 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		SequencedSetLikeList keysLikeList;
 
 		IntList values;
-
-		@Override
-		public Collection<? extends String> getKeys() {
-			return keysLikeList;
-		}
 
 		protected String peekNextKey() {
 			return keysLikeList.getKey(values.size());
@@ -110,15 +104,6 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 			values.add(dictionarizedValue);
 
 			return this;
-		}
-
-		@Override
-		public Collection<?> getValues() {
-			if (values == null) {
-				return ImmutableList.of();
-			} else {
-				throw new NotYetImplementedException("Undictionarize");
-			}
 		}
 
 		public IntList getDictionarizedValues() {
@@ -139,7 +124,7 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		 */
 		public static class MapBuilderPreKeysBuilder {
 			public MapBuilderPreKeysBuilder keys(Collection<? extends String> keys) {
-				return keysLikeList(factory.internKeyset(keys));
+				return keysLikeList(SequencedSetUnsafe.internKeyset(keys));
 			}
 		}
 	}
@@ -155,26 +140,20 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 				.build();
 	}
 
-	@Override
-	public IAdhocMap buildMap(IHasEntries hasEntries) {
-		if (hasEntries instanceof MapBuilderPreKeys preKeys) {
-			IntList values = preKeys.getDictionarizedValues();
+	public IAdhocMap buildMap(MapBuilderPreKeys preKeys) {
+		IntList values = preKeys.getDictionarizedValues();
 
-			if (preKeys.keysLikeList.size() != values.size()) {
-				throw new IllegalArgumentException("keys size (%s) differs from values size (%s)"
-						.formatted(preKeys.keysLikeList.size(), values.size()));
-			}
-
-			return MapOverIntFunction.builder()
-					.factory(this)
-					.keys(preKeys.keysLikeList)
-					.unorderedValues(i -> dictionaryFactory.makeDictionarizer(preKeys.keysLikeList.getKey(i))
-							.fromInt(values.getInt(i)))
-					.build();
-		} else {
-			return buildMapNaively(hasEntries);
+		if (preKeys.keysLikeList.size() != values.size()) {
+			throw new IllegalArgumentException("keys size (%s) differs from values size (%s)"
+					.formatted(preKeys.keysLikeList.size(), values.size()));
 		}
 
+		return MapOverIntFunction.builder()
+				.factory(this)
+				.keys(preKeys.keysLikeList)
+				.unorderedValues(i -> dictionaryFactory.makeDictionarizer(preKeys.keysLikeList.getKey(i))
+						.fromInt(values.getInt(i)))
+				.build();
 	}
 
 }

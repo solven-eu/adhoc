@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.splitter;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.Graphs;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -40,7 +42,7 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.stripper.IFilterStripper;
 import eu.solven.adhoc.filter.stripper.IFilterStripperFactory;
 import eu.solven.adhoc.jgrapht.alg.TransitiveReductionV2;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -79,7 +81,7 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 	 */
 	@Override
 	@SuppressWarnings("PMD.CloseResource")
-	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasQueryOptionsAndExecutorService hasOptions,
+	public IAdhocDag<TableQueryStep> splitInducedAsDag(IHasOptionsAndExecutorService hasOptions,
 			IAdhocDag<TableQueryStep> inducedToInducer) {
 		Set<TableQueryStep> steps = inducedToInducer.vertexSet();
 		if (steps.isEmpty()) {
@@ -90,8 +92,8 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		// Phase 1: group by measure name, then by context (options + customMarker).
 		// Steps from different measures or contexts can never induce each other, so we avoid evaluating those pairs.
-		Map<String, List<TableQueryStep>> byMeasure =
-				steps.stream().collect(Collectors.groupingBy(s -> s.getMeasure().getName()));
+		ImmutableListMultimap<String, TableQueryStep> byMeasure = steps.stream()
+				.collect(ImmutableListMultimap.toImmutableListMultimap(s -> s.getMeasure().getName(), s -> s));
 
 		// Enables cache sharing
 		IFilterStripper sharedStripper = filterStripperFactory.makeFilterStripper(ISliceFilter.MATCH_ALL);
@@ -100,9 +102,9 @@ public class InduceByAdhocComplete extends AInduceByAdhocParent implements IAddO
 
 		// Concurrent path: each context group is processed in its own local DAG, then merged.
 		List<ListenableFuture<IAdhocDag<TableQueryStep>>> futures =
-				byMeasure.values().stream().flatMap(measureSteps -> {
-					Map<TableQueryStep, List<TableQueryStep>> byContext =
-							measureSteps.stream().collect(Collectors.groupingBy(this::contextOnly));
+				byMeasure.asMap().values().stream().flatMap(measureSteps -> {
+					Map<TableQueryStep, List<TableQueryStep>> byContext = measureSteps.stream()
+							.collect(Collectors.groupingBy(this::contextOnly, LinkedHashMap::new, Collectors.toList()));
 
 					return byContext.values()
 							.stream()

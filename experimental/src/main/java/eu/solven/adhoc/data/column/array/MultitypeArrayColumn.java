@@ -41,7 +41,9 @@ import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -237,12 +239,22 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
 	}
 
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
 	private IntStream objectIndexStream() {
 		return IntStream.range(0, measureToAggregateO.size()).filter(i -> measureToAggregateO.get(i) != null);
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
 		Stream<SliceAndMeasure<T>> streamFromLong = IntStream.range(0, measureToAggregateL.size())
 				.mapToObj(i -> SliceAndMeasure.<T>builder()
 						.slice(toBoxedKey(i))
@@ -260,7 +272,8 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 				.valueProvider(vc -> vc.onObject(measureToAggregateO.get(i)))
 				.build());
 
-		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+		return IConsumingStream.fromStream(
+				Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity()));
 	}
 
 	@Override
@@ -289,10 +302,11 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 	}
 
 	@Override
-	public Stream<T> keyStream() {
-		return Stream.of(measureToAggregateL.indexStream(), measureToAggregateD.indexStream(), objectIndexStream())
-				.flatMapToInt(is -> is)
-				.mapToObj(this::toBoxedKey)
+	public IConsumingStream<T> keyStream() {
+		return IConsumingStream.fromStream(
+				Stream.of(measureToAggregateL.indexStream(), measureToAggregateD.indexStream(), objectIndexStream())
+						.flatMapToInt(is -> is)
+						.mapToObj(this::toBoxedKey))
 		// No need for .distinct as each key is guaranteed to appear in a single column
 		// .distinct()
 		;
@@ -314,7 +328,7 @@ public class MultitypeArrayColumn<T extends Integer> implements IMultitypeColumn
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keyStream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
+		keyStream().toList().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
 
 			onValue(key).acceptReceiver(o -> toStringHelper.add("#" + index.getAndIncrement() + "-" + key,
 					PepperLogHelper.getObjectAndClass(o)));

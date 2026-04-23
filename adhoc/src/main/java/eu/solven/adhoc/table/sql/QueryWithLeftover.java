@@ -105,7 +105,6 @@ public class QueryWithLeftover {
 			groupingColumns = groupByColumns.stream()
 					.filter(c -> tableQuery.getGroupBys().stream().anyMatch(gb -> !gb.getSortedColumns().contains(c)))
 					.collect(ImmutableSet.toImmutableSet());
-
 		}
 
 		List<String> leftoversColumns = leftovers.stream()

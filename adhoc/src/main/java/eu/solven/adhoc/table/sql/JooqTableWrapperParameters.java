@@ -31,6 +31,7 @@ import org.jooq.impl.DSL;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -61,6 +62,22 @@ public class JooqTableWrapperParameters {
 	@NonNull
 	final TableLike<?> table;
 
+	/**
+	 * Optional per-query {@link TableLike} provider. When set, {@link JooqTableWrapper#streamSlices} substitutes the
+	 * {@link #table} field with {@link IJooqTableSupplier#tableFor(eu.solven.adhoc.query.table.TableQueryV4)} when
+	 * producing the SQL {@code FROM} clause. Schema introspection ({@code getResultForFields}, {@code getColumns})
+	 * keeps using the all-joins {@link #table}.
+	 */
+	IJooqTableSupplier tableSupplier;
+
+	/**
+	 * Strategy for discovering a {@link TableLike}'s fields. Consumed by {@link JooqTableWrapper#getColumns()} and
+	 * shared with {@link PrunedJoinsJooqSnowflakeSchemaBuilder} so both customise in lockstep. When not configured by
+	 * the builder, {@link #getColumnsResolver()} returns a {@link JooqColumnsHelpers#dbProbe(IDSLSupplier)} bound to
+	 * {@link #getDslSupplier()} — i.e. a {@code SELECT * LIMIT 0} probe.
+	 */
+	IJooqColumnsResolver columnsResolver;
+
 	// https://docs.aws.amazon.com/redshift/latest/dg/set-the-JDBC-fetch-size-parameter.html
 	// https://stackoverflow.com/questions/1318354/what-does-statement-setfetchsizensize-method-really-do-in-sql-server-jdbc-driv
 	// BEWARE We may have multiple concurrent SQL queries, and we may prefer to adjust this given number/type of fetched
@@ -79,6 +96,18 @@ public class JooqTableWrapperParameters {
 	@Default
 	@NonNull
 	Semaphore querySemaphore = new Semaphore(Integer.MAX_VALUE);
+
+	/**
+	 * Lombok's generated getter is replaced here so that a {@code null} {@link #columnsResolver} transparently resolves
+	 * to {@link JooqColumnsHelpers#dbProbe(IDSLSupplier)} bound to {@link #getDslSupplier()} — this IS the default
+	 * resolver for {@link JooqTableWrapper#noCacheGetFields()}.
+	 */
+	public IJooqColumnsResolver getColumnsResolver() {
+		if (columnsResolver != null) {
+			return columnsResolver;
+		}
+		return JooqColumnsHelpers.dbProbe(dslSupplier);
+	}
 
 	/**
 	 * Lombok @Builder

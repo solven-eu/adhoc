@@ -33,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import com.activeviam.copper.LevelIdentifier;
 import com.activeviam.copper.pivot.pp.DrillupPostProcessor;
 import com.activeviam.copper.pivot.pp.LevelFilteringPostProcessor;
 import com.activeviam.pivot.postprocessing.impl.AAdvancedPostProcessorV2;
@@ -626,7 +627,17 @@ public class AtotiMeasureToAdhoc {
 				// No interest in these properties, mapped to an int value
 				.filter(e -> !AAdvancedPostProcessorV2.OUTPUT_TYPE.equals(e.getKey()))
 				.filter(e -> !ADynamicAggregationPostProcessorV2.LEAF_TYPE.equals(e.getKey()))
-				.forEach(entry -> options.put(String.valueOf(entry.getKey()), entry.getValue()));
+				.forEach(entry -> {
+					Object value = entry.getValue();
+					// Atoti's LevelIdentifier has no useful meaning on the Adhoc side — we
+					// translate it into the Adhoc column name the level maps to, so downstream
+					// components (Combinator / Partitionor / Dispatchor options) receive a
+					// plain String referring to the column they know about.
+					if (value instanceof LevelIdentifier levelIdentifier) {
+						value = levelToColumn(levelIdentifier.toDescription());
+					}
+					options.put(String.valueOf(entry.getKey()), value);
+				});
 
 		return options;
 	}

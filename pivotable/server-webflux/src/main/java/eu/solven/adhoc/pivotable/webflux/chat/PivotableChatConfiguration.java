@@ -37,7 +37,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
-import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocSchemaRegistry;
+import eu.solven.adhoc.pivotable.endpoint.PivotableSchemaRegistry;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
@@ -63,7 +63,7 @@ import tools.jackson.databind.ObjectMapper;
 public class PivotableChatConfiguration {
 
 	@Bean
-	public PivotableChatHandler pivotableChatHandler(PivotableAdhocSchemaRegistry schemasRegistry,
+	public PivotableChatHandler pivotableChatHandler(PivotableSchemaRegistry schemasRegistry,
 			ObjectMapper objectMapper,
 			WebClient.Builder webClientBuilder,
 			@Value("${adhoc.pivotable.chat.anthropic-api-key}") String apiKey,

@@ -30,7 +30,6 @@ import eu.solven.adhoc.engine.step.ISliceReader;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.combination.ICombination;
-import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.pepper.core.PepperLogHelper;
 
@@ -52,7 +51,7 @@ public class ExampleVaRArrayCombination implements ICombination {
 	}
 
 	@Override
-	public IValueProvider combine(ISliceWithStep slice, ISlicedRecord slicedRecord) {
+	public void combine(ISliceWithStep slice, ISlicedRecord slicedRecord, IValueReceiver valueReceiver) {
 		int size = slicedRecord.size();
 
 		// ExampleVaR: storing into a int[] as it is easier to register unitTests (SUM aggregations are predictable,
@@ -89,14 +88,14 @@ public class ExampleVaRArrayCombination implements ICombination {
 		IValueMatcher valueMatcher = sliceReader.getValueMatcher(IExampleVaRConstants.C_SCENARIOINDEX);
 
 		if (IValueMatcher.MATCH_ALL.equals(valueMatcher)) {
-			return vr -> vr.onObject(valuesAsArray);
+			valueReceiver.onObject(valuesAsArray);
 		} else {
 			int[] filteredValuesAsArray = IntStream.range(0, nbScenarios)
 					.filter(i -> valueMatcher.match(i))
 					.map(filteredIndex -> valuesAsArray[filteredIndex])
 					.toArray();
 
-			return vr -> vr.onObject(filteredValuesAsArray);
+			valueReceiver.onObject(filteredValuesAsArray);
 		}
 	}
 

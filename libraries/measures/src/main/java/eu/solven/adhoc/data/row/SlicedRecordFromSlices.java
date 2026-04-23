@@ -32,6 +32,7 @@ import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.cuboid.SliceAndMeasure;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.primitive.IValueReceiver;
 import eu.solven.adhoc.util.AdhocDebug;
 import lombok.Builder;
 import lombok.Singular;
@@ -59,6 +60,11 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 	@Override
 	public IValueProvider read(int index) {
 		return valueProviders.get(index);
+	}
+
+	@Override
+	public void read(int index, IValueReceiver receiver) {
+		valueProviders.get(index).acceptReceiver(receiver);
 	}
 
 	@Override

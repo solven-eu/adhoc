@@ -96,12 +96,13 @@ meaningful.
 
 ## Identifying which cube contributed a row
 
-The virtual column `~CompositeSlicer` (configurable via `optCubeSlicer`) holds the name of the
-sub-cube that produced each slice. You can group or filter by it:
+The virtual column `~CompositeSlicer` (exposed as the constant
+`CompositeCubesTableWrapper.DEFAULT_SLICER`, configurable via `optCubeSlicer`) holds the name of
+the sub-cube that produced each slice. You can group or filter by it:
 
 ```java
 CubeQuery.builder()
-		.groupBy(GroupByColumns.named("desk", "~CompositeSlicer"))
+		.groupBy(GroupByColumns.named("desk", CompositeCubesTableWrapper.DEFAULT_SLICER))
 		.measure("pnl")
 		.build()
 ```

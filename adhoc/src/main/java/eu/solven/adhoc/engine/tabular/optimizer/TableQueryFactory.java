@@ -56,7 +56,7 @@ import eu.solven.adhoc.filter.FilterEquivalencyHelpers;
 import eu.solven.adhoc.filter.IFilterQueryBundle;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.OrFilter;
-import eu.solven.adhoc.options.IHasQueryOptionsAndExecutorService;
+import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
@@ -99,8 +99,7 @@ public class TableQueryFactory extends ATableQueryFactory {
 	}
 
 	@Override
-	public SplitTableQueries splitInduced(IHasQueryOptionsAndExecutorService hasOptions,
-			Set<TableQueryStep> tableSteps) {
+	public SplitTableQueries splitInduced(IHasOptionsAndExecutorService hasOptions, Set<TableQueryStep> tableSteps) {
 		if (tableSteps.isEmpty()) {
 			return SplitTableQueries.empty();
 		}

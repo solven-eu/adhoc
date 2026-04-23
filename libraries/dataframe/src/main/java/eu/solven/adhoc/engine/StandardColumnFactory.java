@@ -23,16 +23,18 @@
 package eu.solven.adhoc.engine;
 
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.join.DagBottomUpStrategyNavigableElseHash;
 import eu.solven.adhoc.dataframe.join.IDagBottomUpStrategy;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
+import eu.solven.adhoc.engine.IColumnFactory.ColumnParams.ColumnParamsBuilder;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
-import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -44,32 +46,58 @@ import lombok.NonNull;
  */
 @Builder
 public class StandardColumnFactory implements IColumnFactory {
+
 	@NonNull
 	@Default
 	private final IDagBottomUpStrategy bottomUpStrategy = new DagBottomUpStrategyNavigableElseHash();
 
 	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity) {
-		return bottomUpStrategy.makeColumn(initialCapacity);
+	public <T> IMultitypeColumnFastGet<T> makeColumn(ColumnParams<T> params) {
+		return bottomUpStrategy.makeColumn(params);
 	}
 
 	@Override
-	public <T> IMultitypeColumnFastGet<T> makeColumnRandomInsertions(int initialCapacity) {
-		return bottomUpStrategy.makeColumnRandomInserts(initialCapacity);
+	public <T> IMultitypeColumnFastGet<T> makeColumn(Consumer<? super ColumnParamsBuilder<T>> params) {
+		return bottomUpStrategy.makeColumn(buildParameters(params));
 	}
 
 	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity) {
-		return bottomUpStrategy.makeColumn(agg, initialCapacity);
+	public IMultitypeIntColumnFastGet makeIntColumn(Consumer<? super ColumnParamsBuilder<Integer>> params) {
+		ColumnParams<Integer> parameters = buildParameters(parametersBuilder -> {
+			// Make Integer by default
+			parametersBuilder.clazz(Integer.class);
+			// Apply the User customizations
+			params.accept(parametersBuilder);
+		});
+
+		if (!parameters.isInt()) {
+			throw new IllegalArgumentException("intColumn but type=%s".formatted(parameters.getClazz()));
+		}
+
+		return (IMultitypeIntColumnFastGet) bottomUpStrategy.makeColumn(parameters);
 	}
 
 	@Override
-	public <T> IMultitypeMergeableColumn<T> makeColumnRandomInsertions(IAggregation agg, int initialCapacity) {
-		return bottomUpStrategy.makeColumnRandomInserts(agg, initialCapacity);
+	public <T> IMultitypeMergeableColumn<T> makeMergeableColumn(
+			Consumer<? super ColumnParams.ColumnParamsBuilder<T>> params) {
+		ColumnParams<T> parameters = buildParameters(params);
+
+		if (parameters.getAgg() == null) {
+			throw new IllegalArgumentException("mergeable but aggregation=null");
+		}
+
+		return (IMultitypeMergeableColumn<T>) bottomUpStrategy.makeColumn(parameters);
+	}
+
+	protected <T> ColumnParams<T> buildParameters(Consumer<? super ColumnParams.ColumnParamsBuilder<T>> parameters) {
+		ColumnParams.ColumnParamsBuilder<T> paramsBuilder = ColumnParams.builder();
+		parameters.accept(paramsBuilder);
+
+		return paramsBuilder.build();
 	}
 
 	@Override
-	public Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
+	public IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings) {
 		return bottomUpStrategy.joinCuboids(step, underlyings);
 	}
 

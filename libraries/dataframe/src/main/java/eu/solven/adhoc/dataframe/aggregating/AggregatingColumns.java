@@ -26,16 +26,22 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.roaringbitmap.RoaringBitmap;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
+import com.google.common.base.Suppliers;
 
 import eu.solven.adhoc.collection.ICompactable;
-import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
+import eu.solven.adhoc.dataframe.column.IMultitypeMergeableIntColumn;
 import eu.solven.adhoc.dataframe.column.UndictionarizedColumn;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashIntColumn;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
@@ -49,6 +55,7 @@ import eu.solven.pepper.core.PepperStreamHelper;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.Object2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Builder.Default;
@@ -81,7 +88,12 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 	@NonNull
 	@Default
-	Map<String, IMultitypeMergeableColumn<Integer>> aggregatorToAggregates = new LinkedHashMap<>();
+	Map<String, IMultitypeMergeableIntColumn> aggregatorToAggregates = new LinkedHashMap<>();
+
+	// Built once (on first `closeColumn` call) and shared across all per-aggregator close calls. Mirrors
+	// `AggregatingColumnsDistinct.memoizeSliceToIndex`. Reversing the slice→index map is O(N); without
+	// memoisation each `closeColumn` call (one per aggregator) would rebuild it.
+	final Supplier<Int2ObjectFunction<T>> memoizeIndexToSlice = Suppliers.memoize(this::indexToSlice);
 
 	// preColumn: we would not need to merge as the DB should guarantee providing distinct aggregates
 	// In fact, some DB may provide aggregates, but partitioned: we may receive the same aggregate on the same slice
@@ -89,7 +101,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	@Override
-	protected IMultitypeMergeableColumn<Integer> getColumn(String aggregator) {
+	protected IMultitypeMergeableIntColumn getColumn(String aggregator) {
 		return aggregatorToAggregates.get(aggregator);
 	}
 
@@ -97,8 +109,8 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	public IOpenedSlice openSlice(T key) {
 		int keyIndex = dictionarize(key);
 		return aggregator -> {
-			IAggregation agg = operatorFactory.makeAggregation(aggregator.getAggregator());
-			IMultitypeMergeableColumn<Integer> column =
+			IAggregation agg = getAggregation(aggregator);
+			IMultitypeMergeableIntColumn column =
 					aggregatorToAggregates.computeIfAbsent(aggregator.getAlias(), _ -> makePreColumn(agg));
 
 			if (column.getAggregation() instanceof IHasCarriers hasCarriers) {
@@ -110,9 +122,9 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		};
 	}
 
-	protected IMultitypeMergeableColumn<Integer> makePreColumn(IAggregation agg) {
+	protected IMultitypeMergeableIntColumn makePreColumn(IAggregation agg) {
 		// Not all table will provide slices properly sorted (e.g. InMemoryTable)
-		return factories.getColumnFactory().makeColumn(agg, IAdhocCapacityConstants.ZERO_THEN_MAX);
+		return (IMultitypeMergeableIntColumn) factories.getColumnFactory().makeIntColumn(p -> p.agg(agg));
 	}
 
 	@Override
@@ -121,17 +133,29 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 		// BEWARE This happens even if the aggregates is null and then should be skipped,
 		// which is sub-optimal (but IValueReceiver API leads to this). It is acceptable as we expect at least one
 		// aggregate to have a value for given slice.
-		return sliceToIndex.computeIfAbsent(key, _ -> sliceToIndex.size());
+		// One should also not given key may not contribute along all aggregators, and some aggregator may actually
+		// receive given slice later (given AggregatingColumns does not required keys to be distinct).
+		return sliceToIndex.computeIfAbsent(key, _ -> {
+			// `recordNewSlice(...)` has to be called before `sliceToIndex` actual update
+			recordNewSlice(key);
+			return sliceToIndex.size();
+		});
+	}
+
+	@Override
+	protected int sliceCount() {
+		return sliceToIndex.size();
 	}
 
 	@Override
 	public IMultitypeColumnFastGet<T> closeColumn(ICubeQueryStep queryStep, IAliasedAggregator aggregator) {
-		IMultitypeColumnFastGet<Integer> notFinalColumn = getColumn(aggregator.getAlias());
+		String aggregatorName = aggregator.getAlias();
+		IMultitypeIntColumnFastGet notFinalColumn = getColumn(aggregatorName);
 
 		if (notFinalColumn == null) {
 			// Typically happens when a filter reject completely one of the underlying
 			// measure, and not a single aggregate was written
-			notFinalColumn = MultitypeHashColumn.empty();
+			notFinalColumn = MultitypeHashIntColumn.empty();
 		}
 
 		if (notFinalColumn.isEmpty()) {
@@ -141,25 +165,50 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 			compactable.compact();
 		}
 
-		IMultitypeColumnFastGet<Integer> column = notFinalColumn;
+		IMultitypeIntColumnFastGet column = notFinalColumn;
 
-		// TODO PERFORMANCE Is this process duplicated for each column?!
-		// Reverse from `slice->index` to `index->slice`
-		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
-		// `.parallelStream()`?
-		sliceToIndex.object2IntEntrySet().forEach((e) -> indexToSlice.put(e.getIntValue(), e.getKey()));
+		long nbSorted = getNbSorted(aggregatorName, column);
 
-		// Turn the columnByIndex to a columnBySlice
-		return undictionarizeColumn(column, sliceToIndex::getInt, indexToSlice::get);
+		// Turn the columnByIndex to a columnBySlice. The reverse `index->slice` map is built once (memoised) and
+		// shared across all per-aggregator close calls — see `memoizeIndexToSlice`.
+		return undictionarizeColumn(column, sliceToIndex::getInt, memoizeIndexToSlice.get(), nbSorted);
 	}
 
-	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeColumnFastGet<Integer> column,
+	/**
+	 * Builds the {@code index → slice} reverse map from {@code sliceToIndex}. Called at most once per
+	 * {@link AggregatingColumns} instance via {@link #memoizeIndexToSlice}.
+	 */
+	protected Int2ObjectFunction<T> indexToSlice() {
+		Int2ObjectMap<T> indexToSlice = new Int2ObjectOpenHashMap<>(sliceToIndex.size());
+		// `.parallelStream()`?
+		sliceToIndex.object2IntEntrySet().forEach(e -> indexToSlice.put(e.getIntValue(), e.getKey()));
+		return indexToSlice::get;
+	}
+
+	@SuppressWarnings("PMD.LooseCoupling")
+	protected static <T> IMultitypeColumnFastGet<T> undictionarizeColumn(IMultitypeIntColumnFastGet column,
 			Object2IntFunction<T> sliceToIndex,
-			Int2ObjectFunction<T> indexToSlice) {
+			Int2ObjectFunction<T> indexToSlice,
+			long nbSorted) {
+
+		// BEWARE In edge-cases, the navigable column may be interlaced with the hash column. TODO Improve the detection
+		// of this case to skip the bitmap creation.
+		// Snapshot the sorted-prefix index set from the source column's natural stream order *before* copying, so the
+		// bitmap reflects which original indices belong to the slice-ascending head of the dictionarization. The
+		// wrapper then uses this bitmap as its sortedLeg predicate, independent of the destination column's own key
+		// ordering.
+		int nbSortedInt = (int) nbSorted;
+		IntArrayList intArrayList = new IntArrayList(nbSortedInt);
+		column.limit(nbSortedInt).forEach(s -> intArrayList.add(s.getSlice().intValue()));
+
+		RoaringBitmap bitmap = RoaringBitmap.bitmapOf(intArrayList.elements());
+
 		return UndictionarizedColumn.<T>builder()
 				.indexToSlice(indexToSlice)
 				.sliceToIndex(sliceToIndex)
 				.column(column)
+				.sortedLength(nbSortedInt)
+				.sortedLeg(bitmap::contains)
 				.build();
 	}
 

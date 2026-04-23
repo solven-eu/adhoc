@@ -25,6 +25,7 @@ package eu.solven.adhoc.pivotable.webmvc.app;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import eu.solven.adhoc.pivotable.webmvc.PivotableWebjarsCachingWebmvcConfigurer;
 import eu.solven.adhoc.pivotable.webmvc.PivotableWebmvcExceptionHandler;
 import eu.solven.adhoc.pivotable.webmvc.api.CubesController;
 import eu.solven.adhoc.pivotable.webmvc.api.PivotableClearController;
@@ -51,6 +52,9 @@ import lombok.extern.slf4j.Slf4j;
 		PivotableQueryController.class,
 		PivotableClearController.class,
 		PivotableWebmvcExceptionHandler.class,
+
+		// Static resources: long-cache policy for `/webjars/**`.
+		PivotableWebjarsCachingWebmvcConfigurer.class,
 
 })
 @Slf4j

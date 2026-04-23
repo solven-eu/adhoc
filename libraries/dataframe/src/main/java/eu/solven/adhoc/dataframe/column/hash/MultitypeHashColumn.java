@@ -22,10 +22,10 @@
  */
 package eu.solven.adhoc.dataframe.column.hash;
 
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -39,11 +39,13 @@ import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
 import eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier;
-import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IMultitypeConstants;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
+import eu.solven.adhoc.stream.ConsumingStream;
+import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
+import eu.solven.adhoc.util.NotYetImplementedException;
 import eu.solven.pepper.core.PepperLogHelper;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMaps;
@@ -86,6 +88,11 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 
 	@Default
 	protected int capacity = IAdhocCapacityConstants.ZERO_THEN_MAX;
+
+	// If true, this will automatically turn dirty input (like `Integer`) into a clean one (like `int`)
+	// BEWARE Default to true as we prefer safety over optimizations
+	@Default
+	boolean cleanDirty = CleaningValueReceiver.DEFAULT;
 
 	/**
 	 * To be called before a guaranteed `add` operation.
@@ -159,7 +166,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	 * @return
 	 */
 	protected IValueReceiver unsafePut(T key, boolean safe) {
-		return new IValueReceiver() {
+		return CleaningValueReceiver.cleaning(cleanDirty, true, new IValueReceiver() {
 			@Override
 			public void onLong(long v) {
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_LONG);
@@ -185,29 +192,22 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 
 			@Override
 			public void onObject(Object v) {
-				if (AdhocPrimitiveHelpers.isLongLike(v)) {
-					long vAsPrimitive = AdhocPrimitiveHelpers.asLong(v);
-					onLong(vAsPrimitive);
-				} else if (AdhocPrimitiveHelpers.isDoubleLike(v)) {
-					double vAsPrimitive = AdhocPrimitiveHelpers.asDouble(v);
-					onDouble(vAsPrimitive);
-				} else if (v != null) {
-					checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
-					sliceToO.put(key, v);
+				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
+				sliceToO.put(key, v);
 
-					if (safe) {
-						sliceToL.removeLong(key);
-						sliceToD.removeDouble(key);
-					}
+				if (safe) {
+					sliceToL.removeLong(key);
+					sliceToD.removeDouble(key);
 				}
 			}
-		};
+		});
 	}
 
 	protected IValueReceiver merge(T key) {
 		throw new UnsupportedOperationException("%s can not merge %s".formatted(this, key));
 	}
 
+	@VisibleForTesting
 	protected void clearKey(T key) {
 		sliceToL.removeLong(key);
 		sliceToD.removeDouble(key);
@@ -232,15 +232,9 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		// it would require searching the column providing given type
 
 		// https://github.com/vigna/fastutil/issues/279
-		Object2LongMaps.fastForEach(sliceToL, entry -> {
-			rowScanner.onKey(entry.getKey()).onLong(entry.getLongValue());
-		});
-		Object2DoubleMaps.fastForEach(sliceToD, entry -> {
-			rowScanner.onKey(entry.getKey()).onDouble(entry.getDoubleValue());
-		});
-		Object2ObjectMaps.fastForEach(sliceToO, entry -> {
-			rowScanner.onKey(entry.getKey()).onObject(entry.getValue());
-		});
+		Object2LongMaps.fastForEach(sliceToL, e -> rowScanner.onKey(e.getKey()).onLong(e.getLongValue()));
+		Object2DoubleMaps.fastForEach(sliceToD, e -> rowScanner.onKey(e.getKey()).onDouble(e.getDoubleValue()));
+		Object2ObjectMaps.fastForEach(sliceToO, e -> rowScanner.onKey(e.getKey()).onObject(e.getValue()));
 	}
 
 	@Override
@@ -256,24 +250,25 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
-	public Stream<SliceAndMeasure<T>> stream() {
-		Stream<SliceAndMeasure<T>> streamFromLong = Streams.stream(Object2LongMaps.fastIterable(sliceToL))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onLong(entry.getLongValue()))
-						.build());
-		Stream<SliceAndMeasure<T>> streamFromDouble = Streams.stream(Object2DoubleMaps.fastIterable(sliceToD))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onDouble(entry.getDoubleValue()))
-						.build());
-		Stream<SliceAndMeasure<T>> streamFromObject = Streams.stream(Object2ObjectMaps.fastIterable(sliceToO))
-				.map(entry -> SliceAndMeasure.<T>builder()
-						.slice(entry.getKey())
-						.valueProvider(vc -> vc.onObject(entry.getValue()))
-						.build());
+	public IConsumingStream<SliceAndMeasure<T>> limit(int limit) {
+		throw new NotYetImplementedException("Needed?");
+	}
 
-		return Stream.of(streamFromLong, streamFromDouble, streamFromObject).flatMap(Functions.identity());
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> skip(int skip) {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public IConsumingStream<SliceAndMeasure<T>> stream() {
+		return ConsumingStream.<SliceAndMeasure<T>>builder().source(consumer -> {
+			sliceToL.forEach((slice, o) -> consumer
+					.accept(SliceAndMeasure.<T>builder().slice(slice).valueProvider(vc -> vc.onLong(o)).build()));
+			sliceToD.forEach((slice, o) -> consumer
+					.accept(SliceAndMeasure.<T>builder().slice(slice).valueProvider(vc -> vc.onDouble(o)).build()));
+			sliceToO.forEach((slice, o) -> consumer
+					.accept(SliceAndMeasure.<T>builder().slice(slice).valueProvider(vc -> vc.onObject(o)).build()));
+		}).build();
 	}
 
 	@Override
@@ -294,10 +289,13 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 	}
 
 	@Override
-	public Stream<T> keyStream() {
-		return Stream.of(sliceToD.keySet(), sliceToL.keySet(), sliceToO.keySet())
-				// No need for .distinct as each key is guaranteed to appear in a single column
-				.flatMap(Collection::stream);
+	public IConsumingStream<T> keyStream() {
+		// No need for .distinct as each key is guaranteed to appear in a single column
+		return ConsumingStream.<T>builder().source(consumer -> {
+			sliceToL.keySet().stream().forEach(consumer::accept);
+			sliceToD.keySet().stream().forEach(consumer::accept);
+			sliceToO.keySet().stream().forEach(consumer::accept);
+		}).build();
 
 	}
 
@@ -316,7 +314,7 @@ public class MultitypeHashColumn<T> implements IMultitypeColumnFastGet<T>, IComp
 		}
 
 		AtomicInteger index = new AtomicInteger();
-		keyStream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
+		keyStream().toList().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(key -> {
 
 			onValue(key).acceptReceiver(o -> {
 				toStringHelper.add("#" + index.getAndIncrement() + "-" + key, PepperLogHelper.getObjectAndClass(o));

@@ -30,12 +30,11 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
-
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.map.AdhocMapHelpers;
+import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -43,6 +42,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.table.transcoder.AdhocTranscodingHelper;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
 import eu.solven.adhoc.table.transcoder.value.IColumnValueTranscoder;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -55,15 +55,18 @@ import lombok.With;
  * @author Benoit Lacelle
  */
 @Builder(toBuilder = true)
+@AllArgsConstructor
 @EqualsAndHashCode
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@With
 	final ITabularGroupByRecord groupBy;
-	// BEWARE: ImmutableMap will forbid null value
+	// BEWARE: the field type is Map (not ImmutableMap) so callers can pass non-Guava immutable maps such as
+	// PerfectHashMap. Lombok @Singular still accumulates into an ImmutableMap when the builder API is used,
+	// preserving the prior `forbid null value` semantics for that path.
 	@NonNull
 	@Singular
-	final ImmutableMap<String, ?> aggregates;
+	final Map<String, ?> aggregates;
 
 	@Override
 	public IGroupBy getGroupBy() {
@@ -131,15 +134,20 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	protected ITabularRecord withSlice(ISliceFactory factory, Map<String, ?> slice) {
-		return toBuilder().slice(groupBy.getGroupBy(), AdhocMapHelpers.fromMap(factory, slice).asSlice()).build();
+		return withGroupBy(groupByRecord(groupBy.getGroupBy(), AdhocMapHelpers.fromMap(factory, slice).asSlice()));
 	}
 
+	@SuppressWarnings("PMD.CompareObjectsWithEquals")
 	@Override
 	public ITabularRecord transcode(ITableReverseAliaser transcodingContext) {
-		Map<String, ?> transcoded =
-				AdhocTranscodingHelper.transcodeColumns(transcodingContext, groupBy.asSlice().asAdhocMap());
+		IAdhocMap inputMap = groupBy.asSlice().asAdhocMap();
+		Map<String, ?> outputMap = AdhocTranscodingHelper.transcodeColumns(transcodingContext, inputMap);
 
-		return withSlice(groupBy.asSlice().getFactory(), transcoded);
+		if (outputMap == inputMap) {
+			return this;
+		}
+
+		return withSlice(groupBy.asSlice().getFactory(), outputMap);
 	}
 
 	@Override
@@ -162,23 +170,27 @@ public class TabularRecordOverMaps implements ITabularRecord {
 
 	@SuppressWarnings({ "PMD.InsufficientStringBufferDeclaration", "PMD.ConsecutiveAppendsShouldReuse" })
 	public static String toString(ITabularRecord tabularRecord) {
-		StringBuilder string = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 
-		string.append("slice:{");
-		string.append(tabularRecord.columnsKeySet()
+		sb.append("slice:{");
+		sb.append(tabularRecord.columnsKeySet()
 				.stream()
 				.map(column -> column + "=" + tabularRecord.getGroupBy(column))
 				.collect(Collectors.joining(", ")));
-		string.append("} aggregates:{");
+		sb.append("} aggregates:{");
 
-		string.append(tabularRecord.aggregateKeySet()
+		sb.append(tabularRecord.aggregateKeySet()
 				.stream()
 				.filter(aggregateName -> null != tabularRecord.getAggregate(aggregateName))
 				.map(aggregateName -> aggregateName + "=" + tabularRecord.getAggregate(aggregateName))
 				.collect(Collectors.joining(", ")));
-		string.append('}');
+		sb.append('}');
 
-		return string.toString();
+		return sb.toString();
+	}
+
+	protected static TabularGroupByRecordOverMap groupByRecord(IGroupBy groupBy, ISlice slice) {
+		return TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(slice).build();
 	}
 
 	/**
@@ -192,8 +204,9 @@ public class TabularRecordOverMaps implements ITabularRecord {
 		// }
 
 		public TabularRecordOverMapsBuilder slice(IGroupBy groupBy, ISlice slice) {
-			return groupBy(TabularGroupByRecordOverMap.builder().groupBy(groupBy).slice(slice).build());
+			return groupBy(groupByRecord(groupBy, slice));
 		}
+
 	}
 
 	@Override

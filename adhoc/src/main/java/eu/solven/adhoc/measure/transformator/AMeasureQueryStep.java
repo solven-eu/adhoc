@@ -25,7 +25,6 @@ package eu.solven.adhoc.measure.transformator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
@@ -35,6 +34,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
+import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,10 +73,9 @@ public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 	}
 
 	protected void forEachDistinctSlice(List<? extends ICuboid> underlyings, Consumer<SliceAndMeasures> sliceConsumer) {
-		Stream<SliceAndMeasures> sliceAndMeasures = joinCuboids(underlyings);
-
 		AtomicInteger slicesDone = new AtomicInteger();
-		sliceAndMeasures.forEach(slice -> {
+
+		joinCuboids(underlyings).forEach(slice -> {
 			if (isDebug()) {
 				log.info("[DEBUG] Processing slice={}", slice);
 			}
@@ -92,6 +91,7 @@ public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 				log.info("[DEBUG] Done processing {} slices", slicesDone);
 			}
 		});
+
 	}
 
 	/**
@@ -101,7 +101,7 @@ public abstract class AMeasureQueryStep implements IMeasureQueryStep {
 	 * @param underlyings
 	 * @return
 	 */
-	protected Stream<SliceAndMeasures> joinCuboids(List<? extends ICuboid> underlyings) {
+	protected IConsumingStream<SliceAndMeasures> joinCuboids(List<? extends ICuboid> underlyings) {
 		return getFactories().getColumnFactory().joinCuboids(getStep(), underlyings);
 	}
 

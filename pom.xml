@@ -68,26 +68,26 @@
 	<properties>
 		<java.version>25</java.version>
 
-		<lombok.version>1.18.44</lombok.version>
+		<lombok.version>1.18.46</lombok.version>
 
-		<pepper.version>5.6</pepper.version>
+		<pepper.version>5.7</pepper.version>
 
 		<!-- Used by Adhoc as a library, and Pivotable -->
 		<!-- If this version is enforced only in adhoc module, pivotablr will
 		take SpringBoot default-->
-		<jooq.version>3.21.1</jooq.version>
+		<jooq.version>3.21.2</jooq.version>
 
 		<spotless.version>3.4.0</spotless.version>
 		<cleanthat.version>2.24</cleanthat.version>
 
 		<!-- Optional dependencies -->
 		<!-- Typically not optional when referred by pivotable-server-->
-		<evalex.ezylang.version>3.6.0</evalex.ezylang.version>
-		<duckdb.version>1.5.1.0</duckdb.version>
+		<evalex.ezylang.version>3.6.1</evalex.ezylang.version>
+		<duckdb.version>1.5.2.0</duckdb.version>
 		<guava.version>33.5.0-jre</guava.version>
 
 		<arrow.version>19.0.0</arrow.version>
-		<jgrapht.version>1.5.2</jgrapht.version>
+		<jgrapht.version>1.5.3</jgrapht.version>
 
 		<!-- Jacoco requirements on a per-module basis-->
 		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
@@ -443,6 +443,25 @@
 					</executions>
 				</plugin>
 				<plugin>
+					<!-- https://github.com/CycloneDX/cyclonedx-maven-plugin -->
+					<!-- Generates a CycloneDX SBOM (Software Bill of Materials) in target/bom.json.
+					     Bound to the verify phase so it runs after tests but before install/deploy. -->
+					<groupId>org.cyclonedx</groupId>
+					<artifactId>cyclonedx-maven-plugin</artifactId>
+					<configuration>
+						<skipNotDeployed>false</skipNotDeployed>
+					</configuration>
+					<executions>
+						<execution>
+							<id>sbom</id>
+							<goals>
+								<goal>makeBom</goal>
+							</goals>
+							<phase>verify</phase>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
 					<!--
 					https://maven.apache.org/plugins/maven-checkstyle-plugin/ -->
 					<groupId>org.apache.maven.plugins</groupId>
@@ -731,7 +750,7 @@
 								<!-- Do not include HTML and Vue files -->
 								<!--
 								https://biomejs.dev/internals/language-support/#html-super-languages-support -->
-								<include>src/**/*.js</include>
+								<include>**/*.js</include>
 							</includes>
 							<excludes>
 								<exclude>**/node_modules/**</exclude>
@@ -873,6 +892,10 @@
 				<groupId>com.github.spotbugs</groupId>
 				<artifactId>spotbugs-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-maven-plugin</artifactId>
+			</plugin>
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -1001,6 +1024,9 @@
 				<!-- Dependency will be checked with style -->
 				<enforcer.skip>true</enforcer.skip>
 
+				<!-- SBOM generation is slow and not needed for fast recompiles -->
+				<cyclonedx.skip>true</cyclonedx.skip>
+
 				<skipTests>true</skipTests>
 				<skipITs>true</skipITs>
 				<jacoco.skip>true</jacoco.skip>
@@ -1025,6 +1051,9 @@
 
 				<!-- Dependency will be checked with style -->
 				<enforcer.skip>true</enforcer.skip>
+
+				<!-- SBOM generation is slow and not needed when skipping style checks -->
+				<cyclonedx.skip>true</cyclonedx.skip>
 			</properties>
 		</profile>
 

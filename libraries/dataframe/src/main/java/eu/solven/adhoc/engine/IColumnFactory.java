@@ -23,16 +23,21 @@
 package eu.solven.adhoc.engine;
 
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
+import eu.solven.adhoc.stream.IConsumingStream;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.Value;
 
 /**
  * Holds the strategy to create {@link IMultitypeColumn} and {@link Cuboid}.
@@ -45,41 +50,13 @@ public interface IColumnFactory {
 	 */
 	int NO_ESTIMATION = 0;
 
-	/**
-	 *
-	 * @param initialCapacity
-	 *            0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
-	 *            value.
-	 * @return a column which will hold result for the given underlyings
-	 */
-	<T> IMultitypeColumnFastGet<T> makeColumn(int initialCapacity);
+	<T> IMultitypeColumnFastGet<T> makeColumn(ColumnParams<T> params);
 
-	<T> IMultitypeColumnFastGet<T> makeColumnRandomInsertions(int initialCapacity);
+	<T> IMultitypeColumnFastGet<T> makeColumn(Consumer<? super ColumnParams.ColumnParamsBuilder<T>> params);
 
-	/**
-	 * @param agg
-	 * @param initialCapacity
-	 *            0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
-	 *            value.
-	 * @return a column which will hold result for the given underlyings, allowing multiple writing (through merge) for
-	 *         the same slice.
-	 *
-	 */
-	<T> IMultitypeMergeableColumn<T> makeColumn(IAggregation agg, int initialCapacity);
+	<T> IMultitypeMergeableColumn<T> makeMergeableColumn(Consumer<? super ColumnParams.ColumnParamsBuilder<T>> params);
 
-	/**
-	 * This method should be used when we know the insertion order is random, hence we should not rely on a Navigable
-	 * contract.
-	 * 
-	 * @param agg
-	 * @param initialCapacity
-	 *            0 (IColumnFactory{@link #NO_ESTIMATION}) is no estimation is available. If strictly positive, the
-	 *            actual capacity may be capped to this value.
-	 * @return a column which will hold result for the given underlyings, allowing multiple writing (through merge) for
-	 *         the same slice.
-	 *
-	 */
-	<T> IMultitypeMergeableColumn<T> makeColumnRandomInsertions(IAggregation agg, int initialCapacity);
+	IMultitypeIntColumnFastGet makeIntColumn(Consumer<? super ColumnParams.ColumnParamsBuilder<Integer>> params);
 
 	/**
 	 * This is similar to an SQL JOIN over cuboids: we want to align each individual cuboid on a per-slice basis,
@@ -89,5 +66,46 @@ public interface IColumnFactory {
 	 * @param underlyings
 	 * @return
 	 */
-	Stream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
+	IConsumingStream<SliceAndMeasures> joinCuboids(CubeQueryStep step, List<? extends ICuboid> underlyings);
+
+	/**
+	 * Customize the characteristics of a {@link IMultitypeColumnFastGet}.
+	 * 
+	 * @param <T>
+	 */
+	@Builder
+	@Value
+	class ColumnParams<T> {
+		// Is the key an `Integer`? Typically used for AAggregatingColumns
+		// @Default
+		// boolean isInt = false;
+		// Do we insert in random access or not?
+		@Default
+		Class<T> clazz = null;
+
+		/**
+		 * This method should be used when we know the insertion order is random, hence we should not rely on a
+		 * Navigable contract.
+		 */
+		@Default
+		boolean isRandomAccess = false;
+
+		/**
+		 * 0 is no estimation is available. If strictly positive, the actual capacity may be capped to this
+		 */
+		@Default
+		int initialCapacity = NO_ESTIMATION;
+
+		/**
+		 * a column which will hold result for the given underlyings, allowing multiple writing (through merge) for the
+		 * same slice.
+		 */
+		// If null, no merging capabilities
+		@Default
+		IAggregation agg = null;
+
+		public boolean isInt() {
+			return clazz != null && Integer.class.isAssignableFrom(clazz);
+		}
+	}
 }
