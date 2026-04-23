@@ -1097,15 +1097,24 @@
 									<arg>-XDcompilePolicy=simple</arg>
 									<arg>--should-stop=ifError=FLOW</arg>
 									<!--
-										`-XepAllErrorsAsWarnings` demotes EP's default ERROR-severity checks to
-										WARNING so first-time integration is visible in the build log without
-										failing CI. Promote individual checks back to ERROR (or drop this flag
-										entirely) once the codebase is clean.
-										`StringConcatToTextBlock` crashes with a NoSuchElementException on some
-										of this codebase's literals in Error Prone 2.49.0; disabling it until a
-										fixed upstream version ships. Track / drop this arg on the next bump.
+										Default severity stands (Error Prone's own ERROR vs WARNING mapping). Two
+										doc-only checks are demoted to WARNING because fixing them would mean
+										retrofitting Javadoc across hundreds of Lombok-flavoured types — tracked
+										separately. All other checks keep their default severity, so real-bug
+										rules block the build.
+										`FunctionalInterfaceMethodChanged` is disabled: the rule flags
+										@FunctionalInterfaces whose `default` methods override an abstract method of
+										a @FunctionalInterface superinterface (surprising lambda-widening semantics).
+										In this codebase all such types are implemented by named classes — the risk
+										is theoretical and the @FunctionalInterface annotation has documentation
+										value we want to keep.
+										Two checks are disabled because Error Prone 2.49.0 crashes internally on
+										patterns present in this codebase — track / drop these overrides on the
+										next EP bump:
+										  - StringConcatToTextBlock: NoSuchElementException on some literals
+										  - Immutable: throws on switch-expressions yielding method references
 									-->
-									<arg>-Xplugin:ErrorProne -XepAllErrorsAsWarnings -Xep:StringConcatToTextBlock:OFF</arg>
+									<arg>-Xplugin:ErrorProne -Xep:EmptyBlockTag:WARN -Xep:MissingSummary:WARN -Xep:FunctionalInterfaceMethodChanged:OFF -Xep:StringConcatToTextBlock:OFF -Xep:Immutable:OFF</arg>
 									<!--
 										JEP 403: javac internals are strongly encapsulated by default on JDK 16+.
 										Error Prone inspects those internals to traverse the AST, so we re-open them

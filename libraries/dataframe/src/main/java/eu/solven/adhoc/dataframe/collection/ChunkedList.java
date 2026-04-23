@@ -313,7 +313,7 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	/** Throws {@link FrozenException} if this list has been compacted. */
 	private void checkNotCompacted() {
 		if (compacted) {
-			throw new FrozenException("ChunkedList has been compacted and is frozen. size={}".formatted(size()));
+			throw new FrozenException("ChunkedList has been compacted and is frozen. size=%d".formatted(size()));
 		}
 	}
 
