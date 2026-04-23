@@ -1,0 +1,33 @@
+# Render blueprint for Pivotable. See https://render.com/docs/blueprint-spec.
+#
+# Usage:
+#   1. Push this file to the repo root (or this exact path, Render accepts either).
+#   2. In the Render dashboard → New → Blueprint → point at your Github repo.
+#   3. First deploy takes ~3-5 min (Maven dependency download). Later deploys hit the Docker
+#      layer cache and land in ~30-60 s.
+#
+# The service is pinned to the `free` plan — great for a demo, with the 15 min idle-sleep
+# tradeoff. Bump to `starter` ($7/mo) if you need always-on and no cold starts.
+services:
+  - type: web
+    name: pivotable
+    runtime: docker
+    dockerfilePath: ./docs/deploy/render/Dockerfile
+    dockerContext: .
+    plan: free
+    # Render injects PORT; the Dockerfile's ENTRYPOINT already forwards it via
+    # `--server.port=${PORT:-8080}`. No healthCheckPath override — Spring Boot's / or
+    # /actuator/health respond fast enough that the default TCP-port check is sufficient.
+    autoDeploy: true
+    envVars:
+      # Render's build network sometimes rate-limits anonymous Maven Central hits. This is the
+      # documented workaround; safe to leave even when the limit isn't being hit.
+      - key: MAVEN_OPTS
+        value: "-Dmaven.wagon.http.pool=false"
+      # Optional: uncomment to switch to the full OAuth2 login flow. Requires secrets.
+      # - key: SPRING_PROFILES_ACTIVE
+      #   value: "pivotable-unsafe_external_oauth2,pivotable-simple_datasets"
+      # - key: ADHOC_PIVOTABLE_LOGIN_OAUTH2_GITHUB_CLIENTID
+      #   sync: false   # prompts for manual entry in the Render dashboard
+      # - key: ADHOC_PIVOTABLE_LOGIN_OAUTH2_GITHUB_CLIENTSECRET
+      #   sync: false
