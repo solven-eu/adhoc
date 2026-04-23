@@ -56,15 +56,15 @@ public class TestIndexHtml {
 
 	/**
 	 * Aborts all tests in this class if the external CDN is not reachable (e.g. corporate proxy blocking outbound
-	 * HTTPS). The tests verify that every URL embedded in {@code index.html} returns a 2xx response; those checks
-	 * would all fail with a connection error in a restricted network instead of giving a clear skip.
+	 * HTTPS). The tests verify that every URL embedded in {@code index.html} returns a 2xx response; those checks would
+	 * all fail with a connection error in a restricted network instead of giving a clear skip.
 	 */
 	@BeforeAll
 	static void checkCdnConnectivity() {
 		try {
 			HttpURLConnection connection = (HttpURLConnection) new URL(CDN_URL).openConnection();
-			connection.setConnectTimeout(3_000);
-			connection.setReadTimeout(3_000);
+			connection.setConnectTimeout(3000);
+			connection.setReadTimeout(3000);
 			connection.setRequestMethod("HEAD");
 			connection.connect();
 			connection.disconnect();

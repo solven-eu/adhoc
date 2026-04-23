@@ -61,8 +61,8 @@ public class TestEmbeddedMongo {
 	static void checkMongoDownloadConnectivity() {
 		try {
 			HttpURLConnection connection = (HttpURLConnection) new URL(MONGODB_DOWNLOAD_URL).openConnection();
-			connection.setConnectTimeout(3_000);
-			connection.setReadTimeout(3_000);
+			connection.setConnectTimeout(3000);
+			connection.setReadTimeout(3000);
 			connection.setRequestMethod("HEAD");
 			connection.connect();
 			connection.disconnect();

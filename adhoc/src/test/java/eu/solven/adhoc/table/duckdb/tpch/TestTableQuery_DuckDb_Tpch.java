@@ -56,8 +56,6 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ADuckDbJooqTest;
 import lombok.extern.slf4j.Slf4j;
 
-
-
 /**
  * Integration tests for the TPC-H example schema.
  *
@@ -77,16 +75,16 @@ public class TestTableQuery_DuckDb_Tpch extends ADuckDbJooqTest {
 	private static final String TPCH_EXTENSION_REPOSITORY_URL = "http://extensions.duckdb.org";
 
 	/**
-	 * Aborts all tests in this class if the DuckDB extension repository is not reachable (e.g. corporate proxy
-	 * blocking outbound HTTP). DuckDB silently fails to load the TPC-H extension when the download is blocked, leading
-	 * to cryptic query failures rather than a clear skip.
+	 * Aborts all tests in this class if the DuckDB extension repository is not reachable (e.g. corporate proxy blocking
+	 * outbound HTTP). DuckDB silently fails to load the TPC-H extension when the download is blocked, leading to
+	 * cryptic query failures rather than a clear skip.
 	 */
 	@BeforeAll
 	static void checkExtensionRepositoryConnectivity() {
 		try {
 			HttpURLConnection connection = (HttpURLConnection) new URL(TPCH_EXTENSION_REPOSITORY_URL).openConnection();
-			connection.setConnectTimeout(3_000);
-			connection.setReadTimeout(3_000);
+			connection.setConnectTimeout(3000);
+			connection.setReadTimeout(3000);
 			connection.setRequestMethod("HEAD");
 			connection.connect();
 			connection.disconnect();
