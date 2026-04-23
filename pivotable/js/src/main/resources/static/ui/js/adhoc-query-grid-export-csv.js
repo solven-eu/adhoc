@@ -99,9 +99,7 @@ export default {
 			</button>
 			<ul class="dropdown-menu">
 				<li>
-					<button type="button" class="dropdown-item" @click="downloadAsCsv">
-						<i class="bi bi-download me-1"></i>Download CSV
-					</button>
+					<button type="button" class="dropdown-item" @click="downloadAsCsv"><i class="bi bi-download me-1"></i>Download CSV</button>
 				</li>
 				<li>
 					<button type="button" class="dropdown-item" @click="copyToClipboard">

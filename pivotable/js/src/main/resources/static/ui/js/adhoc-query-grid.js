@@ -1,22 +1,21 @@
-import { ref, watch, onMounted, reactive, provide, inject, computed } from "vue";
+import { ref, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
-import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
-import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
-
-import { usePreferencesStore } from "./store-preferences.js";
+import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
+import AdhocGridControls from "./adhoc-query-grid-controls.js";
 
 // Formatters
 import { SlickGrid, SlickDataView } from "slickgrid";
 
 import gridHelper from "./adhoc-query-grid-helper.js";
+import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
 		AdhocCellModal,
-		AdhocGridFormatModal,
-		AdhocGridExportCsv,
+		AdhocGridTimingsBar,
+		AdhocGridControls,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -310,116 +309,13 @@ export default {
 			);
 		});
 
-		function isLoading() {
-			if (!props.tabularView.loading) {
-				// Not a single flag initialized the loading property
-				return false;
-			}
-
-			// BEWARE some properties are date (like latestFetched)
-			return Object.values(props.tabularView.loading).some((loadingFlag) => typeof loadingFlag === "boolean" && !!loadingFlag);
-		}
-
-		function loadingPercent() {
-			if (!isLoading()) {
-				return 100;
-			}
-
-			if (props.tabularView.loading.sending) {
-				return 10;
-			}
-			if (props.tabularView.loading.executing) {
-				return 20;
-			}
-			if (props.tabularView.loading.downloading) {
-				return 75;
-			}
-			if (props.tabularView.loading.preparingGrid) {
-				return 85;
-			}
-			if (props.tabularView.loading.rendering) {
-				return 90;
-			}
-
-			console.log("Unclear loading state", props.tabularView.loading);
-			return 95;
-		}
-
-		function loadingMessage() {
-			if (!isLoading()) {
-				return "Loaded";
-			}
-
-			if (props.tabularView.loading.sending) {
-				return "Sending the query";
-			}
-			if (props.tabularView.loading.executing) {
-				// The execution phase may be a single synchronous call, or a polling until state of DONE
-				if (props.tabularView.loading.fetching) {
-					return "Executing the query (fetching)";
-				}
-				if (props.tabularView.loading.sleeping) {
-					return "Executing the query (sleeping)";
-				}
-				return "Executing the query (?)";
-			}
-			if (props.tabularView.loading.downloading) {
-				return "Downloading the result";
-			}
-			if (props.tabularView.loading.preparingGrid) {
-				return "Preparing the grid";
-			}
-			if (props.tabularView.loading.rendering) {
-				return "Rendering the grid";
-			}
-
-			console.log("Unclear loading state", props.tabularView.loading);
-			return "Unclear but not done yet";
-		}
-
-		// Human-readable view of the per-stage timings emitted by the executor / grid hooks.
-		// The raw `tabularView.timing` object — shape `{ sending, executing, downloading,
-		// preparingGrid, sorting, rowSpanning, rendering, … }`, values in milliseconds — used
-		// to be rendered as-is under the grid which looked like dev debug output. We now surface
-		// it as an ordered list of `<stage>: <ms>ms` pills plus a total, muted because these are
-		// operational metrics, not part of the query's functional result.
-		const TIMING_ORDER = ["sending", "executing", "downloading", "preparingGrid", "sorting", "rowSpanning", "rendering"];
-		const formattedTimings = computed(() => {
-			const timing = props.tabularView && props.tabularView.timing;
-			if (!timing) return null;
-
-			const entries = [];
-			let total = 0;
-			// Ordered entries first so the display reads in execution order.
-			for (const stage of TIMING_ORDER) {
-				const ms = timing[stage];
-				if (typeof ms === "number" && Number.isFinite(ms)) {
-					entries.push({ stage, ms });
-					total += ms;
-				}
-			}
-			// Any unknown keys get appended after in insertion order — keeps forward-compat
-			// when the executor starts reporting new stages without needing a UI change.
-			for (const stage of Object.keys(timing)) {
-				if (TIMING_ORDER.includes(stage)) continue;
-				const ms = timing[stage];
-				if (typeof ms === "number" && Number.isFinite(ms)) {
-					entries.push({ stage, ms });
-					total += ms;
-				}
-			}
-			if (entries.length === 0) return null;
-			return { entries, total };
-		});
-
-		// Shared preferences store — exposes `wizardHidden` for the full-screen-grid toggle.
-		// Toggled from a small button rendered next to the Formatting Options / Export buttons
-		// at the bottom of the grid area (keeps the toggle close to the other grid-level
-		// controls and avoids eating vertical space at the top).
-		const preferencesStore = usePreferencesStore();
-		const toggleWizardHidden = function () {
-			preferencesStore.wizardHidden = !preferencesStore.wizardHidden;
-		};
+		// Loading-state helpers. All three read from `props.tabularView.loading` and return a
+		// display-layer primitive; they live in `adhoc-query-grid-loading.js` so they can be
+		// unit-tested without a DOM. Thin instance wrappers are kept here because Vue templates
+		// call methods with no args — the wrappers bind `props.tabularView` once.
+		const isLoading = () => isLoadingHelper(props.tabularView);
+		const loadingPercent = () => loadingPercentHelper(props.tabularView);
+		const loadingMessage = () => loadingMessageHelper(props.tabularView);
 
 		return {
 			rendering,
@@ -430,12 +326,8 @@ export default {
 			loadingMessage,
 
 			formatOptions,
-			formattedTimings,
 
 			data,
-
-			preferencesStore,
-			toggleWizardHidden,
 		};
 	},
 	template: /* HTML */ `
@@ -466,41 +358,8 @@ export default {
 				</div>
 			</span>
 			<div hidden>props.tabularView.loading={{tabularView.loading}}</div>
-			<!--
-				Per-stage query timings. These are operational metrics (non-functional) — they
-				describe how long each phase of the round-trip took, not anything about the data
-				itself — hence the muted styling and the explicit "Performance" label so users
-				don't confuse them with results. Hidden entirely when no timings are available
-				(first render, cached views).
-			-->
-			<div v-if="formattedTimings" class="small text-muted mt-1" title="Operational metrics — not part of the query result">
-				<i class="bi bi-speedometer2 me-1"></i>
-				<span class="fw-semibold me-1">Performance:</span>
-				<span v-for="(entry, i) in formattedTimings.entries" :key="entry.stage" class="me-2">
-					{{entry.stage}}={{entry.ms}}ms<span v-if="i < formattedTimings.entries.length - 1">,</span>
-				</span>
-				<span class="ms-1">(total: {{formattedTimings.total}}ms)</span>
-			</div>
-			<!--
-				Grid-level controls grouped on a single horizontal strip at the bottom: export
-				to CSV, formatting options, and the full-screen-grid toggle (hide the wizard
-				to let the grid use the full viewport width). The toggle lives here rather
-				than at the top of the grid column so it doesn't push the data down by a row
-				that would stay empty most of the time.
-			-->
-			<div class="d-flex flex-wrap gap-2 align-items-center mt-2">
-				<AdhocGridExportCsv :array="data.array" />
-				<AdhocGridFormatModal :formatOptions="formatOptions" />
-				<button
-					type="button"
-					class="btn btn-outline-secondary btn-sm"
-					@click="toggleWizardHidden"
-					:title="preferencesStore.wizardHidden ? 'Show the wizard (exit full-screen grid)' : 'Hide the wizard (full-screen grid)'"
-				>
-					<i :class="preferencesStore.wizardHidden ? 'bi bi-arrows-angle-contract me-1' : 'bi bi-arrows-fullscreen me-1'"></i>
-					{{ preferencesStore.wizardHidden ? "Show wizard" : "Hide wizard" }}
-				</button>
-			</div>
+			<AdhocGridTimingsBar :tabularView="tabularView" />
+			<AdhocGridControls :dataArray="data.array" :formatOptions="formatOptions" />
 		</div>
 	`,
 };
