@@ -44,6 +44,13 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
+			<!-- Used to share some code between unitTests and benchmarks -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-experimental</artifactId>
 			<version>${project.version}</version>
@@ -62,15 +69,6 @@
 			<groupId>io.github.solven-eu.pepper</groupId>
 			<artifactId>pepper-unittest</artifactId>
 			<version>${pepper.version}</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<!-- Enable shared code between benchmarks and profilable tests -->
-			<groupId>eu.solven.adhoc</groupId>
-			<artifactId>adhoc</artifactId>
-			<version>${project.version}</version>
-			<classifier>tests</classifier>
 			<scope>test</scope>
 		</dependency>
 

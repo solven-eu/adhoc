@@ -33,16 +33,13 @@ flowchart LR
         aggregator_adhoc["aggregator-adhoc"]
     end
 
-    adhoc --> adhoc_cell
     adhoc --> adhoc_dataframe
     adhoc --> adhoc_encoding
-    adhoc --> adhoc_measures
     adhoc --> adhoc_model
     adhoc_atoti --> adhoc
     adhoc_calcite --> adhoc
     adhoc_cell --> adhoc_encoding
     adhoc_cell --> adhoc_filters
-    adhoc_cell -.-> adhoc_model
     adhoc_dataframe --> adhoc_cell
     adhoc_dataframe --> adhoc_encoding
     adhoc_dataframe --> adhoc_measures
@@ -52,7 +49,6 @@ flowchart LR
     adhoc_experimental --> adhoc
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
-    adhoc_measures -.-> adhoc_model
     adhoc_spring --> adhoc
     pivotable_authorization --> pivotable_public
     pivotable_authorization --> pivotable_tools
