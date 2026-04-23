@@ -1,32 +1,33 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
-// The SPA loads its dependencies via a browser import-map in `index.html` (pinned
-// CDN URLs + webjars). Vite's dev server needs to KNOW these bare specifiers so
-// it doesn't try to resolve them from `node_modules` — we mirror the import-map
-// as a redirect table below.
+// The SPA loads its dependencies via a browser import-map in `index.html` (production
+// is the full switch — CDN vs local WebJars, see the `?webjars` mode). Vite's dev
+// server needs to KNOW these bare specifiers so it doesn't try to resolve them from
+// `node_modules` — we mirror the CDN arm of the import-map here as a redirect table.
 //
-// In dev, the plugin rewrites every `import "vue-router"` to
-// `import "https://unpkg.com/vue-router@…/…"` and tells Vite the resolved id is
-// external (a URL the browser fetches natively).
+// The CDN URLs are jsdelivr's WebJars mirror: `cdn.jsdelivr.net/webjars/<groupId>/
+// <artifact>/<version>/<path>`. jsdelivr serves Maven Central WebJar artefacts
+// directly, so the CDN and the local Spring Boot `/webjars/*` modes return byte-
+// identical content — versions are pinned once in pivotable/js/pom.xml and spelled
+// out again here; the embedded version makes any drift immediately visible.
 //
-// Keep in sync with `<script type="importmap">` in
-// `src/main/resources/static/index.html`.
+// In dev, the plugin rewrites every `import "vue-router"` to the jsdelivr URL and
+// tells Vite the resolved id is external (fetched natively by the browser).
+//
+// Keep in sync with the `IMPORTS` table in `src/main/resources/static/index.html`.
 const IMPORTMAP_ALIASES = {
-	vue: "https://unpkg.com/vue@3.5.29/dist/vue.esm-browser.js",
-	"vue-router": "https://unpkg.com/vue-router@5.0.3/dist/vue-router.esm-browser.js",
-	"@vue/devtools-api": "https://unpkg.com/@vue/devtools-api@6.2.1/lib/esm/index.js",
-	pinia: "https://unpkg.com/pinia@3.0.4/dist/pinia.esm-browser.js",
-	"vue-demi": "https://cdn.jsdelivr.net/npm/vue-demi/lib/v3/index.mjs",
-	// `bootstrap` is served by a webjar in production (`/webjars/bootstrap/js/bootstrap.esm.js`).
-	// Vite treats root-relative paths as local files (ignores `external: true`), so we point at a
-	// CDN copy for dev to keep the URL absolute and fetched by the browser directly.
-	bootstrap: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.esm.min.js",
-	"@popperjs/core": "https://unpkg.com/@popperjs/core@2.11.8/dist/esm/index.js",
-	slickgrid: "https://cdn.jsdelivr.net/npm/slickgrid@5.18.2/dist/esm/index.mjs",
-	sortablejs: "https://cdn.jsdelivr.net/npm/sortablejs@1.15.7/modular/sortable.esm.js",
-	lodashEs: "https://cdn.jsdelivr.net/npm/lodash-es@4.17.23/+esm",
-	mermaid: "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.mjs",
+	vue: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue/3.5.32/dist/vue.esm-browser.js",
+	"vue-router": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-router/4.6.3/dist/vue-router.esm-browser.js",
+	"@vue/devtools-api": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue__devtools-api/6.6.4/lib/esm/index.js",
+	pinia: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/pinia/3.0.4/dist/pinia.esm-browser.js",
+	"vue-demi": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-demi/0.14.10/lib/v3/index.mjs",
+	bootstrap: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
+	"@popperjs/core": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/popperjs__core/2.11.8/dist/esm/index.js",
+	slickgrid: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/esm/index.mjs",
+	sortablejs: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/sortablejs/1.15.7/modular/sortable.esm.js",
+	lodashEs: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/lodash-es/4.17.21/lodash.js",
+	mermaid: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/mermaid/11.6.0/dist/mermaid.esm.mjs",
 };
 
 /**
