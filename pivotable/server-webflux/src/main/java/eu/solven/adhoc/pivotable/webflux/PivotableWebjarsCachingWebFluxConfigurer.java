@@ -42,16 +42,20 @@ import org.springframework.web.reactive.config.WebFluxConfigurer;
  *
  * Registered at {@link Ordered#HIGHEST_PRECEDENCE} so it takes precedence over Spring Boot's auto-configured
  * `/webjars/**` handler, which uses the default (short) cache.
+ * 
+ * @author Benoit Lacelle
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class PivotableWebjarsCachingWebFluxConfigurer implements WebFluxConfigurer {
 
+	private static final int DAYS_IN_YEAR = 365;
+
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry) {
 		registry.addResourceHandler("/webjars/**")
 				.addResourceLocations("classpath:/META-INF/resources/webjars/")
-				.setCacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable());
+				.setCacheControl(CacheControl.maxAge(Duration.ofDays(DAYS_IN_YEAR)).cachePublic().immutable());
 	}
 
 }
