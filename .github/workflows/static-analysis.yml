@@ -42,3 +42,11 @@ jobs:
           maven-static-analysis-${{ runner.os }}-
     - name: Check with Static tools (PMD, checkstyle, SpotBugs)
       run: mvn package -DskipTests -Dspotless.skip=true --file pom.xml --batch-mode
+    # Error Prone is wired as an opt-in Maven profile; see CONVENTIONS.MD § "Error Prone static analysis"
+    # and the `errorprone` profile in pom.xml for the full configuration. `-Pfast` skips tests and the
+    # slow static checks already covered by the step above (PMD, Checkstyle, SpotBugs, Spotless); we
+    # only want EP's findings here. Findings currently surface as `[WARNING]` lines thanks to
+    # `-XepAllErrorsAsWarnings`, so this step never reddens the build on its own — drop that flag in
+    # pom.xml to make the step fail on EP violations once the codebase is clean.
+    - name: Error Prone
+      run: mvn clean compile --file pom.xml --batch-mode -Perrorprone,fast
