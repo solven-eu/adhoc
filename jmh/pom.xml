@@ -71,10 +71,12 @@
 			<artifactId>adhoc</artifactId>
 			<version>${project.version}</version>
 			<classifier>tests</classifier>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>
-			<!-- include MapLibre FSST implementation -->
+			<!-- include MapLibre FSST implementation — FsstAdhoc wrapper lives in adhoc-fsst's test-jar and is used
+			     from jmh's src/main benchmarks, so this dep must stay compile-scope. -->
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-fsst</artifactId>
 			<version>${project.version}</version>

@@ -48,5 +48,11 @@ jobs:
     # only want EP's findings here. Findings currently surface as `[WARNING]` lines thanks to
     # `-XepAllErrorsAsWarnings`, so this step never reddens the build on its own — drop that flag in
     # pom.xml to make the step fail on EP violations once the codebase is clean.
+    #
+    # `adhoc-jmh` is excluded because its `src/main` benchmarks compile-link a test-jar classifier
+    # (`adhoc-fsst:tests`, used by FsstEncodeBenchmark). `mvn clean compile` does not run the
+    # `package` phase, so the referenced test-jar is never produced during this step and the
+    # compile would fail at resolution. Benchmarks do not benefit meaningfully from Error Prone
+    # checks anyway.
     - name: Error Prone
-      run: mvn clean compile --file pom.xml --batch-mode -Perrorprone,fast
+      run: mvn clean compile --file pom.xml --batch-mode -Perrorprone,fast -pl '!:adhoc-jmh' -am
