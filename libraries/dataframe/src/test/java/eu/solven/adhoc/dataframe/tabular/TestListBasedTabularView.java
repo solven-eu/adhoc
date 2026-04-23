@@ -48,7 +48,7 @@ public class TestListBasedTabularView {
 
 		String asString = PepperJackson3TestHelper.verifyJackson(ListBasedTabularView.class, view);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "coordinates" : [ {
 				    "c1" : "v1"
@@ -115,7 +115,7 @@ public class TestListBasedTabularView {
 		objectMapper = objectMapper.rebuild().addModule(adhocModule).build();
 
 		String asString = objectMapper.writeValueAsString(view);
-		Assertions.assertThat(asString.replaceAll("[\r\n]", "\n"))
+		Assertions.assertThat(asString.replaceAll("[\r\n]+", "\n"))
 				.contains("""
 						{
 						  "coordinates" : [

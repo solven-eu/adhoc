@@ -25,6 +25,7 @@ package eu.solven.adhoc.pivotable.webflux.api;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,6 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.Assertions;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +51,28 @@ import lombok.extern.slf4j.Slf4j;
 @Import(PivotableSpaRouter.class)
 @Slf4j
 public class TestIndexHtml {
+
+	private static final String CDN_URL = "https://cdn.jsdelivr.net";
+
+	/**
+	 * Aborts all tests in this class if the external CDN is not reachable (e.g. corporate proxy blocking outbound
+	 * HTTPS). The tests verify that every URL embedded in {@code index.html} returns a 2xx response; those checks would
+	 * all fail with a connection error in a restricted network instead of giving a clear skip.
+	 */
+	@BeforeAll
+	static void checkCdnConnectivity() {
+		try {
+			HttpURLConnection connection = (HttpURLConnection) new URL(CDN_URL).openConnection();
+			connection.setConnectTimeout(3000);
+			connection.setReadTimeout(3000);
+			connection.setRequestMethod("HEAD");
+			connection.connect();
+			connection.disconnect();
+		} catch (IOException e) {
+			Assumptions.assumeTrue(false,
+					"CDN not reachable (%s): %s — skipping index.html URL checks".formatted(CDN_URL, e.getMessage()));
+		}
+	}
 
 	@Autowired
 	PivotableSpaRouter spaRouter;

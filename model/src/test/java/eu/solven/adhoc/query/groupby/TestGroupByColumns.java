@@ -56,7 +56,7 @@ public class TestGroupByColumns {
 		IGroupBy groupByAsc = GroupByColumns.named("a", "b");
 
 		String asString = PepperJackson3TestHelper.verifyJackson(IGroupBy.class, groupByAsc);
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "columns" : [ "a", "b" ]
 				}""");

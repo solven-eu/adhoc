@@ -21,7 +21,33 @@ One may clone with:
 
 And authenticate with a PAT (with `scope=repo`) as password, generated at https://github.com/settings/tokens
 
-You may also encounter [Spotless issues around Proxy](https://github.com/diffplug/spotless/issues/1658):
+You may also encounter [Spotless issues around Proxy](https://github.com/diffplug/spotless/issues/1658).
+
+Maven JVM options are configured in `.mvn/jvm.config`. In a corporate environment, you may need to add proxy settings there so that Maven (and the JVM it runs in) can reach external repositories:
+
+```
+-Dhttp.proxyHost=proxy.example.com
+-Dhttp.proxyPort=8080
+-Dhttps.proxyHost=proxy.example.com
+-Dhttps.proxyPort=8080
+-Dhttp.nonProxyHosts=localhost|127.0.0.1|*.example.com
+```
+
+Replace the host, port, and non-proxy patterns with the values for your environment. These properties are passed directly to the JVM, so they apply to all HTTP/HTTPS connections made by Maven plugins (including Spotless, Checkstyle, etc.).
+
+## Enterprise / Restricted Execution Environment (IntelliJ + Copilot)
+
+In enterprise environments where OS security policies restrict executable files to specific directories (e.g. `C:\Develop`), the GitHub Copilot IntelliJ plugin may fail to run because it automatically downloads `rg.exe` (Ripgrep) into a user-profile cache folder (e.g. `C:\Users\<user>\.cache\pkg\...`) that is outside the allowed execution zone. This causes the agent features to crash and the plugin to disconnect from GitHub.
+
+**Workaround** ([microsoft/copilot-intellij-feedback#629](https://github.com/microsoft/copilot-intellij-feedback/issues/629)):
+
+1. Download the Ripgrep binary for Windows manually from the [official releases](https://github.com/BurntSushi/ripgrep/releases) and place `rg.exe` inside a folder that your security policy permits execution from (your "sandbox" folder, e.g. `C:\Develop\tools\rg\`).
+2. Set the environment variable `GITHUB_COPILOT_RIPGREP_PATH_OVERRIDE` to the full path of that executable:
+   ```
+   GITHUB_COPILOT_RIPGREP_PATH_OVERRIDE=C:\Develop\tools\rg\rg.exe
+   ```
+   This can be set as a Windows system/user environment variable, or inside IntelliJ via **Help → Edit Custom VM Options** / `idea.properties`.
+3. Restart IntelliJ. Copilot will use the pre-installed binary instead of attempting to download its own.
 
 # Coding conventions
 

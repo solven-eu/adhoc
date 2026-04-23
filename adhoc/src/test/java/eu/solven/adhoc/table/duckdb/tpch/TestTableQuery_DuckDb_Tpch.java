@@ -22,6 +22,9 @@
  */
 package eu.solven.adhoc.table.duckdb.tpch;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +32,8 @@ import java.util.stream.LongStream;
 
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -66,6 +71,29 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TestTableQuery_DuckDb_Tpch extends ADuckDbJooqTest {
+
+	private static final String TPCH_EXTENSION_REPOSITORY_URL = "http://extensions.duckdb.org";
+
+	/**
+	 * Aborts all tests in this class if the DuckDB extension repository is not reachable (e.g. corporate proxy blocking
+	 * outbound HTTP). DuckDB silently fails to load the TPC-H extension when the download is blocked, leading to
+	 * cryptic query failures rather than a clear skip.
+	 */
+	@BeforeAll
+	static void checkExtensionRepositoryConnectivity() {
+		try {
+			HttpURLConnection connection = (HttpURLConnection) new URL(TPCH_EXTENSION_REPOSITORY_URL).openConnection();
+			connection.setConnectTimeout(3000);
+			connection.setReadTimeout(3000);
+			connection.setRequestMethod("HEAD");
+			connection.connect();
+			connection.disconnect();
+		} catch (IOException e) {
+			Assumptions.assumeTrue(false,
+					"DuckDB extension repository not reachable (%s): %s — skipping TPC-H tests"
+							.formatted(TPCH_EXTENSION_REPOSITORY_URL, e.getMessage()));
+		}
+	}
 
 	TpchSchema tpchSchema = new TpchSchema();
 

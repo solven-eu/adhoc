@@ -39,7 +39,7 @@ public class TestExpressionColumn {
 		String asString = PepperJackson3TestHelper.verifyJackson(IAdhocColumn.class,
 				TableExpressionColumn.builder().name("someColumn").sql("someSQL").build());
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : ".TableExpressionColumn",
 				  "name" : "someColumn",

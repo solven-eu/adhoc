@@ -48,7 +48,7 @@ public class TestSubMeasureAsAggregator {
 		String asString = PepperJackson3TestHelper
 				.verifyJackson(AdhocPublicJackson.makeObjectMapper(), SubMeasureAsAggregator.class, subMeasure);
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : ".SubMeasureAsAggregator",
 				  "name" : "someName",

@@ -44,7 +44,7 @@ public class TestColumnWithCalculatedCoordinates {
 						.calculatedCoordinate(CalculatedCoordinate.star())
 						.build());
 
-		Assertions.assertThat(asString).isEqualTo("""
+		Assertions.assertThat(asString).isEqualToNormalizingNewlines("""
 				{
 				  "type" : ".ColumnWithCalculatedCoordinates",
 				  "column" : "d",

@@ -12,22 +12,18 @@ flowchart LR
     adhoc_libraries["adhoc-libraries"]
     adhoc_measures["adhoc-measures"]
     adhoc_model["adhoc-model"]
-    adhoc_public["adhoc-public"]
     adhoc_spring["adhoc-spring"]
     pivotable["pivotable"]
-    pivotable_authorization["pivotable-authorization"]
     pivotable_bom["pivotable-bom"]
     pivotable_infra["pivotable-infra"]
     pivotable_js["pivotable-js"]
     pivotable_mcp["pivotable-mcp"]
     pivotable_model["pivotable-model"]
-    pivotable_public["pivotable-public"]
     pivotable_server["pivotable-server"]
     pivotable_server_core["pivotable-server-core"]
     pivotable_server_oauth2["pivotable-server-oauth2"]
     pivotable_server_webflux["pivotable-server-webflux"]
     pivotable_server_webmvc["pivotable-server-webmvc"]
-    pivotable_tools["pivotable-tools"]
 
     subgraph spring-boot-starter-parent
         aggregator_adhoc["aggregator-adhoc"]
@@ -50,11 +46,8 @@ flowchart LR
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
     adhoc_spring --> adhoc
-    pivotable_authorization --> pivotable_public
-    pivotable_authorization --> pivotable_tools
     pivotable_mcp --> pivotable_server_core
     pivotable_model --> adhoc_filters
-    pivotable_public --> adhoc_filters
     pivotable_server --> pivotable_js
     pivotable_server --> pivotable_server_core
     pivotable_server --> pivotable_server_oauth2
