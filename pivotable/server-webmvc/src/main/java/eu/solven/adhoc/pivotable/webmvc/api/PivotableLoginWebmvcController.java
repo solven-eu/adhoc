@@ -58,6 +58,7 @@ import eu.solven.adhoc.pivotable.account.internal.PivotableUserPreRegister;
 import eu.solven.adhoc.pivotable.account.internal.PivotableUserRaw;
 import eu.solven.adhoc.pivotable.oauth2.authorizationserver.PivotableTokenService;
 import eu.solven.adhoc.pivotable.security.LoginRouteButNotAuthenticatedException;
+import eu.solven.adhoc.pivotable.webnone.api.IPivotableLoginConstants;
 import eu.solven.adhoc.pivotable.webnone.api.PivotableUserUpdate;
 import eu.solven.adhoc.pivotable.webnone.security.oauth2.PivotableOAuth2UserWebnoneService;
 import graphql.com.google.common.collect.ImmutableMap;
@@ -102,19 +103,49 @@ public class PivotableLoginWebmvcController {
 	}
 
 	/**
-	 * Returns login status without triggering a 401/error — useful for JS polling.
+	 * Returns login status without triggering a 401/error — useful for JS polling. When the caller is logged-in, the
+	 * response is enriched with session-lifetime info so the SPA can display "session idles out in N seconds" without
+	 * having to read the HttpOnly JSESSIONID cookie (which it can't).
 	 *
-	 * @return a JSON map with a {@code login} key holding the HTTP status code
+	 * @param request
+	 *            the current servlet request, used to read the existing session (never creates one).
+	 * @return a JSON map with a {@code login} key holding the HTTP status code and, when logged-in, a {@code session}
+	 *         sub-map describing the HTTP session lifetime.
 	 */
 	@GetMapping("/json")
 	@ResponseBody
-	public Map<String, ?> loginStatus() {
+	public Map<String, ?> loginStatus(HttpServletRequest request) {
 		Optional<PivotableUser> user = userMayEmpty();
 		if (user.isPresent()) {
-			return Map.of("login", HttpStatus.OK.value());
+			// `false` so we never force-create a session just to answer a status probe.
+			HttpSession session = request.getSession(false);
+			if (session == null) {
+				return Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value());
+			}
+			return ImmutableMap.<String, Object>builder()
+					.put(IPivotableLoginConstants.K_LOGIN, HttpStatus.OK.value())
+					.put("session", sessionInfo(session))
+					.build();
 		} else {
-			return Map.of("login", HttpStatus.UNAUTHORIZED.value());
+			return Map.of(IPivotableLoginConstants.K_LOGIN, HttpStatus.UNAUTHORIZED.value());
 		}
+	}
+
+	/**
+	 * Describes the current {@link HttpSession} as a plain JSON-friendly map, so the SPA can render a sliding-idle
+	 * countdown without reading the (HttpOnly) JSESSIONID cookie. All time fields are epoch milliseconds (UTC); the
+	 * idle duration is seconds.
+	 *
+	 * @param session
+	 *            the current HTTP session.
+	 * @return a map with keys {@code maxIdleSeconds}, {@code creationEpochMs}, {@code lastAccessEpochMs}.
+	 */
+	private Map<String, Object> sessionInfo(HttpSession session) {
+		return ImmutableMap.<String, Object>builder()
+				.put("maxIdleSeconds", (long) session.getMaxInactiveInterval())
+				.put("creationEpochMs", session.getCreationTime())
+				.put("lastAccessEpochMs", session.getLastAccessedTime())
+				.build();
 	}
 
 	/**

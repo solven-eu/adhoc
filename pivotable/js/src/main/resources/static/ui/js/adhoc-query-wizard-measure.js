@@ -59,38 +59,38 @@ export default {
 		return { mark, toggleInfo, filteredEntry };
 	},
 	template: /* HTML */ `
-        <span v-html="mark(measure.name)" />
-        <span type="button" :class="'badge text-bg-' + 'primary'" @click.prevent="toggleInfo()">
-            <span>?</span>
-        </span>
-        &nbsp;
-        <AdhocQueryWizardMeasureTag v-for="tag in measure.tags" :tag="tag" :searchOptions="searchOptions" />
-        <div v-if="showDetails" class="text-muted">
-            <span v-if="measure.type == '.Aggregator' ">
-                <small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />
-            </span>
-            <span v-else-if="measure.type == 'eu.solven.adhoc.table.composite.SubMeasureAsAggregator'">
-                <small v-html="mark(measure.aggregationKey + '(' + measure.subMeasure + ')')" />
-            </span>
-            <span v-else-if="measure.type == '.Combinator'">
-                <small v-html="mark(measure.combinationKey + '(' + measure.underlyings.join(', ') + ')')" />
-            </span>
-            <span v-else-if="measure.type == '.Dispatchor'">
-                <small v-html="'dispatching by ' + mark(measure.decompositionKey + '(' + measure.underlying + ')')" />
-            </span>
-            <small v-else-if="measure.type == '.Filtrator'">
-                <ul>
-                    <li>underlying: <span v-html="mark(measure.underlying)"></span></li>
-                    <li>key: <span v-html="mark(measure.key)"></span></li>
-                    <li>tags: <span v-html="mark(measure.tags)"></span></li>
-                    <li>filter: <span v-html="mark(measure.filter)"></span></li>
-                </ul>
-            </small>
-            <small v-else>
-                <ul>
-                    <li v-for="(value, key) in filteredEntry(measure)">{{key}}: <span v-html="mark(value)"></span></li>
-                </ul>
-            </small>
-        </div>
-    `,
+		<span v-html="mark(measure.name)" />
+		<span type="button" :class="'badge text-bg-' + 'primary'" @click.prevent="toggleInfo()">
+			<span>?</span>
+		</span>
+		&nbsp;
+		<AdhocQueryWizardMeasureTag v-for="tag in measure.tags" :tag="tag" :searchOptions="searchOptions" />
+		<div v-if="showDetails" class="text-muted">
+			<span v-if="measure.type == '.Aggregator' ">
+				<small v-html="mark(measure.aggregationKey + '(' + measure.columnName + ')')" />
+			</span>
+			<span v-else-if="measure.type == 'eu.solven.adhoc.table.composite.SubMeasureAsAggregator'">
+				<small v-html="mark(measure.aggregationKey + '(' + measure.subMeasure + ')')" />
+			</span>
+			<span v-else-if="measure.type == '.Combinator'">
+				<small v-html="mark(measure.combinationKey + '(' + measure.underlyings.join(', ') + ')')" />
+			</span>
+			<span v-else-if="measure.type == '.Dispatchor'">
+				<small v-html="'dispatching by ' + mark(measure.decompositionKey + '(' + measure.underlying + ')')" />
+			</span>
+			<small v-else-if="measure.type == '.Filtrator'">
+				<ul>
+					<li>underlying: <span v-html="mark(measure.underlying)"></span></li>
+					<li>key: <span v-html="mark(measure.key)"></span></li>
+					<li>tags: <span v-html="mark(measure.tags)"></span></li>
+					<li>filter: <span v-html="mark(measure.filter)"></span></li>
+				</ul>
+			</small>
+			<small v-else>
+				<ul>
+					<li v-for="(value, key) in filteredEntry(measure)">{{key}}: <span v-html="mark(value)"></span></li>
+				</ul>
+			</small>
+		</div>
+	`,
 };

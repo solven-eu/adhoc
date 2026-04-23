@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.Assertions;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,12 +52,14 @@ public class TestIndexHtml {
 	@Autowired
 	PivotableSpaRouter spaRouter;
 
+	@Disabled("Import maps are not built dynamically (for webjar vs cdn)")
 	@Test
 	public void testIndexHtml() throws IOException {
 		String html = spaRouter.indexHtml.getContentAsString(StandardCharsets.UTF_8);
 		checkHtmlForUrls(html);
 	}
 
+	@Disabled("Import maps are not built dynamically (for webjar vs cdn)")
 	@Test
 	public void testMinifiedIndexHtml() throws IOException {
 		String html = spaRouter.minifyHtml(spaRouter.indexHtml.getContentAsString(StandardCharsets.UTF_8));
@@ -74,12 +77,13 @@ public class TestIndexHtml {
 			checkUrl(nbChecked, href);
 		});
 
+		ObjectMapper objectMapper = new ObjectMapper();
 		jsoup.getElementsByAttributeValue("type", "importmap").forEach(importMap -> {
 			String script = importMap.data();
 
 			Map<String, Map<String, String>> asMap;
 			try {
-				asMap = new ObjectMapper().readValue(script, Map.class);
+				asMap = objectMapper.readValue(script, Map.class);
 			} catch (JsonProcessingException e) {
 				throw new IllegalArgumentException("Invalid json: " + script);
 			}

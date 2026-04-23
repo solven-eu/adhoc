@@ -65,25 +65,25 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button
-                    class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#wizardOptions"
-                    aria-expanded="false"
-                    aria-controls="wizardOptions"
-                >
-                    {{ Object.keys(metadata.query_options).length}} options &nbsp;
-                    <small class="badge text-bg-primary">{{filtered(queryModel.selectedOptions).length}}</small>
-                </button>
-            </h2>
-            <div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
-                <div class="accordion-body vh-50 overflow-scroll">
-                    <AdhocQueryWizardOptions :queryModel="queryModel" />
-                </div>
-            </div>
-        </div>
-    `,
+		<div class="accordion-item">
+			<h2 class="accordion-header">
+				<button
+					class="accordion-button collapsed"
+					type="button"
+					data-bs-toggle="collapse"
+					data-bs-target="#wizardOptions"
+					aria-expanded="false"
+					aria-controls="wizardOptions"
+				>
+					{{ Object.keys(metadata.query_options).length}} options &nbsp;
+					<small class="badge text-bg-primary">{{filtered(queryModel.selectedOptions).length}}</small>
+				</button>
+			</h2>
+			<div id="wizardOptions" class="accordion-collapse collapse" data-bs-parent="#accordionWizard">
+				<div class="accordion-body vh-50 overflow-scroll">
+					<AdhocQueryWizardOptions :queryModel="queryModel" />
+				</div>
+			</div>
+		</div>
+	`,
 };

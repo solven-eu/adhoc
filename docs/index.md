@@ -46,6 +46,7 @@ Pivotable is a referential implementation of a web application wrapping Adhoc ca
 - [Custom Measures](custom-measure.md) — implementing `IHasUnderlyingMeasures` + `AMeasureQueryStep` for arbitrary evaluation logic; `RouterMeasure` example
 - [Composite Cubes](composite-cubes.md) — unifying multiple `ICubeWrapper` instances via `CompositeCubesTableWrapper`
 - [Authorizations](authorizations.md) — rights management via `IImplicitFilter`
+- [Pivotable Security Model](pivotable-security.md) — SPA authentication flow, `SESSION` cookie vs applicative JWT, and the `/api/login/v1/*` routes involved
 
 ### Project reference
 

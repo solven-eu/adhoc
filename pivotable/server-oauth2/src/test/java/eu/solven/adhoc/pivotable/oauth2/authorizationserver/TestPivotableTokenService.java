@@ -121,4 +121,53 @@ public class TestPivotableTokenService {
 		Assertions.assertThat(jwt.getSubject()).isEqualTo(accountId.toString());
 		Assertions.assertThat(jwt.getAudience()).containsExactly("Pivotable-Server");
 	}
+
+	// ── Configurable token lifetimes ─────────────────────────────────────────
+
+	/** Seed env with the signing key and issuer required by {@link PivotableTokenService}. */
+	private void seedSigningEnv() {
+		JWK signatureSecret = PivotableResourceServerHelpers
+				.generateSignatureSecret(new SecureRandom(new byte[] { 0, 1, 2 }), JdkUuidGenerator.INSTANCE);
+		env.setProperty(IPivotableOAuth2Constants.KEY_OAUTH2_ISSUER, "https://some.issuer.domain");
+		env.setProperty(IPivotableOAuth2Constants.KEY_JWT_SIGNINGKEY, signatureSecret.toJSONString());
+	}
+
+	@Test
+	public void testAccessTokenValidity_defaultsToOneHour() {
+		seedSigningEnv();
+
+		long expiresIn = tokenService.get().wrapInJwtAccessToken(UUID.randomUUID()).getExpiresIn();
+
+		Assertions.assertThat(expiresIn).isEqualTo(Duration.ofHours(1).toSeconds());
+	}
+
+	@Test
+	public void testAccessTokenValidity_configOverrideRespected() {
+		seedSigningEnv();
+		// Simulates what `application-pivotable-e2e-shorttoken.yml` does at runtime.
+		env.setProperty(IPivotableOAuth2Constants.KEY_ACCESS_TOKEN_VALIDITY, "PT3S");
+
+		long expiresIn = tokenService.get().wrapInJwtAccessToken(UUID.randomUUID()).getExpiresIn();
+
+		Assertions.assertThat(expiresIn).isEqualTo(3L);
+	}
+
+	@Test
+	public void testRefreshTokenValidity_defaultsTo365Days() {
+		seedSigningEnv();
+
+		long expiresIn = tokenService.get().wrapInJwtRefreshToken(UUID.randomUUID()).getExpiresIn();
+
+		Assertions.assertThat(expiresIn).isEqualTo(Duration.ofDays(365).toSeconds());
+	}
+
+	@Test
+	public void testRefreshTokenValidity_configOverrideRespected() {
+		seedSigningEnv();
+		env.setProperty(IPivotableOAuth2Constants.KEY_REFRESH_TOKEN_VALIDITY, "PT30S");
+
+		long expiresIn = tokenService.get().wrapInJwtRefreshToken(UUID.randomUUID()).getExpiresIn();
+
+		Assertions.assertThat(expiresIn).isEqualTo(30L);
+	}
 }

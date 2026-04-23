@@ -1,5 +1,7 @@
 # Authorizations - Rights Management
 
+See also: [Pivotable Security Model](pivotable-security.md) — covers the authentication layer (who the user is, how the SPA gets an `access_token`). This page only covers rights management **after** the user is authenticated.
+
 Right-management is typically implemented by an `AND` operation combining the user `filter` and a filter based on user-rights.
 
 This can be achieved through `IImplicitFilter`. A Spring-Security example is demonstrated in `TestImplicitFilter_SpringSecurity`.

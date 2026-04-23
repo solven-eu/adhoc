@@ -45,6 +45,7 @@ import eu.solven.adhoc.beta.schema.IAdhocSchema;
 import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.combination.EvaluatedExpressionCombination;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -124,6 +125,16 @@ public class InjectSimpleExampleCubesConfig {
 				.editorKey(SimpleFilterEditor.KEY)
 				.editorOptions(Map.of(SimpleFilterEditor.P_SHIFTED, Map.of("country", "France")))
 				.tags(Arrays.asList("δ"))
+				.build());
+
+		// Always-throwing measure — used by Pivotable e2e / manual tests to exercise the UI's
+		// error-management paths (how a failing measure surfaces in the query grid, the navbar,
+		// server logs, etc.). Underlying is `delta` purely because a Combinator requires at
+		// least one underlying; its value is discarded by ThrowingCombination.
+		measures.add(Combinator.builder()
+				.name("always_throws")
+				.underlying("delta")
+				.combinationKey(ThrowingCombination.class.getName())
 				.build());
 
 		// Helps testing customMarkers

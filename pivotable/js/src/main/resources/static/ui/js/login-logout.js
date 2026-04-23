@@ -60,8 +60,8 @@ export default {
 		return { doLogout };
 	},
 	template: /* HTML */ `
-        <span v-if="isLoggedIn">
-            <button class="btn btn-outline-warning" @click="doLogout">Logout</button>
-        </span>
-    `,
+		<span v-if="isLoggedIn">
+			<button class="btn btn-outline-warning" @click="doLogout">Logout</button>
+		</span>
+	`,
 };

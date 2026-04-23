@@ -15,14 +15,14 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!isLoggedIn"><LoginRef /></div>
-        <span v-else>
-            <ul>
-                <li>
-                    <RouterLink to="/html/endpoints">Browse through endpoints</RouterLink>
-                </li>
-                <li><RouterLink to="/html/me">About me</RouterLink></li>
-            </ul>
-        </span>
-    `,
+		<div v-if="!isLoggedIn"><LoginRef /></div>
+		<span v-else>
+			<ul>
+				<li>
+					<RouterLink to="/html/endpoints">Browse through endpoints</RouterLink>
+				</li>
+				<li><RouterLink to="/html/me">About me</RouterLink></li>
+			</ul>
+		</span>
+	`,
 };

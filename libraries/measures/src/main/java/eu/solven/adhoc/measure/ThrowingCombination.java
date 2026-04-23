@@ -30,6 +30,8 @@ import eu.solven.adhoc.measure.combination.ICombination;
 
 /**
  * A {@link ICombination} which throws. Useful to check behaviors on exceptions.
+ * 
+ * @author Benoit Lacelle
  */
 public class ThrowingCombination implements ICombination {
 	/**

@@ -16,9 +16,9 @@ export default {
 		return {};
 	},
 	template: /* HTML */ `
-        <div v-if="!isLoggedIn"><LoginRef /></div>
-        <div v-else>
-            <AdhocMeLoggedIn />
-        </div>
-    `,
+		<div v-if="!isLoggedIn"><LoginRef /></div>
+		<div v-else>
+			<AdhocMeLoggedIn />
+		</div>
+	`,
 };

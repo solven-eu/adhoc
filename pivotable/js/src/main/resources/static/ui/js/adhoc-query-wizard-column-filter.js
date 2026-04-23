@@ -48,12 +48,6 @@ export default {
 			},
 		}),
 	},
-	methods: {
-		// https://stackoverflow.com/questions/42632711/how-to-call-function-on-child-component-on-parent-events
-		//    saveFilter: function(value) {
-		//        this.value = value;
-		//    }
-	},
 	setup(props) {
 		const store = useAdhocStore();
 
@@ -68,17 +62,95 @@ export default {
 		const equalsValue = ref("");
 		const likePattern = ref("");
 
-		const rawFilterAsJson = ref("rawFilterAsJson");
+		const rawFilterAsJson = ref("");
 
 		const pendingChanges = ref(false);
+
+		// Suggest-dropdown state for the equals / not_equals combobox.
+		const showCoordinatesDropdown = ref(false);
+		const highlightedIdx = ref(-1);
 
 		const columnMeta = computed(() => {
 			const columnId = `${props.endpointId}-${props.cubeId}-${props.column}`;
 			return store.columns[columnId] || { error: "not_loaded" };
 		});
 
+		// Local, case-insensitive filtering of the coordinates list by what the user has
+		// typed in the combobox input. Capped at 50 rows so long lists stay responsive —
+		// the user always has the raw input as an escape hatch if the exact value isn't in
+		// the first 50 matches.
+		const filteredCoordinates = computed(() => {
+			const all = columnMeta.value.coordinates;
+			if (!all) return [];
+			const sorted = Array.from(all).sort();
+			const needle = String(equalsValue.value ?? "").toLowerCase();
+			if (!needle) return sorted.slice(0, 50);
+			return sorted.filter((c) => String(c).toLowerCase().includes(needle)).slice(0, 50);
+		});
+
+		// Walk the top-level AND filter looking for an existing {type:'column', column: target}
+		// entry — the shape produced by saveFilter() below. Deeper trees (nested AND/OR, NOT
+		// wrappers built elsewhere) are intentionally ignored here: this modal only knows how
+		// to round-trip the structure it writes itself.
+		function findColumnFilter(filter, target) {
+			if (!filter || filter.type !== "and" || !Array.isArray(filter.filters)) return null;
+			return filter.filters.find((f) => f && f.type === "column" && f.column === target) || null;
+		}
+
+		// Decode an existing column filter into the local form state, so that reopening the
+		// modal on a column that already has a filter shows/edits the current value instead
+		// of starting blank.
+		function loadFromColumnFilter(existing) {
+			if (!existing) return;
+			const vm = existing.valueMatcher;
+			if (vm === null || vm === undefined || typeof vm !== "object") {
+				filterType.value = "equals";
+				equalsValue.value = vm ?? "";
+			} else if (vm.type === "not") {
+				filterType.value = "not_equals";
+				equalsValue.value = vm.negated ?? "";
+			} else if (vm.type === "like") {
+				filterType.value = "like";
+				likePattern.value = vm.pattern ?? "";
+			} else {
+				filterType.value = "json";
+				rawFilterAsJson.value = JSON.stringify(existing, null, 2);
+			}
+		}
+
+		// Reset local state whenever the column prop changes — critical for the SINGLETON
+		// modal mounted by `adhoc-query-wizard-column-filter-modal-singleton.js` (triggered
+		// from the grid column header). That modal reuses ONE child filter component across
+		// every column the user clicks, so without this reset the previous column's
+		// `equalsValue` would bleed into the new column's modal (user-reported bug). The
+		// PER-COLUMN modal (`adhoc-query-wizard-column-filter-modal.js`) does not hit this
+		// path because each column gets its own child instance, but the reset is harmless
+		// there too. Also preloads any already-saved filter for the new column so the modal
+		// shows/edits current state rather than starting from scratch.
+		let isResetting = false;
+		function resetForCurrentColumn() {
+			isResetting = true;
+			try {
+				filterType.value = "no_filter";
+				equalsValue.value = "";
+				likePattern.value = "";
+				rawFilterAsJson.value = "";
+				showCoordinatesDropdown.value = false;
+				highlightedIdx.value = -1;
+				pendingChanges.value = false;
+
+				loadFromColumnFilter(findColumnFilter(props.queryModel?.filter, props.column));
+			} finally {
+				isResetting = false;
+			}
+		}
+
+		// `immediate: true` so the initial mount sets up state too (important for the
+		// singleton path where `setup()` runs once and column changes are prop updates).
+		watch(() => props.column, resetForCurrentColumn, { immediate: true });
+
 		watch(filterType, () => {
-			pendingChanges.value = true;
+			if (!isResetting) pendingChanges.value = true;
 
 			// The User selected `equals` filter: ensure we have a subset of coordinate to help him making his filter
 			if ((filterType.value === "equals" || filterType.value === "not_equals") && columnMeta.value.error === "not_loaded") {
@@ -86,16 +158,58 @@ export default {
 			}
 		});
 		watch(equalsValue, () => {
-			pendingChanges.value = true;
+			if (!isResetting) pendingChanges.value = true;
 		});
 		watch(likePattern, () => {
-			pendingChanges.value = true;
+			if (!isResetting) pendingChanges.value = true;
 		});
 		watch(rawFilterAsJson, () => {
-			pendingChanges.value = true;
+			if (!isResetting) pendingChanges.value = true;
 		});
 
-		// https://stackoverflow.com/questions/42632711/how-to-call-function-on-child-component-on-parent-events
+		// Combobox handlers — the dropdown is a custom overlay rather than `<datalist>`
+		// because datalist doesn't filter-as-you-type and its styling is owned by the
+		// browser (no way to align it with Bootstrap).
+		function onComboInput() {
+			showCoordinatesDropdown.value = true;
+			highlightedIdx.value = -1;
+		}
+		function onComboFocus() {
+			showCoordinatesDropdown.value = true;
+		}
+		function onComboBlur() {
+			// Delay the hide so a click on a dropdown item registers before we tear it down.
+			// `@mousedown.prevent` on the items keeps focus on the input during the click,
+			// but Safari still emits blur on mouse-down in some cases, so a short timeout is
+			// the pragmatic fix.
+			setTimeout(() => {
+				showCoordinatesDropdown.value = false;
+			}, 150);
+		}
+		function onComboKeyDown(e) {
+			const items = filteredCoordinates.value;
+			if (e.key === "ArrowDown") {
+				showCoordinatesDropdown.value = true;
+				highlightedIdx.value = Math.min(highlightedIdx.value + 1, items.length - 1);
+				e.preventDefault();
+			} else if (e.key === "ArrowUp") {
+				highlightedIdx.value = Math.max(highlightedIdx.value - 1, -1);
+				e.preventDefault();
+			} else if (e.key === "Enter") {
+				if (highlightedIdx.value >= 0 && items[highlightedIdx.value] !== undefined) {
+					equalsValue.value = items[highlightedIdx.value];
+					showCoordinatesDropdown.value = false;
+					e.preventDefault();
+				}
+			} else if (e.key === "Escape") {
+				showCoordinatesDropdown.value = false;
+			}
+		}
+		function selectCoordinate(coord) {
+			equalsValue.value = coord;
+			showCoordinatesDropdown.value = false;
+		}
+
 		function saveFilter() {
 			//			{
 			//			  "type" : "and",
@@ -124,6 +238,13 @@ export default {
 
 			if (filterType.value == "no_filter") {
 				console.log("No filter on", props.column);
+
+				// Collapse the wrapping AND to `{}` (matchAll) when stripping this column's
+				// filter left no siblings — otherwise the wizard would render an "empty AND"
+				// pill, which is ugly and redundant with the matchAll state.
+				if (props.queryModel.filter.filters.length === 0) {
+					props.queryModel.filter = {};
+				}
 			} else if (filterType.value == "equals") {
 				console.log("filter", props.column, "equals", equalsValue.value);
 				const columnFilter = { type: "column", column: props.column, valueMatcher: equalsValue.value };
@@ -160,14 +281,6 @@ export default {
 			pendingChanges.value = false;
 		}
 
-		const sort = function (array) {
-			if (!array) {
-				// empty, null, undefined
-				return array;
-			}
-			return array.slice().sort();
-		};
-
 		return {
 			filterTypes,
 			filterType,
@@ -180,42 +293,90 @@ export default {
 			pendingChanges,
 			saveFilter,
 
-			sort,
+			filteredCoordinates,
+			showCoordinatesDropdown,
+			highlightedIdx,
+			onComboInput,
+			onComboFocus,
+			onComboBlur,
+			onComboKeyDown,
+			selectCoordinate,
 		};
 	},
 	template: /* HTML */ `
-        <div>
-            column={{column}} filterType={{filterType}}
-            <select class="form-select" aria-label="Filter type" v-model="filterType">
-                <option value="no_filter">No filtering</option>
-                <option v-for="value in filterTypes" :value="value">{{value}}</option>
-            </select>
+		<div>
+			<div class="mb-2">
+				<label class="form-label small text-muted mb-1">Filtering column <strong>{{column}}</strong></label>
+				<select class="form-select form-select-sm" aria-label="Filter type" v-model="filterType">
+					<option value="no_filter">No filtering</option>
+					<option v-for="value in filterTypes" :value="value">{{value}}</option>
+				</select>
+			</div>
 
-            <div v-if="filterType == 'no_filter'"></div>
-            <div v-else-if="filterType == 'equals'">
-                <input v-model="equalsValue" placeholder="single value" />
+			<div v-if="filterType == 'no_filter'" class="small text-muted">No filter applied on this column.</div>
 
-                <select class="form-select" aria-label="Filter type" v-model="equalsValue">
-                    <option disabled value="no_value">Please select a value</option>
-                    <option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
-                </select>
-            </div>
-            <div v-else-if="filterType == 'not_equals'">
-                <input v-model="equalsValue" placeholder="single value" />
+			<!--
+				Combobox for equals / not_equals: a single freetext input with a filter-as-you-type
+				dropdown of existing coordinates. Values outside the suggestion list are accepted
+				(the user can type anything) — the dropdown is purely assistive. Shared template for
+				both operators since the editor is the same; the negation is applied at save time
+				via the filterType switch.
+			-->
+			<div v-else-if="filterType == 'equals' || filterType == 'not_equals'" class="position-relative">
+				<input
+					type="text"
+					class="form-control form-control-sm"
+					v-model="equalsValue"
+					@input="onComboInput"
+					@focus="onComboFocus"
+					@blur="onComboBlur"
+					@keydown="onComboKeyDown"
+					placeholder="Type a value — suggestions appear below"
+					aria-label="Filter value"
+					autocomplete="off"
+				/>
+				<ul
+					v-if="showCoordinatesDropdown && filteredCoordinates.length"
+					class="list-group position-absolute w-100 shadow-sm mt-1"
+					style="max-height: 240px; overflow-y: auto; z-index: 1056;"
+				>
+					<li
+						v-for="(coord, i) in filteredCoordinates"
+						:key="coord"
+						class="list-group-item list-group-item-action small py-1"
+						:class="{active: i === highlightedIdx}"
+						style="cursor: pointer;"
+						@mousedown.prevent="selectCoordinate(coord)"
+					>
+						{{coord}}
+					</li>
+				</ul>
+				<small v-if="columnMeta.error === 'not_loaded'" class="text-muted d-block mt-1">Loading suggestions…</small>
+				<small v-else-if="!columnMeta.coordinates || !columnMeta.coordinates.length" class="text-muted d-block mt-1">
+					No suggestions available — type freely.
+				</small>
+			</div>
 
-                <select class="form-select" aria-label="Filter type" v-model="equalsValue">
-                    <option disabled value="no_value">Please select a value</option>
-                    <option v-for="coordinate in sort(columnMeta.coordinates)" :value="coordinate">{{coordinate}}</option>
-                </select>
-            </div>
-            <div v-else-if="filterType == 'like'">
-                <input v-model="likePattern" placeholder="Like (e.g. 'FRA%')" />
-            </div>
-            <div v-else>
-                <textarea v-model="rawFilterAsJson" placeholder="raw filter as json"></textarea>
-            </div>
+			<div v-else-if="filterType == 'like'">
+				<input
+					type="text"
+					class="form-control form-control-sm"
+					v-model="likePattern"
+					placeholder="Like pattern (e.g. 'FRA%')"
+					aria-label="Like pattern"
+				/>
+			</div>
+			<div v-else>
+				<textarea
+					class="form-control form-control-sm"
+					rows="4"
+					v-model="rawFilterAsJson"
+					placeholder="raw filter as json"
+					aria-label="Raw filter JSON"
+				></textarea>
+			</div>
 
-            pending={{pendingChanges}}
-        </div>
-    `,
+			<small v-if="pendingChanges" class="text-warning d-block mt-2">Unsaved changes</small>
+		</div>
+	`,
 };
