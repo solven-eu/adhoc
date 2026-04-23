@@ -17,18 +17,19 @@
 			scripts are deferred by the HTML parser, so injecting an importmap via `appendChild`
 			in the head is still in time for the first `import` resolution.
 
-			URL convention (both modes):
-			  - local  : /webjars/<artifact>/<path>   (webjars-locator-core resolves the version
-			             transparently at the Spring Boot layer)
+			URL convention (both modes embed the version explicitly):
+			  - local  : /webjars/<artifact>/<version>/<path>
 			  - CDN    : https://cdn.jsdelivr.net/webjars/<groupId>/<artifact>/<version>/<path>
 			Both paths resolve to the SAME file from the SAME WebJar — jsdelivr serves Maven
-			Central artefacts over its CDN. This means the two modes serve byte-identical
-			content; the only difference is the hostname and whether the version is spelled
-			out in the URL.
+			Central artefacts over its CDN. Only the hostname differs; the content, path shape
+			and version are identical. Embedding the version in every URL is what makes it safe
+			for the backend to apply a far-future `Cache-Control: immutable` header (see
+			PivotableWebjarsCachingWebFluxConfigurer / PivotableWebjarsCachingWebmvcConfigurer):
+			a version bump changes the URL, invalidating the cache naturally.
 
 			When adding a library:
 			  - add the matching `<groupId>:<artifact>:<version>` dep in pivotable/js/pom.xml;
-			  - pin the SAME version in the CDN URL below — the embedded version forces
+			  - pin the SAME version in BOTH URL fields below — the embedded version forces
 			    explicit alignment (a drift between pom.xml and index.html becomes immediately
 			    visible rather than silently diverging).
 		-->
@@ -43,19 +44,19 @@
 				const STYLESHEETS = [
 					{
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/css/bootstrap.css",
-						webjars: "/webjars/bootstrap/css/bootstrap.css",
+						webjars: "/webjars/bootstrap/5.3.8/css/bootstrap.css",
 					},
 					{
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css",
-						webjars: "/webjars/bootstrap-icons/font/bootstrap-icons.min.css",
+						webjars: "/webjars/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css",
 					},
 					{
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/styles/css/slick.columnpicker.css",
-						webjars: "/webjars/slickgrid/dist/styles/css/slick.columnpicker.css",
+						webjars: "/webjars/slickgrid/5.18.2/dist/styles/css/slick.columnpicker.css",
 					},
 					{
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/styles/css/slick-alpine-theme.css",
-						webjars: "/webjars/slickgrid/dist/styles/css/slick-alpine-theme.css",
+						webjars: "/webjars/slickgrid/5.18.2/dist/styles/css/slick-alpine-theme.css",
 					},
 				];
 				for (const s of STYLESHEETS) {
@@ -76,47 +77,47 @@
 				const IMPORTS = {
 					vue: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue/3.5.32/dist/vue.esm-browser.js",
-						webjars: "/webjars/vue/dist/vue.esm-browser.js",
+						webjars: "/webjars/vue/3.5.32/dist/vue.esm-browser.js",
 					},
 					"vue-router": {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-router/4.6.3/dist/vue-router.esm-browser.js",
-						webjars: "/webjars/vue-router/dist/vue-router.esm-browser.js",
+						webjars: "/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.js",
 					},
 					"@vue/devtools-api": {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue__devtools-api/6.6.4/lib/esm/index.js",
-						webjars: "/webjars/vue__devtools-api/lib/esm/index.js",
+						webjars: "/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
 					},
 					pinia: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/pinia/3.0.4/dist/pinia.esm-browser.js",
-						webjars: "/webjars/pinia/dist/pinia.esm-browser.js",
+						webjars: "/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
 					},
 					"vue-demi": {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-demi/0.14.10/lib/v3/index.mjs",
-						webjars: "/webjars/vue-demi/lib/v3/index.mjs",
+						webjars: "/webjars/vue-demi/0.14.10/lib/v3/index.mjs",
 					},
 					bootstrap: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
-						webjars: "/webjars/bootstrap/js/bootstrap.esm.js",
+						webjars: "/webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
 					},
 					"@popperjs/core": {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/popperjs__core/2.11.8/dist/esm/index.js",
-						webjars: "/webjars/popperjs__core/dist/esm/index.js",
+						webjars: "/webjars/popperjs__core/2.11.8/dist/esm/index.js",
 					},
 					slickgrid: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/esm/index.mjs",
-						webjars: "/webjars/slickgrid/dist/esm/index.mjs",
+						webjars: "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
 					},
 					sortablejs: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/sortablejs/1.15.7/modular/sortable.esm.js",
-						webjars: "/webjars/sortablejs/modular/sortable.esm.js",
+						webjars: "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
 					},
 					lodashEs: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/lodash-es/4.17.21/lodash.js",
-						webjars: "/webjars/lodash-es/lodash.js",
+						webjars: "/webjars/lodash-es/4.17.21/lodash.js",
 					},
 					mermaid: {
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/mermaid/11.6.0/dist/mermaid.esm.mjs",
-						webjars: "/webjars/mermaid/dist/mermaid.esm.mjs",
+						webjars: "/webjars/mermaid/11.6.0/dist/mermaid.esm.mjs",
 					},
 				};
 

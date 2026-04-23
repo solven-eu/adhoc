@@ -31,35 +31,36 @@ test("index.html exposes the active mode on window.__adhocResourceMode for DevTo
 });
 
 test("local-webjars path for every library used by the SPA is present", () => {
-	// The real contract is the URL path, not the object key: these are the versionless
-	// paths the browser actually fetches when `useWebjars` is true. If any goes missing,
-	// the corresponding library will 404 at page load in the default mode.
+	// The real contract is the URL path, not the object key. Paths embed the version so the
+	// backend can apply a far-future `immutable` cache header safely — see
+	// PivotableWebjarsCachingWebFluxConfigurer / PivotableWebjarsCachingWebmvcConfigurer. If
+	// any of these paths goes missing, the corresponding library will 404 at page load.
 	const REQUIRED_WEBJAR_PATHS = [
-		"/webjars/vue/dist/vue.esm-browser.js",
-		"/webjars/vue-router/dist/vue-router.esm-browser.js",
-		"/webjars/pinia/dist/pinia.esm-browser.js",
-		"/webjars/popperjs__core/dist/esm/index.js",
-		"/webjars/slickgrid/dist/esm/index.mjs",
-		"/webjars/sortablejs/modular/sortable.esm.js",
-		"/webjars/lodash-es/lodash.js",
-		"/webjars/mermaid/dist/mermaid.esm.mjs",
-		"/webjars/vue-demi/lib/v3/index.mjs",
-		"/webjars/vue__devtools-api/lib/esm/index.js",
-		"/webjars/bootstrap/js/bootstrap.esm.js",
+		"/webjars/vue/3.5.32/dist/vue.esm-browser.js",
+		"/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.js",
+		"/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
+		"/webjars/popperjs__core/2.11.8/dist/esm/index.js",
+		"/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
+		"/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
+		"/webjars/lodash-es/4.17.21/lodash.js",
+		"/webjars/mermaid/11.6.0/dist/mermaid.esm.mjs",
+		"/webjars/vue-demi/0.14.10/lib/v3/index.mjs",
+		"/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
+		"/webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
 	];
 	for (const p of REQUIRED_WEBJAR_PATHS) {
 		expect(INDEX_HTML).toContain(p);
 	}
 });
 
-test("local webjars URLs are versionless (webjars-locator-core resolves the version at runtime)", () => {
-	// `/webjars/<artifact>/...` — no numeric version segment right after the artifact name.
-	// This is what lets us upgrade a library by bumping pom.xml alone, without editing URLs.
+test("every local /webjars/ URL embeds a version segment — prerequisite for the immutable cache policy", () => {
+	// Extract the `webjars:` arm of each IMPORTS / STYLESHEETS entry and assert the path
+	// matches `/webjars/<artifact>/<version>/...`. Version must be a digit-starting segment
+	// so any regression to a versionless URL (which Spring Boot would serve with stale
+	// content after a WebJar upgrade, given the immutable cache) fails the build.
 	const localWebjarsUrls = INDEX_HTML.match(/webjars:\s*"\/webjars\/[^"]+"/g) || [];
 	expect(localWebjarsUrls.length).toBeGreaterThan(0);
 	for (const url of localWebjarsUrls) {
-		// Reject `/webjars/foo/1.2.3/...` — the version should NOT appear between artifact
-		// and path. Matches `/webjars/<name>/<digit-starting-segment>/...`.
-		expect(url).not.toMatch(/\/webjars\/[^/]+\/\d/);
+		expect(url).toMatch(/\/webjars\/[^/]+\/\d[^/]*\//);
 	}
 });

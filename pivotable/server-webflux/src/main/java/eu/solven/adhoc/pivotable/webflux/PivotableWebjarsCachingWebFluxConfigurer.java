@@ -34,16 +34,11 @@ import org.springframework.web.reactive.config.WebFluxConfigurer;
 /**
  * Apply a far-future immutable cache policy to every `/webjars/**` resource.
  *
- * WebJar artifacts are deployed with their version baked into the file name on the classpath
- * (`META-INF/resources/webjars/<artifact>/<version>/<file>`), so a given version's bytes never change. When the browser
- * requests a URL that embeds the version, the response is safe to cache for arbitrarily long. Set `public`,
+ * WebJar artifacts are deployed with their version baked into the classpath layout
+ * (`META-INF/resources/webjars/<artifact>/<version>/<file>`), and the SPA's `index.html` embeds the same version in
+ * every request URL (`/webjars/<artifact>/<version>/<path>`). A given URL therefore resolves to an immutable byte
+ * sequence — a version bump is always paired with a URL change, which invalidates the cache naturally. Set `public`,
  * `max-age=31536000` (one year) and `immutable` so modern browsers skip the revalidation round-trip entirely.
- *
- * Caveat: the SPA's `index.html` currently resolves WebJar assets via the versionless `/webjars/<artifact>/<path>`
- * shape (rewritten by `webjars-locator-core` at request time). With the long cache below, a WebJar version bump will
- * not propagate to already-visited clients until their cache expires — expected for production rollouts, but noticeable
- * during local dev. The eventual fix is to embed the version in the URL (either at build time via Maven filtering of
- * `index.html`, or by switching the SPA to the CDN-style `/webjars/<groupId>/<artifact>/ <version>/...` shape).
  *
  * Registered at {@link Ordered#HIGHEST_PRECEDENCE} so it takes precedence over Spring Boot's auto-configured
  * `/webjars/**` handler, which uses the default (short) cache.

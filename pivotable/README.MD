@@ -87,7 +87,7 @@ The import map has two sources for every third-party library. A synchronous boot
 
 | Mode | URL shape | Default? | When to use |
 |------|-----------|----------|-------------|
-| **WebJars** (local) | `/webjars/<artifact>/<path>` | ✅ yes | Production, air-gapped, enterprise networks |
+| **WebJars** (local) | `/webjars/<artifact>/<version>/<path>` | ✅ yes | Production, air-gapped, enterprise networks |
 | **CDN** (jsdelivr) | `https://cdn.jsdelivr.net/webjars/<groupId>/<artifact>/<version>/<path>` | via `?cdn` | Local dev without a built backend, quick verification of a fresh checkout |
 
 Both paths resolve to the **same file from the same WebJar** — jsdelivr serves Maven Central artefacts, so the CDN and local modes return byte-identical content. Only the hostname differs.
