@@ -126,6 +126,41 @@ const store = defineStore("preferences", {
 			return hash(queryModel);
 		},
 
+		// Add a user-defined tag to a saved favorite. Tags are free-form strings, deduped
+		// case-insensitively but stored in their original case so the UI shows them the
+		// way the user typed. No server round-trip — fully local, persisted via the same
+		// localStorage path as the queryModel itself.
+		addTagToFavorite(queryId, tag) {
+			const store = this;
+			const cleaned = (tag || "").trim();
+			if (!cleaned) return;
+			const entry = store.queryModels[queryId];
+			if (!entry) return;
+			store.$patch((state) => {
+				const e = state.queryModels[queryId];
+				if (!Array.isArray(e.tags)) {
+					e.tags = [];
+				}
+				const existing = e.tags.find((t) => t.toLowerCase() === cleaned.toLowerCase());
+				if (!existing) {
+					e.tags.push(cleaned);
+				}
+			});
+		},
+
+		// Remove a tag from a favorite. Case-insensitive match. No-op if the favorite or
+		// the tag is missing — the caller is the UI, which can fire the action freely.
+		removeTagFromFavorite(queryId, tag) {
+			const store = this;
+			const cleaned = (tag || "").trim().toLowerCase();
+			if (!cleaned) return;
+			const entry = store.queryModels[queryId];
+			if (!entry || !Array.isArray(entry.tags)) return;
+			store.$patch((state) => {
+				state.queryModels[queryId].tags = state.queryModels[queryId].tags.filter((t) => t.toLowerCase() !== cleaned);
+			});
+		},
+
 		registerLatestQueryId(queryId) {
 			const store = this;
 

@@ -22,16 +22,12 @@
  */
 package eu.solven.adhoc.pivotable.webflux.api;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.RequestPredicate;
@@ -48,7 +44,10 @@ import reactor.core.publisher.Mono;
  *
  * The main design is that all routes to `/api/*` are redirected to the backend, while `/html/*` routes are redirected
  * to the `HTML` and its own (SPA) routing logic.
- * 
+ *
+ * Minification and CDN-vs-WebJars swapping are fully client-side: the bootstrap block in {@code index.html} resolves
+ * four importmap JSON files based on {@code ?cdn} and {@code ?min} query parameters. See that file for the contract.
+ *
  * @author Benoit Lacelle
  *
  */
@@ -67,10 +66,8 @@ public class PivotableSpaRouter {
 			log.info("We should rely on PRD resources in `index.html`");
 		}
 
-		Resource filteredIndexHtml = filterIndexHtmlMl(env, indexHtml);
-
 		Mono<ServerResponse> responseIndexHtml =
-				ServerResponse.ok().contentType(MediaType.TEXT_HTML).bodyValue(filteredIndexHtml);
+				ServerResponse.ok().contentType(MediaType.TEXT_HTML).bodyValue(indexHtml);
 
 		return SpringdocRouteBuilder.route()
 
@@ -83,58 +80,5 @@ public class PivotableSpaRouter {
 
 	private RequestPredicate html(String route) {
 		return RequestPredicates.path(route).and(RequestPredicates.accept(MediaType.TEXT_HTML));
-	}
-
-	private Resource filterIndexHtmlMl(Environment env, Resource indexHtmlResource) {
-		if (env.acceptsProfiles(Profiles.of(IPivotableSpringProfiles.P_PRDMODE))) {
-			String indexHtml;
-			try {
-				indexHtml = indexHtmlResource.getContentAsString(StandardCharsets.UTF_8);
-			} catch (IOException e) {
-				throw new IllegalStateException("Issue loading " + indexHtmlResource, e);
-			}
-
-			indexHtml = minifyHtml(indexHtml);
-
-			String fileName = indexHtmlResource.getFilename();
-			log.info("{} has been minified", fileName);
-
-			return new ByteArrayResource(indexHtml.getBytes(StandardCharsets.UTF_8),
-					"fileName <minified for %s>".formatted(IPivotableSpringProfiles.P_PRDMODE));
-		} else {
-			return indexHtmlResource;
-		}
-	}
-
-	/**
-	 * This minification consists essentially in referring to minified external dependencies.
-	 * 
-	 * @param indexHtml
-	 * @return a minified version of index.html
-	 */
-	String minifyHtml(String indexHtml) {
-		String minified = indexHtml;
-
-		minified = minified.replace("/bootstrap.css", "/bootstrap.min.css");
-		minified = minified.replace("/bootstrap-icons.css", "/bootstrap-icons.min.css");
-
-		minified = minified.replace("/vue.esm-browser.js", "/vue.esm-browser.prod.js");
-		// https://github.com/vuejs/router/issues/694
-		// minified = minified.replace("/vue-router.esm-browser.js", "/vue-router.esm-browser.???.js");
-
-		minified = minified.replace("/bootstrap.esm.js", "/bootstrap.esm.min.js");
-
-		// https://unpkg.com/@vue/devtools-api@6.2.1/lib/esm/index.js
-		minified = minified.replace("/lib/esm/index.js", "/lib/esm/index.js");
-		// https://unpkg.com/@popperjs/core@2.11.8/dist/esm/index.js"
-		minified = minified.replace("/dist/esm/index.js", "/dist/esm/index.js");
-
-		// No minified Pinia ESM?
-		// minified = minified.replace("/pinia.esm-browser.js", "/pinia.esm-browser.min.js");
-
-		minified = minified.replace("/vue-demi/lib/v3/index.mjs", "/vue-demi/lib/v3/index.min.mjs");
-		minified = minified.replace("/vue.esm-browser.js", "/vue.esm-browser.prod.js");
-
-		return minified;
 	}
 }

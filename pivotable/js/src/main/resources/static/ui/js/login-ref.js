@@ -20,7 +20,10 @@ export default {
 			<RouterLink :to="{path:'/html/login'}"><i class="bi bi-person"></i> You need to login</RouterLink>
 		</span>
 		<span v-else-if="needsToCheckLogin">
-			<span v-if="nbLoginLoading > 0">Loading account</span>
+			<span v-if="nbLoginLoading > 0">
+				<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+				Loading account…
+			</span>
 			<span v-else>Unclear login status but not loading. Should not happen</span>
 		</span>
 		<span v-else> This should not happen (login-ref.js) </span>

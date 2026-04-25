@@ -95,6 +95,17 @@ export default {
 		// https://vuejs.org/guide/components/provide-inject.html
 		provide("columnFilterModel", columnFilterModel);
 
+		// Shared model driving the per-measure Statistics modal. Header buttons in the
+		// grid set `measureName` + `stats` and trigger the modal via Bootstrap; the modal
+		// reads the same singleton object. Living here (next to the other singleton
+		// modal models) keeps the wiring symmetric across cellModal / measureDag /
+		// columnFilter / measureStats.
+		const measureStatsModel = reactive({
+			measureName: "",
+			stats: null,
+		});
+		provide("measureStatsModel", measureStatsModel);
+
 		const tabularView = reactive({});
 
 		// Shared reactive flag indicating whether any wizard accordion (columns / measures /

@@ -1,6 +1,7 @@
 ---
+
 description: Monthly whole-repo security audit tailored to the adhoc codebase (OAuth2 dual-stack, query engine, Vue frontend). Diff-scoped review belongs in /security-review; this sweep catches drift the per-PR review misses.
----
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Perform a monthly security sweep of the adhoc repository on the current branch.
 Produce a single report grouped by severity (Critical / High / Medium / Low / Informational).
@@ -115,3 +116,4 @@ End the report with:
 - A ranked top-5 "fix these first" list.
 - A one-line delta note vs the previous sweep (user will paste prior report if desired).
 - Any section where you could not reach a conclusion and what evidence would resolve it.
+

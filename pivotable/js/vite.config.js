@@ -2,32 +2,34 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 // The SPA loads its dependencies via a browser import-map in `index.html` (production
-// is the full switch — CDN vs local WebJars, see the `?webjars` mode). Vite's dev
-// server needs to KNOW these bare specifiers so it doesn't try to resolve them from
-// `node_modules` — we mirror the CDN arm of the import-map here as a redirect table.
+// is the full switch — CDN vs local WebJars, see the `?cdn` and `?dev` modes). Vite's
+// dev server needs to KNOW these bare specifiers so it doesn't try to resolve them
+// from `node_modules` — we mirror the import-map here as a redirect table.
 //
-// The CDN URLs are jsdelivr's WebJars mirror: `cdn.jsdelivr.net/webjars/<groupId>/
-// <artifact>/<version>/<path>`. jsdelivr serves Maven Central WebJar artefacts
-// directly, so the CDN and the local Spring Boot `/webjars/*` modes return byte-
-// identical content — versions are pinned once in pivotable/js/pom.xml and spelled
-// out again here; the embedded version makes any drift immediately visible.
+// We point at the LOCAL `/webjars/*` paths (proxied through Vite to the Spring Boot
+// backend on `:8080`), and at the MINIFIED / `.prod.js` variants by default — same
+// defaults the prod bootstrap uses. Two reasons:
+//   1. The full vue-router 4.6.3 build trips a `__vrv_devtools` runtime error against
+//      vue 3.5.x; the .prod.js build skips the devtools integration code path.
+//   2. Keeping dev and prod on the same artefact paths means a bug reproducible in
+//      dev is a bug reproducible in prod, and vice versa — no "works in dev only"
+//      surprises.
+// To run dev with full / source-readable builds (e.g. for breakpoint debugging in
+// devtools), point this table at the non-`.prod.js` URLs temporarily.
 //
-// In dev, the plugin rewrites every `import "vue-router"` to the jsdelivr URL and
-// tells Vite the resolved id is external (fetched natively by the browser).
-//
-// Keep in sync with the `IMPORTS` table in `src/main/resources/static/index.html`.
+// Keep in sync with `/ui/importmap-webjars-min.json` and `/ui/importmap-cdn-min.json`.
 const IMPORTMAP_ALIASES = {
-	vue: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue/3.5.32/dist/vue.esm-browser.js",
-	"vue-router": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-router/4.6.3/dist/vue-router.esm-browser.js",
-	"@vue/devtools-api": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue__devtools-api/6.6.4/lib/esm/index.js",
-	pinia: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/pinia/3.0.4/dist/pinia.esm-browser.js",
-	"vue-demi": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-demi/0.14.10/lib/v3/index.mjs",
-	bootstrap: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
-	"@popperjs/core": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/popperjs__core/2.11.8/dist/esm/index.js",
-	slickgrid: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/esm/index.mjs",
-	sortablejs: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/sortablejs/1.15.7/modular/sortable.esm.js",
-	lodashEs: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/lodash-es/4.17.21/lodash.js",
-	mermaid: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/mermaid/11.6.0/dist/mermaid.esm.mjs",
+	vue: "/webjars/vue/3.5.32/dist/vue.esm-browser.prod.js",
+	"vue-router": "/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.prod.js",
+	"@vue/devtools-api": "/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
+	pinia: "/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
+	"vue-demi": "/webjars/vue-demi/0.14.10/lib/v3/index.min.mjs",
+	bootstrap: "/webjars/bootstrap/5.3.8/js/bootstrap.esm.min.js",
+	"@popperjs/core": "/webjars/popperjs__core/2.11.8/dist/esm/index.js",
+	slickgrid: "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
+	sortablejs: "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
+	lodashEs: "/webjars/lodash-es/4.17.21/lodash.js",
+	mermaid: "/webjars/mermaid/11.6.0/dist/mermaid.esm.min.mjs",
 };
 
 /**

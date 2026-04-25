@@ -47,6 +47,12 @@ export default {
 
 		// https://github.com/hojas/vue-mermaid-render/blob/main/packages/vue-mermaid-render/src/components/VueMermaidRender.vue
 		const mermaidString = ref("");
+		// True while `mermaid.render` is in-flight. Mermaid 11+ uses dynamic imports per
+		// diagram type (flowchart, sequence, …), so the FIRST render after page load incurs
+		// a network/parse cost of several hundred kB before any SVG is produced. Without a
+		// visible cue the modal looks frozen — see the project-wide async-UX rule in
+		// CLAUDE.md.
+		const renderingMermaid = ref(false);
 
 		// Explicit clicks the user made INSIDE the modal. Accumulates while the modal is open and
 		// gets reset each time the modal is opened on a fresh `main` measure (new `?` click in the
@@ -305,11 +311,16 @@ export default {
 
 		async function updateGraph(graphDefinition) {
 			const id = genSvgId();
-			const res = await mermaid.render(id, graphDefinition);
-			mermaidString.value = res.svg;
+			renderingMermaid.value = true;
+			try {
+				const res = await mermaid.render(id, graphDefinition);
+				mermaidString.value = res.svg;
+			} finally {
+				renderingMermaid.value = false;
+			}
 		}
 
-		return { mermaidString, clickedMeasures, expandLinks };
+		return { mermaidString, clickedMeasures, expandLinks, renderingMermaid };
 	},
 	template: /* HTML */ `
 		<!-- Modal -->
@@ -331,6 +342,20 @@ export default {
 							<label class="form-check-label text-muted small" for="expandLinksBetweenSelected">
 								Add all nodes on paths between selected measures
 							</label>
+						</div>
+						<!--
+							First-render spinner: Mermaid 11+ lazy-loads its flowchart bundle on the
+							first call to render, and the modal sits blank while that fetch resolves.
+							Show a centered spinner so the user knows something is happening. We gate
+							on (renderingMermaid AND mermaidString empty) so subsequent re-renders
+							(a click in the graph adds a node) don't blank the existing SVG behind a
+							spinner — overlaying the graph would cause a flicker on every interaction.
+							The spinner re-appears only when the rendering switches to a brand new
+							measure (mermaidString is cleared by callers in that case).
+						-->
+						<div v-if="renderingMermaid && !mermaidString" class="d-flex align-items-center gap-2 text-muted py-4">
+							<span class="spinner-border" role="status" aria-hidden="true"></span>
+							<span>Loading measure graph…</span>
 						</div>
 						<pre class="mermaid" v-html="mermaidString" />
 					</div>

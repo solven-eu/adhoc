@@ -35,6 +35,21 @@ The **dev stack** is the pair of processes needed to run Pivotable locally: a Sp
 
 When a task needs a running backend+frontend pair, refer to it as "the dev stack" and start it with `npm run dev_stack`.
 
+### Logging in to a dev stack (no excuse for "I can't verify in a logged-out browser")
+
+The default `pivotable-unsafe_fakeuser` profile registers a BASIC user whose credentials are hardcoded and whose login form is **pre-filled** by the SPA — clicking through is a 3-step flow:
+
+1. From the home page click **You need to login**.
+2. Click the provider entry **pivotable-unsafe_fakeuser** (BASIC arm).
+3. Click **Login fakeUser** on the form (the username `11111111-1111-1111-1111-000000000000` and password `no_password` are already in the inputs).
+
+Credentials, for the rare automation that needs them out-of-form:
+
+- username: `11111111-1111-1111-1111-000000000000` (`FakeUser.ACCOUNT_ID`)
+- password: `no_password`
+
+After step 3 the navbar shows "Welcome Fake User" and the rest of the SPA is browsable. There is **no reason** to skip a UI verification on the grounds of being logged out — this works in the dev stack out of the box. See `pivotable/CONTRIBUTING.md` for more detail.
+
 ---
 
 ## Coding Conventions
@@ -127,6 +142,17 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
      - Dead variables, unused imports, overly verbose expressions
      - Any convention violation listed in `CONVENTIONS.MD`
      Apply all fixes in the same commit — never leave known quality issues for a follow-up.
+
+---
+
+## UX rules (Pivotable front-end)
+
+- **Always surface asynchronous activity.** Whenever the Vue front-end performs an operation that the user is waiting on (HTTP request, query execution, login provider discovery, token refresh, export, etc.) the UI MUST make the in-flight state visible. The user should never have to guess whether something is happening. At minimum:
+  - a Bootstrap spinner (`.spinner-border`, `.spinner-grow`) OR a progress bar (`.progress-bar-animated`) next to the affected element, AND
+  - a short textual status (e.g. "Loading providers…", "Refreshing token…") co-located with the spinner.
+  A message alone is better than nothing (see `login.js` loading state) but a spinner + message is the standard. When adding a new async action, add the loading UI in the same change — a follow-up is not acceptable.
+- **Disable the triggering control while it is in-flight.** Clicking a button that is already running should not re-fire the operation. Either set `disabled` until the promise resolves, or debounce the handler.
+- **Homogenize the loading idiom.** When introducing a new loading indicator, look for a sibling component already using one and reuse its pattern (class names, markup shape, text phrasing) rather than inventing a new one. The grid's progress bar (`adhoc-query-grid.js`) is the canonical example for long-running operations; `spinner-border-sm` next to a label is the canonical example for short ones.
 
 ---
 

@@ -41,7 +41,10 @@ export default {
 		return { isLoading, loginProviders, selectedProvider };
 	},
 	template: /* HTML */ `
-		<div v-if="isLoading">Loading login options</div>
+		<div v-if="isLoading" class="d-flex align-items-center gap-2">
+			<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+			<span>Loading login options…</span>
+		</div>
 		<div v-else-if="modal && selectedProvider == 'BASIC'">
 			<LoginBasic :modal="modal" />
 		</div>

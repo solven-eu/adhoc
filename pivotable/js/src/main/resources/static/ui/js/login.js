@@ -54,7 +54,10 @@ export default {
 			<LoginOptions />
 		</div>
 		<div v-else>
-			<div v-if="nbLoginLoading > 0">Loading...</div>
+			<div v-if="nbLoginLoading > 0" class="d-flex align-items-center gap-2">
+				<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+				<span>Loading…</span>
+			</div>
 			<div v-else>?</div>
 		</div> `,
 };

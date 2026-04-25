@@ -98,8 +98,11 @@ export default {
 					</div>
 
 					<ul v-for="(measure) in filtered(measures)" class="list-group list-group-flush">
-						<li class="list-group-item">
-							<div class="form-check form-switch">
+						<li class="list-group-item d-flex align-items-center gap-2">
+							<div
+								class="form-check form-switch flex-grow-1"
+								:class="queryModel.disabledMeasures &amp;&amp; queryModel.disabledMeasures[measure.name] ? 'opacity-50' : ''"
+							>
 								<input
 									class="form-check-input"
 									type="checkbox"
@@ -107,10 +110,33 @@ export default {
 									:id="'measure_' + measure.name"
 									v-model="queryModel.selectedMeasures[measure.name]"
 								/>
-								<label class="form-check-label" :for="'measure_' + measure.name">
+								<label
+									class="form-check-label"
+									:class="queryModel.disabledMeasures &amp;&amp; queryModel.disabledMeasures[measure.name] ? 'text-decoration-line-through' : ''"
+									:for="'measure_' + measure.name"
+								>
 									<AdhocMeasure :measure="measure" :showDetails="showMeasureDetails" :searchOptions="searchOptions" />
 								</label>
 							</div>
+							<!--
+								Pause / resume toggle. Always rendered so the affordance is
+								discoverable; muted + disabled until the measure is picked. Mirrors
+								the icon and tooltip wording used by the filter tree's disable
+								button, so the affordance is identical across measures, columns,
+								and filters.
+							-->
+							<button
+								type="button"
+								class="btn btn-sm btn-link p-0 text-decoration-none"
+								:class="queryModel.selectedMeasures[measure.name] ? '' : 'opacity-25'"
+								:disabled="!queryModel.selectedMeasures[measure.name]"
+								:title="!queryModel.selectedMeasures[measure.name] ? 'Pick this measure first to enable pause' : ((queryModel.disabledMeasures &amp;&amp; queryModel.disabledMeasures[measure.name]) ? 'Resume this measure' : 'Pause this measure (keep in model, skip at query time)')"
+								@click.stop="queryModel.disabledMeasures &amp;&amp; (queryModel.disabledMeasures[measure.name] = !queryModel.disabledMeasures[measure.name])"
+							>
+								<i
+									:class="(queryModel.disabledMeasures &amp;&amp; queryModel.disabledMeasures[measure.name]) ? 'bi bi-play-circle' : 'bi bi-pause-circle'"
+								></i>
+							</button>
 						</li>
 					</ul>
 
