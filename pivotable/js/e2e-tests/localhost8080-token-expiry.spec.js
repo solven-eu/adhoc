@@ -46,7 +46,11 @@ test("loginModal opens when access_token expires mid-session", async ({ page }) 
 
 	// Sanity: we are on a query page with data visible.
 	await expect(page.locator(".slick-row").first()).toBeVisible();
-	const urlBeforeExpiry = page.url();
+	// Snapshot the path (without hash). The query-model→pushState watcher updates
+	// the URL hash whenever the user toggles a column / measure, even when the
+	// subsequent API call fails. So instead of pinning the entire URL we assert
+	// that we stay ON the same query route.
+	const pathBeforeExpiry = new URL(page.url()).pathname;
 
 	// Simulate expiry: every future API call (including the /oauth2/token
 	// refresh attempt) returns 401.
@@ -60,6 +64,8 @@ test("loginModal opens when access_token expires mid-session", async ({ page }) 
 	await expect(page.locator("#loginModal")).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Login to Pivotable" })).toBeVisible();
 
-	// EXPECTED: no full-page redirect away from the query page.
-	expect(page.url()).toBe(urlBeforeExpiry);
+	// EXPECTED: no full-page redirect away from the query route. The hash may
+	// have changed (Shirt Number was added to the queryModel before the 401),
+	// but the path must still be the cube-query route.
+	expect(new URL(page.url()).pathname).toBe(pathBeforeExpiry);
 });

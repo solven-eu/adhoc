@@ -143,6 +143,23 @@
 					<classifier>exec</classifier>
 
 					<mainClass>eu.solven.adhoc.pivotable.webflux.app.PivotableServerWebfluxApplication</mainClass>
+
+					<!--
+						Bundle optional deps (DataFaker, opencsv, duckdb_jdbc, EvalEx) into the exec-jar. Those
+						deps stay `<optional>true</optional>` in the pom so downstream library consumers do not
+						inherit them transitively, but they are required at runtime here whenever a sample-
+						datasets profile activates the example cubes.
+					-->
+					<includeOptional>true</includeOptional>
+
+					<!--
+						Keep the repackaged fat jar local-only: `mvn package` still writes
+						`target/*-exec.jar` (used by the Docker build and `scp` deploy flows) but the artifact
+						is not attached to the Maven project, so `mvn install` does not copy it to `~/.m2`
+						and `mvn deploy` does not push its ~100 MB to Sonatype / Maven Central. Historical
+						releases (0.0.9, 0.0.18) shipped the exec jar by accident; this stops the leak.
+					-->
+					<attach>false</attach>
 				</configuration>
 			</plugin>
 		</plugins>

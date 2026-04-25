@@ -70,9 +70,19 @@ export default {
 						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						<LoginRef :modal="true" data-bs-dismiss="modal" />
-						<hr />
-						<LoginOptions :modal="true" />
+						<!--
+							When already logged-in, show who the session belongs to. Otherwise just
+							render the provider chooser — the user reading the modal title already
+							knows they need to log in, so the previous redundant "You need to login"
+							line was removed.
+						-->
+						<div v-if="isLoggedIn" class="text-center">
+							<img v-if="user.details.picture" :src="user.details.picture" class="rounded-circle mb-2" alt="" width="48" height="48" />
+							<div class="fw-semibold">{{user.details.name || user.details.username}}</div>
+							<div class="text-muted small" v-if="user.details.username && user.details.name">{{user.details.username}}</div>
+							<div class="text-muted small mt-2">You are already signed in.</div>
+						</div>
+						<LoginOptions v-else :modal="true" />
 					</div>
 				</div>
 			</div>

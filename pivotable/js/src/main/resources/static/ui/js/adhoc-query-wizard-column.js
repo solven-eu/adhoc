@@ -139,9 +139,35 @@ export default {
 			Row 2: secondary controls (type, grandTotal asterisk toggle, cardinality badge,
 			filter button) all on one tight horizontal line.
 		-->
-		<div class="form-check form-switch mb-1">
+		<div
+			class="form-check form-switch mb-1 d-flex align-items-start gap-2"
+			:class="queryModel.disabledColumns &amp;&amp; queryModel.disabledColumns[column] ? 'opacity-50' : ''"
+		>
 			<input class="form-check-input" type="checkbox" role="switch" :id="'column_' + column" v-model="queryModel.selectedColumns[column]" />
-			<label class="form-check-label text-wrap" :for="'column_' + column" v-html="mark(column)"></label>
+			<label
+				class="form-check-label text-wrap flex-grow-1"
+				:class="queryModel.disabledColumns &amp;&amp; queryModel.disabledColumns[column] ? 'text-decoration-line-through' : ''"
+				:for="'column_' + column"
+				v-html="mark(column)"
+			></label>
+			<!--
+				Pause / resume toggle for the column. Same affordance as the filter tree and
+				measure list — the column stays in selectedColumns so the wizard pill is
+				preserved (one click resumes), but the executor strips it from the submitted
+				query so the grid restructures around the active subset.
+				Always rendered (even when the column is not yet selected) so the affordance
+				is discoverable; the icon is muted until the user picks the column.
+			-->
+			<button
+				type="button"
+				class="btn btn-sm btn-link p-0 text-decoration-none"
+				:class="queryModel.selectedColumns[column] ? '' : 'opacity-25'"
+				:title="!queryModel.selectedColumns[column] ? 'Pick this column first to enable pause' : ((queryModel.disabledColumns &amp;&amp; queryModel.disabledColumns[column]) ? 'Resume this column' : 'Pause this column (keep in model, skip at query time)')"
+				:disabled="!queryModel.selectedColumns[column]"
+				@click.stop="queryModel.disabledColumns &amp;&amp; (queryModel.disabledColumns[column] = !queryModel.disabledColumns[column])"
+			>
+				<i :class="(queryModel.disabledColumns &amp;&amp; queryModel.disabledColumns[column]) ? 'bi bi-play-circle' : 'bi bi-pause-circle'"></i>
+			</button>
 		</div>
 
 		<div class="d-flex align-items-center gap-2 flex-wrap">

@@ -7,15 +7,25 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<base href="/" />
 		<!--
-			Resource source switcher. Default mode is LOCAL WebJars (served by Spring Boot at
-			`/webjars/*`), keeping the SPA self-hosted and CDN-free by default — safe in
-			enterprise / air-gapped environments. Pass `?cdn` in the URL to load every library
-			from jsdelivr's WebJars mirror instead — handy for quickly verifying a fresh
-			checkout before the backend is built, or when the local WebJar cache is stale.
+			Resource source switcher. Two independent URL flags, fully client-side (no
+			server-side HTML rewriting):
+			  - `?cdn` : flip the source from LOCAL WebJars (served by Spring Boot at
+			    `/webjars/*`) to jsdelivr's WebJars mirror. Default = webjars, keeping the SPA
+			    self-hosted and CDN-free out of the box — safe in enterprise / air-gapped
+			    environments.
+			  - `?dev` : flip MINIFIED / `.prod.js` builds to the full / source-readable
+			    variants. Default = minified, so end users get the smallest payload; pass
+			    `?dev` for DevTools work where you need readable sources and named symbols.
 
-			The switch is done synchronously here, BEFORE any module script executes. Module
-			scripts are deferred by the HTML parser, so injecting an importmap via `appendChild`
-			in the head is still in time for the first `import` resolution.
+			The cross-product gives four loadable states, each backed by a static importmap:
+			  /ui/importmap-webjars-min.json  (default)
+			  /ui/importmap-webjars.json      (?dev)
+			  /ui/importmap-cdn-min.json      (?cdn)
+			  /ui/importmap-cdn.json          (?cdn&dev)
+
+			Stylesheets are injected below via a synchronous bootstrap script; the importmap
+			is loaded externally via `document.write`, which emits the right tag inline before
+			module-scripts execute.
 
 			URL convention (both modes embed the version explicitly):
 			  - local  : /webjars/<artifact>/<version>/<path>
@@ -27,24 +37,40 @@
 			PivotableWebjarsCachingWebFluxConfigurer / PivotableWebjarsCachingWebmvcConfigurer):
 			a version bump changes the URL, invalidating the cache naturally.
 
+			External-src importmap requires Chrome 127+ / Firefox 139+ / Safari (future). Safari
+			users should fall back to the default webjars mode and may need a recent version.
+
 			When adding a library:
 			  - add the matching `<groupId>:<artifact>:<version>` dep in pivotable/js/pom.xml;
-			  - pin the SAME version in BOTH URL fields below — the embedded version forces
-			    explicit alignment (a drift between pom.xml and index.html becomes immediately
-			    visible rather than silently diverging).
+			  - add the SAME version in ALL FOUR `/ui/importmap-*.json` files — the embedded
+			    version forces explicit alignment (a drift between pom.xml and the importmaps
+			    becomes immediately visible rather than silently diverging).
 		-->
 		<script>
 			(function () {
-				// Default = local WebJars. `?cdn` flips to jsdelivr's WebJars mirror.
-				const useCdn = new URLSearchParams(location.search).has("cdn");
+				// Two independent URL flags drive which assets the SPA loads:
+				//   - `?cdn`  : swap the default local WebJars for jsdelivr's WebJars mirror.
+				//   - `?dev`  : swap minified/.prod builds for the full / source-readable
+				//               variants. Default is MINIFIED so end-users get the smallest
+				//               payload; pass `?dev` for DevTools work.
+				// Their cross-product selects one of four importmap JSON files under `/ui/`.
+				const params = new URLSearchParams(location.search);
+				const useCdn = params.has("cdn");
+				const useDev = params.has("dev");
 				const useWebjars = !useCdn;
+				const useMin = !useDev;
 
-				// Stylesheets. Both `cdn` and `webjars` point at the same WebJar file; only the
-				// host (jsdelivr vs. local Spring Boot) differs.
+				// Stylesheets. Each row lists up to four variants: full/min × cdn/webjars.
+				// When a min variant is missing, we fall back to the full URL so the page
+				// still renders (a missing .min.css would otherwise yield a 404 and unstyled
+				// markup). Previously driven by the server-side `minifyHtml` in
+				// PivotableSpaRouter / PivotableSpaController — now fully client-driven.
 				const STYLESHEETS = [
 					{
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/css/bootstrap.css",
+						cdnMin: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/css/bootstrap.min.css",
 						webjars: "/webjars/bootstrap/5.3.8/css/bootstrap.css",
+						webjarsMin: "/webjars/bootstrap/5.3.8/css/bootstrap.min.css",
 					},
 					{
 						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css",
@@ -60,7 +86,12 @@
 					},
 				];
 				for (const s of STYLESHEETS) {
-					const href = useWebjars ? s.webjars || s.cdn : s.cdn || s.webjars;
+					let href;
+					if (useWebjars) {
+						href = (useMin && s.webjarsMin) || s.webjars || s.cdn;
+					} else {
+						href = (useMin && s.cdnMin) || s.cdn || s.webjars;
+					}
 					if (!href) continue;
 					const link = document.createElement("link");
 					link.rel = "stylesheet";
@@ -69,72 +100,82 @@
 					document.head.appendChild(link);
 				}
 
-				// Importmap. Keys must match the `import "<name>"` specifiers used by the SPA.
-				// `@popperjs/core` → WebJar artifact `popperjs__core` (double underscore is the
-				// WebJars convention for scoped npm packages).
-				// `lodash-es` has no convenient bundled ESM WebJar; we point at the main
-				// `lodash.js` entry which re-exports everything the SPA uses.
-				const IMPORTS = {
-					vue: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue/3.5.32/dist/vue.esm-browser.js",
-						webjars: "/webjars/vue/3.5.32/dist/vue.esm-browser.js",
-					},
-					"vue-router": {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-router/4.6.3/dist/vue-router.esm-browser.js",
-						webjars: "/webjars/vue-router/4.6.3/dist/vue-router.esm-browser.js",
-					},
-					"@vue/devtools-api": {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue__devtools-api/6.6.4/lib/esm/index.js",
-						webjars: "/webjars/vue__devtools-api/6.6.4/lib/esm/index.js",
-					},
-					pinia: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/pinia/3.0.4/dist/pinia.esm-browser.js",
-						webjars: "/webjars/pinia/3.0.4/dist/pinia.esm-browser.js",
-					},
-					"vue-demi": {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/vue-demi/0.14.10/lib/v3/index.mjs",
-						webjars: "/webjars/vue-demi/0.14.10/lib/v3/index.mjs",
-					},
-					bootstrap: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
-						webjars: "/webjars/bootstrap/5.3.8/js/bootstrap.esm.js",
-					},
-					"@popperjs/core": {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/popperjs__core/2.11.8/dist/esm/index.js",
-						webjars: "/webjars/popperjs__core/2.11.8/dist/esm/index.js",
-					},
-					slickgrid: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/esm/index.mjs",
-						webjars: "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
-					},
-					sortablejs: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/sortablejs/1.15.7/modular/sortable.esm.js",
-						webjars: "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
-					},
-					lodashEs: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/lodash-es/4.17.21/lodash.js",
-						webjars: "/webjars/lodash-es/4.17.21/lodash.js",
-					},
-					mermaid: {
-						cdn: "https://cdn.jsdelivr.net/webjars/org.webjars.npm/mermaid/11.6.0/dist/mermaid.esm.mjs",
-						webjars: "/webjars/mermaid/11.6.0/dist/mermaid.esm.mjs",
-					},
-				};
-
-				const imports = {};
-				for (const key of Object.keys(IMPORTS)) {
-					imports[key] = useWebjars ? IMPORTS[key].webjars : IMPORTS[key].cdn;
+				// Emit the importmap synchronously BEFORE any module script is parsed.
+				// Implementation: fetch the JSON via a synchronous XHR and attach it as an
+				// inline importmap tag via DOM appendChild. Two earlier approaches were tried
+				// and rejected:
+				//   1. External-src importmap injected via document.write — Chromium has long-
+				//      standing bugs where the map is not registered before subsequent module
+				//      scripts resolve their imports. Symptom: "Failed to resolve module
+				//      specifier" followed by "Unexpected token '<'" when the bare "vue"
+				//      import falls back to fetching "/" and tries to parse HTML as JS.
+				//   2. Inline importmap via document.write — same race condition, plus extra
+				//      string-escaping headaches.
+				// Synchronous XHR is deprecated but still supported and is the safest way to
+				// GUARANTEE the map is in place before any later module script runs.
+				//
+				// IMPORTANT: do not write the literal "less-than + script" or "less-than +
+				// slash + script" sequence anywhere in this inline JS — Vite's HTML
+				// preprocessor recognises that token even inside JS comments and tries to
+				// treat it as a real script tag, which corrupts the served HTML.
+				//
+				// Four importmap files live under /ui/, one per (cdn/webjars) × (full/min)
+				// combination. The matrix is resolved here rather than server-side so all
+				// configuration is visible in a single place and debuggable from DevTools.
+				let importmapUrl;
+				if (useWebjars) {
+					importmapUrl = useMin ? "/ui/importmap-webjars-min.json" : "/ui/importmap-webjars.json";
+				} else {
+					importmapUrl = useMin ? "/ui/importmap-cdn-min.json" : "/ui/importmap-cdn.json";
+				}
+				// In Vite dev-server mode the bootstrap MUST keep the importmap pointed at LOCAL
+				// /webjars/* URLs, regardless of the `?cdn` flag. Detection: Vite injects
+				// `<script type="module" src="/@vite/client">` at the TOP of <head>.
+				//
+				// Why: the inline `<script type="module">` below uses bare specifiers
+				// (`import "vue"` …), so an importmap IS needed even in dev. But Vite's
+				// `importmapExternalsPlugin` rewrites those same specifiers (in modules served
+				// from /ui/js/) to absolute local /webjars/* URLs. If our importmap pointed at
+				// jsdelivr CDN URLs (under `?cdn`), the browser would speculatively fetch the
+				// CDN copy of vue while Vite-served code uses the local one — two parallel
+				// Vue runtimes, two reactivity systems, render crash on first mount with
+				// "Cannot read properties of null (reading 'refs')". Forcing webjars-min in
+				// dev keeps both paths aligned. In production (Spring Boot serving the static
+				// file with no Vite transform), the user's `?cdn` choice is honoured.
+				const isViteDev = !!document.querySelector('script[src="/@vite/client"]');
+				const effectiveImportmapUrl = isViteDev ? "/ui/importmap-webjars-min.json" : importmapUrl;
+				try {
+					const xhr = new XMLHttpRequest();
+					// `false` = synchronous. Required so the importmap is applied before any
+					// later module script resolves its imports.
+					xhr.open("GET", effectiveImportmapUrl, false);
+					xhr.send(null);
+					if (xhr.status >= 200 && xhr.status < 300) {
+						// Build the importmap script via DOM rather than document.write. Chromium
+						// has long-standing bugs where document.write of an importmap script does
+						// not register the map before subsequent module scripts resolve their
+						// imports — the symptom is "Failed to resolve module specifier" and a
+						// follow-up "Unexpected token '<'" when the bare "vue" import falls back
+						// to fetching "/" and tries to parse the HTML as JS. appendChild before
+						// any later module script tag works because module scripts are deferred:
+						// they wait for parsing of the surrounding document to complete, by which
+						// time this synchronous bootstrap has already attached the map.
+						const s = document.createElement("script");
+						s.type = "importmap";
+						s.textContent = xhr.responseText;
+						document.head.appendChild(s);
+					} else {
+						console.error("Importmap fetch failed", effectiveImportmapUrl, xhr.status);
+					}
+				} catch (e) {
+					console.error("Importmap fetch error", effectiveImportmapUrl, e);
 				}
 
-				const mapTag = document.createElement("script");
-				mapTag.type = "importmap";
-				mapTag.setAttribute("crossorigin", "anonymous");
-				mapTag.textContent = JSON.stringify({ imports });
-				document.head.appendChild(mapTag);
-
-				// Expose which mode is active — surfaced under window.__adhocResourceMode for
-				// easy inspection from DevTools or browser-automation tests.
+				// Expose which mode is active — surfaced under window.__adhocResourceMode /
+				// .__adhocMinified for easy inspection from DevTools or browser-automation tests.
 				window.__adhocResourceMode = useWebjars ? "webjars" : "cdn";
+				window.__adhocMinified = useMin;
+				window.__adhocDev = useDev;
 			})();
 		</script>
 
@@ -201,14 +242,117 @@
 				 */
 				transform: translate(-50%, -50%) translate(-50vw, 40vh) scale(0.6) !important;
 			}
+
+			/* Splash: visible while the bootstrap + SPA boot. Removed once Vue mounts. Inline-styled
+			   (no Bootstrap dep) because the page renders this BEFORE Bootstrap CSS resolves. */
+			#adhoc-splash {
+				position: fixed;
+				inset: 0;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 1rem;
+				background: #fff;
+				font-family:
+					system-ui,
+					-apple-system,
+					"Segoe UI",
+					sans-serif;
+				color: #6c757d;
+				z-index: 99999;
+			}
+			#adhoc-splash .splash-spinner {
+				width: 3rem;
+				height: 3rem;
+				border: 4px solid #dee2e6;
+				border-top-color: #0d6efd;
+				border-radius: 50%;
+				animation: adhoc-splash-spin 0.8s linear infinite;
+			}
+			@keyframes adhoc-splash-spin {
+				to {
+					transform: rotate(360deg);
+				}
+			}
+			#adhoc-splash.adhoc-splash-fading {
+				opacity: 0;
+				pointer-events: none;
+				transition: opacity 0.2s ease-out;
+			}
+			/* Error / stall surface inside the splash. Hidden until something goes wrong, at
+			   which point JS toggles the .has-error modifier on the splash root. */
+			#adhoc-splash .splash-error {
+				display: none;
+				max-width: 36rem;
+				padding: 1rem 1.25rem;
+				border: 1px solid #f5c2c7;
+				background: #f8d7da;
+				color: #842029;
+				border-radius: 0.5rem;
+				font-size: 0.85rem;
+				line-height: 1.4;
+			}
+			#adhoc-splash.has-error .splash-spinner {
+				display: none;
+			}
+			#adhoc-splash.has-error .splash-label {
+				color: #842029;
+				font-weight: 600;
+			}
+			#adhoc-splash.has-error .splash-error {
+				display: block;
+			}
+			#adhoc-splash .splash-error pre {
+				white-space: pre-wrap;
+				word-break: break-word;
+				margin: 0.5rem 0 0;
+				font-size: 0.75rem;
+				max-height: 12rem;
+				overflow: auto;
+			}
+			#adhoc-splash .splash-error button {
+				margin-top: 0.75rem;
+				margin-right: 0.5rem;
+				padding: 0.25rem 0.75rem;
+				border: 1px solid #842029;
+				background: transparent;
+				color: #842029;
+				border-radius: 0.25rem;
+				font: inherit;
+				cursor: pointer;
+			}
+			#adhoc-splash .splash-error button:hover {
+				background: #842029;
+				color: #fff;
+			}
+			/* Progress bar underneath the spinner — driven by counted module fetches. */
+			#adhoc-splash .splash-progress {
+				width: 16rem;
+				height: 0.4rem;
+				background: #e9ecef;
+				border-radius: 0.2rem;
+				overflow: hidden;
+			}
+			#adhoc-splash .splash-progress-bar {
+				height: 100%;
+				width: 0%;
+				background: #0d6efd;
+				transition: width 0.15s ease-out;
+			}
+			#adhoc-splash .splash-progress-label {
+				font-size: 0.75rem;
+				color: #adb5bd;
+				font-variant-numeric: tabular-nums;
+			}
 		</style>
 	</head>
 	<body>
 		<!--
-			The importmap used to live here as a static `<script type="importmap">`. It is now
-			generated dynamically by the bootstrap script in <head> so the SPA can switch between
-			CDN and WebJars sources via `?webjars`. See the comment above that script for the
-			full contract. References:
+			The importmap lives in four static JSON files at `/ui/importmap-{webjars,cdn}{,-min}.json`,
+			loaded as an external importmap script tag by the bootstrap block in <head>. See the
+			comment above that script for the full contract.
+			References:
 			  - https://vuejs.org/guide/quick-start
 			  - https://github.com/vuejs/router/issues/694
 			  - https://github.com/vuejs/pinia/issues/2205
@@ -216,6 +360,137 @@
 			  - https://github.com/WICG/import-maps/issues/76
 			  - https://github.com/jsdelivr/jsdelivr/issues/18038
 		-->
+		<!--
+			Splash screen — visible from page parse until the SPA mounts. Stays up while the
+			bootstrap fetches the importmap, while module scripts download, and while Vue
+			Router resolves the first route. Removed by the inline module script below as
+			soon as `app.mount()` returns.
+		-->
+		<div id="adhoc-splash" role="status" aria-live="polite">
+			<div class="splash-spinner" aria-hidden="true"></div>
+			<div class="splash-label">Loading Pivotable…</div>
+			<div class="splash-progress" aria-hidden="true">
+				<div class="splash-progress-bar" id="adhoc-splash-bar"></div>
+			</div>
+			<div class="splash-progress-label" id="adhoc-splash-progress-label">0 / 0</div>
+			<div class="splash-error" id="adhoc-splash-error" role="alert">
+				<strong id="adhoc-splash-error-title">Pivotable failed to start.</strong>
+				<pre id="adhoc-splash-error-detail"></pre>
+				<button type="button" onclick="location.reload()">Reload</button>
+				<button type="button" onclick="location.search = ''">Reset query</button>
+			</div>
+		</div>
+		<script>
+			// Splash watchdog + progress tracker. Three jobs:
+			//   1. Count fetch / XHR / dynamic-import requests started since boot vs requests
+			//      finished, and update the splash progress bar accordingly. The total is a
+			//      moving target (each new fetch bumps it), so the bar represents "fraction of
+			//      currently-known requests that have completed". Good enough for a "things are
+			//      happening, here is the cadence" cue.
+			//   2. Watch for boot stalls — if app.mount() has not torn down the splash within
+			//      30s, surface "Pivotable failed to start" with a Reload button.
+			//   3. Capture any uncaught error / unhandledrejection and surface its message
+			//      inside the splash, so the user sees an actionable failure instead of an
+			//      eternal spinner. The same handlers stay installed after boot but become
+			//      no-ops once the splash is removed.
+			(function () {
+				let started = 0;
+				let finished = 0;
+				const bar = document.getElementById("adhoc-splash-bar");
+				const label = document.getElementById("adhoc-splash-progress-label");
+				const splash = document.getElementById("adhoc-splash");
+
+				const updateProgress = function () {
+					if (!bar || !label) return;
+					const pct = started === 0 ? 0 : Math.round((finished / started) * 100);
+					bar.style.width = pct + "%";
+					label.textContent = finished + " / " + started;
+				};
+
+				// Patch fetch — count starts when the call is made, finished when its promise settles.
+				const origFetch = window.fetch;
+				if (typeof origFetch === "function") {
+					window.fetch = function () {
+						started++;
+						updateProgress();
+						const p = origFetch.apply(this, arguments);
+						p.then(
+							() => {
+								finished++;
+								updateProgress();
+							},
+							() => {
+								finished++;
+								updateProgress();
+							},
+						);
+						return p;
+					};
+				}
+
+				// Patch XHR — only the SYNCHRONOUS bootstrap importmap fetch goes through here
+				// today, but the patch is symmetric with fetch so any future XHR is captured.
+				const OrigXHR = window.XMLHttpRequest;
+				if (typeof OrigXHR === "function") {
+					const PatchedXHR = function () {
+						const xhr = new OrigXHR();
+						const origSend = xhr.send;
+						xhr.send = function () {
+							started++;
+							updateProgress();
+							let done = false;
+							const finish = function () {
+								if (done) return;
+								done = true;
+								finished++;
+								updateProgress();
+							};
+							xhr.addEventListener("loadend", finish);
+							return origSend.apply(this, arguments);
+						};
+						return xhr;
+					};
+					PatchedXHR.prototype = OrigXHR.prototype;
+					window.XMLHttpRequest = PatchedXHR;
+				}
+
+				// Surface a visible error inside the splash. Idempotent — only the FIRST error
+				// is shown, so a cascade of follow-up failures does not overwrite the root cause.
+				let errorShown = false;
+				const showSplashError = function (title, detail) {
+					if (!splash || errorShown) return;
+					if (splash.classList.contains("adhoc-splash-fading")) return;
+					errorShown = true;
+					splash.classList.add("has-error");
+					const t = document.getElementById("adhoc-splash-error-title");
+					const d = document.getElementById("adhoc-splash-error-detail");
+					if (t && title) t.textContent = title;
+					if (d) d.textContent = detail || "";
+				};
+
+				window.addEventListener("error", (e) => {
+					showSplashError("Pivotable failed to start", (e.error && e.error.stack) || e.message || "Unknown error");
+				});
+				window.addEventListener("unhandledrejection", (e) => {
+					const reason = e.reason;
+					const detail = reason && (reason.stack || reason.message || String(reason));
+					showSplashError("Pivotable failed to start", detail || "Unhandled promise rejection");
+				});
+
+				// Stall watchdog — if the splash is still visible after 30s, assume boot is
+				// wedged. We do NOT auto-reload (that would mask repeated failures); we just
+				// flip the splash to its error state so the user can act.
+				setTimeout(() => {
+					if (!splash || splash.classList.contains("adhoc-splash-fading")) return;
+					if (!document.body.contains(splash)) return;
+					showSplashError(
+						"Pivotable is taking too long to start",
+						"Boot has not completed after 30 s. The Reload button retries; Reset query strips ?cdn / ?dev / etc.",
+					);
+				}, 30000);
+			})();
+		</script>
+
 		<div id="app">
 			<AdhocApp />
 		</div>
@@ -323,6 +598,16 @@
 			// https://router.vuejs.org/guide/migration/#All-navigations-are-now-always-asynchronous
 			router.isReady().then(() => {
 				app.mount("#app");
+				// Bootstrap is finished, the SPA has rendered its first frame. Tear down the
+				// splash with a short fade so the transition feels intentional rather than
+				// "flash of unstyled content". `requestAnimationFrame` defers one tick so the
+				// browser commits the freshly-mounted DOM before we start fading.
+				requestAnimationFrame(() => {
+					const splash = document.getElementById("adhoc-splash");
+					if (!splash) return;
+					splash.classList.add("adhoc-splash-fading");
+					setTimeout(() => splash.remove(), 250);
+				});
 			});
 		</script>
 		<!-- This demonstrate how we can inject properties into source files, to be rendered without any API/Javascript-->

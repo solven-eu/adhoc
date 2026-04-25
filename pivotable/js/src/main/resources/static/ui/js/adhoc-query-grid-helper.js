@@ -11,6 +11,9 @@ import { SlickHeaderButtons } from "slickgrid";
 // BEWARE: Should probably push an event to the Modal component so it open itself
 import { Modal } from "bootstrap";
 
+import { computeMeasureStats, heatmapColor } from "./adhoc-query-grid-heatmap.js";
+import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
+
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
 window.Sortable = Sortable;
 
@@ -20,7 +23,32 @@ const isSortable = function () {
 	return true;
 };
 
-const formatters = function (formatOptions) {
+// Copy a column / measure name to the system clipboard. Wired to the `bi-clipboard`
+// icon next to each header name. We need an explicit copy affordance because clicking
+// the column header itself triggers a sort (SlickGrid behaviour) — selecting the text
+// with the mouse to copy-paste is therefore clumsy. Falls back to a manual textarea +
+// document.execCommand("copy") when navigator.clipboard is unavailable (e.g. when
+// served over plain HTTP without secure context).
+const copyColumnNameToClipboard = function (name) {
+	if (navigator.clipboard && navigator.clipboard.writeText) {
+		navigator.clipboard.writeText(name).catch((e) => console.error("Clipboard write failed", e));
+		return;
+	}
+	const ta = document.createElement("textarea");
+	ta.value = name;
+	ta.style.position = "fixed";
+	ta.style.opacity = "0";
+	document.body.appendChild(ta);
+	ta.select();
+	try {
+		document.execCommand("copy");
+	} catch (e) {
+		console.error("execCommand copy failed", e);
+	}
+	document.body.removeChild(ta);
+};
+
+const formatters = function (formatOptions, measureStats) {
 	if (!formatOptions) {
 		formatOptions = {};
 	}
@@ -49,11 +77,30 @@ const formatters = function (formatOptions) {
 		numberFormat = new Intl.NumberFormat(formatOptions.locale, {});
 	}
 
+	// Build a heatmap-styled DOM node for a single numeric cell. SlickGrid's formatter
+	// pipeline renders FormatterResultWithText via `textContent`, so any background color
+	// MUST be attached to a DOM element returned via `.html`. We keep `display: block` so
+	// the span fills the cell width, making the gradient visible across the whole cell
+	// rather than just behind the digits.
+	function buildHeatmapCell(value, color) {
+		const el = document.createElement("span");
+		el.style.display = "block";
+		el.style.backgroundColor = color;
+		el.textContent = numberFormat.format(value);
+		return el;
+	}
+
 	function measureFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
 
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
+			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
+			if (color) {
+				rtn.html = buildHeatmapCell(value, color);
+				rtn.toolTip = value;
+				return rtn;
+			}
 			rtn.text = numberFormat.format(value);
 			// toolTip show raw value
 			rtn.toolTip = value;
@@ -133,6 +180,8 @@ const updateRowSpanInner = function (runningRowSpans, columnNames, metadata, row
 export default {
 	isSortable,
 	formatters,
+	computeMeasureStats,
+	heatmapColor,
 
 	sortRows: function (columnNames, coordinates, values) {
 		if (coordinates.length != values.length) {
@@ -186,7 +235,7 @@ export default {
 		for (let columnName of columnNames) {
 			const column = {
 				id: columnName,
-				name: columnName,
+				name: headerNameWithCopyIcon(columnName),
 				field: columnName,
 				sortable: isSortable(),
 				asyncPostRender: renderCallback,
@@ -194,7 +243,10 @@ export default {
 			};
 
 			if (queryModel) {
-				// queryModel is available: show a button to edit the queryModel from the grid
+				// queryModel is available: show a button to edit the queryModel from the grid.
+				// Note: the copy-name affordance lives INLINE in `column.name` (above) so the
+				// icon sits right next to the name rather than at the far end of the header
+				// alongside the other action buttons.
 				column.header = {
 					buttons: [
 						{
@@ -203,11 +255,11 @@ export default {
 							cssClass: "bi bi-x-circle",
 							itemVisibilityOverride: function (args) {
 								// for example don't show the header button on column "E"
-								return args.column.name !== "E";
+								return args.column.id !== "E";
 							},
 							itemUsabilityOverride: function (args) {
 								// for example the button usable everywhere except on last column "J"
-								return args.column.name !== "J";
+								return args.column.id !== "J";
 							},
 							action: function (e, args) {
 								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
@@ -221,11 +273,11 @@ export default {
 							cssClass: "bi bi-filter-circle",
 							itemVisibilityOverride: function (args) {
 								// for example don't show the header button on column "E"
-								return args.column.name !== "E";
+								return args.column.id !== "E";
 							},
 							itemUsabilityOverride: function (args) {
 								// for example the button usable everywhere except on last column "J"
-								return args.column.name !== "J";
+								return args.column.id !== "J";
 							},
 							action: function (e, args) {
 								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
@@ -243,15 +295,15 @@ export default {
 		return gridColumns;
 	},
 
-	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions) {
-		const measureFormatters = formatters(formatOptions);
+	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats) {
+		const measureFormatters = formatters(formatOptions, measureStats);
 
 		const gridColumns = [];
 
 		for (let measureName of measureNames) {
 			const column = {
 				id: measureName,
-				name: measureName,
+				name: headerNameWithCopyIcon(measureName),
 				field: measureName,
 				sortable: isSortable(),
 				asyncPostRender: renderCallback,
@@ -270,7 +322,10 @@ export default {
 			}
 
 			if (queryModel) {
-				// queryModel is available: show a button to edit the queryModel from the grid
+				// queryModel is available: show a button to edit the queryModel from the grid.
+				// Note: the copy-name affordance lives INLINE in `column.name` (above) so the
+				// icon sits right next to the name rather than at the far end of the header.
+				// The Statistics affordance lives in the FOOTER (next to min/max), not here.
 				column.header = {
 					buttons: [
 						{
@@ -279,11 +334,11 @@ export default {
 							cssClass: "bi bi-x-circle",
 							itemVisibilityOverride: function (args) {
 								// for example don't show the header button on column "E"
-								return args.column.name !== "E";
+								return args.column.id !== "E";
 							},
 							itemUsabilityOverride: function (args) {
 								// for example the button usable everywhere except on last column "J"
-								return args.column.name !== "J";
+								return args.column.id !== "J";
 							},
 							action: function (e, args) {
 								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
@@ -297,11 +352,11 @@ export default {
 							cssClass: "bi bi-question-circle",
 							itemVisibilityOverride: function (args) {
 								// for example don't show the header button on column "E"
-								return args.column.name !== "E";
+								return args.column.id !== "E";
 							},
 							itemUsabilityOverride: function (args) {
 								// for example the button usable everywhere except on last column "J"
-								return args.column.name !== "J";
+								return args.column.id !== "J";
 							},
 							action: function (e, args) {
 								// you can use the "action" callback and/or subscribe to the "onCallback" event, they both have the same arguments
@@ -365,62 +420,80 @@ export default {
 		return data;
 	},
 
-	updateFooters: function (grid, columnNames, coordinates, values) {
+	updateFooters: function (grid, columnNames, coordinates, values, measureStats, formatOptions) {
 		// Update footer row
 		const columnToDistinctCount = {};
 
+		// Footer numbers reuse the same Intl.NumberFormat the measure cells use, so the
+		// summary (min / sum / max) visually lines up with the cell values above it. We
+		// build a dedicated formatter (no heatmap) so the footer stays plain text.
+		const footerFormatters = formatters(formatOptions || {});
+		const formatNumber = function (n) {
+			if (n === null || n === undefined || Number.isNaN(n)) {
+				return "";
+			}
+			// Borrow the measure number-format by calling the same formatter with a fake cell.
+			const out = footerFormatters.measureFormatter(0, 0, n, { id: "__footer__" }, {});
+			return out && typeof out.text === "string" ? out.text : String(n);
+		};
+
 		for (let column of grid.getColumns()) {
-			const columnName = column.name;
+			// `column.name` is now HTML (the inline name + copy-icon markup produced by
+			// `headerNameWithCopyIcon`), so we MUST key off `column.id` here — that is the
+			// bare identifier the rest of the model and the `coordinates[row]` map index by.
+			// A previous version used `column.name` and silently dropped every groupBy footer
+			// (the `columnNames.includes(...)` test never matched HTML).
+			const columnId = column.id;
 
 			var footerText = null;
 			if ("id" === column.id) {
 				// rowIndex column has `distinctCount==length`
-				columnToDistinctCount[columnName] = coordinates.length;
+				columnToDistinctCount[columnId] = coordinates.length;
 
-				footerText = `#: ${columnToDistinctCount[columnName]}`;
-			} else if (columnNames.includes(columnName)) {
+				footerText = `#: ${columnToDistinctCount[columnId]}`;
+			} else if (columnNames.includes(columnId)) {
 				const values = [];
 
 				for (let rowIndex = 0; rowIndex < coordinates.length; rowIndex++) {
-					values.push(coordinates[rowIndex][columnName]);
+					values.push(coordinates[rowIndex][columnId]);
 				}
 
 				// https://stackoverflow.com/questions/21661686/fastest-way-to-get-count-of-unique-elements-in-javascript-array
-				columnToDistinctCount[columnName] = new Set(values).size;
+				columnToDistinctCount[columnId] = new Set(values).size;
 
-				footerText = `#: ${columnToDistinctCount[columnName]}`;
-			} else {
-				var sum = 0;
-				var min = null;
-				var max = null;
-
-				for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
-					if (typeof values[rowIndex][columnName] === "number") {
-						const asNumber = values[rowIndex][columnName];
-
-						sum += asNumber;
-						if (min === null) {
-							min = asNumber;
-						} else {
-							min = Math.min(min, asNumber);
-						}
-						if (max === null) {
-							max = asNumber;
-						} else {
-							max = Math.min(max, asNumber);
-						}
-					}
+				footerText = `#: ${columnToDistinctCount[columnId]}`;
+			} else if (measureStats && measureStats[column.id]) {
+				// Measure column: show min adjacent to max so the eye can compare the heatmap
+				// endpoints at a glance. Sum / mean / variance / null counts moved to the
+				// per-column Statistics modal — accessible via the footer button below.
+				const s = measureStats[column.id];
+				if (s.count > 0) {
+					footerText = `min ${formatNumber(s.min)} · max ${formatNumber(s.max)}`;
 				}
-
-				// TODO Need to properly format else it is not readable
-				footerText = `sum=${sum} min=${min} max=${max}`;
-				footerText = "";
 			}
 
 			if (footerText) {
 				// https://github.com/6pac/SlickGrid/blob/master/examples/example-footer-totals.html
 				var columnElement = grid.getFooterRowColumn(column.id);
 				columnElement.textContent = footerText;
+				// Append a Statistics affordance to MEASURE columns only, anchored next to
+				// min/max in the footer where the related summary numbers already live.
+				// `setAttribute("data-adhoc-stats-measure", ...)` lets the registered
+				// click-delegation handler (in `registerHeaderButtons`) open the modal
+				// without us having to keep a per-button reference around.
+				if (measureStats && measureStats[column.id]) {
+					const btn = document.createElement("i");
+					btn.className = "bi bi-bar-chart adhoc-stats-btn";
+					btn.setAttribute("role", "button");
+					btn.setAttribute("tabindex", "0");
+					btn.setAttribute("title", "Statistics for this measure");
+					btn.setAttribute("data-adhoc-stats-measure", column.id);
+					btn.style.cursor = "pointer";
+					btn.style.marginLeft = "0.5rem";
+					btn.style.opacity = "0.6";
+					columnElement.appendChild(document.createTextNode(" "));
+					columnElement.appendChild(btn);
+				}
 			}
 		}
 	},
@@ -428,6 +501,14 @@ export default {
 	registerHeaderButtons(grid, queryModel) {
 		// https://github.com/6pac/SlickGrid/blob/master/examples/example-plugin-headerbuttons.html
 		var headerButtonsPlugin = new SlickHeaderButtons();
+
+		// Inline copy-name icon — rendered as part of `column.name` HTML so it sits next to
+		// the name itself (not at the far right of the header where SlickHeaderButtons drops
+		// its icons). Click delegation lives in `adhoc-query-grid-clipboard.js` and uses
+		// CAPTURE phase so SlickGrid's sort handler (bound on `.slick-header-column` in
+		// bubble phase) does not fire when the user clicks the icon.
+		const containerEl = grid.getContainerNode();
+		registerCopyNameDelegation(containerEl, copyColumnNameToClipboard);
 
 		const ids = inject("ids");
 
@@ -438,32 +519,61 @@ export default {
 		const columnFilterModal = new Modal(document.getElementById("columnFilterModal"), {});
 		const columnFilterModel = inject("columnFilterModel");
 
+		// Per-measure Statistics modal — singleton, mounted by `adhoc-query-grid.js`. The
+		// `allStats` map is refreshed on every grid resync; this dispatcher just selects
+		// the active measure and shows the modal.
+		const measureStatsEl = document.getElementById("measureStatsModal");
+		const measureStatsModal = measureStatsEl ? new Modal(measureStatsEl, {}) : null;
+		const measureStatsModel = inject("measureStatsModel", null);
+
+		// All action callbacks read `column.id` rather than `column.name` because
+		// `column.name` now contains the rendered HTML (name + inline copy icon) — see
+		// `headerNameWithCopyIcon`. `column.id` is still the bare identifier the rest of
+		// the model keys off.
 		headerButtonsPlugin.onCommand.subscribe(function (e, args) {
 			var column = args.column;
 			var button = args.button;
 			var command = args.command;
 
 			if (command == "remove-column") {
-				queryModel.selectedColumns[column.name] = false;
-				queryModel.onColumnToggled(column.name);
+				queryModel.selectedColumns[column.id] = false;
+				queryModel.onColumnToggled(column.id);
 
 				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
 				// grid.invalidate();
 			} else if (command == "filter-column") {
-				columnFilterModel.column = column.name;
+				columnFilterModel.column = column.id;
 				columnFilterModal.show();
 			} else if (command == "remove-measure") {
-				queryModel.selectedMeasures[column.name] = false;
+				queryModel.selectedMeasures[column.id] = false;
 
 				// No need to invalidate the grid, as the queryModel change shall trigger a grid/tabularView/data update
 				// grid.invalidate();
 			} else if (command == "info-measure") {
-				console.log("Info measure", column.name);
+				console.log("Info measure", column.id);
 
-				measuresDagModel.main = column.name;
+				measuresDagModel.main = column.id;
 				measuresDagModal.show();
 			}
 		});
+
+		// Footer-side click delegation — the Statistics button lives in the per-measure
+		// footer cell (rendered by `updateFooters`), not in the header. We piggy-back on
+		// the same container we wired above for the inline copy-name icon.
+		if (containerEl && !containerEl.__adhocStatsBtnWired) {
+			containerEl.__adhocStatsBtnWired = true;
+			containerEl.addEventListener("click", function (e) {
+				const btn = e.target && e.target.closest && e.target.closest(".adhoc-stats-btn");
+				if (!btn) return;
+				e.preventDefault();
+				e.stopPropagation();
+				const measure = btn.getAttribute("data-adhoc-stats-measure") || "";
+				if (!measureStatsModel || !measureStatsModal) return;
+				measureStatsModel.measureName = measure;
+				measureStatsModel.stats = (measureStatsModel.allStats && measureStatsModel.allStats[measure]) || null;
+				measureStatsModal.show();
+			});
+		}
 
 		grid.registerPlugin(headerButtonsPlugin);
 	},

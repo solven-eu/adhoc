@@ -226,6 +226,24 @@
 				</plugin>
 
 				<plugin>
+					<!--
+						Shared config for the git-commit-id plugin. Submodules that actually declare the plugin
+						(`pivotable-infra` generates git.properties, `pivotable-js` substitutes @git.commit.id.abbrev@
+						into index.html) inherit this managed configuration. Build contexts without a `.git/` directory
+						— typically container builds on Render, Cloud Run, etc. where `.git` is excluded from the
+						upload — must not fail; they fall back to empty/placeholder commit info. Pass the real SHA
+						via `-Dgit.commit.id.abbrev=$CI_COMMIT_SHA` (or equivalent) from the CI if the `@…@` token
+						in the served HTML needs to resolve.
+					-->
+					<groupId>io.github.git-commit-id</groupId>
+					<artifactId>git-commit-id-maven-plugin</artifactId>
+					<configuration>
+						<failOnNoGitDirectory>false</failOnNoGitDirectory>
+						<failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+					</configuration>
+				</plugin>
+
+				<plugin>
 					<!-- We want to provide source jars -->
 					<!-- https://maven.apache.org/plugins/maven-source-plugin/ -->
 					<!-- Needed by Sonatype deployment-->

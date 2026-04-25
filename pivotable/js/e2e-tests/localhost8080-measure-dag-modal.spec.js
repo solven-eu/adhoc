@@ -24,7 +24,7 @@ test("Measure-graph modal: clicking a linked measure adds it to the query and ex
 
 	await page.getByRole("link", { name: /You need to login/ }).click();
 	await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
-	await page.getByRole("button", { name: "Login fakeUser" }).click();
+	await page.getByRole("button", { name: /^Login$/i }).click();
 
 	await page.getByRole("link", { name: "Browse through endpoints" }).click();
 	await page

@@ -27,7 +27,7 @@ test("Grid-header column filter modal resets state when switching columns", asyn
 	await page.goto(url);
 	await page.getByRole("link", { name: /You need to login/ }).click();
 	await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
-	await page.getByRole("button", { name: "Login fakeUser" }).click();
+	await page.getByRole("button", { name: /^Login$/i }).click();
 
 	await page.getByRole("link", { name: "Browse through endpoints" }).click();
 	await page
@@ -36,41 +36,38 @@ test("Grid-header column filter modal resets state when switching columns", asyn
 		.click();
 	await page.getByRole("link", { name: /Query simple/i }).click();
 
-	// Add two columns. `city` clashes with `capital_city` on loose-match, so we use exact.
+	// Add two columns. Target the switches by their stable `id` attribute (the wizard
+	// emits `column_<name>` / `measure_<name>` ids) so loose-match collisions with
+	// other entries (e.g. `city` vs `capital_city`) cannot occur.
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("city");
 	await page.getByRole("button", { name: /columns/ }).click();
-	await page.getByRole("switch", { name: "city", exact: true }).check();
+	await page.locator('[id="column_city"]').check();
 
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("country");
-	await page.getByRole("switch", { name: "country", exact: true }).check();
+	await page.locator('[id="column_country"]').check();
 
 	// A measure is required to get any grid rows — the grid is how we reach the header
 	// filter icons (SlickHeaderButtons plugin, rendered only when rows exist).
-	// NOTE: the `simple` cube exposes `delta` as both a column AND a measure, so we scope
-	// the switch to the measures accordion (#wizardMeasures) to avoid the duplicate-match.
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("delta");
 	await page.getByRole("switch", { name: "JSON" }).uncheck();
 	await page.getByRole("button", { name: /measures/ }).click();
-	// The accessible name of the `delta` measure switch includes its descriptions/formula
-	// (e.g. "delta ? δ SUM(delta)") when the "Show descriptions" toggle is on (default).
-	// Anchor on `SUM(delta)` which uniquely identifies the raw-sum measure we want.
-	await page
-		.locator("#wizardMeasures")
-		.getByRole("switch", { name: /SUM\(delta\)/ })
-		.check();
+	await page.locator('[id="measure_delta"]').check();
 
 	await expect(page.locator(".slick-row").first()).toBeVisible();
 
 	// Helper: click the `.bi-filter-circle` button under the SlickGrid header matching
 	// `columnName`. SlickGrid renders each column header as `.slick-header-column` with
 	// its `.slick-column-name` text, and `SlickHeaderButtons` injects the filter icon as
-	// a descendant `.slick-header-button.bi-filter-circle`.
+	// a descendant `.slick-header-button.bi-filter-circle`. The column name is now
+	// wrapped in `<span class="adhoc-header-name">{name}</span>` followed by the inline
+	// copy-name icon, so we match the inner span exactly rather than the whole
+	// `.slick-column-name` text (which would include trailing whitespace).
 	const openHeaderFilter = async (columnName) => {
 		const header = page.locator(".slick-header-column").filter({
-			has: page.locator(".slick-column-name", { hasText: new RegExp(`^${columnName}$`) }),
+			has: page.locator(".adhoc-header-name", { hasText: new RegExp(`^${columnName}$`) }),
 		});
 		await header.hover();
 		await header.locator(".slick-header-button.bi-filter-circle").click({ force: true });

@@ -1,0 +1,16 @@
+# Kept tight because the Render build uploads this as the Docker build context. Anything left in
+# here is copied into the build stage and invalidates the `COPY . .` layer cache on every push.
+**/target/
+**/node_modules/
+.git/
+.idea/
+.vscode/
+*.log
+# Playwright / vitest reports — regenerated per run, never needed inside the container.
+pivotable/js/playwright-report/
+pivotable/js/test-results/
+pivotable/js/vitest-report/
+pivotable/js/coverage/
+# Editor swap files.
+*.swp
+*.swo

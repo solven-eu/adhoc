@@ -1,8 +1,9 @@
-import { ref, watch, onMounted, reactive, provide, inject } from "vue";
+import { ref, computed, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
 import AdhocGridControls from "./adhoc-query-grid-controls.js";
+import AdhocMeasureStatsModal from "./adhoc-query-grid-stats-modal.js";
 
 // Formatters
 import { SlickGrid, SlickDataView } from "slickgrid";
@@ -16,6 +17,7 @@ export default {
 		AdhocCellModal,
 		AdhocGridTimingsBar,
 		AdhocGridControls,
+		AdhocMeasureStatsModal,
 	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
@@ -46,8 +48,34 @@ export default {
 		// https://stackoverflow.com/questions/2402953/javascript-data-grid-for-millions-of-rows
 		let dataView;
 
+		// Singleton model for the per-measure Statistics modal — provided by `adhoc-query.js`
+		// so the grid header buttons (registered in `adhoc-query-grid-helper.js`) can toggle
+		// it without prop-drilling. Read here so the local AdhocMeasureStatsModal gets the
+		// same reactive object the header buttons mutate.
+		const measureStatsModel = inject("measureStatsModel");
+
 		let grid;
 		const gridMetadata = reactive({});
+		// Two distinct "empty" states with different UX:
+		//
+		//   - `isEmptyModel` — the queryModel itself has no selected measures and no
+		//     selected columns (the user hasn't built a query yet). This is the case
+		//     that warrants the wizard-pointer hint ("Use the wizard…"). Derived as a
+		//     `computed` so it tracks the queryModel reactively without being mutated
+		//     from resyncData.
+		//
+		//   - `isEmptyView` — the user HAS built a query, but the backend returned zero
+		//     rows. The grid still shows its column headers; we don't want the wizard
+		//     hint here (it would lie about the state) but we may want a different
+		//     "no rows match" message in the future.
+		const isEmptyModel = computed(() => {
+			const qm = props.queryModel;
+			if (!qm) return true;
+			const hasSelectedMeasure = Object.values(qm.selectedMeasures || {}).some((v) => v === true);
+			const hasSelectedColumn = Object.values(qm.selectedColumns || {}).some((v) => v === true);
+			return !hasSelectedMeasure && !hasSelectedColumn;
+		});
+		const isEmptyView = computed(() => !isEmptyModel.value && !gridMetadata.nb_rows);
 
 		const formatOptions = reactive({
 			// https://stackoverflow.com/questions/673905/how-can-i-determine-a-users-locale-within-the-browser
@@ -73,9 +101,9 @@ export default {
 		function renderingDone() {
 			rendering.value = false;
 			props.tabularView.loading.rendering = false;
-			if (props.tabularView.timing.rendering_start) {
-				props.tabularView.timing.rendering = new Date() - props.tabularView.timing.rendering_start;
-				delete props.tabularView.timing.rendering_start;
+			if (props.tabularView.timing.rendering_startedAt) {
+				props.tabularView.timing.rendering = new Date() - props.tabularView.timing.rendering_startedAt;
+				delete props.tabularView.timing.rendering_startedAt;
 			} else {
 				// another cell already registered renderering as done
 			}
@@ -95,19 +123,34 @@ export default {
 			const view = props.tabularView.view;
 
 			gridColumns = [];
+			// Per-measure stats (min / max / sum / count) computed from `view.values`. Set in
+			// the non-empty branch below and threaded into both `measuresToGridColumns` (for
+			// the heatmap cell formatter) and `updateFooters` (for the min/sum/max summary).
+			// Left undefined when the grid is empty so formatters degrade to plain numbers.
+			let measureStats;
 
 			// Null view = cleared state (e.g. right after Reset, when queryModel is empty so no
 			// query was fired). Render a blank grid with a single placeholder column and zero
 			// data rows — SlickGrid misbehaves with `setColumns([])`, so keep at least one column.
 			// Bail out before the code below, which dereferences `view.coordinates` and
 			// `tabularView.query.groupBy.columns` (both undefined in this state).
+			//
+			// SlickGrid's frozen-column + rowSpan combo does NOT redraw on `dataView.refresh()`
+			// alone — the previous viewport's rendered rows survive. We must explicitly
+			// invalidate the row cache and re-render, mirroring the trailing call in the
+			// non-empty branch below.
 			if (!view) {
+				console.log("Rendering empty view (no query)");
 				gridColumns.push({ id: "empty", name: "", field: "empty", sortable: false });
 				data.array = [];
 				gridMetadata.nb_rows = 0;
 				grid.setColumns(gridColumns);
+				dataView.beginUpdate();
 				dataView.setItems(data.array, "id");
-				dataView.refresh();
+				dataView.endUpdate();
+				grid.remapAllColumnsRowSpan();
+				grid.invalidate();
+				grid.render();
 				return;
 			}
 
@@ -158,7 +201,7 @@ export default {
 			} else {
 				rendering.value = true;
 				props.tabularView.loading.rendering = true;
-				props.tabularView.timing.rendering_start = new Date();
+				props.tabularView.timing.rendering_startedAt = new Date();
 
 				// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 				console.log(`Rendering columnNames=${columnNames}`);
@@ -167,22 +210,38 @@ export default {
 				// measureNames may be filled on first row if we requested no measure and received the default measure
 				const measureNames = props.tabularView.query.measures;
 				console.log(`Rendering measureNames=${measureNames}`);
+
+				// Compute per-measure min/max/sum stats BEFORE building the column definitions
+				// so the cell formatter can paint a heatmap background on each numeric cell, and
+				// so the footer row can surface min/sum/max without re-scanning the values.
+				measureStats = gridHelper.computeMeasureStats(measureNames, view.values);
+				// Stash the freshly-computed stats on the shared singleton so the per-measure
+				// Statistics modal can be opened from the grid header without re-scanning the
+				// view. Resetting the visible measure name on each resync prevents stale
+				// numbers from being shown if the user re-opens the modal after a fresh query.
+				if (measureStatsModel) {
+					measureStatsModel.allStats = measureStats;
+				}
+
 				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
-				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions));
+				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats));
 
 				{
 					props.tabularView.loading.sorting = true;
 					const sortingStart = new Date();
+					props.tabularView.timing.sorting_startedAt = sortingStart;
 					try {
 						gridHelper.sortRows(columnNames, view.coordinates, view.values);
 					} finally {
 						props.tabularView.loading.sorting = false;
 						props.tabularView.timing.sorting = new Date() - sortingStart;
+						delete props.tabularView.timing.sorting_startedAt;
 					}
 				}
 
 				props.tabularView.loading.rowSpanning = true;
 				const rowSpanningStart = new Date();
+				props.tabularView.timing.rowSpanning_startedAt = rowSpanningStart;
 				try {
 					if (view.coordinates.length >= 1) {
 						const rowIndex = 0;
@@ -200,6 +259,7 @@ export default {
 				} finally {
 					props.tabularView.loading.rowSpanning = false;
 					props.tabularView.timing.rowSpanning = new Date() - rowSpanningStart;
+					delete props.tabularView.timing.rowSpanning_startedAt;
 				}
 			}
 
@@ -207,7 +267,7 @@ export default {
 
 			grid.setColumns(gridColumns);
 
-			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values);
+			gridHelper.updateFooters(grid, columnNames, view.coordinates, view.values, measureStats, formatOptions);
 
 			dataView.getItemMetadata = (row) => {
 				return metadata[row] && metadata[row].attributes ? metadata[row] : (metadata[row] = { attributes: { "data-row": row }, ...metadata[row] });
@@ -299,11 +359,13 @@ export default {
 					}
 					props.tabularView.loading.preparingGrid = true;
 					const startPreparingGrid = new Date();
+					props.tabularView.timing.preparingGrid_startedAt = startPreparingGrid;
 					try {
 						resyncData();
 					} finally {
 						props.tabularView.loading.preparingGrid = false;
 						props.tabularView.timing.preparingGrid = new Date() - startPreparingGrid;
+						delete props.tabularView.timing.preparingGrid_startedAt;
 					}
 				},
 			);
@@ -328,6 +390,9 @@ export default {
 			formatOptions,
 
 			data,
+			measureStatsModel,
+			isEmptyModel,
+			isEmptyView,
 		};
 	},
 	template: /* HTML */ `
@@ -337,9 +402,29 @@ export default {
 			</div>
 
 			<AdhocCellModal :queryModel="queryModel" :clickedCell="clickedCell" :cube="cube" />
+			<AdhocMeasureStatsModal :statsModel="measureStatsModel" :formatOptions="formatOptions" />
 
 			<span style="width:100%;" class="position-relative">
 				<div :id="domId" class="vh-75 slickgrid-grid"></div>
+
+				<!--
+					Empty-state hints. Two variants depending on which kind of "empty" we
+					are looking at:
+					  - 'isEmptyModel' (no measures + no columns picked yet): point the
+					    user to the wizard panel on the left.
+					  - 'isEmptyView'  (query was sent but matched zero rows): the typical
+					    cause is an over-constrained filter, so point UP to the filter
+					    block above the wizard.
+				-->
+				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-if="!isLoading() && isEmptyModel">
+					<i class="bi bi-arrow-left-circle fs-3"></i>
+					<div>Use the wizard to pick columns and measures, then Submit to build a query.</div>
+				</div>
+				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-else-if="!isLoading() && isEmptyView">
+					<i class="bi bi-arrow-up-circle fs-3"></i>
+					<div>No rows match the current filter.</div>
+					<div class="small">Loosen or clear the filter above the wizard to bring rows back.</div>
+				</div>
 
 				<div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">
 					<div

@@ -15,6 +15,14 @@ export default {
 			customMarkers: {},
 			// `optionName->boolean`
 			selectedOptions: {},
+			// Pause/resume parity with filters. `disabledColumns[name] === true` and
+			// `disabledMeasures[name] === true` mean: keep the entry in `selectedColumns` /
+			// `selectedMeasures` (so the wizard pill, with its remove button, stays where the
+			// user left it), but DROP it from the wire-level query at submit time. The user
+			// re-enables with a single click on the same pause/resume toggle. Symmetrical with
+			// `filter.disabled` on filter tree nodes.
+			disabledColumns: {},
+			disabledMeasures: {},
 		};
 
 		queryModel.reset = function () {
@@ -39,6 +47,8 @@ export default {
 			Object.keys(this.filter).forEach((k) => delete this.filter[k]);
 			Object.keys(this.customMarkers).forEach((k) => delete this.customMarkers[k]);
 			Object.keys(this.selectedOptions).forEach((k) => delete this.selectedOptions[k]);
+			if (this.disabledColumns) Object.keys(this.disabledColumns).forEach((k) => delete this.disabledColumns[k]);
+			if (this.disabledMeasures) Object.keys(this.disabledMeasures).forEach((k) => delete this.disabledMeasures[k]);
 			console.log("queryModel has been reset");
 		};
 

@@ -77,18 +77,49 @@ public class TestIndexHtml {
 	@Autowired
 	PivotableSpaRouter spaRouter;
 
-	@Disabled("Import maps are not built dynamically (for webjar vs cdn)")
+	@Disabled("Import maps are not built dynamically (for webjar vs cdn); importmap JSONs live at "
+			+ "/ui/importmap-{webjars,cdn}{,-min}.json and are checked by the JS unit-test suite.")
 	@Test
 	public void testIndexHtml() throws IOException {
 		String html = spaRouter.indexHtml.getContentAsString(StandardCharsets.UTF_8);
 		checkHtmlForUrls(html);
 	}
 
-	@Disabled("Import maps are not built dynamically (for webjar vs cdn)")
+	/**
+	 * Smoke test — ensures index.html parses cleanly and exposes the structural anchors the SPA bootstrap depends on.
+	 *
+	 * Catches the kind of regression we hit when the literal text {@code <script>} appeared in inline-JS comments and
+	 * Vite's HTML preprocessor mis-tokenised it, dropping half the document. Cheap and offline (no CDN required), so
+	 * unlike {@link #testIndexHtml()} this one is left enabled.
+	 */
 	@Test
-	public void testMinifiedIndexHtml() throws IOException {
-		String html = spaRouter.minifyHtml(spaRouter.indexHtml.getContentAsString(StandardCharsets.UTF_8));
-		checkHtmlForUrls(html);
+	public void testIndexHtml_structure() throws IOException {
+		String html = spaRouter.indexHtml.getContentAsString(StandardCharsets.UTF_8);
+
+		Document jsoup = Jsoup.parse(html);
+
+		// Doctype + lang attribute survived the parse.
+		Assertions.assertThat(jsoup.title()).isEqualTo("Pivotable (Adhoc)");
+		Assertions.assertThat(jsoup.selectFirst("html").attr("lang")).isEqualTo("en");
+
+		// SPA mount point. Without it Vue has nowhere to mount and the page stays blank.
+		Assertions.assertThat(jsoup.selectFirst("#app")).as("#app mount point").isNotNull();
+
+		// Bootstrap inline script + main module script are both present.
+		Assertions.assertThat(jsoup.select("script"))
+				.as("inline bootstrap + module script")
+				.hasSizeGreaterThanOrEqualTo(2);
+		Assertions.assertThat(jsoup.selectFirst("script[type=module]")).as("module script").isNotNull();
+
+		// `?cdn` and `?dev` flags are wired in the bootstrap block — guard against an accidental rename.
+		Assertions.assertThat(html).contains("params.has(\"cdn\")").contains("params.has(\"dev\")");
+
+		// All four importmap JSONs are referenced from the bootstrap block.
+		Assertions.assertThat(html)
+				.contains("/ui/importmap-webjars.json")
+				.contains("/ui/importmap-webjars-min.json")
+				.contains("/ui/importmap-cdn.json")
+				.contains("/ui/importmap-cdn-min.json");
 	}
 
 	private void checkHtmlForUrls(String html) throws IOException {

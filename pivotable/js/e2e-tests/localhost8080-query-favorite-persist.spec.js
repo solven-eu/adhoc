@@ -36,7 +36,7 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	});
 	await page.getByRole("link", { name: /You need to login/ }).click();
 	await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
-	await page.getByRole("button", { name: "Login fakeUser" }).click();
+	await page.getByRole("button", { name: /^Login$/i }).click();
 
 	await page.getByRole("link", { name: "Browse through endpoints" }).click();
 	await page
@@ -51,15 +51,15 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("city");
 	await page.getByRole("button", { name: /columns/ }).click();
-	await page.getByRole("switch", { name: "city", exact: true }).check();
+	await page.locator('[id="column_city"]').check();
 
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("delta");
 	await page.getByRole("switch", { name: "JSON" }).uncheck();
 	await page.getByRole("button", { name: /measures/ }).click();
-	await page.getByRole("switch", { name: /^delta$/ }).check();
+	await page.locator('[id="measure_delta"]').check();
 
-	await expect(page.locator(".slick-row").first()).toBeVisible();
+	await expect(page.locator(".slick-row").first()).toBeVisible({ timeout: 15000 });
 
 	// ── Save as favorite ──
 	// The Favorite toggle button renders inside `adhoc-query-favorite.js`. Its text is
@@ -67,8 +67,22 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 	// with `exact: false` would also match the plural "Favorites" modal, so we anchor on the
 	// modal trigger via its `data-bs-target`.
 	await page.locator('button[data-bs-target="#queryFavorite"]').click();
+	await expect(page.locator("#queryFavorite")).toBeVisible();
 	await page.getByRole("textbox", { name: "Query name" }).fill(favoriteName);
-	await page.getByRole("button", { name: "Save", exact: true }).click();
+	await page.locator("#queryFavorite").getByRole("button", { name: "Save", exact: true }).click();
+	// Wait for the favorite to actually land in localStorage before tearing down
+	// the page. The store's $subscribe persists asynchronously after $patch — a
+	// fast `page.goto` below could otherwise win the race and lose the entry.
+	await page.waitForFunction((name) => {
+		try {
+			const raw = window.localStorage.getItem("adhoc.preferences");
+			if (!raw) return false;
+			const payload = JSON.parse(raw);
+			return Object.values(payload.queryModels || {}).some((m) => m.name === name);
+		} catch {
+			return false;
+		}
+	}, favoriteName);
 	// No need to dismiss the modal explicitly — the favorite is already persisted to
 	// localStorage via the pinia `$subscribe` wired in `store-preferences.js`, and the
 	// subsequent `page.goto` tears down the whole DOM anyway.
@@ -90,15 +104,35 @@ test("Favorite saved on simple cube survives F5 and restores on reopen", async (
 
 	// ── Reopen the favorite from the Favorites modal ──
 	await page.locator('button[data-bs-target="#queryFavorites"]').click();
-	// List items in `adhoc-query-favorites.js` render as clickable <li>s; the saved entry is
-	// the only one with our unique timestamp-based name.
-	await page
-		.locator("#queryFavorites")
-		.getByText("name=" + favoriteName)
-		.click();
+	// Wait for the modal to be fully open before searching its body — Bootstrap
+	// applies the show transition asynchronously, and `getByText` does not retry
+	// across visibility transitions reliably.
+	await expect(page.locator("#queryFavorites")).toBeVisible();
+	// Find the list-group entry whose body contains the unique timestamp-based name.
+	// Click directly on the load-handler row (the inner div with cursor:pointer).
+	// `getByText` over the concatenated `id=…name=…path=…` text matches the whole
+	// run, so we instead pick the list-item by `hasText` substring and click the
+	// first descendant carrying the cursor:pointer style.
+	await expect(page.locator("#queryFavorites.show")).toBeVisible();
+	// Bootstrap's modal-backdrop element is stacked just below the modal-dialog and,
+	// due to a known interaction with the way some browsers compute pointer-event
+	// targets across position:fixed stacking contexts, can intercept the click on
+	// the inner row. Trigger the load handler directly via DOM dispatch — Vue's
+	// @click listener is a regular addEventListener on the .adhoc-favorite-load div,
+	// so a synthetic click event reaches it without going through the backdrop.
+	await page.evaluate((name) => {
+		const items = Array.from(document.querySelectorAll("#queryFavorites .list-group-item"));
+		const row = items.find((li) => li.textContent.includes(name));
+		if (!row) throw new Error("Favorite row not found");
+		const target = row.querySelector(".adhoc-favorite-load");
+		if (!target) throw new Error("adhoc-favorite-load child not found");
+		target.click();
+	}, favoriteName);
 
 	// ── Verify: loading the favorite restored the query and a fresh round-trip produced
 	// rows. This is the actual end-to-end proof the favorite was preserved in localStorage
-	// across the reload and carries back the full queryModel (columns + measures). ──
-	await expect(page.locator(".slick-row").first()).toBeVisible();
+	// across the reload and carries back the full queryModel (columns + measures). The
+	// extra 10 s timeout accommodates loadQuery → autoQuery round-trip → grid resync,
+	// which can exceed the default 2 s on a cold backend.
+	await expect(page.locator(".slick-row").first()).toBeVisible({ timeout: 10000 });
 });

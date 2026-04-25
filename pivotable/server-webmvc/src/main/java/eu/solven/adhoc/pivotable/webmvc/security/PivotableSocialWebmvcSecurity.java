@@ -121,6 +121,10 @@ public class PivotableSocialWebmvcSecurity {
 						// Holds static resources (e.g. `/ui/js/store.js`)
 						"/ui/js/**",
 						"/ui/img/**",
+						// Importmap JSONs loaded by the inline bootstrap in index.html, BEFORE the
+						// user is authenticated. Without permitAll on these, the bootstrap fetch
+						// 401s and module specifiers like `import "vue"` fail to resolve.
+						"/ui/importmap-*.json",
 						// The routes used by the spa
 						"/",
 						"/index.html",
@@ -169,7 +173,12 @@ public class PivotableSocialWebmvcSecurity {
 						.permitAll()
 
 						// Webjars and static resources
-						.requestMatchers("/ui/js/**", "/ui/img/**", "/webjars/**", "/favicon.ico")
+						.requestMatchers("/ui/js/**",
+								"/ui/img/**",
+								// Importmap JSONs are loaded by the bootstrap before login (see comment above).
+								"/ui/importmap-*.json",
+								"/webjars/**",
+								"/favicon.ico")
 						.permitAll()
 
 						// PivotableLoginController

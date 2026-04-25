@@ -1,40 +1,20 @@
 This document is intended for Adhoc developers and users.
 
+It covers the core query engine and shared libraries. Pivotable-specific entries (the
+SPA, the Pivotable backend, the dev stack, login flow, asset loading) live in
+[pivotable/CHANGES.MD](pivotable/CHANGES.MD).
+
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 
 ## [0.0.19]
 
-### Added
-- Query-raw modal (`adhoc-query-raw-modal.js`): new **SQL** tab next to the existing JSON / MDX tabs, rendering a minimal SQL projection of the current queryModel via a new `adhoc-query-to-sql.js` module (selected columns → `SELECT` + `GROUP BY`; selected measures → bare `SELECT` identifiers; column-equality filters → `WHERE`; `withStarColumns` → `ROLLUP(col)`; unknown matchers → `/* … */` comment, same contract as the MDX converter). Both the MDX and the SQL tab now carry a prominent **"Informative only"** `alert alert-info` banner stating that Adhoc does not execute MDX or SQL — the derived text is there to help the user hand-translate the current query into a real MDX-native (Excel, Mondrian, Atoti, …) or SQL-native (DuckDB, Postgres, BigQuery, …) client. Covered by new `unit-tests/query-to-sql.spec.js` (21 cases: empty model, measures-only, columns-only, mixed, AND/OR/NOT filters, `equals` matcher object form, unknown matcher fallback, disabled-filter stripping, numeric/boolean literals, single-quote escaping in literals, double-quote escaping in identifiers, `withStarColumns` → `ROLLUP`, empty cube name).
+### Changed
 - `ForestAsMermaidDag` (new `eu.solven.adhoc.measure.mermaid` package in the `experimental` module): Mermaid-flowchart counterpart of `ForestAsGraphvizDag`. Renders an `IMeasureForest` (or a `MeasureForests`, using one `subgraph` block per forest) as `flowchart LR` text, using the same per-class shape/color conventions as the Graphviz sibling and as the interactive Pivotable measure-graph modal (`adhoc-measures-dag.js`). Supports a `highlightedMeasures` builder option (thick red border). Intended for docs and for previewing programmatically built forests — the output can be pasted at https://mermaid.live or rendered inline by any Mermaid-capable Markdown viewer.
-- `PivotableTokenService`: access-token and refresh-token lifetimes are now configurable via `adhoc.pivotable.oauth2.access-token.validity` and `adhoc.pivotable.oauth2.refresh-token.validity` (ISO-8601 durations). Defaults unchanged (`PT1H` / `P365D`). New test-only profile `application-pivotable-e2e-shorttoken.yml` sets them to `PT3S` / `PT30S` so e2e tests can exercise the real token-refresh and re-login paths in seconds instead of hours.
-- `GET /api/login/v1/json`: when the caller is logged-in, the response is enriched with a `session` sub-map exposing the sliding-idle lifetime (`maxIdleSeconds`, `creationEpochMs`, `lastAccessEpochMs`). Lets the SPA render a session-expiry countdown without needing to read the HttpOnly `SESSION`/`JSESSIONID` cookie. Implemented in both webflux (`PivotableLoginWebfluxController`) and webmvc (`PivotableLoginWebmvcController`). Anonymous callers still get the previous `{ "login": 401 }` shape — no session is force-created by the probe.
-- `docs/pivotable-security.md`: new article describing the SPA authentication model — identity layer (BASIC/OAuth2 → `SESSION` cookie) vs API layer (applicative JWT `access_token`), their lifetimes, and the `/api/login/v1/*` route map. Includes a Mermaid sequence diagram of the full login flow.
-
-### Changed
 - `eu.solven.adhoc.measure.ThrowingCombination`: promoted from `libraries/measures` test scope to main scope so downstream projects (notably Pivotable's `simple` cube) can register it to exercise error-management paths. Behaviour unchanged — still throws `ThrowingCombinationException("Throwing on slice=…")` on every `combine` call. Existing in-module tests (`TestTransformator_Combinator_Exception`, `TestTransformator_Partitionor_ExceptionAsMeasure`, `TestCubeQueryEngine`) keep working unmodified.
-- `simple` cube (`InjectSimpleExampleCubesConfig`): new `always_throws` measure wired on top of `delta` via `ThrowingCombination.class.getName()`. Used by Pivotable UI tests to check how a failing measure surfaces in the query grid / navbar / server logs.
-
-### Changed
-- Query wizard filter tree (`adhoc-query-wizard-filter.js`): an empty root filter (`queryModel.filter === {}`, i.e. the "no filter applied" state) no longer renders as the literal `{}` via the generic `{{filter}}` fallback. It now renders as a muted secondary pill with a `bi-infinity` icon and the label **matchAll**, with a tooltip "No filter — matches all rows (matchAll)". Terminology follows the existing JS convention (`adhoc-query-executor.js:107`, `adhoc-query-wizard-column.js:91`) and aligns with the backend's `IAdhocFilter.MATCH_ALL`.
-- Column filter modal (`adhoc-query-wizard-column-filter.js`): the equals / not_equals editor is now a single filterable combobox instead of a raw `<input>` plus a disconnected `<select>` of coordinates. Users type freely, and a dropdown of matching coordinates (case-insensitive substring, capped at 50) appears below the input with keyboard navigation (ArrowUp/Down, Enter to pick, Escape to dismiss) and mouse-click selection. The like / JSON editors pick up the same Bootstrap form-control sizing, and a small "Unsaved changes" indicator replaces the earlier `pending={{pendingChanges}}` debug text.
-- `pivotable-unsafe` profile: `server.forward-headers-strategy: framework` enabled so Spring Security / OAuth2 build redirects against the reverse-proxy's external host (Vite dev server on `:5173`) instead of the Netty backend's own `:8080`. Paired with a shared `backendProxy` in `pivotable/js/vite.config.js` (`changeOrigin: true`, `xfwd: true`, plus a custom `proxyReq` handler injecting `X-Forwarded-Host` — node-http-proxy's `xfwd` covers For/Port/Proto but not Host). Scoped to `pivotable-unsafe` because in production Spring Boot serves the SPA itself and no proxy is involved.
-- `pivotable/js/package.json`: added `dev_stack` (runs `npm run backend` + `npm run dev_frontend` in one subshell, `trap 'kill 0' SIGINT` so Ctrl-C terminates both), renamed the previous `dev` script to `dev_frontend` to make the frontend/full-stack distinction explicit. `playwright.config.mjs` `webServer.command` now delegates to `npm run backend` so the backend invocation lives in one place and honours `$WEBMODE` + `$SPRING_ACTIVE_PROFILES`. Documented under "Local dev stack (Pivotable)" in `CLAUDE.md`.
-
-### Changed
-- Query view Submit block: when any wizard accordion (columns / measures / custom markers / options) is expanded, the Submit button now floats over the top of the grid (`position: fixed`) so it stays visible without the user scrolling past a tall accordion body. Collapsing the accordion re-docks the button to its normal position below the wizard. Clicking Submit programmatically collapses the open accordion via Bootstrap's `Collapse.hide()`, so a round-trip query re-docks the button automatically. Implementation: shared reactive `accordionState` provided by `adhoc-query.js`, maintained via `document`-level listeners on `show.bs.collapse` / `hidden.bs.collapse` (Bootstrap 5 native events bubble).
 
 ### Fixed
-- Column filter modal singleton (`adhoc-query-wizard-column-filter-modal-singleton.js` / `adhoc-query-wizard-column-filter.js`): opening the filter modal on a different column from the grid header used to pre-fill the freetext input with the value last typed for the previous column. Root cause: the grid-header modal mounts ONE child `AdhocQueryWizardColumnFilter` and swaps its `:column` prop across clicks, so internal `ref("")` state (`equalsValue`, `filterType`, `likePattern`…) survived across columns. Fix: `watch(() => props.column, …, { immediate: true })` resets local state on every column change and pre-loads any already-saved filter for the new column from `queryModel.filter`, so reopening edits the current filter instead of starting blank. Per-column modals (wizard sidebar) already mounted one instance per column — the reset is harmless there and guards against any future refactor. New e2e spec `localhost8080-column-filter-reset.spec.js` asserts the reset end-to-end.
-- Favorites modal (`adhoc-query-favorite.js`): the name/path edit rows both used to label themselves "name =", so the path row displayed "name =" followed by the path value. Relabeled the second row to "path =". Drive-by: added e2e spec `localhost8080-query-favorite-persist.spec.js` covering the full round-trip — save a favorite, clean-reload (F5 equivalent), reopen from the favorites list, grid restored.
 - `TableQueryEngine#suppressGeneratedColumns`: when a query groups by a column that is both (a) produced by an `IColumnGenerator` (e.g. the `scenarioIndex` column of `ExampleVaRDecomposition`) AND (b) carries a `withStar`/`ColumnWithCalculatedCoordinates` grandTotal, the engine used to suppress BOTH the plain `ReferencedColumn` branch AND the synthetic `FunctionCalculatedColumn` branch — collapsing them to the same `grandTotal` table query and then restoring the same `COORDINATE_GENERATED="generated"` coordinate for both. The two branches then emitted the same slice key with the same measure value, crashing `MapBasedTabularView.appendSlice` with `IllegalArgumentException: Multiple entries with same key`. Fix: suppression now skips any groupBy column whose `IAdhocColumn` is an `ICalculatedColumn` — calculated columns carry their own value-computation logic and must not be overwritten by the generator fallback. Reproducer (and new regression test): `TestTableQuery_DuckDb_VaR#testGroupByScenarioIndex_withStar_countAsterisk` (plus `…_withStar_mArray` for the companion case where the measure does decompose).
-- Query view "Restore last successful query" button: the banner now also updates the WIZARD (left sidebar switches) to reflect the restored queryModel — previously `always_throws` (or whichever measure caused the failure) stayed visually checked even though `selectedMeasures` had dropped it logically. Root cause: `queryModel.reset()` and `parsedJsonToQueryModel` reassigned fresh `{}` objects to `selectedMeasures` / `selectedColumns` / `withStarColumns` / `filter` / `customMarkers` / `selectedOptions`, breaking the per-key reactive chain for `v-model` bindings that had already resolved to the prior proxy. Fix: clear in-place (`delete key`) in `reset`, and use `Object.assign` in `parsedJsonToQueryModel` rather than reassigning the parent reference. New e2e spec `localhost8080-query-restore-last-successful.spec.js` asserts the switches reflect the restored state.
-- Query view "Reset query" after a failure: clicking `Reset query` while the "query is broken" banner is up now lands on a clean empty view (banner gone, grid empty, wizard cleared). Three-part fix: (a) `queryModel.reset()` now uses `this` instead of its closure-captured raw reference — the closure pointed at the pre-`reactive()` target, so mutations never fired Vue effects and the UI stayed frozen despite the model being logically cleared; (b) the executor's autoQuery watcher short-circuits when both `measures` and `groupBy.columns` are empty, clearing `tabularView.view` / `tabularView.error` instead of firing an empty-query round-trip that would re-populate the banner; (c) the grid's `resyncData` renders an empty grid when `tabularView.view` is null, rather than dereferencing undefined `.coordinates`. New e2e spec `localhost8080-query-reset-after-failure.spec.js` covers the flow end-to-end on the `simple` cube using the `always_throws` measure.
-- Query view: a failing query now surfaces a prominent sticky banner above the grid (previously the only indication was a small alert badge next to the Submit button, easy to miss when scrolling). The grid continues to show the last successful result so the user keeps context; the banner offers a "Restore last successful query" button that rolls the `queryModel` back to the snapshot captured when the most recent `TabularView` was received. Faulty measures / columns / filters that caused the failure are dropped cleanly because `parsedJsonToQueryModel` does a full reset before populating. Implementation: `tabularView.error` carries the error message from `adhoc-query-executor.js`; `lastSuccessfulQuery` (a plain JSON snapshot via `queryModelToParsedJson`) lives on `adhoc-query.js` and is refreshed on every `tabularView.view` assignment.
-- New `pivotable/js/ROADMAP.md` collects known UX gaps and feature ideas: off-screen grid tooltip clipping, persistent navigable query history with diff / tree view, cached `TabularView` restoration on back-navigation.
-- Query view: browser back/forward now restores the previous query model (groupBy, measures, filter, customMarkers, options) instead of silently changing the URL while the UI kept the current state. Two fixes: (a) a new watch in `adhoc-query.js` listens to `router.currentRoute.value.hash` and decodes it into `queryModel` on popstate, using a hash-equality guard to break the feedback loop with the queryModel→pushState watcher; (b) `adhoc-query-helper.js:parsedJsonToQueryModel` now calls `queryModel.reset()` before populating, so decoding the hash acts as a full snapshot replacement (previously columns/measures added after the restored state would stick, defeating back/forward). Unit test `query-hash.spec.js#loadQueryModelFromHash - replaces prior state` covers the replacement semantics. Known limitation noted inline as a TODO: back/forward re-triggers a full query recomputation — no cached TabularView restoration.
-- `login-providers.js`: selecting the BASIC provider from inside the loginModal now renders the username/password form in-place instead of triggering a full-page navigation to `/html/login/basic`. The modal branch was gated on `item.registration_id == 'BASIC'`, but the backend returns `registration_id = 'pivotable-unsafe_fakeuser'` (the profile name), so the gate never matched and the template fell through to `<a :href="item.login_url">`. Gate now uses `item.type == 'basic'`. New e2e spec `localhost8080-login-modal-basic.spec.js` regression-tests the scenario.
 - `ForestAsGraphvizDag.highlightedMeasures`: new builder option receiving a `Set<String>` of measure names. Matching nodes receive a thick red double-perimeter border (`color="red"`, `penwidth="3"`, `peripheries="2"`) on top of their regular shape/fill styling, so a human can quickly locate them in a large DAG.
 - `IHasExecutorAndSliceFactory` + `PodExecutors` + `IScopeBinder`: new marker interface implemented by `IAdhocFactories` and `QueryPod` exposes both the executor service and the slice factory, and a new `PodExecutors` utility (`runScoped`, `callScoped`, `submitScoped`, `scopedExecutor`) centralises scope-binding around dispatched tasks. `ISliceFactory`'s `callWithScope` / `runWithScope` / `getWithScope` methods are deprecated in favour of having `ColumnSliceFactory` implement `IScopeBinder#bindScope` directly; `CubeQueryEngine#execute`, `PartitionorQueryStep#produceOutputPerInputPartition`, and `TabularRecordStreamReducer` now dispatch through `PodExecutors`.
 - `PerfectHashMap` / `PerfectHashKeyset`: immutable `Map<String, V>` backed by a reusable `PerfectHashKeyset` (an ordered `SequencedSet<String>` of key fields wrapping a `SimplePerfectHash`) and an `ImmutableList<V>` of values. The keyset (and especially the perfect-hash table) is computed once and shared across many maps; each map only pays for an `ImmutableList` sized to `keyFields.size()`. A public `ABSENT` sentinel encodes `not in this map` so that the values list can stay in `ImmutableList` (which forbids nulls). `PerfectHashMap.keySet()` returns the shared `PerfectHashKeyset` by reference when the map is fully populated. Intended for callers like `TabularRecordBuilder#aggregates` that build many maps with the same key set.
@@ -123,8 +103,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Arrow IPC streaming endpoint: `POST /api/v1/cubes/query` with `Accept: application/vnd.apache.arrow.stream` returns query results as a streaming Arrow IPC response. Backed by `TabularViewArrowSerializer` (in `adhoc-experimental`) discovered via `ServiceLoader`. Supports `Long`, `Integer`, `Double`, `Boolean`, `LocalDate`, and `String` column types.
 - `MavenDependencyAsMermaid`: utility that scans `pom.xml` files across a multi-module Maven project and renders a Mermaid `flowchart TD` of inter-module dependencies; compile edges use solid arrows, test-scope edges use dashed arrows, and modules are grouped into `subgraph` blocks by their aggregator parent.
 - `ColumnarTabularView`: columnar alternative to `ListBasedTabularView` — stores one `List<?>` per coordinate column and one per aggregate, enabling zero-transposition Arrow serialization.
-- `pivotable-mcp` module: exposes Pivotable as an MCP server (list endpoints, browse schemas, execute queries) via `PivotableMcpTools`.
-- `PivotableChatHandler`: optional AI query assistant in the SPA, streaming tool calls to update the query model in real time (requires `adhoc.pivotable.chat.anthropic-api-key`).
 - `DuckDBMemoryLogger`: daemon that periodically samples `duckdb_memory()` and logs results; self-terminates when the monitored connection closes.
 - `TableQueryV3` enables `GROUPING SET` queries.
 - `ITableQueryStepsSplitter` enables to inject a splitting policy into an `ITableQueryOptimizer`.
@@ -178,7 +156,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `DagCompletableExecutor` enable task sharing when evaluating a DAG of tasks.
 - `IAppendableColumn.freeze()` turned to `IAppendableColumn.freeze(IFreezingStrategy)`
 - `MultitypeNavigableColumn` propagates the capacity to values.
-- Pivotable spring profiles has been reworked. There is more a default `application.yml`, but one should import `pivotable-config.yml`.
 
 ### Removed
 - `ISliceFactory.newMapBuilder()` is removed. You need to have a clear view of the keyset.
@@ -203,7 +180,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Experimental support of [MongoDB](https://www.mongodb.com/docs/languages/java/)
 - Introduce multiple `.executeAsync(...)` methods, as alternative to usual `.execute(...)` returning a `ListenableFuture`.
 - Introduce `QueryPod.addCancellationListener(Runnable)`, enabling registration and cancellation of inner parts when cancelling the outer query.
-- Pivotable will automatically cancel currently running queries if another query is triggered.
 - `IAdhocMap.retainAll(Set<String>)` enables faster creation of `IAdhocMap` over a subset of columns (e.g. inducing).
 
 ### Changed
@@ -217,7 +193,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a==a1&(b==b1|c==c1)").optimize()`).
 - `FilterOptimizer` may skip `or vs and` simplification (e.g. `FilterBuilder.or("a=in=(a1,a2)&b==b1|a=in=(a1,a2)&!(b!=b2&!(c==c1&d==d1&b==b3))").optimize()`).
 - `FilterStripper` was not properly stripping `OR` in case one stripped operand was `matchAll`.
-- VueJS router is properly waited for (with `.isReady()`) to load the queryModel from `#hash` on relogging.
 
 ### Improved
 - `TableQueryOptimizerSinglePerAggregator` now build a tree of intermediate CubeQuerySteps, to enable computing each filters a single time.
@@ -241,7 +216,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Fixed
 - Fix bug in SQL condition with NOT given NULL. (Typically `NOT(c = 'v')` is turned into `NOT(c IS NOT NULL AND c = 'v')`).
-- Actuator configuration in Pivotable has been reviewed. `/actuator/info` and `/actuator/health` are public.
 - Memory-leak in `CachingOperatorsFactory` due to `DispatchorQueryStep` adding values as option, for `CumulatingDecomposition`.
 - Improve compaction in `IMultitypeMergeableGrid.closeColumn`
 
@@ -288,7 +262,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 - Introduced `ICoordinateNormalizer` to centralize how coordinates should be normalized (e.g. `int` into `long`).
 - Introduced `NullMatcher.NULL_HOLDER` to represent `null` where a null-reference is forbidden.
 - Introduced `ICalculatedCoordinate` to enable adding coordinate into columns. Typical usecase is having an `*` coordinate aggregating all other coordinates, as a grandTotal of current column.
-- Playwright is activated to integration-tests Pivotable.
 
 ### Changed
 - Update `DuckDB` to `1.3.2.0` (from `1.3.1.0`)
@@ -305,9 +278,6 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Added
 - Columns can be tagged through `AdhocSchema`.
-- In Pivotable, tag filtering is now cross-columns, in addition to cross-measures.
-- Additional `WorldCup` example cube, with more complex measures.
-- In Pivotable, clicking a column header will sort rows based on given column.
 - Introduces `ICompactable`. It is called on each queryStep of the DAG.
 - Introduces `ShiftedValueMatcher`, enabling `SimplerFilterEditor.shiftIfPresent` to shift dynamically existing values.
 - Introduces `CumulatingDecomposition`, which is another case of `Dispatchor`. Can be used for cumulative `SUM` through time.
@@ -381,26 +351,20 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 ### Changed
 - `DuckDB` is upgraded to 1.2.2.0
-- In `Pivotbale`, `customMarkers` are written on a per-value basis, with the `path` as key.
 - `QueryTableV2` introduced querySharing for `TableQuery` with same groupBy, by relying on SQL `FILTER` keyword.
 - Drops `CharSequence` as a privileged type (e.g. in aggregations, in `IMultiTypeXXX`)
 
 ### Added
 - Enable `cubeSlicer` in `CompositeCubesTableWrapper`: it enables filtering by underlying cube
-- Enable Export to CSV in `Pivotable`
-- Enable Export to Clipboard in `Pivotable`
 
 ## [0.0.5]
 ### Changed
-- `Pivotable` opens a filter-helper when double-cliking a cell of the grid.
-- `Pivotable` search now highlights/marks matching elements.
 - `StandardQueryOptions.CONCURRENT` has now much better behavior, especially around composite cubes, multiple tableQueries, and DAG with independent steps.
 - Prepare querySharing for aggregators with same groupBy but different filters, with `FILTER` sql keyword. See `QueryTableV2`
 - `ExpressionCombination` can refer to underlyings by their index with the syntax `underlyings[index]`
 
 ### Added
 - Enable `customMarkerMetadata` in `AdhocSchema`
-- Enable `tags` measure filtering in `Pivotable`
 - Introduces `AdhocAutoConfiguration` for easy Spring auto-configuration.
 - `AdhocQuery`s executed through `AdhocSchema` now see their `AdhocFilter` being transcoded (e.g. to manage a filter over a `date`, expressed as a JSON String).
 
@@ -425,8 +389,7 @@ We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 ### Added
 - `ForestAsGraphvizDag`: can turn an `IMeasureForest` into a Graphviz DOT file.
 - `ICubeWrapper.getCoordinates` can query multiple columns in one call, which is leveraged by `DuckDb` tables.
-- `Pivotable` can now drop column/measure from grid headers.
-- Fix serialization of `IQueryOptions`, and update `Pivotable` for proper options.
+- Fix serialization of `IQueryOptions`.
 
 ## [0.0.2]
 ### Added

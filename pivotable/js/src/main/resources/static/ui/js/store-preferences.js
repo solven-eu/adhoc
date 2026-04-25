@@ -47,6 +47,8 @@ function buildPayload(state) {
 		latestQueryIds: state.latestQueryIds,
 		currentQueryId: state.currentQueryId,
 		wizardHidden: state.wizardHidden,
+		localEndpoints: state.localEndpoints,
+		wizardOpenAccordion: state.wizardOpenAccordion,
 	};
 }
 
@@ -117,6 +119,20 @@ const store = defineStore("preferences", {
 		// full width. Persisted so the preference survives reloads. Toggled from a button
 		// in the grid column header (see adhoc-query.js).
 		wizardHidden: false,
+
+		// User-registered Pivotable endpoints (in addition to the ones discovered via the
+		// `/endpoints` server route). Each entry is `{id, name, url, host, port, prefix,
+		// local: true}`. `local: true` marks them as locally-added so the rest of the app
+		// can distinguish them from server-side ones. Persisted in the same payload as
+		// favorites so they survive a reload — the typical use case is registering a peer
+		// Pivotable server (e.g. one running locally on a different host:port).
+		localEndpoints: {},
+
+		// Id of the wizard accordion section the user last opened (one of `wizardColumns`,
+		// `wizardMeasures`, `wizardCustoms`, `wizardOptions`) or empty string when all are
+		// collapsed. Restored on F5 so the wizard re-opens to the same section the user
+		// was working in. Persisted via the standard `$subscribe` path.
+		wizardOpenAccordion: "",
 	}),
 	getters: {
 		isDraft: (store) => !store.currentQueryId,
@@ -124,6 +140,96 @@ const store = defineStore("preferences", {
 	actions: {
 		hashQuery(queryModel) {
 			return hash(queryModel);
+		},
+
+		// Add a user-defined tag to a saved favorite. Tags are free-form strings, deduped
+		// case-insensitively but stored in their original case so the UI shows them the
+		// way the user typed. No server round-trip — fully local, persisted via the same
+		// localStorage path as the queryModel itself.
+		addTagToFavorite(queryId, tag) {
+			const store = this;
+			const cleaned = (tag || "").trim();
+			if (!cleaned) return;
+			const entry = store.queryModels[queryId];
+			if (!entry) return;
+			store.$patch((state) => {
+				const e = state.queryModels[queryId];
+				if (!Array.isArray(e.tags)) {
+					e.tags = [];
+				}
+				const existing = e.tags.find((t) => t.toLowerCase() === cleaned.toLowerCase());
+				if (!existing) {
+					e.tags.push(cleaned);
+				}
+			});
+		},
+
+		// Build a normalised endpoint object from raw inputs. Exposed (a) so callers can
+		// preview the synthesised URL before committing, and (b) so unit tests can exercise
+		// the URL-building rules without touching the store.
+		buildLocalEndpoint(input) {
+			const host = (input && input.host ? String(input.host) : "").trim();
+			if (!host) {
+				throw new Error("Host is required");
+			}
+			// Default port matches the Pivotable backend's `:8080`.
+			const port = input.port === undefined || input.port === null || input.port === "" ? 8080 : Number(input.port);
+			if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+				throw new Error("Port must be an integer in [1, 65535]");
+			}
+			let prefix = (input.prefix !== undefined && input.prefix !== null ? String(input.prefix) : "").trim();
+			// Normalise: leading slash optional on input, always present on output. Trailing
+			// slash dropped so concatenation with sub-routes behaves predictably.
+			if (prefix && !prefix.startsWith("/")) {
+				prefix = "/" + prefix;
+			}
+			while (prefix.endsWith("/")) {
+				prefix = prefix.slice(0, -1);
+			}
+			const url = "http://" + host + ":" + port + prefix;
+			const name = (input.name && String(input.name).trim()) || host + ":" + port + (prefix || "");
+			return {
+				id: input.id || uuidv4(),
+				name,
+				host,
+				port,
+				prefix,
+				url,
+				local: true,
+			};
+		},
+
+		// Register a user-supplied endpoint (typically a peer Pivotable server reachable
+		// over the network). The synthesised entry survives a reload via the same
+		// localStorage payload that holds favorites. No server round-trip — the entry
+		// exists only client-side, surfaced in the endpoints list alongside the
+		// server-discovered ones.
+		addLocalEndpoint(input) {
+			const endpoint = this.buildLocalEndpoint(input);
+			this.$patch((state) => {
+				state.localEndpoints[endpoint.id] = endpoint;
+			});
+			return endpoint;
+		},
+
+		removeLocalEndpoint(id) {
+			if (!id) return;
+			this.$patch((state) => {
+				delete state.localEndpoints[id];
+			});
+		},
+
+		// Remove a tag from a favorite. Case-insensitive match. No-op if the favorite or
+		// the tag is missing — the caller is the UI, which can fire the action freely.
+		removeTagFromFavorite(queryId, tag) {
+			const store = this;
+			const cleaned = (tag || "").trim().toLowerCase();
+			if (!cleaned) return;
+			const entry = store.queryModels[queryId];
+			if (!entry || !Array.isArray(entry.tags)) return;
+			store.$patch((state) => {
+				state.queryModels[queryId].tags = state.queryModels[queryId].tags.filter((t) => t.toLowerCase() !== cleaned);
+			});
 		},
 
 		registerLatestQueryId(queryId) {
@@ -286,18 +392,35 @@ export const usePreferencesStore = function () {
 			if (typeof migrated.wizardHidden === "boolean") {
 				theStore.wizardHidden = migrated.wizardHidden;
 			}
+			if (migrated.localEndpoints && typeof migrated.localEndpoints === "object") {
+				theStore.localEndpoints = migrated.localEndpoints;
+			}
+			if (typeof migrated.wizardOpenAccordion === "string") {
+				theStore.wizardOpenAccordion = migrated.wizardOpenAccordion;
+			}
 		}
 
 		// Persist on every state change. Pinia's $subscribe fires for any mutation (including
 		// $patch), so save+import+remove all get written automatically — no more per-component
 		// watchers needed, no more F5-amnesia.
-		theStore.$subscribe((mutation, state) => {
-			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify(buildPayload(state)));
-			} catch (e) {
-				console.warn("preferences: failed to persist", e);
-			}
-		});
+		//
+		// `{ detached: true }` is REQUIRED. Without it, $subscribe is bound to the lifetime of
+		// the calling component (the first one to import this store) and the subscription is
+		// torn down when that component unmounts. Subsequent component mounts find
+		// `__hydrated === true` and skip the re-registration — leaving the store with NO
+		// persistence subscriber. The user's "Save favorite" then mutates in-memory state
+		// fine, but nothing ever lands in localStorage. Detached subscriptions live for the
+		// life of the page, which is what we want.
+		theStore.$subscribe(
+			(mutation, state) => {
+				try {
+					localStorage.setItem(STORAGE_KEY, JSON.stringify(buildPayload(state)));
+				} catch (e) {
+					console.warn("preferences: failed to persist", e);
+				}
+			},
+			{ detached: true },
+		);
 
 		theStore.__hydrated = true;
 	}

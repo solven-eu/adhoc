@@ -99,6 +99,15 @@ export default {
 		if (!props.queryModel.selectedOptions) {
 			props.queryModel.selectedOptions = {};
 		}
+		// Pause/resume parity with filters. Initialise the maps so the wizard pills can bind
+		// to `disabledColumns[name]` / `disabledMeasures[name]` directly without first having
+		// to materialise the parent object.
+		if (!props.queryModel.disabledColumns) {
+			props.queryModel.disabledColumns = {};
+		}
+		if (!props.queryModel.disabledMeasures) {
+			props.queryModel.disabledMeasures = {};
+		}
 
 		// Recursively drops sub-filters flagged `disabled: true` from a filter tree. The `disabled`
 		// flag is a Pivotable-side UI preference (pause/resume in the wizard) — the backend does
@@ -127,7 +136,13 @@ export default {
 		// This computed property snapshots of the query
 		const queryJson = computed(() => {
 			//const columns = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
-			const measures = Object.keys(props.queryModel.selectedMeasures).filter((measure) => props.queryModel.selectedMeasures[measure] === true);
+			// Drop measures the user has paused (`disabledMeasures[m] === true`). The pill stays
+			// in the wizard so a single click resumes it; the backend simply receives a query
+			// without that measure.
+			const disabledMeasures = props.queryModel.disabledMeasures || {};
+			const measures = Object.keys(props.queryModel.selectedMeasures).filter(
+				(measure) => props.queryModel.selectedMeasures[measure] === true && !disabledMeasures[measure],
+			);
 
 			// Strip disabled sub-filters BEFORE deep-copying so the wire-level filter tree reflects
 			// only the user-active filters — even though the pivotable-side model keeps everything.
@@ -137,12 +152,20 @@ export default {
 
 			// BEWARE This is a workaround to force `compute` to be reactive on all columns state
 			// It is unclear why the reactivity on `props.queryModel.selectedColumnsOrdered` is not working
-			const columns2 = Object.keys(props.queryModel.selectedColumns).filter((column) => props.queryModel.selectedColumns[column] === true);
+			// Same disable-aware filter as for measures: a paused column is kept in the wizard
+			// pill (with the pause icon) but stripped from the submitted query — the grid
+			// restructures around the remaining columns.
+			const disabledColumns = props.queryModel.disabledColumns || {};
+			const columns2 = Object.keys(props.queryModel.selectedColumns).filter(
+				(column) => props.queryModel.selectedColumns[column] === true && !disabledColumns[column],
+			);
 
 			// https://stackoverflow.com/questions/597588/how-do-you-clone-an-array-of-objects-in-javascript
 			// We do a copy as `queryJson` must not changed when playing with the wizard.
-			// `.slice` as we want an immutable snapshot
-			const orderedColumnsAsList = props.queryModel.selectedColumnsOrdered.slice(0);
+			// `.slice` as we want an immutable snapshot. Drop paused columns: the ordered list
+			// preserves the user's selected ordering (so re-enabling restores their layout)
+			// but the submitted query reflects only the active subset.
+			const orderedColumnsAsList = props.queryModel.selectedColumnsOrdered.slice(0).filter((c) => !disabledColumns[c]);
 
 			// Add a calculated member representing the grand totals
 			const orderedColumnsWithStar = orderedColumnsAsList.map((c) => {
@@ -184,6 +207,7 @@ export default {
 
 		const onView = function (queryForApi, responseTabularView, stringifiedQuery, startDownloading) {
 			props.tabularView.timing.downloading = new Date() - startDownloading;
+			delete props.tabularView.timing.downloading_startedAt;
 
 			// This will be cancelled in the finally block: the rendering status is managed autonomously by the grid
 
@@ -264,6 +288,7 @@ export default {
 
 					const startSending = new Date();
 					props.tabularView.loading.sending = true;
+					props.tabularView.timing.sending_startedAt = startSending;
 
 					const synchronous = false;
 
@@ -278,6 +303,7 @@ export default {
 
 						props.tabularView.loading.sending = false;
 						props.tabularView.timing.sending = new Date() - startSending;
+						delete props.tabularView.timing.sending_startedAt;
 
 						if (!response.ok) {
 							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
@@ -285,6 +311,7 @@ export default {
 
 						const startDownloading = new Date();
 						props.tabularView.loading.downloading = true;
+						props.tabularView.timing.downloading_startedAt = startDownloading;
 
 						const responseTabularView = await response.json();
 						if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
@@ -304,6 +331,7 @@ export default {
 
 						props.tabularView.loading.sending = false;
 						props.tabularView.timing.sending = new Date() - startSending;
+						delete props.tabularView.timing.sending_startedAt;
 
 						if (!response.ok) {
 							throw new NetworkError("POST has failed (" + response.statusText + " - " + response.status + ")", url, response);
@@ -321,6 +349,7 @@ export default {
 
 						const startExecuting = new Date();
 						props.tabularView.loading.executing = true;
+						props.tabularView.timing.executing_startedAt = startExecuting;
 						while (true) {
 							if (latestSendQueryIdSnapshot !== latestSentQueryId.value) {
 								console.warn(`About to poll for ${latestSendQueryIdSnapshot} but latest query is ${latestSentQueryId.value}`);
@@ -375,9 +404,11 @@ export default {
 						}
 						props.tabularView.loading.executing = false;
 						props.tabularView.timing.executing = new Date() - startExecuting;
+						delete props.tabularView.timing.executing_startedAt;
 
 						const startDownloading = new Date();
 						props.tabularView.loading.downloading = true;
+						props.tabularView.timing.downloading_startedAt = startDownloading;
 
 						const fetchViewOptions = {
 							method: "GET",
