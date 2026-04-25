@@ -338,7 +338,6 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
-
 			// Register the watch once the grid is mounted and initialized.
 			//
 			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
@@ -411,9 +410,9 @@ export default {
 				<!--
 					Empty-state hints. Two variants depending on which kind of "empty" we
 					are looking at:
-					  - `isEmptyModel` (no measures + no columns picked yet): point the
+					  - 'isEmptyModel' (no measures + no columns picked yet): point the
 					    user to the wizard panel on the left.
-					  - `isEmptyView`  (query was sent but matched zero rows): the typical
+					  - 'isEmptyView'  (query was sent but matched zero rows): the typical
 					    cause is an over-constrained filter, so point UP to the filter
 					    block above the wizard.
 				-->
