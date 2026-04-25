@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, reactive, provide, inject } from "vue";
+import { ref, computed, watch, onMounted, reactive, provide, inject } from "vue";
 
 import AdhocCellModal from "./adhoc-query-grid-cell-modal.js";
 import AdhocGridTimingsBar from "./adhoc-query-grid-timings-bar.js";
@@ -56,6 +56,26 @@ export default {
 
 		let grid;
 		const gridMetadata = reactive({});
+		// Two distinct "empty" states with different UX:
+		//
+		//   - `isEmptyModel` — the queryModel itself has no selected measures and no
+		//     selected columns (the user hasn't built a query yet). This is the case
+		//     that warrants the wizard-pointer hint ("Use the wizard…"). Derived as a
+		//     `computed` so it tracks the queryModel reactively without being mutated
+		//     from resyncData.
+		//
+		//   - `isEmptyView` — the user HAS built a query, but the backend returned zero
+		//     rows. The grid still shows its column headers; we don't want the wizard
+		//     hint here (it would lie about the state) but we may want a different
+		//     "no rows match" message in the future.
+		const isEmptyModel = computed(() => {
+			const qm = props.queryModel;
+			if (!qm) return true;
+			const hasSelectedMeasure = Object.values(qm.selectedMeasures || {}).some((v) => v === true);
+			const hasSelectedColumn = Object.values(qm.selectedColumns || {}).some((v) => v === true);
+			return !hasSelectedMeasure && !hasSelectedColumn;
+		});
+		const isEmptyView = computed(() => !isEmptyModel.value && !gridMetadata.nb_rows);
 
 		const formatOptions = reactive({
 			// https://stackoverflow.com/questions/673905/how-can-i-determine-a-users-locale-within-the-browser
@@ -114,13 +134,23 @@ export default {
 			// data rows — SlickGrid misbehaves with `setColumns([])`, so keep at least one column.
 			// Bail out before the code below, which dereferences `view.coordinates` and
 			// `tabularView.query.groupBy.columns` (both undefined in this state).
+			//
+			// SlickGrid's frozen-column + rowSpan combo does NOT redraw on `dataView.refresh()`
+			// alone — the previous viewport's rendered rows survive. We must explicitly
+			// invalidate the row cache and re-render, mirroring the trailing call in the
+			// non-empty branch below.
 			if (!view) {
+				console.log("Rendering empty view (no query)");
 				gridColumns.push({ id: "empty", name: "", field: "empty", sortable: false });
 				data.array = [];
 				gridMetadata.nb_rows = 0;
 				grid.setColumns(gridColumns);
+				dataView.beginUpdate();
 				dataView.setItems(data.array, "id");
-				dataView.refresh();
+				dataView.endUpdate();
+				grid.remapAllColumnsRowSpan();
+				grid.invalidate();
+				grid.render();
 				return;
 			}
 
@@ -308,6 +338,7 @@ export default {
 
 			gridHelper.registerEventSubscribers(grid, dataView, currentSortCol, clickedCell);
 
+
 			// Register the watch once the grid is mounted and initialized.
 			//
 			// NOT `{ deep: true }` on purpose. `view` is only ever swapped by reference from
@@ -361,6 +392,8 @@ export default {
 
 			data,
 			measureStatsModel,
+			isEmptyModel,
+			isEmptyView,
 		};
 	},
 	template: /* HTML */ `
@@ -375,9 +408,23 @@ export default {
 			<span style="width:100%;" class="position-relative">
 				<div :id="domId" class="vh-75 slickgrid-grid"></div>
 
-				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-if="!isLoading() && !gridMetadata.nb_rows">
+				<!--
+					Empty-state hints. Two variants depending on which kind of "empty" we
+					are looking at:
+					  - `isEmptyModel` (no measures + no columns picked yet): point the
+					    user to the wizard panel on the left.
+					  - `isEmptyView`  (query was sent but matched zero rows): the typical
+					    cause is an over-constrained filter, so point UP to the filter
+					    block above the wizard.
+				-->
+				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-if="!isLoading() && isEmptyModel">
 					<i class="bi bi-arrow-left-circle fs-3"></i>
 					<div>Use the wizard to pick columns and measures, then Submit to build a query.</div>
+				</div>
+				<div class="position-absolute top-50 start-50 translate-middle text-center text-muted" v-else-if="!isLoading() && isEmptyView">
+					<i class="bi bi-arrow-up-circle fs-3"></i>
+					<div>No rows match the current filter.</div>
+					<div class="small">Loosen or clear the filter above the wizard to bring rows back.</div>
 				</div>
 
 				<div class="position-absolute top-50 start-50 translate-middle" style="width:100%;" v-if="isLoading()">

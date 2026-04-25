@@ -64,7 +64,14 @@ test("queryPivotable.addDependantFromGraph", async ({ page }) => {
 	await page.goto(url);
 	await queryPivotable.queryPivotable(page);
 
-	await page.getByRole("columnheader", { name: "event_count Header Button" }).locator("span").click();
+	// Hover the column header to surface the SlickHeaderButtons icons (they are
+	// hidden until the user mouses over). The accessible name now contains
+	// "Copy name to clipboard" (an inline icon next to the name) on top of
+	// "Header Button", so we substring-match the bare measure name.
+	await page
+		.getByRole("columnheader", { name: /event_count/ })
+		.first()
+		.hover();
 	await page.getByTitle("DAG about m=event_count").click();
 	await page.locator("a").filter({ hasText: "goal_count" }).click();
 	await page.getByRole("dialog", { name: "Measure Info" }).getByLabel("Close").click();

@@ -27,9 +27,15 @@ test("single selected measure hangs off the cube (no groupBy)", () => {
 	q.selectedMeasures.delta = true;
 	const md = queryModelToMermaid(q, "simple");
 	expect(md).toEqual(
-		["flowchart LR", '  cube(["simple"])', '  subgraph measures["Measures"]', "    direction TB", '    m_delta["delta"]', "  end", "  cube --> measures"].join(
-			"\n",
-		),
+		[
+			"flowchart LR",
+			'  cube(["simple"])',
+			'  subgraph measures["Measures"]',
+			"    direction TB",
+			'    m_delta["delta"]',
+			"  end",
+			"  cube --> measures",
+		].join("\n"),
 	);
 });
 

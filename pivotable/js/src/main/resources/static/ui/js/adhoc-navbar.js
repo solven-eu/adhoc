@@ -116,17 +116,32 @@ export default {
                             <RouterLink class="nav-link" to="/html/endpoints/xxx/schemas"><i class="bi bi-trophy" />Schemas</RouterLink>
                         </li-->
 					</ul>
-					<span v-if="isLoggedIn">
-						{{account.details.name}}<img
-							:src="account.details.picture"
-							class="img-thumbnail"
-							alt="You're looking nice"
-							width="64"
-							height="64"
-							v-if="account.details.picture"
-						/>
-						<Logout />
-					</span>
+					<!--
+						Logged-in user pill. Replaces an earlier flat layout that just dumped
+						the name + avatar + logout button next to each other (it was unclear
+						the name was the user.name). Now: a Bootstrap dropdown whose toggle
+						shows "Logged in as <name>", with the avatar to its left; the menu
+						opens to the user's full username, an account link, and a logout.
+					-->
+					<div v-if="isLoggedIn" class="dropdown">
+						<button
+							class="btn btn-link dropdown-toggle d-flex align-items-center gap-2 text-decoration-none"
+							type="button"
+							data-bs-toggle="dropdown"
+							aria-expanded="false"
+						>
+							<img v-if="account.details.picture" :src="account.details.picture" class="rounded-circle" alt="" width="28" height="28" />
+							<i v-else class="bi bi-person-circle fs-5"></i>
+							<span class="small">Logged in as <strong>{{account.details.name || account.details.username}}</strong></span>
+						</button>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li class="dropdown-header" v-if="account.details.username &amp;&amp; account.details.name">
+								<small class="text-muted">{{account.details.username}}</small>
+							</li>
+							<li><hr class="dropdown-divider" v-if="account.details.username &amp;&amp; account.details.name" /></li>
+							<li><Logout /></li>
+						</ul>
+					</div>
 					<!--
 						Session status indicator. The raw needsToLogin / needsToRefreshAccessToken
 						values used to be dumped verbatim next to the user block — useful for

@@ -92,18 +92,30 @@ export default {
 		return { username, password, doLoginBasic, isExecutingBasic };
 	},
 	template: /* HTML */ `
-		<span v-if="isLoggedIn"> <Logout /><small>BASIC session lasts 1hour.</small> </span>
-		<span v-else>
-			<form class="input-group mb-3" :inert="isExecutingBasic || nbLoginLoading ? true : null">
-				<input type="text" class="form-control" placeholder="Username" aria-label="Username" v-model="username" />
-				<span class="input-group-text">:</span>
-				<input type="text" class="form-control" placeholder="Password" aria-label="Password" v-model="password" />
-				<button type="button" @click="doLoginBasic" class="btn btn-primary">Login fakeUser</button>
-
-				<div class="spinner-border" role="status" v-if="isExecutingBasic || nbLoginLoading">
-					<span class="visually-hidden">Loading...</span>
-				</div>
-			</form>
-		</span>
+		<div v-if="isLoggedIn" class="d-flex align-items-center gap-2">
+			<Logout />
+			<small class="text-muted">BASIC session lasts 1 hour.</small>
+		</div>
+		<!--
+			Stacked form layout — the inputs sit one above the other and the action button
+			fills the row width below them. This replaces an input-group that strung the
+			whole thing on one line and pushed the Login button to the right edge of the
+			screen, which felt awkward (most click targets in this UI are on the left).
+		-->
+		<form v-else class="d-flex flex-column gap-2" :inert="isExecutingBasic || nbLoginLoading ? true : null" @submit.prevent="doLoginBasic">
+			<div>
+				<label for="loginBasicUsername" class="form-label small text-muted mb-1">Username</label>
+				<input id="loginBasicUsername" type="text" class="form-control form-control-sm" autocomplete="username" v-model="username" />
+			</div>
+			<div>
+				<label for="loginBasicPassword" class="form-label small text-muted mb-1">Password</label>
+				<input id="loginBasicPassword" type="password" class="form-control form-control-sm" autocomplete="current-password" v-model="password" />
+			</div>
+			<button type="submit" class="btn btn-primary btn-sm w-100" :disabled="isExecutingBasic || nbLoginLoading">
+				<span v-if="isExecutingBasic || nbLoginLoading" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+				<span v-if="isExecutingBasic || nbLoginLoading">Signing in…</span>
+				<span v-else>Login</span>
+			</button>
+		</form>
 	`,
 };

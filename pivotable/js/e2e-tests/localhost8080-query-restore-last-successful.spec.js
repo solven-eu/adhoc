@@ -32,7 +32,7 @@ test("Restore last successful query updates the wizard switches", async ({ page 
 
 	await page.getByRole("link", { name: /You need to login/ }).click();
 	await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
-	await page.getByRole("button", { name: "Login fakeUser" }).click();
+	await page.getByRole("button", { name: /^Login$/i }).click();
 
 	await page.getByRole("link", { name: "Browse through endpoints" }).click();
 	await page
@@ -47,24 +47,24 @@ test("Restore last successful query updates the wizard switches", async ({ page 
 	await page.getByRole("searchbox", { name: "Search" }).fill("delta");
 	await page.getByRole("switch", { name: "JSON" }).uncheck();
 	await page.getByRole("button", { name: /measures/ }).click();
-	await page.getByRole("switch", { name: /^delta$/ }).check();
+	await page.locator('[id="measure_delta"]').check();
 
 	await expect(page.locator(".slick-row").first()).toBeVisible();
 
 	// Snapshot the switches that should survive the restore.
-	await expect(page.getByRole("switch", { name: /^delta$/ })).toBeChecked();
+	await expect(page.locator('[id="measure_delta"]')).toBeChecked();
 
 	// ── Break the query by adding the always-throwing measure ──
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("always_throws");
-	await page.getByRole("switch", { name: /^always_throws$/ }).check();
+	await page.locator('[id="measure_always_throws"]').check();
 
 	// Banner appears.
 	const errorBanner = page.getByText(/Query is broken/);
 	await expect(errorBanner).toBeVisible();
 
 	// Wizard confirms the faulty measure is selected (repro of the pre-fix state).
-	await expect(page.getByRole("switch", { name: /^always_throws$/ })).toBeChecked();
+	await expect(page.locator('[id="measure_always_throws"]')).toBeChecked();
 
 	// ── Click "Restore last successful query" ──
 	await page.getByRole("button", { name: /Restore last successful query/ }).click();
@@ -75,12 +75,12 @@ test("Restore last successful query updates the wizard switches", async ({ page 
 	// EXPECTED: the wizard reflects the restored state — `always_throws` unchecked.
 	// This is the specific check requested: pre-fix, the switch stayed visually checked
 	// even though selectedMeasures.always_throws had been logically dropped.
-	await expect(page.getByRole("switch", { name: /^always_throws$/ })).not.toBeChecked();
+	await expect(page.locator('[id="measure_always_throws"]')).not.toBeChecked();
 
 	// And the surviving measure stays selected.
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill("delta");
-	await expect(page.getByRole("switch", { name: /^delta$/ })).toBeChecked();
+	await expect(page.locator('[id="measure_delta"]')).toBeChecked();
 
 	// Grid still shows data (the last successful view is preserved).
 	await expect(page.locator(".slick-row").first()).toBeVisible();

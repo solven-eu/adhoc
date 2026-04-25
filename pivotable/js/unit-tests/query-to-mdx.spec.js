@@ -156,7 +156,9 @@ test("withStarColumns renders as DrillDownMember from the All member", () => {
 	q.selectedColumnsOrdered.push("city");
 	q.withStarColumns.city = true;
 	const mdx = queryModelToMdx(q, "simple");
-	expect(mdx).toEqual(["SELECT", "  NON EMPTY DrillDownMember({[city].[city].[AllMember]}, {[city].[city].[AllMember]}) ON ROWS", "FROM [simple]"].join("\n"));
+	expect(mdx).toEqual(
+		["SELECT", "  NON EMPTY DrillDownMember({[city].[city].[AllMember]}, {[city].[city].[AllMember]}) ON ROWS", "FROM [simple]"].join("\n"),
+	);
 });
 
 test("withStarColumns mixes with plain members in a multi-line NON EMPTY CrossJoin", () => {

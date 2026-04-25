@@ -4,7 +4,10 @@ const addColumn = async function (page, column) {
 	await page.getByRole("searchbox", { name: "Search" }).dblclick();
 	await page.getByRole("searchbox", { name: "Search" }).fill(column);
 	await page.getByRole("button", { name: /columns/ }).click();
-	await page.getByRole("switch", { name: column }).check();
+	// Target by stable id (`column_<name>`). The accessible name of the column
+	// switch is matched substring-wise by Playwright, so passing `"city"` would
+	// also match `capital_city`. Same trade-off as `addMeasure`.
+	await page.locator(`[id="column_${column}"]`).check();
 };
 
 const addMeasure = async function (page, measure) {
@@ -13,10 +16,12 @@ const addMeasure = async function (page, measure) {
 	// Disable JSON to prevent the depending measures to show up
 	await page.getByRole("switch", { name: "JSON" }).uncheck();
 
-	// Add measure=event_count
-	//        await expect(page.getByRole("switch", { name: /event_count/ })).toBeVisible({ timeout: 5000 });
+	// Target by stable id (`measure_<name>`). The accessible name of the switch now
+	// embeds the measure description / dependency hints, so a name-based match on
+	// `event_count` would also match dependant measures whose description references
+	// it — Playwright then trips on strict mode.
 	await page.getByRole("button", { name: /measures/ }).click();
-	await page.getByRole("switch", { name: measure }).check();
+	await page.locator(`[id="measure_${measure}"]`).check();
 };
 
 // https://stackoverflow.com/questions/33178843/es6-export-default-with-multiple-functions-referring-to-each-other
@@ -37,7 +42,7 @@ export default {
 	async login(page) {
 		await this.showLoginOptions(page);
 		await page.getByRole("link", { name: /pivotable-unsafe_fakeuser/ }).click();
-		await page.getByRole("button", { name: /Login fakeUser/ }).click();
+		await page.getByRole("button", { name: /^Login$/i }).click();
 
 		await expect(page.getByText(/Welcome Fake User/)).toBeVisible();
 	},
@@ -48,7 +53,7 @@ export default {
 		await page.goto("http://localhost:8080/");
 		await page.getByRole("link", { name: /You need to login/ }).click();
 		await page.getByRole("link", { name: "pivotable-unsafe_fakeuser" }).click();
-		await page.getByRole("button", { name: "Login fakeUser" }).click();
+		await page.getByRole("button", { name: /^Login$/i }).click();
 		await page.getByRole("link", { name: "Browse through endpoints" }).click();
 		await page.getByRole("link", { name: /WorldCupPlayers/ }).click();
 		await page.getByRole("link", { name: /Query WorldCupPlayers/ }).click();

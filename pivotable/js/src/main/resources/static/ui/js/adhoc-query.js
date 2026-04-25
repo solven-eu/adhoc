@@ -131,6 +131,12 @@ export default {
 		const onAccordionShow = (event) => {
 			if (event.target && event.target.closest && event.target.closest("#accordionWizard")) {
 				accordionState.isOpen = true;
+				// Persist which section was opened so an F5 brings the user back to the
+				// same place. `event.target` is the `.accordion-collapse` div, whose id is
+				// e.g. `wizardColumns` / `wizardMeasures` / `wizardCustoms` / `wizardOptions`.
+				if (event.target.id) {
+					preferencesStore.wizardOpenAccordion = event.target.id;
+				}
 			}
 		};
 		const onAccordionHide = (event) => {
@@ -140,11 +146,38 @@ export default {
 				// enforces at-most-one-open, so we don't need to check for other-still-open
 				// siblings here.
 				accordionState.isOpen = false;
+				// Clear the persisted open-section ONLY if the section that's hiding is the
+				// one we previously persisted. Otherwise a Bootstrap data-bs-parent close-on-
+				// open of a sibling would erase the new open id we just wrote in onShow.
+				if (event.target.id && preferencesStore.wizardOpenAccordion === event.target.id) {
+					preferencesStore.wizardOpenAccordion = "";
+				}
 			}
 		};
 		onMounted(() => {
 			document.addEventListener("show.bs.collapse", onAccordionShow);
 			document.addEventListener("hide.bs.collapse", onAccordionHide);
+
+			// Restore the last-open accordion. The wizard is rendered after this hook
+			// fires, so we wait one tick for the DOM. We toggle by adding the `show`
+			// class directly + flipping the trigger button's aria-expanded, mirroring
+			// Bootstrap's own collapse state — going through Bootstrap's JS Collapse API
+			// would also fire animations, which here we don't need (we're restoring an
+			// already-final state, not transitioning to it).
+			const savedId = preferencesStore.wizardOpenAccordion;
+			if (savedId) {
+				requestAnimationFrame(() => {
+					const panel = document.getElementById(savedId);
+					if (!panel) return;
+					panel.classList.add("show");
+					const trigger = document.querySelector('[data-bs-target="#' + savedId + '"]');
+					if (trigger) {
+						trigger.classList.remove("collapsed");
+						trigger.setAttribute("aria-expanded", "true");
+					}
+					accordionState.isOpen = true;
+				});
+			}
 		});
 		onUnmounted(() => {
 			document.removeEventListener("show.bs.collapse", onAccordionShow);

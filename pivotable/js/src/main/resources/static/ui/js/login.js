@@ -41,23 +41,38 @@ export default {
 
 		return { userStore, hintLoginSuccess, hintLoggedOut };
 	},
-	template: /* HTML */ `isLoggedIn={{isLoggedIn}} userStore={{userStore.needsToLogin}} user={{user.details.username}}
-		<div v-if="isLoggedIn">
-			Welcome {{user.details.name}}. <Logout />
-
-			<Whatnow />
-
-			<span v-if="hintLoginSuccess"> Login Success </span>
-			<span v-if="hintLoggedOut"> Logout Success </span>
-		</div>
-		<div v-else-if="isLoggedOut">
-			<LoginOptions />
-		</div>
-		<div v-else>
-			<div v-if="nbLoginLoading > 0" class="d-flex align-items-center gap-2">
-				<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-				<span>Loading…</span>
+	template: /* HTML */ `
+		<div class="container py-4" style="max-width: 32rem">
+			<div v-if="isLoggedIn" class="card shadow-sm">
+				<div class="card-body">
+					<!--
+						Header block (avatar + name + welcome) is centred for the visual
+						"hello again" beat. Action options below it are LEFT-aligned because
+						they're a bullet list — centred bullets read as oddly indented and
+						make the list less scannable.
+					-->
+					<div class="text-center">
+						<img v-if="user.details.picture" :src="user.details.picture" class="rounded-circle mb-3" alt="" width="64" height="64" />
+						<h5 class="card-title mb-1">Welcome {{user.details.name || user.details.username}}</h5>
+						<p class="card-subtitle text-muted small mb-3" v-if="user.details.username && user.details.name">{{user.details.username}}</p>
+						<div v-if="hintLoginSuccess" class="alert alert-success py-2 small mb-3">You are now signed in.</div>
+						<div v-if="hintLoggedOut" class="alert alert-info py-2 small mb-3">You have been signed out.</div>
+					</div>
+					<Whatnow />
+					<div class="mt-3"><Logout /></div>
+				</div>
 			</div>
-			<div v-else>?</div>
-		</div> `,
+			<div v-else-if="isLoggedOut" class="card shadow-sm">
+				<div class="card-body">
+					<h5 class="card-title mb-3 text-center">Sign in to Pivotable</h5>
+					<LoginOptions />
+				</div>
+			</div>
+			<div v-else class="d-flex align-items-center justify-content-center gap-2 py-4 text-muted">
+				<span v-if="nbLoginLoading > 0" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+				<span v-if="nbLoginLoading > 0">Checking your session…</span>
+				<span v-else>Initialising…</span>
+			</div>
+		</div>
+	`,
 };

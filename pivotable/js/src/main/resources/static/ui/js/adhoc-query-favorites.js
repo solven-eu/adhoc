@@ -160,7 +160,7 @@ export default {
 
 						<ul v-for="(queryModel,queryId) in filteredQueryModels" class="list-group">
 							<li class="list-group-item">
-								<div @click="loadQuery(queryId)" style="cursor:pointer">
+								<div class="adhoc-favorite-load" @click="loadQuery(queryId)" style="cursor: pointer">
 									<small>id={{queryId}}</small>
 									<div>name={{queryModel.name}}</div>
 									<div>path={{queryModel.path}}</div>

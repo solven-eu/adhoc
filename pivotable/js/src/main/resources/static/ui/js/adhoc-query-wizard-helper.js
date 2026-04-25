@@ -15,6 +15,12 @@ export default {
 		searchOptions.text = "";
 		// https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
 		searchOptions.tags.length = 0;
+		// Also drop the "show only queried entries" toggle. The wizard surfaces a Clear
+		// button when the current filters yield zero matches; if that toggle was on, the
+		// clear+text reset alone could still leave the user staring at an empty list
+		// because `filtered()` would keep restricting to selected entries. Resetting it to
+		// false ensures the user really sees ALL options after a single click.
+		searchOptions.filterQueried = false;
 	},
 
 	queried: function (keyToBoolean) {
