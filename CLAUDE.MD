@@ -183,6 +183,11 @@ These rules exist because slow sessions have been observed and root-caused here.
 - **Don't re-read files already in context.** If a file was written or fully read earlier in the same session, edit it directly without a preceding `Read` call.
 - **Combine Maven goals** to avoid redundant JVM startups: e.g. `mvn spotless:apply pmd:check --file pom.xml --batch-mode` instead of two separate invocations.
 - **Scope Maven to the affected module** with `-pl <module>` when only one module was changed (e.g. `-pl adhoc`), rather than running the full reactor.
+- **Stop and ask when the problem turns out subtler than the discussion assumed.** Symptoms: the user requested a change "X" that triggers more failures than expected, or a debug session is dragging on (multiple log-and-rerun loops, conflicting test expectations, semantic ambiguity in the design). Don't keep editing — pause, write a short status describing (a) the situation as I now understand it, (b) what I'd do next and why, (c) the trade-offs, and ask for a decision. Examples that warrant a stop:
+  - A "small fix" causes a non-trivial number of test regressions that look semantic, not mechanical, especially when the user just told me they "fixed the unit-tests".
+  - I've run the same failing test multiple times with added logs and still don't have a working fix.
+  - I'm about to touch a file the user explicitly said is theirs / they just edited.
+  Iterating silently when the situation is actually ambiguous wastes context and time. Stating it clearly invites a 1-line redirect and saves a long detour.
 
 ---
 

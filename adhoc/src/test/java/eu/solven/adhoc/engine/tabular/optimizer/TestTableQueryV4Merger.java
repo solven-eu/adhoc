@@ -138,4 +138,29 @@ public class TestTableQueryV4Merger {
 		Assertions.assertThat(merged.getAggregators()).hasSize(1);
 		Assertions.assertThat(merged.getAggregators().iterator().next().getAlias()).isEqualTo("k1");
 	}
+
+	@Test
+	public void testMergeForDrillthrough_widensWhereFromPerAggregatorFilters() {
+		// Regression test: the input V4 has a permissive WHERE (matchAll) but two aggregators each carry their
+		// own per-aggregator FILTER. After `mergeForDrillthrough` strips per-aggregator FILTERs to MATCH_ALL the
+		// merged WHERE must NOT degrade to MATCH_ALL — it must widen to `OR(a=a1, a=a2)` so row inclusion is
+		// preserved. Without this, every DB row would survive instead of just those matching either FILTER.
+		FilteredAggregator agg1 =
+				FilteredAggregator.builder().aggregator(k1).filter(ColumnFilter.matchEq("a", "a1")).build();
+		FilteredAggregator agg2 =
+				FilteredAggregator.builder().aggregator(k2).filter(ColumnFilter.matchEq("a", "a2")).build();
+		TableQueryV4 input = TableQueryV4.builder()
+				.filter(ISliceFilter.MATCH_ALL)
+				.groupByToAggregators(IGroupBy.GRAND_TOTAL, ImmutableSet.of(agg1, agg2))
+				.build();
+
+		TableQueryV4 merged = TableQueryV4Merger.mergeForDrillthrough(ImmutableSet.of(input), filterOptimizer);
+
+		Assertions.assertThat(merged.getFilter()).isNotEqualTo(ISliceFilter.MATCH_ALL);
+		// All per-aggregator FILTERs must have been reset to MATCH_ALL (row-preserving contract).
+		Assertions.assertThat(merged.getAggregators())
+				.allSatisfy(fa -> Assertions.assertThat(fa.getFilter()).isEqualTo(ISliceFilter.MATCH_ALL));
+		// The widened WHERE references the original FILTERs' columns, so `addFilteredColumnsToGroupBy` surfaces `a`.
+		Assertions.assertThat(merged.getGroupBys().iterator().next().getSortedColumns()).contains("a");
+	}
 }

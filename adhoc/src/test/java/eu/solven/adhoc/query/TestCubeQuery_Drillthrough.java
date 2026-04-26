@@ -145,32 +145,16 @@ public class TestCubeQuery_Drillthrough extends ADagTest implements IAdhocTestCo
 
 		ListMapEntryBasedTabularViewDrillThrough view = ListMapEntryBasedTabularViewDrillThrough.load(output);
 
-		// One TabularEntry per DB row matched by the query. The user queried only `shifted`, whose underlying is
-		// `k1`, so only `k1` shows in `values` — `k2` was not part of the query and is intentionally absent (DT
-		// shows the columns relevant to the query, not the entire table). `a` is auto-added to coordinates
-		// because the Shiftor's filter pinned it. With FILTERs stripped to MATCH_ALL by `mergeForDrillthrough`,
-		// every row exposes its own `k1` value (so the row at a=a2 keeps `k1=234`, not absent).
-		Assertions.assertThat(view.getEntries()).hasSize(4).allSatisfy(entry -> {
-			Assertions.assertThat(entry.getCoordinates()).containsKey("a");
+		// The Shiftor pins `a=a1`, so the merged row-inclusion filter (computed as `OR` over real aggregators of
+		// `WHERE AND FILTER`) is `a=a1` — only the two `a=a1` source rows participate (a=a2 and a=a3 are not
+		// matched by any real aggregator and therefore excluded from the DT output). `k2` is intentionally
+		// absent (DT exposes only columns relevant to the query — here, the Shiftor's underlying `k1`). `a`
+		// is auto-added to coordinates because it appears in the merged WHERE.
+		Assertions.assertThat(view.getEntries()).hasSize(2).allSatisfy(entry -> {
+			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of("a", "a1"));
 			Assertions.assertThat(entry.getValues()).doesNotContainKey("k2");
-		}).anySatisfy(entry -> {
-			// First a=a1 source row: k1=123.
-			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of("a", "a1"));
-			Assertions.assertThat((Map) entry.getValues()).containsEntry("k1", 123);
-		}).anySatisfy(entry -> {
-			// a=a2 source row: k1=234. Survives even though the Shiftor's natural filter is `a=a1`,
-			// because DT strips per-aggregator FILTERs to MATCH_ALL — the merged WHERE is the OR of
-			// inputs (matchAll here), so every DB row participates.
-			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of("a", "a2"));
-			Assertions.assertThat((Map) entry.getValues()).containsEntry("k1", 234);
-		}).anySatisfy(entry -> {
-			// Second a=a1 source row: k1=345.
-			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of("a", "a1"));
-			Assertions.assertThat((Map) entry.getValues()).containsEntry("k1", 345);
-		}).anySatisfy(entry -> {
-			// a=a3 source row carries no k1 — values is empty.
-			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of("a", "a3"));
-			Assertions.assertThat(entry.getValues()).isEmpty();
-		});
+		})
+				.anySatisfy(entry -> Assertions.assertThat((Map) entry.getValues()).containsEntry("k1", 123))
+				.anySatisfy(entry -> Assertions.assertThat((Map) entry.getValues()).containsEntry("k1", 345));
 	}
 }

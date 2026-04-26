@@ -306,6 +306,13 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 					return;
 				}
 
+				if (EmptyAggregation.isEmpty(a.getAggregator())) {
+					// EmptyAggregation surfaces as a NULL column (see EmptyAggregation Javadoc): emit the alias
+					// with a null value so the slice is materialized regardless of any real aggregator's value.
+					aggregates.put(a.getAlias(), null);
+					return;
+				}
+
 				Object aggregate = null;
 				if (CountAggregation.isCount(a.getAggregator().getAggregationKey())) {
 					boolean doCountOne = false;

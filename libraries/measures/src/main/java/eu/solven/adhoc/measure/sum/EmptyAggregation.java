@@ -34,7 +34,26 @@ import eu.solven.adhoc.measure.model.IAliasedAggregator;
 /**
  * Relates with {@link EmptyMeasure}. Useful to materialize an {@link IAggregation} to force the DAG not to be empty
  * when querying the table. It helps materializing the relevant slices, without requesting any aggregation.
- * 
+ *
+ * <p>
+ * <b>Wire semantics — behaves as a NULL column.</b> An aggregator backed by {@code EmptyAggregation} surfaces as a
+ * column whose value is always {@code null} (analogous to {@code SELECT NULL AS x …} in SQL). Each record produced by
+ * the table layer carries the aggregator's alias as a key, with {@code null} as the value, whenever the aggregator's
+ * per-aggregator {@code FILTER} matches the row. The aggregator therefore contributes only its slice's existence —
+ * never a value — and can coexist with real aggregators in the same {@link TableQueryV4} (the record's other columns
+ * carry the real aggregators' values, exactly like a SQL row with a mix of {@code SUM(b)} and {@code NULL AS x}).
+ *
+ * <p>
+ * Two consequences:
+ * <ul>
+ * <li>An all-empty {@link TableQueryV4} (every aggregator is an {@code EmptyAggregation}) collapses to "list distinct
+ * slices", which is the historical use case (materialize coordinates for a measure-less query).</li>
+ * <li>A mixed {@link TableQueryV4} (some empty, some real) emits one record per row, where each record carries both the
+ * real aggregators' values and the empty aggregators' {@code null} markers — consumers that already tolerate a missing
+ * key for a non-applicable aggregator must also tolerate the key being present with a {@code
+ * null} value.</li>
+ * </ul>
+ *
  * @author Benoit Lacelle
  */
 public class EmptyAggregation implements IAggregation, ILongAggregation, IDoubleAggregation {

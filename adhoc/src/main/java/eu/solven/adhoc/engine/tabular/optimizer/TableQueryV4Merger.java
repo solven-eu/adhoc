@@ -36,6 +36,7 @@ import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
@@ -118,15 +119,48 @@ public class TableQueryV4Merger {
 		TableQueryV4 merged = merge(queries, filterOptimizer);
 		Set<FilteredAggregator> dedupedByName = dedupeByAggregatorName(merged.getAggregators());
 		Set<FilteredAggregator> rowPreserving = rewriteToRowPreserving(dedupedByName);
-		// Compute filter columns from the ORIGINAL inputs (per-agg FILTERs and per-V4 WHEREs) BEFORE the strip,
-		// so we still surface columns that participated in the resolution even though the merged aggregators
-		// have their FILTERs reset to MATCH_ALL.
-		IGroupBy enrichedGroupBy = addFilteredColumnsToGroupBy(merged, queries);
+		// Widen the merged WHERE filter to capture every (V4.WHERE AND fa.FILTER) pair — i.e. the row-inclusion
+		// condition each (input V4, per-aggregator FILTER) originally carried — then OR them. Without this, a
+		// per-aggregator FILTER stripped down to MATCH_ALL by `rewriteToRowPreserving` would silently widen row
+		// inclusion (e.g. WHERE=matchAll with two FILTERs `a=a1` and `a=a2` would degrade to "all rows" instead
+		// of `a=a1 OR a=a2`). The widened WHERE then naturally exposes its filter columns to
+		// `addFilteredColumnsToGroupBy`, so the helper keeps its single-arg signature.
+		ISliceFilter rowInclusionFilter = computeRowInclusionFilter(queries, filterOptimizer);
+		TableQueryV4 mergedWithFilter = merged.toBuilder().filter(rowInclusionFilter).build();
+		IGroupBy enrichedGroupBy = addFilteredColumnsToGroupBy(mergedWithFilter);
 
-		return merged.toBuilder()
+		return mergedWithFilter.toBuilder()
 				.clearGroupByToAggregators()
 				.groupByToAggregators(enrichedGroupBy, rowPreserving)
 				.build();
+	}
+
+	/**
+	 * @return the row-inclusion filter for DRILLTHROUGH: {@code OR over (V4, fa)} of {@code AND(V4.WHERE, fa.FILTER)}.
+	 *         A row passes iff it satisfied at least one {@code (V4, aggregator)} pair's effective filter in the
+	 *         original execution — preserving exactly the rows that any input was going to look at.
+	 *
+	 *         <p>
+	 *         Empty aggregators are EXCLUDED from this computation: they exist only as slice-materialization aids (e.g.
+	 *         Shiftor's {@code whereToReadForWrite}) and would otherwise contribute their {@code MATCH_ALL} FILTER to
+	 *         the {@code OR}, collapsing it to {@code MATCH_ALL} and erasing the row-inclusion info from every other
+	 *         input. DRILLTHROUGH does not use the empty aggregator's slice-materialization effect (it rewrites every
+	 *         aggregator to {@link CoalesceAggregation}), so dropping it here is sound.
+	 */
+	protected ISliceFilter computeRowInclusionFilter(Set<TableQueryV4> queries, IFilterOptimizer filterOptimizer) {
+		List<ISliceFilter> effectiveFilters = queries.stream().flatMap(q -> {
+			ISliceFilter where = q.getFilter();
+			List<FilteredAggregator> realAggregators =
+					q.getAggregators().stream().filter(fa -> !EmptyAggregation.isEmpty(fa.getAggregator())).toList();
+			if (realAggregators.isEmpty()) {
+				// V4 with no real aggregator (e.g. all-empty V4): contributes its WHERE as-is — that WHERE is
+				// the only row-inclusion signal it carries.
+				return java.util.stream.Stream.of(where);
+			}
+			return realAggregators.stream()
+					.map(fa -> FilterBuilder.and(where, fa.getFilter()).optimize(filterOptimizer));
+		}).toList();
+		return FilterBuilder.or(effectiveFilters).optimize(filterOptimizer);
 	}
 
 	/**
@@ -154,23 +188,21 @@ public class TableQueryV4Merger {
 	}
 
 	/**
-	 * @return an {@link IGroupBy} extending {@code merged}'s groupBy with every column referenced by the WHERE filter
-	 *         of any input V4 or by any per-aggregator {@code FILTER} of any input V4, deduplicated. Rationale: in
-	 *         DRILLTHROUGH the user wants to see, on every output row, every column that participated in the query's
-	 *         resolution — including columns that were only used to filter (and would otherwise be invisible). Computed
-	 *         from the inputs (not the post-strip merged V4) so that aggregator FILTERs we just stripped to MATCH_ALL
-	 *         are still surfaced via their referenced columns.
+	 * @return an {@link IGroupBy} extending {@code merged}'s groupBy with every column referenced by the merged WHERE
+	 *         filter or by any per-aggregator {@code FILTER}, deduplicated. Rationale: in DRILLTHROUGH the user wants
+	 *         to see, on every output row, every column that participated in the query's resolution — including columns
+	 *         that were only used to filter (and would otherwise be invisible). The caller is expected to pass the
+	 *         post-{@code computeRowInclusionFilter} merged V4 so the row-inclusion columns are visible on
+	 *         {@code merged.getFilter()}.
 	 */
-	protected IGroupBy addFilteredColumnsToGroupBy(TableQueryV4 merged, Set<TableQueryV4> inputs) {
+	protected IGroupBy addFilteredColumnsToGroupBy(TableQueryV4 merged) {
 		IGroupBy currentGroupBy = merged.getGroupBys().iterator().next();
 		Set<String> alreadyGrouped = currentGroupBy.getSortedColumns();
 
 		ImmutableSet.Builder<String> filterColumnsBuilder = ImmutableSet.builder();
-		inputs.forEach(input -> {
-			filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(input.getFilter()));
-			input.getAggregators()
-					.forEach(fa -> filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(fa.getFilter())));
-		});
+		filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(merged.getFilter()));
+		merged.getAggregators()
+				.forEach(fa -> filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(fa.getFilter())));
 		Set<String> filterColumns = filterColumnsBuilder.build();
 
 		Set<String> missing =

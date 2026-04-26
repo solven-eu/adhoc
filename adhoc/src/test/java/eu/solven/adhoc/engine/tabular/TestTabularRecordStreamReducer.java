@@ -34,8 +34,13 @@ import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
+import eu.solven.adhoc.filter.ColumnFilter;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.options.IHasQueryOptions;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.table.InMemoryTable;
 
@@ -102,5 +107,37 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 
 		Assertions.assertThat(merged.size(k1Sum)).isEqualTo(1);
 		Assertions.assertThat(merged.size(k2Sum)).isEqualTo(1);
+	}
+
+	// Regression test for `forEachMeasure` with an EmptyAggregation carrying a per-aggregator FILTER: the empty
+	// aggregator must materialize a slice ONLY when that slice matches its FILTER. A slice that doesn't match
+	// must NOT receive a `valueReceiver.onLong(0)` write — otherwise we'd silently materialize a "slice exists"
+	// marker on rows the FILTER explicitly rejected. The merged grid's size for the empty aggregator is the
+	// observable signal: with one matching row out of two, size must be 1, not 2.
+	@Test
+	public void testForEachMeasure_emptyAggregatorFilter_skipsUnmatchedSlice() {
+		InMemoryTable tableWrapper = InMemoryTable.builder().distinctSlices(false).build();
+
+		// Two rows on distinct `a` coordinates.
+		tableWrapper.add(Map.of("a", "a1", "v", 10));
+		tableWrapper.add(Map.of("a", "a2", "v", 20));
+
+		Aggregator empty = Aggregator.empty();
+		// Empty aggregator with FILTER `a=a1` — only the a=a1 slice should materialize.
+		FilteredAggregator filteredEmpty =
+				FilteredAggregator.builder().aggregator(empty).filter(ColumnFilter.matchEq("a", "a1")).build();
+		TableQueryV3 tableQuery = TableQueryV3
+				.edit(TableQueryV2.builder().aggregator(filteredEmpty).groupBy(GroupByColumns.named("a")).build())
+				.build();
+
+		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
+		TableQueryEngine bootstrapped =
+				(TableQueryEngine) engine.bootstrap(QueryPod.forTable(tableWrapper), optimizer, inducer);
+		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
+
+		// Only the `a=a1` slice was materialized by the empty aggregator. The `a=a2` slice received no
+		// `onLong(0)` write — its FILTER didn't match, so the slice is genuinely absent from this aggregator's
+		// column.
+		Assertions.assertThat(merged.size(empty)).isEqualTo(1);
 	}
 }
