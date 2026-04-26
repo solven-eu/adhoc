@@ -61,8 +61,11 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeMergeableColumn;
 import eu.solven.adhoc.dataframe.filter.FilterMatcher;
+import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.ISinkExecutionFeedback;
@@ -82,6 +85,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasTableQueryForSteps.StepAndFilteredAggregator;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryV4Merger;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.QueryStepIsCompleted;
@@ -181,6 +185,58 @@ public class TableQueryEngine implements ITableQueryEngine {
 				executeTableQueries(suppressedQuerySteps, executionFeedfack);
 
 		return restoreSuppressedGroupBy(calculatedToSuppressed, stepToSuppressedValues);
+	}
+
+	/**
+	 * Execute the inducer {@link TableQueryStep}s of {@code queryStepsDag} as a single merged {@link TableQueryV4} (see
+	 * {@link TableQueryV4Merger}) and stream every database row as a separate
+	 * {@link ListMapEntryBasedTabularViewDrillThrough.TabularEntry} — without any per-slice aggregation or measure
+	 * processing.
+	 *
+	 * <p>
+	 * This is the {@link StandardQueryOptions#DRILLTHROUGH} execution path. The returned view contains one entry per
+	 * row produced by the table; each entry carries the merged groupBy values as {@code coordinates} and the
+	 * per-aggregator (aliased) values as {@code values}.
+	 *
+	 * @return a {@link ListMapEntryBasedTabularViewDrillThrough} carrying the raw rows.
+	 */
+	public ITabularView executeDrillthrough(QueryStepsDag queryStepsDag) {
+		Set<TableQueryStep> tableQuerySteps = prepareForTable(queryStepsDag);
+
+		Map<TableQueryStep, TableQueryStep> calculatedToSuppressed = new LinkedHashMap<>();
+		tableQuerySteps.forEach(generatedStep -> {
+			calculatedToSuppressed.put(generatedStep, suppressGeneratedColumns(generatedStep));
+		});
+		Set<TableQueryStep> suppressedQuerySteps = ImmutableSet.copyOf(calculatedToSuppressed.values());
+
+		SplitTableQueries withoutShared = tableQueryFactory.splitInduced(queryPod, suppressedQuerySteps);
+		Set<TableQueryV4> tableQueries = withoutShared.getTableQueries();
+
+		if (tableQueries.isEmpty()) {
+			// Empty query: nothing to scan, return an empty view.
+			return ListMapEntryBasedTabularViewDrillThrough.withCapacity(0);
+		}
+
+		TableQueryV4 merged = TableQueryV4Merger.mergeForDrillthrough(tableQueries, filterOptimizerSupplier.get());
+
+		if (queryPod.isDebugOrExplain()) {
+			eventBus.post(AdhocLogEvent.builder()
+					.debug(queryPod.isDebug())
+					.explain(queryPod.isExplain())
+					.message("[DRILLTHROUGH] merged %s tableQueries into %s".formatted(tableQueries.size(), merged))
+					.source(this)
+					.build());
+		}
+
+		ListMapEntryBasedTabularViewDrillThrough view = ListMapEntryBasedTabularViewDrillThrough.withCapacity(0);
+		try (ITabularRecordStream stream = openTableStream(merged)) {
+			stream.records().forEach((ITabularRecord record) -> {
+				Map<String, ?> coordinates = record.asSlice().asAdhocMap();
+				Map<String, ?> values = record.aggregatesAsMap();
+				view.appendRow(coordinates, values);
+			});
+		}
+		return view;
 	}
 
 	private ISinkExecutionFeedback prepareExecutionFeedback(QueryStepsDag queryStepsDag) {

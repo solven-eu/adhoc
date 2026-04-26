@@ -563,7 +563,7 @@ export default {
 				<span
 					:key="accordionState.isOpen"
 					:class="accordionState.isOpen ? 'position-fixed shadow bg-body rounded p-2 border' : ''"
-					:style="accordionState.isOpen ? 'top: 50%; left: 62.5%; transform: translate(-50%, -50%); z-index: 1040;' : ''"
+					:style="accordionState.isOpen ? 'top: 66%; left: 62.5%; transform: translate(-50%, -50%); z-index: 1040;' : ''"
 				>
 					<!--
 					Close button — only visible when the block is floating over the grid. Clicking

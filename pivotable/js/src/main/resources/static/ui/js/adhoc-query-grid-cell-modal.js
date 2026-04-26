@@ -80,12 +80,28 @@ export default {
 			props.queryModel.selectedMeasures[measure] = true;
 		};
 
+		// Build a DRILLTHROUGH for the clicked cell: pin every filterable groupBy coordinate of the
+		// clicked row as an additional column-equals filter, then enable the DRILLTHROUGH option so
+		// the next Submit returns the underlying rows.
+		const drillthroughThisCell = function () {
+			Object.entries(props.clickedCell || {}).forEach(([column, coordinate]) => {
+				if (columnIsFilterable(column) && coordinate !== undefined && coordinate !== null) {
+					applyEqualsFilter(column, coordinate);
+				}
+			});
+			if (!props.queryModel.selectedOptions) {
+				props.queryModel.selectedOptions = {};
+			}
+			props.queryModel.selectedOptions.DRILLTHROUGH = true;
+		};
+
 		return {
 			applyEqualsFilter,
 			applyNotEqualsFilter,
 			columnIsFilterable,
 			getUnderlyingsIfMeasure,
 			addMeasure,
+			drillthroughThisCell,
 		};
 	},
 	template: /* HTML */ `
@@ -119,6 +135,15 @@ export default {
 						</ul>
 					</div>
 					<div class="modal-footer">
+						<button
+							type="button"
+							class="btn btn-outline-secondary"
+							data-bs-dismiss="modal"
+							@click="drillthroughThisCell()"
+							title="Pin this cell's coordinates as filters and enable DRILLTHROUGH; press Submit to fetch the underlying rows."
+						>
+							<i class="bi bi-zoom-in"></i> DrillThrough this cell
+						</button>
 						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
 					</div>
 				</div>

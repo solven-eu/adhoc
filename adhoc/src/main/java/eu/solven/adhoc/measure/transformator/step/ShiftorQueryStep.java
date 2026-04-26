@@ -84,6 +84,10 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 		CubeQueryStep whereToReadShifted =
 				CubeQueryStep.edit(step).filter(shiftedFilter).measure(underlyingMeasure).build();
 		// Read slices from the natural underlyingStep, as the natural slices to write
+		// TODO Should rely on Aggregator.empty() so that we materialize a write cell whenever the Shiftor finds a
+		// value, even if the natural underlying is empty for that slice. The engine currently rejects mixing empty
+		// and non-empty aggregators in the same TableQueryV4, so this needs more plumbing — tracked via
+		// TestCubeQuery_Shiftor#testNotShiftMissingOnMeasure_ShiftedExist (currently broken).
 		CubeQueryStep whereToReadForWrite = CubeQueryStep.edit(step).measure(underlyingMeasure).build();
 
 		if (whereToReadShifted.equals(whereToReadForWrite)) {

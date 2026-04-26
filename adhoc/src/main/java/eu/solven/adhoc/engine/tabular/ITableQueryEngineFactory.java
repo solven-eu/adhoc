@@ -25,20 +25,38 @@ package eu.solven.adhoc.engine.tabular;
 import java.util.Map;
 
 import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
 
 /**
  * Part if {@link ICubeQueryEngine} dedicated to {@link TableQuery}.
- * 
+ *
  * @author Benoit Lacelle
  */
 @FunctionalInterface
 public interface ITableQueryEngineFactory {
 
 	Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag);
+
+	/**
+	 * Execute the {@code queryStepsDag} as a {@link StandardQueryOptions#DRILLTHROUGH} query: every database row is
+	 * returned as an independent {@link ITabularView} entry, without any per-slice aggregation or measure
+	 * transformation.
+	 *
+	 * <p>
+	 * Default implementation throws {@link UnsupportedOperationException}; concrete factories that support DRILLTHROUGH
+	 * (e.g. {@link TableQueryEngineFactory}) must override.
+	 *
+	 * @return the raw rows assembled into a {@link ITabularView}.
+	 */
+	default ITabularView executeDrillthrough(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		throw new UnsupportedOperationException(
+				"DRILLTHROUGH is not supported by %s".formatted(this.getClass().getName()));
+	}
 
 }

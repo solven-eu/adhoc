@@ -179,15 +179,32 @@ export default {
 			// Delete the example
 			delete metadata[0];
 
+			// DRILLTHROUGH: the response carries one entry per source row, with per-aggregator (aliased) keys
+			// that do not necessarily appear in `query.measures`. The schema (groupBy + measures) is therefore
+			// discovered from the rows themselves rather than from the submitted query.
+			const isDrillthrough = (props.tabularView.query.options || []).includes("DRILLTHROUGH");
+
 			// May be String or Object (decorating a column with calculated coordinates)
 			const rawColumnNames = props.tabularView.query.groupBy.columns;
-			const columnNames = rawColumnNames.map((rawC) => {
+			let columnNames = rawColumnNames.map((rawC) => {
 				if (typeof rawC === "object") {
 					return rawC.column;
 				} else {
 					return rawC;
 				}
 			});
+			if (isDrillthrough) {
+				// Union of all coordinate keys across rows, preserving insertion order.
+				const seen = new Set(columnNames);
+				for (const row of view.coordinates) {
+					for (const k of Object.keys(row)) {
+						if (!seen.has(k)) {
+							seen.add(k);
+							columnNames.push(k);
+						}
+					}
+				}
+			}
 
 			if (view.coordinates.length === 0) {
 				// TODO Why do we show an empty column? Maybe to force having something to render
@@ -208,7 +225,22 @@ export default {
 				gridColumns.push(...gridHelper.groupByToGridColumns(columnNames, props.queryModel, renderCallback));
 
 				// measureNames may be filled on first row if we requested no measure and received the default measure
-				const measureNames = props.tabularView.query.measures;
+				let measureNames = props.tabularView.query.measures;
+				if (isDrillthrough) {
+					// In DRILLTHROUGH the response uses per-aggregator aliases (e.g. `k1`, `k1_1`) which may
+					// differ from the user-submitted `measures`. Discover the value schema as the union of
+					// all keys appearing in `view.values`, preserving first-seen order.
+					const seenMeasures = new Set();
+					measureNames = [];
+					for (const row of view.values) {
+						for (const k of Object.keys(row)) {
+							if (!seenMeasures.has(k)) {
+								seenMeasures.add(k);
+								measureNames.push(k);
+							}
+						}
+					}
+				}
 				console.log(`Rendering measureNames=${measureNames}`);
 
 				// Compute per-measure min/max/sum stats BEFORE building the column definitions
@@ -243,7 +275,9 @@ export default {
 				const rowSpanningStart = new Date();
 				props.tabularView.timing.rowSpanning_startedAt = rowSpanningStart;
 				try {
-					if (view.coordinates.length >= 1) {
+					if (view.coordinates.length >= 1 && !isDrillthrough) {
+						// DRILLTHROUGH responses are intentionally heterogeneous (each source row may carry a
+						// different subset of columns), so the first-row sanity check would fire spuriously.
 						const rowIndex = 0;
 						const coordinatesRow = view.coordinates[rowIndex];
 						const measuresRow = view.values[rowIndex];
