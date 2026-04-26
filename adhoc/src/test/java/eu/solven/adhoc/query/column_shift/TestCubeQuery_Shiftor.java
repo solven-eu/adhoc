@@ -29,6 +29,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.google.common.collect.ImmutableSet;
+
 import eu.solven.adhoc.ADagTest;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
@@ -127,6 +129,8 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
+		// Shiftor's whereToReadForWrite uses Aggregator.empty() to materialize every DB slice — including ccy=CHN
+		// (whose row carries no k1) — so the shifted value is written there too.
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
@@ -139,7 +143,10 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		}).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "HKD");
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
-		}).hasSize(4);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "CHN");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		}).hasSize(5);
 	}
 
 	@Test
@@ -174,7 +181,10 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).isEmpty();
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		});
 	}
 
 	@Test
@@ -267,10 +277,11 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 
 		ListMapEntryBasedTabularViewDrillThrough mapBased = ListMapEntryBasedTabularViewDrillThrough.load(output);
 
-		// One TabularEntry per DB row. The Shiftor produces two inducer aggregators (FILTER(ccy=EUR) and unfiltered),
-		// but DRILLTHROUGH dedupes them by Aggregator name (MATCH_ALL wins), so the user sees a single `k1` column —
-		// the `k1_1` re-indexing alias is a TableQueryV4 internal and must not leak into the output. `ccy` is auto-
-		// added to the groupBy because it participated in the per-aggregator FILTER (Shiftor's ccy==EUR shift).
+		// One TabularEntry per DB row, with the union of columns. DRILLTHROUGH strips per-aggregator FILTERs to
+		// MATCH_ALL (a row's k1 value is always exposed if present), and the merged WHERE filter is the OR of
+		// every input V4's WHERE — so every DB row participates. `ccy` is auto-added to coordinates because it
+		// was referenced by the Shiftor's per-aggregator FILTER (computed from the original inputs, before the
+		// FILTER strip).
 		Assertions.assertThat(mapBased.getEntries()).hasSize(6).anySatisfy(entry -> {
 			Assertions.assertThat(entry.getCoordinates()).isEqualTo(Map.of("ccy", "EUR"));
 			Assertions.assertThat(entry.getValues()).isEqualTo(Map.of("k1", 123));
@@ -292,8 +303,6 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		});
 	}
 
-	// TODO This highlights that whereToReadForWrite in ShiftorQueryStep.getUnderlyingsSteps should maybe rely on an
-	// Aggregator.empty(), but it leads to further limitations.
 	@Test
 	public void testNotShiftMissingOnMeasure_ShiftedExist() {
 		// blue+JPY does not exist, but the shifted blue+EUR exists
@@ -314,8 +323,142 @@ public class TestCubeQuery_Shiftor extends ADagTest implements IAdhocTestConstan
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).isEmpty();
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
+
+	@Test
+	public void testNotShiftMissingOnMeasure_ShiftedExist_groupByShifted() {
+		// blue+JPY does not exist, but the shifted blue+EUR exists
+		{
+			CubeQuery blueJPY =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "JPY").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueJPY).isEmpty()).isTrue();
+
+			CubeQuery blueEUR =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "EUR").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueEUR).isEmpty()).isFalse();
+		}
+
+		// Query on blue+JPY if shifted to EUR should write a value
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", "JPY")
+				.andFilter("color", "blue")
+				.groupByAlso("ccy")
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
+
+	@Test
+	public void testNotShiftMissingOnMeasure_ShiftedExist_groupByShifted_filterMissingAndUnknown() {
+		// blue+JPY does not exist, but the shifted blue+EUR exists
+		{
+			CubeQuery blueJPY =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "JPY").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueJPY).isEmpty()).isTrue();
+
+			CubeQuery blueEUR =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "EUR").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueEUR).isEmpty()).isFalse();
+		}
+
+		// Query on blue+JPY if shifted to EUR should write a value
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", ImmutableSet.of("JPY", "unknownCCY"))
+				.andFilter("color", "blue")
+				.groupByAlso("ccy")
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(2).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "unknownCCY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
+
+	@Test
+	public void testNotShiftMissingOnMeasure_ShiftedExist_groupByShifted_filterMissingAndUnknown_groupByUnrelated() {
+		// blue+JPY does not exist, but the shifted blue+EUR exists
+		{
+			CubeQuery blueJPY =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "JPY").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueJPY).isEmpty()).isTrue();
+
+			CubeQuery blueEUR =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "EUR").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueEUR).isEmpty()).isFalse();
+		}
+
+		// Query on blue+JPY if shifted to EUR should write a value
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", ImmutableSet.of("JPY", "unknownCCY"))
+				.andFilter("color", ImmutableSet.of("blue", "unknownColor"))
+				.groupByAlso("ccy", "color")
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(2).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates)
+					.hasSize(2)
+					.containsEntry("ccy", "JPY")
+					.containsEntry("color", "blue");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates)
+					.hasSize(2)
+					.containsEntry("ccy", "unknownCCY")
+					.containsEntry("color", "blue");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
+	}
+
+	@Test
+	public void testNotShiftMissingOnMeasure_ShiftedExist_groupByShifted_coverAlsoNominalCase() {
+		// blue+JPY does not exist, but the shifted blue+EUR exists
+		{
+			CubeQuery blueJPY =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "JPY").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueJPY).isEmpty()).isTrue();
+
+			CubeQuery blueEUR =
+					CubeQuery.builder().measure(k1Sum).andFilter("ccy", "EUR").andFilter("color", "blue").build();
+			Assertions.assertThat(cube().execute(blueEUR).isEmpty()).isFalse();
+		}
+
+		// Query on blue+JPY if shifted to EUR should write a value
+		ITabularView output = cube().execute(CubeQuery.builder()
+				.measure(mName)
+				.andFilter("ccy", ImmutableSet.of("EUR", "JPY", "unknownCCY"))
+				.andFilter("color", "blue")
+				.groupByAlso("ccy")
+				.build());
+
+		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
+
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(3).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
-			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "unknownCCY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
 		});
 	}
 

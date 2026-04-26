@@ -118,7 +118,10 @@ public class TableQueryV4Merger {
 		TableQueryV4 merged = merge(queries, filterOptimizer);
 		Set<FilteredAggregator> dedupedByName = dedupeByAggregatorName(merged.getAggregators());
 		Set<FilteredAggregator> rowPreserving = rewriteToRowPreserving(dedupedByName);
-		IGroupBy enrichedGroupBy = addFilteredColumnsToGroupBy(merged);
+		// Compute filter columns from the ORIGINAL inputs (per-agg FILTERs and per-V4 WHEREs) BEFORE the strip,
+		// so we still surface columns that participated in the resolution even though the merged aggregators
+		// have their FILTERs reset to MATCH_ALL.
+		IGroupBy enrichedGroupBy = addFilteredColumnsToGroupBy(merged, queries);
 
 		return merged.toBuilder()
 				.clearGroupByToAggregators()
@@ -127,12 +130,16 @@ public class TableQueryV4Merger {
 	}
 
 	/**
-	 * Rewrite every aggregator to use {@link CoalesceAggregation} so the table layer never collapses figures: each
-	 * source row's value flows through unchanged. Critical for measures backed by an
-	 * {@link eu.solven.adhoc.measure.aggregation.carrier.IAggregationCarrier} (e.g. Rank, percentile sketches), where
-	 * applying the natural aggregation at the row level is meaningless or outright errors. Also makes
-	 * {@code Sum}/{@code Avg} measures behave intuitively in DRILLTHROUGH (each row exposes its raw contribution, not a
-	 * per-slice sum).
+	 * Rewrite every aggregator for DRILLTHROUGH: replace its aggregation with {@link CoalesceAggregation} (so the table
+	 * layer never collapses figures — each source row's value flows through unchanged) and reset its per-aggregator
+	 * {@code FILTER} to {@link ISliceFilter#MATCH_ALL}.
+	 *
+	 * <p>
+	 * Filter reset rationale: DRILLTHROUGH's contract is "one row per actual DB row, with the union of columns over the
+	 * OR of filters". A per-aggregator FILTER inherited from one source V4 (e.g. a Shiftor's {@code ccy=EUR}) would
+	 * split a single DB row into "row with k1 populated" vs "row with k1 absent" depending on whether that row's
+	 * {@code ccy} matches — which contradicts the row-preserving contract. The OR-combined merged WHERE filter alone
+	 * determines row inclusion; once a row is in, every aggregator column is exposed.
 	 *
 	 * <p>
 	 * The aggregator name (alias) is preserved, so the user-visible column key is unchanged.
@@ -141,24 +148,29 @@ public class TableQueryV4Merger {
 		return aggregators.stream()
 				.map(fa -> fa.toBuilder()
 						.aggregator(fa.getAggregator().toBuilder().aggregationKey(CoalesceAggregation.KEY).build())
+						.filter(ISliceFilter.MATCH_ALL)
 						.build())
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
-	 * @return an {@link IGroupBy} extending {@code merged}'s groupBy with every column referenced by the merged WHERE
-	 *         filter or by any per-aggregator {@code FILTER} clause, deduplicated. Rationale: in DRILLTHROUGH the user
-	 *         wants to see, on every output row, every column that participated in the query's resolution — including
-	 *         columns that were only used to filter (and would otherwise be invisible).
+	 * @return an {@link IGroupBy} extending {@code merged}'s groupBy with every column referenced by the WHERE filter
+	 *         of any input V4 or by any per-aggregator {@code FILTER} of any input V4, deduplicated. Rationale: in
+	 *         DRILLTHROUGH the user wants to see, on every output row, every column that participated in the query's
+	 *         resolution — including columns that were only used to filter (and would otherwise be invisible). Computed
+	 *         from the inputs (not the post-strip merged V4) so that aggregator FILTERs we just stripped to MATCH_ALL
+	 *         are still surfaced via their referenced columns.
 	 */
-	protected IGroupBy addFilteredColumnsToGroupBy(TableQueryV4 merged) {
+	protected IGroupBy addFilteredColumnsToGroupBy(TableQueryV4 merged, Set<TableQueryV4> inputs) {
 		IGroupBy currentGroupBy = merged.getGroupBys().iterator().next();
 		Set<String> alreadyGrouped = currentGroupBy.getSortedColumns();
 
 		ImmutableSet.Builder<String> filterColumnsBuilder = ImmutableSet.builder();
-		filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(merged.getFilter()));
-		merged.getAggregators()
-				.forEach(fa -> filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(fa.getFilter())));
+		inputs.forEach(input -> {
+			filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(input.getFilter()));
+			input.getAggregators()
+					.forEach(fa -> filterColumnsBuilder.addAll(FilterHelpers.getFilteredColumns(fa.getFilter())));
+		});
 		Set<String> filterColumns = filterColumnsBuilder.build();
 
 		Set<String> missing =

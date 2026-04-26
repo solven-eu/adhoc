@@ -127,7 +127,7 @@ public final class UnsafeMeasureForest implements IMeasureForest {
 	@Override
 	public IMeasureForest acceptVisitor(IMeasureForestVisitor visitor) {
 		String editedName = visitor.editName(getName());
-		if (Objects.equals(editedName, getName())) {
+		if (!Objects.equals(editedName, getName())) {
 			log.warn("Can not edit the name of {}", this);
 		}
 

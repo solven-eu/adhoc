@@ -168,12 +168,11 @@ public class TestQueryStepsDag implements IAdhocTestConstants {
 
 		Assertions.assertThat(dag.getExplicits()).hasSize(1);
 
-		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(2);
+		// Shiftor's two underlyings are now: the natural k1 (whereToReadShifted) and Aggregator.empty()
+		// (whereToReadForWrite — used to materialize any DB slice). 3 vertices, 2 edges.
+		Assertions.assertThat(dag.getInducedToInducer().vertexSet()).hasSize(3);
+		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(2);
 
-		// There is 2 identical edges: they are merged in the DAG
-		Assertions.assertThat(dag.getInducedToInducer().edgeSet()).hasSize(1);
-
-		// The 2 identical edges are explicit in `underlyingSteps` with the help of a multigraph
 		Assertions
 				.assertThat(dag.underlyingSteps(
 						CubeQueryStep.builder().measure(shiftorAisA1).filter(ColumnFilter.matchEq("a", "a1")).build()))

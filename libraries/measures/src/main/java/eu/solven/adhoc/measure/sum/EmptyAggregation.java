@@ -87,16 +87,18 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 		return isEmpty(aggregator.getAggregationKey());
 	}
 
+	/**
+	 * @return {@code true} when EVERY aggregator is an {@link EmptyAggregation} (or the set is empty); {@code false}
+	 *         when none are empty OR when empty and non-empty aggregators are mixed. Mixed sets are no longer rejected:
+	 *         callers that compute aggregator columns must filter out empty ones via {@link #isEmpty(Aggregator)} when
+	 *         iterating per-aggregator. The empty aggregator's only contract is to materialize slices, which the
+	 *         non-empty raw-row pass already does — so mixing is a no-op for the empty side.
+	 */
 	public static boolean isEmpty(Set<? extends IAliasedAggregator> aggregators) {
-		boolean hasEmpty =
-				aggregators.stream().map(IAliasedAggregator::getAggregator).anyMatch(EmptyAggregation::isEmpty);
-
-		if (hasEmpty && aggregators.size() >= 2) {
-			// BEWARE Is it legal if we receive multiple aggregators which are all empty?
-			throw new IllegalArgumentException("Must not query empty and non-empty: " + aggregators);
-		}
-
-		return hasEmpty;
+		long emptyCount =
+				aggregators.stream().map(IAliasedAggregator::getAggregator).filter(EmptyAggregation::isEmpty).count();
+		// All-or-nothing: only true when every aggregator is empty.
+		return emptyCount > 0 && emptyCount == aggregators.size();
 	}
 
 }

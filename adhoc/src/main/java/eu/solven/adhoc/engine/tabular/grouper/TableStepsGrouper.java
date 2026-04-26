@@ -26,6 +26,7 @@ import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Aggregator;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
@@ -52,12 +53,25 @@ public class TableStepsGrouper implements ITableStepsGrouper {
 	 * Check everything representing the context of the query. Typically represents the {@link IQueryOption} and the
 	 * customMarker.
 	 *
+	 * <p>
+	 * The aggregator's emptyness IS part of the context: an {@link EmptyAggregation} inducer (used e.g. by
+	 * {@link eu.solven.adhoc.measure.transformator.step.ShiftorQueryStep} to materialize any DB slice) requires the
+	 * "iterate every slice" execution path, while a real aggregator requires the per-slice aggregation path. Mixing the
+	 * two in a single {@link TableQueryV4} would force the engine into a hybrid path it does not implement — keep them
+	 * in distinct groups instead.
+	 *
 	 * @param inducer
 	 * @return a CubeQueryStep which has been fleshed-out of what's not the query context.
 	 */
 	protected TableQueryStep contextOnly(TableQueryStep inducer) {
+		Aggregator placeholderAggregator;
+		if (EmptyAggregation.isEmpty(inducer.getMeasure())) {
+			placeholderAggregator = Aggregator.empty();
+		} else {
+			placeholderAggregator = Aggregator.sum("noMeasure");
+		}
 		return inducer.toBuilder()
-				.aggregator(Aggregator.sum("noMeasure"))
+				.aggregator(placeholderAggregator)
 				.groupBy(IGroupBy.GRAND_TOTAL)
 				.filter(ISliceFilter.MATCH_ALL)
 				.customMarker(contextOnly(inducer.getCustomMarker()))

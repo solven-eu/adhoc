@@ -119,7 +119,9 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(3).anySatisfy((coordinates, measures) -> {
+		// Shiftor's whereToReadForWrite uses Aggregator.empty() to materialize every DB slice (not only those
+		// where the underlying has a value), so a row with ccy=CHN (no k1) still gets the shifted value.
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(4).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "EUR");
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
 		}).anySatisfy((coordinates, measures) -> {
@@ -127,6 +129,9 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
 		}).anySatisfy((coordinates, measures) -> {
 			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "JPY");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("ccy", "CHN");
 			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
 		});
 	}
@@ -178,7 +183,13 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+		// Even though no DB row has ccy=unknown, the Shiftor's whereToReadForWrite (Aggregator.empty()) finds no
+		// natural slice — but its whereToReadShifted does (the EUR rows). The Shiftor's filter-cartesian fallback
+		// then materializes the grandTotal slice with the shifted value (sum of EUR rows = 123 + 345 = 468).
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat(coordinates).isEmpty();
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123 + 345);
+		});
 	}
 
 	@Test
