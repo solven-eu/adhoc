@@ -40,7 +40,7 @@ import eu.solven.adhoc.dataframe.aggregating.PartitionedMultitypeMergeableGrid;
 import eu.solven.adhoc.dataframe.column.partitioned.IPartitioned;
 import eu.solven.adhoc.dataframe.column.partitioned.PartitioningHelpers;
 import eu.solven.adhoc.dataframe.column.partitioned.ShardingForEachParameters;
-import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
+import eu.solven.adhoc.dataframe.filter.FilterMatcher;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.tabular.IMultitypeMergeableGrid;
@@ -263,7 +263,12 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 			}
 
 			if (EmptyAggregation.isEmpty(filteredAggregator.getAggregator())) {
-				if (MoreFilterHelpers.match(filteredAggregator.getFilter(), slice)) {
+				if (FilterMatcher.builder()
+						.sliceFactory(sliceFactory)
+						.filter(filteredAggregator.getFilter())
+						.onMissingColumn(_ -> true)
+						.build()
+						.match(slice)) {
 					// TODO Introduce .onBoolean
 					valueReceiver.onLong(0);
 				} else {

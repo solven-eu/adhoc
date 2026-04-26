@@ -205,7 +205,13 @@ public class TestTransformator_Shiftor_contextValue extends ADagTest implements 
 
 		MapBasedTabularView mapBased = MapBasedTabularView.load(output);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(0);
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(2).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "red");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 123);
+		}).anySatisfy((coordinates, measures) -> {
+			Assertions.assertThat((Map) coordinates).hasSize(1).containsEntry("color", "blue");
+			Assertions.assertThat((Map) measures).hasSize(1).containsEntry(mName, 0L + 345);
+		});
 	}
 
 	@Test

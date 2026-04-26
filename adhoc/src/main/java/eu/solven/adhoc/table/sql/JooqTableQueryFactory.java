@@ -66,6 +66,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.sum.AvgAggregation;
+import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.CountAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.measure.sum.ExpressionAggregation;
@@ -632,6 +633,12 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			return buildCountAggregate(fieldWithoutCase, conditionInCase);
 		} else if (RankAggregation.isRank(aggregationKey)) {
 			return buildRankAggregate(a, fieldToAggregate);
+		} else if (CoalesceAggregation.KEY.equals(aggregationKey)) {
+			// `CoalesceAggregation` ("the column is constant for the slice — return any one value") is used in
+			// the DRILLTHROUGH path where each slice carries at most one row. SQL has no `COALESCE(col)` aggregate;
+			// `any_value(col)` (DuckDB / standard SQL since 2023) is the matching primitive — pick any row's
+			// value for the slice. Same row-preserving guarantee, no double-counting risk.
+			return aggregate("any_value", fieldToAggregate);
 		} else {
 			return onCustomAggregation(a, namedColumn, conditionInCase);
 		}

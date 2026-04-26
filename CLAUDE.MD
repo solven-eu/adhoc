@@ -125,6 +125,13 @@ New executor jobs are proposed monthly by the Discovery Agent (see `.claude/disc
 
 ## After every change
 
+- **TDD when a bug is identified.** As soon as a failure is *clearly* understood (not "I'm exploring why something is off" — actually identified, with a known root cause and reproduction shape), write a reproducing test FIRST and confirm it fails for the expected reason, THEN apply the fix. The reproducer pins the regression even after the surrounding code is refactored. Concretely:
+  1. Write the test (or extend an existing one) describing the buggy scenario as concretely as possible — same inputs, same call shape, same expected output.
+  2. Run it — confirm it fails with the symptom you predicted (exception, wrong value, missing row, etc.). If it fails differently or passes, you have not yet identified the bug; investigate further before writing the fix.
+  3. Apply the fix in production code.
+  4. Re-run the test — confirm it now passes.
+  5. Run the affected module's full test suite to catch regressions.
+  This applies even when the fix is a one-liner. Skipping the reproducer is acceptable only for *exploratory* spikes (e.g. "let me try this and see what breaks") — and even then the spike should end with a real reproducer once the issue is understood.
 - **Tests**: Every new class or significant behaviour change must be accompanied by a unit test. Cover at least the nominal path plus the most likely edge cases (null values, empty input, mixed types, etc.). Target ≥ 80 % instruction coverage for new files; classes below 20 % are critically under-tested — check with `perl scripts/check-coverage-sonar.pl` (offline) or `perl scripts/check-coverage-low.pl` (local JaCoCo). Test files live in the same module under `src/test/java/`.
 - **CHANGES.MD**: Add a one-liner under the current `[0.0.x]` section (under `### Added`, `### Changed`, or `### Fixed` as appropriate) for every user-visible addition or change. Do **not** record coverage-only test additions — they carry no functional value for API users.
 - **Final pass**: Before declaring work done, run through this checklist — do not skip any item even if the task felt simple:
