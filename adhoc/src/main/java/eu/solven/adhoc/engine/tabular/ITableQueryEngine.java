@@ -25,17 +25,36 @@ package eu.solven.adhoc.engine.tabular;
 import java.util.Map;
 
 import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.optimizer.TableQueryV4Merger;
+import eu.solven.adhoc.options.StandardQueryOptions;
+import eu.solven.adhoc.query.table.TableQueryV4;
 
 /**
  * A tableQuery engine, prepared for a given query.
  * 
  * @author Benoit Lacelle
  */
-@FunctionalInterface
 public interface ITableQueryEngine {
 
 	Map<TableQueryStep, ICuboid> executeTableQueries(QueryStepsDag queryStepsDag);
+
+	/**
+	 * Execute the inducer {@link TableQueryStep}s of {@code queryStepsDag} as a single merged {@link TableQueryV4} (see
+	 * {@link TableQueryV4Merger}) and stream every database row as a separate
+	 * {@link ListMapEntryBasedTabularViewDrillThrough.TabularEntry} — without any per-slice aggregation or measure
+	 * processing.
+	 *
+	 * <p>
+	 * This is the {@link StandardQueryOptions#DRILLTHROUGH} execution path. The returned view contains one entry per
+	 * row produced by the table; each entry carries the merged groupBy values as {@code coordinates} and the
+	 * per-aggregator (aliased) values as {@code values}.
+	 *
+	 * @return a {@link ListMapEntryBasedTabularViewDrillThrough} carrying the raw rows.
+	 */
+	ITabularView executeDrillthrough(QueryStepsDag queryStepsDag);
 
 }

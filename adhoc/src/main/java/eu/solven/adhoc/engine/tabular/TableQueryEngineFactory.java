@@ -89,11 +89,7 @@ public class TableQueryEngineFactory implements ITableQueryEngineFactory {
 	@Override
 	public ITabularView executeDrillthrough(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		ITableQueryEngine engine = bootstrap(queryPod);
-		if (engine instanceof TableQueryEngine concreteEngine) {
-			return concreteEngine.executeDrillthrough(queryStepsDag);
-		}
-		throw new UnsupportedOperationException(
-				"DRILLTHROUGH is not supported by %s".formatted(engine.getClass().getName()));
+		return engine.executeDrillthrough(queryStepsDag);
 	}
 
 	protected ITableQueryEngine bootstrap(QueryPod queryPod) {
