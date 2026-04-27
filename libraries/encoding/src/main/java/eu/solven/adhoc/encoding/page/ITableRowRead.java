@@ -35,6 +35,10 @@ public interface ITableRowRead extends IInt2ObjectReader {
 
 	int size();
 
+	default boolean isEmpty() {
+		return size() == 0;
+	}
+
 	Object readValue(int columnIndex);
 
 	@Override
