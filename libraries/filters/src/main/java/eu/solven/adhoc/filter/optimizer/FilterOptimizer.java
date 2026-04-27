@@ -25,6 +25,7 @@ package eu.solven.adhoc.filter.optimizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -397,7 +398,11 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 		return partitionedClusters.entrySet()
 				.stream()
 				.collect(Collectors.toMap(Map.Entry::getKey,
-						e -> e.getValue().stream().flatMap(ee -> ee.stream()).collect(ImmutableSet.toImmutableSet())));
+						e -> e.getValue().stream().flatMap(ee -> ee.stream()).collect(ImmutableSet.toImmutableSet()),
+						(a, b) -> {
+							throw new IllegalStateException("Duplicate key");
+						},
+						LinkedHashMap::new));
 	}
 
 	@SuppressWarnings("checkstyle:MagicNumber")

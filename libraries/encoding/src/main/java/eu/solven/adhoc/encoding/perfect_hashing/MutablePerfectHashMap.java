@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
 
 /**
  * A mutable {@link Map} backed by a {@link SimplePerfectHash} that is rebuilt on every structural mutation (new key via
@@ -71,7 +72,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 	// Rebuilt on every structural mutation. SimplePerfectHash#indexOf returns the position in the List passed to
 	// make(),
 	// which by construction equals the index of the key in keyList — hence the index into `valuesArr`.
-	private IHasIndexOf<K> hash = SimplePerfectHash.<K>make(List.of());
+	private IHasIndexOf<K> hash = SimplePerfectHash.<K>make(ImmutableList.of());
 
 	/**
 	 * Creates an empty mutable map.
@@ -170,7 +171,7 @@ public class MutablePerfectHashMap<K, V> implements Map<K, V> {
 	public void clear() {
 		keyList.clear();
 		valuesArr = EMPTY;
-		hash = SimplePerfectHash.<K>make(List.of());
+		hash = SimplePerfectHash.<K>make(ImmutableList.of());
 	}
 
 	@Override
