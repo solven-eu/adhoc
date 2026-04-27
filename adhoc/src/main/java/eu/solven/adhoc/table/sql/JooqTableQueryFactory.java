@@ -101,16 +101,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
-	public static final String PREFIX_GROUPING = "adhoc_grouping_";
 
 	@NonNull
 	@Builder.Default
 	final IOperatorFactory operatorFactory = StandardOperatorFactory.builder().build();
 
 	/**
-	 * Optional per-query table provider. When set, {@link #prepareQuery(TableQueryV4)} substitutes the {@link #table}
-	 * field with {@link IJooqTableSupplier#tableFor(TableQueryV4)}. When {@code null}, the constant {@link #table} is
-	 * always used (current behaviour).
+	 * Optional per-query table provider. When set, {@link #prepareSliceQuery(TableQueryV4)} substitutes the
+	 * {@link #table} field with {@link IJooqTableSupplier#tableFor(TableQueryV4)}. When {@code null}, the constant
+	 * {@link #table} is always used (current behaviour).
 	 */
 	@NonNull
 	final IJooqTableSupplier tableSupplier;
@@ -211,12 +210,13 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	@Deprecated
-	public QueryWithLeftover prepareQuery(TableQueryV2 tableQuery) {
-		return prepareQuery(TableQueryV3.edit(tableQuery).build());
+	public QueryWithLeftover prepareSliceQuery(TableQueryV2 tableQuery) {
+		return prepareSliceQuery(TableQueryV3.edit(tableQuery).build());
 	}
 
 	@Override
-	public QueryWithLeftover prepareQuery(TableQueryV4 tableQuery) {
+	public QueryWithLeftover prepareSliceQuery(TableQueryV4 tableQuery) {
+		// TODO We should do a UNION ALL and not a covering V3
 		TableQueryV3 v3 = tableQuery.asCoveringV3();
 
 		if (tableQuery.isDebugOrExplain()) {
@@ -232,7 +232,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 					percentEfficiency,
 					v3);
 		}
-		return prepareQuery(v3, resolveTable(tableQuery));
+		return prepareSliceQuery(v3, resolveTable(tableQuery));
 	}
 
 	/**
@@ -241,43 +241,83 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	 * Subclasses may override to plug in their own per-query logic.
 	 */
 	protected TableLike<?> resolveTable(TableQueryV4 tableQuery) {
-		// if (tableSupplier != null) {
 		return tableSupplier.tableFor(tableQuery);
-		// }
-		// return table;
 	}
 
-	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery) {
-		return prepareQuery(tableQuery, resolveTable(TableQueryV4.edit(tableQuery).build()));
+	protected QueryWithLeftover prepareSliceQuery(TableQueryV3 tableQuery) {
+		return prepareSliceQuery(tableQuery, resolveTable(TableQueryV4.edit(tableQuery).build()));
 	}
 
-	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery, TableLike<?> fromTable) {
+	/**
+	 * SLICES variant: GROUP BY + aggregate functions. Wraps each aggregator in its SQL aggregation function (e.g.
+	 * {@code SUM(col) FILTER (WHERE ...)}) and applies a {@code GROUP BY} on the requested columns. One row per
+	 * distinct slice.
+	 */
+	protected QueryWithLeftover prepareSliceQuery(TableQueryV3 tableQuery, TableLike<?> fromTable) {
+		return prepareQuery(tableQuery, fromTable, SqlRenderMode.SLICES);
+	}
+
+	/**
+	 * ROWS variant: no GROUP BY, no aggregate function. Each per-aggregator FILTER becomes a
+	 * {@code CASE WHEN <filter> THEN <column> END AS <alias>} (the column is null when the FILTER does not match), so
+	 * each surviving DB row produces one record. This is the foundation of
+	 * {@link eu.solven.adhoc.options.StandardQueryOptions#DRILLTHROUGH}.
+	 *
+	 * @param tableQuery
+	 *            the merged DRILLTHROUGH query.
+	 * @return the {@link QueryWithLeftover} carrying the raw-rows SQL.
+	 */
+	@Override
+	public QueryWithLeftover prepareRowsQuery(TableQueryV3 tableQuery) {
+		return prepareQuery(tableQuery, resolveTable(TableQueryV4.edit(tableQuery).build()), SqlRenderMode.ROWS);
+	}
+
+	/**
+	 * SQL rendering mode, capturing the only two axes by which {@link #prepareSliceQuery} and {@link #prepareRowsQuery}
+	 * differ:
+	 * <ul>
+	 * <li>{@link #SLICES}: SELECT wraps each aggregator in its SQL aggregation function and a {@code GROUP BY} clause
+	 * is emitted over the requested groupBy columns.</li>
+	 * <li>{@link #ROWS}: SELECT emits a {@code CASE WHEN <filter> THEN <column>} per FA (no aggregation function) and
+	 * no {@code GROUP BY} is emitted, so each surviving DB row produces one record.</li>
+	 * </ul>
+	 * Everything else (WHERE, FROM, leftover splitting, ORDER BY, partitioning, QueryWithLeftover assembly) is shared.
+	 */
+	protected enum SqlRenderMode {
+		SLICES, ROWS
+	}
+
+	/**
+	 * Shared scaffold for both {@link #prepareSliceQuery} and {@link #prepareRowsQuery}. The two methods only differ on
+	 * how they render the SELECT clause (aggregate-functions-with-FILTER vs CASE-WHEN) and whether they emit a
+	 * {@code GROUP BY} — both axes captured by {@link SqlRenderMode}.
+	 */
+	protected QueryWithLeftover prepareQuery(TableQueryV3 tableQuery, TableLike<?> fromTable, SqlRenderMode mode) {
 		ISliceToJooqCondition toCondition = makeToCondition();
 
 		ConditionWithFilter conditionAndLeftover = toConditions(toCondition, tableQuery);
 
-		// Leftover in FILTER clause
+		// Leftover in FILTER clause — common to both modes: any FA whose FILTER cannot be transcoded fully into
+		// SQL records its leftover here, and the JooqTableWrapper applies the leftover post-fetch.
 		Map<String, ISliceFilter> aggregateToLeftover = new LinkedHashMap<>();
-
-		{
-			tableQuery.getAggregators().forEach(filtered -> {
-				ISliceFilter aggregatorFilter = filtered.getFilter();
-				ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitLeftover(aggregatorFilter);
-
-				if (!conditionWithFilter.getLeftover().isMatchAll()) {
-					aggregateToLeftover.put(filtered.getAlias(), conditionWithFilter.getLeftover());
-				}
-			});
-		}
+		tableQuery.getAggregators().forEach(filtered -> {
+			ConditionWithFilter conditionWithFilter = toCondition.toConditionSplitLeftover(filtered.getFilter());
+			if (!conditionWithFilter.getLeftover().isMatchAll()) {
+				aggregateToLeftover.put(filtered.getAlias(), conditionWithFilter.getLeftover());
+			}
+		});
 
 		ImmutableSet<ISliceFilter> leftovers = ImmutableSet.<ISliceFilter>builder()
 				.add(conditionAndLeftover.getLeftover())
 				.addAll(aggregateToLeftover.values())
 				.build();
-		AggregatedRecordFields fields = makeSelectedColumns(tableQuery, leftovers);
+		AggregatedRecordFields fields = selectedColumns(tableQuery, leftovers);
 
-		// `SELECT ...`
-		Collection<SelectFieldOrAsterisk> selectedFields = makeSelectedFields(toCondition, tableQuery, fields);
+		// `SELECT ...` — the FIRST mode-specific axis.
+		Collection<SelectFieldOrAsterisk> selectedFields = switch (mode) {
+		case SLICES -> selectedSliceFields(toCondition, tableQuery, fields);
+		case ROWS -> selectedRowsFields(toCondition, tableQuery, fields);
+		};
 
 		// `FROM ...`
 		SelectJoinStep<Record> selectFrom = dslContext.select(selectedFields).from(fromTable);
@@ -290,46 +330,98 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 			selectFromWhere = selectFrom.where(conditionAndLeftover.getCondition());
 		}
 
-		// `GROUP BY ...`
-		Collection<GroupField> groupFields = makeGroupingFields(tableQuery, conditionAndLeftover.getLeftover());
-		SelectHavingStep<Record> selectFromWhereGroupBy = selectFromWhere.groupBy(groupFields);
+		// `GROUP BY ...` — the SECOND mode-specific axis. ROWS emits no GROUP BY at all.
+		// TODO We may like to break `GROUPING SET` around here (see TableQueryV4.streamV3 and
+		// JooqTableWrapper.streamSlices). TableQueryV4.isPerfectV3() is the shared flag that signals
+		// whether a covering GROUPING SET is efficient (true) or wasteful (false). Three strategies
+		// worth exposing as a configurable option:
+		//
+		// 1. GROUPING SETS (current default via asCoveringV3): one SQL query, cartesian product of all
+		// (groupBy × aggregator) pairs. Efficient when isPerfectV3() is true; wasteful otherwise,
+		// because it computes irrelevant (groupBy, aggregator) combinations.
+		//
+		// 2. UNION ALL via multiple TableQueryV3 (TableQueryV4.streamV3): one SQL per distinct aggregator
+		// set; each query covers only the (groupBy, aggregator) pairs that actually need each other.
+		// Avoids cartesian waste but adds per-query overhead. Preferable when isPerfectV3() is false.
+		//
+		// 3. Literal SQL UNION ALL (not yet implemented): a single SQL statement whose branches are
+		// UNION ALL'd by the DB engine itself. Unlike option 2 (which concatenates at the Java level),
+		// this lets the DB share one scan across branches and can be faster on columnar engines.
+		//
+		// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
+		// overlap. Benchmark with TestTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
+		ResultQuery<Record> beforeOrder = switch (mode) {
+		case SLICES -> selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndLeftover.getLeftover()));
+		case ROWS -> selectFromWhere;
+		};
 
-		// `ORDER BY ...`
+		// `ORDER BY ...` / `LIMIT ...`
 		ResultQuery<Record> resultQuery;
 		if (tableQuery.getTopClause().isPresent()) {
 			Collection<? extends OrderField<?>> optOrderFields = getOptionalOrders(tableQuery);
-
-			resultQuery = selectFromWhereGroupBy.orderBy(optOrderFields).limit(tableQuery.getTopClause().getLimit());
+			resultQuery = applyOrderAndLimit(beforeOrder, optOrderFields, tableQuery.getTopClause().getLimit());
 		} else {
-			resultQuery = selectFromWhereGroupBy;
+			resultQuery = beforeOrder;
 		}
 
 		return QueryWithLeftover.builder()
-				// TODO We may like to break `GROUPING SET` around here (see TableQueryV4.streamV3 and
-				// JooqTableWrapper.streamSlices). TableQueryV4.isPerfectV3() is the shared flag that signals
-				// whether a covering GROUPING SET is efficient (true) or wasteful (false). Three strategies
-				// worth exposing as a configurable option:
-				//
-				// 1. GROUPING SETS (current default via asCoveringV3): one SQL query, cartesian product of all
-				// (groupBy × aggregator) pairs. Efficient when isPerfectV3() is true; wasteful otherwise,
-				// because it computes irrelevant (groupBy, aggregator) combinations.
-				//
-				// 2. UNION ALL via multiple TableQueryV3 (TableQueryV4.streamV3): one SQL per distinct aggregator
-				// set; each query covers only the (groupBy, aggregator) pairs that actually need each other.
-				// Avoids cartesian waste but adds per-query overhead. Preferable when isPerfectV3() is false.
-				//
-				// 3. Literal SQL UNION ALL (not yet implemented): a single SQL statement whose branches are
-				// UNION ALL'd by the DB engine itself. Unlike option 2 (which concatenates at the Java level),
-				// this lets the DB share one scan across branches and can be faster on columnar engines.
-				//
-				// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
-				// overlap. Benchmark with TestTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
 				.queries(partitionQuery(resultQuery))
 				.leftover(conditionAndLeftover.getLeftover())
 				.aggregatorToLeftovers(aggregateToLeftover)
 				.fields(fields)
-				// .groupingColumns(groupingColumns)
 				.build();
+	}
+
+	/**
+	 * SELECT-fields builder for {@link SqlRenderMode#ROWS}: one {@code CASE WHEN <filter> THEN <col>} per FA, plus the
+	 * groupBy columns as plain fields, plus any leftover columns. Empty aggregators (slice-materialization aids) are
+	 * dropped — they have no SQL counterpart in row-streaming mode.
+	 */
+	protected Collection<SelectFieldOrAsterisk> selectedRowsFields(ISliceToJooqCondition toCondition,
+			TableQueryV3 tableQuery,
+			AggregatedRecordFields fields) {
+		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
+		tableQuery.getAggregators().stream().distinct().forEach(filteredAggregator -> {
+			Aggregator a = filteredAggregator.getAggregator();
+			if (EmptyAggregation.isEmpty(a.getAggregationKey())) {
+				return;
+			}
+			Field<Object> rawColumn = DSL.field(name(a.getColumnName()));
+			ConditionWithFilter faCondition = toCondition.toConditionSplitLeftover(filteredAggregator.getFilter());
+			Field<Object> withCase = asCase(faCondition.getCondition(), rawColumn);
+			selectedFields.add(withCase.as(filteredAggregator.getAlias()));
+		});
+		Map<String, IAdhocColumn> distinctColumns = tableQuery.getColumns();
+		fields.getColumns().stream().map(distinctColumns::get).forEach(column -> {
+			Field<Object> field = columnAsField(column);
+			selectedFields.add(field);
+		});
+		fields.getLeftovers().forEach(leftover -> {
+			Field<Object> field = columnAsField(ReferencedColumn.ref(leftover));
+			selectedFields.add(field);
+		});
+		if (selectedFields.isEmpty()) {
+			// No aggregator and no groupBy: still emit a row marker so DRILLTHROUGH counts the matching rows.
+			selectedFields.add(DSL.val(1));
+		}
+		return selectedFields;
+	}
+
+	/**
+	 * Apply ORDER BY + LIMIT to the query. Extracted so the SLICES (post-GROUP BY) and ROWS (post-WHERE) branches share
+	 * the same call site even though their input types differ in JOOQ's fluent API.
+	 */
+	protected ResultQuery<Record> applyOrderAndLimit(ResultQuery<Record> resultQuery,
+			Collection<? extends OrderField<?>> orderFields,
+			Number limit) {
+		if (resultQuery instanceof SelectHavingStep<Record> havingStep) {
+			return havingStep.orderBy(orderFields).limit(limit);
+		} else if (resultQuery instanceof SelectConnectByStep<Record> connectStep) {
+			return connectStep.orderBy(orderFields).limit(limit);
+		} else {
+			throw new IllegalStateException(
+					"Unsupported jOOQ query stage for ORDER BY/LIMIT: %s".formatted(resultQuery.getClass().getName()));
+		}
 	}
 
 	protected ISliceToJooqCondition makeToCondition() {
@@ -357,7 +449,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		return makeToCondition().and(conditions, leftoverFilters);
 	}
 
-	protected List<SelectFieldOrAsterisk> makeSelectedFields(ISliceToJooqCondition toCondition,
+	protected List<SelectFieldOrAsterisk> selectedSliceFields(ISliceToJooqCondition toCondition,
 			TableQueryV3 tableQuery,
 			AggregatedRecordFields fields) {
 		List<SelectFieldOrAsterisk> selectedFields = new ArrayList<>();
@@ -439,7 +531,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 				.build();
 	}
 
-	protected AggregatedRecordFields makeSelectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
+	protected AggregatedRecordFields selectedColumns(TableQueryV3 tableQuery, Set<ISliceFilter> leftovers) {
 		return QueryWithLeftover.makeSelectedColumns(tableQuery, leftovers);
 	}
 
@@ -634,10 +726,10 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		} else if (RankAggregation.isRank(aggregationKey)) {
 			return buildRankAggregate(a, fieldToAggregate);
 		} else if (CoalesceAggregation.KEY.equals(aggregationKey)) {
-			// `CoalesceAggregation` ("the column is constant for the slice — return any one value") is used in
-			// the DRILLTHROUGH path where each slice carries at most one row. SQL has no `COALESCE(col)` aggregate;
-			// `any_value(col)` (DuckDB / standard SQL since 2023) is the matching primitive — pick any row's
-			// value for the slice. Same row-preserving guarantee, no double-counting risk.
+			// `CoalesceAggregation` ("the column is constant for the slice — return any one value") maps to
+			// `any_value(col)` (DuckDB / standard SQL since 2023): same row-preserving guarantee, no
+			// double-counting risk. The DRILLTHROUGH path no longer relies on this (it bypasses GROUP BY via
+			// `streamRawRows`), but the mapping stays valid for any caller emitting Coalesce in a regular query.
 			return aggregate("any_value", fieldToAggregate);
 		} else {
 			return onCustomAggregation(a, namedColumn, conditionInCase);
@@ -723,8 +815,8 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 	}
 
 	@Deprecated(since = "TODO Migrate unitTests")
-	public QueryWithLeftover prepareQuery(TableQuery tableQuery) {
-		return prepareQuery(TableQueryV3.edit(tableQuery).build());
+	public QueryWithLeftover prepareSliceQuery(TableQuery tableQuery) {
+		return prepareSliceQuery(TableQueryV3.edit(tableQuery).build());
 	}
 
 	public static String groupingAlias(String c) {

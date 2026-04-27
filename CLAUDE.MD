@@ -195,6 +195,10 @@ These rules exist because slow sessions have been observed and root-caused here.
   - I've run the same failing test multiple times with added logs and still don't have a working fix.
   - I'm about to touch a file the user explicitly said is theirs / they just edited.
   Iterating silently when the situation is actually ambiguous wastes context and time. Stating it clearly invites a 1-line redirect and saves a long detour.
+- **When the user *suggests* a design change, give feedback before implementing — unless they were unambiguously decisive.** Treat phrasings like "I feel awkward about X", "Shouldn't we Y?", "Maybe Z?", "I wonder if…" as **invitations to discuss**, not orders to refactor. Pause, share an opinion (agree / disagree / mixed, with the trade-offs you see), then let them confirm. A 2–3 sentence opinion costs almost nothing; a 30-minute refactor in the wrong direction costs a lot. Only skip the feedback step when the user is fully decisive ("do X", "rename Y to Z", "drop the FOO branch") AND you fully agree. If you do skip it, say in one sentence why you agreed and went straight to implementation, so the user can still redirect early. Phrasing patterns to watch for:
+  - **Discuss first** (non-decisive): "Shouldn't we…", "I'd expect…", "I feel awkward about…", "Wouldn't it be simpler to…", "Maybe…", "I wonder if…", "What do you think about…".
+  - **Implement directly** (decisive): "Do X", "Apply Y", "Rename Z to W", "Drop the FOO branch", "Yes, go ahead", "Implement option (a)".
+  When in doubt, default to the discuss-first path. Even if I "totally agree", a one-liner like "Agree — V3 is more honest, going for it now" is enough for the user to interrupt before I burn context.
 
 ---
 

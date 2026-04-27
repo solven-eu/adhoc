@@ -70,6 +70,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.groupby.GroupByColumns.GroupByColumnsBuilder;
 import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
@@ -134,7 +135,20 @@ public class ColumnsManager implements IColumnsManager {
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
-	public ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV4 query) {
+	public ITabularRecordStream openSlicesStream(QueryPod queryPod, TableQueryV4 query) {
+		return openStreamInternal(queryPod, query, false);
+	}
+
+	@Override
+	public ITabularRecordStream openRowsStream(QueryPod queryPod, TableQueryV3 query) {
+		// Reuse the V4 transcoding pipeline (filter rewrite, missing-column handling, post-filter) by going
+		// through V3.toV4() then converting back to V3 right before calling table.streamRows. Lossless because
+		// the merger emits a V3-shaped query (single groupBy, single aggregator set) and `transcodeQuery`
+		// preserves that shape.
+		return openStreamInternal(queryPod, query.toV4(), true);
+	}
+
+	protected ITabularRecordStream openStreamInternal(QueryPod queryPod, TableQueryV4 query, boolean isDT) {
 		AliasingContext transcodingContext = openTranscodingContext();
 
 		ISliceFilter transcodedFilter;
@@ -196,7 +210,11 @@ public class ColumnsManager implements IColumnsManager {
 		ITabularRecordStream tabularRecordStream;
 
 		try {
-			tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
+			if (isDT) {
+				tabularRecordStream = table.streamRows(queryPod, transcodedQuery.asCoveringV3());
+			} else {
+				tabularRecordStream = table.streamSlices(queryPod, transcodedQuery);
+			}
 		} catch (RuntimeException e) {
 			if (StandardQueryOptions.EXCEPTIONS_AS_MEASURE_VALUE.isActive(queryPod.getOptions())) {
 				tabularRecordStream = AdhocExceptionAsMeasureValueHelper.makeErrorStream(transcodedQuery, e);

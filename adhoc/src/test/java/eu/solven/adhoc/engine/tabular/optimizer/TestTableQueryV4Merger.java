@@ -37,6 +37,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 
 public class TestTableQueryV4Merger {
@@ -142,9 +143,9 @@ public class TestTableQueryV4Merger {
 	@Test
 	public void testMergeForDrillthrough_widensWhereFromPerAggregatorFilters() {
 		// Regression test: the input V4 has a permissive WHERE (matchAll) but two aggregators each carry their
-		// own per-aggregator FILTER. After `mergeForDrillthrough` strips per-aggregator FILTERs to MATCH_ALL the
-		// merged WHERE must NOT degrade to MATCH_ALL — it must widen to `OR(a=a1, a=a2)` so row inclusion is
-		// preserved. Without this, every DB row would survive instead of just those matching either FILTER.
+		// own per-aggregator FILTER. The merged WHERE must NOT degrade to MATCH_ALL — it must widen to
+		// `OR(a=a1, a=a2)` so row inclusion is preserved. Without this, every DB row would survive instead of
+		// just those matching either FILTER.
 		FilteredAggregator agg1 =
 				FilteredAggregator.builder().aggregator(k1).filter(ColumnFilter.matchEq("a", "a1")).build();
 		FilteredAggregator agg2 =
@@ -154,12 +155,15 @@ public class TestTableQueryV4Merger {
 				.groupByToAggregators(IGroupBy.GRAND_TOTAL, ImmutableSet.of(agg1, agg2))
 				.build();
 
-		TableQueryV4 merged = TableQueryV4Merger.mergeForDrillthrough(ImmutableSet.of(input), filterOptimizer);
+		TableQueryV3 merged = TableQueryV4Merger.mergeForDrillthrough(ImmutableSet.of(input), filterOptimizer);
 
 		Assertions.assertThat(merged.getFilter()).isNotEqualTo(ISliceFilter.MATCH_ALL);
-		// All per-aggregator FILTERs must have been reset to MATCH_ALL (row-preserving contract).
+		// Per-aggregator FILTERs are preserved verbatim (the row-streaming layer applies them per-row to
+		// populate the alias column with null when the FILTER does not match). Row inclusion comes from the
+		// widened merged WHERE, not from the per-aggregator FILTERs.
 		Assertions.assertThat(merged.getAggregators())
-				.allSatisfy(fa -> Assertions.assertThat(fa.getFilter()).isEqualTo(ISliceFilter.MATCH_ALL));
+				.extracting(fa -> fa.getFilter())
+				.containsExactlyInAnyOrder(ColumnFilter.matchEq("a", "a1"), ColumnFilter.matchEq("a", "a2"));
 		// The widened WHERE references the original FILTERs' columns, so `addFilteredColumnsToGroupBy` surfaces `a`.
 		Assertions.assertThat(merged.getGroupBys().iterator().next().getSortedColumns()).contains("a");
 	}

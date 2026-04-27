@@ -35,12 +35,12 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.experimental.UtilityClass;
 
@@ -115,23 +115,38 @@ public class TableQueryV4Merger {
 	 * conflicts unique in a regular execution are pure {@link TableQueryV4} internals and should not leak into the
 	 * user-visible DRILLTHROUGH output.
 	 */
-	public static TableQueryV4 mergeForDrillthrough(Set<TableQueryV4> queries, IFilterOptimizer filterOptimizer) {
+	public static TableQueryV3 mergeForDrillthrough(Set<TableQueryV4> queries, IFilterOptimizer filterOptimizer) {
 		TableQueryV4 merged = merge(queries, filterOptimizer);
-		Set<FilteredAggregator> dedupedByName = dedupeByAggregatorName(merged.getAggregators());
-		Set<FilteredAggregator> rowPreserving = rewriteToRowPreserving(dedupedByName);
-		// Widen the merged WHERE filter to capture every (V4.WHERE AND fa.FILTER) pair — i.e. the row-inclusion
+		// Empty aggregators are slice-materialization aids (e.g. Shiftor's whereToReadForWrite) — they carry no
+		// payload and would surface as a useless `empty` column in the DRILLTHROUGH output. Drop them before dedup.
+		Set<FilteredAggregator> realAggregators = merged.getAggregators()
+				.stream()
+				.filter(fa -> !EmptyAggregation.isEmpty(fa.getAggregator()))
+				.collect(ImmutableSet.toImmutableSet());
+		Set<FilteredAggregator> dedupedByName = dedupeByAggregatorName(realAggregators);
+		// Widen the merged WHERE filter to capture every (V4.WHERE AND fa.FILTER) pair — the row-inclusion
 		// condition each (input V4, per-aggregator FILTER) originally carried — then OR them. Without this, a
-		// per-aggregator FILTER stripped down to MATCH_ALL by `rewriteToRowPreserving` would silently widen row
-		// inclusion (e.g. WHERE=matchAll with two FILTERs `a=a1` and `a=a2` would degrade to "all rows" instead
-		// of `a=a1 OR a=a2`). The widened WHERE then naturally exposes its filter columns to
+		// V4 with WHERE=matchAll and two FILTERs `a=a1` and `a=a2` would widen row inclusion to "all rows"
+		// instead of `a=a1 OR a=a2`. The widened WHERE then naturally exposes its filter columns to
 		// `addFilteredColumnsToGroupBy`, so the helper keeps its single-arg signature.
 		ISliceFilter rowInclusionFilter = computeRowInclusionFilter(queries, filterOptimizer);
 		TableQueryV4 mergedWithFilter = merged.toBuilder().filter(rowInclusionFilter).build();
 		IGroupBy enrichedGroupBy = addFilteredColumnsToGroupBy(mergedWithFilter);
 
-		return mergedWithFilter.toBuilder()
-				.clearGroupByToAggregators()
-				.groupByToAggregators(enrichedGroupBy, rowPreserving)
+		// DRILLTHROUGH does not benefit from V4's per-step partitioning of (groupBy × aggregators): there is no
+		// GROUP BY at execution time, every row flows through with the union of aggregator columns. Returning a
+		// V3 makes the contract explicit — single groupBy, single aggregator set — and saves the downstream layers
+		// (JOOQ raw-rows query factory, InMemoryTable) from a pointless V4-to-V3 conversion. Aggregators are kept
+		// verbatim: `streamRows` emits one record per DB row and never invokes the aggregation function, so there
+		// is no need to rewrite to CoalesceAggregation, and the per-aggregator FILTER is preserved (the row-
+		// streaming layer applies it per-row to populate the alias column with null when the FILTER does not match).
+		return TableQueryV3.builder()
+				.filter(rowInclusionFilter)
+				.groupBy(enrichedGroupBy)
+				.aggregators(ImmutableSet.copyOf(dedupedByName))
+				.customMarker(merged.getCustomMarker())
+				.topClause(merged.getTopClause())
+				.options(merged.getOptions())
 				.build();
 	}
 
@@ -144,8 +159,8 @@ public class TableQueryV4Merger {
 	 *         Empty aggregators are EXCLUDED from this computation: they exist only as slice-materialization aids (e.g.
 	 *         Shiftor's {@code whereToReadForWrite}) and would otherwise contribute their {@code MATCH_ALL} FILTER to
 	 *         the {@code OR}, collapsing it to {@code MATCH_ALL} and erasing the row-inclusion info from every other
-	 *         input. DRILLTHROUGH does not use the empty aggregator's slice-materialization effect (it rewrites every
-	 *         aggregator to {@link CoalesceAggregation}), so dropping it here is sound.
+	 *         input. DRILLTHROUGH does not use the empty aggregator's slice-materialization effect (the row-streaming
+	 *         path emits one record per DB row regardless of the empty marker), so dropping it here is sound.
 	 */
 	protected ISliceFilter computeRowInclusionFilter(Set<TableQueryV4> queries, IFilterOptimizer filterOptimizer) {
 		List<ISliceFilter> effectiveFilters = queries.stream().flatMap(q -> {
@@ -161,30 +176,6 @@ public class TableQueryV4Merger {
 					.map(fa -> FilterBuilder.and(where, fa.getFilter()).optimize(filterOptimizer));
 		}).toList();
 		return FilterBuilder.or(effectiveFilters).optimize(filterOptimizer);
-	}
-
-	/**
-	 * Rewrite every aggregator for DRILLTHROUGH: replace its aggregation with {@link CoalesceAggregation} (so the table
-	 * layer never collapses figures — each source row's value flows through unchanged) and reset its per-aggregator
-	 * {@code FILTER} to {@link ISliceFilter#MATCH_ALL}.
-	 *
-	 * <p>
-	 * Filter reset rationale: DRILLTHROUGH's contract is "one row per actual DB row, with the union of columns over the
-	 * OR of filters". A per-aggregator FILTER inherited from one source V4 (e.g. a Shiftor's {@code ccy=EUR}) would
-	 * split a single DB row into "row with k1 populated" vs "row with k1 absent" depending on whether that row's
-	 * {@code ccy} matches — which contradicts the row-preserving contract. The OR-combined merged WHERE filter alone
-	 * determines row inclusion; once a row is in, every aggregator column is exposed.
-	 *
-	 * <p>
-	 * The aggregator name (alias) is preserved, so the user-visible column key is unchanged.
-	 */
-	protected Set<FilteredAggregator> rewriteToRowPreserving(Set<FilteredAggregator> aggregators) {
-		return aggregators.stream()
-				.map(fa -> fa.toBuilder()
-						.aggregator(fa.getAggregator().toBuilder().aggregationKey(CoalesceAggregation.KEY).build())
-						.filter(ISliceFilter.MATCH_ALL)
-						.build())
-				.collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**

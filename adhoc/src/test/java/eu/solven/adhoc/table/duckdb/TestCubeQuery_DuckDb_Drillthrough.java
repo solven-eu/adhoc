@@ -74,17 +74,15 @@ public class TestCubeQuery_DuckDb_Drillthrough extends ADuckDbJooqTest implement
 
 		ListMapEntryBasedTabularViewDrillThrough view = ListMapEntryBasedTabularViewDrillThrough.load(output);
 
-		// DuckDB renders the merged aggregator as `any_value(k1)` and applies a `GROUP BY a` at the SQL
-		// layer, so the table returns ONE row per slice (two slices: a=a1, a=a2) — not one row per source
-		// row. The two a=a1 rows (k1=123, k1=345) collapse to a single slice; DuckDB picks any of the two
-		// `k1` values (we only assert membership). This is a deliberate divergence from the
-		// InMemoryTable DT contract (per-source-row records); SQL backends inherently group at the engine
-		// level. Pinning the per-slice shape here, with a TODO to discuss whether DT-on-SQL should bypass
-		// GROUP BY entirely (e.g. by stripping the groupBy in `mergeForDrillthrough` for SQL tables).
-		Assertions.assertThat(view.getEntries()).hasSize(2).anySatisfy(entry -> {
+		// DRILLTHROUGH on JOOQ-backed tables now goes through `streamRawRows`: the SQL has neither GROUP BY
+		// nor aggregate function, so each source row produces one TabularEntry. The two `a=a1` rows
+		// (k1=123 and k1=345) surface as TWO distinct entries — matching the InMemoryTable DT contract.
+		Assertions.assertThat(view.getEntries()).hasSize(3).anySatisfy(entry -> {
 			Assertions.assertThat((Map) entry.getCoordinates()).containsEntry("a", "a1");
-			Assertions.assertThat((Map) entry.getValues())
-					.hasEntrySatisfying(k1Sum.getName(), v -> Assertions.assertThat(v).isIn(123D, 345D));
+			Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 123D);
+		}).anySatisfy(entry -> {
+			Assertions.assertThat((Map) entry.getCoordinates()).containsEntry("a", "a1");
+			Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 345D);
 		}).anySatisfy(entry -> {
 			Assertions.assertThat((Map) entry.getCoordinates()).containsEntry("a", "a2");
 			Assertions.assertThat((Map) entry.getValues()).containsEntry(k1Sum.getName(), 234D);

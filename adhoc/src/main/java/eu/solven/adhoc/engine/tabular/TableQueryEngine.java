@@ -217,7 +217,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 			return ListMapEntryBasedTabularViewDrillThrough.withCapacity(0);
 		}
 
-		TableQueryV4 merged = TableQueryV4Merger.mergeForDrillthrough(tableQueries, filterOptimizerSupplier.get());
+		TableQueryV3 merged = TableQueryV4Merger.mergeForDrillthrough(tableQueries, filterOptimizerSupplier.get());
 
 		if (queryPod.isDebugOrExplain()) {
 			eventBus.post(AdhocLogEvent.builder()
@@ -229,7 +229,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		}
 
 		ListMapEntryBasedTabularViewDrillThrough view = ListMapEntryBasedTabularViewDrillThrough.withCapacity(0);
-		try (ITabularRecordStream stream = openTableStream(merged)) {
+		try (ITabularRecordStream stream = openTableStreamForDrillthrough(merged)) {
 			stream.records().forEach((ITabularRecord record) -> {
 				Map<String, ?> coordinates = record.asSlice().asAdhocMap();
 				Map<String, ?> values = record.aggregatesAsMap();
@@ -823,7 +823,11 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	protected ITabularRecordStream openTableStream(TableQueryV4 tableQuery) {
-		return queryPod.getColumnsManager().openTableStream(queryPod, tableQuery);
+		return queryPod.getColumnsManager().openSlicesStream(queryPod, tableQuery);
+	}
+
+	protected ITabularRecordStream openTableStreamForDrillthrough(TableQueryV3 tableQuery) {
+		return queryPod.getColumnsManager().openRowsStream(queryPod, tableQuery);
 	}
 
 	protected Map<TableQueryStep, ICuboid> aggregateStreamToAggregates(IHasTableQueryForSteps tableQueries,

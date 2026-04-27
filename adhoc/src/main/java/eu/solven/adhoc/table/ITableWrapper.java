@@ -31,6 +31,7 @@ import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
@@ -56,6 +57,30 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
 	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery);
+
+	/**
+	 * Stream every database row matching {@code tableQuery.getFilter()} without any GROUP BY or aggregate function:
+	 * each row produces one {@link eu.solven.adhoc.dataframe.row.ITabularRecord}, the row's groupBy projection carries
+	 * {@code tableQuery.getGroupBys()}, and each aggregator slot is populated with the raw column value (or
+	 * {@code null} if the aggregator's per-aggregator FILTER rejects the row).
+	 *
+	 * <p>
+	 * This is the foundation of {@link eu.solven.adhoc.options.StandardQueryOptions#DRILLTHROUGH}: each DB row maps to
+	 * one user-visible tabular entry, with no slice collapse. The DRILLTHROUGH path takes a {@link TableQueryV3}
+	 * because there is no execution-time GROUP BY: V4's per-step partitioning of (groupBy × aggregators) brings nothing
+	 * to a row-streaming pipeline. The default implementation delegates to
+	 * {@link #streamSlices(QueryPod, TableQueryV3)}, preserving the legacy "GROUP BY ALL + any_value(...)" behaviour,
+	 * so wrappers can opt in incrementally.
+	 *
+	 * @param queryPod
+	 * @param tableQuery
+	 *            the merged DRILLTHROUGH query — its WHERE captures the full row-inclusion filter and its
+	 *            {@link FilteredAggregator} list describes which aggregator columns to surface per row.
+	 * @return a {@link ITabularRecordStream} carrying one record per matched row.
+	 */
+	default ITabularRecordStream streamRows(QueryPod queryPod, TableQueryV3 tableQuery) {
+		return streamSlices(queryPod, tableQuery);
+	}
 
 	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV4());
