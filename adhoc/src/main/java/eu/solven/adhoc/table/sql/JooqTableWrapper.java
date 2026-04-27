@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,6 +74,7 @@ import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -241,29 +243,56 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		return tableParameters.getDslSupplier().getDSLContext();
 	}
 
-	@SuppressWarnings("PMD.CloseResource")
+	/**
+	 * DRILLTHROUGH-mode: stream every DB row matching {@code tableQuery.getFilter()} without any GROUP BY or aggregate
+	 * function. Takes a {@link TableQueryV3} because the row-streaming pipeline does not benefit from V4's per-step
+	 * (groupBy × aggregators) partitioning. Each FA's per-aggregator FILTER is encoded as
+	 * {@code CASE WHEN <filter> THEN <column> END AS <alias>} so the alias column carries null for rows the FILTER
+	 * rejects.
+	 */
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
-		if (!Objects.equals(this, queryPod.getTable())) {
-			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
-		} else {
-			Optional<IAdhocColumn> optInvalidColumn = tableQuery.getGroupBys()
-					.stream()
-					.flatMap(gb -> gb.getColumns().stream())
-					.filter(c -> c instanceof ICalculatedColumn)
-					.findAny();
-			if (optInvalidColumn.isPresent()) {
-				// These should be handled by ColumnsManager, which itself call ITableWrapper
-				// BEWARE We still accept TableExpressionColumn
-				throw new IllegalArgumentException("%s are not manageable by ITableWrapper. query=%s"
-						.formatted(optInvalidColumn.get(), tableQuery));
-			}
-		}
+	public ITabularRecordStream streamRows(QueryPod queryPod, TableQueryV3 tableQuery) {
+		validateGroupBys(queryPod, tableQuery.getGroupBys(), tableQuery);
 
 		IGroupBy mergedGroupBy = GroupByColumns.mergeNonAmbiguous(tableQuery.getGroupBys());
+		QueryWithLeftover resultQuery = makeQueryFactory().prepareRowsQuery(tableQuery);
 
-		IJooqTableQueryFactory queryFactory = makeQueryFactory();
+		traceQuery(tableQuery.isDebugOrExplain(), tableQuery.isDebug(), resultQuery);
 
+		// streamRows guarantees one record per source row; slices are not deduplicated by definition.
+		return wrapStream(queryPod, mergedGroupBy, resultQuery, tableQuery, /* distinctSlices */ false);
+	}
+
+	@Override
+	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+		validateGroupBys(queryPod, tableQuery.getGroupBys(), tableQuery);
+
+		IGroupBy mergedGroupBy = GroupByColumns.mergeNonAmbiguous(tableQuery.getGroupBys());
+		QueryWithLeftover resultQuery = makeQueryFactory().prepareSliceQuery(tableQuery);
+
+		traceQuery(tableQuery.isDebugOrExplain(), tableQuery.isDebug(), resultQuery);
+
+		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
+		return wrapStream(queryPod, mergedGroupBy, resultQuery, tableQuery, distinctSlices);
+	}
+
+	protected void validateGroupBys(QueryPod queryPod, Set<IGroupBy> groupBys, Object tableQueryForLog) {
+		if (!Objects.equals(this, queryPod.getTable())) {
+			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
+		}
+		Optional<IAdhocColumn> optInvalidColumn = groupBys.stream()
+				.flatMap(gb -> gb.getColumns().stream())
+				.filter(c -> c instanceof ICalculatedColumn)
+				.findAny();
+		if (optInvalidColumn.isPresent()) {
+			// These should be handled by ColumnsManager, which itself calls ITableWrapper.
+			// BEWARE We still accept TableExpressionColumn.
+			throw new IllegalArgumentException("%s are not manageable by ITableWrapper. query=%s"
+					.formatted(optInvalidColumn.get(), tableQueryForLog));
+		}
+	}
+
+	protected void traceQuery(boolean debugOrExplain, boolean debug, QueryWithLeftover resultQuery) {
 		// TODO This should be checked only once. Is it expensive?
 		makeDsl().connection(c -> {
 			if (c.getAutoCommit()) {
@@ -274,29 +303,31 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				log.debug("autoCommit should not be true. connection={}", c);
 			}
 		});
-
-		QueryWithLeftover resultQuery = queryFactory.prepareQuery(tableQuery);
-
-		if (tableQuery.isDebugOrExplain()) {
+		if (debugOrExplain) {
 			log.info("[EXPLAIN] SQL to db={}: `{}` and lateFilter={}",
 					getName(),
 					toSQL(resultQuery.getQuery()),
 					resultQuery.getLeftover());
 		}
-		if (tableQuery.isDebug()) {
+		if (debug) {
 			debugResultQuery(resultQuery);
 		}
+	}
 
+	@SuppressWarnings("PMD.CloseResource")
+	protected ITabularRecordStream wrapStream(QueryPod queryPod,
+			IGroupBy mergedGroupBy,
+			QueryWithLeftover resultQuery,
+			Object source,
+			boolean distinctSlices) {
 		IConsumingStream<ITabularRecord> tableStream = toMapStream(queryPod, mergedGroupBy, resultQuery);
-
-		boolean distinctSlices = areDistinctSliced(tableQuery, resultQuery);
 
 		Semaphore semaphore = querySemaphore();
 		// Limit concurrent queries: acquire lazily when the stream is first opened.
 		// The permit is released as soon as the first row arrives: at that point the DB has completed query
 		// execution and is streaming results, so a new query can start. If the stream is closed before
 		// producing any row (empty result or early cancel), the permit is released on close instead.
-		return new SuppliedTabularRecordConsumingStream(tableQuery, distinctSlices, () -> {
+		return new SuppliedTabularRecordConsumingStream(source, distinctSlices, () -> {
 			try {
 				Duration timeout = AdhocDuckDBUnsafe.getSemaphoreTimeout();
 				boolean acquired = semaphore.tryAcquire(timeout.getSeconds(), TimeUnit.SECONDS);

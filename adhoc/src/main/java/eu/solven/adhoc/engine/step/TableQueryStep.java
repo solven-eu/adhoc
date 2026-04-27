@@ -24,6 +24,8 @@ package eu.solven.adhoc.engine.step;
 
 import java.util.concurrent.ConcurrentMap;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -57,7 +59,7 @@ public final class TableQueryStep extends ACubeQueryStep {
 	@Builder
 	protected TableQueryStep(ISliceFilter filter,
 			IGroupBy groupBy,
-			Object customMarker,
+			@Nullable Object customMarker,
 			@Singular ImmutableSet<IQueryOption> options,
 			ConcurrentMap<Object, Object> cache,
 			@NonNull Aggregator aggregator) {

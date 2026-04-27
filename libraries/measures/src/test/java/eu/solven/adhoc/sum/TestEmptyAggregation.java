@@ -49,7 +49,9 @@ public class TestEmptyAggregation {
 
 		Assertions.assertThat(EmptyAggregation.isEmpty(Set.of(Aggregator.sum("k1")))).isFalse();
 
-		Assertions.assertThatThrownBy(() -> EmptyAggregation.isEmpty(Set.of(Aggregator.empty(), Aggregator.sum("k1"))))
-				.isInstanceOf(IllegalArgumentException.class);
+		// Mixed empty + non-empty: no longer an error (used by Shiftor to materialize slices on top of a real
+		// aggregator). The empty contributes only its slice-materialization effect, which is a no-op once the raw
+		// row pass kicks in for the non-empty aggregator.
+		Assertions.assertThat(EmptyAggregation.isEmpty(Set.of(Aggregator.empty(), Aggregator.sum("k1")))).isFalse();
 	}
 }

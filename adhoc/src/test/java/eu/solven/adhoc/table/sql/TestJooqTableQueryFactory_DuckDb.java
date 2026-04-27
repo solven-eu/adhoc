@@ -145,7 +145,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	@Test
 	public void testGrandTotal() {
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -154,7 +154,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testMeasureNameWithDot() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -164,7 +164,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testMeasureNameWithDot_quoted() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k.USD").columnName("\"t.k\"").build())
 				.build());
 
@@ -175,7 +175,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testColumnWithAt() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("a@b@c"))
 				.build());
@@ -187,7 +187,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testColumnWithSpace() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("pre post"))
 				.build());
@@ -200,7 +200,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	@Test
 	public void testCountAsterisk() {
 		QueryWithLeftover condition =
-				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
+				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -210,7 +210,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	@Test
 	public void testEmptyAggregation() {
 		QueryWithLeftover condition =
-				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
+				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -222,7 +222,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -235,7 +235,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -248,7 +248,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter notFilter = customFilter.negate();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(notFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -264,7 +264,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.negated(FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine())
 				.build();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(notFilter).build());
 
 		// custom part is handled as leftover
 		Assertions.assertThat(condition.getLeftover())
@@ -279,7 +279,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	@Test
 	public void testFilteredAggregator() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -290,7 +290,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	@Test
 	public void testFilteredAggregator_rank() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.builder()
 								.name("rankM")
@@ -310,7 +310,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 
 	@Test
 	public void testMinMax() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("kMin").aggregationKey(MinAggregation.KEY).build())
 				.aggregator(Aggregator.builder().name("kMax").aggregationKey(MaxAggregation.KEY).build())
 				.build());
@@ -319,9 +319,27 @@ public class TestJooqTableQueryFactory_DuckDb {
 				select min("kMin") "kMin", max("kMax") "kMax" from "someTableName" group by ALL""");
 	}
 
+	/**
+	 * {@link eu.solven.adhoc.measure.sum.CoalesceAggregation} ("the column is constant for the slice — return any one
+	 * value") maps to {@code any_value(col)} on DuckDB / standard SQL since 2023. Pinning the SQL rendering so the
+	 * mapping does not silently regress if the dispatch in {@code buildAggregateFunction} is reshuffled.
+	 */
+	@Test
+	public void testCoalesceMapsToAnyValue() {
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
+				.aggregator(Aggregator.builder()
+						.name("kAny")
+						.aggregationKey(eu.solven.adhoc.measure.sum.CoalesceAggregation.KEY)
+						.build())
+				.build());
+
+		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
+				select any_value("kAny") "kAny" from "someTableName" group by ALL""");
+	}
+
 	@Test
 	public void testRank() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder()
 						.name("kRank")
 						.aggregationKey(RankAggregation.KEY)
@@ -338,7 +356,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_StringMatcher() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").matching(StringMatcher.hasToString("c1")).build();
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -352,7 +370,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 				.column("c")
 				.matching(OrMatcher.or(StringMatcher.hasToString("c1"), StringMatcher.hasToString("c2")))
 				.build();
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -366,7 +384,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 	public void testFilter_NotStringMatcher() {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").matching(NotMatcher.not(StringMatcher.hasToString("c1"))).build();
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -381,7 +399,7 @@ public class TestJooqTableQueryFactory_DuckDb {
 		ISliceFilter nativeFilter = ColumnFilter.matchEq("c", "c1");
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.sum("k"))
 						.filter(nativeFilter)

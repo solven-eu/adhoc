@@ -58,6 +58,7 @@ public class TestRowSliceFactory {
 		MapVerifier.forInstance(nullOnly).verify();
 	}
 
+	// BEWARE This generates a warning: it's fine as we actually want to ensure the behavior is a user write this code
 	@Test
 	public void testAppendArray_null() {
 		IAdhocMap aAndNull = factory.newMapBuilder(List.of("a", "b")).append("a1", null).build();

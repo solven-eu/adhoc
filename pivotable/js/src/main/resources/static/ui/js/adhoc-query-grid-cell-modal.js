@@ -1,3 +1,5 @@
+import queryHelper from "./adhoc-query-helper.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {},
@@ -80,12 +82,59 @@ export default {
 			props.queryModel.selectedMeasures[measure] = true;
 		};
 
+		// Build a DRILLTHROUGH for the clicked cell: pin every filterable groupBy coordinate of the
+		// clicked row as an additional column-equals filter, then enable the DRILLTHROUGH option so
+		// the next Submit returns the underlying rows.
+		const drillthroughThisCell = function () {
+			Object.entries(props.clickedCell || {}).forEach(([column, coordinate]) => {
+				if (columnIsFilterable(column) && coordinate !== undefined && coordinate !== null) {
+					applyEqualsFilter(column, coordinate);
+				}
+			});
+			if (!props.queryModel.selectedOptions) {
+				props.queryModel.selectedOptions = {};
+			}
+			props.queryModel.selectedOptions.DRILLTHROUGH = true;
+		};
+
+		// Same intent as `drillthroughThisCell`, but emits the result into a fresh tab on the same cube
+		// route instead of mutating the current page's queryModel. The target URL carries the (deep-cloned)
+		// queryModel + DRILLTHROUGH option in the hash so the new tab restores via the standard
+		// `hashToQueryModel` path. Caller's queryModel is left untouched, so the originating tab keeps its
+		// state intact.
+		const drillthroughThisCellNewTab = function () {
+			// Deep-clone to detach from the current queryModel reactive proxy.
+			const parsedJson = JSON.parse(JSON.stringify(queryHelper.queryModelToParsedJson(props.queryModel)));
+
+			if (!parsedJson.filter || !parsedJson.filter.type) {
+				parsedJson.filter = { type: "and", filters: [] };
+			} else if (parsedJson.filter.type !== "and") {
+				console.warn("Existing filter is not an AND, cannot append cell coordinates safely", parsedJson.filter);
+				return;
+			}
+			Object.entries(props.clickedCell || {}).forEach(([column, coordinate]) => {
+				if (columnIsFilterable(column) && coordinate !== undefined && coordinate !== null) {
+					parsedJson.filter.filters.push({ type: "column", column: column, valueMatcher: coordinate });
+				}
+			});
+
+			if (!parsedJson.options.includes("DRILLTHROUGH")) {
+				parsedJson.options.push("DRILLTHROUGH");
+			}
+
+			const hash = "#" + encodeURIComponent(JSON.stringify({ query: parsedJson }));
+			const url = window.location.pathname + hash;
+			window.open(url, "_blank", "noopener");
+		};
+
 		return {
 			applyEqualsFilter,
 			applyNotEqualsFilter,
 			columnIsFilterable,
 			getUnderlyingsIfMeasure,
 			addMeasure,
+			drillthroughThisCell,
+			drillthroughThisCellNewTab,
 		};
 	},
 	template: /* HTML */ `
@@ -119,6 +168,24 @@ export default {
 						</ul>
 					</div>
 					<div class="modal-footer">
+						<button
+							type="button"
+							class="btn btn-outline-secondary"
+							data-bs-dismiss="modal"
+							@click="drillthroughThisCell()"
+							title="Pin this cell's coordinates as filters and enable DRILLTHROUGH in this tab; press Submit to fetch the underlying rows."
+						>
+							<i class="bi bi-zoom-in"></i> DrillThrough this cell
+						</button>
+						<button
+							type="button"
+							class="btn btn-outline-secondary"
+							data-bs-dismiss="modal"
+							@click="drillthroughThisCellNewTab()"
+							title="Open the DRILLTHROUGH for this cell in a new tab — keeps the current view untouched."
+						>
+							<i class="bi bi-box-arrow-up-right"></i> DrillThrough in new tab
+						</button>
 						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
 					</div>
 				</div>

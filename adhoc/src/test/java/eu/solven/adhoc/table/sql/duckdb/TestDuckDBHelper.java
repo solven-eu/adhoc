@@ -91,7 +91,7 @@ public class TestDuckDBHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		QueryWithLeftover condition = queryFactory.prepareQuery(tableQueryBuilder.build());
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(tableQueryBuilder.build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED))
@@ -115,7 +115,7 @@ public class TestDuckDBHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
+		QueryWithLeftover queryWithLeftover = queryFactory.prepareSliceQuery(tableQueryBuilder.build());
 
 		Assertions.assertThat(queryWithLeftover.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -136,7 +136,7 @@ public class TestDuckDBHelper {
 				.dslContext(DSL.using(SQLDialect.DUCKDB))
 				.build();
 
-		QueryWithLeftover queryWithLeftover = queryFactory.prepareQuery(tableQueryBuilder.build());
+		QueryWithLeftover queryWithLeftover = queryFactory.prepareSliceQuery(tableQueryBuilder.build());
 
 		Assertions.assertThat(queryWithLeftover.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -156,7 +156,7 @@ public class TestDuckDBHelper {
 				.build();
 
 		QueryWithLeftover queryWithLeftover =
-				queryFactory.prepareQuery(tableQueryBuilder.groupBy(GroupByColumns.named("b", "a")).build());
+				queryFactory.prepareSliceQuery(tableQueryBuilder.groupBy(GroupByColumns.named("b", "a")).build());
 
 		Assertions.assertThat(queryWithLeftover.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());

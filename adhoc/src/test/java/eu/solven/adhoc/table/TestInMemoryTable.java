@@ -179,4 +179,35 @@ public class TestInMemoryTable {
 		Assertions.assertThat(output.toList()).contains(Map.of());
 		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
 	}
+
+	@Test
+	public void testStreamSlices_mixedEmptyAndRealAggregator_emitsBothColumns() {
+		// `EmptyAggregation` surfaces as a NULL column in the wire records (see EmptyAggregation Javadoc): a
+		// TableQuery mixing a real aggregator (`SUM(v)`) with an empty one must produce records carrying BOTH
+		// keys per matching row — the real one with its computed value, the empty one with `null`.
+		InMemoryTable table = InMemoryTable.builder().build();
+		table.add(Map.of("c", "c1", "v", 10));
+		table.add(Map.of("c", "c2", "v", 20));
+
+		ITabularRecordStream output = table.streamSlices(TableQueryV2.builder()
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("v")).build())
+				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.empty()).build())
+				.build());
+
+		// Per-row branch: one record per source row. Each record carries `v` with its actual value AND the
+		// empty aggregator's alias mapped to `null`.
+		String emptyAlias = Aggregator.empty().getName();
+		Assertions.assertThat(output.toList())
+				.hasSize(2)
+				.anySatisfy(map -> Assertions.assertThat((Map<String, Object>) map)
+						.containsEntry("v", 10)
+						.containsKey(emptyAlias)
+						.extractingByKey(emptyAlias)
+						.isNull())
+				.anySatisfy(map -> Assertions.assertThat((Map<String, Object>) map)
+						.containsEntry("v", 20)
+						.containsKey(emptyAlias)
+						.extractingByKey(emptyAlias)
+						.isNull());
+	}
 }

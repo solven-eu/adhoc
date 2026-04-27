@@ -350,6 +350,15 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// It is relevant to have a log before the `opening` phase which may be slow
 		eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("bootstrap").source(this).build());
 
+		if (StandardQueryOptions.DRILLTHROUGH.isActive(queryPod.getOptions())) {
+			// DRILLTHROUGH bypasses measure aggregation: every DB row becomes a tabular entry directly.
+			ITabularView drillthroughView = executeDrillthrough(queryPod, queryStepsDag);
+			eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("aggregate").source(this).build());
+			eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("transform").source(this).build());
+			eventBus.post(AdhocQueryPhaseIsCompleted.builder().phase("view").source(this).build());
+			return drillthroughView;
+		}
+
 		// Execute the leaf aggregations, by tableWrappers
 		Map<CubeQueryStep, ICuboid> queryStepToValues = new ConcurrentHashMap<>();
 
@@ -423,6 +432,17 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 		// queryPod.with
 		// AdhocSubQuery.builder().subQuery(qu).parentQueryId(queryPod.getQueryId()).build();
 		return tableQueryEngine.executeTableQueries(queryPod, queryStepsDag);
+	}
+
+	/**
+	 * Execute the {@code queryStepsDag} in DRILLTHROUGH mode: returns raw table rows as a
+	 * {@link eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough}, bypassing any cube-level
+	 * measure transformation.
+	 *
+	 * @return a {@link ITabularView} of the raw rows.
+	 */
+	protected ITabularView executeDrillthrough(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		return tableQueryEngine.executeDrillthrough(queryPod, queryStepsDag);
 	}
 
 	/**

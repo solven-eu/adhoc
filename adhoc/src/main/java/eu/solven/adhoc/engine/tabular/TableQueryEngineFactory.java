@@ -25,6 +25,7 @@ package eu.solven.adhoc.engine.tabular;
 import java.util.Map;
 
 import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IAdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
@@ -83,6 +84,12 @@ public class TableQueryEngineFactory implements ITableQueryEngineFactory {
 	@Override
 	public Map<TableQueryStep, ICuboid> executeTableQueries(QueryPod queryPod, QueryStepsDag queryStepsDag) {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
+	}
+
+	@Override
+	public ITabularView executeDrillthrough(QueryPod queryPod, QueryStepsDag queryStepsDag) {
+		ITableQueryEngine engine = bootstrap(queryPod);
+		return engine.executeDrillthrough(queryStepsDag);
 	}
 
 	protected ITableQueryEngine bootstrap(QueryPod queryPod) {

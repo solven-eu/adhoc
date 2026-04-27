@@ -138,7 +138,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testGrandTotal() {
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.builder().name("k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -147,7 +147,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testMeasureNameWithDot() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(
 				TableQuery.builder().aggregator(Aggregator.builder().name("k.USD").columnName("t.k").build()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
@@ -157,7 +157,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testColumnWithAt() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("a@b@c"))
 				.build());
@@ -170,7 +170,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testColumnWithSpace() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("k").build())
 				.groupBy(GroupByColumns.named("pre post"))
 				.build());
@@ -184,7 +184,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testCountAsterisk() {
 		QueryWithLeftover condition =
-				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
+				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.countAsterisk()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -195,7 +195,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testEmptyAggregation() {
 		QueryWithLeftover condition =
-				queryFactory.prepareQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
+				queryFactory.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.empty()).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -208,7 +208,7 @@ public class TestJooqTableQueryFactory_Postgres {
 		ColumnFilter customFilter =
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isSameAs(customFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -222,7 +222,7 @@ public class TestJooqTableQueryFactory_Postgres {
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l).isEqualTo(orFilter));
 		Assertions.assertThat(condition.getQuery().getSQL(ParamType.INLINED)).isEqualTo("""
@@ -236,7 +236,7 @@ public class TestJooqTableQueryFactory_Postgres {
 				ColumnFilter.builder().column("c").valueMatcher(IAdhocTestConstants.randomMatcher).build();
 		ISliceFilter orFilter = FilterBuilder.or(ColumnFilter.matchEq("d", "someD"), customFilter).combine().negate();
 		QueryWithLeftover condition = queryFactory
-				.prepareQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
+				.prepareSliceQuery(TableQuery.builder().aggregator(Aggregator.sum("k")).filter(orFilter).build());
 
 		Assertions.assertThat(condition.getLeftover())
 				.satisfies(l -> Assertions.assertThat(l).isEqualTo(customFilter.negate()));
@@ -251,7 +251,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testFilteredAggregator() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("k")).filter(customFilter).build())
 				.build());
 
@@ -262,7 +262,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testFilteredAggregator_rank() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.builder()
 								.name("rankM")
@@ -283,7 +283,7 @@ public class TestJooqTableQueryFactory_Postgres {
 	@Test
 	public void testFilteredAggregator_countStar() {
 		ISliceFilter customFilter = ColumnFilter.matchEq("c", "c1");
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQueryV2.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQueryV2.builder()
 				.aggregator(FilteredAggregator.builder()
 						.aggregator(Aggregator.countAsterisk())
 						.filter(customFilter)
@@ -296,7 +296,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testMinMax() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder().name("kMin").aggregationKey(MinAggregation.KEY).build())
 				.aggregator(Aggregator.builder().name("kMax").aggregationKey(MaxAggregation.KEY).build())
 				.build());
@@ -307,7 +307,7 @@ public class TestJooqTableQueryFactory_Postgres {
 
 	@Test
 	public void testRank() {
-		QueryWithLeftover condition = queryFactory.prepareQuery(TableQuery.builder()
+		QueryWithLeftover condition = queryFactory.prepareSliceQuery(TableQuery.builder()
 				.aggregator(Aggregator.builder()
 						.name("kRank")
 						.aggregationKey(RankAggregation.KEY)

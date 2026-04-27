@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.sql;
 import org.jooq.ResultQuery;
 
 import eu.solven.adhoc.query.table.TableQuery;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 
 /**
@@ -35,6 +36,18 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 @FunctionalInterface
 public interface IJooqTableQueryFactory {
 
-	QueryWithLeftover prepareQuery(TableQueryV4 tableQuery);
+	QueryWithLeftover prepareSliceQuery(TableQueryV4 tableQuery);
+
+	/**
+	 * Build a non-aggregating SQL query for the {@link eu.solven.adhoc.options.StandardQueryOptions#DRILLTHROUGH} path:
+	 * one record per matched row, no GROUP BY, per-aggregator FILTER encoded as a {@code CASE WHEN} on the column.
+	 *
+	 * <p>
+	 * Default implementation delegates to {@link #prepareSliceQuery(TableQueryV4)}, preserving the legacy GROUP BY
+	 * behavior for factories that do not specialize the path.
+	 */
+	default QueryWithLeftover prepareRowsQuery(TableQueryV3 tableQuery) {
+		return prepareSliceQuery(tableQuery.toV4());
+	}
 
 }

@@ -32,6 +32,7 @@ import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
@@ -47,7 +48,18 @@ import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
  */
 public interface IColumnsManager extends IHasColumnTypes {
 
-	ITabularRecordStream openTableStream(QueryPod queryPod, TableQueryV4 tableQuery);
+	ITabularRecordStream openSlicesStream(QueryPod queryPod, TableQueryV4 tableQuery);
+
+	/**
+	 * Same transcoding/post-filter behaviour as {@link #openSlicesStream(QueryPod, TableQueryV4)}, but routes the
+	 * underlying call to {@link eu.solven.adhoc.table.ITableWrapper#streamRows} so each DB row produces one
+	 * {@link eu.solven.adhoc.dataframe.row.ITabularRecord}, with no GROUP BY or aggregation. Used by the
+	 * {@link eu.solven.adhoc.options.StandardQueryOptions#DRILLTHROUGH} path. Takes a {@link TableQueryV3} because the
+	 * DRILLTHROUGH execution does not benefit from V4's per-step (groupBy × aggregators) partitioning.
+	 */
+	default ITabularRecordStream openRowsStream(QueryPod queryPod, TableQueryV3 tableQuery) {
+		return openSlicesStream(queryPod, tableQuery.toV4());
+	}
 
 	Object onMissingColumn(ICubeWrapper cube, String column);
 

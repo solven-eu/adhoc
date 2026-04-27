@@ -22,16 +22,23 @@
  */
 package eu.solven.adhoc.measure.transformator.step;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.dataframe.column.Cuboid;
@@ -46,10 +53,15 @@ import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.IFilterEditor.FilterEditorContext;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
+import eu.solven.adhoc.filter.value.IValueMatcher;
+import eu.solven.adhoc.filter.value.InMatcher;
 import eu.solven.adhoc.filter.value.NullMatcher;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
+import eu.solven.adhoc.map.factory.ISliceFactory;
+import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.primitive.IValueProvider;
+import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,8 +95,10 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 		// Read values from the shifted underlyingStep
 		CubeQueryStep whereToReadShifted =
 				CubeQueryStep.edit(step).filter(shiftedFilter).measure(underlyingMeasure).build();
-		// Read slices from the natural underlyingStep, as the natural slices to write
-		CubeQueryStep whereToReadForWrite = CubeQueryStep.edit(step).measure(underlyingMeasure).build();
+		// Read slices from any DB-materialized row via Aggregator.empty(), so a cell whose natural underlying has
+		// no value (e.g. blue+JPY missing) but whose shifted slice has one (blue+EUR exists) still gets written.
+		// See TestCubeQuery_Shiftor#testNotShiftMissingOnMeasure_ShiftedExist.
+		CubeQueryStep whereToReadForWrite = CubeQueryStep.edit(step).measure(Aggregator.empty()).build();
 
 		if (whereToReadShifted.equals(whereToReadForWrite)) {
 			log.debug("whereToReadShited and whereToWrite are equals");
@@ -164,26 +178,105 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 		ICuboid whereToReadForWrite = underlyings.getLast();
 
 		AtomicInteger slicesDone = new AtomicInteger();
+
+		// This second block will catch slices which does not exist in DB, but can be materialized given User filters
+		processSlicesMaterializedByFilters(sliceConsumer, whereToReadForWrite, slicesDone);
+
+		processSlicesMaterializedByTable(sliceConsumer, whereToReadForWrite, slicesDone);
+	}
+
+	protected void processSlicesMaterializedByTable(Consumer<SliceAsMapWithStep> sliceConsumer,
+			ICuboid whereToReadForWrite,
+			AtomicInteger slicesDone) {
 		whereToReadForWrite.forEachSlice(rawSlice -> {
 			return v -> {
 				// All we need is the slice, to know where to write
 				log.debug("v={} is not used", v);
 
-				SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(rawSlice).queryStep(getStep()).build();
-
-				try {
-					sliceConsumer.accept(slice);
-				} catch (RuntimeException e) {
-					throw new IllegalArgumentException(
-							"Issue processing m=%s slice=%s".formatted(shiftor.getName(), slice),
-							e);
-				}
-
-				if (Integer.bitCount(slicesDone.incrementAndGet()) == 1 && isDebug()) {
-					log.info("[DEBUG] Done processing {} slices", slicesDone);
-				}
+				emitSlice(rawSlice, sliceConsumer, slicesDone);
 			};
 		});
+	}
+
+	/**
+	 * Used to cover the case where a filter is explicitly referencing some coordinates, which would be fed by a
+	 * Shiftor, even if the coordinate/cell is not actually present in the table.
+	 * 
+	 * @param sliceConsumer
+	 * @param whereToReadForWrite
+	 * @param slicesDone
+	 */
+	protected void processSlicesMaterializedByFilters(Consumer<SliceAsMapWithStep> sliceConsumer,
+			ICuboid whereToReadForWrite,
+			AtomicInteger slicesDone) {
+		Set<String> columns = step.getGroupBy().getSequencedColumns();
+
+		SetMultimap<String, Object> columnToFilteredValues =
+				MultimapBuilder.linkedHashKeys().linkedHashSetValues().build();
+
+		columns.forEach(column -> {
+			IValueMatcher valueMatcher = FilterHelpers.getValueMatcher(step.getFilter(), column);
+
+			if (valueMatcher instanceof EqualsMatcher equalsMatcher) {
+				columnToFilteredValues.put(column, equalsMatcher.getOperand());
+			} else if (valueMatcher instanceof InMatcher inMatcher) {
+				columnToFilteredValues.putAll(column, inMatcher.getOperands());
+			} else {
+				log.debug("No explicit values for column={}", column);
+			}
+		});
+
+		// If any groupBy column has no pinned value, we cannot synthesize a slice for it: bail out.
+		// `Sets.cartesianProduct` on an empty list returns a singleton containing an empty list, which
+		// correctly yields one grandTotal slice when the groupBy itself is empty.
+		boolean allPinned = columns.stream().allMatch(c -> !columnToFilteredValues.get(c).isEmpty());
+		log.debug("[SHIFTOR] columns={} pinned={} allPinned={}", columns, columnToFilteredValues, allPinned);
+		if (allPinned) {
+			List<Set<Object>> perColumnValues =
+					columns.stream().<Set<Object>>map(c -> ImmutableSet.copyOf(columnToFilteredValues.get(c))).toList();
+
+			ISliceFactory sliceFactory = factories.getSliceFactory();
+
+			BigInteger cartesianProductSize = AdhocCollectionHelpers.cartesianProductSize(perColumnValues);
+			if (cartesianProductSize.compareTo(BigInteger.valueOf(AdhocUnsafe.cartesianProductLimit)) >= 0) {
+				throw new IllegalArgumentException("Too-large cartesian product given columns=%s on set=%s"
+						.formatted(columnToFilteredValues, step));
+			}
+
+			Sets.cartesianProduct(perColumnValues).forEach(combo -> {
+				IMapBuilderPreKeys builder = sliceFactory.newMapBuilder(columns);
+				combo.forEach(builder::append);
+				ISlice rawSlice = builder.build().asSlice();
+
+				Object value = IValueProvider.getValue(whereToReadForWrite.onValue(rawSlice));
+
+				if (value == null) {
+					log.debug("Registering a filter-synthesized slice={}", rawSlice);
+					emitSlice(rawSlice, sliceConsumer, slicesDone);
+				} else {
+					log.debug("Already processed by table slice={}", rawSlice);
+				}
+			});
+		}
+	}
+
+	/**
+	 * Wrap {@code rawSlice} with the current {@link CubeQueryStep}, push it through {@code sliceConsumer}, and bump the
+	 * {@code slicesDone} counter (logging at power-of-two milestones if debug is on). Shared between the normal
+	 * forEachSlice branch and the user-filter-cartesian fallback so both report the same way.
+	 */
+	protected void emitSlice(ISlice rawSlice, Consumer<SliceAsMapWithStep> sliceConsumer, AtomicInteger slicesDone) {
+		SliceAsMapWithStep slice = SliceAsMapWithStep.builder().slice(rawSlice).queryStep(getStep()).build();
+
+		try {
+			sliceConsumer.accept(slice);
+		} catch (RuntimeException e) {
+			throw new IllegalArgumentException("Issue processing m=%s slice=%s".formatted(shiftor.getName(), slice), e);
+		}
+
+		if (Integer.bitCount(slicesDone.incrementAndGet()) == 1 && isDebug()) {
+			log.info("[DEBUG] Done processing {} slices", slicesDone);
+		}
 	}
 
 	@Override

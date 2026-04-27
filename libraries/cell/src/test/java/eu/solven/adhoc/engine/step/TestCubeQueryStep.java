@@ -125,7 +125,7 @@ public class TestCubeQueryStep {
 
 		step.getCache().put("k", "v");
 
-		CubeQueryStep copy = CubeQueryStep.edit(step).build();
+		CubeQueryStep copy = step.toBuilder().build();
 
 		// Check .equals, even if some fields are not in the equals
 		Assertions.assertThat(copy).isEqualTo(step);
@@ -157,7 +157,7 @@ public class TestCubeQueryStep {
 		step.getCache().put("k", "v");
 		transverseCache.put("k2", "v2");
 
-		CubeQueryStep copy = CubeQueryStep.edit(step).build();
+		CubeQueryStep copy = step.toBuilder().build();
 
 		// Check .equals, even if some fields are not in the equals
 		Assertions.assertThat(copy).isEqualTo(step);
@@ -196,7 +196,7 @@ public class TestCubeQueryStep {
 				.build();
 		Assertions.assertThat((Optional) stepHasCustom.optCustomMarker()).contains("someCustomMarker");
 
-		CubeQueryStep editKeepCustom = CubeQueryStep.edit(stepHasCustom).build();
+		CubeQueryStep editKeepCustom = stepHasCustom.toBuilder().build();
 		Assertions.assertThat((Optional) editKeepCustom.optCustomMarker()).contains("someCustomMarker");
 	}
 

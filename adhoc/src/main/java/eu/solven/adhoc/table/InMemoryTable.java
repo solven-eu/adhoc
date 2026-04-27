@@ -66,6 +66,7 @@ import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
+import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.util.AdhocUnsafe;
@@ -123,6 +124,21 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	@Override
 	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
+	}
+
+	/**
+	 * Stream every stored row matching {@code tableQuery.getFilter()} as a separate {@link ITabularRecord} — no slice
+	 * collapse. Each row's groupBy projection carries the union of {@code tableQuery}'s groupBy columns, and each
+	 * aggregator alias is populated with the row's raw column value when the per-aggregator FILTER matches the row,
+	 * else absent.
+	 */
+	@Override
+	public ITabularRecordStream streamRows(QueryPod queryPod, TableQueryV3 tableQuery) {
+		// Reuse the per-row mapping path of streamSlices: makeStream emits one ITabularRecord per row when
+		// `isEmptyAggregation` is false. We achieve the no-collapse contract by going through the existing
+		// pipeline with `distinctSlices = false` (the default), so multiple rows sharing a slice surface as
+		// distinct records — exactly the DRILLTHROUGH expectation.
+		return streamSlices(queryPod, tableQuery);
 	}
 
 	@Override
@@ -303,6 +319,13 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 			aggs.forEach(a -> {
 				if (!MoreFilterHelpers.match(a.getFilter(), row)) {
 					// This aggregate is rejected by the `FILTER` clause
+					return;
+				}
+
+				if (EmptyAggregation.isEmpty(a.getAggregator())) {
+					// EmptyAggregation surfaces as a NULL column (see EmptyAggregation Javadoc): emit the alias
+					// with a null value so the slice is materialized regardless of any real aggregator's value.
+					aggregates.put(a.getAlias(), null);
 					return;
 				}
 

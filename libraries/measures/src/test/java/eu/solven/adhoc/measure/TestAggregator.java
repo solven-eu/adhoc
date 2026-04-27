@@ -57,7 +57,7 @@ public class TestAggregator {
 				.tag("someTag")
 				.build();
 
-		Aggregator copy = Aggregator.edit(aggregator).build();
+		Aggregator copy = aggregator.toBuilder().build();
 
 		Assertions.assertThat(copy).isEqualTo(aggregator);
 	}
@@ -68,7 +68,7 @@ public class TestAggregator {
 
 		// with `.edit`
 		{
-			Aggregator copy = Aggregator.edit(aggregator).name("otherName").build();
+			Aggregator copy = aggregator.toBuilder().name("otherName").build();
 
 			// The columnName has to be fixed when building the initial aggregator
 			Assertions.assertThat(copy.getColumnName()).isEqualTo(aggregator.getName());

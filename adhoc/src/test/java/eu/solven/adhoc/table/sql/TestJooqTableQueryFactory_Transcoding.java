@@ -71,8 +71,8 @@ public class TestJooqTableQueryFactory_Transcoding {
 	@Test
 	public void testToTableQuery_transcodingLeadsToMatchNone() {
 		// BEWARE We expect a WARN. It should be turned into an Event at some point
-		QueryWithLeftover condition =
-				queryFactory.prepareQuery(TableQuery.builder().filter(AndFilter.and("k1", "v1", "k2", "v2")).build());
+		QueryWithLeftover condition = queryFactory
+				.prepareSliceQuery(TableQuery.builder().filter(AndFilter.and("k1", "v1", "k2", "v2")).build());
 
 		Assertions.assertThat(condition.getLeftover()).satisfies(l -> Assertions.assertThat(l.isMatchAll()).isTrue());
 		Assertions.assertThat(condition.getQuery().toString()).isEqualTo("""
