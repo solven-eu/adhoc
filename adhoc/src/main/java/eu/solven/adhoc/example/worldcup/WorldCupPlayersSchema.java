@@ -30,7 +30,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -242,9 +241,10 @@ public class WorldCupPlayersSchema {
 				.baseTable(DSL.table("WorldCupPlayers"))
 				.baseTableAlias("WorldCupPlayers")
 				.build()
-				.leftJoin(DSL.table("WorldCupMatches"),
-						"WorldCupMatches",
-						ImmutableList.of(Map.entry("MatchId", "MatchID"), Map.entry("RoundId", "RoundID")));
+				.leftJoin(j -> j.table(DSL.table("WorldCupMatches"))
+						.alias("WorldCupMatches")
+						.on("MatchId", "MatchID")
+						.on("RoundId", "RoundID"));
 	}
 
 	// `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` as we can not use PreparedStatement on FROM clause.

@@ -91,6 +91,50 @@ public class JooqSnowflakeSchemaBuilder {
 	}
 
 	/**
+	 * Add a LEFT JOIN configured through a chainable {@link JooqJoinBuilder} (the new primary API).
+	 *
+	 * <p>
+	 * The {@code consumer} populates a fresh {@link JooqJoinBuilder} (table, alias, ON columns, optional per-join
+	 * column aliases). Once it returns, the JOIN is committed against the schema. Compared to the legacy
+	 * {@code leftJoin(leftAlias, joinedTable, joinName, on)} signature, this form is easier to read with multiple JOINs
+	 * in a row and easier to skip dynamically (just wrap the call in an {@code if (envFlag) ...} block).
+	 *
+	 * <p>
+	 * Example:
+	 *
+	 * <pre>{@code
+	 * schema.leftJoin(j -> j.table(DSL.table("orders"))
+	 * 		.alias("orders")
+	 * 		.from("lineitem") // optional
+	 * 		.on("l_orderkey", "o_orderkey")
+	 * 		.withAlias("display", "name"));
+	 * }</pre>
+	 *
+	 * @param consumer
+	 *            populates the per-join builder.
+	 * @return this
+	 */
+	public JooqSnowflakeSchemaBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
+		JooqJoinBuilder joinBuilder = new JooqJoinBuilder();
+		consumer.accept(joinBuilder);
+		joinBuilder.validate();
+		// Default `from` to the BASE table — the dominant pattern in OLAP/BI is a star schema where every
+		// dimension JOINs the fact directly. Snowflake legs explicitly opt-in by calling `.from(prevJoin)`.
+		// Argument: defaulting to base gives a louder failure on a missing `.from(...)` (the JOIN references
+		// base columns the parent doesn't have → SQL error) versus the silent-misjoin you'd get if we defaulted
+		// to the previous JOIN and the dim happened to share a column name with it.
+		String fromAlias = joinBuilder.getFrom() != null ? joinBuilder.getFrom() : baseTableAlias;
+		leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn());
+
+		// Commit per-join column aliases via the existing schema-level facility — the join's alias is now the
+		// `latestJoin`, so withAliases qualifies columns against the freshly-joined table.
+		if (!joinBuilder.getColumnAliases().isEmpty()) {
+			withAliases(joinBuilder.getColumnAliases());
+		}
+		return this;
+	}
+
+	/**
 	 * Assumes the LEFT table is the base store.
 	 *
 	 * @param joinedTable
@@ -100,7 +144,10 @@ public class JooqSnowflakeSchemaBuilder {
 	 * @param on
 	 *            a {@link List} of mapping of `.isEqualTo` between LEFT fields and RIGHT fields
 	 * @return
+	 * @deprecated Prefer {@link #leftJoin(Consumer)} — chainable, easier to read with multiple JOINs, and easier to
+	 *             skip dynamically.
 	 */
+	@Deprecated(since = "Prefer leftJoin(Consumer)")
 	public JooqSnowflakeSchemaBuilder leftJoin(Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
@@ -133,7 +180,10 @@ public class JooqSnowflakeSchemaBuilder {
 	 * @param on
 	 *            a {@link List} of mapping of `.isEqualTo` between LEFT fields and RIGHT fields
 	 * @return
+	 * @deprecated Prefer {@link #leftJoin(Consumer)} — chainable, easier to read with multiple JOINs, and easier to
+	 *             skip dynamically. Used internally to commit a {@link JooqJoinBuilder}.
 	 */
+	@Deprecated(since = "Prefer leftJoin(Consumer)")
 	public JooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
@@ -152,6 +202,10 @@ public class JooqSnowflakeSchemaBuilder {
 		return leftJoinConditions(joinedTable.as(joinName), onConditions);
 	}
 
+	/**
+	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#onSame(String)}.
+	 */
+	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)")
 	public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
@@ -159,6 +213,10 @@ public class JooqSnowflakeSchemaBuilder {
 		return leftJoin(leftTableAlias, joinedTable, joinName, on.stream().map(f -> Map.entry(f, f)).toList());
 	}
 
+	/**
+	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#onSame(String)}.
+	 */
+	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)")
 	public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,

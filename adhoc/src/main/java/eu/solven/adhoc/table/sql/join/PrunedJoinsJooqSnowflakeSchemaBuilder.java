@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.jooq.Condition;
 import org.jooq.Name;
@@ -144,6 +145,30 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 
 	// ── Recording joins (override the high-level path only) ─────────────────
 
+	/**
+	 * Honours {@link JooqJoinBuilder#providedColumns(Set)} — when the consumer sets it, the recorded {@link JoinNode}
+	 * carries that explicit override (used for prunability decisions).
+	 */
+	@Override
+	public PrunedJoinsJooqSnowflakeSchemaBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
+		JooqJoinBuilder joinBuilder = new JooqJoinBuilder();
+		consumer.accept(joinBuilder);
+		joinBuilder.validate();
+		// See JooqSnowflakeSchemaBuilder#leftJoin(Consumer) for the rationale: default to the BASE table, not
+		// the most-recent join. Star pattern is dominant; snowflake legs opt-in via `.from(prevJoin)`.
+		String fromAlias = joinBuilder.getFrom() != null ? joinBuilder.getFrom() : baseTableAlias;
+		Set<String> provided = joinBuilder.getProvidedColumns();
+		if (provided != null) {
+			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn(), provided);
+		} else {
+			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn());
+		}
+		if (!joinBuilder.getColumnAliases().isEmpty()) {
+			withAliases(joinBuilder.getColumnAliases());
+		}
+		return this;
+	}
+
 	@SuppressWarnings("CPD-START")
 	@Override
 	public PrunedJoinsJooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
@@ -177,7 +202,10 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 	 * Variant of {@link #leftJoin(String, Table, String, List)} that carries an explicit list of columns the joined
 	 * table provides. Use this when the configured {@code columnsResolver} cannot discover the joined table's fields
 	 * (e.g. a {@code DSL.table(name)} with no declared fields), or when you want to override the derived set.
+	 *
+	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#providedColumns(Set)}.
 	 */
+	@Deprecated(since = "Prefer leftJoin(Consumer) + providedColumns(...)")
 	public PrunedJoinsJooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,

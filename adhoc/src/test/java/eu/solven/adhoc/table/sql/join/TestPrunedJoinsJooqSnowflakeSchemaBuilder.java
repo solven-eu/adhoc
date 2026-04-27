@@ -73,7 +73,10 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testNoJoin_whenOnlyBaseColumnsReferenced() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name", "a_code"));
+		builder.leftJoin(j -> j.table(DSL.table("dim_a"))
+				.alias("a")
+				.on("a_id", "id")
+				.providedColumns(Set.of("a_name", "a_code")));
 
 		// Query references only columns owned by the base table (or not owned by any join).
 		TableQueryV4 q = queryGroupBy("region", "amount");
@@ -89,8 +92,12 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testChain_includesAllAncestorsWhenLeafIsNeeded() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name"))
-				.leftJoin("a", DSL.table("dim_a_sub"), "asub", List.of(Map.entry("sub_id", "id")), Set.of("sub_label"));
+		builder.leftJoin(j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")))
+				.leftJoin(j -> j.table(DSL.table("dim_a_sub"))
+						.alias("asub")
+						.from("a")
+						.on("sub_id", "id")
+						.providedColumns(Set.of("sub_label")));
 
 		// Referencing a leaf-level column should pull in both joins (a → asub).
 		TableQueryV4 q = queryGroupBy("sub_label", "amount");
@@ -105,8 +112,9 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testIndependentArms_prunedIndependently() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name"))
-				.leftJoin("fact", DSL.table("dim_b"), "b", List.of(Map.entry("b_id", "id")), Set.of("b_name"));
+		builder.leftJoin(j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")))
+				.leftJoin(
+						j -> j.table(DSL.table("dim_b")).alias("b").on("b_id", "id").providedColumns(Set.of("b_name")));
 
 		// Query touches only the `b` arm.
 		TableQueryV4 q = queryGroupBy("b_name", "amount");
@@ -124,7 +132,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
 		// The override advertises only `a_name`. Any other column is treated as unknown → assumed to belong to the
 		// base (so the join is NOT pulled in).
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name"));
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
 
 		// Index carries both the unqualified `a_name` and the qualified `a.a_name` → "a".
 		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot())
@@ -142,7 +151,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testPurgeColumnCache_rebuildsIndex() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name"));
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
 
 		PrunedJoinsJooqTableSupplier supplier = supplier(builder);
 
@@ -162,7 +172,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testNeededAliasCache_reusedAcrossEquivalentQueries() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name"));
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
 
 		TableQueryV4 q1 = queryGroupBy("a_name", "amount");
 		TableQueryV4 q2 = queryGroupBy("a_name", "amount");
@@ -196,7 +207,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testFilterColumns_triggerTheirJoin() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_country"));
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_country")));
 
 		// GROUP BY only a base column, but FILTER on a joined column → the join must still be included.
 		IGroupBy gb = GroupByColumns.named("region");
@@ -215,8 +227,9 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testGetSnowflakeTable_containsEveryJoin() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")), Set.of("a_name"))
-				.leftJoin("fact", DSL.table("dim_b"), "b", List.of(Map.entry("b_id", "id")), Set.of("b_name"));
+		builder.leftJoin(j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")))
+				.leftJoin(
+						j -> j.table(DSL.table("dim_b")).alias("b").on("b_id", "id").providedColumns(Set.of("b_name")));
 
 		String full = builder.getSnowflakeTable().toString();
 		Assertions.assertThat(full).contains("dim_a", "dim_b");
@@ -238,7 +251,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	public void testDerivedColumns_populateIndexFromFieldStream() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
 		// 4-arg leftJoin — no providedColumns — derived index must come from dim_a.fields().
-		builder.leftJoin("fact", tableWithFields("dim_a", "a_id", "a_name"), "a", List.of(Map.entry("a_id", "a_id")));
+		builder.leftJoin(
+				j -> j.table(tableWithFields("dim_a", "a_id", "a_name")).alias("a").from("fact").onSame("a_id"));
 
 		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot())
 				.containsEntry("a_id", "a")
@@ -248,7 +262,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testDerivedColumns_joinIncludedWhenDerivedColumnReferenced() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", tableWithFields("dim_a", "a_id", "a_name"), "a", List.of(Map.entry("a_id", "a_id")));
+		builder.leftJoin(
+				j -> j.table(tableWithFields("dim_a", "a_id", "a_name")).alias("a").from("fact").onSame("a_id"));
 
 		TableLike<?> pruned = supplier(builder).tableFor(queryGroupBy("a_name", "amount"));
 
@@ -259,7 +274,8 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	@Test
 	public void testDerivedColumns_joinPrunedWhenOnlyBaseColumnsReferenced() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
-		builder.leftJoin("fact", tableWithFields("dim_a", "a_id", "a_name"), "a", List.of(Map.entry("a_id", "a_id")));
+		builder.leftJoin(
+				j -> j.table(tableWithFields("dim_a", "a_id", "a_name")).alias("a").from("fact").onSame("a_id"));
 
 		// Query references only `region` (base column) — the `a` join is not needed and must be pruned.
 		TableLike<?> pruned = supplier(builder).tableFor(queryGroupBy("region", "amount"));
@@ -271,11 +287,12 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	public void testDerivedColumns_snowflakeChainViaDerived() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
 		// Two-level chain, both joins use the derived path (no explicit providedColumns).
-		builder.leftJoin("fact", tableWithFields("dim_a", "a_id", "a_name"), "a", List.of(Map.entry("a_id", "a_id")))
-				.leftJoin("a",
-						tableWithFields("dim_a_sub", "sub_id", "sub_label"),
-						"asub",
-						List.of(Map.entry("sub_id", "sub_id")));
+		builder.leftJoin(
+				j -> j.table(tableWithFields("dim_a", "a_id", "a_name")).alias("a").from("fact").onSame("a_id"))
+				.leftJoin(j -> j.table(tableWithFields("dim_a_sub", "sub_id", "sub_label"))
+						.alias("asub")
+						.from("a")
+						.onSame("sub_id"));
 
 		// Referencing the leaf column must pull in both joins via ancestor closure.
 		TableLike<?> pruned = supplier(builder).tableFor(queryGroupBy("sub_label", "amount"));
@@ -287,9 +304,11 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 	public void testDerivedColumns_mixedWithExplicitOverride() {
 		PrunedJoinsJooqSnowflakeSchemaBuilder builder = newBuilder();
 		// `a` uses derived columns.
-		builder.leftJoin("fact", tableWithFields("dim_a", "a_id", "a_name"), "a", List.of(Map.entry("a_id", "a_id")));
+		builder.leftJoin(
+				j -> j.table(tableWithFields("dim_a", "a_id", "a_name")).alias("a").from("fact").onSame("a_id"));
 		// `b` declares an explicit override — its `.fields()` would be ignored anyway since DSL.table() has none.
-		builder.leftJoin("fact", DSL.table("dim_b"), "b", List.of(Map.entry("b_id", "id")), Set.of("b_country"));
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_b")).alias("b").on("b_id", "id").providedColumns(Set.of("b_country")));
 
 		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot())
 				.containsEntry("a_name", "a")
@@ -313,7 +332,7 @@ public class TestPrunedJoinsJooqSnowflakeSchemaBuilder {
 		// explicit override was given. Any column reference will be treated as "unknown → base" and the join is
 		// not pulled in. This matches the documented contract: if derivation cannot find columns, the caller must
 		// supply providedColumns to enable pruning.
-		builder.leftJoin("fact", DSL.table("dim_a"), "a", List.of(Map.entry("a_id", "id")));
+		builder.leftJoin(j -> j.table(DSL.table("dim_a")).alias("a").from("fact").on("a_id", "id"));
 
 		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot()).isEmpty();
 

@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.table.sql.join;
 
-import java.util.List;
-import java.util.Map;
-
 import org.assertj.core.api.Assertions;
 import org.jooq.Record;
 import org.jooq.Table;
@@ -43,7 +40,7 @@ public class TestJooqSnowflakeSchemaBuilder {
 		JooqSnowflakeSchemaBuilder snowflakeBuilder =
 				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable"), "joined", List.of(Map.entry("baseA", "joinedA")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable")).alias("joined").on("baseA", "joinedA"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -63,8 +60,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 		JooqSnowflakeSchemaBuilder snowflakeBuilder =
 				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry("joined1.baseA", "joined2A")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
+				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("joined1.baseA", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -86,8 +83,9 @@ public class TestJooqSnowflakeSchemaBuilder {
 		JooqSnowflakeSchemaBuilder snowflakeBuilder =
 				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry("\"ill_name.baseA\"", "joined2A")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
+				.leftJoin(
+						j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("\"ill_name.baseA\"", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -111,8 +109,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 		JooqSnowflakeSchemaBuilder snowflakeBuilder =
 				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry(";ill_name.baseA''", "joined2A")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
+				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on(";ill_name.baseA''", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -135,10 +133,14 @@ public class TestJooqSnowflakeSchemaBuilder {
 				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		snowflakeBuilder.withAlias("aliasBase", "baseA")
-				.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.withAlias("alias1", "joined1A")
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry(";ill_name.baseA''", "joined2A")))
-				.withAlias("alias2", "joined2A");
+				.leftJoin(j -> j.table(DSL.table("joinedTable1"))
+						.alias("joined1")
+						.on("baseA", "joined1A")
+						.withAlias("alias1", "joined1A"))
+				.leftJoin(j -> j.table(DSL.table("joinedTable2"))
+						.alias("joined2")
+						.on(";ill_name.baseA''", "joined2A")
+						.withAlias("alias2", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 

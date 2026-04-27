@@ -27,12 +27,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -162,30 +159,27 @@ public class TpchSchema {
 				.baseTable(DSL.table("lineitem"))
 				.baseTableAlias("lineitem")
 				.build()
-				// lineitem → orders (many line items per order)
-				.leftJoin(DSL.table("orders"), "orders", ImmutableList.of(Map.entry("l_orderkey", "o_orderkey")))
-				// orders → customer (each order belongs to one customer)
-				.leftJoin("orders",
-						DSL.table("customer"),
-						"customer",
-						ImmutableList.of(Map.entry("o_custkey", "c_custkey")))
-				// customer → nation (customer's home nation)
-				.leftJoin("customer",
-						DSL.table("nation"),
-						"cust_nation",
-						ImmutableList.of(Map.entry("c_nationkey", "n_nationkey")))
-				// nation → region (customer's home region)
-				.leftJoin("cust_nation",
-						DSL.table("region"),
-						"cust_region",
-						ImmutableList.of(Map.entry("n_regionkey", "r_regionkey")))
-				// lineitem → part (the ordered part)
-				.leftJoin("lineitem", DSL.table("part"), "part", ImmutableList.of(Map.entry("l_partkey", "p_partkey")))
-				// lineitem → supplier (the fulfilling supplier)
-				.leftJoin("lineitem",
-						DSL.table("supplier"),
-						"supplier",
-						ImmutableList.of(Map.entry("l_suppkey", "s_suppkey")));
+				// lineitem → orders (many line items per order). Star: defaults to base.
+				.leftJoin(j -> j.table(DSL.table("orders")).alias("orders").on("l_orderkey", "o_orderkey"))
+				// orders → customer (each order belongs to one customer). Snowflake leg: `.from("orders")`.
+				.leftJoin(j -> j.table(DSL.table("customer"))
+						.alias("customer")
+						.from("orders")
+						.on("o_custkey", "c_custkey"))
+				// customer → nation (customer's home nation). Snowflake leg: `.from("customer")`.
+				.leftJoin(j -> j.table(DSL.table("nation"))
+						.alias("cust_nation")
+						.from("customer")
+						.on("c_nationkey", "n_nationkey"))
+				// nation → region (customer's home region). Snowflake leg: `.from("cust_nation")`.
+				.leftJoin(j -> j.table(DSL.table("region"))
+						.alias("cust_region")
+						.from("cust_nation")
+						.on("n_regionkey", "r_regionkey"))
+				// lineitem → part (the ordered part). Star: defaults to base.
+				.leftJoin(j -> j.table(DSL.table("part")).alias("part").on("l_partkey", "p_partkey"))
+				// lineitem → supplier (the fulfilling supplier). Star: defaults to base.
+				.leftJoin(j -> j.table(DSL.table("supplier")).alias("supplier").on("l_suppkey", "s_suppkey"));
 	}
 
 	public CubeWrapperBuilder makeCube(AdhocSchema schema,

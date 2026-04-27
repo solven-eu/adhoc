@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.duckdb.DuckDBConnection;
@@ -42,7 +41,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 
-import com.google.common.collect.ImmutableList;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -191,7 +189,7 @@ public class InjectPixarExampleCubesConfig {
 					.baseTable(DSL.table("pixar_people"))
 					.baseTableAlias("people")
 					.build()
-					.leftJoin(DSL.table("pixar_films"), "films", ImmutableList.of(Map.entry("film", "film")));
+					.leftJoin(j -> j.table(DSL.table("pixar_films")).alias("films").onSame("film"));
 
 			JooqTableWrapper peopleTable = new JooqTableWrapper("people",
 					JooqTableWrapperParameters.builder()
