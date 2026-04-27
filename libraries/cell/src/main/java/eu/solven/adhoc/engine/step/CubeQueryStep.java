@@ -81,14 +81,6 @@ public final class CubeQueryStep extends ACubeQueryStep {
 				.measure(getMeasure());
 	}
 
-	/**
-	 * @deprecated use {@link #toBuilder()}
-	 */
-	@Deprecated(since = "use .toBuilder()", forRemoval = true)
-	public static CubeQueryStepBuilder edit(CubeQueryStep step) {
-		return step.toBuilder();
-	}
-
 	public static CubeQueryStepBuilder edit(IWhereGroupByQuery step) {
 		CubeQueryStepBuilder builder = CubeQueryStep.builder().filter(step.getFilter()).groupBy(step.getGroupBy());
 

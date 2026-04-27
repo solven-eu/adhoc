@@ -115,11 +115,6 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 		return Aggregator.builder().aggregationKey(SumAggregation.KEY).name(column).build();
 	}
 
-	@Deprecated(since = "use .toBuilder()", forRemoval = true)
-	public static AggregatorBuilder edit(Aggregator aggregator) {
-		return aggregator.toBuilder();
-	}
-
 	/**
 	 * 
 	 * @return an {@link Aggregator} equivalent with `COUNT(*)` in a SQL database.
