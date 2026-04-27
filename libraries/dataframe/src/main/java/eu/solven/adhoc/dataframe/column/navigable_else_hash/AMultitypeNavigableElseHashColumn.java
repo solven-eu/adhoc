@@ -22,9 +22,10 @@
  */
 package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
@@ -105,7 +106,7 @@ public abstract class AMultitypeNavigableElseHashColumn<T extends Comparable<T>>
 
 	@Override
 	public IConsumingStream<SliceAndMeasure<T>> stream() {
-		return IConsumingStream.concat(List.of(getNavigable().stream(), getHash().stream()));
+		return IConsumingStream.concat(ImmutableList.of(getNavigable().stream(), getHash().stream()));
 	}
 
 	@Override
@@ -121,12 +122,12 @@ public abstract class AMultitypeNavigableElseHashColumn<T extends Comparable<T>>
 		if (skip > getNavigable().size()) {
 			throw new IllegalArgumentException("skip=%s navigable.size=%s".formatted(skip, getNavigable().size()));
 		}
-		return IConsumingStream.concat(List.of(getNavigable().skip(skip), getHash().stream()));
+		return IConsumingStream.concat(ImmutableList.of(getNavigable().skip(skip), getHash().stream()));
 	}
 
 	@Override
 	public IConsumingStream<T> keyStream() {
-		return IConsumingStream.concat(List.of(getNavigable().keyStream(), getHash().keyStream()));
+		return IConsumingStream.concat(ImmutableList.of(getNavigable().keyStream(), getHash().keyStream()));
 	}
 
 	@Override

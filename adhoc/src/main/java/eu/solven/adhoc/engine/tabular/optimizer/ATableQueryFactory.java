@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 
@@ -88,8 +89,9 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		IFilterStripper stripper = filterBundle.getFilterStripperFactory().makeFilterStripper(commonFilter);
 
 		// Group steps by their IGroupBy
-		Map<IGroupBy, List<TableQueryStep>> byGroupBy = steps.stream()
-				.collect(Collectors.groupingBy(ICubeQueryStep::getGroupBy, LinkedHashMap::new, Collectors.toList()));
+		Map<IGroupBy, ImmutableList<TableQueryStep>> byGroupBy = steps.stream()
+				.collect(Collectors
+						.groupingBy(ICubeQueryStep::getGroupBy, LinkedHashMap::new, ImmutableList.toImmutableList()));
 
 		ImmutableSetMultimap.Builder<IGroupBy, FilteredAggregator> multimapBuilder = ImmutableSetMultimap.builder();
 		byGroupBy.forEach((groupBy, groupBySteps) -> {
@@ -99,9 +101,10 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 				return FilteredAggregator.builder().aggregator(step.getMeasure()).filter(strippedFromWhere).build();
 			}).collect(ImmutableSet.toImmutableSet());
 
-			Map<String, List<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
-					.collect(Collectors
-							.groupingBy(FilteredAggregator::getAlias, LinkedHashMap::new, Collectors.toList()));
+			Map<String, ImmutableList<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
+					.collect(Collectors.groupingBy(FilteredAggregator::getAlias,
+							LinkedHashMap::new,
+							ImmutableList.toImmutableList()));
 
 			List<FilteredAggregator> aliasedAggregators = aliasToAggregators.entrySet().stream().flatMap(e -> {
 				List<FilteredAggregator> aggregators = e.getValue();
