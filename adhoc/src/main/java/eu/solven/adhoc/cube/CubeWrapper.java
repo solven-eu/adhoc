@@ -163,6 +163,18 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 				originalMetadata = columnToType.get(columnAlias);
 			}
 
+			if (originalMetadata == null && tableName != null) {
+				// Third-try: a JooqSnowflakeSchemaBuilder-style aliaser declares `aliasedColor -> b.color`, but the
+				// table only knows the unqualified `color` (see JooqTableWrapper.getColumns: SQL backends return
+				// column names without their table-qualifier when listing columns). When `tableName` carries a dot,
+				// strip the qualifier and retry with the bare column name as a best-guess of the actual column.
+				int lastDot = tableName.lastIndexOf('.');
+				if (lastDot >= 0 && lastDot < tableName.length() - 1) {
+					String unqualified = tableName.substring(lastDot + 1);
+					originalMetadata = columnToType.get(unqualified);
+				}
+			}
+
 			if (originalMetadata == null) {
 				// Discard: a shared ColumnsManager may carry aliases relevant only to a subset of cubes, so an alias
 				// with no underlying column on this cube is not necessarily a bug — but still worth warning about.

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -90,6 +91,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -141,14 +143,24 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		SetMultimap<String, ColumnMetadata> columnToMeta = SetMultimapBuilder.treeKeys().hashSetValues().build();
 		SetMultimap<String, String> columnToCubes = SetMultimapBuilder.treeKeys().hashSetValues().build();
 
-		cubes.stream().forEach(cube -> {
-			cube.getColumns().forEach(c -> {
-				String columnName = c.getName();
+		// Each subCube's getColumns() is itself @Blocking (probes its own data source). Fan out the calls on the
+		// shared executor service so a composite over N subCubes does not pay N sequential round-trips. We use
+		// AdhocFactoriesUnsafe.factories.getExecutorService() because getColumns() has no QueryPod in scope and
+		// therefore no per-query executor — falling back on the global one keeps every blocking call off the
+		// FJP common pool while reusing the project's standard mixed/VT pool.
+		ListeningExecutorService executor = AdhocFactoriesUnsafe.factories.getExecutorService();
+		Map<ICubeWrapper, Collection<ColumnMetadata>> cubeToColumns = LinkedHashMap.newLinkedHashMap(cubes.size());
+		Map<ICubeWrapper, CompletableFuture<Collection<ColumnMetadata>>> futures =
+				LinkedHashMap.newLinkedHashMap(cubes.size());
+		cubes.forEach(cube -> futures.put(cube, CompletableFuture.supplyAsync(cube::getColumns, executor)));
+		futures.forEach((cube, future) -> cubeToColumns.put(cube, future.join()));
 
-				columnToMeta.put(columnName, c);
-				columnToCubes.put(columnName, cube.getName());
-			});
-		});
+		cubeToColumns.forEach((cube, cubeColumns) -> cubeColumns.forEach(c -> {
+			String columnName = c.getName();
+
+			columnToMeta.put(columnName, c);
+			columnToCubes.put(columnName, cube.getName());
+		}));
 
 		// Add a column enables to groupBy/filter through subCubes
 		optCubeSlicer.ifPresent(cubeColumn -> columnToMeta.put(cubeColumn,

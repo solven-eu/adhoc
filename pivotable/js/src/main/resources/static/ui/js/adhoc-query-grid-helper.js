@@ -15,7 +15,7 @@ import { SlickHeaderButtons } from "slickgrid";
 // BEWARE: Should probably push an event to the Modal component so it open itself
 import { Modal } from "bootstrap";
 
-import { computeMeasureStats, heatmapColor } from "./adhoc-query-grid-heatmap.js";
+import { computeMeasureStats, computeParentSliceStats, heatmapColor, secondaryHeatmapFill } from "./adhoc-query-grid-heatmap.js";
 import { headerNameWithCopyIcon, registerCopyNameDelegation } from "./adhoc-query-grid-clipboard.js";
 
 // https://github.com/SortableJS/Sortable/issues/1229#issuecomment-521951729
@@ -52,7 +52,7 @@ const copyColumnNameToClipboard = function (name) {
 	document.body.removeChild(ta);
 };
 
-const formatters = function (formatOptions, measureStats) {
+const formatters = function (formatOptions, measureStats, parentSliceStats, parentColumnNames) {
 	if (!formatOptions) {
 		formatOptions = {};
 	}
@@ -86,11 +86,51 @@ const formatters = function (formatOptions, measureStats) {
 	// MUST be attached to a DOM element returned via `.html`. We keep `display: block` so
 	// the span fills the cell width, making the gradient visible across the whole cell
 	// rather than just behind the digits.
-	function buildHeatmapCell(value, color) {
+	//
+	// `formattedText` lets the caller plug in either the regular number format or the
+	// percent format — sharing this builder across both formatters keeps the secondary-
+	// heatmap rendering identical for both kinds of measure cells.
+	function buildHeatmapCell(value, color, formattedText, dataContext, columnDef) {
 		const el = document.createElement("span");
 		el.style.display = "block";
-		el.style.backgroundColor = color;
-		el.textContent = numberFormat.format(value);
+		el.style.position = "relative";
+		if (color) {
+			el.style.backgroundColor = color;
+		}
+
+		// Secondary heatmap: HORIZONTAL bar spanning the FULL cell height, calibrated against
+		// the PARENT-SLICE min/max (parent = the row's groupBy values minus the last view
+		// column). The bar fills proportionally from the left edge — full-height makes the
+		// signal much more visible than a thin strip, while the translucent fill keeps the
+		// primary heatmap underneath legible.
+		const parentBucket = parentSliceStats ? parentSliceStats[columnDef.id] : null;
+		if (parentBucket && dataContext && parentColumnNames && parentColumnNames.length > 0) {
+			const parts = [];
+			for (const col of parentColumnNames) {
+				parts.push(dataContext[col]);
+			}
+			const parentStats = parentBucket.get(JSON.stringify(parts));
+			const fill = secondaryHeatmapFill(value, parentStats);
+			if (fill !== null) {
+				const bar = document.createElement("span");
+				bar.style.position = "absolute";
+				bar.style.left = "0";
+				bar.style.top = "0";
+				bar.style.bottom = "0";
+				bar.style.width = (fill * 100).toFixed(1) + "%";
+				bar.style.background = "rgba(0, 123, 255, 0.25)";
+				bar.style.pointerEvents = "none";
+				el.appendChild(bar);
+			}
+		}
+
+		// Text node sits above the secondary bar so the digits remain readable on top of the
+		// translucent fill. `position: relative` puts it on a higher stacking layer than the
+		// absolutely-positioned bar (which is the cell's first child).
+		const textNode = document.createElement("span");
+		textNode.style.position = "relative";
+		textNode.textContent = formattedText;
+		el.appendChild(textNode);
 		return el;
 	}
 
@@ -100,8 +140,13 @@ const formatters = function (formatOptions, measureStats) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
 		if (typeof value === "number") {
 			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
-			if (color) {
-				rtn.html = buildHeatmapCell(value, color);
+			// Build the cell DOM whenever EITHER the primary heatmap colours it, OR the secondary
+			// heatmap has a bar to render (parent-slice stats define a fill). This keeps the
+			// secondary bar visible even when the primary heatmap is degenerate (single value or
+			// midpoint-equal — `heatmapColor` returns null then).
+			const hasSecondary = parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
+			if (color || hasSecondary) {
+				rtn.html = buildHeatmapCell(value, color, numberFormat.format(value), dataContext, columnDef);
 				rtn.toolTip = value;
 				return rtn;
 			}
@@ -133,6 +178,19 @@ const formatters = function (formatOptions, measureStats) {
 	// https://github.com/6pac/SlickGrid/blob/master/src/slick.formatters.ts
 	function percentFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
+
+		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
+		// `measureFormatter` does — they share the same numeric semantics, and any measure whose
+		// name contains `%` is routed here.
+		if (typeof value === "number") {
+			const color = measureStats ? heatmapColor(value, measureStats[columnDef.id]) : null;
+			const hasSecondary = parentSliceStats && parentSliceStats[columnDef.id] && parentColumnNames && parentColumnNames.length > 0;
+			if (color || hasSecondary) {
+				rtn.html = buildHeatmapCell(value, color, percentFormat.format(value), dataContext, columnDef);
+				rtn.toolTip = value;
+				return rtn;
+			}
+		}
 
 		rtn.text = percentFormat.format(value);
 		rtn.toolTip = value;
@@ -185,6 +243,7 @@ export default {
 	isSortable,
 	formatters,
 	computeMeasureStats,
+	computeParentSliceStats,
 	heatmapColor,
 
 	sortRows: function (columnNames, coordinates, values) {
@@ -299,8 +358,8 @@ export default {
 		return gridColumns;
 	},
 
-	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats) {
-		const measureFormatters = formatters(formatOptions, measureStats);
+	measuresToGridColumns: function (measureNames, queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames) {
+		const measureFormatters = formatters(formatOptions, measureStats, parentSliceStats, parentColumnNames);
 
 		const gridColumns = [];
 
@@ -449,6 +508,15 @@ export default {
 			// (the `columnNames.includes(...)` test never matched HTML).
 			const columnId = column.id;
 
+			// Always reset the footer cell up-front so a stale "min … · max …" or stale
+			// Statistics button from a previous render does not leak into a column whose
+			// current contract no longer warrants one (e.g. a measure column whose values
+			// turn out to be all-strings, leaving `s.count === 0` and producing no footerText).
+			const columnElement = grid.getFooterRowColumn(column.id);
+			if (columnElement) {
+				columnElement.textContent = "";
+			}
+
 			var footerText = null;
 			if ("id" === column.id) {
 				// rowIndex column has `distinctCount==length`
@@ -473,19 +541,30 @@ export default {
 				const s = measureStats[column.id];
 				if (s.count > 0) {
 					footerText = `min ${formatNumber(s.min)} · max ${formatNumber(s.max)}`;
+				} else {
+					// All values are non-numeric (e.g. a custom-marker measure surfacing
+					// currency codes). Fall back to the distinct-count footer the groupBy
+					// branch uses — same useful summary, just without min/max which would
+					// be meaningless on strings.
+					const measureValues = [];
+					for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+						measureValues.push(values[rowIndex][columnId]);
+					}
+					footerText = `#: ${new Set(measureValues).size}`;
 				}
 			}
 
 			if (footerText) {
 				// https://github.com/6pac/SlickGrid/blob/master/examples/example-footer-totals.html
-				var columnElement = grid.getFooterRowColumn(column.id);
 				columnElement.textContent = footerText;
 				// Append a Statistics affordance to MEASURE columns only, anchored next to
 				// min/max in the footer where the related summary numbers already live.
 				// `setAttribute("data-adhoc-stats-measure", ...)` lets the registered
 				// click-delegation handler (in `registerHeaderButtons`) open the modal
-				// without us having to keep a per-button reference around.
-				if (measureStats && measureStats[column.id]) {
+				// without us having to keep a per-button reference around. Skipped for the
+				// all-non-numeric fallback branch — the stats modal would show count=0 / sum=0
+				// and offer no useful information for string-valued measures.
+				if (measureStats && measureStats[column.id] && measureStats[column.id].count > 0) {
 					const btn = document.createElement("i");
 					btn.className = "bi bi-bar-chart adhoc-stats-btn";
 					btn.setAttribute("role", "button");
