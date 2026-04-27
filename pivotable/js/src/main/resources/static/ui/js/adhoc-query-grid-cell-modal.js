@@ -168,24 +168,40 @@ export default {
 						</ul>
 					</div>
 					<div class="modal-footer">
-						<button
-							type="button"
-							class="btn btn-outline-secondary"
-							data-bs-dismiss="modal"
-							@click="drillthroughThisCell()"
-							title="Pin this cell's coordinates as filters and enable DRILLTHROUGH in this tab; press Submit to fetch the underlying rows."
-						>
-							<i class="bi bi-zoom-in"></i> DrillThrough this cell
-						</button>
-						<button
-							type="button"
-							class="btn btn-outline-secondary"
-							data-bs-dismiss="modal"
-							@click="drillthroughThisCellNewTab()"
-							title="Open the DRILLTHROUGH for this cell in a new tab — keeps the current view untouched."
-						>
-							<i class="bi bi-box-arrow-up-right"></i> DrillThrough in new tab
-						</button>
+						<!--
+							Single DrillThrough entry-point: a split-button dropdown surfaces the two outcomes
+							(in-view vs new-tab) under one menu, so the footer doesn't grow with each new variant
+							(future: "DrillThrough on a side panel", "DrillThrough as CSV export", …).
+						-->
+						<div class="btn-group">
+							<button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+								<i class="bi bi-zoom-in"></i> DrillThrough
+							</button>
+							<ul class="dropdown-menu shadow-sm">
+								<li>
+									<button
+										type="button"
+										class="dropdown-item"
+										data-bs-dismiss="modal"
+										@click="drillthroughThisCell()"
+										title="Pin this cell's coordinates as filters and enable DRILLTHROUGH in this tab; press Submit to fetch the underlying rows."
+									>
+										<i class="bi bi-zoom-in me-1"></i> DrillThrough this view
+									</button>
+								</li>
+								<li>
+									<button
+										type="button"
+										class="dropdown-item"
+										data-bs-dismiss="modal"
+										@click="drillthroughThisCellNewTab()"
+										title="Open the DRILLTHROUGH for this cell in a new tab — keeps the current view untouched."
+									>
+										<i class="bi bi-box-arrow-up-right me-1"></i> DrillThrough in new tab
+									</button>
+								</li>
+							</ul>
+						</div>
 						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
 					</div>
 				</div>

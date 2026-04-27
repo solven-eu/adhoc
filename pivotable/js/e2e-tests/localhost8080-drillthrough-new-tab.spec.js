@@ -65,7 +65,12 @@ test("DrillThrough in new tab: opens fresh tab with DT option pinned in URL hash
 	await page.locator(".slick-row").first().dblclick();
 	await expect(page.locator("#cellModal")).toBeVisible();
 
-	// Click "DrillThrough in new tab" — captures the new tab via context.waitForEvent("page").
+	// Open the DrillThrough dropdown first (single split-button entry-point), then click the
+	// "DrillThrough in new tab" menu item. The new tab is captured via context.waitForEvent("page").
+	await page
+		.locator("#cellModal")
+		.getByRole("button", { name: /^\s*DrillThrough\s*$/ })
+		.click();
 	const newTabPromise = context.waitForEvent("page", { timeout: 15_000 });
 	await page.getByRole("button", { name: /DrillThrough in new tab/ }).click();
 	const newTab = await newTabPromise;

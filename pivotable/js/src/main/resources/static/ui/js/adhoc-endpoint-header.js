@@ -1,13 +1,13 @@
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
-import AdhocEndpointRef from "./adhoc-endpoint-ref.js";
+import AdhocEndpointChip from "./adhoc-endpoint-chip.js";
 
 import AdhocLoading from "./adhoc-loading.js";
 
 export default {
 	components: {
-		AdhocEndpointRef,
+		AdhocEndpointChip,
 		AdhocLoading,
 	},
 	props: {
@@ -43,13 +43,13 @@ export default {
 			<span>
 				<span v-if="withDescription">
 					<h1>
-						<AdhocEndpointRef :endpointId="endpointId" />
+						<AdhocEndpointChip :endpointId="endpointId" />
 					</h1>
 					Endpoint-Description: {{endpoint.name}}
 				</span>
 				<span v-else>
 					<h5>
-						<AdhocEndpointRef :endpointId="endpointId" />
+						<AdhocEndpointChip :endpointId="endpointId" />
 					</h5>
 				</span>
 			</span>

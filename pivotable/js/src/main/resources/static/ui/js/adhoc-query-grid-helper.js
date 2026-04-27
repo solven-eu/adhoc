@@ -1,7 +1,11 @@
 import { ref, inject } from "vue";
 
-// Ordering of rows
-import _ from "lodashEs";
+// Ordering of rows. Per-function imports keep the browser from fetching the lodash root bundle —
+// only the small graph behind each function is loaded.
+import map from "lodashEs/map.js";
+import orderBy from "lodashEs/orderBy.js";
+import isEqual from "lodashEs/isEqual.js";
+import sortBy from "lodashEs/sortBy.js";
 
 import Sortable from "sortablejs";
 
@@ -189,7 +193,7 @@ export default {
 		}
 
 		// https://stackoverflow.com/questions/48701488/how-to-order-array-by-another-array-ids-lodash-javascript
-		const index = _.map(coordinates, (x, i) => [coordinates[i], values[i]]);
+		const index = map(coordinates, (x, i) => [coordinates[i], values[i]]);
 
 		const sortingFunctions = [];
 		const sortingOrders = [];
@@ -207,7 +211,7 @@ export default {
 			// or `desc`
 			sortingOrders.push("asc");
 		}
-		const indexSorted = _.orderBy(index, sortingFunctions, sortingOrders);
+		const indexSorted = orderBy(index, sortingFunctions, sortingOrders);
 
 		for (let i = 0; i < coordinates.length; i++) {
 			coordinates[i] = indexSorted[i][0];
@@ -217,10 +221,10 @@ export default {
 
 	sanityCheckFirstRow: function (columnNames, coordinatesRow, measureNames, measuresRow) {
 		// https://stackoverflow.com/questions/29951293/using-lodash-to-compare-jagged-arrays-items-existence-without-order
-		if (!_.isEqual(_.sortBy(columnNames), _.sortBy(Object.keys(coordinatesRow)))) {
+		if (!isEqual(sortBy(columnNames), sortBy(Object.keys(coordinatesRow)))) {
 			throw new Error(`Inconsistent columnNames: ${columnNames} vs ${Object.keys(coordinatesRow)}`);
 		}
-		if (!_.isEqual(_.sortBy(measureNames), _.sortBy(Object.keys(measuresRow)))) {
+		if (!isEqual(sortBy(measureNames), sortBy(Object.keys(measuresRow)))) {
 			// throw new Error(`Inconsistent measureNames: ${measureNames} vs ${Object.keys(measuresRow)}`);
 
 			// This typically happens when not requesting a single measure, and receiving the default measure

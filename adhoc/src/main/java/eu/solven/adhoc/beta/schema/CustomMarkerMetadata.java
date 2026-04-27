@@ -22,10 +22,13 @@
  */
 package eu.solven.adhoc.beta.schema;
 
-import java.util.Set;
+import org.jspecify.annotations.Nullable;
+
+import com.google.common.collect.ImmutableSet;
 
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.Singular;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -49,9 +52,10 @@ public class CustomMarkerMetadata {
 	// String type;
 
 	@NonNull
-	Set<String> possibleValues;
+	@Singular
+	ImmutableSet<String> possibleValues;
 
-	// May be null
+	@Nullable
 	String defaultValue;
 
 }

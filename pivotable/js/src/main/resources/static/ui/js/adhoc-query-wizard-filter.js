@@ -1,9 +1,13 @@
 import { inject } from "vue";
 
+import AdhocColumnChip from "./adhoc-column-chip.js";
+
 export default {
 	name: "AdhocQueryWizardFilter",
 	// https://vuejs.org/guide/components/registration#local-registration
-	components: {},
+	components: {
+		AdhocColumnChip,
+	},
 	// https://vuejs.org/guide/components/props.html
 	props: {
 		filter: {
@@ -176,7 +180,7 @@ export default {
 
 		<span v-else-if="filter.type==='column'" class="d-inline-flex align-items-center gap-1" :class="filter.disabled ? 'text-muted' : ''">
 			<span class="small" :class="filter.disabled ? 'text-decoration-line-through' : ''">
-				<span class="fw-semibold">{{filter.column}}</span>
+				<AdhocColumnChip :name="filter.column" />
 				<span class="text-muted">=</span>
 				<span>{{filter.valueMatcher}}</span>
 			</span>

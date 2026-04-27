@@ -97,7 +97,8 @@ test("cdn importmap mirrors the webjars importmap — same keys, same versions",
 	//   - WebJars local    : `/webjars/<artifact>/<version>/...`
 	//   - jsdelivr WebJars : `https://cdn.jsdelivr.net/webjars/<groupId>/<artifact>/<version>/...`
 	//   - jsdelivr npm ESM : `https://cdn.jsdelivr.net/npm/<package>@<version>/...` (used for
-	//                        the bundled `lodashEs` CDN variant via `/+esm`).
+	//                        the `lodashEs` CDN variant — the package directory, with per-function
+	//                        files mapped via the `lodashEs/` prefix entry).
 	const extractVersion = function (url) {
 		// Try the `/webjars/.../<version>/` forms first (both local and jsdelivr).
 		const webjarsMatch = url.match(/\/webjars\/[^/]+\/(?:[^/]+\/)?(\d[^/]*)\//);
