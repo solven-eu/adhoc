@@ -25,7 +25,6 @@ package eu.solven.adhoc.filter.optimizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;

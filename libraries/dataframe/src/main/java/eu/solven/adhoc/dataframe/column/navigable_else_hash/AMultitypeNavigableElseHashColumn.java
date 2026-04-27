@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.collection.ICompactable;
