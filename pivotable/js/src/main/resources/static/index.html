@@ -243,6 +243,35 @@
 				transform: translate(-50%, -50%) translate(-50vw, 40vh) scale(0.6) !important;
 			}
 
+			/*
+			 * "Busy" pulse for action buttons that go disabled-while-computing (Refresh / Submit while
+			 * a query is in flight). The default disabled grey is hard to distinguish from a permanently
+			 * inactive button — the pulse signals "this is intentionally disabled because work is
+			 * happening, not because there is nothing to do". Combines with the inline spinner shown
+			 * inside the button label.
+			 *
+			 * Targets `.btn:disabled.adhoc-busy` so the rule never affects unrelated disabled buttons —
+			 * callers must opt in by binding `:class="{ 'adhoc-busy': isInFlight }"`.
+			 */
+			@keyframes adhoc-busy-pulse {
+				0%,
+				100% {
+					box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.45);
+					opacity: 0.85;
+				}
+				50% {
+					box-shadow: 0 0 0 4px rgba(13, 110, 253, 0);
+					opacity: 1;
+				}
+			}
+			.btn.adhoc-busy:disabled {
+				animation: adhoc-busy-pulse 1.2s ease-in-out infinite;
+				/* Keep the disabled cursor (Bootstrap default) but override the muted opacity so the
+				   pulse can swing through 0.85 → 1.0 — otherwise Bootstrap's `.disabled { opacity: 0.65 }`
+				   pins it flat. */
+				opacity: 1 !important;
+			}
+
 			/* Splash: visible while the bootstrap + SPA boot. Removed once Vue mounts. Inline-styled
 			   (no Bootstrap dep) because the page renders this BEFORE Bootstrap CSS resolves. */
 			#adhoc-splash {

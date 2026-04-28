@@ -11,6 +11,8 @@ import { SlickGrid, SlickDataView } from "slickgrid";
 import gridHelper from "./adhoc-query-grid-helper.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
+import { usePreferencesStore } from "./store-preferences.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -388,6 +390,22 @@ export default {
 			// that would re-fire this very watcher, causing the grid to render twice per
 			// edit (and logging `Rendering measureNames=` twice). Shallow reference watching
 			// fires exactly once per server response — which is what the UX needs.
+			// When the wizard is hidden/shown, the grid column transitions between col-9 and col-12. SlickGrid's
+			// viewport size is cached on construction and on explicit resize events; without an explicit
+			// notification it keeps drawing against the old width and the layout looks broken until the user
+			// triggers Submit or hits F5. Watch `wizardHidden` and call `resizeCanvas()` so SlickGrid recomputes
+			// its viewport against the new column width. `nextTick`-style timing is achieved by running on the
+			// reactive change AFTER Vue has applied the col-* class binding.
+			const preferencesStoreForResize = usePreferencesStore();
+			watch(
+				() => preferencesStoreForResize.wizardHidden,
+				() => {
+					if (grid) {
+						grid.resizeCanvas();
+					}
+				},
+			);
+
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {

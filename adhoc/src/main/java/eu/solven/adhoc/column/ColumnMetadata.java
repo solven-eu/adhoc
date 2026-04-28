@@ -82,13 +82,14 @@ public class ColumnMetadata implements IHasName, IHasTags {
 
 		// https://stackoverflow.com/questions/9797212/finding-the-nearest-common-superclass-or-superinterface-of-a-collection-of-cla
 		Optional<? extends Class<?>> commonType =
-				columns.stream().<Class<?>>map(c -> c.getType()).reduce(ClassUtils::determineCommonAncestor);
+				columns.stream().<Class<?>>map(ColumnMetadata::getType).reduce(ClassUtils::determineCommonAncestor);
 
 		// Keep as alias only if all definition holds given alias
 		// This is better for composite cubes, as an alias valid for only a subCube should not be consider an alias in
 		// the composite
-		Set<String> intersectionAliases =
-				columns.stream().<Set<String>>map(c -> c.getAliases()).reduce(ImmutableSet.of(), Sets::intersection);
+		Set<String> intersectionAliases = columns.stream()
+				.<Set<String>>map(ColumnMetadata::getAliases)
+				.reduce(ImmutableSet.of(), Sets::intersection);
 
 		// In a composite cube, it seems legitimate to consider the union of tags. This would not be true of composite
 		// tags like `composite-full`.

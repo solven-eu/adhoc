@@ -48,7 +48,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class EvaluatedExpressionColumn implements IAdhocColumn, ICalculatedColumn {
+public class EvaluatedExpressionColumn implements ICalculatedColumn {
 	// The name of the evaluated column
 	@NonNull
 	String name;

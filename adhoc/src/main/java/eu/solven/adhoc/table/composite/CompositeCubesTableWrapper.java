@@ -110,7 +110,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 // GodClass: large class kept whole because the methods coordinate composite-cube dispatch and splitting them would
 // require leaking many private invariants. Refactor tracked separately.
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
 
 	/**
@@ -175,28 +175,32 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				})
 				// add composite-transverse tag
 				.map(c -> {
-					ColumnMetadataBuilder builder = c.toBuilder();
-					Set<String> cubesWithColumn = columnToCubes.get(c.getName());
-					if (optCubeSlicer.isPresent() && optCubeSlicer.get().equals(c.getName())
-							|| cubesWithColumn.size() == cubes.size()) {
-						return builder.tag("composite-full").build();
-					} else {
-						// Current column is unknown by some cube
-						builder.tag("composite-partial");
-
-						cubes.forEach(cube -> {
-							String cubeName = cube.getName();
-							if (cubesWithColumn.contains(cubeName)) {
-								builder.tag("composite-known:" + cubeName);
-							} else {
-								builder.tag("composite-unknown:" + cubeName);
-							}
-						});
-
-						return builder.build();
-					}
+					return toMeta(columnToCubes, c);
 				})
 				.toList();
+	}
+
+	protected ColumnMetadata toMeta(SetMultimap<String, String> columnToCubes, ColumnMetadata c) {
+		ColumnMetadataBuilder builder = c.toBuilder();
+		Set<String> cubesWithColumn = columnToCubes.get(c.getName());
+		if (optCubeSlicer.isPresent() && optCubeSlicer.get().equals(c.getName())
+				|| cubesWithColumn.size() == cubes.size()) {
+			return builder.tag("composite-full").build();
+		} else {
+			// Current column is unknown by some cube
+			builder.tag("composite-partial");
+
+			cubes.forEach(cube -> {
+				String cubeName = cube.getName();
+				if (cubesWithColumn.contains(cubeName)) {
+					builder.tag("composite-known:" + cubeName);
+				} else {
+					builder.tag("composite-unknown:" + cubeName);
+				}
+			});
+
+			return builder.build();
+		}
 	}
 
 	@Override
@@ -350,12 +354,19 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			}
 
 			ITabularView subView = e.getValue();
-			return subView.stream(slice -> {
-				return oAsMap -> {
-					return transcodeSliceToComposite(compositeQuery
-							.getGroupBy(), subCube, slice, oAsMap, missingColumnsAsmask);
-				};
-			});
+			return streamRecords(compositeQuery, subCube, missingColumnsAsmask, subView);
+		});
+	}
+
+	protected Stream<? extends ITabularRecord> streamRecords(TableQueryV2 compositeQuery,
+			ICubeWrapper subCube,
+			Map<String, Object> missingColumnsAsmask,
+			ITabularView subView) {
+		return subView.stream(slice -> {
+			return oAsMap -> {
+				return transcodeSliceToComposite(compositeQuery
+						.getGroupBy(), subCube, slice, oAsMap, missingColumnsAsmask);
+			};
 		});
 	}
 
@@ -494,7 +505,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * is a Virtual Thread executor when the query is concurrent, so all sub-queries can run in parallel without
 	 * exhausting platform threads.
 	 */
-	@SuppressWarnings({ "PMD.CloseResource", "PMD.ExceptionAsFlowControl" })
+	@SuppressWarnings("PMD.ExceptionAsFlowControl")
 	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 

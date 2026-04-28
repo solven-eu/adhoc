@@ -72,7 +72,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "checkstyle:MagicNumber" })
+@SuppressWarnings("checkstyle:MagicNumber")
 public class TpchSchema {
 
 	public String getName() {

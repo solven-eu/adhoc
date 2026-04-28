@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -153,10 +154,15 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 	public PrunedJoinsJooqSnowflakeSchemaBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
 		JooqJoinBuilder joinBuilder = new JooqJoinBuilder();
 		consumer.accept(joinBuilder);
+		// Empty-consumer fast path — same rationale as JooqSnowflakeSchemaBuilder: the JOIN is silently
+		// dropped, the joinNodes list is left untouched.
+		if (joinBuilder.isEmpty()) {
+			return this;
+		}
 		joinBuilder.validate();
 		// See JooqSnowflakeSchemaBuilder#leftJoin(Consumer) for the rationale: default to the BASE table, not
 		// the most-recent join. Star pattern is dominant; snowflake legs opt-in via `.from(prevJoin)`.
-		String fromAlias = joinBuilder.getFrom() != null ? joinBuilder.getFrom() : baseTableAlias;
+		String fromAlias = Optional.ofNullable(joinBuilder.getFrom()).orElse(baseTableAlias);
 		Set<String> provided = joinBuilder.getProvidedColumns();
 		if (provided != null) {
 			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn(), provided);

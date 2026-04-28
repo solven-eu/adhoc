@@ -127,6 +127,25 @@ public class TestJooqSnowflakeSchemaBuilder {
 				.hasSize(1);
 	}
 
+	// Empty-consumer should drop the JOIN cleanly — useful for callers that wrap a JOIN in a runtime
+	// condition: when the condition is false, they skip populating the builder and the JOIN simply does not
+	// happen, leaving the snowflake table unchanged.
+	@Test
+	public void testEmptyConsumer_dropsTheJoin() {
+		JooqSnowflakeSchemaBuilder snowflakeBuilder =
+				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+
+		String beforeSql = snowflakeBuilder.getSnowflakeTable().toString();
+
+		// No-op consumer — does not call .table(...), .alias(...), or .on(...).
+		snowflakeBuilder.leftJoin(j -> {
+		});
+
+		// Snowflake table is unchanged: no JOIN was committed.
+		Assertions.assertThat(snowflakeBuilder.getSnowflakeTable().toString()).isEqualTo(beforeSql);
+		Assertions.assertThat(snowflakeBuilder.getAliasToOriginal()).isEmpty();
+	}
+
 	@Test
 	public void testSnowflake_withAlias() {
 		JooqSnowflakeSchemaBuilder snowflakeBuilder =

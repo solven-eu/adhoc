@@ -57,6 +57,8 @@ import lombok.Getter;
  *
  * @author Benoit Lacelle
  */
+// Field-named-like-method is the standard fluent-builder pattern: `b.table(t)` writes the `table` field.
+@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 public class JooqJoinBuilder {
 	@Getter(AccessLevel.PACKAGE)
 	private Table<?> table;
@@ -170,6 +172,18 @@ public class JooqJoinBuilder {
 	}
 
 	// Package-private accessors used by JooqSnowflakeSchemaBuilder when committing the JOIN.
+
+	/**
+	 * @return {@code true} when the consumer never touched any setter — the JOIN should be silently dropped. Useful for
+	 *         callers that conditionally populate the builder ({@code if (envFlag) j.table(...)...}).
+	 */
+	boolean isEmpty() {
+		return table == null && alias == null
+				&& from == null
+				&& on.isEmpty()
+				&& columnAliases.isEmpty()
+				&& providedColumns == null;
+	}
 
 	void validate() {
 		if (table == null) {

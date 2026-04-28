@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.Wrapper;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
@@ -83,7 +82,7 @@ public class DuckDBDataSource implements DataSource, AutoCloseable {
 	/**
 	 * Wrapper for {@link DuckDBConnection}
 	 */
-	public static class DuckDBConnectionWrapper extends DefaultConnection implements Wrapper {
+	public static class DuckDBConnectionWrapper extends DefaultConnection {
 		protected DuckDBConnection delegate;
 		protected AtomicInteger openCounter;
 		protected Runnable onClose;

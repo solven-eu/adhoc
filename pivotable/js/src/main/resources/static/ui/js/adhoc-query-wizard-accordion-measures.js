@@ -48,10 +48,10 @@ export default {
 		};
 
 		// Local toggle — controls the grey description line rendered under each measure name.
-		// Default ON to preserve existing behaviour; users who want a denser list can flip it off.
+		// Default OFF for a denser, scannable list; users who want extra context can flip it on.
 		// Kept local (not in searchOptions) because it's a pure UI preference with no side effects
 		// on search semantics.
-		const showMeasureDetails = ref(true);
+		const showMeasureDetails = ref(false);
 
 		return {
 			filtered,

@@ -360,7 +360,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 	}
 
 	// Manages concurrency: the logic here should be strictly minimal on-top of concurrency
-	@SuppressWarnings("PMD.CloseResource")
 	protected Map<TableQueryStep, ICuboid> executeTableQueries(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps hasTableQueries) {
 		try {
@@ -430,7 +429,6 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return stepToValues;
 	}
 
-	@SuppressWarnings("PMD.CloseResource")
 	protected Map<TableQueryStep, ICuboid> processOneTableQueryV4(ISinkExecutionFeedback sinkExecutionFeedback,
 			IHasTableQueryForSteps tableQueries,
 			TableQueryV4 tableQuery) {

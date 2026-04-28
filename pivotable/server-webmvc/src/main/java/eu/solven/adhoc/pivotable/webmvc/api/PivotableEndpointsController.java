@@ -23,6 +23,7 @@
 package eu.solven.adhoc.pivotable.webmvc.api;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,7 @@ import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.beta.schema.CubeSchemaMetadata;
 import eu.solven.adhoc.beta.schema.EndpointSchemaMetadata;
 import eu.solven.adhoc.beta.schema.IAdhocSchema;
+import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.pivotable.api.IPivotableApiConstants;
@@ -259,33 +261,88 @@ public class PivotableEndpointsController {
 
 			Map<String, ? extends Map<String, ?>> columnToDetails = holderColumns.getColumns();
 
-			columnToDetails.entrySet()
+			// Filter the candidate columns once and reuse the list — needed both for the bulk
+			// getCoordinates(Map, int) call AND the per-column ColumnStatistics build below.
+			List<Map.Entry<String, ? extends Map<String, ?>>> matchingEntries = columnToDetails.entrySet()
 					.stream()
 					.filter(e -> columnSearch.getName().isEmpty() || columnSearch.getName().get().match(e.getKey()))
-					.sorted(Map.Entry.comparingByKey())
-					.forEach(e -> {
-						String column = e.getKey();
-						Map<String, ?> columnDetails = e.getValue();
+					.sorted(Map.Entry
+							.comparingByKey()).<Map.Entry<String, ? extends Map<String, ?>>>map(e -> e)
+					.toList();
 
-						ColumnIdentifier columnId = columnTemplate.toBuilder().column(column).build();
+			if (matchingEntries.isEmpty()) {
+				return columns;
+			}
 
-						CoordinatesSample coordinates = schema.getCoordinates(columnId,
-								columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL),
-								columnSearch.getLimitCoordinates());
+			// Bulk-fetch every matching column's CoordinatesSample in one shot, using the holder's
+			// `getCoordinates(Map<String, IValueMatcher>, int)` method. The previous implementation
+			// looped per-column and called the schema-level single-column `getCoordinates(...)` —
+			// O(N) round-trips against the underlying engine for what the engine can answer in one
+			// query (e.g. a single `SELECT COUNT(DISTINCT col1), COUNT(DISTINCT col2), ... FROM t`
+			// on the SQL side). The bulk API is the right entry point both for correctness (the
+			// engine may share scans across columns) and for the bulk "Estimate all" UX.
+			IValueMatcher coordinateMatcher = columnSearch.getCoordinate().orElse(IValueMatcher.MATCH_ALL);
+			Map<String, IValueMatcher> columnToValueMatcher = LinkedHashMap.newLinkedHashMap(matchingEntries.size());
+			matchingEntries.forEach(e -> columnToValueMatcher.put(e.getKey(), coordinateMatcher));
 
-						columns.add(ColumnStatistics.builder()
-								.entrypointId(endpointId)
-								.holder(columnTemplate.getHolder())
-								.column(column)
-								.type(MapPathGet.getRequiredString(columnDetails, "type"))
-								.tags(MapPathGet.getRequiredAs(columnDetails, "tags"))
-								.coordinates(coordinates.getCoordinates())
-								.estimatedCardinality(coordinates.getEstimatedCardinality())
-								.build());
-					});
+			Map<String, CoordinatesSample> coordinatesByColumn = bulkGetCoordinates(schema,
+					columnTemplate,
+					columnToValueMatcher,
+					columnSearch.getLimitCoordinates());
+
+			matchingEntries.forEach(e -> {
+				String column = e.getKey();
+				Map<String, ?> columnDetails = e.getValue();
+
+				CoordinatesSample coordinates = coordinatesByColumn.getOrDefault(column, CoordinatesSample.empty());
+
+				columns.add(ColumnStatistics.builder()
+						.entrypointId(endpointId)
+						.holder(columnTemplate.getHolder())
+						.column(column)
+						.type(MapPathGet.getRequiredString(columnDetails, "type"))
+						.tags(MapPathGet.getRequiredAs(columnDetails, "tags"))
+						.coordinates(coordinates.getCoordinates())
+						.estimatedCardinality(coordinates.getEstimatedCardinality())
+						.build());
+			});
 		}
 
 		return columns;
+	}
+
+	/**
+	 * Resolves the cube named in {@code columnTemplate.getHolder()} and calls its bulk
+	 * {@code ICubeWrapper.getCoordinates(Map, int)} so every matching column is answered in one round-trip — the engine
+	 * can share scans across columns (e.g. a single {@code SELECT COUNT(DISTINCT col1), COUNT(DISTINCT col2), ...} on
+	 * the SQL side) instead of paying O(N) per-column round-trips.
+	 *
+	 * <p>
+	 * Tables fall back to the per-column path (the {@link IAdhocSchema} interface does not expose a table accessor
+	 * today, only {@link IAdhocSchema#getCubes()}). This is fine — {@code searchColumns} requires either a {@code cube}
+	 * or a {@code table} parameter, and the wizard's "Estimate all" flow always uses {@code cube=...}, which is the
+	 * bulk-path here.
+	 */
+	protected Map<String, CoordinatesSample> bulkGetCoordinates(IAdhocSchema schema,
+			ColumnIdentifier columnTemplate,
+			Map<String, IValueMatcher> columnToValueMatcher,
+			int limit) {
+		String holder = columnTemplate.getHolder();
+		if (columnTemplate.isCubeElseTable()) {
+			ICubeWrapper cube =
+					schema.getCubes().stream().filter(c -> holder.equals(c.getName())).findFirst().orElse(null);
+			if (cube != null) {
+				return cube.getCoordinates(columnToValueMatcher, limit);
+			}
+			return Map.of();
+		}
+		// Tables: per-column fallback (no bulk accessor on IAdhocSchema today).
+		Map<String, CoordinatesSample> result = LinkedHashMap.newLinkedHashMap(columnToValueMatcher.size());
+		columnToValueMatcher.forEach((column, matcher) -> {
+			ColumnIdentifier columnId = columnTemplate.toBuilder().column(column).build();
+			result.put(column, schema.getCoordinates(columnId, matcher, limit));
+		});
+		return result;
 	}
 
 }

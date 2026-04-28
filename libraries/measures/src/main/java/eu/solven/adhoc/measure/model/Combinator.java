@@ -35,7 +35,6 @@ import eu.solven.adhoc.measure.lambda.LambdaCombination;
 import eu.solven.adhoc.measure.lambda.LambdaCombination.ILambdaCombination;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.measure.transformator.ICombinator;
-import eu.solven.adhoc.measure.transformator.IHasCombinationKey;
 import eu.solven.adhoc.measure.transformator.IHasUnderlyingMeasures;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
@@ -58,7 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Jacksonized
 @Slf4j
-public class Combinator implements ICombinator, IHasCombinationKey {
+public class Combinator implements ICombinator {
 	@NonNull
 	String name;
 

@@ -168,16 +168,50 @@ const formatters = function (formatOptions, measureStats, parentSliceStats, pare
 		return rtn;
 	}
 
-	const percentFormatOptions = {};
-	percentFormatOptions.maximumSignificantDigits = formatOptions.maximumSignificantDigits;
-	// TODO Should we have a different fraction digit for %?
-	// percentFormatOptions.maximumFractionDigits = formatOptions.maximumFractionDigits;
-	percentFormatOptions.style = "percent";
-	const percentFormat = new Intl.NumberFormat(formatOptions.locale, percentFormatOptions);
+	// Adaptive percent format: each measure column gets its own Intl.NumberFormat whose
+	// `maximumFractionDigits` is chosen from the column's observed |min|/|max| so the user always sees
+	// at least ~2 significant digits at the column's actual scale. Without this, a measure whose values
+	// are all under 1% (e.g. `% delta / (delta+gamma)` returning 0.001..0.005) renders as "0%" / "0.0%"
+	// across the whole column — pointless data.
+	//
+	// Bucketing rule (computed against the larger of |stats.min| and |stats.max|, expressed as a percent):
+	//   ≥ 10%  → 0 fraction digits ("50%")
+	//   ≥ 1%   → 1 fraction digit  ("5.5%")
+	//   < 1%   → ceil(-log10(maxPct)) + 2 fraction digits, capped at 6
+	//             (e.g. 0.005% → 4 fraction digits → "0.0050%")
+	// Defaults to 2 fraction digits when measureStats is absent (e.g. one-row queries with no spread).
+	const percentFormatPerColumn = new Map();
+	function getPercentFormat(columnId) {
+		let fmt = percentFormatPerColumn.get(columnId);
+		if (fmt) return fmt;
+		let maxFracDigits = 2;
+		const stats = measureStats ? measureStats[columnId] : null;
+		if (stats && stats.count > 0) {
+			const maxAbs = Math.max(Math.abs(stats.min), Math.abs(stats.max));
+			if (maxAbs > 0) {
+				const maxPct = maxAbs * 100;
+				if (maxPct >= 10) {
+					maxFracDigits = 0;
+				} else if (maxPct >= 1) {
+					maxFracDigits = 1;
+				} else {
+					maxFracDigits = Math.min(6, Math.max(2, Math.ceil(-Math.log10(maxPct)) + 2));
+				}
+			}
+		}
+		fmt = new Intl.NumberFormat(formatOptions.locale, {
+			style: "percent",
+			minimumFractionDigits: maxFracDigits,
+			maximumFractionDigits: maxFracDigits,
+		});
+		percentFormatPerColumn.set(columnId, fmt);
+		return fmt;
+	}
 
 	// https://github.com/6pac/SlickGrid/blob/master/src/slick.formatters.ts
 	function percentFormatter(row, cell, value, columnDef, dataContext) {
 		var rtn = {};
+		const percentFormat = getPercentFormat(columnDef.id);
 
 		// Apply the primary + secondary heatmaps to percent-formatted cells the same way
 		// `measureFormatter` does — they share the same numeric semantics, and any measure whose

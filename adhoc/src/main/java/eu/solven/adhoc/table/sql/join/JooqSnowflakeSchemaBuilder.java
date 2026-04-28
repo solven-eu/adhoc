@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.sql.join;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -117,13 +118,18 @@ public class JooqSnowflakeSchemaBuilder {
 	public JooqSnowflakeSchemaBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
 		JooqJoinBuilder joinBuilder = new JooqJoinBuilder();
 		consumer.accept(joinBuilder);
+		// Empty-consumer fast path: the caller chose to skip this JOIN at runtime (e.g. wrapped in a feature
+		// flag that turned out false). Drop it cleanly — no validation, no SQL change.
+		if (joinBuilder.isEmpty()) {
+			return this;
+		}
 		joinBuilder.validate();
 		// Default `from` to the BASE table — the dominant pattern in OLAP/BI is a star schema where every
 		// dimension JOINs the fact directly. Snowflake legs explicitly opt-in by calling `.from(prevJoin)`.
 		// Argument: defaulting to base gives a louder failure on a missing `.from(...)` (the JOIN references
 		// base columns the parent doesn't have → SQL error) versus the silent-misjoin you'd get if we defaulted
 		// to the previous JOIN and the dim happened to share a column name with it.
-		String fromAlias = joinBuilder.getFrom() != null ? joinBuilder.getFrom() : baseTableAlias;
+		String fromAlias = Optional.ofNullable(joinBuilder.getFrom()).orElse(baseTableAlias);
 		leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn());
 
 		// Commit per-join column aliases via the existing schema-level facility — the join's alias is now the

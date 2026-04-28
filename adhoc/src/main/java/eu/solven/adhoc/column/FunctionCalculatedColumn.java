@@ -60,7 +60,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class FunctionCalculatedColumn implements IAdhocColumn, ICalculatedColumn {
+public class FunctionCalculatedColumn implements ICalculatedColumn {
 	public static final String RECORDING_VALUE = "$ADHOC$_RECORDINGVALUE";
 
 	// The name of the evaluated column

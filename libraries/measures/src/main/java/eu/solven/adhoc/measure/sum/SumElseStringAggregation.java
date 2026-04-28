@@ -23,8 +23,6 @@
 package eu.solven.adhoc.measure.sum;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
-import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
-import eu.solven.adhoc.measure.aggregation.ILongAggregation;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 // https://learn.microsoft.com/en-us/dax/sum-function-dax
 @Slf4j
-public class SumElseStringAggregation extends SumAggregation implements IDoubleAggregation, ILongAggregation {
+public class SumElseStringAggregation extends SumAggregation {
 
 	@Override
 	protected Object wrapNotANumber(Object r) {

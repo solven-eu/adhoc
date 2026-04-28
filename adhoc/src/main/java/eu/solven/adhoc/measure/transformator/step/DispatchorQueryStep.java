@@ -76,7 +76,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class DispatchorQueryStep extends AMeasureQueryStep implements IMeasureQueryStep {
+public class DispatchorQueryStep extends AMeasureQueryStep {
 	public static final String P_UNDERLYINGS = "underlyings";
 
 	final Dispatchor dispatchor;
