@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.pivotable.app.example;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -30,9 +31,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
 import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.CoordinatesSample;
+import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 /**
@@ -56,6 +60,53 @@ public class TestInjectPixarExampleCubesConfig {
 		Assertions.assertThat(schema.getCubes())
 				.extracting(ICubeWrapper::getName)
 				.containsExactlyInAnyOrder("films", "people", "pixar");
+	}
+
+	@Test
+	public void testFilmsCube_getCoordinatesPerColumn() {
+		new InjectPixarExampleCubesConfig().registerPixarFilms(schema);
+
+		schema.getCubes().forEach(cube -> {
+			// Probe each column's coordinates in a single bulk call — exactly what the SPA does on Estimate-all to
+			// fan out one HTTP request rather than N. Asserts the wiring (table, JOOQ resolver, schema introspection)
+			// is consistent enough that every declared column is reachable from `getCoordinates`.
+			Map<String, IValueMatcher> request = new LinkedHashMap<>();
+			for (ColumnMetadata column : cube.getColumns()) {
+				request.put(column.getName(), IValueMatcher.MATCH_ALL);
+			}
+			Assertions.assertThat(request).isNotEmpty();
+
+			Map<String, CoordinatesSample> result = cube.getCoordinates(request, 50);
+
+			// Every requested column must round-trip — a missing key would mean the cube silently dropped it. Some
+			// columns may have an empty coordinate sample (e.g. all-null columns) but the entry must exist.
+			Assertions.assertThat(result.keySet()).containsExactlyInAnyOrderElementsOf(request.keySet());
+
+			switch (cube.getName()) {
+			case "films": {
+				// Spot-check a known dimensional column: `film` is the title, expected to have at least one coordinate.
+				// The bundled CSV has unique titles so the sample size should be the row count, capped at the limit.
+				Assertions.assertThat(result.get("film").getCoordinates()).isNotEmpty();
+				break;
+			}
+			case "people": {
+				// Spot-check a known dimensional column: `film` is the title, expected to have at least one coordinate.
+				// The bundled CSV has unique titles so the sample size should be the row count, capped at the limit.
+				Assertions.assertThat(result.get("film").getCoordinates()).isNotEmpty();
+				break;
+			}
+			case "pixar": {
+				// Spot-check a known dimensional column: `film` is the title, expected to have at least one coordinate.
+				// The bundled CSV has unique titles so the sample size should be the row count, capped at the limit.
+				Assertions.assertThat(result.get("film").getCoordinates()).isNotEmpty();
+				break;
+			}
+
+			default:
+				throw new IllegalArgumentException("Unexpected value: " + cube.getName());
+			}
+		});
+
 	}
 
 	@Test

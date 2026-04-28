@@ -71,6 +71,7 @@ public class JooqTableSupplierBuilder {
 	final IDSLSupplier dslSupplier;
 
 	@NonNull
+	@Getter
 	final Table<Record> baseTable;
 	@NonNull
 	final String baseTableAlias;

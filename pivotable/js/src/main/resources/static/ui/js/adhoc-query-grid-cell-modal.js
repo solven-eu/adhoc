@@ -1,8 +1,11 @@
+import { provide } from "vue";
+
+import AdhocColumnChip from "./adhoc-column-chip.js";
 import queryHelper from "./adhoc-query-helper.js";
 
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
-	components: {},
+	components: { AdhocColumnChip },
 	props: {
 		queryModel: {
 			type: Object,
@@ -19,6 +22,13 @@ export default {
 	},
 	computed: {},
 	setup(props) {
+		// AdhocColumnChip reads its target queryModel via `inject("queryModel")` (so the chip can be dropped
+		// anywhere inside the wizard subtree without prop-drilling). The cell-modal lives outside that
+		// subtree, so without an explicit provide the chip's dropdown actions (Add as groupBy / Add filter /
+		// Edit filter) silently no-op. Forward the same queryModel the cell-modal already operates on so the
+		// chip's actions mutate the SAME reactive object — they take effect immediately.
+		provide("queryModel", props.queryModel);
+
 		const applyEqualsFilter = function (column, coordinate) {
 			// BEWARE This is poor design. We should send some event  managing the queryModel/filters
 			if (!props.queryModel.filter || !props.queryModel.filter.type) {
@@ -32,6 +42,13 @@ export default {
 			const columnFilter = { type: "column", column: column, valueMatcher: coordinate };
 			props.queryModel.filter.filters.push(columnFilter);
 			console.log("Added filter", columnFilter);
+			// UX shortcut: equality collapses the column to a constant, so dropping it from the groupBy in
+			// the same model edit avoids a single-coordinate header that adds no analytical value. The user
+			// is one click away from a re-query — both the filter add and the groupBy drop must land before
+			// it fires.
+			if (props.queryModel.selectedColumns && props.queryModel.selectedColumns[column]) {
+				props.queryModel.selectedColumns[column] = false;
+			}
 		};
 		const applyNotEqualsFilter = function (column, coordinate) {
 			// BEWARE This is poor design. We should send some event  managing the queryModel/filters
@@ -148,19 +165,19 @@ export default {
 					<div class="modal-body">
 						<ul>
 							<li v-for="(coordinate, column) in clickedCell">
-								{{ column }}: {{ coordinate }}
+								<AdhocColumnChip :name="column" />: {{ coordinate }}
 								<span v-if="columnIsFilterable(column)">
 									<button type="button" class="btn" @click="applyEqualsFilter(column, coordinate)">
-										<i class="bi bi-filter-circle"></i>
+										<i class="bi bi-filter-circle" aria-hidden="true"></i>
 									</button>
 									<button type="button" class="btn" @click="applyNotEqualsFilter(column, coordinate)">
-										<i class="bi bi-filter-circle-fill"></i>
+										<i class="bi bi-filter-circle-fill" aria-hidden="true"></i>
 									</button>
 								</span>
 								<ul v-if="getUnderlyingsIfMeasure(column)">
 									<li v-for="underlying in getUnderlyingsIfMeasure(column)">
 										<button type="button" class="btn" @click="addMeasure(underlying)">
-											{{underlying}} <i class="bi bi-plus-circle"></i>
+											{{underlying}} <i class="bi bi-plus-circle" aria-hidden="true"></i>
 										</button>
 									</li>
 								</ul>
@@ -175,7 +192,7 @@ export default {
 						-->
 						<div class="btn-group">
 							<button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-								<i class="bi bi-zoom-in"></i> DrillThrough
+								<i class="bi bi-zoom-in" aria-hidden="true"></i> DrillThrough
 							</button>
 							<ul class="dropdown-menu shadow-sm">
 								<li>
@@ -186,7 +203,7 @@ export default {
 										@click="drillthroughThisCell()"
 										title="Pin this cell's coordinates as filters and enable DRILLTHROUGH in this tab; press Submit to fetch the underlying rows."
 									>
-										<i class="bi bi-zoom-in me-1"></i> DrillThrough this view
+										<i class="bi bi-zoom-in me-1" aria-hidden="true"></i> DrillThrough this view
 									</button>
 								</li>
 								<li>
@@ -197,7 +214,7 @@ export default {
 										@click="drillthroughThisCellNewTab()"
 										title="Open the DRILLTHROUGH for this cell in a new tab — keeps the current view untouched."
 									>
-										<i class="bi bi-box-arrow-up-right me-1"></i> DrillThrough in new tab
+										<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i> DrillThrough in new tab
 									</button>
 								</li>
 							</ul>

@@ -101,6 +101,27 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	private Table<Record> fullTableCache;
 
 	/**
+	 * Optional explicit list of columns the BASE table provides — escape hatch mirroring per-join
+	 * {@code providedColumns}. Honoured by {@link PrunedJoinsJooqTableSupplier#resolveBaseColumns()}: when non-empty,
+	 * the supplier uses this set verbatim and skips the resolver. Useful when the resolver cannot discover the base
+	 * table's fields (typical with {@code DSL.table(name)} that carries no declared fields and no DB probe).
+	 * <p>
+	 * Empty default — falls back to the configured {@code columnsResolver}.
+	 */
+	@Getter
+	private Set<String> baseProvidedColumns = Set.of();
+
+	/**
+	 * Declare the columns the base table provides. Subsequent {@code build()} / re-probes will see them. Calling this
+	 * after queries have flowed requires {@link PrunedJoinsJooqTableSupplier#invalidateAll()} to drop the stale index.
+	 */
+	public PrunedJoinsJooqTableSupplierBuilder baseProvidedColumns(Set<String> columns) {
+		this.baseProvidedColumns = ImmutableSet.copyOf(columns);
+		invalidateCaches();
+		return this;
+	}
+
+	/**
 	 * A declaration of a LEFT JOIN to be composed into the {@code FROM} clause on demand.
 	 */
 	@Value

@@ -25,6 +25,15 @@ export default {
 			type: String,
 			required: true,
 		},
+		// Visually mark the chip as paused/disabled (line-through, muted). The chip's outer wrapper is
+		// `d-inline-block` (atomic inline-level), and its inner `<a>` carries `text-decoration-none`, so
+		// `text-decoration: line-through` applied to a parent does NOT propagate. Callers wanting the chip
+		// to honour a paused-filter strikethrough must pass `:disabled="filter.disabled"` and let the chip
+		// apply the decoration directly.
+		disabled: {
+			type: Boolean,
+			default: false,
+		},
 	},
 	setup(props) {
 		const queryModel = inject("queryModel");
@@ -75,10 +84,11 @@ export default {
 		return { isGroupBy, editableFilter, addAsGroupBy, addAsFilter, editFilter };
 	},
 	template: /* HTML */ `
-		<span class="dropdown d-inline-block">
+		<span class="dropdown d-inline-block" :class="disabled ? 'text-muted' : ''">
 			<a
 				href="#"
-				class="text-decoration-none fw-semibold"
+				class="fw-semibold"
+				:class="disabled ? 'text-decoration-line-through text-muted' : 'text-decoration-none'"
 				role="button"
 				data-bs-toggle="dropdown"
 				aria-expanded="false"

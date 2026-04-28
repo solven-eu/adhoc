@@ -48,6 +48,9 @@ test("Column chip: 'Add as groupBy' from a filter pill toggles the column into s
 	await filterButton.click();
 	// Confirm the modal opened — Bootstrap modals get the `show` class.
 	await expect(page.locator("#columnFilterModal_country")).toHaveClass(/show/);
+	// The modal opens with `filterType="no_filter"` (only a select is rendered). The text input
+	// for `equals` value only appears once we pick that filter type — flip the select first.
+	await page.locator("#columnFilterModal_country select").first().selectOption("equals");
 	// Use the modal's free-text matcher to add a value.
 	await page.locator("#columnFilterModal_country input[type=text]").first().fill("FR");
 	// Save — the modal's save button text varies; pick by `type=submit` or its label.

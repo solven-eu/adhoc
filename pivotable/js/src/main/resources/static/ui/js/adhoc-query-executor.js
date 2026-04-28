@@ -585,13 +585,19 @@ export default {
 				body to reach it. Clicking Submit closes the accordion (see submitQuery), which
 				re-docks the block to its normal flow position below the wizard.
 
-				<Transition> wrap + :key="accordionState.isOpen" + mode="out-in" gives a subtle
-				fade/scale animation as a visual hint that the block moves between the two
-				positions. The actual position (static -> fixed) cannot be interpolated, so this
-				is a UX hint rather than a literal fly-over. Corresponding CSS classes
+				<Transition> wrap + :key="accordionState.isOpen" gives a subtle fade/scale
+				animation as a visual hint that the block moves between the two positions. The
+				actual position (static -> fixed) cannot be interpolated, so this is a UX hint
+				rather than a literal fly-over. Corresponding CSS classes
 				.submit-float-{enter,leave}-{from,active,to} live in index.html.
+
+				No mode attribute (default = simultaneous) so the docked block appears INSTANTLY
+				the moment the accordion closes, while the floating overlay fades out over the
+				old position on top of it. mode="out-in" was previously used here but it forced
+				the docked block to wait for the leave animation to complete (0.3s delay before
+				it reappeared under the wizard) — visibly bad.
 			-->
-			<Transition name="submit-float" mode="out-in">
+			<Transition name="submit-float">
 				<span
 					:key="accordionState.isOpen"
 					:class="accordionState.isOpen ? 'position-fixed shadow bg-body rounded p-2 border' : ''"

@@ -45,6 +45,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
@@ -121,6 +122,18 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	@Default
 	private ListeningExecutorService executorService = AdhocFactoriesUnsafe.factories.getExecutorService();
 
+	/**
+	 * Strategy used to recover the underlying column names referenced by a SQL expression that did not match the
+	 * column→alias index directly — e.g. {@code approx_count_distinct(c_custkey)} or
+	 * {@code sum(l_extendedprice * (1 - l_discount))}. Defaults to {@link KnownColumnsExpressionExtractor} (token-
+	 * boundary substring scan over the index). Plug in a custom impl for projects whose expressions cannot be recovered
+	 * by substring scanning — e.g. heavy use of column aliases not in the index, or a parser-grade dialect-specific
+	 * extractor.
+	 */
+	@NonNull
+	@Default
+	private IExpressionColumnExtractor expressionColumnExtractor = KnownColumnsExpressionExtractor.INSTANCE;
+
 	/** Lazily built column→owning-join index. {@code null} means "not yet computed". Memoised across queries. */
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private Map<String, String> columnToAlias;
@@ -188,15 +201,43 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 		Set<String> needed = new LinkedHashSet<>();
 
 		// 1. Direct hits from referenced columns.
-		// Unknown columns (not in the index) are treated as base-table columns — matching the existing convention
-		// of `aliasToOriginal`, where an unqualified name that isn't recorded defaults to the base. Callers who
-		// want pruning to be correct for a column that isn't discoverable via `joinedTable.fields()` must declare
-		// it via the explicit `providedColumns` override on `leftJoin(...)`.
+		// STRICT: every referenced column must resolve in the index (which now also covers the base table). When a
+		// reference does not match directly, the supplier falls back to the configured `expressionColumnExtractor`
+		// — handles SQL expressions like `sum(l_extendedprice * (1 - l_discount))` or
+		// `approx_count_distinct(c_custkey)`
+		// passed as the column name. The extractor returns the underlying column(s) the expression touches; each is
+		// looked up in the index. If neither the direct match nor the extractor produces an index hit, we throw —
+		// preferable to silently pruning a join and producing a downstream "column does not exist" SQL error.
 		for (String col : referencedColumns) {
-			// Relates with CaseInsensitiveContext
+			// `*` is the COUNT(*) sentinel — see AdhocJooqHelper.isExpression. It references no specific column
+			// and thus pulls in no join. Skip silently.
+			if (ICountMeasuresConstants.ASTERISK.equals(col)) {
+				continue;
+			}
 			String owner = index.get(col);
-			if (owner != null && !owner.equals(baseAlias)) {
-				needed.add(owner);
+			if (owner != null) {
+				if (!owner.equals(baseAlias)) {
+					needed.add(owner);
+				}
+				continue;
+			}
+			Set<String> extracted = expressionColumnExtractor.extractColumns(col, index.keySet());
+			boolean anyHit = false;
+			for (String inner : extracted) {
+				String innerOwner = index.get(inner);
+				if (innerOwner != null) {
+					anyHit = true;
+					if (!innerOwner.equals(baseAlias)) {
+						needed.add(innerOwner);
+					}
+				}
+			}
+			if (!anyHit) {
+				throw new IllegalArgumentException(
+						"Column `%s` is unknown — neither base `%s` nor any join provides it,".formatted(col, baseAlias)
+								+ " and the expressionColumnExtractor recovered no underlying column."
+								+ " Index columns: "
+								+ index.keySet());
 			}
 		}
 
@@ -243,6 +284,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	protected Map<String, String> columnToAlias() {
 		if (columnToAlias == null) {
 			List<JoinNode> joinNodes = schema.getJoinNodes();
+			String baseAlias = schema.getBaseTableAlias();
 
 			// Fan out per-join column resolution onto `executorService`. With a DB-probing resolver each
 			// `resolveColumns(node)` is a blocking JDBC round-trip (`SELECT * LIMIT 0`); resolving them sequentially
@@ -253,6 +295,12 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			for (JoinNode node : joinNodes) {
 				futures.add(CompletableFuture.supplyAsync(() -> resolveColumns(node), executorService));
 			}
+			// Base-table columns are resolved alongside, so the index is the SINGLE authoritative source for
+			// "what columns exist in this snowflake". `computeNeededAliases` can then fail strictly on unknown
+			// columns instead of silently treating them as base — catching SQL-expression columns and
+			// resolver-misconfigurations early.
+			CompletableFuture<Set<String>> baseFuture =
+					CompletableFuture.supplyAsync(() -> resolveBaseColumns(), executorService);
 
 			Map<String, String> idx = new LinkedHashMap<>();
 			for (int i = 0; i < joinNodes.size(); i++) {
@@ -277,9 +325,49 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 					idx.putIfAbsent(DSL.name(alias, column).toString(), alias);
 				}
 			}
+			// Register base-table columns last so joins win on collisions for naturally-shared key columns —
+			// matches `aliasToOriginal`'s "left/parent wins" convention and the existing per-join `putIfAbsent`
+			// semantics.
+			boolean dotFreeBase = baseAlias.indexOf('.') < 0;
+			for (String column : baseFuture.join()) {
+				idx.putIfAbsent(column, baseAlias);
+				if (dotFreeBase && column.indexOf('.') < 0) {
+					idx.putIfAbsent(baseAlias + "." + column, baseAlias);
+				}
+				idx.putIfAbsent(DSL.name(baseAlias, column).toString(), baseAlias);
+			}
 			columnToAlias = idx;
 		}
 		return columnToAlias;
+	}
+
+	/**
+	 * Resolves the base table's columns through the same {@link IJooqColumnsResolver} used for joins, with the same
+	 * fallback to an empty set when the resolver yields nothing. Cached under the base alias in
+	 * {@link #resolvedColumnsByAlias} so repeated index rebuilds (after {@link #invalidateAll()}) reuse the result.
+	 */
+	protected Set<String> resolveBaseColumns() {
+		String baseAlias = schema.getBaseTableAlias();
+		return resolvedColumnsByAlias.computeIfAbsent(baseAlias, alias -> {
+			Set<String> override = schema.getBaseProvidedColumns();
+			if (override != null && !override.isEmpty()) {
+				return override;
+			}
+			List<Field<?>> fields = columnsResolver.columnsOf(dslSupplier, schema.getBaseTable());
+			if (fields == null || fields.isEmpty()) {
+				log.debug(
+						"Join-pruning: columnsResolver returned no fields for baseTable={} (alias={}) —"
+								+ " strict-mode `computeNeededAliases` will reject every referenced column",
+						schema.getBaseTable(),
+						alias);
+				return Set.of();
+			}
+			Set<String> probed = new LinkedHashSet<>();
+			for (Field<?> f : fields) {
+				probed.add(f.getName());
+			}
+			return probed;
+		});
 	}
 
 	/**

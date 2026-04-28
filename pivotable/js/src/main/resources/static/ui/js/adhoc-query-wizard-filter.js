@@ -180,7 +180,7 @@ export default {
 
 		<span v-else-if="filter.type==='column'" class="d-inline-flex align-items-center gap-1" :class="filter.disabled ? 'text-muted' : ''">
 			<span class="small" :class="filter.disabled ? 'text-decoration-line-through' : ''">
-				<AdhocColumnChip :name="filter.column" />
+				<AdhocColumnChip :name="filter.column" :disabled="filter.disabled" />
 				<span class="text-muted">=</span>
 				<span>{{filter.valueMatcher}}</span>
 			</span>

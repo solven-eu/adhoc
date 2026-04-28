@@ -50,12 +50,19 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 		AdhocJooqHelper.disableBanners();
 	}
 
-	/** Convenience builder seeded with a `fact` base table. */
+	/**
+	 * Convenience builder seeded with a `fact` base table whose columns are declared explicitly via
+	 * {@link PrunedJoinsJooqTableSupplierBuilder#baseProvidedColumns(Set)}. Required because {@code DSL.table("fact")}
+	 * carries no declared fields and the test does not wire a DB-probe resolver, so the strict-mode
+	 * {@code computeNeededAliases} would otherwise reject every base-column reference. The set is the union of every
+	 * column referenced by tests in this file.
+	 */
 	private PrunedJoinsJooqTableSupplierBuilder newBuilder() {
 		return PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
 				.baseTable(DSL.table("fact"))
 				.baseTableAlias("fact")
-				.build();
+				.build()
+				.baseProvidedColumns(Set.of("amount", "region", "id", "k1", "country", "k1_count"));
 	}
 
 	/** Default-resolver supplier bound to {@code builder}. */
@@ -141,14 +148,15 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 		builder.leftJoin(
 				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
 
-		// Index carries three entries: the unqualified `a_name`, the bare dotted `a.a_name` (the convention cube
-		// callers use), and the JOOQ-escaped two-part name `"a"."a_name"` (handles dot-in-name pathologies; same
-		// escaping convention as `registerInAliaser` / `withAliases`). All three resolve to alias `a`.
+		// Index carries three entries for the join's `a_name`: the unqualified `a_name`, the bare dotted `a.a_name`
+		// (the convention cube callers use), and the JOOQ-escaped two-part name `"a"."a_name"` (handles dot-in-name
+		// pathologies; same escaping convention as `registerInAliaser` / `withAliases`). All three resolve to alias
+		// `a`. Plus the base table contributes its own entries via `baseProvidedColumns(...)` — strict-mode requires
+		// the base columns to be in the index too.
 		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot())
 				.containsEntry("a_name", "a")
 				.containsEntry("a.a_name", "a")
-				.containsEntry(DSL.name("a", "a_name").toString(), "a")
-				.hasSize(3);
+				.containsEntry(DSL.name("a", "a_name").toString(), "a");
 
 		// Query referencing the advertised column → join included.
 		TableLike<?> advertisedHit = supplier(builder).tableFor(queryGroupBy("a_name", "amount"));
@@ -335,20 +343,92 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 	}
 
 	@Test
-	public void testDerivedColumns_emptyFieldsOnPlainTable_fallsBackToBase() {
-		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+	public void testDerivedColumns_emptyFieldsOnPlainTable_failsStrict() {
 		// Plain DSL.table("dim_a") has an empty .fields() array → derived index stays empty for this join. No
-		// explicit override was given. Any column reference will be treated as "unknown → base" and the join is
-		// not pulled in. This matches the documented contract for the *raw* supplier: if derivation cannot find
-		// columns, the caller must either supply providedColumns OR go through `JooqTableWrapperParameters`,
-		// which auto-upgrades the resolver to a DB probe — see `JooqTableWrapperParametersBuilder.tableSupplier`.
+		// explicit override was given. Strict-mode `computeNeededAliases` now rejects the reference because the
+		// supplier has no way to know `a_name` is on the join (legacy "default to base" silently dropped the join
+		// and produced an SQL error downstream — caught here at the prune step instead).
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
 		builder.leftJoin(j -> j.table(DSL.table("dim_a")).alias("a").from("fact").on("a_id", "id"));
 
-		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot()).isEmpty();
+		// Index carries the base columns from `baseProvidedColumns(...)` only — no entries for the join.
+		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot()).doesNotContainKey("a_name");
 
-		TableLike<?> pruned = supplier(builder).tableFor(queryGroupBy("a_name", "amount"));
-		// `a_name` is unknown → treated as base column → `a` join is pruned.
-		Assertions.assertThat(pruned.toString()).isEqualTo("\"fact\"");
+		Assertions.assertThatThrownBy(() -> supplier(builder).tableFor(queryGroupBy("a_name", "amount")))
+				.hasRootCauseInstanceOf(IllegalArgumentException.class)
+				.rootCause()
+				.hasMessageContaining("a_name")
+				.hasMessageContaining("unknown");
+	}
+
+	@Test
+	public void testExpressionColumn_extractorPullsInJoin() {
+		// The default extractor (KnownColumnsExpressionExtractor) finds `a_name` inside the SUBSTRING expression
+		// by token-boundary matching against the index. This pulls in the `a` join even though the expression
+		// itself is not a plain column. Mirrors the real-world `getCoordinates` flow on a join column, where the
+		// engine emits `approx_count_distinct(joined_col)` as the aggregator-column name.
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
+
+		TableQueryV4 q = queryGroupBy("SUBSTRING(a_name, 1, 1)", "amount");
+		TableLike<?> pruned = supplier(builder).tableFor(q);
+
+		// Join must appear in the FROM — the expression `SUBSTRING(a_name, 1, 1)` references `a_name` which
+		// the extractor identified as belonging to alias `a`.
+		Assertions.assertThat(pruned.toString()).contains("dim_a", "\"a\"");
+	}
+
+	@Test
+	public void testExpressionColumn_aggregatorExpression_pullsInJoin() {
+		// TPC-H-style aggregator column name — a SUM over a join column. The default extractor identifies
+		// `a_name` in the expression and pulls in the `a` join. Same pattern as TpchSchema's `revenue` aggregator
+		// (`sum(l_extendedprice * (1 - l_discount))`) and DuckDB's auto-generated cardinality probe
+		// (`approx_count_distinct(joined_col)` issued by `getCoordinates`).
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
+
+		TableQueryV4 q = queryGroupBy("region", "approx_count_distinct(a_name)");
+		TableLike<?> pruned = supplier(builder).tableFor(q);
+
+		Assertions.assertThat(pruned.toString()).contains("dim_a", "\"a\"");
+	}
+
+	@Test
+	public void testExpressionColumn_doesNotFalseMatchSubstrings() {
+		// `a_name` must NOT match inside `a_name_extra` — token-boundary check in the default extractor.
+		// Without the boundary check, a query referencing `a_name_extra` would falsely pull in the `a` join.
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
+
+		TableQueryV4 q = queryGroupBy("SUBSTRING(a_name_extra, 1, 1)", "amount");
+		Assertions.assertThatThrownBy(() -> supplier(builder).tableFor(q))
+				.hasRootCauseInstanceOf(IllegalArgumentException.class)
+				.rootCause()
+				.hasMessageContaining("a_name_extra");
+	}
+
+	@Test
+	public void testStrictUnknownColumn_failsFast() {
+		// Strict-mode contract — when neither the direct index lookup nor the expression extractor finds an
+		// underlying column, the supplier rejects up-front with a clear diagnostic. Without strict mode, the
+		// previous "unknown → assume base" fallback would silently drop the join needed to reach the underlying
+		// column, producing a "column does not exist" error from the engine.
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
+
+		// Reference contains no string that matches any indexed column — the extractor returns nothing.
+		TableQueryV4 q = queryGroupBy("SUBSTRING(\"unrelated_col\", 1, 1)", "amount");
+		Assertions.assertThatThrownBy(() -> supplier(builder).tableFor(q))
+				// neededAliasCache wraps the underlying ExecutionException, which itself wraps the strict-mode
+				// IllegalArgumentException — assert on the root cause to skip the wrapper layers.
+				.hasRootCauseInstanceOf(IllegalArgumentException.class)
+				.rootCause()
+				.hasMessageContaining("unrelated_col")
+				.hasMessageContaining("unknown");
 	}
 
 	@Test

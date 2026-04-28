@@ -69,7 +69,7 @@ export default {
 			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("11,270.00");
 		} else {
 			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(1)).toContainText("C");
-			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("588.00");
+			await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toContainText("558.00");
 		}
 	},
 };

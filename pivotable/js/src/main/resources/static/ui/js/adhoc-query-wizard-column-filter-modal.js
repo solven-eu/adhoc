@@ -64,28 +64,37 @@ export default {
 		};
 	},
 	template: /* HTML */ `
-		<div class="modal fade" :id="'columnFilterModal_' + column" tabindex="-1" aria-labelledby="columnFilterModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-centered">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="columnFilterModalLabel">Filtering column={{column}}</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-					</div>
-					<div class="modal-body">
-						<AdhocQueryWizardColumnFilter
-							:queryModel="queryModel"
-							:column="column"
-							:type="type"
-							:endpointId="endpointId"
-							:cubeId="cubeId"
-							ref="filterRef"
-						/>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveFilter">Ok</button>
+		<!--
+			Teleport to body so the modal stacking/positioning is computed against the viewport, not the
+			wizard subtree. Several wizard ancestors set CSS transforms (Bootstrap accordion, Vue Transition
+			elements, dropdown shells) which make position:fixed resolve relative to the transformed box —
+			leaving only the backdrop visible across the screen and the dialog itself off-position. Same fix
+			as adhoc-query-favorite.js. Triggered from AdhocColumnChip.editFilter via Bootstrap Modal.show.
+		-->
+		<Teleport to="body">
+			<div class="modal fade" :id="'columnFilterModal_' + column" tabindex="-1" aria-labelledby="columnFilterModalLabel" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="columnFilterModalLabel">Filtering column={{column}}</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						</div>
+						<div class="modal-body">
+							<AdhocQueryWizardColumnFilter
+								:queryModel="queryModel"
+								:column="column"
+								:type="type"
+								:endpointId="endpointId"
+								:cubeId="cubeId"
+								ref="filterRef"
+							/>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="saveFilter">Ok</button>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+		</Teleport>
 	`,
 };
