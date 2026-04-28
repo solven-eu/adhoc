@@ -25,13 +25,14 @@ package eu.solven.adhoc.table.sql;
 import java.util.concurrent.Semaphore;
 
 import org.jooq.Name;
+import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizerFactory;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -59,24 +60,29 @@ public class JooqTableWrapperParameters {
 	@NonNull
 	IDSLSupplier dslSupplier;
 
-	@NonNull
-	final TableLike<?> table;
+	// @NonNull
+	// final TableLike<?> table;
 
 	/**
 	 * Optional per-query {@link TableLike} provider. When set, {@link JooqTableWrapper#streamSlices} substitutes the
 	 * {@link #table} field with {@link IJooqTableSupplier#tableFor(eu.solven.adhoc.query.table.TableQueryV4)} when
 	 * producing the SQL {@code FROM} clause. Schema introspection ({@code getResultForFields}, {@code getColumns})
 	 * keeps using the all-joins {@link #table}.
+	 * <p>
+	 * Prefer wiring this via the builder's {@code tableSupplier(IJooqTableSupplier)} setter (typically with
+	 * {@code schema.build()}): it sets both {@link #table} and {@link #tableSupplier} from the supplier's
+	 * {@link IJooqTableSupplier#getSchemaTable()}, so callers no longer need a separate {@code .table(...)} call.
 	 */
 	IJooqTableSupplier tableSupplier;
 
 	/**
 	 * Strategy for discovering a {@link TableLike}'s fields. Consumed by {@link JooqTableWrapper#getColumns()} and
-	 * shared with {@link PrunedJoinsJooqSnowflakeSchemaBuilder} so both customise in lockstep. When not configured by
-	 * the builder, {@link #getColumnsResolver()} returns a {@link JooqColumnsHelpers#dbProbe(IDSLSupplier)} bound to
+	 * shared with {@link PrunedJoinsJooqTableSupplierBuilder} so both customise in lockstep. When not configured by the
+	 * builder, {@link #getColumnsResolver()} returns a {@link JooqColumnsHelpers#dbProbe(IDSLSupplier)} bound to
 	 * {@link #getDslSupplier()} — i.e. a {@code SELECT * LIMIT 0} probe.
 	 */
-	IJooqColumnsResolver columnsResolver;
+	@Default
+	final IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe();
 
 	// https://docs.aws.amazon.com/redshift/latest/dg/set-the-JDBC-fetch-size-parameter.html
 	// https://stackoverflow.com/questions/1318354/what-does-statement-setfetchsizensize-method-really-do-in-sql-server-jdbc-driv
@@ -98,18 +104,6 @@ public class JooqTableWrapperParameters {
 	Semaphore querySemaphore = new Semaphore(Integer.MAX_VALUE);
 
 	/**
-	 * Lombok's generated getter is replaced here so that a {@code null} {@link #columnsResolver} transparently resolves
-	 * to {@link JooqColumnsHelpers#dbProbe(IDSLSupplier)} bound to {@link #getDslSupplier()} — this IS the default
-	 * resolver for {@link JooqTableWrapper#noCacheGetFields()}.
-	 */
-	public IJooqColumnsResolver getColumnsResolver() {
-		if (columnsResolver != null) {
-			return columnsResolver;
-		}
-		return JooqColumnsHelpers.dbProbe(dslSupplier);
-	}
-
-	/**
 	 * Lombok @Builder
 	 * 
 	 * @author Benoit Lacelle
@@ -122,7 +116,11 @@ public class JooqTableWrapperParameters {
 		}
 
 		public JooqTableWrapperParametersBuilder tableName(Name tableName) {
-			this.table(DSL.table(tableName));
+			return this.table(DSL.table(tableName));
+		}
+
+		public JooqTableWrapperParametersBuilder table(Table<?> table) {
+			this.tableSupplier(IJooqTableSupplier.constant(table));
 
 			return this;
 		}

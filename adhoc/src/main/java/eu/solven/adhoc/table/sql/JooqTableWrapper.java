@@ -203,7 +203,8 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		// Single source of truth: the parameters' columnsResolver (guaranteed non-null via the custom getter, which
 		// defaults to `JooqColumnsHelpers.dbProbe(dslSupplier)` when the builder did not configure one).
 		try {
-			List<Field<?>> fields = tableParameters.getColumnsResolver().columnsOf(tableParameters.getTable());
+			List<Field<?>> fields = tableParameters.getColumnsResolver()
+					.columnsOf(tableParameters.getDslSupplier(), tableParameters.getTableSupplier().getSchemaTable());
 			if (fields == null) {
 				return Collections.emptyList();
 			} else {
@@ -393,16 +394,13 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 
 	protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 		// `.table(...)` is the migration helper that wires `tableSupplier = IJooqTableSupplier.constant(table)`.
-		// When the parameters carry an explicit supplier (e.g. PrunedJoinsJooqSnowflakeSchemaBuilder.asTableSupplier),
+		// When the parameters carry an explicit supplier (e.g. PrunedJoinsJooqTableSupplierBuilder.build()),
 		// it overrides the constant one below.
 		JooqTableQueryFactory.JooqTableQueryFactoryBuilder<?, ?> builder = JooqTableQueryFactory.builder()
 				.operatorFactory(tableParameters.getOperatorFactory())
-				.table(tableParameters.getTable())
+				.tableSupplier(tableParameters.getTableSupplier())
 				.dslContext(dslContext)
 				.filterOptimizer(tableParameters.getFilterOptimizerFactory().makeOptimizerWithCache());
-		if (tableParameters.getTableSupplier() != null) {
-			builder.tableSupplier(tableParameters.getTableSupplier());
-		}
 		return builder.build();
 	}
 
@@ -540,7 +538,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	@Override
 	public Map<String, ?> getHealthDetails() {
 		return ImmutableMap.<String, Object>builder()
-				.put("tableLike", tableParameters.getTable().toString())
+				.put("tableLike", tableParameters.getTableSupplier().getSchemaTable().toString())
 				.put("dialect", tableParameters.getDslSupplier().getDSLContext().dialect())
 				.put("dslContextCreationTime", tableParameters.getDslSupplier().getDSLContext().creationTime())
 				.build();

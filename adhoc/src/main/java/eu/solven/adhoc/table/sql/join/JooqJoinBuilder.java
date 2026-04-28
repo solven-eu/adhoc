@@ -34,13 +34,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 
 /**
- * Per-join builder produced inside {@link JooqSnowflakeSchemaBuilder#leftJoin(java.util.function.Consumer)}.
+ * Per-join builder produced inside {@link JooqTableSupplierBuilder#leftJoin(java.util.function.Consumer)}.
  *
  * <p>
  * Replaces the multi-parameter {@code leftJoin(leftAlias, joinedTable, joinName, on)} signature with a chainable DSL
  * that scopes per-join state (the LEFT side, the joined table, the alias, the ON columns, and per-column aliases) to
- * the consumer's lifetime. Once the consumer returns, {@link JooqSnowflakeSchemaBuilder} commits the join via the same
- * {@link JooqSnowflakeSchemaBuilder#leftJoinConditions} machinery the legacy overloads use.
+ * the consumer's lifetime. Once the consumer returns, {@link JooqTableSupplierBuilder} commits the join via the same
+ * {@link JooqTableSupplierBuilder#leftJoinConditions} machinery the legacy overloads use.
  *
  * <p>
  * Example:
@@ -73,10 +73,16 @@ public class JooqJoinBuilder {
 	// so the resulting aliases are deterministic.
 	@Getter(AccessLevel.PACKAGE)
 	private final Map<String, String> columnAliases = new LinkedHashMap<>();
-	// Optional explicit column list — only honoured by PrunedJoinsJooqSnowflakeSchemaBuilder, where it overrides
+	// Optional explicit column list — only honoured by PrunedJoinsJooqTableSupplierBuilder, where it overrides
 	// the columns the join provides for prunability decisions. Null on the base schema builder (ignored).
 	@Getter(AccessLevel.PACKAGE)
 	private Set<String> providedColumns;
+	// Optional opt-out of pruning. `null` = use the default (true for high-level Consumer-based JOINs); `false` =
+	// force the join to be included in every materialised FROM clause regardless of referenced columns. Honoured only
+	// by PrunedJoinsJooqTableSupplierBuilder. Useful when a join carries a side-effect that callers may rely on
+	// (e.g. an INNER-JOIN-style filter, or a join to a view whose presence changes row cardinality).
+	@Getter(AccessLevel.PACKAGE)
+	private Boolean prunable;
 
 	/**
 	 * @param joinedTable
@@ -91,7 +97,7 @@ public class JooqJoinBuilder {
 	/**
 	 * @param joinAlias
 	 *            the alias to give the JOINed table — used both as the SQL alias (qualifies columns) and as the alias
-	 *            name remembered by {@link JooqSnowflakeSchemaBuilder} for subsequent {@code from(...)} calls.
+	 *            name remembered by {@link JooqTableSupplierBuilder} for subsequent {@code from(...)} calls.
 	 * @return this
 	 */
 	public JooqJoinBuilder alias(String joinAlias) {
@@ -140,7 +146,7 @@ public class JooqJoinBuilder {
 
 	/**
 	 * Register a per-join column alias scoped to this JOIN's table — equivalent to calling
-	 * {@link JooqSnowflakeSchemaBuilder#withAlias(String, String)} immediately after the JOIN, but kept inside the join
+	 * {@link JooqTableSupplierBuilder#withAlias(String, String)} immediately after the JOIN, but kept inside the join
 	 * definition for clearer locality.
 	 *
 	 * @param aliasName
@@ -156,11 +162,11 @@ public class JooqJoinBuilder {
 
 	/**
 	 * Explicit list of columns the joined table provides — honoured only by
-	 * {@link PrunedJoinsJooqSnowflakeSchemaBuilder}, where it overrides the columns used for prunability decisions (see
-	 * the original 5-arg {@code PrunedJoinsJooqSnowflakeSchemaBuilder#leftJoin(String, Table, String, List, Set)}).
+	 * {@link PrunedJoinsJooqTableSupplierBuilder}, where it overrides the columns used for prunability decisions (see
+	 * the original 5-arg {@code PrunedJoinsJooqTableSupplierBuilder#leftJoin(String, Table, String, List, Set)}).
 	 *
 	 * <p>
-	 * On the base {@link JooqSnowflakeSchemaBuilder} this setter has no effect — the value is simply ignored.
+	 * On the base {@link JooqTableSupplierBuilder} this setter has no effect — the value is simply ignored.
 	 *
 	 * @param columns
 	 *            the columns the joined table provides.
@@ -171,7 +177,25 @@ public class JooqJoinBuilder {
 		return this;
 	}
 
-	// Package-private accessors used by JooqSnowflakeSchemaBuilder when committing the JOIN.
+	/**
+	 * Opt the JOIN out of pruning — honoured only by {@link PrunedJoinsJooqTableSupplierBuilder}. When set to
+	 * {@code false}, the join is always included in the materialised {@code FROM} clause, regardless of which columns
+	 * the query references. Use this for joins whose presence changes row cardinality (e.g. an INNER-style join used as
+	 * a filter) and must therefore not be elided.
+	 *
+	 * <p>
+	 * On the base {@link JooqTableSupplierBuilder} this setter has no effect — the value is simply ignored.
+	 *
+	 * @param prunable
+	 *            {@code false} to force-include this join; {@code true} (the default) to allow pruning.
+	 * @return this
+	 */
+	public JooqJoinBuilder prunable(boolean prunable) {
+		this.prunable = prunable;
+		return this;
+	}
+
+	// Package-private accessors used by JooqTableSupplierBuilder when committing the JOIN.
 
 	/**
 	 * @return {@code true} when the consumer never touched any setter — the JOIN should be silently dropped. Useful for
@@ -182,7 +206,8 @@ public class JooqJoinBuilder {
 				&& from == null
 				&& on.isEmpty()
 				&& columnAliases.isEmpty()
-				&& providedColumns == null;
+				&& providedColumns == null
+				&& prunable == null;
 	}
 
 	void validate() {

@@ -164,7 +164,7 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 			}
 
 			if (originalMetadata == null && tableName != null) {
-				// Third-try: a JooqSnowflakeSchemaBuilder-style aliaser declares `aliasedColor -> b.color`, but the
+				// Third-try: a JooqTableSupplierBuilder-style aliaser declares `aliasedColor -> b.color`, but the
 				// table only knows the unqualified `color` (see JooqTableWrapper.getColumns: SQL backends return
 				// column names without their table-qualifier when listing columns). When `tableName` carries a dot,
 				// strip the qualifier and retry with the bare column name as a best-guess of the actual column.

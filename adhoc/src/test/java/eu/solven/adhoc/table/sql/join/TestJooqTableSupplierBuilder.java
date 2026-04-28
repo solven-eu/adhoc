@@ -30,15 +30,15 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 
-public class TestJooqSnowflakeSchemaBuilder {
+public class TestJooqTableSupplierBuilder {
 	static {
 		AdhocJooqHelper.disableBanners();
 	}
 
 	@Test
 	public void testSnowflake() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable")).alias("joined").on("baseA", "joinedA"));
 
@@ -57,8 +57,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 
 	@Test
 	public void testSnowflake_explicitForeignKeyWithDot() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
 				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("joined1.baseA", "joined2A"));
@@ -80,8 +80,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 
 	@Test
 	public void testSnowflake_fieldWithWithDot() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
 				.leftJoin(
@@ -106,8 +106,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 	// Weird pathes can be prefixed with `;`
 	@Test
 	public void testSnowflake_weirdPath() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
 				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on(";ill_name.baseA''", "joined2A"));
@@ -132,8 +132,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 	// happen, leaving the snowflake table unchanged.
 	@Test
 	public void testEmptyConsumer_dropsTheJoin() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		String beforeSql = snowflakeBuilder.getSnowflakeTable().toString();
 
@@ -148,8 +148,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 
 	@Test
 	public void testSnowflake_withAlias() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
 
 		snowflakeBuilder.withAlias("aliasBase", "baseA")
 				.leftJoin(j -> j.table(DSL.table("joinedTable1"))

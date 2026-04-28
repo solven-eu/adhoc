@@ -61,7 +61,7 @@ import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.table.sql.join.JooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.JooqTableSupplierBuilder;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import eu.solven.pepper.spring.PepperResourceHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -159,13 +159,14 @@ public class InjectPixarExampleCubesConfig {
 		CubeWrapper filmsCube;
 		{
 
-			JooqSnowflakeSchemaBuilder films = JooqSnowflakeSchemaBuilder.builder()
+			JooqTableSupplierBuilder films = JooqTableSupplierBuilder.builder()
+					.dslSupplier(dslSupplier)
 					.baseTable(DSL.table("pixar_films"))
 					.baseTableAlias("films")
 					.build();
 
 			JooqTableWrapper filmsTable = new JooqTableWrapper("films",
-					DuckDBHelper.parametersBuilder(dslSupplier).table(films.getSnowflakeTable()).build());
+					DuckDBHelper.parametersBuilder(dslSupplier).tableSupplier(films.build()).build());
 			schema.registerTable(filmsTable);
 
 			List<IMeasure> measuresFilm = new ArrayList<>();
@@ -185,7 +186,7 @@ public class InjectPixarExampleCubesConfig {
 
 		CubeWrapper peopleCube;
 		{
-			JooqSnowflakeSchemaBuilder people = JooqSnowflakeSchemaBuilder.builder()
+			JooqTableSupplierBuilder people = JooqTableSupplierBuilder.builder()
 					.baseTable(DSL.table("pixar_people"))
 					.baseTableAlias("people")
 					.build()
@@ -193,7 +194,7 @@ public class InjectPixarExampleCubesConfig {
 
 			JooqTableWrapper peopleTable = new JooqTableWrapper("people",
 					JooqTableWrapperParameters.builder()
-							.table(people.getSnowflakeTable())
+							.tableSupplier(people.build())
 							.dslSupplier(dslSupplier)
 							.build());
 			schema.registerTable(peopleTable);

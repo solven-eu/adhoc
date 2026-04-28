@@ -181,7 +181,7 @@ public class TestCubeWrapper {
 		Assertions.assertThat(cube.getColumnsAsMap().get("aliasC").getType()).isEqualTo(String.class);
 	}
 
-	// Reproducer for the JooqSnowflakeSchemaBuilder scenario: an aliaser declares
+	// Reproducer for the JooqTableSupplierBuilder scenario: an aliaser declares
 	// aliasedColor -> b.color
 	// but the table only knows the unqualified `color` (SQL backends typically return the column name without
 	// the table-qualifier when listing columns — see JooqTableWrapper.getColumns). The two existing resolution

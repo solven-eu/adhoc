@@ -43,16 +43,17 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
+import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplier;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import eu.solven.pepper.collection.MapWithNulls;
 
 /**
- * End-to-end test of {@link PrunedJoinsJooqSnowflakeSchemaBuilder} against an in-memory DuckDB backend.
+ * End-to-end test of {@link PrunedJoinsJooqTableSupplierBuilder} against an in-memory DuckDB backend.
  * <p>
  * The schema is a 3-level snowflake:
  *
@@ -77,10 +78,10 @@ public class TestTableQuery_DuckDb_withPrunedJoins extends ADuckDbJooqTest imple
 	 * Single columns-resolver instance shared between {@link JooqTableWrapper} (via parameters) and
 	 * {@link PrunedJoinsJooqTableSupplier}. Any customisation propagates to both paths.
 	 */
-	IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe(dslSupplier);
+	IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe();
 
 	/** Schema side: records the join tree. */
-	PrunedJoinsJooqSnowflakeSchemaBuilder snowflakeBuilder = PrunedJoinsJooqSnowflakeSchemaBuilder.prunedBuilder()
+	PrunedJoinsJooqTableSupplierBuilder snowflakeBuilder = PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
 			.baseTable(DSL.table(DSL.name(factTable)))
 			.baseTableAlias("f")
 			.build()
@@ -95,15 +96,17 @@ public class TestTableQuery_DuckDb_withPrunedJoins extends ADuckDbJooqTest imple
 	 * wire a DB-backed {@code SELECT * LIMIT 0} probe. Probing is lazy — it happens on the first query, after
 	 * {@code initTables()} has created the DuckDB schema.
 	 */
-	PrunedJoinsJooqTableSupplier tableSupplier =
-			PrunedJoinsJooqTableSupplier.builder().schema(snowflakeBuilder).columnsResolver(columnsResolver).build();
+	PrunedJoinsJooqTableSupplier tableSupplier = PrunedJoinsJooqTableSupplier.builder()
+			.dslSupplier(dslSupplier)
+			.schema(snowflakeBuilder)
+			.columnsResolver(columnsResolver)
+			.build();
 
 	@Override
 	public ITableWrapper makeTable() {
 		JooqTableWrapperParameters params = DuckDBHelper.parametersBuilder(dslSupplier)
-				// The all-joins table is used for schema introspection (`getColumns`, `getResultForFields`).
-				.table(snowflakeBuilder.getSnowflakeTable())
-				// The per-query supplier is used by `streamSlices` and prunes unreachable joins.
+				// `tableSupplier(...)` wires both the per-query pruning supplier and (via `getSchemaTable()`) the
+				// all-joins table used by `getColumns` / `getResultForFields`.
 				.tableSupplier(tableSupplier)
 				// Shared probe — `getColumns()` uses it; the supplier already uses the same instance.
 				.columnsResolver(columnsResolver)

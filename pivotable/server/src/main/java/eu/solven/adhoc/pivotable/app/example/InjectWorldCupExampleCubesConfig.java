@@ -34,6 +34,8 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.example.worldcup.WorldCupPlayersSchema;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.table.ITableWrapper;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -58,7 +60,8 @@ public class InjectWorldCupExampleCubesConfig {
 	}
 
 	protected void registerWorldCupPlayers(IAdhocSchema schema) {
-		WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema();
+		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
+		WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema(dslSupplier);
 		ITableWrapper table = worldCupSchema.getTable(worldCupSchema.getName());
 		IAdhocSchemaRegistrer registrer = schema.getRegistrer();
 		registrer.registerTable(table);
