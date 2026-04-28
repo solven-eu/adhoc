@@ -141,11 +141,14 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 		builder.leftJoin(
 				j -> j.table(DSL.table("dim_a")).alias("a").on("a_id", "id").providedColumns(Set.of("a_name")));
 
-		// Index carries both the unqualified `a_name` and the qualified `a.a_name` → "a".
+		// Index carries three entries: the unqualified `a_name`, the bare dotted `a.a_name` (the convention cube
+		// callers use), and the JOOQ-escaped two-part name `"a"."a_name"` (handles dot-in-name pathologies; same
+		// escaping convention as `registerInAliaser` / `withAliases`). All three resolve to alias `a`.
 		Assertions.assertThat(supplier(builder).getColumnToAliasSnapshot())
 				.containsEntry("a_name", "a")
 				.containsEntry("a.a_name", "a")
-				.hasSize(2);
+				.containsEntry(DSL.name("a", "a_name").toString(), "a")
+				.hasSize(3);
 
 		// Query referencing the advertised column → join included.
 		TableLike<?> advertisedHit = supplier(builder).tableFor(queryGroupBy("a_name", "amount"));
@@ -362,5 +365,28 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 		// Query references nothing the join provides → without the flag, the join would be pruned.
 		TableLike<?> pruned = supplier(builder).tableFor(queryGroupBy("region", "amount"));
 		Assertions.assertThat(pruned.toString()).contains("dim_a", "\"a\"");
+	}
+
+	@Test
+	public void testQualifiedKey_escapesDotsInAliasOrColumn() {
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		// Pathological aliases / columns containing a dot: a plain `alias + "." + column` concatenation would
+		// be ambiguous (e.g. `cust.a.b` could mean `cust` × `a.b` or `cust.a` × `b`). The supplier suppresses the
+		// bare dotted entry in this case and only registers the JOOQ-escaped two-part name, which quotes each
+		// part and is the unambiguous form callers should use here.
+		builder.leftJoin(
+				j -> j.table(DSL.table("dim_dotted")).alias("cust.x").on("a_id", "id").providedColumns(Set.of("a.b")));
+
+		Map<String, String> index = supplier(builder).getColumnToAliasSnapshot();
+
+		// Unqualified entry — keyed by the raw column name, dot included.
+		Assertions.assertThat(index).containsEntry("a.b", "cust.x");
+
+		// JOOQ-escaped two-part name keeps the dots inside their respective segments — the unambiguous form.
+		String qualified = DSL.name("cust.x", "a.b").toString();
+		Assertions.assertThat(index).containsEntry(qualified, "cust.x");
+
+		// Bare dotted entry must NOT exist for this pathological case — it would be ambiguous.
+		Assertions.assertThat(index).doesNotContainKey("cust.x.a.b");
 	}
 }

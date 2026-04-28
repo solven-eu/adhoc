@@ -47,7 +47,8 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 
 import eu.solven.adhoc.app.IPivotableSpringProfiles;
-import eu.solven.adhoc.beta.schema.AdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchema;
+import eu.solven.adhoc.beta.schema.IAdhocSchemaRegistrer;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
@@ -79,7 +80,7 @@ public class InjectPixarExampleCubesConfig {
 	// `java:S6831` as Sonar states `@Qualifier` is bad on `@Bean`
 	@Profile(IPivotableSpringProfiles.P_SIMPLE_DATASETS)
 	@Bean
-	public Void initPixarCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) AdhocSchema schema) {
+	public Void initPixarCubes(@Qualifier(IPivotableSpringProfiles.P_SELF_ENDPOINT) IAdhocSchema schema) {
 		log.info("Registering the {} dataset", IPivotableSpringProfiles.P_SIMPLE_DATASETS);
 
 		registerPixarFilms(schema);
@@ -88,7 +89,7 @@ public class InjectPixarExampleCubesConfig {
 	}
 
 	@SuppressWarnings("checkstyle.MethodLength")
-	protected void registerPixarFilms(AdhocSchema schema) {
+	protected void registerPixarFilms(IAdhocSchema schema) {
 		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
 
 		DSLContext dslContext = dslSupplier.getDSLContext();
@@ -156,6 +157,8 @@ public class InjectPixarExampleCubesConfig {
 
 		});
 
+		IAdhocSchemaRegistrer schemaRegistrer = schema.getRegistrer();
+
 		CubeWrapper filmsCube;
 		{
 
@@ -167,13 +170,13 @@ public class InjectPixarExampleCubesConfig {
 
 			JooqTableWrapper filmsTable = new JooqTableWrapper("films",
 					DuckDBHelper.parametersBuilder(dslSupplier).tableSupplier(films.build()).build());
-			schema.registerTable(filmsTable);
+			schemaRegistrer.registerTable(filmsTable);
 
 			List<IMeasure> measuresFilm = new ArrayList<>();
 			measuresFilm.add(Aggregator.countAsterisk().toBuilder().name("count(films)").build());
 
-			schema.registerForest(MeasureForest.fromMeasures("films", measuresFilm));
-			filmsCube = schema.openCubeWrapperBuilder()
+			schemaRegistrer.registerForest(MeasureForest.fromMeasures("films", measuresFilm));
+			filmsCube = schemaRegistrer.openCubeWrapperBuilder()
 					.name("films")
 					.forest(MeasureForest.fromMeasures("films", measuresFilm))
 					.table(filmsTable)
@@ -181,12 +184,13 @@ public class InjectPixarExampleCubesConfig {
 							.aliaser(MapTableAliaser.builder().aliasToOriginals(films.getAliasToOriginal()).build())
 							.build())
 					.build();
-			schema.registerCube(filmsCube);
+			schemaRegistrer.registerCube(filmsCube);
 		}
 
 		CubeWrapper peopleCube;
 		{
 			JooqTableSupplierBuilder people = JooqTableSupplierBuilder.builder()
+					.dslSupplier(dslSupplier)
 					.baseTable(DSL.table("pixar_people"))
 					.baseTableAlias("people")
 					.build()
@@ -197,13 +201,13 @@ public class InjectPixarExampleCubesConfig {
 							.tableSupplier(people.build())
 							.dslSupplier(dslSupplier)
 							.build());
-			schema.registerTable(peopleTable);
+			schemaRegistrer.registerTable(peopleTable);
 
 			List<IMeasure> measuresPeople = new ArrayList<>();
 			measuresPeople.add(Aggregator.countAsterisk().toBuilder().name("count(people)").build());
 
-			schema.registerForest(MeasureForest.fromMeasures("people", measuresPeople));
-			peopleCube = schema.openCubeWrapperBuilder()
+			schemaRegistrer.registerForest(MeasureForest.fromMeasures("people", measuresPeople));
+			peopleCube = schemaRegistrer.openCubeWrapperBuilder()
 					.name("people")
 					.forest(MeasureForest.fromMeasures("people", measuresPeople))
 					.table(peopleTable)
@@ -211,13 +215,13 @@ public class InjectPixarExampleCubesConfig {
 							.aliaser(MapTableAliaser.builder().aliasToOriginals(people.getAliasToOriginal()).build())
 							.build())
 					.build();
-			schema.registerCube(peopleCube);
+			schemaRegistrer.registerCube(peopleCube);
 		}
 
 		{
 			CompositeCubesTableWrapper pixarTable =
 					CompositeCubesTableWrapper.builder().name("pixar").cube(filmsCube).cube(peopleCube).build();
-			schema.registerTable(pixarTable);
+			schemaRegistrer.registerTable(pixarTable);
 
 			List<IMeasure> measuresComposite = new ArrayList<>();
 			measuresComposite.add(Combinator.builder()
@@ -234,8 +238,8 @@ public class InjectPixarExampleCubesConfig {
 			// `clear` also includes the underlying measures, available through the composite
 			IMeasureForest clearPixarForest = pixarTable.injectUnderlyingMeasures(rawPixarForest);
 
-			schema.registerForest(clearPixarForest);
-			schema.registerCube("pixar", "pixar", "pixar");
+			schemaRegistrer.registerForest(clearPixarForest);
+			schemaRegistrer.registerCube("pixar", "pixar", "pixar");
 		}
 	}
 }

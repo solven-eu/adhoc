@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.TableLike;
@@ -66,6 +67,20 @@ public final class JooqColumnsHelpers {
 	}
 
 	/**
+	 * @param sqlBuilder
+	 *            given the queried {@link TableLike}, returns the raw SQL string to execute. Typically a single-row
+	 *            probe such as {@code "SELECT * FROM \"dev\".\"public\".\"%s\" LIMIT 0".formatted(someTable)}.
+	 * @return a fresh {@link IJooqColumnsResolver} that runs the caller-supplied raw SQL via the
+	 *         {@link IDSLSupplier#getDSLContext()} {@code fetch(...)} entry-point and returns the result-set columns.
+	 *         Useful for backends where the JOOQ-rendered probe would be wrong: e.g. Redshift accessed via the
+	 *         PostgreSQL 8 dialect, where {@code LIMIT 0} interacts badly with some JOOQ-generated qualifiers, or when
+	 *         the probe must hit a specific {@code database.schema.table} qualifier that JOOQ refuses to render.
+	 */
+	public static IJooqColumnsResolver predefinedSql(Function<TableLike<?>, String> sqlBuilder) {
+		return new PredefinedSqlResolver(sqlBuilder);
+	}
+
+	/**
 	 * Stateless {@link IJooqColumnsResolver} that reads {@link TableLike#asTable()} fields. Exposed via
 	 * {@link #fromJooqFields()}.
 	 */
@@ -98,6 +113,26 @@ public final class JooqColumnsHelpers {
 					PepperLogHelper
 							.lazyToString(() -> table.toString().replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
 			return List.of(dslSupplier.getDSLContext().select().from(table).limit(0).fetch().fields());
+		}
+	}
+
+	/**
+	 * {@link IJooqColumnsResolver} that runs a caller-supplied raw SQL probe — bypasses JOOQ's query builder. Used as
+	 * an escape hatch for backends where JOOQ produces an SQL that the backend rejects (Redshift accessed via the
+	 * PostgreSQL 8 dialect, etc.). Exposed via {@link #predefinedSql(Function)}.
+	 */
+	@RequiredArgsConstructor
+	@Slf4j
+	static final class PredefinedSqlResolver implements IJooqColumnsResolver {
+		private final Function<TableLike<?>, String> sqlBuilder;
+
+		@Blocking
+		@Override
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
+			String sql = sqlBuilder.apply(table);
+			log.info("Fetching fields via predefined SQL={}",
+					PepperLogHelper.lazyToString(() -> sql.replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
+			return List.of(dslSupplier.getDSLContext().fetch(sql).fields());
 		}
 	}
 }

@@ -23,23 +23,27 @@
 package eu.solven.adhoc.table.sql.join;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 
 import org.jooq.Field;
 import org.jooq.TableLike;
+import org.jooq.impl.DSL;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
@@ -48,6 +52,7 @@ import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder.JoinNode;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -103,6 +108,18 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	@Default
 	@Getter
 	private IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe();
+
+	/**
+	 * Executor used by {@link #columnToAlias()} to resolve each {@link JoinNode}'s column set in parallel during the
+	 * first build. With a DB-probing resolver the per-join cost is dominated by JDBC round-trips, so a snowflake with N
+	 * arms otherwise pays N sequential probes on first use; fanning out collapses them to a single wall-clock probe.
+	 * Defaults to the project-wide pool exposed by {@link AdhocFactoriesUnsafe} (a Virtual-Thread executor) so blocking
+	 * JDBC calls do not pin platform threads and the index build does not consume the FJP common pool. Closing this
+	 * supplier does NOT close the executor — it is owned by the application.
+	 */
+	@NonNull
+	@Default
+	private ListeningExecutorService executorService = AdhocFactoriesUnsafe.factories.getExecutorService();
 
 	/** Lazily built column→owning-join index. {@code null} means "not yet computed". Memoised across queries. */
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
@@ -225,15 +242,39 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	 */
 	protected Map<String, String> columnToAlias() {
 		if (columnToAlias == null) {
+			List<JoinNode> joinNodes = schema.getJoinNodes();
+
+			// Fan out per-join column resolution onto `executorService`. With a DB-probing resolver each
+			// `resolveColumns(node)` is a blocking JDBC round-trip (`SELECT * LIMIT 0`); resolving them sequentially
+			// turns the first index build into N sequential network hops, which is what we want to avoid here.
+			// Declaration order is preserved by walking `joinNodes` for the merge step — the futures are joined in
+			// the same order they were dispatched, so the "left wins on collisions" semantics still holds.
+			List<CompletableFuture<Set<String>>> futures = new ArrayList<>(joinNodes.size());
+			for (JoinNode node : joinNodes) {
+				futures.add(CompletableFuture.supplyAsync(() -> resolveColumns(node), executorService));
+			}
+
 			Map<String, String> idx = new LinkedHashMap<>();
-			for (JoinNode node : schema.getJoinNodes()) {
-				Set<String> columns = resolveColumns(node);
+			for (int i = 0; i < joinNodes.size(); i++) {
+				JoinNode node = joinNodes.get(i);
+				Set<String> columns = futures.get(i).join();
+				String alias = node.getAlias();
+				boolean dotFreeAlias = alias.indexOf('.') < 0;
 				for (String column : columns) {
 					// Unqualified form: first-declared wins on collisions (matches `registerInAliaser` /
 					// `putIfAbsent` semantics).
-					idx.putIfAbsent(column, node.getAlias());
-					// Qualified form: `alias.column` always resolves unambiguously to this join's alias.
-					idx.putIfAbsent(node.getAlias() + "." + column, node.getAlias());
+					idx.putIfAbsent(column, alias);
+					// Bare dotted form `alias.column` — the convention cube callers use today (e.g.
+					// `groupBy("p.productName")`). Skipped when alias OR column already contains a dot, since the
+					// resulting key would be ambiguous (e.g. `cust.a.b` could mean `cust` × `a.b` or `cust.a` × `b`).
+					if (dotFreeAlias && column.indexOf('.') < 0) {
+						idx.putIfAbsent(alias + "." + column, alias);
+					}
+					// Escaped form via JOOQ's two-part `Name.toString()` — quotes each segment so dots inside the
+					// alias or the column stay inside their segment. Same escaping convention as
+					// `registerInAliaser` and `withAliases` (both store `Name.toString()` in `aliasToOriginal`),
+					// and the only unambiguous form when either part already contains a dot.
+					idx.putIfAbsent(DSL.name(alias, column).toString(), alias);
 				}
 			}
 			columnToAlias = idx;
@@ -259,6 +300,8 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 						alias);
 				return Set.of();
 			}
+			// BEWARE Is this an opportunity to register fully qualified field names?
+			// It is actually done in `columnToAlias`
 			return fields.stream().map(Field::getName).collect(ImmutableSet.toImmutableSet());
 		});
 	}
