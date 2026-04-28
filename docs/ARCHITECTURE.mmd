@@ -3,6 +3,10 @@ classDiagram
     direction TB
 
     %% ─── Interfaces ────────────────────────────────────────────────
+    class IAdhocEventBus {
+    }
+    class IColumnGenerator {
+    }
     class IDSLSupplier {
     }
     class IFilterOptimizerFactory {
@@ -10,6 +14,8 @@ classDiagram
     class IImplicitFilter {
     }
     class IImplicitOptions {
+    }
+    class IJooqColumnsResolver {
     }
     class IJooqTableSupplier {
     }
@@ -70,15 +76,11 @@ classDiagram
     }
     class DagBottomUpStrategyNavigableElseHash {
     }
-    class EmptyColumnGenerator {
-    }
     class EmptyTableWrapper {
     }
     class IdentityImplicitAliaser {
     }
     class InMemoryTable {
-    }
-    class JooqColumnsHelpers {
     }
     class JooqTableWrapper {
         JooqTableWrapperParameters tableParameters
@@ -127,8 +129,6 @@ classDiagram
     }
     class TableQueryInducerFactory {
     }
-    class UnsafeAdhocEventBusHelpers {
-    }
     class UnsafeMeasureForest {
     }
 
@@ -155,20 +155,20 @@ classDiagram
     ColumnsManager *-- IdentityImplicitAliaser : aliaser
     StandardColumnFactory *-- DagBottomUpStrategyNavigableElseHash : bottomUpStrategy
     AdhocFactories *-- StandardColumnFactory : columnFactory
-    ColumnsManager *-- EmptyColumnGenerator : columnGenerator
+    ColumnsManager *-- IColumnGenerator : columnGenerator
     CubeWrapper *-- ColumnsManager : columnsManager
     CompositeCubesTableWrapper *-- ColumnsManager : columnsManager
-    JooqTableWrapperParameters *-- JooqColumnsHelpers : columnsResolver
-    PrunedJoinsJooqTableSupplier *-- JooqColumnsHelpers : columnsResolver
+    JooqTableWrapperParameters *-- IJooqColumnsResolver : columnsResolver
+    PrunedJoinsJooqTableSupplier *-- IJooqColumnsResolver : columnsResolver
     StandardMissingColumnManager *-- StandardCoordinateNormalizer : coordinateNormalizer
     ColumnsManager *-- StandardCustomTypeManager : customTypeManager
     CachingTableWrapper *-- ITableWrapper : decorated
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
     PrunedJoinsJooqTableSupplier *-- IDSLSupplier : dslSupplier
     CubeWrapper *-- CubeQueryEngine : engine
-    CubeQueryEngine *-- UnsafeAdhocEventBusHelpers : eventBus
-    TableQueryEngineFactory *-- UnsafeAdhocEventBusHelpers : eventBus
-    ColumnsManager *-- UnsafeAdhocEventBusHelpers : eventBus
+    CubeQueryEngine *-- IAdhocEventBus : eventBus
+    TableQueryEngineFactory *-- IAdhocEventBus : eventBus
+    ColumnsManager *-- IAdhocEventBus : eventBus
     CubeQueryEngine *-- AdhocFactoriesUnsafe : factories
     TableQueryEngineFactory *-- AdhocFactories : factories
     StandardQueryPreparator *-- AdhocFactoriesUnsafe : factories
