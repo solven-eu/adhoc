@@ -246,7 +246,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure("coach_score")
 				.groupByAlso("minute")
-				.filter(AndFilter.and(ColumnFilter.matchLike("Coach name", "LORENZO%"),
+				.filter(AndFilter.and(ColumnFilter.matchLike("Coach Name", "LORENZO%"),
 						ColumnFilter.matchEq("minute", 4)))
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);

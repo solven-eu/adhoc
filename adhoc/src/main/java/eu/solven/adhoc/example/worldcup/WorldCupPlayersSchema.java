@@ -125,7 +125,7 @@ public class WorldCupPlayersSchema {
 
 		measures.add(Partitionor.builder()
 				.name("match_count")
-				.groupBy(GroupByColumns.named("MatchId"))
+				.groupBy(GroupByColumns.named("MatchID"))
 				.combinationKey(ConstantCombination.class.getName())
 				.combinationOption(ConstantCombination.K_CONSTANT, 1)
 				.underlying("events")
@@ -140,7 +140,7 @@ public class WorldCupPlayersSchema {
 		measures.add(Partitionor.builder()
 				.name("coach_score")
 				.combinationKey(EventsScoreCombination.class.getName())
-				.groupBy(GroupByColumns.named("Coach name"))
+				.groupBy(GroupByColumns.named("Coach Name"))
 				.underlyings(ImmutableList.of("goal_count", "redcard_count", "match_count"))
 				.aggregationKey(AvgAggregation.KEY)
 				.build());
@@ -247,8 +247,8 @@ public class WorldCupPlayersSchema {
 				.build()
 				.leftJoin(j -> j.table(DSL.table("WorldCupMatches"))
 						.alias("WorldCupMatches")
-						.on("MatchId", "MatchID")
-						.on("RoundId", "RoundID"));
+						.onSame("MatchID")
+						.onSame("RoundID"));
 	}
 
 	// `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` as we can not use PreparedStatement on FROM clause.
@@ -293,8 +293,8 @@ public class WorldCupPlayersSchema {
 		MapTableAliaser aliaser = MapTableAliaser.builder()
 				.aliasToOriginals(snowflakeBuilder(dslSupplier).getAliasToOriginal())
 				// TODO Need to progress on caseSensitivity
-				.aliasToOriginal("MatchID", "WorldCupPlayers.MatchId")
-				.aliasToOriginal("RoundID", "WorldCupPlayers.RoundId")
+				// .aliasToOriginal("MatchID", "WorldCupPlayers.MatchID")
+				// .aliasToOriginal("RoundID", "WorldCupPlayers.RoundId")
 				.build();
 		return schema.openCubeWrapperBuilder()
 				.name(worldCupSchema.getName())

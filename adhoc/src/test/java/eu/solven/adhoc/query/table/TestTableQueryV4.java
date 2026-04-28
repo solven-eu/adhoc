@@ -214,4 +214,26 @@ public class TestTableQueryV4 {
 		Assertions.assertThat(v3.getAggregators().stream().map(FilteredAggregator::getAlias).toList())
 				.containsExactly("price");
 	}
+
+	// --- getColumns ---
+
+	@Test
+	public void getColumns_skipsEmptyAggregatorColumnName() {
+		// Aggregator.empty() carries an `EmptyAggregation`; it never reads from the table — its column name
+		// (defaulted to its name "empty") is a placeholder, not a real column. `getColumns` is consumed by
+		// downstream JOIN-pruning to decide which tables a query touches, so feeding it the placeholder would
+		// either spuriously pull in a join (if the supplier blindly trusts it) or trigger a strict-mode
+		// rejection in `PrunedJoinsJooqTableSupplier.computeNeededAliases`. Empty aggregators must be skipped.
+		FilteredAggregator aggEmpty = FilteredAggregator.builder().aggregator(Aggregator.empty()).build();
+
+		TableQueryV4 v4 = TableQueryV4.builder()
+				.groupByToAggregators(ImmutableSetMultimap.of(gbCountry, aggSum, gbCountry, aggEmpty))
+				.build();
+
+		Set<String> columns = TableQueryV4.getColumns(v4);
+
+		// `country` from the groupBy and `price` from the real aggregator must be present; the empty
+		// aggregator's "empty" placeholder column name must not.
+		Assertions.assertThat(columns).contains("country", "price").doesNotContain("empty");
+	}
 }

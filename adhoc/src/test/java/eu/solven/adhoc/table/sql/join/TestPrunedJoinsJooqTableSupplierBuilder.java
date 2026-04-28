@@ -100,6 +100,44 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 		Assertions.assertThat(pruned.toString()).isEqualTo("\"fact\"");
 	}
 
+	@Test
+	public void testNoJoin_whenOnlyBaseColumnsReferenced_joinedColumn() {
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		builder.leftJoin(j -> j.table(DSL.table("dim_a"))
+				.alias("a")
+				.onSame("id")
+				.providedColumns(Set.of("id", "a_name", "a_code")));
+
+		// query the base column involved in a join
+		TableQueryV4 q = queryGroupBy("id", "amount");
+
+		TableLike<?> pruned = supplier(builder).tableFor(q);
+
+		// FROM should be just the base table — no joins. jOOQ collapses `fact "fact"` (name == alias) to `"fact"`.
+		Assertions.assertThat(pruned.toString()).isEqualTo("\"fact\"");
+	}
+
+	@Test
+	public void testNoJoin_whenOnlyBaseColumnsReferenced_joinedColumn_rightSide() {
+		PrunedJoinsJooqTableSupplierBuilder builder = newBuilder();
+		builder.leftJoin(j -> j.table(DSL.table("dim_a"))
+				.alias("a")
+				.onSame("id")
+				.providedColumns(Set.of("id", "a_name", "a_code")));
+
+		// query the base column involved in a join
+		TableQueryV4 q = queryGroupBy("a.id", "amount");
+
+		TableLike<?> pruned = supplier(builder).tableFor(q);
+
+		// FROM should be just the base table — no joins. jOOQ collapses `fact "fact"` (name == alias) to `"fact"`.
+		Assertions.assertThat(pruned.toString()).isEqualTo("""
+				fact "fact"
+				  left outer join dim_a "a"
+				    on "fact"."id" = "a"."id"
+								""".strip());
+	}
+
 	// ── 2. Leaf-column query includes full ancestor chain ────────────────────
 
 	@Test

@@ -44,6 +44,7 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.top.AdhocTopClause;
@@ -312,7 +313,12 @@ public class TableQueryV4 implements ITableQuery {
 		columns.addAll(FilterHelpers.getFilteredColumns(tableQuery.getFilter()));
 
 		for (FilteredAggregator fa : tableQuery.getAggregators()) {
-			columns.add(fa.getAggregator().getColumnName());
+			// Skip empty aggregators — they never read from the table; their `columnName` defaults to the
+			// aggregator's name ("empty") which is a placeholder, not a real column. Including it here would
+			// either feed downstream JOIN-pruning a non-existent column or trigger strict-mode rejection.
+			if (!EmptyAggregation.isEmpty(fa.getAggregator())) {
+				columns.add(fa.getAggregator().getColumnName());
+			}
 			columns.addAll(FilterHelpers.getFilteredColumns(fa.getFilter()));
 		}
 

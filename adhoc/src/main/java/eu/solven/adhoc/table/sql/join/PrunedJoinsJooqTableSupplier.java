@@ -214,6 +214,13 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			if (ICountMeasuresConstants.ASTERISK.equals(col)) {
 				continue;
 			}
+
+			String originalColumn = schema.getAliasToOriginal().get(col);
+			if (originalColumn != null) {
+				col = originalColumn;
+			}
+
+			// BEWARE CaseSensitivity would play a role around here
 			String owner = index.get(col);
 			if (owner != null) {
 				if (!owner.equals(baseAlias)) {
@@ -329,11 +336,13 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			// matches `aliasToOriginal`'s "left/parent wins" convention and the existing per-join `putIfAbsent`
 			// semantics.
 			boolean dotFreeBase = baseAlias.indexOf('.') < 0;
-			for (String column : baseFuture.join()) {
+			Set<String> baseColumns = baseFuture.join();
+			for (String column : baseColumns) {
 				idx.putIfAbsent(column, baseAlias);
 				if (dotFreeBase && column.indexOf('.') < 0) {
 					idx.putIfAbsent(baseAlias + "." + column, baseAlias);
 				}
+				// Might be redundant with JooqTableSupplierBuilder.registerInAliaser(Name, Name)
 				idx.putIfAbsent(DSL.name(baseAlias, column).toString(), baseAlias);
 			}
 			columnToAlias = idx;
