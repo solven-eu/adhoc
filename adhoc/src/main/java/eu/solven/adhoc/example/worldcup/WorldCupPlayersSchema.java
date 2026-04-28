@@ -71,8 +71,9 @@ import eu.solven.adhoc.table.sql.JooqTableQueryFactory;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.table.sql.join.JooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.JooqTableSupplierBuilder;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
@@ -83,7 +84,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "checkstyle:MagicNumber" })
+@RequiredArgsConstructor
 public class WorldCupPlayersSchema {
+	@lombok.NonNull
+	final IDSLSupplier dslSupplier;
+
 	public String getName() {
 		return "WorldCupPlayers";
 	}
@@ -145,7 +150,7 @@ public class WorldCupPlayersSchema {
 					.name(measure + ".previousWorldCup")
 					.editorKey(SimpleFilterEditor.KEY)
 					.editorOptions(
-							ImmutableMap.of(SimpleFilterEditor.P_SHIFTED, ImmutableMap.of("year", shitYearFunction())))
+							ImmutableMap.of(SimpleFilterEditor.P_SHIFTED, ImmutableMap.of("Year", shitYearFunction())))
 					.underlying(measure)
 					.build());
 		});
@@ -155,7 +160,7 @@ public class WorldCupPlayersSchema {
 					.name(measure + ".sinceInception")
 					.editorKey(SimpleFilterEditor.KEY)
 					.editorOptions(
-							ImmutableMap.of(SimpleFilterEditor.P_SHIFTED, ImmutableMap.of("year", upToFunction())))
+							ImmutableMap.of(SimpleFilterEditor.P_SHIFTED, ImmutableMap.of("Year", upToFunction())))
 					.underlying(measure)
 					.build());
 		});
@@ -168,7 +173,7 @@ public class WorldCupPlayersSchema {
 					.name(measure + ".sinceInception2")
 					.decompositionKey(CumulatingDecomposition.class.getName())
 					.decompositionOption(DuplicatingDecomposition.K_COLUMN_TO_COORDINATES,
-							ImmutableMap.of("year", years))
+							ImmutableMap.of("Year", years))
 					.decompositionOption(CumulatingDecomposition.K_FILTER_EDITOR, upToEditor())
 					.underlying(measure)
 					.build());
@@ -191,7 +196,7 @@ public class WorldCupPlayersSchema {
 
 	@SuppressWarnings({ "checkstyle:AvoidInlineConditionals" })
 	protected IFilterEditor upToEditor() {
-		return f -> SimpleFilterEditor.shiftIfPresent(f, "year", upToFunction());
+		return f -> SimpleFilterEditor.shiftIfPresent(f, "Year", upToFunction());
 	}
 
 	@SuperBuilder
@@ -209,8 +214,6 @@ public class WorldCupPlayersSchema {
 	}
 
 	public ITableWrapper getTable(String tableName) {
-		IDSLSupplier dslSupplier = DuckDBHelper.inMemoryDSLSupplier();
-
 		DSLContext dslContext = dslSupplier.getDSLContext();
 
 		dslContext.connection(connection -> {
@@ -218,10 +221,10 @@ public class WorldCupPlayersSchema {
 			loadParquetToTable(connection, new ClassPathResource("/datasets/worldcup/WorldCupMatches.parquet"));
 		});
 
-		JooqSnowflakeSchemaBuilder worldCupPlayers = snowflakeBuilder();
+		JooqTableSupplierBuilder worldCupPlayers = snowflakeBuilder(dslSupplier);
 
 		JooqTableWrapperParameters tableParameters =
-				DuckDBHelper.parametersBuilder(dslSupplier).table(worldCupPlayers.getSnowflakeTable()).build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableSupplier(worldCupPlayers.build()).build();
 
 		return new JooqTableWrapper(tableName, tableParameters) {
 
@@ -229,15 +232,16 @@ public class WorldCupPlayersSchema {
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 				return WorldCupQueryFactory.builder()
 						.operatorFactory(tableParameters.getOperatorFactory())
-						.table(tableParameters.getTable())
+						.tableSupplier(tableParameters.getTableSupplier())
 						.dslContext(dslContext)
 						.build();
 			}
 		};
 	}
 
-	private JooqSnowflakeSchemaBuilder snowflakeBuilder() {
-		return JooqSnowflakeSchemaBuilder.builder()
+	private JooqTableSupplierBuilder snowflakeBuilder(IDSLSupplier dslSupplier) {
+		return JooqTableSupplierBuilder.builder()
+				.dslSupplier(dslSupplier)
 				.baseTable(DSL.table("WorldCupPlayers"))
 				.baseTableAlias("WorldCupPlayers")
 				.build()
@@ -286,17 +290,16 @@ public class WorldCupPlayersSchema {
 			WorldCupPlayersSchema worldCupSchema,
 			ITableWrapper table,
 			IMeasureForest forest) {
+		MapTableAliaser aliaser = MapTableAliaser.builder()
+				.aliasToOriginals(snowflakeBuilder(dslSupplier).getAliasToOriginal())
+				// TODO Need to progress on caseSensitivity
+				.aliasToOriginal("MatchID", "WorldCupPlayers.MatchId")
+				.aliasToOriginal("RoundID", "WorldCupPlayers.RoundId")
+				.build();
 		return schema.openCubeWrapperBuilder()
 				.name(worldCupSchema.getName())
 				.forest(forest)
 				.table(table)
-				.columnsManager(ColumnsManager.builder()
-						.aliaser(MapTableAliaser.builder()
-								.aliasToOriginals(snowflakeBuilder().getAliasToOriginal())
-								// TODO Need to progress on caseSensitivity
-								.aliasToOriginal("MatchID", "WorldCupPlayers.MatchId")
-								.aliasToOriginal("RoundID", "WorldCupPlayers.RoundId")
-								.build())
-						.build());
+				.columnsManager(ColumnsManager.builder().aliaser(aliaser).build());
 	}
 }

@@ -106,8 +106,11 @@ public class TestTableQuery_DuckDb_Tpch extends ADuckDbJooqTest {
 
 	@Override
 	public CubeWrapperBuilder makeCube() {
-		return tpchSchema
-				.makeCube(AdhocSchema.builder().engine(engine()).env(env).build(), tpchSchema, table(), forest);
+		return tpchSchema.makeCube(dslSupplier,
+				AdhocSchema.builder().engine(engine()).env(env).build(),
+				tpchSchema,
+				table(),
+				forest);
 	}
 
 	/**

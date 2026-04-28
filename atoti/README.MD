@@ -97,7 +97,7 @@ Key steps:
 ```mermaid
 flowchart LR
     SQL[("SQL database<br/>(or DuckDB, Arrow, ...)")]
-    View["Flat view<br/>FROM fact LEFT JOIN enrich1 ... LEFT JOIN enrichN<br/>(e.g. via JooqSnowflakeSchemaBuilder)"]
+    View["Flat view<br/>FROM fact LEFT JOIN enrich1 ... LEFT JOIN enrichN<br/>(e.g. via JooqTableSupplierBuilder)"]
     subgraph Adhoc["Adhoc scope"]
         Forest["Tree of measures<br/>Combinator / Partitionor / Filtrator / Dispatchor"]
     end
@@ -113,7 +113,7 @@ Architectural trade-off on *when* denormalization happens:
 
 - **Tree of measures**: translated automatically via `AtotiMeasureToAdhoc` (see [Translating PostProcessors](#translating-postprocessors) below). The translator produces an Adhoc forest but not the PostProcessor implementations.
 - **Business logic**: each PostProcessor must be manually rewritten as a `Combinator`, `Partitionor`, `Filtrator`, or `Dispatchor`. See the per-class migration strategy below.
-- **Data layer**: the project must expose a view equivalent to the flat pre-aggregated cube. For JDBC backends this is typically a SQL clause `FROM <factTable> LEFT JOIN <enrichment1> ... LEFT JOIN <enrichmentN>` — see `JooqSnowflakeSchemaBuilder` for a builder helper that mirrors a snowflake schema.
+- **Data layer**: the project must expose a view equivalent to the flat pre-aggregated cube. For JDBC backends this is typically a SQL clause `FROM <factTable> LEFT JOIN <enrichment1> ... LEFT JOIN <enrichmentN>` — see `JooqTableSupplierBuilder` for a builder helper that mirrors a snowflake schema.
 - **Sibling in-memory stores** (the standalone stores the Datastore holds but does not JOIN into the cube) become sibling Adhoc measures or external tables referenced from a `Combinator`.
 
 

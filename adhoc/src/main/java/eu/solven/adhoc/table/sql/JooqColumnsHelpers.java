@@ -27,9 +27,9 @@ import java.util.List;
 import org.jooq.Field;
 import org.jooq.TableLike;
 
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
+import eu.solven.adhoc.util.Blocking;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -57,14 +57,12 @@ public final class JooqColumnsHelpers {
 	}
 
 	/**
-	 * @param dslSupplier
-	 *            JDBC backend used to run the probe query
 	 * @return a fresh {@link IJooqColumnsResolver} running {@code SELECT * FROM <table> LIMIT 0} per lookup. Probe
-	 *         results are cached upstream by {@link PrunedJoinsJooqSnowflakeSchemaBuilder} and by
+	 *         results are cached upstream by {@link PrunedJoinsJooqTableSupplierBuilder} and by
 	 *         {@link JooqTableWrapper}; this resolver itself performs no caching.
 	 */
-	public static IJooqColumnsResolver dbProbe(IDSLSupplier dslSupplier) {
-		return new DbProbeResolver(dslSupplier);
+	public static IJooqColumnsResolver dbProbe() {
+		return new DbProbeResolver();
 	}
 
 	/**
@@ -78,7 +76,7 @@ public final class JooqColumnsHelpers {
 		}
 
 		@Override
-		public List<Field<?>> columnsOf(TableLike<?> table) {
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			return List.of(table.asTable().fields());
 		}
 	}
@@ -91,11 +89,10 @@ public final class JooqColumnsHelpers {
 	@RequiredArgsConstructor
 	@Slf4j
 	static final class DbProbeResolver implements IJooqColumnsResolver {
-		@NonNull
-		private final IDSLSupplier dslSupplier;
 
+		@Blocking
 		@Override
-		public List<Field<?>> columnsOf(TableLike<?> table) {
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			// Log in INFO as the round-trip may be slow on large-schema JDBC drivers.
 			log.info("Fetching fields via SELECT * LIMIT 0 of table={}",
 					PepperLogHelper

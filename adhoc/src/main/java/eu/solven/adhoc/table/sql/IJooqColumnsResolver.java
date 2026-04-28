@@ -27,7 +27,8 @@ import java.util.List;
 import org.jooq.Field;
 import org.jooq.TableLike;
 
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
+import eu.solven.adhoc.util.Blocking;
 
 /**
  * Resolves the columns of a jOOQ {@link TableLike} — name and type carried by each {@link Field}.
@@ -36,10 +37,10 @@ import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
  * <ul>
  * <li>Reading {@code table.asTable().fields()} — works for code-generated or {@code VALUES}-based tables.</li>
  * <li>Probing the DB via {@code SELECT * LIMIT 0} — necessary for plain {@code DSL.table(Name)} whose fields jOOQ
- * cannot introspect. See {@link PrunedJoinsJooqSnowflakeSchemaBuilder#dslProbeResolver(IDSLSupplier)}.</li>
+ * cannot introspect. See {@link PrunedJoinsJooqTableSupplierBuilder#dslProbeResolver(IDSLSupplier)}.</li>
  * </ul>
  * Shared by {@link JooqTableWrapper} (to populate {@code getColumns()} schema introspection) and
- * {@link PrunedJoinsJooqSnowflakeSchemaBuilder} (to decide which joins can be pruned from the {@code FROM} clause).
+ * {@link PrunedJoinsJooqTableSupplierBuilder} (to decide which joins can be pruned from the {@code FROM} clause).
  * Configuring the resolver on {@link JooqTableWrapperParameters#getColumnsResolver()} makes both paths pick up the same
  * customisation.
  *
@@ -49,10 +50,14 @@ import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
 public interface IJooqColumnsResolver {
 
 	/**
+	 * 
+	 * @param dslSupplier
+	 *            JDBC backend used to run the probe query
 	 * @param table
 	 *            the jOOQ {@link TableLike} whose columns are being queried
 	 * @return the list of jOOQ {@link Field}s provided by {@code table}; may be empty if the columns cannot be
 	 *         determined
 	 */
-	List<Field<?>> columnsOf(TableLike<?> table);
+	@Blocking
+	List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table);
 }

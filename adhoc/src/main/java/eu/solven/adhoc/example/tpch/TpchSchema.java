@@ -49,7 +49,7 @@ import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.table.sql.join.JooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.JooqTableSupplierBuilder;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import lombok.extern.slf4j.Slf4j;
 
@@ -130,10 +130,10 @@ public class TpchSchema {
 
 		dslContext.connection(this::loadTpchData);
 
-		JooqSnowflakeSchemaBuilder tpch = snowflakeBuilder();
+		JooqTableSupplierBuilder tpch = snowflakeBuilder(dslSupplier);
 
 		JooqTableWrapperParameters tableParameters =
-				DuckDBHelper.parametersBuilder(dslSupplier).table(tpch.getSnowflakeTable()).build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableSupplier(tpch.build()).build();
 
 		return new JooqTableWrapper(tableName, tableParameters);
 	}
@@ -151,11 +151,12 @@ public class TpchSchema {
 		}
 	}
 
-	protected JooqSnowflakeSchemaBuilder snowflakeBuilder() {
+	protected JooqTableSupplierBuilder snowflakeBuilder(IDSLSupplier dslSupplier) {
 		// TPC-H snowflake schema — see https://docs.snowflake.com/en/user-guide/sample-data-tpch
 		// lineitem is the central fact table; all other tables are reached via LEFT JOINs so that every
 		// line item is preserved even when dimension rows are missing.
-		return JooqSnowflakeSchemaBuilder.builder()
+		return JooqTableSupplierBuilder.builder()
+				.dslSupplier(dslSupplier)
 				.baseTable(DSL.table("lineitem"))
 				.baseTableAlias("lineitem")
 				.build()
@@ -182,18 +183,18 @@ public class TpchSchema {
 				.leftJoin(j -> j.table(DSL.table("supplier")).alias("supplier").on("l_suppkey", "s_suppkey"));
 	}
 
-	public CubeWrapperBuilder makeCube(AdhocSchema schema,
+	public CubeWrapperBuilder makeCube(IDSLSupplier dslSupplier,
+			AdhocSchema schema,
 			TpchSchema tpchSchema,
 			ITableWrapper table,
 			IMeasureForest forest) {
+		MapTableAliaser aliaser =
+				MapTableAliaser.builder().aliasToOriginals(snowflakeBuilder(dslSupplier).getAliasToOriginal()).build();
+
 		return schema.openCubeWrapperBuilder()
 				.name(tpchSchema.getName())
 				.forest(forest)
 				.table(table)
-				.columnsManager(ColumnsManager.builder()
-						.aliaser(MapTableAliaser.builder()
-								.aliasToOriginals(snowflakeBuilder().getAliasToOriginal())
-								.build())
-						.build());
+				.columnsManager(ColumnsManager.builder().aliaser(aliaser).build());
 	}
 }

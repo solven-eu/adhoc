@@ -41,6 +41,9 @@ import org.jooq.impl.DSL;
 import com.google.common.collect.Lists;
 
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
+import eu.solven.adhoc.table.sql.IDSLSupplier;
+import eu.solven.adhoc.table.sql.IJooqTableSupplier;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder.PrunedJoinsJooqTableSupplierBuilderBuilder;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -54,7 +57,7 @@ import lombok.NonNull;
  * 
  * @author Benoit Lacelle
  */
-public class JooqSnowflakeSchemaBuilder {
+public class JooqTableSupplierBuilder {
 	// JOINs often refers the same name from the joined tables: this map will record the qualified field to refer when
 	// the unqualified field is queried
 	// e.g. if `FROM table t JOIN joined j ON t.k = j.k`, then may decide that `k` always refers to `t.k`
@@ -63,6 +66,9 @@ public class JooqSnowflakeSchemaBuilder {
 	// BEWARE Naming should follow MapTableAliaser
 	@Getter
 	final Map<String, String> aliasToOriginal = new ConcurrentHashMap<>();
+
+	@NonNull
+	final IDSLSupplier dslSupplier;
 
 	@NonNull
 	final Table<Record> baseTable;
@@ -80,15 +86,19 @@ public class JooqSnowflakeSchemaBuilder {
 
 	// https://stackoverflow.com/questions/30717640/how-to-exclude-property-from-lombok-builder
 	// `snowflakeTable` is not built by the builder
-	@Builder
-	public JooqSnowflakeSchemaBuilder(Table<Record> baseTable, String baseTableAlias) {
-		// this.queriedToUnderlying=queriedToUnderlying;
+	@Builder(builderMethodName = "legacyBuilder")
+	public JooqTableSupplierBuilder(IDSLSupplier dslSupplier, Table<Record> baseTable, String baseTableAlias) {
+		this.dslSupplier = dslSupplier;
 		this.baseTable = baseTable;
 		this.baseTableAlias = baseTableAlias;
 
 		this.snowflakeTable = baseTable.as(baseTableAlias);
 
 		this.latestJoin = baseTableAlias;
+	}
+
+	public static PrunedJoinsJooqTableSupplierBuilderBuilder builder() {
+		return PrunedJoinsJooqTableSupplierBuilder.prunedBuilder();
 	}
 
 	/**
@@ -115,7 +125,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 *            populates the per-join builder.
 	 * @return this
 	 */
-	public JooqSnowflakeSchemaBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
+	public JooqTableSupplierBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
 		JooqJoinBuilder joinBuilder = new JooqJoinBuilder();
 		consumer.accept(joinBuilder);
 		// Empty-consumer fast path: the caller chose to skip this JOIN at runtime (e.g. wrapped in a feature
@@ -154,7 +164,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 *             skip dynamically.
 	 */
 	@Deprecated(since = "Prefer leftJoin(Consumer)")
-	public JooqSnowflakeSchemaBuilder leftJoin(Table<?> joinedTable,
+	public JooqTableSupplierBuilder leftJoin(Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
 		return leftJoin(baseTableAlias, joinedTable, joinName, on);
@@ -190,7 +200,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 *             skip dynamically. Used internally to commit a {@link JooqJoinBuilder}.
 	 */
 	@Deprecated(since = "Prefer leftJoin(Consumer)")
-	public JooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
+	public JooqTableSupplierBuilder leftJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
@@ -212,7 +222,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#onSame(String)}.
 	 */
 	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)")
-	public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias,
+	public JooqTableSupplierBuilder joinHomo(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
 			List<String> on) {
@@ -223,7 +233,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#onSame(String)}.
 	 */
 	@Deprecated(since = "Prefer leftJoin(Consumer) + onSame(...)")
-	public JooqSnowflakeSchemaBuilder joinHomo(String leftTableAlias,
+	public JooqTableSupplierBuilder joinHomo(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
 			String on,
@@ -242,7 +252,7 @@ public class JooqSnowflakeSchemaBuilder {
 		}
 	}
 
-	public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
+	public JooqTableSupplierBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
 		snowflakeTable = snowflakeTable.leftJoin(joinedTable).on(on.toArray(Condition[]::new));
 
 		// BEWARE Should we set `latestJoin` to null? No as it may has just been set by the caller. But if it is not the
@@ -257,7 +267,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 *            enable chaining definitions without inlining
 	 * @return this
 	 */
-	public JooqSnowflakeSchemaBuilder accept(Consumer<JooqSnowflakeSchemaBuilder> builderConsumer) {
+	public JooqTableSupplierBuilder accept(Consumer<JooqTableSupplierBuilder> builderConsumer) {
 		builderConsumer.accept(this);
 
 		return this;
@@ -269,7 +279,7 @@ public class JooqSnowflakeSchemaBuilder {
 	 *            enable chaining definitions without inlining
 	 * @return this
 	 */
-	public JooqSnowflakeSchemaBuilder accept(Iterable<Consumer<JooqSnowflakeSchemaBuilder>> builderConsumers) {
+	public JooqTableSupplierBuilder accept(Iterable<Consumer<JooqTableSupplierBuilder>> builderConsumers) {
 		builderConsumers.forEach(builderConsumer -> builderConsumer.accept(this));
 
 		return this;
@@ -285,11 +295,21 @@ public class JooqSnowflakeSchemaBuilder {
 	 *            the name of the column in the table. Do not qualify it for current table
 	 * @return current builder
 	 */
-	public JooqSnowflakeSchemaBuilder withAlias(String alias, String original) {
+	public JooqTableSupplierBuilder withAlias(String alias, String original) {
 		return withAliases(Map.of(alias, original));
 	}
 
-	public JooqSnowflakeSchemaBuilder withAliases(Map<String, String> aliasToOriginal) {
+	/**
+	 * @return an {@link IJooqTableSupplier} suitable for
+	 *         {@code JooqTableWrapperParameters.builder().tableSupplier(...)}. The base implementation returns a
+	 *         constant supplier wrapping {@link #getSnowflakeTable()}; subclasses with per-query strategies (e.g.
+	 *         {@link PrunedJoinsJooqTableSupplierBuilder}) override this to return a schema-aware supplier.
+	 */
+	public IJooqTableSupplier build() {
+		return IJooqTableSupplier.constant(getSnowflakeTable());
+	}
+
+	public JooqTableSupplierBuilder withAliases(Map<String, String> aliasToOriginal) {
 		if (latestJoin == null) {
 			throw new IllegalStateException("Can not register an alias over an unamed JOIN");
 		}
