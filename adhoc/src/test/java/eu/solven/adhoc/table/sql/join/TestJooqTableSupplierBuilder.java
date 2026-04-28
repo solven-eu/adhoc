@@ -178,4 +178,40 @@ public class TestJooqTableSupplierBuilder {
 				.containsEntry("alias2", "\"joined2\".\"joined2A\"")
 				.hasSize(4);
 	}
+
+	// `from(...)` is purely a convenience that prepends a single alias to unqualified left columns. When the
+	// left side of an ON clause needs to mix columns from MULTIPLE earlier tables (typical multi-key join such
+	// as `(a.id, b.color) → c`), the caller can omit `from(...)` entirely and pass each left column as a
+	// fully-qualified two-part name. `parseOnName` returns multipart names as-is without prepending anything,
+	// so `a.id` resolves to `a.id` and `b.color` resolves to `b.color` — both correctly bound to their own
+	// owning table even though no single `from(...)` could express the pair.
+	@Test
+	public void testSnowflake_multiTableLeftSide_noFrom_qualifiesEachLeftColumn() {
+		JooqTableSupplierBuilder snowflakeBuilder =
+				JooqTableSupplierBuilder.builder().baseTable(DSL.table("base_t")).baseTableAlias("base").build();
+
+		snowflakeBuilder
+				// base → a (single-key join, default `from` = base)
+				.leftJoin(j -> j.table(DSL.table("table_a")).alias("a").on("a_id", "id"))
+				// base → b (single-key join, default `from` = base)
+				.leftJoin(j -> j.table(DSL.table("table_b")).alias("b").on("b_id", "id"))
+				// (a, b) → c on (a.id = c.a_id AND b.color = c.color) — multi-table left side: NO `from(...)`,
+				// each left column is given as the fully-qualified `<alias>.<column>` form.
+				.leftJoin(j -> j.table(DSL.table("table_c")).alias("c").on("a.id", "a_id").on("b.color", "color"));
+
+		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
+
+		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
+				base_t "base"
+				  left outer join table_a "a"
+				    on "base"."a_id" = "a"."id"
+				  left outer join table_b "b"
+				    on "base"."b_id" = "b"."id"
+				  left outer join table_c "c"
+				    on (
+				      "a"."id" = "c"."a_id"
+				      and "b"."color" = "c"."color"
+				    )
+								""".trim());
+	}
 }

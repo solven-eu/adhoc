@@ -34,7 +34,6 @@ import org.jooq.Condition;
 import org.jooq.Name;
 import org.jooq.Parser;
 import org.jooq.Record;
-import org.jooq.SQLDialect;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 
@@ -44,6 +43,7 @@ import eu.solven.adhoc.table.sql.AdhocJooqHelper;
 import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder.PrunedJoinsJooqTableSupplierBuilderBuilder;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
@@ -68,6 +68,7 @@ public class JooqTableSupplierBuilder {
 	final Map<String, String> aliasToOriginal = new ConcurrentHashMap<>();
 
 	@NonNull
+	@Getter(AccessLevel.PACKAGE)
 	final IDSLSupplier dslSupplier;
 
 	@NonNull
@@ -81,9 +82,7 @@ public class JooqTableSupplierBuilder {
 
 	String latestJoin;
 
-	// @NonNull
-	// @Default
-	Supplier<Parser> parserSupplier = DSL.using(SQLDialect.DUCKDB)::parser;
+	final Supplier<Parser> parserSupplier = () -> getDslSupplier().getDSLContext().parser();
 
 	// https://stackoverflow.com/questions/30717640/how-to-exclude-property-from-lombok-builder
 	// `snowflakeTable` is not built by the builder
@@ -94,8 +93,6 @@ public class JooqTableSupplierBuilder {
 		this.baseTableAlias = baseTableAlias;
 
 		this.snowflakeTable = baseTable.as(baseTableAlias);
-
-		this.latestJoin = baseTableAlias;
 	}
 
 	public static PrunedJoinsJooqTableSupplierBuilderBuilder builder() {
@@ -180,6 +177,7 @@ public class JooqTableSupplierBuilder {
 			Name name = AdhocJooqHelper.name(rawName, parserSupplier);
 
 			if (name.parts().length == 1) {
+				// Not qualified: we qualify with the default left table
 				name = DSL.name(DSL.name(leftTableAlias), name);
 			}
 
