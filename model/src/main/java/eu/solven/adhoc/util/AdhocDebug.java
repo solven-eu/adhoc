@@ -24,6 +24,8 @@ package eu.solven.adhoc.util;
 
 import java.util.Arrays;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.primitive.IValueProvider;
 import lombok.experimental.UtilityClass;
 
@@ -36,7 +38,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class AdhocDebug {
 
-	public static String toString(Object o) {
+	public static String toString(@Nullable Object o) {
 		if (o instanceof int[] array) {
 			return Arrays.toString(array);
 		} else if (o instanceof long[] array) {

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.query.groupby;
 
+import java.util.NoSuchElementException;
+
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -133,6 +135,23 @@ public class TestGroupByColumns {
 								GroupByColumns.of(CustomTestColumn.builder().name("someC").build()))))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("Ambiguous", "someC", CustomTestColumn.class.getName());
+	}
+
+	@Test
+	public void getColumn_present() {
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
+
+		Assertions.assertThat(groupBy.getColumn("a")).isEqualTo(ReferencedColumn.ref("a"));
+		Assertions.assertThat(groupBy.getColumn("b")).isEqualTo(ReferencedColumn.ref("b"));
+	}
+
+	@Test
+	public void getColumn_absent_throws() {
+		IGroupBy groupBy = GroupByColumns.named("a", "b");
+
+		Assertions.assertThatThrownBy(() -> groupBy.getColumn("missing"))
+				.isInstanceOf(NoSuchElementException.class)
+				.hasMessageContaining("missing");
 	}
 
 	@Test

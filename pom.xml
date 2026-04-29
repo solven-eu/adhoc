@@ -71,6 +71,8 @@
 		<lombok.version>1.18.46</lombok.version>
 		<!-- Error Prone — enabled only under the `errorprone` profile. Kept here so Dependabot can bump a single version token. -->
 		<errorprone.version>2.49.0</errorprone.version>
+		<!-- NullAway — Error Prone plugin doing flow-sensitive nullness analysis driven by JSpecify @NullMarked. -->
+		<nullaway.version>0.13.4</nullaway.version>
 
 		<pepper.version>5.7</pepper.version>
 
@@ -1110,6 +1112,17 @@
 										<artifactId>error_prone_core</artifactId>
 										<version>${errorprone.version}</version>
 									</path>
+									<path>
+										<!--
+											NullAway — flow-sensitive nullness analysis layered on top of Error Prone.
+											Driven by JSpecify @NullMarked: only packages already annotated are checked
+											(see `-XepOpt:NullAway:AnnotatedPackages` below), so unmigrated code stays
+											silent until it is opted in.
+										-->
+										<groupId>com.uber.nullaway</groupId>
+										<artifactId>nullaway</artifactId>
+										<version>${nullaway.version}</version>
+									</path>
 								</annotationProcessorPaths>
 								<compilerArgs combine.children="append">
 									<arg>-XDcompilePolicy=simple</arg>
@@ -1132,7 +1145,15 @@
 										  - StringConcatToTextBlock: NoSuchElementException on some literals
 										  - Immutable: throws on switch-expressions yielding method references
 									-->
-									<arg>-Xplugin:ErrorProne -Xep:EmptyBlockTag:WARN -Xep:MissingSummary:WARN -Xep:FunctionalInterfaceMethodChanged:OFF -Xep:StringConcatToTextBlock:OFF -Xep:Immutable:OFF</arg>
+									<!--
+										NullAway is opted-in per package via JSpecify `@NullMarked` (JSpecifyMode=true):
+										only annotated packages are checked, so unmigrated code stays silent. As a single
+										module's packages get marked, NullAway starts enforcing flow-sensitive nullness
+										on them at ERROR severity. To temporarily downgrade while migrating a noisy
+										module, set `-Xep:NullAway:WARN` instead of WARN→ERROR — do this in a profile,
+										not by editing this line, so the default stays strict.
+									-->
+									<arg>-Xplugin:ErrorProne -Xep:EmptyBlockTag:WARN -Xep:MissingSummary:WARN -Xep:FunctionalInterfaceMethodChanged:OFF -Xep:StringConcatToTextBlock:OFF -Xep:Immutable:OFF -Xep:NullAway:ERROR -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true</arg>
 									<!--
 										JEP 403: javac internals are strongly encapsulated by default on JDK 16+.
 										Error Prone inspects those internals to traverse the AST, so we re-open them

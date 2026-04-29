@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.primitive;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Able to consume a value which may be a different types, with the ability to handle primitive types without boxing.
  * 
@@ -61,7 +63,7 @@ public interface IThrowingValueReceiver extends IValueReceiver {
 	}
 
 	@Override
-	default void onObject(Object v) {
+	default void onObject(@Nullable Object v) {
 		try {
 			onObjectMayThrow(v);
 		} catch (Exception e) {
@@ -69,6 +71,6 @@ public interface IThrowingValueReceiver extends IValueReceiver {
 		}
 	}
 
-	void onObjectMayThrow(Object v) throws Exception;
+	void onObjectMayThrow(@Nullable Object v) throws Exception;
 
 }

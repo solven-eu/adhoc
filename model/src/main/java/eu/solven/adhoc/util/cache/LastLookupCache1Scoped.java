@@ -27,6 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * JDK-25 {@link ScopedValue}-backed variant of {@link LastLookupCache1}: the "last entry" is held in a tiny mutable
  * holder bound per scope instead of a {@link ThreadLocal}.
@@ -57,7 +59,9 @@ public class LastLookupCache1Scoped<V> {
 	// Mutable 1-cell holder. A scope binds one fresh instance; mutations happen inside the scope on a single thread.
 	// Not an AtomicReference, not volatile: no cross-thread visibility concerns inside a per-thread scope.
 	private static final class Holder {
+		@Nullable
 		Object key;
+		@Nullable
 		Object value;
 	}
 
@@ -85,7 +89,7 @@ public class LastLookupCache1Scoped<V> {
 	 */
 	// Reference equality is intentional (the whole point of the fast-path cache).
 	@SuppressWarnings({ "unchecked", "PMD.CompareObjectsWithEquals" })
-	public V getByRef(Object refKey) {
+	public @Nullable V getByRef(Object refKey) {
 		// `ScopedValue.orElse(null)` throws NPE in JDK 25 (Objects.requireNonNull on the fallback), so we have to use
 		// the isBound() + get() pair even though it's two probes.
 		if (!scope.isBound()) {

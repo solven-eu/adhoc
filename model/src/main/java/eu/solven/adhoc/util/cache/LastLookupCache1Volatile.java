@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Drop-in variant of {@link LastLookupCache1} that replaces the {@link ThreadLocal} last-entry holder with a single
  * {@code volatile} reference shared by all threads.
@@ -92,7 +94,7 @@ public class LastLookupCache1Volatile<V> {
 	 */
 	// Reference equality is intentional (the whole point of the fast-path cache).
 	@SuppressWarnings("PMD.CompareObjectsWithEquals")
-	public V getByRef(Object refKey) {
+	public @Nullable V getByRef(Object refKey) {
 		CacheEntry<Object, V> entry = lastEntry;
 		if (entry.key == refKey) {
 			return entry.value;

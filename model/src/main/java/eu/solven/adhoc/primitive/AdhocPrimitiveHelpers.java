@@ -25,6 +25,9 @@ package eu.solven.adhoc.primitive;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -79,7 +82,7 @@ public class AdhocPrimitiveHelpers {
 	 * @return a normalized version of the input. Typically as `long` for `long-like` and `double` for `double-like`.
 	 */
 	@Deprecated(since = "Unclear if this is legit")
-	public static Object normalizeValue(Object o) {
+	public static @Nullable Object normalizeValue(@Nullable Object o) {
 		if (o == null) {
 			return null;
 		}
@@ -134,7 +137,8 @@ public class AdhocPrimitiveHelpers {
 	public static ImmutableSet<?> normalizeValues(Collection<?> coordinates) {
 		ImmutableSet.Builder<Object> builder = ImmutableSet.builderWithExpectedSize(coordinates.size());
 
-		coordinates.forEach(rawValue -> builder.add(normalizeValue(rawValue)));
+		// `normalizeValue` returns null only for null inputs; preserve the prior NPE-on-null behaviour explicitly.
+		coordinates.forEach(rawValue -> builder.add(Objects.requireNonNull(normalizeValue(rawValue))));
 
 		return builder.build();
 	}
