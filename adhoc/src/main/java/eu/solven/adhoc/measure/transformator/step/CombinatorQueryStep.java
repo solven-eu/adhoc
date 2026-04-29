@@ -28,7 +28,6 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Ints;
 
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
@@ -40,6 +39,7 @@ import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.ISliceAndValueConsumer;
 import eu.solven.adhoc.dataframe.join.SliceAndMeasures;
 import eu.solven.adhoc.engine.IAdhocFactories;
+import eu.solven.adhoc.engine.IColumnFactory;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.CoalesceCombination;
@@ -106,7 +106,7 @@ public class CombinatorQueryStep extends AMeasureQueryStep {
 	}
 
 	public static int sumSizes(Collection<? extends ICuboid> underlyings) {
-		return Ints.saturatedCast(underlyings.stream().mapToLong(ICuboid::size).sum());
+		return IColumnFactory.sumSizes(underlyings);
 	}
 
 	@Override

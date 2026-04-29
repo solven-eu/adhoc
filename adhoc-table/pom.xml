@@ -64,6 +64,22 @@
 		</dependency>
 
 		<dependency>
+			<!-- Used for QuerySteps DAG -->
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-core</artifactId>
+			<version>${jgrapht.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- EvaluatedExpressionColumn -->
+			<groupId>com.ezylang</groupId>
+			<artifactId>EvalEx</artifactId>
+			<version>${evalex.ezylang.version}</version>
+			<!-- Many projects may not use EvalTranformation-->
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
 			<!-- ClassUtils — common-ancestor inference in InMemoryTable -->
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
@@ -95,6 +111,14 @@
 			<artifactId>duckdb_jdbc</artifactId>
 			<version>${duckdb.version}</version>
 			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<!-- @SuppressCleanthat — used by QueryWithLeftover -->
+			<groupId>io.github.solven-eu.cleanthat</groupId>
+			<artifactId>annotations</artifactId>
+			<version>2.25</version>
+			<scope>compile</scope>
 		</dependency>
 
 		<dependency>

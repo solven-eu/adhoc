@@ -20,33 +20,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.table.sql;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.jooq.conf.ParseNameCase;
+import org.jooq.conf.Settings;
 
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.UtilityClass;
 
-public class TestAdhocQueryId {
-	@Test
-	public void testQueryId() {
-		AdhocQueryId queryId = AdhocQueryIds.from("someCube", CubeQuery.builder().build());
+/**
+ * Helps switching Adhoc into Case-Sensitive or Case-Insensitive.
+ * 
+ * @author Benoit Lacelle
+ */
+@UtilityClass
+public class AdhocCaseInsensitivityUnsafe {
 
-		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
-		Assertions.assertThat(queryId.getParentQueryId()).isNull();
-		Assertions.assertThat(queryId.getQueryId()).isNotNull();
+	// Adhoc is currently case-sensitive b ydefault
+	// But many Database (DuckDB, PostgreSQL, RedShift) are caseInsensitive
+	// Some of them can be turned caseSensitive (RedShift)
+	// https://docs.aws.amazon.com/redshift/latest/dg/r_enable_case_sensitive_identifier.html
+	// Some of them will return by default the input identifiers (DuckDB)
+	// https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html#case-sensitivity-of-identifiers
+	@Setter
+	@Getter
+	private static boolean caseInsensitive = false;
+
+	public static Settings jooqSettings(boolean caseInsensitive) {
+		Settings settings = new Settings();
+
+		if (!caseInsensitive) {
+			// Adhoc being caseSensitive by default, we prefer to keep the case of encountered identifiers
+			settings.setParseNameCase(ParseNameCase.AS_IS);
+		}
+
+		return settings;
 	}
 
-	@Test
-	public void testQueryId_withparent() {
-		AdhocQueryId queryId = AdhocQueryIds.from("parentCube", CubeQuery.builder().build());
-
-		AdhocQueryId subQueryId = AdhocQueryIds.from("subCube",
-				AdhocSubQuery.builder().subQuery(CubeQuery.builder().build()).parentQueryId(queryId).build());
-
-		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
-		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());
-		Assertions.assertThat(subQueryId.getQueryId()).isNotNull().isNotEqualTo(queryId.getQueryId());
-	}
 }

@@ -53,6 +53,7 @@ import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.AdhocQueryIds;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableQueryPod;
@@ -76,8 +77,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IMeasureResolver,
-		IHasMeasures, IIsCancellable, ITableQueryPod {
+public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IIsCancellable, ITableQueryPod {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -270,7 +270,7 @@ public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndS
 				throw new IllegalStateException("table must not be null");
 			}
 			if (queryId == null) {
-				queryId = AdhocQueryId.from(table.getName(), query);
+				queryId = AdhocQueryIds.from(table.getName(), query);
 			}
 			if (columnsManager == null) {
 				columnsManager = ColumnsManager.builder().build();

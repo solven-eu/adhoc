@@ -22,31 +22,43 @@
  */
 package eu.solven.adhoc.query;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.util.UUID;
 
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.util.AdhocUnsafe;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
+import lombok.Value;
 
-public class TestAdhocQueryId {
-	@Test
-	public void testQueryId() {
-		AdhocQueryId queryId = AdhocQueryIds.from("someCube", CubeQuery.builder().build());
+/**
+ * An {@link AdhocQueryId} is useful to attach properly logs to a given query, especially in logs and eventBus events.
+ * 
+ * @author Benoit Lacelle
+ */
+@Value
+@Builder
+public class AdhocQueryId {
+	@Default
+	long queryIndex = AdhocUnsafe.nextQueryIndex();
 
-		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
-		Assertions.assertThat(queryId.getParentQueryId()).isNull();
-		Assertions.assertThat(queryId.getQueryId()).isNotNull();
-	}
+	// queryId is defaulted to a random UUID, with very low collision probability
+	@NonNull
+	@Default
+	UUID queryId = AdhocUnsafe.randomUUID();
 
-	@Test
-	public void testQueryId_withparent() {
-		AdhocQueryId queryId = AdhocQueryIds.from("parentCube", CubeQuery.builder().build());
+	// a query may have a parent, for instance in a CompositeCube, the compositeQuery would be the parent of the
+	// underlyingQuerys
+	@Default
+	UUID parentQueryId = null;
 
-		AdhocQueryId subQueryId = AdhocQueryIds.from("subCube",
-				AdhocSubQuery.builder().subQuery(CubeQuery.builder().build()).parentQueryId(queryId).build());
+	// Some queryHash to help as a human to see/search given query is re-used or edited
+	@NonNull
+	@Default
+	String queryHash = "";
 
-		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
-		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());
-		Assertions.assertThat(subQueryId.getQueryId()).isNotNull().isNotEqualTo(queryId.getQueryId());
-	}
+	@Default
+	boolean cubeElseTable = true;
+
+	@NonNull
+	String cube;
 }

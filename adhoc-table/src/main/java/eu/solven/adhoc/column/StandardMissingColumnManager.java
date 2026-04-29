@@ -20,33 +20,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.column;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.filter.value.NullMatcher;
+import eu.solven.adhoc.map.ICoordinateNormalizer;
+import eu.solven.adhoc.map.StandardCoordinateNormalizer;
+import eu.solven.adhoc.util.IHasName;
+import lombok.Builder;
+import lombok.Builder.Default;
+import lombok.NonNull;
 
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+/**
+ * A simple implementation for {@link IMissingColumnManager}. You can use it as starting-point for your projects needs.
+ * 
+ * @author Benoit Lacelle
+ */
+@Builder
+public class StandardMissingColumnManager implements IMissingColumnManager {
 
-public class TestAdhocQueryId {
-	@Test
-	public void testQueryId() {
-		AdhocQueryId queryId = AdhocQueryIds.from("someCube", CubeQuery.builder().build());
+	@NonNull
+	@Default
+	ICoordinateNormalizer coordinateNormalizer = new StandardCoordinateNormalizer();
 
-		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
-		Assertions.assertThat(queryId.getParentQueryId()).isNull();
-		Assertions.assertThat(queryId.getQueryId()).isNotNull();
+	@Override
+	public Object onMissingColumn(IHasName cube, String column) {
+		return "%s".formatted(cube.getName());
 	}
 
-	@Test
-	public void testQueryId_withparent() {
-		AdhocQueryId queryId = AdhocQueryIds.from("parentCube", CubeQuery.builder().build());
-
-		AdhocQueryId subQueryId = AdhocQueryIds.from("subCube",
-				AdhocSubQuery.builder().subQuery(CubeQuery.builder().build()).parentQueryId(queryId).build());
-
-		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
-		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());
-		Assertions.assertThat(subQueryId.getQueryId()).isNotNull().isNotEqualTo(queryId.getQueryId());
+	@Override
+	public Object onMissingColumn(String column) {
+		return NullMatcher.NULL_HOLDER;
 	}
+
 }

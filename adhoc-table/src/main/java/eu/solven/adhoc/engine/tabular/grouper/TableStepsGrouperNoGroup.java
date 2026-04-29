@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,30 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.engine.tabular.grouper;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.query.table.TableQueryV3;
 
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.ICubeQuery;
-import nl.jqno.equalsverifier.EqualsVerifier;
+/**
+ * This {@link ITableStepsGrouper} does not do any grouping: a single {@link TableQueryV3} will be executed per
+ * {@link CubeQueryStep}.
+ * 
+ * This strategy will maximize the number of {@link TableQueryV3} per {@link CubeQuery}.
+ * 
+ * @author Benoit Lacelle
+ */
+public class TableStepsGrouperNoGroup implements ITableStepsGrouper {
 
-public class TestAdhocSubQuery {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(AdhocSubQuery.class).verify();
+	@Override
+	public TableQueryStep tableQueryGroupBy(TableQueryStep inducer) {
+		return inducer;
 	}
 
-	// IHasMeasure may lead to StackOverFlow due to very lax default methods
-	@Test
-	public void testGetMeasures() {
-		ICubeQuery query = CubeQuery.builder().measure("m").build();
-		AdhocSubQuery subQuery =
-				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryIds.from("someCube", query)).build();
-
-		Assertions.assertThat(subQuery.getMeasures()).hasSize(1).contains(ReferencedMeasure.ref("m"));
-	}
 }

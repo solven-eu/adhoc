@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
-import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.AdhocQueryIds;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
@@ -95,7 +95,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 
 		builder.registerRootWithDescendants(measures);
 
-		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
+		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
 		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
@@ -120,7 +120,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 
 		builder.registerRootWithDescendants(Set.of(sumK1K2));
 
-		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
+		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
 		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
@@ -147,7 +147,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 
 		builder.registerRootWithDescendants(measures);
 
-		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().measure("m").build()),
+		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().measure("m").build()),
 				builder.getQueryDag());
 
 		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""

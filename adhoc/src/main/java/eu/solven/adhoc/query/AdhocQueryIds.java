@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2025 Benoit Chatain Lacelle - SOLVEN
+ * Copyright (c) 2026 Benoit Chatain Lacelle - SOLVEN
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,28 +22,32 @@
  */
 package eu.solven.adhoc.query;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import eu.solven.adhoc.query.cube.IHasParentQueryId;
+import lombok.experimental.UtilityClass;
 
-public class TestAdhocSubQuery {
-	@Test
-	public void testHashcodeEquals() {
-		EqualsVerifier.forClass(AdhocSubQuery.class).verify();
-	}
+/**
+ * Cube-aware factory helpers for {@link AdhocQueryId}. Lives in the cube layer because it depends on {@link ICubeQuery}
+ * / {@link IHasParentQueryId}; keeping it separate from the data class itself lets the table layer reach the data class
+ * without pulling cube types.
+ *
+ * @author Benoit Lacelle
+ */
+@UtilityClass
+public class AdhocQueryIds {
 
-	// IHasMeasure may lead to StackOverFlow due to very lax default methods
-	@Test
-	public void testGetMeasures() {
-		ICubeQuery query = CubeQuery.builder().measure("m").build();
-		AdhocSubQuery subQuery =
-				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryIds.from("someCube", query)).build();
+	/**
+	 * Build an {@link AdhocQueryId} from a cube/table name and an {@link ICubeQuery}, deriving a queryHash from the
+	 * query's {@code toString()} and a parentQueryId when the query implements {@link IHasParentQueryId}.
+	 */
+	public static AdhocQueryId from(String cubeOrTable, ICubeQuery query) {
+		String queryHash = Integer.toHexString(query.toString().hashCode());
+		AdhocQueryId.AdhocQueryIdBuilder builder = AdhocQueryId.builder().queryHash(queryHash).cube(cubeOrTable);
 
-		Assertions.assertThat(subQuery.getMeasures()).hasSize(1).contains(ReferencedMeasure.ref("m"));
+		if (query instanceof IHasParentQueryId hasParentQueryId) {
+			builder.parentQueryId(hasParentQueryId.getParentQueryId().getQueryId());
+		}
+
+		return builder.build();
 	}
 }

@@ -65,13 +65,6 @@
 			<version>${pepper.version}</version>
 		</dependency>
 
-		<dependency>
-			<!-- Used for QuerySteps DAG -->
-			<groupId>org.jgrapht</groupId>
-			<artifactId>jgrapht-core</artifactId>
-			<version>${jgrapht.version}</version>
-		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.jooq/jooq -->
 		<dependency>
 			<groupId>org.jooq</groupId>

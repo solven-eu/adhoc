@@ -49,6 +49,7 @@ import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.AdhocQueryIds;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -102,7 +103,7 @@ public class StandardQueryPreparator implements IQueryPreparator {
 			IColumnsManager columnsManager,
 			ICubeQuery rawQuery) {
 		ICubeQuery preparedQuery = combineWithImplicit(rawQuery);
-		AdhocQueryId queryId = AdhocQueryId.from(table.getName(), preparedQuery);
+		AdhocQueryId queryId = AdhocQueryIds.from(table.getName(), preparedQuery);
 
 		ListeningExecutorService executorService = getExecutorService(preparedQuery);
 		IHasOptionsAndExecutorService withOptions = HasOptionsAndExecutorService.builder()

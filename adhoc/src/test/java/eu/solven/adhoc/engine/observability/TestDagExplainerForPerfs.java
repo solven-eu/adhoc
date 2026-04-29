@@ -42,7 +42,7 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
-import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.AdhocQueryIds;
 import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagExplainerForPerfs {
@@ -92,7 +92,7 @@ public class TestDagExplainerForPerfs {
 
 		QueryStepsDag dag = queryStepsDagBuilder.getQueryDag();
 
-		dagExplainer.explain(AdhocQueryId.from("someCube", CubeQuery.builder().build()), dag);
+		dagExplainer.explain(AdhocQueryIds.from("someCube", CubeQuery.builder().build()), dag);
 
 		Assertions.assertThat(String.join("\n", messages)).isEqualToNormalizingNewlines("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000

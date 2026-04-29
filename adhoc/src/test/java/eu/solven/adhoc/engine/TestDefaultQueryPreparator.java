@@ -34,7 +34,7 @@ import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.AdhocQueryIds;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
@@ -58,7 +58,7 @@ public class TestDefaultQueryPreparator {
 
 		ICubeQuery query = CubeQuery.builder().measure("m").build();
 		AdhocSubQuery subQuery =
-				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryId.from("someCube", query)).build();
+				AdhocSubQuery.builder().subQuery(query).parentQueryId(AdhocQueryIds.from("someCube", query)).build();
 
 		QueryPod prepared = queryPreparator.prepareQuery(table, forest, columnManager, subQuery);
 

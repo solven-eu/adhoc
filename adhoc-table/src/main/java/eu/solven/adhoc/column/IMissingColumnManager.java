@@ -20,33 +20,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.column;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import eu.solven.adhoc.util.IHasName;
 
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+/**
+ * On edge-cases (e.g. a failed JOIN), we would encounter NULL. This interface centralizes the behaviors on such cases.
+ * 
+ * @author Benoit Lacelle
+ */
+public interface IMissingColumnManager {
 
-public class TestAdhocQueryId {
-	@Test
-	public void testQueryId() {
-		AdhocQueryId queryId = AdhocQueryIds.from("someCube", CubeQuery.builder().build());
+	/**
+	 * Typically called on {@link CompositeCubesTableWrapper}, when a {@link ICubeWrapper} is missing a column requested
+	 * by the query.
+	 * 
+	 * @param cube
+	 * @param column
+	 * @return
+	 */
+	Object onMissingColumn(IHasName cube, String column);
 
-		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
-		Assertions.assertThat(queryId.getParentQueryId()).isNull();
-		Assertions.assertThat(queryId.getQueryId()).isNotNull();
-	}
+	/**
+	 * Typically called by {@link ICubeQueryEngine}, when received a row from table missing some column (e.g. failed
+	 * JOIN).
+	 * 
+	 * @param column
+	 * @return
+	 */
+	// BEWARE This should probably be contextual to the IAdhocTableWrapper
+	Object onMissingColumn(String column);
 
-	@Test
-	public void testQueryId_withparent() {
-		AdhocQueryId queryId = AdhocQueryIds.from("parentCube", CubeQuery.builder().build());
-
-		AdhocQueryId subQueryId = AdhocQueryIds.from("subCube",
-				AdhocSubQuery.builder().subQuery(CubeQuery.builder().build()).parentQueryId(queryId).build());
-
-		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
-		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());
-		Assertions.assertThat(subQueryId.getQueryId()).isNotNull().isNotEqualTo(queryId.getQueryId());
-	}
 }

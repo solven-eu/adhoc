@@ -20,33 +20,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query;
+package eu.solven.adhoc.eventbus;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.table.ITableQueryPod;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Singular;
+import lombok.Value;
+import lombok.With;
 
-public class TestAdhocQueryId {
-	@Test
-	public void testQueryId() {
-		AdhocQueryId queryId = AdhocQueryIds.from("someCube", CubeQuery.builder().build());
+/**
+ * An event enabling to be notified on query lifecycle events (e.g. start, done).
+ * 
+ * @author Benoit Lacelle
+ */
+@Value
+@Builder
+public class QueryLifecycleEvent implements IAdhocEvent {
+	ITableQueryPod query;
 
-		Assertions.assertThat(queryId.getCube()).isEqualTo("someCube");
-		Assertions.assertThat(queryId.getParentQueryId()).isNull();
-		Assertions.assertThat(queryId.getQueryId()).isNotNull();
-	}
+	// Useful for event filtering
+	@NonNull
+	@Singular
+	ImmutableSet<String> tags;
 
-	@Test
-	public void testQueryId_withparent() {
-		AdhocQueryId queryId = AdhocQueryIds.from("parentCube", CubeQuery.builder().build());
-
-		AdhocQueryId subQueryId = AdhocQueryIds.from("subCube",
-				AdhocSubQuery.builder().subQuery(CubeQuery.builder().build()).parentQueryId(queryId).build());
-
-		Assertions.assertThat(subQueryId.getCube()).isEqualTo("subCube");
-		Assertions.assertThat(subQueryId.getParentQueryId()).isEqualTo(queryId.getQueryId());
-		Assertions.assertThat(subQueryId.getQueryId()).isNotNull().isNotEqualTo(queryId.getQueryId());
-	}
+	@With
+	String fqdn;
 }
