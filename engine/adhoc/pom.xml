@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.solven.adhoc</groupId>
-		<artifactId>aggregator-adhoc</artifactId>
+		<artifactId>adhoc-engine</artifactId>
 		<version>0.0.19-SNAPSHOT</version>
 	</parent>
 
