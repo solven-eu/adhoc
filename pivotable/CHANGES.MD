@@ -5,6 +5,10 @@ It collects entries that affect the Pivotable backend (`pivotable/server-{webflu
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format.
 
 
+## [0.1.0]
+
+Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Pivotable is not yet API-stable).
+
 ## [0.0.19]
 
 ### Added
