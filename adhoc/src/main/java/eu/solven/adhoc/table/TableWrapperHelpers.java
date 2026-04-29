@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 
 import eu.solven.adhoc.dataframe.row.CompositeTabularRecordStream;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import lombok.experimental.UtilityClass;
@@ -40,7 +39,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TableWrapperHelpers {
 
-	public static ITabularRecordStream v4ToV3(QueryPod queryPod,
+	public static ITabularRecordStream v4ToV3(ITableQueryPod queryPod,
 			Stream<TableQueryV4> tableQuery,
 			ITableWrapper tableWrapper) {
 		List<ITabularRecordStream> underlyings =
@@ -49,7 +48,7 @@ public class TableWrapperHelpers {
 		return CompositeTabularRecordStream.builder().underlyings(underlyings).build();
 	}
 
-	public static ITabularRecordStream v3TovV2(QueryPod queryPod,
+	public static ITabularRecordStream v3TovV2(ITableQueryPod queryPod,
 			Stream<TableQueryV3> tableQuery,
 			ITableWrapper tableWrapper) {
 		List<ITabularRecordStream> underlyings =

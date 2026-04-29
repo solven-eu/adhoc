@@ -87,6 +87,7 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
@@ -223,12 +224,12 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 compositeQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 compositeQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, compositeQuery.streamV3(), this);
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 compositeQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 compositeQuery) {
 		Map<String, ICubeQuery> cubeToQuery = makeSubQueries(queryPod, compositeQuery);
 
 		// Actual execution is the only concurrent section
@@ -240,7 +241,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				() -> IConsumingStream.fromStream(openStream(compositeQuery, cubeToView)));
 	}
 
-	protected Map<String, ICubeQuery> makeSubQueries(QueryPod queryPod, TableQueryV2 compositeQuery) {
+	protected Map<String, ICubeQuery> makeSubQueries(ITableQueryPod queryPod, TableQueryV2 compositeQuery) {
 		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
@@ -448,7 +449,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		}
 	}
 
-	protected ICubeQuery makeSubQuery(QueryPod queryPod, TableQueryV2 compositeQuery, ICubeWrapper subCube) {
+	protected ICubeQuery makeSubQuery(ITableQueryPod queryPod, TableQueryV2 compositeQuery, ICubeWrapper subCube) {
 		Predicate<String> subCubeKnownMeasure = makeSubColumnPredicate(subCube);
 
 		// groupBy only by relevant columns. Other columns are ignored
@@ -506,7 +507,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * exhausting platform threads.
 	 */
 	@SuppressWarnings("PMD.ExceptionAsFlowControl")
-	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {
+	protected Map<String, ITabularView> executeSubQueries(ITableQueryPod queryPod,
+			Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		try {

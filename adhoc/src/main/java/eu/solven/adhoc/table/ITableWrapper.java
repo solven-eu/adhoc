@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.IHasColumns;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -56,7 +55,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery);
+	ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery);
 
 	/**
 	 * Stream every database row matching {@code tableQuery.getFilter()} without any GROUP BY or aggregate function:
@@ -78,11 +77,11 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 *            {@link FilteredAggregator} list describes which aggregator columns to surface per row.
 	 * @return a {@link ITabularRecordStream} carrying one record per matched row.
 	 */
-	default ITabularRecordStream streamRows(QueryPod queryPod, TableQueryV3 tableQuery) {
+	default ITabularRecordStream streamRows(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
 		return streamSlices(queryPod, tableQuery);
 	}
 
-	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV3 tableQuery) {
+	default ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV4());
 	}
 
@@ -93,27 +92,27 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return
 	 */
-	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+	default ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV3());
 	}
 
-	default ITabularRecordStream streamSlices(QueryPod queryPod, TableQuery tableQuery) {
+	default ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQuery tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV2());
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV3 tableQuery) {
-		return streamSlices(QueryPod.forTable(this), tableQuery);
+		return streamSlices(eu.solven.adhoc.engine.context.QueryPod.forTable(this), tableQuery);
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV2 tableQuery) {
-		return streamSlices(QueryPod.forTable(this), tableQuery);
+		return streamSlices(eu.solven.adhoc.engine.context.QueryPod.forTable(this), tableQuery);
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		return streamSlices(QueryPod.forTable(this), tableQuery);
+		return streamSlices(eu.solven.adhoc.engine.context.QueryPod.forTable(this), tableQuery);
 	}
 
 	/**

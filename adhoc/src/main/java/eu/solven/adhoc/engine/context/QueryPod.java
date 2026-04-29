@@ -55,6 +55,7 @@ import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.ICubeQuery;
+import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocTime;
@@ -76,7 +77,7 @@ import lombok.extern.slf4j.Slf4j;
 @Value
 @Slf4j
 public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IMeasureResolver,
-		IHasMeasures, IIsCancellable {
+		IHasMeasures, IIsCancellable, ITableQueryPod {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -334,6 +335,16 @@ public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndS
 	@Override
 	public void removeCancellationListener(Runnable runnable) {
 		cancellationListeners.remove(runnable);
+	}
+
+	/**
+	 * {@link ITableQueryPod} contract: a sibling pod with the wrapped table swapped. Implemented via the existing
+	 * Lombok-generated {@code toBuilder()} so the rest of the cube/engine context (forest, measures, options, …) is
+	 * preserved.
+	 */
+	@Override
+	public QueryPod withTable(ITableWrapper newTable) {
+		return this.toBuilder().table(newTable).build();
 	}
 
 }

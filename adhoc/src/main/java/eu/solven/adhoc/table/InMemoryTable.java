@@ -55,7 +55,6 @@ import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
@@ -122,7 +121,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
@@ -133,7 +132,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	 * else absent.
 	 */
 	@Override
-	public ITabularRecordStream streamRows(QueryPod queryPod, TableQueryV3 tableQuery) {
+	public ITabularRecordStream streamRows(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
 		// Reuse the per-row mapping path of streamSlices: makeStream emits one ITabularRecord per row when
 		// `isEmptyAggregation` is false. We achieve the no-collapse contract by going through the existing
 		// pipeline with `distinctSlices = false` (the default), so multiple rows sharing a slice surface as
@@ -142,7 +141,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
 		if (!this.equals(queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
@@ -201,7 +200,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 		});
 	}
 
-	protected Stream<ITabularRecord> makeStream(QueryPod queryPod,
+	protected Stream<ITabularRecord> makeStream(ITableQueryPod queryPod,
 			TableQueryV2 tableQuery,
 			Set<String> aggregateColumns,
 			boolean isEmptyAggregation,

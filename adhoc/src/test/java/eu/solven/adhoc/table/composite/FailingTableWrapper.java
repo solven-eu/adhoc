@@ -27,8 +27,8 @@ import java.util.Collections;
 
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV4;
+import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -51,7 +51,7 @@ public class FailingTableWrapper implements ITableWrapper {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
 		throw new IllegalStateException("Simulating some exception");
 	}
 

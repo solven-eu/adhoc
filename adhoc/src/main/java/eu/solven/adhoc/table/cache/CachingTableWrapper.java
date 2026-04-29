@@ -44,7 +44,6 @@ import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.HideAggregatorsTabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.options.StandardQueryOptions;
@@ -55,6 +54,7 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
+import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.util.IHasCache;
@@ -179,13 +179,13 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource", "checkstyle:MethodLength" })
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
 		if (StandardQueryOptions.NO_CACHE.isActive(queryPod.getOptions())) {
 			return streamDecorated(queryPod, tableQuery);
 		}
@@ -410,7 +410,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return tableQuery.toBuilder().clearAggregators().aggregators(notCached).build();
 	}
 
-	protected CachingKey makeCacheKey(QueryPod queryPod, TableQueryV2 tableQuery) {
+	protected CachingKey makeCacheKey(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
 		TableQueryV2Builder queryKeyForCache = tableQuery.toBuilder();
 
 		ITableWrapper table = queryPod.getTable();
@@ -426,8 +426,8 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return CachingKey.builder().tableQuery(queryKeyForCache.build()).build();
 	}
 
-	protected ITabularRecordStream streamDecorated(QueryPod queryPod, TableQueryV2 tableQuery) {
-		QueryPod decoratedContext = queryPod.toBuilder().table(decorated).build();
+	protected ITabularRecordStream streamDecorated(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
+		ITableQueryPod decoratedContext = queryPod.withTable(decorated);
 		return decorated.streamSlices(decoratedContext, tableQuery);
 	}
 

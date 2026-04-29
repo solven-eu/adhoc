@@ -48,11 +48,11 @@ import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import lombok.Builder;
@@ -76,7 +76,7 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected IConsumingStream streamTabularRecords(QueryPod queryPod,
+	protected IConsumingStream streamTabularRecords(ITableQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
 		return IConsumingStream.fromStream(sqlQuery.getQueries().stream().flatMap(oneQuery -> {
@@ -86,7 +86,7 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 		}));
 	}
 
-	protected Stream<ITabularRecord> toBigQueryStream(QueryPod queryPod,
+	protected Stream<ITabularRecord> toBigQueryStream(ITableQueryPod queryPod,
 			ResultQuery<Record> sqlQuery,
 			ITabularRecordFactory tabularRecordFactory) {
 		if (queryPod.isCancelled()) {
@@ -139,7 +139,7 @@ public class BigQueryTableWrapper extends JooqTableWrapper {
 		return result.streamAll().map(row -> toTabularRecord(queryPod, tabularRecordFactory, schema, row));
 	}
 
-	protected ITabularRecord toTabularRecord(QueryPod queryPod,
+	protected ITabularRecord toTabularRecord(ITableQueryPod queryPod,
 			ITabularRecordFactory tabularRecordFactory,
 			Schema schema,
 			List<FieldValue> row) {

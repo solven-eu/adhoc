@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableList;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.Builder;
@@ -50,7 +49,7 @@ public class EmptyTableWrapper implements ITableWrapper {
 	final String name;
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
 		return new SuppliedTabularRecordConsumingStream("empty", true, IConsumingStream::empty);
 	}
 

@@ -67,7 +67,6 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.stream.SuppliedTabularRecordConsumingStream;
 import eu.solven.adhoc.engine.cancel.CancellationHelpers;
 import eu.solven.adhoc.engine.cancel.CancelledQueryException;
-import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.observability.IHasHealthDetails;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -77,6 +76,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
+import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters.JooqTableWrapperParametersBuilder;
 import eu.solven.adhoc.table.sql.duckdb.AdhocDuckDBUnsafe;
@@ -252,7 +252,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	 * rejects.
 	 */
 	@Override
-	public ITabularRecordStream streamRows(QueryPod queryPod, TableQueryV3 tableQuery) {
+	public ITabularRecordStream streamRows(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
 		validateGroupBys(queryPod, tableQuery.getGroupBys(), tableQuery);
 
 		IGroupBy mergedGroupBy = GroupByColumns.mergeNonAmbiguous(tableQuery.getGroupBys());
@@ -265,7 +265,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(QueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
 		validateGroupBys(queryPod, tableQuery.getGroupBys(), tableQuery);
 
 		IGroupBy mergedGroupBy = GroupByColumns.mergeNonAmbiguous(tableQuery.getGroupBys());
@@ -277,7 +277,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		return wrapStream(queryPod, mergedGroupBy, resultQuery, tableQuery, distinctSlices);
 	}
 
-	protected void validateGroupBys(QueryPod queryPod, Set<IGroupBy> groupBys, Object tableQueryForLog) {
+	protected void validateGroupBys(ITableQueryPod queryPod, Set<IGroupBy> groupBys, Object tableQueryForLog) {
 		if (!Objects.equals(this, queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
@@ -316,7 +316,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	@SuppressWarnings("PMD.CloseResource")
-	protected ITabularRecordStream wrapStream(QueryPod queryPod,
+	protected ITabularRecordStream wrapStream(ITableQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover resultQuery,
 			Object source,
@@ -405,7 +405,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	}
 
 	@SuppressWarnings("PMD.CloseResource")
-	protected IConsumingStream<ITabularRecord> toMapStream(QueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> toMapStream(ITableQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
 		IConsumingStream<ITabularRecord> tabularRecords = streamTabularRecords(queryPod, mergedGroupBy, sqlQuery);
@@ -416,7 +416,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.map(row -> applyAggregatorLeftovers(sqlQuery, row));
 	}
 
-	protected IConsumingStream<ITabularRecord> streamTabularRecords(QueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> streamTabularRecords(ITableQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
 		List<ResultQuery<Record>> resultQuery = sqlQuery.getQueries();
@@ -457,7 +457,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 		}
 	}
 
-	protected ITabularRecordFactory makeTabularRecordFactory(QueryPod queryPod,
+	protected ITabularRecordFactory makeTabularRecordFactory(ITableQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery,
 			ResultQuery<Record> oneQuery) {
@@ -469,7 +469,7 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				.build();
 	}
 
-	protected Stream<Record> toStream(QueryPod queryPod, ResultQuery<Record> resultQuery) {
+	protected Stream<Record> toStream(ITableQueryPod queryPod, ResultQuery<Record> resultQuery) {
 		// BEWARE This cancellation mechanism is quite awkward. JooQ cancellation design seems to have blind spots. We
 		// may have to introduce an ExecuteListener to fully handle them.
 		if (queryPod.isCancelled()) {
