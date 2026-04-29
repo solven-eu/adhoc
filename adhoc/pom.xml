@@ -140,7 +140,7 @@
 			<!-- Used by ExampleVaRQuickSelectCombination -->
 			<groupId>com.github.haifengl</groupId>
 			<artifactId>smile-core</artifactId>
-			<version>6.0.0</version>
+			<version>6.0.1</version>
 			<scope>test</scope>
 		</dependency>
 
