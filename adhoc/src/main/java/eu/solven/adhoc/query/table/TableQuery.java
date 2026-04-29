@@ -26,7 +26,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.IHasMeasure;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -48,7 +48,7 @@ import lombok.Value;
 /**
  * A query over an {@link ITableWrapper}, which typically represents an external database.
  * 
- * This relates to {@link CubeQueryStep} by enabling multiple {@link Aggregator}.
+ * This relates to {@link ICubeQueryStep} by enabling multiple {@link Aggregator}.
  * 
  * @author Benoit Lacelle
  * @see eu.solven.adhoc.table.transcoder.ITableAliaser
@@ -137,10 +137,10 @@ public class TableQuery implements IWhereGroupByQuery, ITableQuery {
 	/**
 	 * 
 	 * @param aggregatorSteps
-	 *            {@link CubeQueryStep}, each associated to an {@link Aggregator}
+	 *            {@link ICubeQueryStep}, each associated to an {@link Aggregator}
 	 * @return an equivalent {@link Set} of {@link TableQuery}
 	 */
-	public static Set<TableQuery> fromSteps(Set<CubeQueryStep> aggregatorSteps) {
+	public static Set<TableQuery> fromSteps(Set<? extends ICubeQueryStep> aggregatorSteps) {
 		return aggregatorSteps.stream()
 				.map(step -> edit(step).aggregator((Aggregator) step.getMeasure()).build())
 				.collect(ImmutableSet.toImmutableSet());

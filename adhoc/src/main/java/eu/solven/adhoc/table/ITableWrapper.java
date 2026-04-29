@@ -102,17 +102,17 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV3 tableQuery) {
-		return streamSlices(eu.solven.adhoc.engine.context.QueryPod.forTable(this), tableQuery);
+		return streamSlices(ITableQueryPod.forTable(this), tableQuery);
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQueryV2 tableQuery) {
-		return streamSlices(eu.solven.adhoc.engine.context.QueryPod.forTable(this), tableQuery);
+		return streamSlices(ITableQueryPod.forTable(this), tableQuery);
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		return streamSlices(eu.solven.adhoc.engine.context.QueryPod.forTable(this), tableQuery);
+		return streamSlices(ITableQueryPod.forTable(this), tableQuery);
 	}
 
 	/**

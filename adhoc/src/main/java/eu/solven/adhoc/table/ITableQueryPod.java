@@ -64,4 +64,12 @@ public interface ITableQueryPod extends IHasOptionsAndExecutorService, IHasExecu
 	 * @return a fresh {@link ITableQueryPod} bound to {@code table}.
 	 */
 	ITableQueryPod withTable(ITableWrapper table);
+
+	/**
+	 * Returns a thin standalone {@link ITableQueryPod} bound to {@code table}. Suitable for metadata calls and tests
+	 * that drive an {@link ITableWrapper#streamSlices} without a full cube/engine context.
+	 */
+	static ITableQueryPod forTable(ITableWrapper table) {
+		return StandaloneTableQueryPod.builder().table(table).build();
+	}
 }

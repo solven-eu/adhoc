@@ -20,14 +20,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.util;
+package eu.solven.adhoc.engine.cancel;
 
 import java.util.concurrent.CancellationException;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 
 public class TestCancelledQueryException {
 

@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -47,7 +47,7 @@ import lombok.Value;
  * A query over an {@link ITableWrapper}, which typically represents an external database.
  * 
  * It is similar to {@link TableQuery} but enables {@link Aggregator} to be filtered, hence enabling covering more
- * {@link CubeQueryStep}.
+ * {@link ICubeQueryStep}.
  * 
  * @author Benoit Lacelle
  * @see eu.solven.adhoc.table.transcoder.ITableAliaser

@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableSet;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.CubeQueryStep.CubeQueryStepBuilder;
+import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
@@ -51,7 +52,7 @@ import lombok.Value;
 /**
  * A query over an {@link ITableWrapper}, which typically represents an external database.
  * 
- * This v3 covers `GROUPING SET` and `FILTER` syntaxes enabling to cover more {@link CubeQueryStep} in a single table
+ * This v3 covers `GROUPING SET` and `FILTER` syntaxes enabling to cover more {@link ICubeQueryStep} in a single table
  * query.
  * 
  * @author Benoit Lacelle
@@ -115,7 +116,7 @@ public class TableQueryV3 implements ITableQuery {
 				.aggregators(tableQuery.getAggregators());
 	}
 
-	public Stream<CubeQueryStep> cubeQuerySteps(IFilterOptimizer filterOptimizer) {
+	public Stream<ICubeQueryStep> cubeQuerySteps(IFilterOptimizer filterOptimizer) {
 		return getAggregators().stream()
 				.flatMap(a -> getGroupBys().stream().map(gb -> recombineQueryStep(filterOptimizer, a, gb)));
 	}
@@ -125,7 +126,7 @@ public class TableQueryV3 implements ITableQuery {
 	}
 
 	@Deprecated(since = "V4", forRemoval = true)
-	protected CubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
+	protected ICubeQueryStep recombineQueryStep(IFilterOptimizer filterOptimizer,
 			FilteredAggregator filteredAggregator,
 			IGroupBy groupBy) {
 		// Recombine the stepFilter given the tableQuery filter and the measure filter
@@ -185,7 +186,7 @@ public class TableQueryV3 implements ITableQuery {
 				.collect(ImmutableSet.toImmutableSet());
 	}
 
-	public static TableQueryV3Builder edit(CubeQueryStep step) {
+	public static TableQueryV3Builder edit(ICubeQueryStep step) {
 		return TableQueryV3.builder().options(step.getOptions()).customMarker(step.getCustomMarker());
 	}
 
