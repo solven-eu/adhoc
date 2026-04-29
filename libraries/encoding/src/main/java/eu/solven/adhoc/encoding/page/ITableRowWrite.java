@@ -31,8 +31,12 @@ public interface ITableRowWrite {
 
 	int size();
 
+	default boolean isEmpty() {
+		return size() == 0;
+	}
+
 	/**
-	 * 
+	 *
 	 * @param key
 	 * @param value
 	 * @return the index written, compatible with read by index from {@link ITableRowRead}.
