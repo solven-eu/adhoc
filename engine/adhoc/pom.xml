@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>adhoc-engine</artifactId>
+		<version>0.1.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>adhoc</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
+
+	<properties>
+		<cucumber.version>7.23.0</cucumber.version>
+
+		<jacoco.branch.ratio>0.78</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.85</jacoco.instruction.ratio>
+
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc</automatic.module.name>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-encoding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-dataframe</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- Resource -->
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<!-- MapPathGet -->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-mappath</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+		<dependency>
+			<!-- PepperLoghelper -->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.jooq/jooq -->
+		<dependency>
+			<groupId>org.jooq</groupId>
+			<artifactId>jooq</artifactId>
+			<version>${jooq.version}</version>
+		</dependency>
+
+		<!--		<dependency>-->
+		<!--			 Typically used by MultiTypeStorage -->
+		<!--			<groupId>it.unimi.dsi</groupId>-->
+		<!--			<artifactId>fastutil</artifactId>-->
+		<!--			<version>8.5.18</version>-->
+		<!--		</dependency>-->
+
+		<!--		<dependency>-->
+		<!-- Enable faster internalization of keySet in StandardSliceFactory-->
+		<!--			<groupId>com.github.takawitter</groupId>-->
+		<!--			<artifactId>trie4j</artifactId>-->
+		<!--			<version>0.9.10</version>-->
+		<!--		</dependency>-->
+		<!--		<dependency>-->
+		<!-- Enable faster internalization of keySet in StandardSliceFactory-->
+		<!--			<groupId>com.googlecode.concurrent-trees</groupId>-->
+		<!--			<artifactId>concurrent-trees</artifactId>-->
+		<!--			<version>2.6.1</version>-->
+		<!--		</dependency>-->
+
+		<dependency>
+			<!-- EvaluatedExpressionColumn -->
+			<groupId>com.ezylang</groupId>
+			<artifactId>EvalEx</artifactId>
+			<version>${evalex.ezylang.version}</version>
+			<!-- Many projects may not use EvalTranformation-->
+			<optional>true</optional>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
+		<dependency>
+			<groupId>org.duckdb</groupId>
+			<artifactId>duckdb_jdbc</artifactId>
+			<version>${duckdb.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>7.0.2</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>tools.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
+			<!-- One may need require reading/writing Yaml files-->
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- JdbcClient for inserting arrays-->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.github.haifengl/smile-core -->
+		<dependency>
+			<!-- Used by ExampleVaRQuickSelectCombination -->
+			<groupId>com.github.haifengl</groupId>
+			<artifactId>smile-core</artifactId>
+			<version>6.0.1</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Cucumber -->
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-java</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-spring</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.cucumber</groupId>
+			<artifactId>cucumber-junit-platform-engine</artifactId>
+			<version>${cucumber.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Source:
+		https://mvnrepository.com/artifact/com.google.guava/guava-testlib -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava-testlib</artifactId>
+			<version>${guava.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<!-- Adhoc relies on Jupiter/JUnit5-->
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<!-- Check RAM usage, or proper provisioning/capacity-->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-with-agent</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<!-- IValueProviderTestHelpers -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-model</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- MapWithNulls -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-cell</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- IAdhocTestConstants -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-measures</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/io.github.solven-eu.cleanthat/annotations -->
+		<dependency>
+			<groupId>io.github.solven-eu.cleanthat</groupId>
+			<artifactId>annotations</artifactId>
+			<version>2.25</version>
+			<scope>compile</scope>
+		</dependency>
+	</dependencies>
+</project>

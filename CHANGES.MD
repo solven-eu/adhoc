@@ -7,6 +7,13 @@ SPA, the Pivotable backend, the dev stack, login flow, asset loading) live in
 We adhere to the [keepachangelog](https://keepachangelog.com/en/1.0.0/) format
 
 
+## [0.1.0]
+
+Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Adhoc is not yet API-stable).
+
+### Changed
+- Aggregator restructuring: the `adhoc` and `adhoc-table` Maven modules are now nested under a new `engine/` aggregator pom (`adhoc-engine`). The `adhoc-table` folder has been renamed `engine/table/`. Artifact coordinates (`eu.solven.adhoc:adhoc`, `eu.solven.adhoc:adhoc-table`) are unchanged; only the source-tree layout and the project version are affected.
+
 ## [0.0.19]
 
 ### Added

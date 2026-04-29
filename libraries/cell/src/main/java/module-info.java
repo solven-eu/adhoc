@@ -8,6 +8,9 @@ module eu.solven.adhoc.cell {
 	exports eu.solven.adhoc.cuboid;
 	exports eu.solven.adhoc.cuboid.slice;
 	exports eu.solven.adhoc.cuboid.tabular;
+	exports eu.solven.adhoc.engine.cancel;
+	exports eu.solven.adhoc.engine.context;
+	exports eu.solven.adhoc.engine.observability;
 	exports eu.solven.adhoc.engine.step;
 	exports eu.solven.adhoc.eventbus;
 	exports eu.solven.adhoc.map;

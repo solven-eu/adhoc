@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.solven.adhoc</groupId>
+		<artifactId>adhoc-engine</artifactId>
+		<version>0.1.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>adhoc-table</artifactId>
+	<!-- `name` is required by Sonatype-->
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description>Table-side stack: ITableWrapper, JOOQ-backed table impls, in-memory table, query/table types. Depends only on adhoc-cell and below; does not depend on the cube/engine layer.</description>
+
+	<properties>
+		<jacoco.branch.ratio>0.70</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
+
+		<testJarPhase>package</testJarPhase>
+		<automatic.module.name>eu.solven.adhoc.table</automatic.module.name>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-encoding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-filters</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-measures</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-cell</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-dataframe</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- Used for QuerySteps DAG -->
+			<groupId>org.jgrapht</groupId>
+			<artifactId>jgrapht-core</artifactId>
+			<version>${jgrapht.version}</version>
+		</dependency>
+
+		<dependency>
+			<!-- EvaluatedExpressionColumn -->
+			<groupId>com.ezylang</groupId>
+			<artifactId>EvalEx</artifactId>
+			<version>${evalex.ezylang.version}</version>
+			<!-- Many projects may not use EvalTranformation-->
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<!-- ClassUtils — common-ancestor inference in InMemoryTable -->
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<!-- MapPathGet -->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-mappath</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+		<dependency>
+			<!-- PepperLogHelper -->
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper</artifactId>
+			<version>${pepper.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.jooq/jooq -->
+		<dependency>
+			<groupId>org.jooq</groupId>
+			<artifactId>jooq</artifactId>
+			<version>${jooq.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.duckdb/duckdb_jdbc -->
+		<dependency>
+			<groupId>org.duckdb</groupId>
+			<artifactId>duckdb_jdbc</artifactId>
+			<version>${duckdb.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<!-- @SuppressCleanthat — used by QueryWithLeftover -->
+			<groupId>io.github.solven-eu.cleanthat</groupId>
+			<artifactId>annotations</artifactId>
+			<version>2.25</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-suite</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.solven-eu.pepper</groupId>
+			<artifactId>pepper-unittest</artifactId>
+			<version>${pepper.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- JdbcClient for inserting arrays -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<!-- IValueProviderTestHelpers -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-model</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- MapWithNulls -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-cell</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- IAdhocTestConstants -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-measures</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<!-- guava-testlib for MapWithNulls and friends -->
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava-testlib</artifactId>
+			<version>${guava.version}</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>junit</groupId>
+					<artifactId>junit</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+</project>
