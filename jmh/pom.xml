@@ -51,6 +51,13 @@
 			<classifier>tests</classifier>
 		</dependency>
 		<dependency>
+			<!-- Used to share some code between unitTests and benchmarks -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-experimental</artifactId>
 			<version>${project.version}</version>

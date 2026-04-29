@@ -22,6 +22,12 @@
 
 	<dependencies>
 		<dependency>
+			<!-- @NullMarked / @Nullable / @NonNull (annotation-only, retained at compile time) -->
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>tools.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 		</dependency>

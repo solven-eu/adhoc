@@ -13,6 +13,7 @@ Bump to 0.1.0 to mark the move to JDK 25 (still 0.x — Adhoc is not yet API-sta
 
 ### Changed
 - Aggregator restructuring: the `adhoc` and `adhoc-table` Maven modules are now nested under a new `engine/` aggregator pom (`adhoc-engine`). The `adhoc-table` folder has been renamed `engine/table/`. Artifact coordinates (`eu.solven.adhoc:adhoc`, `eu.solven.adhoc:adhoc-table`) are unchanged; only the source-tree layout and the project version are affected.
+- `adhoc-model`: every package now declares `@NullMarked` (JSpecify) via `package-info.java` — parameters, return types and fields are non-null by default; explicit `@Nullable` opt-outs are required for legitimately-nullable references. Annotation-only at this stage; flow-sensitive enforcement (NullAway) will be wired in a follow-up.
 
 ## [0.0.19]
 
