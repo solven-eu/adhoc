@@ -29,17 +29,21 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
 public class TestJooqTableSupplierBuilder {
 	static {
 		AdhocJooqHelper.disableBanners();
 	}
 
+	final JooqTableSupplierBuilder snowflakeBuilder = JooqTableSupplierBuilder.builder()
+			.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
+			.baseTable(DSL.table("baseTable"))
+			.baseTableAlias("base")
+			.build();
+
 	@Test
 	public void testSnowflake() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable")).alias("joined").on("baseA", "joinedA"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
@@ -57,9 +61,6 @@ public class TestJooqTableSupplierBuilder {
 
 	@Test
 	public void testSnowflake_explicitForeignKeyWithDot() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
 				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("joined1.baseA", "joined2A"));
 
@@ -80,9 +81,6 @@ public class TestJooqTableSupplierBuilder {
 
 	@Test
 	public void testSnowflake_fieldWithWithDot() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
 				.leftJoin(
 						j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("\"ill_name.baseA\"", "joined2A"));
@@ -106,9 +104,6 @@ public class TestJooqTableSupplierBuilder {
 	// Weird pathes can be prefixed with `;`
 	@Test
 	public void testSnowflake_weirdPath() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
 				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on(";ill_name.baseA''", "joined2A"));
 
@@ -132,9 +127,6 @@ public class TestJooqTableSupplierBuilder {
 	// happen, leaving the snowflake table unchanged.
 	@Test
 	public void testEmptyConsumer_dropsTheJoin() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		String beforeSql = snowflakeBuilder.getSnowflakeTable().toString();
 
 		// No-op consumer — does not call .table(...), .alias(...), or .on(...).
@@ -148,9 +140,6 @@ public class TestJooqTableSupplierBuilder {
 
 	@Test
 	public void testSnowflake_withAlias() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		snowflakeBuilder.withAlias("aliasBase", "baseA")
 				.leftJoin(j -> j.table(DSL.table("joinedTable1"))
 						.alias("joined1")
@@ -187,9 +176,6 @@ public class TestJooqTableSupplierBuilder {
 	// owning table even though no single `from(...)` could express the pair.
 	@Test
 	public void testSnowflake_multiTableLeftSide_noFrom_qualifiesEachLeftColumn() {
-		JooqTableSupplierBuilder snowflakeBuilder =
-				JooqTableSupplierBuilder.builder().baseTable(DSL.table("base_t")).baseTableAlias("base").build();
-
 		snowflakeBuilder
 				// base → a (single-key join, default `from` = base)
 				.leftJoin(j -> j.table(DSL.table("table_a")).alias("a").on("a_id", "id"))
@@ -202,7 +188,7 @@ public class TestJooqTableSupplierBuilder {
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
 		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
-				base_t "base"
+				baseTable "base"
 				  left outer join table_a "a"
 				    on "base"."a_id" = "a"."id"
 				  left outer join table_b "b"

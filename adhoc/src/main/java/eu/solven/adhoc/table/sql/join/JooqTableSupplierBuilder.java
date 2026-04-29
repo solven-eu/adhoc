@@ -77,9 +77,11 @@ public class JooqTableSupplierBuilder {
 	@NonNull
 	final String baseTableAlias;
 
+	// This JooQ table is updated on any input change.
 	@Getter
 	Table<Record> snowflakeTable;
 
+	// Useful to know to which JOIN aliases are applying
 	String latestJoin;
 
 	final Supplier<Parser> parserSupplier = () -> getDslSupplier().getDSLContext().parser();
@@ -88,11 +90,15 @@ public class JooqTableSupplierBuilder {
 	// `snowflakeTable` is not built by the builder
 	@Builder(builderMethodName = "legacyBuilder")
 	public JooqTableSupplierBuilder(IDSLSupplier dslSupplier, Table<Record> baseTable, String baseTableAlias) {
+		Objects.requireNonNull(dslSupplier, "dslSupplier");
 		this.dslSupplier = dslSupplier;
+		Objects.requireNonNull(baseTable, "baseTable");
 		this.baseTable = baseTable;
+		Objects.requireNonNull(baseTableAlias, "baseTableAlias");
 		this.baseTableAlias = baseTableAlias;
 
 		this.snowflakeTable = baseTable.as(baseTableAlias);
+		this.latestJoin = baseTableAlias;
 	}
 
 	public static PrunedJoinsJooqTableSupplierBuilderBuilder builder() {

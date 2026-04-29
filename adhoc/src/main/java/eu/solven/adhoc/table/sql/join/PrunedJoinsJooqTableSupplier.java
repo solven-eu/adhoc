@@ -29,12 +29,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
 
@@ -47,7 +50,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
@@ -94,8 +96,6 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	/** The snowflake-schema source: provides the {@link JoinNode} list and materialises {@code Table}s on demand. */
 	@NonNull
 	private final PrunedJoinsJooqTableSupplierBuilder schema;
-	@NonNull
-	private final IDSLSupplier dslSupplier;
 
 	/**
 	 * Strategy used to discover a join's columns when no {@code columnsOverride} was supplied on the {@link JoinNode}.
@@ -153,6 +153,9 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	private final Cache<Set<String>, Set<String>> neededAliasCache =
 			CacheBuilder.newBuilder().maximumSize(MAX_CACHE_ENTRY).build();
 
+	/** Memoised full-joins table (all joins included). Invalidated whenever a new {@code leftJoin} is declared. */
+	private Table<Record> fullTableCache;
+
 	// ── IJooqTableSupplier ──────────────────────────────────────────────────
 
 	@Override
@@ -171,7 +174,10 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	@Override
 	public TableLike<?> getSchemaTable() {
 		// All-joins table: schema introspection (getColumns / getResultForFields) needs every column to be reachable.
-		return schema.getSnowflakeTable();
+		if (fullTableCache == null) {
+			fullTableCache = schema.getSnowflakeTable();
+		}
+		return fullTableCache;
 	}
 
 	/**
@@ -183,6 +189,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 	@SuppressWarnings("PMD.NullAssignment")
 	public void invalidateAll() {
 		columnToAlias = null;
+		fullTableCache = null;
 		neededAliasCache.invalidateAll();
 		resolvedColumnsByAlias.clear();
 	}
@@ -208,27 +215,24 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 		// passed as the column name. The extractor returns the underlying column(s) the expression touches; each is
 		// looked up in the index. If neither the direct match nor the extractor produces an index hit, we throw —
 		// preferable to silently pruning a join and producing a downstream "column does not exist" SQL error.
-		for (String col : referencedColumns) {
+		for (String aliasedcol : referencedColumns) {
 			// `*` is the COUNT(*) sentinel — see AdhocJooqHelper.isExpression. It references no specific column
 			// and thus pulls in no join. Skip silently.
-			if (ICountMeasuresConstants.ASTERISK.equals(col)) {
+			if (ICountMeasuresConstants.ASTERISK.equals(aliasedcol)) {
 				continue;
 			}
 
-			String originalColumn = schema.getAliasToOriginal().get(col);
-			if (originalColumn != null) {
-				col = originalColumn;
-			}
+			String originalColumn = Optional.ofNullable(schema.getAliasToOriginal().get(aliasedcol)).orElse(aliasedcol);
 
 			// BEWARE CaseSensitivity would play a role around here
-			String owner = index.get(col);
+			String owner = index.get(originalColumn);
 			if (owner != null) {
 				if (!owner.equals(baseAlias)) {
 					needed.add(owner);
 				}
 				continue;
 			}
-			Set<String> extracted = expressionColumnExtractor.extractColumns(col, index.keySet());
+			Set<String> extracted = expressionColumnExtractor.extractColumns(originalColumn, index.keySet());
 			boolean anyHit = false;
 			for (String inner : extracted) {
 				String innerOwner = index.get(inner);
@@ -241,8 +245,8 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			}
 			if (!anyHit) {
 				throw new IllegalArgumentException(
-						"Column `%s` is unknown — neither base `%s` nor any join provides it,".formatted(col, baseAlias)
-								+ " and the expressionColumnExtractor recovered no underlying column."
+						"Column `%s` is unknown — neither base `%s` nor any join provides it,".formatted(aliasedcol,
+								baseAlias) + " and the expressionColumnExtractor recovered no underlying column."
 								+ " Index columns: "
 								+ index.keySet());
 			}
@@ -307,7 +311,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			// columns instead of silently treating them as base — catching SQL-expression columns and
 			// resolver-misconfigurations early.
 			CompletableFuture<Set<String>> baseFuture =
-					CompletableFuture.supplyAsync(() -> resolveBaseColumns(), executorService);
+					CompletableFuture.supplyAsync(this::resolveBaseColumns, executorService);
 
 			Map<String, String> idx = new LinkedHashMap<>();
 			for (int i = 0; i < joinNodes.size(); i++) {
@@ -362,7 +366,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			if (override != null && !override.isEmpty()) {
 				return override;
 			}
-			List<Field<?>> fields = columnsResolver.columnsOf(dslSupplier, schema.getBaseTable());
+			List<Field<?>> fields = columnsResolver.columnsOf(schema.getDslSupplier(), schema.getBaseTable());
 			if (fields == null || fields.isEmpty()) {
 				log.debug(
 						"Join-pruning: columnsResolver returned no fields for baseTable={} (alias={}) —"
@@ -389,7 +393,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			return node.getColumnsOverride();
 		}
 		return resolvedColumnsByAlias.computeIfAbsent(node.getAlias(), alias -> {
-			List<Field<?>> fields = columnsResolver.columnsOf(dslSupplier, node.getJoinedTable());
+			List<Field<?>> fields = columnsResolver.columnsOf(schema.getDslSupplier(), node.getJoinedTable());
 			if (fields == null || fields.isEmpty()) {
 				log.debug("Join-pruning: columnsResolver returned no fields for joinedTable={} (alias={}) —"
 						+ " this join will not be prunable unless a columnsOverride is supplied on leftJoin(...)",

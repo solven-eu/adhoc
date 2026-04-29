@@ -97,9 +97,6 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	@Getter
 	private final List<JoinNode> joinNodes = new ArrayList<>();
 
-	/** Memoised full-joins table (all joins included). Invalidated whenever a new {@code leftJoin} is declared. */
-	private Table<Record> fullTableCache;
-
 	/**
 	 * Optional explicit list of columns the BASE table provides — escape hatch mirroring per-join
 	 * {@code providedColumns}. Honoured by {@link PrunedJoinsJooqTableSupplier#resolveBaseColumns()}: when non-empty,
@@ -109,6 +106,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 * Empty default — falls back to the configured {@code columnsResolver}.
 	 */
 	@Getter
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 	private Set<String> baseProvidedColumns = Set.of();
 
 	/**
@@ -117,7 +115,6 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	public PrunedJoinsJooqTableSupplierBuilder baseProvidedColumns(Set<String> columns) {
 		this.baseProvidedColumns = ImmutableSet.copyOf(columns);
-		invalidateCaches();
 		return this;
 	}
 
@@ -201,7 +198,6 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 			int lastIdx = joinNodes.size() - 1;
 			JoinNode last = joinNodes.get(lastIdx);
 			joinNodes.set(lastIdx, last.toBuilder().prunable(false).build());
-			invalidateCaches();
 		}
 		if (!joinBuilder.getColumnAliases().isEmpty()) {
 			withAliases(joinBuilder.getColumnAliases());
@@ -234,7 +230,6 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 				.prunable(true)
 				.build());
 
-		invalidateCaches();
 		return this;
 	}
 
@@ -256,7 +251,6 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 		int lastIdx = joinNodes.size() - 1;
 		JoinNode last = joinNodes.get(lastIdx);
 		joinNodes.set(lastIdx, last.toBuilder().columnsOverride(ImmutableSet.copyOf(providedColumns)).build());
-		invalidateCaches();
 		return this;
 	}
 
@@ -266,7 +260,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	@Override
 	public PrunedJoinsJooqTableSupplier build() {
-		return PrunedJoinsJooqTableSupplier.builder().schema(this).dslSupplier(dslSupplier).build();
+		return PrunedJoinsJooqTableSupplier.builder().schema(this).build();
 	}
 
 	@Override
@@ -281,17 +275,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 				.onConditions(on)
 				.prunable(false)
 				.build());
-		invalidateCaches();
 		return this;
-	}
-
-	/**
-	 * Drops the memoised full-joins table. Called on each {@link #leftJoin} so the next {@link #getSnowflakeTable()}
-	 * includes the newly-registered node.
-	 */
-	@SuppressWarnings("PMD.NullAssignment")
-	protected void invalidateCaches() {
-		fullTableCache = null;
 	}
 
 	// ── Materialisation ─────────────────────────────────────────────────────
@@ -302,10 +286,7 @@ public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilde
 	 */
 	@Override
 	public Table<Record> getSnowflakeTable() {
-		if (fullTableCache == null) {
-			fullTableCache = materialise(allAliases());
-		}
-		return fullTableCache;
+		return materialise(allAliases());
 	}
 
 	/**

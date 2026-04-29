@@ -84,6 +84,7 @@ public class TestTableQuery_DuckDb_withPrunedJoins extends ADuckDbJooqTest imple
 	PrunedJoinsJooqTableSupplierBuilder snowflakeBuilder = PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
 			.baseTable(DSL.table(DSL.name(factTable)))
 			.baseTableAlias("f")
+			.dslSupplier(dslSupplier)
 			.build()
 			// fact → product: non-key columns `productName` + `countryId` (countryId is used for the next snowflake
 			// leg). Star: defaults to base `f`.
@@ -96,11 +97,8 @@ public class TestTableQuery_DuckDb_withPrunedJoins extends ADuckDbJooqTest imple
 	 * wire a DB-backed {@code SELECT * LIMIT 0} probe. Probing is lazy — it happens on the first query, after
 	 * {@code initTables()} has created the DuckDB schema.
 	 */
-	PrunedJoinsJooqTableSupplier tableSupplier = PrunedJoinsJooqTableSupplier.builder()
-			.dslSupplier(dslSupplier)
-			.schema(snowflakeBuilder)
-			.columnsResolver(columnsResolver)
-			.build();
+	PrunedJoinsJooqTableSupplier tableSupplier =
+			PrunedJoinsJooqTableSupplier.builder().schema(snowflakeBuilder).columnsResolver(columnsResolver).build();
 
 	@Override
 	public ITableWrapper makeTable() {

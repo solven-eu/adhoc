@@ -59,6 +59,7 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 	 */
 	private PrunedJoinsJooqTableSupplierBuilder newBuilder() {
 		return PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
+				.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
 				.baseTable(DSL.table("fact"))
 				.baseTableAlias("fact")
 				.build()
@@ -69,7 +70,6 @@ public class TestPrunedJoinsJooqTableSupplierBuilder {
 	private static PrunedJoinsJooqTableSupplier supplier(PrunedJoinsJooqTableSupplierBuilder builder) {
 		return PrunedJoinsJooqTableSupplier.builder()
 				.schema(builder)
-				.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
 				.columnsResolver(JooqColumnsHelpers.fromJooqFields())
 				.build();
 	}
