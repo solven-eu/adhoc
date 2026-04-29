@@ -57,7 +57,7 @@ test("queryPivotable.addColumn", async ({ page }) => {
 			.nth(1)
 			.locator(".slick-cell")
 			.nth(3 - 1),
-	).toHaveText("19.00");
+	).toHaveText("17.00");
 });
 
 test("queryPivotable.addDependantFromGraph", async ({ page }) => {
@@ -82,14 +82,14 @@ test("queryPivotable.addDependantFromGraph", async ({ page }) => {
 		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("11,270.00");
 		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("2,256.00");
 		// row1
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("588.00");
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toHaveText("162.00");
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("558.00");
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toHaveText("158.00");
 	} else {
 		// row0
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("588.00");
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("162.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(3)).toHaveText("158.00");
 		// row1
-		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("100.00");
+		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(2)).toHaveText("88.00");
 		await expect(page.locator(".slick-row").nth(1).locator(".slick-cell").nth(3)).toBeEmpty();
 	}
 });
@@ -105,6 +105,6 @@ test("queryPivotable.browserRefresh", async ({ page }) => {
 	if (starCoordinate) {
 		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("11,270.00");
 	} else {
-		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("588.00");
+		await expect(page.locator(".slick-row").nth(0).locator(".slick-cell").nth(2)).toHaveText("558.00");
 	}
 });

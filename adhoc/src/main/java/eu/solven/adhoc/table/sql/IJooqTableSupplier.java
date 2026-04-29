@@ -25,19 +25,18 @@ package eu.solven.adhoc.table.sql;
 import org.jooq.TableLike;
 
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 
 /**
  * Produces the jOOQ {@link TableLike} used in the {@code FROM} clause of a given {@link TableQueryV4}.
  * <p>
  * The default {@link JooqTableWrapper} path uses a single constant table supplied via
  * {@code JooqTableWrapperParameters.table}. Alternative implementations (e.g.
- * {@link PrunedJoinsJooqSnowflakeSchemaBuilder}) produce a query-specific {@link TableLike} — typically by pruning
- * joins that are not reachable from the columns actually referenced by the query.
+ * {@link PrunedJoinsJooqTableSupplierBuilder}) produce a query-specific {@link TableLike} — typically by pruning joins
+ * that are not reachable from the columns actually referenced by the query.
  *
  * @author Benoit Lacelle
  */
-@FunctionalInterface
 public interface IJooqTableSupplier {
 
 	/**
@@ -48,9 +47,26 @@ public interface IJooqTableSupplier {
 	TableLike<?> tableFor(TableQueryV4 tableQuery);
 
 	/**
+	 * @return the {@link TableLike} used for schema introspection (i.e. {@code getColumns()} /
+	 *         {@code getResultForFields()}). For pruning suppliers, this is the all-joins table; for the constant
+	 *         supplier, it equals the table returned by {@link #tableFor(TableQueryV4)}.
+	 */
+	TableLike<?> getSchemaTable();
+
+	/**
 	 * Wraps a constant table as an {@link IJooqTableSupplier} that ignores the query.
 	 */
 	static IJooqTableSupplier constant(TableLike<?> table) {
-		return _ -> table;
+		return new IJooqTableSupplier() {
+			@Override
+			public TableLike<?> tableFor(TableQueryV4 tableQuery) {
+				return table;
+			}
+
+			@Override
+			public TableLike<?> getSchemaTable() {
+				return table;
+			}
+		};
 	}
 }

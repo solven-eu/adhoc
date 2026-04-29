@@ -23,13 +23,14 @@
 package eu.solven.adhoc.table.sql;
 
 import java.util.List;
+import java.util.function.Function;
 
 import org.jooq.Field;
 import org.jooq.TableLike;
 
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
+import eu.solven.adhoc.util.Blocking;
 import eu.solven.pepper.core.PepperLogHelper;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -57,14 +58,26 @@ public final class JooqColumnsHelpers {
 	}
 
 	/**
-	 * @param dslSupplier
-	 *            JDBC backend used to run the probe query
 	 * @return a fresh {@link IJooqColumnsResolver} running {@code SELECT * FROM <table> LIMIT 0} per lookup. Probe
-	 *         results are cached upstream by {@link PrunedJoinsJooqSnowflakeSchemaBuilder} and by
+	 *         results are cached upstream by {@link PrunedJoinsJooqTableSupplierBuilder} and by
 	 *         {@link JooqTableWrapper}; this resolver itself performs no caching.
 	 */
-	public static IJooqColumnsResolver dbProbe(IDSLSupplier dslSupplier) {
-		return new DbProbeResolver(dslSupplier);
+	public static IJooqColumnsResolver dbProbe() {
+		return new DbProbeResolver();
+	}
+
+	/**
+	 * @param sqlBuilder
+	 *            given the queried {@link TableLike}, returns the raw SQL string to execute. Typically a single-row
+	 *            probe such as {@code "SELECT * FROM \"dev\".\"public\".\"%s\" LIMIT 0".formatted(someTable)}.
+	 * @return a fresh {@link IJooqColumnsResolver} that runs the caller-supplied raw SQL via the
+	 *         {@link IDSLSupplier#getDSLContext()} {@code fetch(...)} entry-point and returns the result-set columns.
+	 *         Useful for backends where the JOOQ-rendered probe would be wrong: e.g. Redshift accessed via the
+	 *         PostgreSQL 8 dialect, where {@code LIMIT 0} interacts badly with some JOOQ-generated qualifiers, or when
+	 *         the probe must hit a specific {@code database.schema.table} qualifier that JOOQ refuses to render.
+	 */
+	public static IJooqColumnsResolver predefinedSql(Function<TableLike<?>, String> sqlBuilder) {
+		return new PredefinedSqlResolver(sqlBuilder);
 	}
 
 	/**
@@ -78,7 +91,7 @@ public final class JooqColumnsHelpers {
 		}
 
 		@Override
-		public List<Field<?>> columnsOf(TableLike<?> table) {
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			return List.of(table.asTable().fields());
 		}
 	}
@@ -91,16 +104,35 @@ public final class JooqColumnsHelpers {
 	@RequiredArgsConstructor
 	@Slf4j
 	static final class DbProbeResolver implements IJooqColumnsResolver {
-		@NonNull
-		private final IDSLSupplier dslSupplier;
 
+		@Blocking
 		@Override
-		public List<Field<?>> columnsOf(TableLike<?> table) {
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
 			// Log in INFO as the round-trip may be slow on large-schema JDBC drivers.
 			log.info("Fetching fields via SELECT * LIMIT 0 of table={}",
 					PepperLogHelper
 							.lazyToString(() -> table.toString().replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
 			return List.of(dslSupplier.getDSLContext().select().from(table).limit(0).fetch().fields());
+		}
+	}
+
+	/**
+	 * {@link IJooqColumnsResolver} that runs a caller-supplied raw SQL probe — bypasses JOOQ's query builder. Used as
+	 * an escape hatch for backends where JOOQ produces an SQL that the backend rejects (Redshift accessed via the
+	 * PostgreSQL 8 dialect, etc.). Exposed via {@link #predefinedSql(Function)}.
+	 */
+	@RequiredArgsConstructor
+	@Slf4j
+	static final class PredefinedSqlResolver implements IJooqColumnsResolver {
+		private final Function<TableLike<?>, String> sqlBuilder;
+
+		@Blocking
+		@Override
+		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
+			String sql = sqlBuilder.apply(table);
+			log.info("Fetching fields via predefined SQL={}",
+					PepperLogHelper.lazyToString(() -> sql.replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
+			return List.of(dslSupplier.getDSLContext().fetch(sql).fields());
 		}
 	}
 }

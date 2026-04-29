@@ -178,7 +178,7 @@ public class TestTableQuery_DuckDb_customAggregation extends ADuckDbJooqTest imp
 			protected IJooqTableQueryFactory makeQueryFactory(DSLContext dslContext) {
 				return CustomAggregationJooqTableQueryFactory.builder()
 						.operatorFactory(jooqTableWrapperParameters.getOperatorFactory())
-						.table(jooqTableWrapperParameters.getTable())
+						.tableSupplier(jooqTableWrapperParameters.getTableSupplier())
 						.dslContext(dslContext)
 						.build();
 			}

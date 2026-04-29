@@ -51,7 +51,7 @@ import lombok.extern.jackson.Jacksonized;
 @SuperBuilder
 @Jacksonized
 @EqualsAndHashCode(callSuper = false)
-public class ListBasedTabularView extends AListBasedTabularView implements IReadableTabularView {
+public class ListBasedTabularView extends AListBasedTabularView {
 
 	// Split into 2 lists as a List of Map.Entry is not easy to serialize
 	@Default

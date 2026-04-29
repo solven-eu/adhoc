@@ -53,7 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuperBuilder
 @EqualsAndHashCode(callSuper = false)
 @Slf4j
-public class MapBasedTabularView extends ATabularView implements ITabularView, IWritableTabularView {
+public class MapBasedTabularView extends ATabularView implements ITabularView {
 	@Default
 	@Getter
 	final Map<Map<String, ?>, Map<String, ?>> coordinatesToValues = new TreeMap<>(MapComparators.mapComparator());

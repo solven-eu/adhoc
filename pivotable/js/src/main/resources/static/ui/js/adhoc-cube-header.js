@@ -1,15 +1,15 @@
 import { mapState } from "pinia";
 import { useAdhocStore } from "./store-adhoc.js";
 
-import AdhocCubeRef from "./adhoc-cube-ref.js";
-import AdhocAccountRef from "./adhoc-account-ref.js";
-import AdhocEndpointRef from "./adhoc-endpoint-ref.js";
+import AdhocCubeChip from "./adhoc-cube-chip.js";
+import AdhocAccountChip from "./adhoc-account-chip.js";
+import AdhocEndpointChip from "./adhoc-endpoint-chip.js";
 
 export default {
 	components: {
-		AdhocCubeRef,
-		AdhocAccountRef,
-		AdhocEndpointRef,
+		AdhocCubeChip,
+		AdhocAccountChip,
+		AdhocEndpointChip,
 	},
 	props: {
 		cubeId: {
@@ -48,8 +48,8 @@ export default {
 		<div v-else-if="endpoint.error || cube.error">{{endpoint.error || cube.error}}</div>
 		<span v-else>
 			<h2>
-				<AdhocCubeRef :cubeId="cubeId" :endpointId="endpointId" />
-				<AdhocEndpointRef :endpointId="endpointId" />
+				<AdhocCubeChip :cubeId="cubeId" :endpointId="endpointId" />
+				<AdhocEndpointChip :endpointId="endpointId" />
 			</h2>
 		</span>
 	`,

@@ -1,3 +1,5 @@
+import { inject } from "vue";
+
 import AdhocGridFormatModal from "./adhoc-query-grid-format-modal.js";
 import AdhocGridExportCsv from "./adhoc-query-grid-export-csv.js";
 
@@ -33,12 +35,41 @@ export default {
 		const toggleWizardHidden = function () {
 			preferencesStore.wizardHidden = !preferencesStore.wizardHidden;
 		};
-		return { preferencesStore, toggleWizardHidden };
+		// Provided by AdhocQueryExecutor — the Submit trigger + auto-query state + in-flight signal +
+		// "is the in-flight query identical to the displayed one" signal (used to differentiate
+		// Refreshing vs Querying labels). Defaults are no-ops so this component still mounts cleanly in
+		// test contexts that don't include the executor.
+		const submitQuery = inject("submitQuery", () => {});
+		const autoQuery = inject("autoQuery", { value: false });
+		const isQueryInFlight = inject("isQueryInFlight", { value: false });
+		const isSameAsLastQuery = inject("isSameAsLastQuery", { value: false });
+		return { preferencesStore, toggleWizardHidden, submitQuery, autoQuery, isQueryInFlight, isSameAsLastQuery };
 	},
 	template: /* HTML */ `
 		<div class="d-flex flex-wrap gap-2 align-items-center mt-2">
 			<AdhocGridExportCsv :array="dataArray" />
 			<AdhocGridFormatModal :formatOptions="formatOptions" />
+			<!--
+				Refresh button — mirrors the in-wizard Submit. Only rendered when the wizard is hidden (the
+				actual Submit lives inside the wizard column, so the user would lose the affordance in full-
+				screen-grid mode without this). Disabled while a query is in flight: re-clicking would just
+				queue an identical request — the spinner is the right signal here.
+			-->
+			<button
+				v-if="preferencesStore.wizardHidden"
+				type="button"
+				class="btn btn-outline-primary btn-sm"
+				:class="isQueryInFlight ? 'adhoc-busy' : ''"
+				@click="submitQuery"
+				:disabled="isQueryInFlight"
+				:title="isQueryInFlight ? 'A query is already running' : 'Re-run the current query'"
+			>
+				<span v-if="isQueryInFlight">
+					<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+					{{ isSameAsLastQuery ? "Refreshing…" : "Querying…" }}
+				</span>
+				<span v-else><i class="bi bi-arrow-clockwise me-1"></i> Refresh</span>
+			</button>
 			<button
 				type="button"
 				class="btn btn-outline-secondary btn-sm"

@@ -23,27 +23,43 @@
 package eu.solven.adhoc.table.sql.join;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
 
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Table;
 import org.jooq.TableLike;
+import org.jooq.impl.DSL;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
+import eu.solven.adhoc.query.ICountMeasuresConstants;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
 import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder.JoinNode;
+import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder.JoinNode;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
+import eu.solven.adhoc.util.IHasCache;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,7 +67,7 @@ import lombok.extern.slf4j.Slf4j;
  * {@link IJooqTableSupplier} that prunes the {@code FROM} clause of a query to the minimum snowflake subset needed by
  * the referenced columns.
  * <p>
- * This is the pruning half of the two-responsibility split with {@link PrunedJoinsJooqSnowflakeSchemaBuilder}: the
+ * This is the pruning half of the two-responsibility split with {@link PrunedJoinsJooqTableSupplierBuilder}: the
  * builder records the join tree and materialises jOOQ {@code Table<Record>}s on demand, while this supplier runs the
  * per-query pruning algorithm —
  * <ol>
@@ -59,35 +75,64 @@ import lombok.extern.slf4j.Slf4j;
  * <li>look each column up in the column→alias index, populated from each {@link JoinNode}'s {@code columnsOverride} or
  * {@link #columnsResolver};</li>
  * <li>close over parent links (snowflake transitivity) and force-include any non-prunable node;</li>
- * <li>delegate back to {@link PrunedJoinsJooqSnowflakeSchemaBuilder#materialise(Set)} for the final
+ * <li>delegate back to {@link PrunedJoinsJooqTableSupplierBuilder#materialise(Set)} for the final
  * {@code Table<Record>}.</li>
  * </ol>
  * The supplier caches the pruning decision per referenced-column set (bounded LRU), and caches per-alias resolver
- * output. Both caches are cleared by {@link #purgeColumnCache()}.
+ * output. Both caches are cleared by {@link #invalidateAll()}.
  *
  * <p>
- * The supplier assumes the schema (the underlying {@link PrunedJoinsJooqSnowflakeSchemaBuilder}) is stable once queries
- * start flowing. If new {@code leftJoin}s are added afterwards, call {@link #purgeColumnCache()} to drop stale caches.
+ * The supplier assumes the schema (the underlying {@link PrunedJoinsJooqTableSupplierBuilder}) is stable once queries
+ * start flowing. If new {@code leftJoin}s are added afterwards, call {@link #invalidateAll()} to drop stale caches.
  *
  * @author Benoit Lacelle
  */
 @Slf4j
-@Builder
-public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
+// Custom builder class name avoids the clash with the standalone `PrunedJoinsJooqTableSupplierBuilder`
+// (the schema-source class) that the `schema` field references.
+@Builder(builderClassName = "Builder")
+public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCache {
 
 	/** The snowflake-schema source: provides the {@link JoinNode} list and materialises {@code Table}s on demand. */
 	@NonNull
-	private final PrunedJoinsJooqSnowflakeSchemaBuilder schema;
+	private final PrunedJoinsJooqTableSupplierBuilder schema;
 
 	/**
 	 * Strategy used to discover a join's columns when no {@code columnsOverride} was supplied on the {@link JoinNode}.
 	 * Defaults to {@link JooqColumnsHelpers#fromJooqFields()}. Swap in
 	 * {@link JooqColumnsHelpers#dbProbe(eu.solven.adhoc.table.sql.IDSLSupplier)} when the jOOQ tables carry no declared
-	 * fields.
+	 * fields. Non-final on purpose: {@link JooqTableWrapperParameters.JooqTableWrapperParametersBuilder#tableSupplier}
+	 * auto-replaces the default with a DB probe wired to the params' {@code dslSupplier} so users get correct pruning
+	 * out of the box without an explicit resolver.
 	 */
 	@NonNull
 	@Default
-	private final IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.fromJooqFields();
+	@Getter
+	private IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe();
+
+	/**
+	 * Executor used by {@link #columnToAlias()} to resolve each {@link JoinNode}'s column set in parallel during the
+	 * first build. With a DB-probing resolver the per-join cost is dominated by JDBC round-trips, so a snowflake with N
+	 * arms otherwise pays N sequential probes on first use; fanning out collapses them to a single wall-clock probe.
+	 * Defaults to the project-wide pool exposed by {@link AdhocFactoriesUnsafe} (a Virtual-Thread executor) so blocking
+	 * JDBC calls do not pin platform threads and the index build does not consume the FJP common pool. Closing this
+	 * supplier does NOT close the executor — it is owned by the application.
+	 */
+	@NonNull
+	@Default
+	private ListeningExecutorService executorService = AdhocFactoriesUnsafe.factories.getExecutorService();
+
+	/**
+	 * Strategy used to recover the underlying column names referenced by a SQL expression that did not match the
+	 * column→alias index directly — e.g. {@code approx_count_distinct(c_custkey)} or
+	 * {@code sum(l_extendedprice * (1 - l_discount))}. Defaults to {@link KnownColumnsExpressionExtractor} (token-
+	 * boundary substring scan over the index). Plug in a custom impl for projects whose expressions cannot be recovered
+	 * by substring scanning — e.g. heavy use of column aliases not in the index, or a parser-grade dialect-specific
+	 * extractor.
+	 */
+	@NonNull
+	@Default
+	private IExpressionColumnExtractor expressionColumnExtractor = KnownColumnsExpressionExtractor.INSTANCE;
 
 	/** Lazily built column→owning-join index. {@code null} means "not yet computed". Memoised across queries. */
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
@@ -95,32 +140,44 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
 
 	/**
 	 * Per-alias cache of the resolved column set, to avoid calling {@link #columnsResolver} repeatedly (especially when
-	 * the resolver does DB-side work). Cleared by {@link #purgeColumnCache()}.
+	 * the resolver does DB-side work). Cleared by {@link #invalidateAll()}.
 	 */
-	private final Map<String, Set<String>> resolvedColumnsByAlias = new LinkedHashMap<>();
+	private final Map<String, Set<String>> resolvedColumnsByAlias = new ConcurrentSkipListMap<>();
+
+	private static final int MAX_CACHE_ENTRY = 128;
 
 	/**
 	 * Bounded cache keyed by referenced-column set → needed-alias set. Per the design note, the {@code Table<Record>}
 	 * rebuild cost is negligible, so we cache only the pruning decision, not the materialised table.
 	 */
-	private final Map<Set<String>, Set<String>> neededAliasCache = new LinkedHashMap<>(32, 0.75f, true) {
-		private static final long serialVersionUID = 1L;
-		private static final int MAX_ENTRIES = 128;
+	private final Cache<Set<String>, Set<String>> neededAliasCache =
+			CacheBuilder.newBuilder().maximumSize(MAX_CACHE_ENTRY).build();
 
-		@Override
-		protected boolean removeEldestEntry(Map.Entry<Set<String>, Set<String>> eldest) {
-			return size() > MAX_ENTRIES;
-		}
-	};
+	/** Memoised full-joins table (all joins included). Invalidated whenever a new {@code leftJoin} is declared. */
+	private Table<Record> fullTableCache;
 
 	// ── IJooqTableSupplier ──────────────────────────────────────────────────
 
 	@Override
 	public TableLike<?> tableFor(TableQueryV4 tableQuery) {
 		Set<String> referenced = ImmutableSet.copyOf(collectReferencedColumns(tableQuery));
-		Set<String> neededAliases =
-				neededAliasCache.computeIfAbsent(referenced, r -> ImmutableSet.copyOf(computeNeededAliases(r)));
+		Set<String> neededAliases;
+		try {
+			neededAliases =
+					neededAliasCache.get(referenced, () -> ImmutableSet.copyOf(computeNeededAliases(referenced)));
+		} catch (ExecutionException e) {
+			throw new IllegalArgumentException("Issue with t=" + tableQuery, e);
+		}
 		return schema.materialise(neededAliases);
+	}
+
+	@Override
+	public TableLike<?> getSchemaTable() {
+		// All-joins table: schema introspection (getColumns / getResultForFields) needs every column to be reachable.
+		if (fullTableCache == null) {
+			fullTableCache = schema.getSnowflakeTable();
+		}
+		return fullTableCache;
 	}
 
 	/**
@@ -128,10 +185,12 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
 	 * a late {@code leftJoin} on the underlying schema, after swapping {@link #columnsResolver}, or after the joined
 	 * tables' columns change at runtime.
 	 */
+	@Override
 	@SuppressWarnings("PMD.NullAssignment")
-	public void purgeColumnCache() {
+	public void invalidateAll() {
 		columnToAlias = null;
-		neededAliasCache.clear();
+		fullTableCache = null;
+		neededAliasCache.invalidateAll();
 		resolvedColumnsByAlias.clear();
 	}
 
@@ -149,14 +208,47 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
 		Set<String> needed = new LinkedHashSet<>();
 
 		// 1. Direct hits from referenced columns.
-		// Unknown columns (not in the index) are treated as base-table columns — matching the existing convention
-		// of `aliasToOriginal`, where an unqualified name that isn't recorded defaults to the base. Callers who
-		// want pruning to be correct for a column that isn't discoverable via `joinedTable.fields()` must declare
-		// it via the explicit `providedColumns` override on `leftJoin(...)`.
-		for (String col : referencedColumns) {
-			String owner = index.get(col);
-			if (owner != null && !owner.equals(baseAlias)) {
-				needed.add(owner);
+		// STRICT: every referenced column must resolve in the index (which now also covers the base table). When a
+		// reference does not match directly, the supplier falls back to the configured `expressionColumnExtractor`
+		// — handles SQL expressions like `sum(l_extendedprice * (1 - l_discount))` or
+		// `approx_count_distinct(c_custkey)`
+		// passed as the column name. The extractor returns the underlying column(s) the expression touches; each is
+		// looked up in the index. If neither the direct match nor the extractor produces an index hit, we throw —
+		// preferable to silently pruning a join and producing a downstream "column does not exist" SQL error.
+		for (String aliasedcol : referencedColumns) {
+			// `*` is the COUNT(*) sentinel — see AdhocJooqHelper.isExpression. It references no specific column
+			// and thus pulls in no join. Skip silently.
+			if (ICountMeasuresConstants.ASTERISK.equals(aliasedcol)) {
+				continue;
+			}
+
+			String originalColumn = Optional.ofNullable(schema.getAliasToOriginal().get(aliasedcol)).orElse(aliasedcol);
+
+			// BEWARE CaseSensitivity would play a role around here
+			String owner = index.get(originalColumn);
+			if (owner != null) {
+				if (!owner.equals(baseAlias)) {
+					needed.add(owner);
+				}
+				continue;
+			}
+			Set<String> extracted = expressionColumnExtractor.extractColumns(originalColumn, index.keySet());
+			boolean anyHit = false;
+			for (String inner : extracted) {
+				String innerOwner = index.get(inner);
+				if (innerOwner != null) {
+					anyHit = true;
+					if (!innerOwner.equals(baseAlias)) {
+						needed.add(innerOwner);
+					}
+				}
+			}
+			if (!anyHit) {
+				throw new IllegalArgumentException(
+						"Column `%s` is unknown — neither base `%s` nor any join provides it,".formatted(aliasedcol,
+								baseAlias) + " and the expressionColumnExtractor recovered no underlying column."
+								+ " Index columns: "
+								+ index.keySet());
 			}
 		}
 
@@ -198,20 +290,64 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
 	 * Builds (or returns the memoised) {@code Map<columnName, joinAlias>}. The index is populated from each
 	 * {@link JoinNode}'s {@code columnsOverride} if present, else from {@link #columnsResolver}. "Left wins" on
 	 * collisions: the first-declared alias for a column keeps it (matches the existing {@code registerInAliaser}
-	 * semantics in {@link JooqSnowflakeSchemaBuilder}).
+	 * semantics in {@link JooqTableSupplierBuilder}).
 	 */
 	protected Map<String, String> columnToAlias() {
 		if (columnToAlias == null) {
+			List<JoinNode> joinNodes = schema.getJoinNodes();
+			String baseAlias = schema.getBaseTableAlias();
+
+			// Fan out per-join column resolution onto `executorService`. With a DB-probing resolver each
+			// `resolveColumns(node)` is a blocking JDBC round-trip (`SELECT * LIMIT 0`); resolving them sequentially
+			// turns the first index build into N sequential network hops, which is what we want to avoid here.
+			// Declaration order is preserved by walking `joinNodes` for the merge step — the futures are joined in
+			// the same order they were dispatched, so the "left wins on collisions" semantics still holds.
+			List<CompletableFuture<Set<String>>> futures = new ArrayList<>(joinNodes.size());
+			for (JoinNode node : joinNodes) {
+				futures.add(CompletableFuture.supplyAsync(() -> resolveColumns(node), executorService));
+			}
+			// Base-table columns are resolved alongside, so the index is the SINGLE authoritative source for
+			// "what columns exist in this snowflake". `computeNeededAliases` can then fail strictly on unknown
+			// columns instead of silently treating them as base — catching SQL-expression columns and
+			// resolver-misconfigurations early.
+			CompletableFuture<Set<String>> baseFuture =
+					CompletableFuture.supplyAsync(this::resolveBaseColumns, executorService);
+
 			Map<String, String> idx = new LinkedHashMap<>();
-			for (JoinNode node : schema.getJoinNodes()) {
-				Set<String> columns = resolveColumns(node);
+			for (int i = 0; i < joinNodes.size(); i++) {
+				JoinNode node = joinNodes.get(i);
+				Set<String> columns = futures.get(i).join();
+				String alias = node.getAlias();
+				boolean dotFreeAlias = alias.indexOf('.') < 0;
 				for (String column : columns) {
 					// Unqualified form: first-declared wins on collisions (matches `registerInAliaser` /
 					// `putIfAbsent` semantics).
-					idx.putIfAbsent(column, node.getAlias());
-					// Qualified form: `alias.column` always resolves unambiguously to this join's alias.
-					idx.putIfAbsent(node.getAlias() + "." + column, node.getAlias());
+					idx.putIfAbsent(column, alias);
+					// Bare dotted form `alias.column` — the convention cube callers use today (e.g.
+					// `groupBy("p.productName")`). Skipped when alias OR column already contains a dot, since the
+					// resulting key would be ambiguous (e.g. `cust.a.b` could mean `cust` × `a.b` or `cust.a` × `b`).
+					if (dotFreeAlias && column.indexOf('.') < 0) {
+						idx.putIfAbsent(alias + "." + column, alias);
+					}
+					// Escaped form via JOOQ's two-part `Name.toString()` — quotes each segment so dots inside the
+					// alias or the column stay inside their segment. Same escaping convention as
+					// `registerInAliaser` and `withAliases` (both store `Name.toString()` in `aliasToOriginal`),
+					// and the only unambiguous form when either part already contains a dot.
+					idx.putIfAbsent(DSL.name(alias, column).toString(), alias);
 				}
+			}
+			// Register base-table columns last so joins win on collisions for naturally-shared key columns —
+			// matches `aliasToOriginal`'s "left/parent wins" convention and the existing per-join `putIfAbsent`
+			// semantics.
+			boolean dotFreeBase = baseAlias.indexOf('.') < 0;
+			Set<String> baseColumns = baseFuture.join();
+			for (String column : baseColumns) {
+				idx.putIfAbsent(column, baseAlias);
+				if (dotFreeBase && column.indexOf('.') < 0) {
+					idx.putIfAbsent(baseAlias + "." + column, baseAlias);
+				}
+				// Might be redundant with JooqTableSupplierBuilder.registerInAliaser(Name, Name)
+				idx.putIfAbsent(DSL.name(baseAlias, column).toString(), baseAlias);
 			}
 			columnToAlias = idx;
 		}
@@ -219,20 +355,23 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
 	}
 
 	/**
-	 * Resolves the column set for a {@link JoinNode}: {@code columnsOverride} if present, else delegates to
-	 * {@link #columnsResolver} and caches the result per alias so the resolver is invoked at most once per alias per
-	 * {@link #purgeColumnCache()} cycle (important when the resolver performs a DB round-trip).
+	 * Resolves the base table's columns through the same {@link IJooqColumnsResolver} used for joins, with the same
+	 * fallback to an empty set when the resolver yields nothing. Cached under the base alias in
+	 * {@link #resolvedColumnsByAlias} so repeated index rebuilds (after {@link #invalidateAll()}) reuse the result.
 	 */
-	protected Set<String> resolveColumns(JoinNode node) {
-		if (node.getColumnsOverride() != null) {
-			return node.getColumnsOverride();
-		}
-		return resolvedColumnsByAlias.computeIfAbsent(node.getAlias(), alias -> {
-			List<Field<?>> fields = columnsResolver.columnsOf(node.getJoinedTable());
+	protected Set<String> resolveBaseColumns() {
+		String baseAlias = schema.getBaseTableAlias();
+		return resolvedColumnsByAlias.computeIfAbsent(baseAlias, alias -> {
+			Set<String> override = schema.getBaseProvidedColumns();
+			if (override != null && !override.isEmpty()) {
+				return override;
+			}
+			List<Field<?>> fields = columnsResolver.columnsOf(schema.getDslSupplier(), schema.getBaseTable());
 			if (fields == null || fields.isEmpty()) {
-				log.debug("Join-pruning: columnsResolver returned no fields for joinedTable={} (alias={}) —"
-						+ " this join will not be prunable unless a columnsOverride is supplied on leftJoin(...)",
-						node.getJoinedTable(),
+				log.debug(
+						"Join-pruning: columnsResolver returned no fields for baseTable={} (alias={}) —"
+								+ " strict-mode `computeNeededAliases` will reject every referenced column",
+						schema.getBaseTable(),
 						alias);
 				return Set.of();
 			}
@@ -241,6 +380,30 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier {
 				probed.add(f.getName());
 			}
 			return probed;
+		});
+	}
+
+	/**
+	 * Resolves the column set for a {@link JoinNode}: {@code columnsOverride} if present, else delegates to
+	 * {@link #columnsResolver} and caches the result per alias so the resolver is invoked at most once per alias per
+	 * {@link #invalidateAll()} cycle (important when the resolver performs a DB round-trip).
+	 */
+	protected Set<String> resolveColumns(JoinNode node) {
+		if (node.getColumnsOverride() != null) {
+			return node.getColumnsOverride();
+		}
+		return resolvedColumnsByAlias.computeIfAbsent(node.getAlias(), alias -> {
+			List<Field<?>> fields = columnsResolver.columnsOf(schema.getDslSupplier(), node.getJoinedTable());
+			if (fields == null || fields.isEmpty()) {
+				log.debug("Join-pruning: columnsResolver returned no fields for joinedTable={} (alias={}) —"
+						+ " this join will not be prunable unless a columnsOverride is supplied on leftJoin(...)",
+						node.getJoinedTable(),
+						alias);
+				return Set.of();
+			}
+			// BEWARE Is this an opportunity to register fully qualified field names?
+			// It is actually done in `columnToAlias`
+			return fields.stream().map(Field::getName).collect(ImmutableSet.toImmutableSet());
 		});
 	}
 

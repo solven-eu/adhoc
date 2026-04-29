@@ -1,4 +1,4 @@
-import { computed, ref, reactive, watch, inject } from "vue";
+import { computed, ref, reactive, watch, inject, provide } from "vue";
 
 import { Collapse } from "bootstrap";
 
@@ -523,6 +523,36 @@ export default {
 			sendQuery();
 		};
 
+		// True when the engine is currently running a query (any leg of the loading state). Used by Submit
+		// (in this component) AND by the grid-controls Refresh button (provided below) to disable the
+		// affordance while a round-trip is already in flight — re-clicking would just queue an identical
+		// request.
+		const isQueryInFlight = computed(() => loadingV2.nbLoading >= 1);
+
+		// Distinguishes "Refreshing" (re-running the SAME query the grid is currently showing) from
+		// "Querying" (running a DIFFERENT query — the grid will be replaced with a new view). Compares
+		// the JSON of the queryModel-derived `queryJson` against the last successful `tabularView.query`
+		// (set by `onView` once a response is received). When `tabularView.query` is absent (first run,
+		// or after a Reset) we are by definition NOT refreshing.
+		const isSameAsLastQuery = computed(() => {
+			const current = queryJson.value;
+			const last = props.tabularView && props.tabularView.query;
+			if (!last) return false;
+			try {
+				return JSON.stringify(current) === JSON.stringify(last);
+			} catch (e) {
+				return false;
+			}
+		});
+
+		// Provide the trigger + status to descendants (notably the AdhocGridControls strip) so they can
+		// surface a Refresh button that mirrors Submit's effect when the wizard is hidden. Keep these out
+		// of `props` — they are intra-AdhocQuery wiring, not a public component contract.
+		provide("submitQuery", submitQuery);
+		provide("autoQuery", autoQuery);
+		provide("isQueryInFlight", isQueryInFlight);
+		provide("isSameAsLastQuery", isSameAsLastQuery);
+
 		return {
 			queryJson,
 			autoQuery,
@@ -532,6 +562,8 @@ export default {
 			closeOpenAccordions,
 			sendQueryError,
 			accordionState,
+			isQueryInFlight,
+			isSameAsLastQuery,
 		};
 	},
 	template: /* HTML */ `
@@ -553,13 +585,19 @@ export default {
 				body to reach it. Clicking Submit closes the accordion (see submitQuery), which
 				re-docks the block to its normal flow position below the wizard.
 
-				<Transition> wrap + :key="accordionState.isOpen" + mode="out-in" gives a subtle
-				fade/scale animation as a visual hint that the block moves between the two
-				positions. The actual position (static -> fixed) cannot be interpolated, so this
-				is a UX hint rather than a literal fly-over. Corresponding CSS classes
+				<Transition> wrap + :key="accordionState.isOpen" gives a subtle fade/scale
+				animation as a visual hint that the block moves between the two positions. The
+				actual position (static -> fixed) cannot be interpolated, so this is a UX hint
+				rather than a literal fly-over. Corresponding CSS classes
 				.submit-float-{enter,leave}-{from,active,to} live in index.html.
+
+				No mode attribute (default = simultaneous) so the docked block appears INSTANTLY
+				the moment the accordion closes, while the floating overlay fades out over the
+				old position on top of it. mode="out-in" was previously used here but it forced
+				the docked block to wait for the leave animation to complete (0.3s delay before
+				it reappeared under the wizard) — visibly bad.
 			-->
-			<Transition name="submit-float" mode="out-in">
+			<Transition name="submit-float">
 				<span
 					:key="accordionState.isOpen"
 					:class="accordionState.isOpen ? 'position-fixed shadow bg-body rounded p-2 border' : ''"
@@ -580,7 +618,32 @@ export default {
 						@click="closeOpenAccordions"
 					></button>
 					<div>
-						<button type="button" @click="submitQuery" class="btn btn-outline-primary">Submit</button>
+						<!--
+							Submit semantics:
+							- autoQuery OFF: Submit is the only way to trigger a query.
+							- autoQuery ON: the previous queryModel change has already auto-fired a request; pressing
+							  this button is functionally a Refresh of the same query, hence the relabel.
+							- While a query is in flight (isQueryInFlight), the button is disabled with a pulsing
+							  animation + inline spinner. The label adapts to the situation:
+								- "Refreshing…" — the in-flight query is identical to the one the grid is showing
+									(re-running the same query against the same data source).
+								- "Querying…" — the in-flight query differs from the displayed one (a new query is
+									replacing the previous view; visible especially on first run or after queryModel edits).
+						-->
+						<button
+							type="button"
+							@click="submitQuery"
+							class="btn btn-outline-primary"
+							:class="isQueryInFlight ? 'adhoc-busy' : ''"
+							:disabled="isQueryInFlight"
+							:title="isQueryInFlight ? 'A query is already running' : (autoQuery ? 'Re-run the current query' : 'Run the query')"
+						>
+							<span v-if="isQueryInFlight">
+								<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+								{{ isSameAsLastQuery ? "Refreshing…" : "Querying…" }}
+							</span>
+							<span v-else>{{ autoQuery ? "Refresh" : "Submit" }}</span>
+						</button>
 						<span v-if="sendQueryError" class="alert alert-warning" role="alert">{{sendQueryError}}</span>
 					</div>
 

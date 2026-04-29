@@ -57,7 +57,7 @@ import lombok.experimental.SuperBuilder;
  */
 @SuperBuilder
 @EqualsAndHashCode(callSuper = false)
-public class ColumnarTabularView extends AListBasedTabularView implements IReadableTabularView {
+public class ColumnarTabularView extends AListBasedTabularView {
 
 	@Default
 	@Getter

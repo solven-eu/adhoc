@@ -11,6 +11,8 @@ import { SlickGrid, SlickDataView } from "slickgrid";
 import gridHelper from "./adhoc-query-grid-helper.js";
 import { isLoading as isLoadingHelper, loadingPercent as loadingPercentHelper, loadingMessage as loadingMessageHelper } from "./adhoc-query-grid-loading.js";
 
+import { usePreferencesStore } from "./store-preferences.js";
+
 export default {
 	// https://vuejs.org/guide/components/registration#local-registration
 	components: {
@@ -247,6 +249,11 @@ export default {
 				// so the cell formatter can paint a heatmap background on each numeric cell, and
 				// so the footer row can surface min/sum/max without re-scanning the values.
 				measureStats = gridHelper.computeMeasureStats(measureNames, view.values);
+				// Secondary-heatmap stats: per-measure min/max bucketed by the parent slice (the row's
+				// groupBy values minus the LAST view column). Drives the per-cell vertical bar so each
+				// cell can be compared to its sibling rows under the same parent member.
+				const parentColumnNames = columnNames.slice(0, -1);
+				const parentSliceStats = gridHelper.computeParentSliceStats(measureNames, parentColumnNames, view.coordinates, view.values);
 				// Stash the freshly-computed stats on the shared singleton so the per-measure
 				// Statistics modal can be opened from the grid header without re-scanning the
 				// view. Resetting the visible measure name on each resync prevents stale
@@ -256,7 +263,9 @@ export default {
 				}
 
 				// TODO Refresh the columns on `formatOptions` changes, else we need to query to see the format changes
-				gridColumns.push(...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats));
+				gridColumns.push(
+					...gridHelper.measuresToGridColumns(measureNames, props.queryModel, renderCallback, formatOptions, measureStats, parentSliceStats, parentColumnNames),
+				);
 
 				{
 					props.tabularView.loading.sorting = true;
@@ -381,6 +390,22 @@ export default {
 			// that would re-fire this very watcher, causing the grid to render twice per
 			// edit (and logging `Rendering measureNames=` twice). Shallow reference watching
 			// fires exactly once per server response — which is what the UX needs.
+			// When the wizard is hidden/shown, the grid column transitions between col-9 and col-12. SlickGrid's
+			// viewport size is cached on construction and on explicit resize events; without an explicit
+			// notification it keeps drawing against the old width and the layout looks broken until the user
+			// triggers Submit or hits F5. Watch `wizardHidden` and call `resizeCanvas()` so SlickGrid recomputes
+			// its viewport against the new column width. `nextTick`-style timing is achieved by running on the
+			// reactive change AFTER Vue has applied the col-* class binding.
+			const preferencesStoreForResize = usePreferencesStore();
+			watch(
+				() => preferencesStoreForResize.wizardHidden,
+				() => {
+					if (grid) {
+						grid.resizeCanvas();
+					}
+				},
+			);
+
 			watch(
 				() => props.tabularView.view,
 				(newView, oldView) => {

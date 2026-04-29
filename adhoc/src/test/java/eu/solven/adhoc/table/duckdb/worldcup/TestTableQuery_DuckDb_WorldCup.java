@@ -70,7 +70,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements IAdhocTestConstants {
 
-	WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema();
+	WorldCupPlayersSchema worldCupSchema = new WorldCupPlayersSchema(dslSupplier);
 
 	IMeasureForest forest = worldCupSchema.getForest(worldCupSchema.getName());
 
@@ -97,7 +97,9 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry(countAsterisk.getName(), 39_256L).hasSize(1);
+			// `COUNT(*)` changes if we do not JOIN by matches
+			// Assertions.assertThat((Map) v).containsEntry(countAsterisk.getName(), 39_256L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry(countAsterisk.getName(), 37_784L).hasSize(1);
 		});
 	}
 
@@ -152,7 +154,9 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry("event_count", 17L).hasSize(1);
+			// `COUNT(*)` changes if we do not JOIN by matches
+			// Assertions.assertThat((Map) v).containsEntry("event_count", 17L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry("event_count", 15L).hasSize(1);
 		});
 	}
 
@@ -163,7 +167,9 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasSize(1).hasEntrySatisfying(Map.of(), v -> {
-			Assertions.assertThat((Map) v).containsEntry("goal_count", 17L).hasSize(1);
+			// `COUNT(*)` changes if we do not JOIN by matches
+			// Assertions.assertThat((Map) v).containsEntry("goal_count", 17L).hasSize(1);
+			Assertions.assertThat((Map) v).containsEntry("goal_count", 15L).hasSize(1);
 		});
 	}
 
@@ -191,12 +197,12 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	@Test
 	public void testMatchCount_previousWorldCup_groupByYear() {
 		ITabularView result = cube().execute(
-				CubeQuery.builder().measure("match_count", "match_count.previousWorldCup").groupByAlso("year").build());
+				CubeQuery.builder().measure("match_count", "match_count.previousWorldCup").groupByAlso("Year").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
 		Assertions.assertThat(mapBased.getCoordinatesToValues())
 				.hasSize(20)
-				.hasEntrySatisfying(Map.of("year", 1998L), v -> {
+				.hasEntrySatisfying(Map.of("Year", 1998L), v -> {
 					Assertions.assertThat((Map) v)
 							.containsEntry("match_count", 64L)
 							.containsEntry("match_count.previousWorldCup", 52L)
@@ -222,7 +228,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	public void testMatchCount_sinceInception_filterYear() {
 		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure("match_count", "match_count.sinceInception2")
-				.andFilter("year", 1998L)
+				.andFilter("Year", 1998L)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -240,7 +246,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure("coach_score")
 				.groupByAlso("minute")
-				.filter(AndFilter.and(ColumnFilter.matchLike("Coach name", "LORENZO%"),
+				.filter(AndFilter.and(ColumnFilter.matchLike("Coach Name", "LORENZO%"),
 						ColumnFilter.matchEq("minute", 4)))
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
@@ -256,25 +262,25 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	@Test
 	public void testMatchCount_sinceInception_groupByYear() {
 		ITabularView result = cube().execute(
-				CubeQuery.builder().measure("match_count", "match_count.sinceInception2").groupByAlso("year").build());
+				CubeQuery.builder().measure("match_count", "match_count.sinceInception2").groupByAlso("Year").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1930L), v -> {
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("Year", 1930L), v -> {
 			Assertions.assertThat((Map) v)
 					.containsEntry("match_count", 18L)
 					.containsEntry("match_count.sinceInception2", 18L)
 					.hasSize(2);
-		}).hasEntrySatisfying(Map.of("year", 1934L), v -> {
+		}).hasEntrySatisfying(Map.of("Year", 1934L), v -> {
 			Assertions.assertThat((Map) v)
 					.containsEntry("match_count", 17L)
 					.containsEntry("match_count.sinceInception2", 18L + 17L)
 					.hasSize(2);
-		}).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+		}).hasEntrySatisfying(Map.of("Year", 1998L), v -> {
 			Assertions.assertThat((Map) v)
 					.containsEntry("match_count", 64L)
 					.containsEntry("match_count.sinceInception2", 580L)
 					.hasSize(2);
-		}).hasEntrySatisfying(Map.of("year", 2002L), v -> {
+		}).hasEntrySatisfying(Map.of("Year", 2002L), v -> {
 			Assertions.assertThat((Map) v)
 					.containsEntry("match_count", 64L)
 					.containsEntry("match_count.sinceInception2", 580L + 64L)
@@ -289,7 +295,7 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 						"goal_count",
 						// "redcard_count",
 						"match_count")
-				.andFilter("year", 1998L)
+				.andFilter("Year", 1998L)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
@@ -307,10 +313,10 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	@Test
 	public void testCoachScore_sinceInception_groupByYear() {
 		ITabularView result = cube().execute(
-				CubeQuery.builder().measure("coach_score", "coach_score.sinceInception2").groupByAlso("year").build());
+				CubeQuery.builder().measure("coach_score", "coach_score.sinceInception2").groupByAlso("Year").build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("Year", 1998L), v -> {
 			Assertions.assertThat((Map) v).hasEntrySatisfying("coach_score", score -> {
 				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(0.71, 0.72);
 			}).hasEntrySatisfying("coach_score.sinceInception2", score -> {
@@ -323,12 +329,12 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 	public void testCoachScore_sinceInception_groupByYear_filterByYear() {
 		ITabularView result = cube().execute(CubeQuery.builder()
 				.measure("coach_score", "coach_score.sinceInception2")
-				.groupByAlso("year")
-				.andFilter("year", 1998L)
+				.groupByAlso("Year")
+				.andFilter("Year", 1998L)
 				.build());
 		MapBasedTabularView mapBased = MapBasedTabularView.load(result);
 
-		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("year", 1998L), v -> {
+		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("Year", 1998L), v -> {
 			Assertions.assertThat((Map) v).hasEntrySatisfying("coach_score", score -> {
 				Assertions.assertThat(score).asInstanceOf(InstanceOfAssertFactories.DOUBLE).isBetween(0.71, 0.72);
 			}).hasEntrySatisfying("coach_score.sinceInception2", score -> {
@@ -352,9 +358,13 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("minute", 1L), v -> {
 			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 135L));
 		}).hasEntrySatisfying(Map.of("minute", 90L), v -> {
-			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 328L));
+			// `COUNT(*)` changes if we do not JOIN by matches
+			// Assertions.assertThat(v).isEqualTo(Map.of("event_count", 328L));
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 294L));
 		}).hasEntrySatisfying(Map.of("minute", "*"), v -> {
-			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 11_270L));
+			// `COUNT(*)` changes if we do not JOIN by matches
+			// Assertions.assertThat(v).isEqualTo(Map.of("event_count", 11_270L));
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 10_704L));
 		}).hasSize(120 + 1);
 	}
 
@@ -372,7 +382,9 @@ public class TestTableQuery_DuckDb_WorldCup extends ADuckDbJooqTest implements I
 		Assertions.assertThat(mapBased.getCoordinatesToValues()).hasEntrySatisfying(Map.of("Position", "GKC"), v -> {
 			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 13L));
 		}).hasEntrySatisfying(MapWithNulls.of("Position", null), v -> {
-			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 10569L));
+			// `COUNT(*)` changes if we do not JOIN by matches
+			// Assertions.assertThat(v).isEqualTo(Map.of("event_count", 10569L));
+			Assertions.assertThat(v).isEqualTo(Map.of("event_count", 10045L));
 		}).hasSize(4 + 1);
 	}
 

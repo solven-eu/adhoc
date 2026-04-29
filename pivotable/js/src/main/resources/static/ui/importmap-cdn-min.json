@@ -9,7 +9,8 @@
         "@popperjs/core": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/popperjs__core/2.11.8/dist/esm/index.js",
         "slickgrid": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/slickgrid/5.18.2/dist/esm/index.mjs",
         "sortablejs": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/sortablejs/1.15.7/modular/sortable.esm.js",
-        "lodashEs": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm",
+        "lodashEs": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/lodash.js",
+        "lodashEs/": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/",
         "mermaid": "https://cdn.jsdelivr.net/webjars/org.webjars.npm/mermaid/11.6.0/dist/mermaid.esm.min.mjs"
     }
 }

@@ -65,6 +65,63 @@ export const computeMeasureStats = function (measureNames, values) {
 	return stats;
 };
 
+// Bucket measure values by "parent slice" (a slice's groupBy values minus the LAST one) and return
+// per-bucket min/max so the secondary heatmap can render a vertical bar relative to the parent member
+// instead of relative to the whole column.
+//
+// Returns `{ measureName: Map<parentKey, {min, max}> }`, or `null` when `parentColumnNames` is empty
+// (single-groupBy queries have no parent — the secondary heatmap is hidden in that case so it never
+// duplicates the primary one).
+//
+// `parentKey` is JSON-encoded so equal slices map to equal map keys regardless of value type.
+export const computeParentSliceStats = function (measureNames, parentColumnNames, coordinates, values) {
+	if (!parentColumnNames || parentColumnNames.length === 0) {
+		return null;
+	}
+	const result = {};
+	for (const measureName of measureNames) {
+		result[measureName] = new Map();
+	}
+	for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+		const coords = coordinates[rowIndex];
+		const row = values[rowIndex];
+		// Parent key — the row's coordinates limited to the columns left of the last view column.
+		const parentParts = [];
+		for (const col of parentColumnNames) {
+			parentParts.push(coords[col]);
+		}
+		const parentKey = JSON.stringify(parentParts);
+		for (const measureName of measureNames) {
+			const v = row[measureName];
+			if (typeof v !== "number" || Number.isNaN(v)) continue;
+			const bucket = result[measureName];
+			let stats = bucket.get(parentKey);
+			if (!stats) {
+				stats = { min: v, max: v };
+				bucket.set(parentKey, stats);
+			} else {
+				if (v < stats.min) stats.min = v;
+				if (v > stats.max) stats.max = v;
+			}
+		}
+	}
+	return result;
+};
+
+// Compute the secondary-heatmap fill ratio for a value relative to its parent slice's [min, max].
+// Returns a number in [MIN_FILL, 1] when the bar should render, or `null` otherwise (no parent stats,
+// no spread inside the parent, non-numeric value). MIN_FILL is deliberately not zero so the bar stays
+// visible at the minimum and does not let the user lose track of the secondary signal in cells with
+// all-equal-or-near-equal parent neighbours.
+export const SECONDARY_HEATMAP_MIN_FILL = 0.1;
+export const secondaryHeatmapFill = function (value, parentStats) {
+	if (!parentStats) return null;
+	if (typeof value !== "number" || Number.isNaN(value)) return null;
+	if (parentStats.min === parentStats.max) return null;
+	const ratio = (value - parentStats.min) / (parentStats.max - parentStats.min);
+	return SECONDARY_HEATMAP_MIN_FILL + (1 - SECONDARY_HEATMAP_MIN_FILL) * ratio;
+};
+
 // Map a numeric value to a heatmap background color based on the measure's OBSERVED
 // [min, max] range. The scale is calibrated per column so that contrast spans the full
 // alpha range from the column's minimum to its maximum, regardless of where those

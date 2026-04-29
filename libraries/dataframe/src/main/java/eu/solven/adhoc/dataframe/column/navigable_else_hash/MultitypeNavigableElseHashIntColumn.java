@@ -24,13 +24,11 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
 import java.util.Optional;
 
-import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGetSorted;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashIntColumn;
-import eu.solven.adhoc.dataframe.column.navigable.IHasSortedLeg;
 import eu.solven.adhoc.dataframe.column.navigable.MultitypeNavigableIntColumn;
 import eu.solven.adhoc.dataframe.join.UnderlyingQueryStepHelpersNavigableElseHash;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -53,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ToString
 public class MultitypeNavigableElseHashIntColumn extends AMultitypeNavigableElseHashColumn<Integer>
-		implements IMultitypeIntColumnFastGet, ICompactable, IHasSortedLeg {
+		implements IMultitypeIntColumnFastGet {
 	@Default
 	@NonNull
 	@Getter(AccessLevel.PROTECTED)

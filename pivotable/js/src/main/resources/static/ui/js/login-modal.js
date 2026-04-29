@@ -5,12 +5,12 @@ import { useUserStore } from "./store-user.js";
 
 import { Modal } from "bootstrap";
 
-import LoginRef from "./login-ref.js";
+import LoginChip from "./login-chip.js";
 import LoginOptions from "./login-providers.js";
 
 export default {
 	components: {
-		LoginRef,
+		LoginChip,
 		LoginOptions,
 	},
 	props: {

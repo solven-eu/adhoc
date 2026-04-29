@@ -22,9 +22,6 @@
  */
 package eu.solven.adhoc.table.sql.join;
 
-import java.util.List;
-import java.util.Map;
-
 import org.assertj.core.api.Assertions;
 import org.jooq.Record;
 import org.jooq.Table;
@@ -32,18 +29,22 @@ import org.jooq.impl.DSL;
 import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.table.sql.AdhocJooqHelper;
+import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
 
-public class TestJooqSnowflakeSchemaBuilder {
+public class TestJooqTableSupplierBuilder {
 	static {
 		AdhocJooqHelper.disableBanners();
 	}
 
+	final JooqTableSupplierBuilder snowflakeBuilder = JooqTableSupplierBuilder.builder()
+			.dslSupplier(DuckDBHelper.inMemoryDSLSupplier())
+			.baseTable(DSL.table("baseTable"))
+			.baseTableAlias("base")
+			.build();
+
 	@Test
 	public void testSnowflake() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable"), "joined", List.of(Map.entry("baseA", "joinedA")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable")).alias("joined").on("baseA", "joinedA"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -60,11 +61,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 
 	@Test
 	public void testSnowflake_explicitForeignKeyWithDot() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry("joined1.baseA", "joined2A")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
+				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("joined1.baseA", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -83,11 +81,9 @@ public class TestJooqSnowflakeSchemaBuilder {
 
 	@Test
 	public void testSnowflake_fieldWithWithDot() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry("\"ill_name.baseA\"", "joined2A")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
+				.leftJoin(
+						j -> j.table(DSL.table("joinedTable2")).alias("joined2").on("\"ill_name.baseA\"", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -108,11 +104,8 @@ public class TestJooqSnowflakeSchemaBuilder {
 	// Weird pathes can be prefixed with `;`
 	@Test
 	public void testSnowflake_weirdPath() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
-		snowflakeBuilder.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry(";ill_name.baseA''", "joined2A")));
+		snowflakeBuilder.leftJoin(j -> j.table(DSL.table("joinedTable1")).alias("joined1").on("baseA", "joined1A"))
+				.leftJoin(j -> j.table(DSL.table("joinedTable2")).alias("joined2").on(";ill_name.baseA''", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -129,16 +122,33 @@ public class TestJooqSnowflakeSchemaBuilder {
 				.hasSize(1);
 	}
 
+	// Empty-consumer should drop the JOIN cleanly — useful for callers that wrap a JOIN in a runtime
+	// condition: when the condition is false, they skip populating the builder and the JOIN simply does not
+	// happen, leaving the snowflake table unchanged.
+	@Test
+	public void testEmptyConsumer_dropsTheJoin() {
+		String beforeSql = snowflakeBuilder.getSnowflakeTable().toString();
+
+		// No-op consumer — does not call .table(...), .alias(...), or .on(...).
+		snowflakeBuilder.leftJoin(j -> {
+		});
+
+		// Snowflake table is unchanged: no JOIN was committed.
+		Assertions.assertThat(snowflakeBuilder.getSnowflakeTable().toString()).isEqualTo(beforeSql);
+		Assertions.assertThat(snowflakeBuilder.getAliasToOriginal()).isEmpty();
+	}
+
 	@Test
 	public void testSnowflake_withAlias() {
-		JooqSnowflakeSchemaBuilder snowflakeBuilder =
-				JooqSnowflakeSchemaBuilder.builder().baseTable(DSL.table("baseTable")).baseTableAlias("base").build();
-
 		snowflakeBuilder.withAlias("aliasBase", "baseA")
-				.leftJoin(DSL.table("joinedTable1"), "joined1", List.of(Map.entry("baseA", "joined1A")))
-				.withAlias("alias1", "joined1A")
-				.leftJoin(DSL.table("joinedTable2"), "joined2", List.of(Map.entry(";ill_name.baseA''", "joined2A")))
-				.withAlias("alias2", "joined2A");
+				.leftJoin(j -> j.table(DSL.table("joinedTable1"))
+						.alias("joined1")
+						.on("baseA", "joined1A")
+						.withAlias("alias1", "joined1A"))
+				.leftJoin(j -> j.table(DSL.table("joinedTable2"))
+						.alias("joined2")
+						.on(";ill_name.baseA''", "joined2A")
+						.withAlias("alias2", "joined2A"));
 
 		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
 
@@ -156,5 +166,38 @@ public class TestJooqSnowflakeSchemaBuilder {
 				.containsEntry("alias1", "\"joined1\".\"joined1A\"")
 				.containsEntry("alias2", "\"joined2\".\"joined2A\"")
 				.hasSize(4);
+	}
+
+	// `from(...)` is purely a convenience that prepends a single alias to unqualified left columns. When the
+	// left side of an ON clause needs to mix columns from MULTIPLE earlier tables (typical multi-key join such
+	// as `(a.id, b.color) → c`), the caller can omit `from(...)` entirely and pass each left column as a
+	// fully-qualified two-part name. `parseOnName` returns multipart names as-is without prepending anything,
+	// so `a.id` resolves to `a.id` and `b.color` resolves to `b.color` — both correctly bound to their own
+	// owning table even though no single `from(...)` could express the pair.
+	@Test
+	public void testSnowflake_multiTableLeftSide_noFrom_qualifiesEachLeftColumn() {
+		snowflakeBuilder
+				// base → a (single-key join, default `from` = base)
+				.leftJoin(j -> j.table(DSL.table("table_a")).alias("a").on("a_id", "id"))
+				// base → b (single-key join, default `from` = base)
+				.leftJoin(j -> j.table(DSL.table("table_b")).alias("b").on("b_id", "id"))
+				// (a, b) → c on (a.id = c.a_id AND b.color = c.color) — multi-table left side: NO `from(...)`,
+				// each left column is given as the fully-qualified `<alias>.<column>` form.
+				.leftJoin(j -> j.table(DSL.table("table_c")).alias("c").on("a.id", "a_id").on("b.color", "color"));
+
+		Table<Record> snowflakeTable = snowflakeBuilder.getSnowflakeTable();
+
+		Assertions.assertThat(snowflakeTable.toString()).isEqualTo("""
+				baseTable "base"
+				  left outer join table_a "a"
+				    on "base"."a_id" = "a"."id"
+				  left outer join table_b "b"
+				    on "base"."b_id" = "b"."id"
+				  left outer join table_c "c"
+				    on (
+				      "a"."id" = "c"."a_id"
+				      and "b"."color" = "c"."color"
+				    )
+								""".trim());
 	}
 }

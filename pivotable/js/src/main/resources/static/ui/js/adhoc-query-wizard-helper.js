@@ -1,5 +1,5 @@
-// Ordering of columns
-import _ from "lodashEs";
+// Ordering of columns. Per-function import to avoid fetching the lodash root bundle.
+import sortBy from "lodashEs/sortBy.js";
 
 export default {
 	removeTag: function (searchOptions, tag) {
@@ -101,6 +101,6 @@ export default {
 
 		// Measures has to be sorted by name
 		// https://stackoverflow.com/questions/8996963/how-to-perform-case-insensitive-sorting-array-of-string-in-javascript
-		return _.sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
+		return sortBy(filtereditems, [(resultItem) => (resultItem.key || resultItem.name).toLowerCase()]);
 	},
 };

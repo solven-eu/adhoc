@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.table.composite;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -90,6 +91,7 @@ import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.composite.CompositeCubeHelper.CompatibleMeasures;
 import eu.solven.adhoc.table.composite.SubMeasureAsAggregator.SubMeasureAsAggregatorBuilder;
+import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -108,7 +110,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 // GodClass: large class kept whole because the methods coordinate composite-cube dispatch and splitting them would
 // require leaking many private invariants. Refactor tracked separately.
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
 public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDetails {
 
 	/**
@@ -141,14 +143,24 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		SetMultimap<String, ColumnMetadata> columnToMeta = SetMultimapBuilder.treeKeys().hashSetValues().build();
 		SetMultimap<String, String> columnToCubes = SetMultimapBuilder.treeKeys().hashSetValues().build();
 
-		cubes.stream().forEach(cube -> {
-			cube.getColumns().forEach(c -> {
-				String columnName = c.getName();
+		// Each subCube's getColumns() is itself @Blocking (probes its own data source). Fan out the calls on the
+		// shared executor service so a composite over N subCubes does not pay N sequential round-trips. We use
+		// AdhocFactoriesUnsafe.factories.getExecutorService() because getColumns() has no QueryPod in scope and
+		// therefore no per-query executor — falling back on the global one keeps every blocking call off the
+		// FJP common pool while reusing the project's standard mixed/VT pool.
+		ListeningExecutorService executor = AdhocFactoriesUnsafe.factories.getExecutorService();
+		Map<ICubeWrapper, Collection<ColumnMetadata>> cubeToColumns = LinkedHashMap.newLinkedHashMap(cubes.size());
+		Map<ICubeWrapper, CompletableFuture<Collection<ColumnMetadata>>> futures =
+				LinkedHashMap.newLinkedHashMap(cubes.size());
+		cubes.forEach(cube -> futures.put(cube, CompletableFuture.supplyAsync(cube::getColumns, executor)));
+		futures.forEach((cube, future) -> cubeToColumns.put(cube, future.join()));
 
-				columnToMeta.put(columnName, c);
-				columnToCubes.put(columnName, cube.getName());
-			});
-		});
+		cubeToColumns.forEach((cube, cubeColumns) -> cubeColumns.forEach(c -> {
+			String columnName = c.getName();
+
+			columnToMeta.put(columnName, c);
+			columnToCubes.put(columnName, cube.getName());
+		}));
 
 		// Add a column enables to groupBy/filter through subCubes
 		optCubeSlicer.ifPresent(cubeColumn -> columnToMeta.put(cubeColumn,
@@ -163,28 +175,32 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				})
 				// add composite-transverse tag
 				.map(c -> {
-					ColumnMetadataBuilder builder = c.toBuilder();
-					Set<String> cubesWithColumn = columnToCubes.get(c.getName());
-					if (optCubeSlicer.isPresent() && optCubeSlicer.get().equals(c.getName())
-							|| cubesWithColumn.size() == cubes.size()) {
-						return builder.tag("composite-full").build();
-					} else {
-						// Current column is unknown by some cube
-						builder.tag("composite-partial");
-
-						cubes.forEach(cube -> {
-							String cubeName = cube.getName();
-							if (cubesWithColumn.contains(cubeName)) {
-								builder.tag("composite-known:" + cubeName);
-							} else {
-								builder.tag("composite-unknown:" + cubeName);
-							}
-						});
-
-						return builder.build();
-					}
+					return toMeta(columnToCubes, c);
 				})
 				.toList();
+	}
+
+	protected ColumnMetadata toMeta(SetMultimap<String, String> columnToCubes, ColumnMetadata c) {
+		ColumnMetadataBuilder builder = c.toBuilder();
+		Set<String> cubesWithColumn = columnToCubes.get(c.getName());
+		if (optCubeSlicer.isPresent() && optCubeSlicer.get().equals(c.getName())
+				|| cubesWithColumn.size() == cubes.size()) {
+			return builder.tag("composite-full").build();
+		} else {
+			// Current column is unknown by some cube
+			builder.tag("composite-partial");
+
+			cubes.forEach(cube -> {
+				String cubeName = cube.getName();
+				if (cubesWithColumn.contains(cubeName)) {
+					builder.tag("composite-known:" + cubeName);
+				} else {
+					builder.tag("composite-unknown:" + cubeName);
+				}
+			});
+
+			return builder.build();
+		}
 	}
 
 	@Override
@@ -338,12 +354,19 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 			}
 
 			ITabularView subView = e.getValue();
-			return subView.stream(slice -> {
-				return oAsMap -> {
-					return transcodeSliceToComposite(compositeQuery
-							.getGroupBy(), subCube, slice, oAsMap, missingColumnsAsmask);
-				};
-			});
+			return streamRecords(compositeQuery, subCube, missingColumnsAsmask, subView);
+		});
+	}
+
+	protected Stream<? extends ITabularRecord> streamRecords(TableQueryV2 compositeQuery,
+			ICubeWrapper subCube,
+			Map<String, Object> missingColumnsAsmask,
+			ITabularView subView) {
+		return subView.stream(slice -> {
+			return oAsMap -> {
+				return transcodeSliceToComposite(compositeQuery
+						.getGroupBy(), subCube, slice, oAsMap, missingColumnsAsmask);
+			};
 		});
 	}
 
@@ -482,7 +505,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * is a Virtual Thread executor when the query is concurrent, so all sub-queries can run in parallel without
 	 * exhausting platform threads.
 	 */
-	@SuppressWarnings({ "PMD.CloseResource", "PMD.ExceptionAsFlowControl" })
+	@SuppressWarnings("PMD.ExceptionAsFlowControl")
 	protected Map<String, ITabularView> executeSubQueries(QueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 

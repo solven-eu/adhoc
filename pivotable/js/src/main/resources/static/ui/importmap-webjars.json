@@ -10,6 +10,7 @@
         "slickgrid": "/webjars/slickgrid/5.18.2/dist/esm/index.mjs",
         "sortablejs": "/webjars/sortablejs/1.15.7/modular/sortable.esm.js",
         "lodashEs": "/webjars/lodash-es/4.17.21/lodash.js",
+        "lodashEs/": "/webjars/lodash-es/4.17.21/",
         "mermaid": "/webjars/mermaid/11.6.0/dist/mermaid.esm.mjs"
     }
 }

@@ -138,6 +138,17 @@
 		<exclude name="AvoidCatchingNPE" />
 		<exclude name="AvoidCatchingGenericException" />
 	</rule>
+	<!-- https://docs.pmd-code.org/latest/pmd_rules_java_errorprone.html#closeresource -->
+	<rule ref="category/java/errorprone.xml/CloseResource">
+		<properties>
+			<!-- Whitelist long-lived shared executor pools whose lifecycle is owned by the application, not
+				 by the caller. `IAdhocFactories.getExecutorService()` returns a project-wide pool managed via
+				 `AdhocFactoriesUnsafe`; closing it from a caller would shut down the shared pool for the whole
+				 process. Without this exception, every assignment of `getExecutorService()` to a local
+				 reference triggers a CloseResource warning. -->
+			<property name="allowedResourceMethodPatterns" value="eu.solven.adhoc.engine.IHasExecutorAndSliceFactory#getExecutorService()" />
+		</properties>
+	</rule>
 	<rule ref="category/java/multithreading.xml">
 		<exclude name="DoNotUseThreads" />
 		<exclude name="UseConcurrentHashMap" />

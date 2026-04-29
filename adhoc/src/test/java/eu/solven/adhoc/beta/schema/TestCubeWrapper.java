@@ -175,11 +175,50 @@ public class TestCubeWrapper {
 						.build())
 				.build();
 
+		// With the unqualified-fallback in place: `aliasC -> join.rawC` is resolved by stripping the
+		// `join.` qualifier and finding the bare `rawC` in the table, so `aliasC` is no longer dangling.
+		Assertions.assertThat(cube.getColumnsAsMap()).containsKey("rawC").containsKey("aliasC").hasSize(2);
+		Assertions.assertThat(cube.getColumnsAsMap().get("aliasC").getType()).isEqualTo(String.class);
+	}
+
+	// Reproducer for the JooqTableSupplierBuilder scenario: an aliaser declares
+	// aliasedColor -> b.color
+	// but the table only knows the unqualified `color` (SQL backends typically return the column name without
+	// the table-qualifier when listing columns — see JooqTableWrapper.getColumns). The two existing resolution
+	// paths in CubeWrapper.getColumns — (1) lookup by underlying name `b.color`, (2) lookup by alias name
+	// `aliasedColor` — both miss because the table's column key is the unqualified `color`. A third-try fallback
+	// extracts the column part after the LAST dot from the underlying name and retries with that.
+	@Test
+	public void testAliasedColumns_qualifiedUnderlying_unqualifiedTableColumn() {
+		InMemoryTable table = InMemoryTable.builder().build();
+
+		// SQL-shape: the table reports the unqualified `color`, even though the join produces `b.color`.
+		table.add(Map.of("color", "red"));
+
+		ICubeWrapper rawCube = CubeWrapper.builder()
+				.name(this.getClass().getSimpleName())
+				.forest(MeasureForest.empty())
+				.table(table)
+				.build();
+
+		ICubeWrapper cube = CubeWrapperEditor.edit(rawCube)
+				.aliaser(MapTableAliaser.builder().aliasToOriginal("aliasedColor", "b.color").build())
+				.build();
+
+		// With the unqualified-fallback in place: `aliasedColor` resolves to the unqualified `color` (extracted
+		// from `b.color` by stripping the table-qualifier), so the schema exposes both the original column and
+		// its alias.
 		Assertions.assertThat(cube.getColumnsAsMap())
-				.containsEntry("rawC", ColumnMetadata.builder().name("rawC").type(String.class).alias("rawC").build())
-				// `aliasC` is dangling as `tableColumn=join.rawC` did not match the unqualified name `rawC` from the
-				// table, and `aliasC` itself is not a known column either. It is therefore discarded.
-				.hasSize(1);
+				.containsEntry("color",
+						ColumnMetadata.builder().name("color").type(String.class).alias("aliasedColor").build())
+				.containsEntry("aliasedColor",
+						ColumnMetadata.builder()
+								.name("aliasedColor")
+								.type(String.class)
+								.alias("color")
+								.alias("aliasedColor")
+								.build())
+				.hasSize(2);
 	}
 
 	@Test

@@ -29,12 +29,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import eu.solven.adhoc.util.Blocking;
 import eu.solven.adhoc.util.IHasColumnsKeySet;
 import eu.solven.pepper.core.PepperStreamHelper;
 
 /**
  * Helps describing the column of some data-structure.
- * 
+ *
  * @author Benoit Lacelle
  */
 @FunctionalInterface
@@ -42,9 +43,15 @@ public interface IHasColumns extends IHasColumnsKeySet, IHasColumnTypes {
 
 	/**
 	 * Must be distinct per name.
-	 * 
+	 *
+	 * <p>
+	 * Marked {@link Blocking} because typical implementations probe the underlying data source (JDBC metadata, remote
+	 * schema fetch, sub-cube fan-out) — must not be called from {@code ForkJoinPool} workers; safe on a Virtual Thread
+	 * executor.
+	 *
 	 * @return the columns available for groupBy operations
 	 */
+	@Blocking("typical implementations probe the underlying data source (JDBC metadata, remote schema, …)")
 	Collection<ColumnMetadata> getColumns();
 
 	default Map<String, ColumnMetadata> getColumnsAsMap() {

@@ -27,12 +27,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.solven.adhoc.beta.schema.AdhocSchema;
@@ -52,7 +49,7 @@ import eu.solven.adhoc.table.sql.IDSLSupplier;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.table.sql.join.JooqSnowflakeSchemaBuilder;
+import eu.solven.adhoc.table.sql.join.JooqTableSupplierBuilder;
 import eu.solven.adhoc.table.transcoder.MapTableAliaser;
 import lombok.extern.slf4j.Slf4j;
 
@@ -75,7 +72,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-@SuppressWarnings({ "PMD.AvoidDuplicateLiterals", "checkstyle:MagicNumber" })
+@SuppressWarnings("checkstyle:MagicNumber")
 public class TpchSchema {
 
 	public String getName() {
@@ -133,10 +130,10 @@ public class TpchSchema {
 
 		dslContext.connection(this::loadTpchData);
 
-		JooqSnowflakeSchemaBuilder tpch = snowflakeBuilder();
+		JooqTableSupplierBuilder tpch = snowflakeBuilder(dslSupplier);
 
 		JooqTableWrapperParameters tableParameters =
-				DuckDBHelper.parametersBuilder(dslSupplier).table(tpch.getSnowflakeTable()).build();
+				DuckDBHelper.parametersBuilder(dslSupplier).tableSupplier(tpch.build()).build();
 
 		return new JooqTableWrapper(tableName, tableParameters);
 	}
@@ -154,52 +151,50 @@ public class TpchSchema {
 		}
 	}
 
-	protected JooqSnowflakeSchemaBuilder snowflakeBuilder() {
+	protected JooqTableSupplierBuilder snowflakeBuilder(IDSLSupplier dslSupplier) {
 		// TPC-H snowflake schema — see https://docs.snowflake.com/en/user-guide/sample-data-tpch
 		// lineitem is the central fact table; all other tables are reached via LEFT JOINs so that every
 		// line item is preserved even when dimension rows are missing.
-		return JooqSnowflakeSchemaBuilder.builder()
+		return JooqTableSupplierBuilder.builder()
+				.dslSupplier(dslSupplier)
 				.baseTable(DSL.table("lineitem"))
 				.baseTableAlias("lineitem")
 				.build()
-				// lineitem → orders (many line items per order)
-				.leftJoin(DSL.table("orders"), "orders", ImmutableList.of(Map.entry("l_orderkey", "o_orderkey")))
-				// orders → customer (each order belongs to one customer)
-				.leftJoin("orders",
-						DSL.table("customer"),
-						"customer",
-						ImmutableList.of(Map.entry("o_custkey", "c_custkey")))
-				// customer → nation (customer's home nation)
-				.leftJoin("customer",
-						DSL.table("nation"),
-						"cust_nation",
-						ImmutableList.of(Map.entry("c_nationkey", "n_nationkey")))
-				// nation → region (customer's home region)
-				.leftJoin("cust_nation",
-						DSL.table("region"),
-						"cust_region",
-						ImmutableList.of(Map.entry("n_regionkey", "r_regionkey")))
-				// lineitem → part (the ordered part)
-				.leftJoin("lineitem", DSL.table("part"), "part", ImmutableList.of(Map.entry("l_partkey", "p_partkey")))
-				// lineitem → supplier (the fulfilling supplier)
-				.leftJoin("lineitem",
-						DSL.table("supplier"),
-						"supplier",
-						ImmutableList.of(Map.entry("l_suppkey", "s_suppkey")));
+				// lineitem → orders (many line items per order). Star: defaults to base.
+				.leftJoin(j -> j.table(DSL.table("orders")).alias("orders").on("l_orderkey", "o_orderkey"))
+				// orders → customer (each order belongs to one customer). Snowflake leg: `.from("orders")`.
+				.leftJoin(j -> j.table(DSL.table("customer"))
+						.alias("customer")
+						.from("orders")
+						.on("o_custkey", "c_custkey"))
+				// customer → nation (customer's home nation). Snowflake leg: `.from("customer")`.
+				.leftJoin(j -> j.table(DSL.table("nation"))
+						.alias("cust_nation")
+						.from("customer")
+						.on("c_nationkey", "n_nationkey"))
+				// nation → region (customer's home region). Snowflake leg: `.from("cust_nation")`.
+				.leftJoin(j -> j.table(DSL.table("region"))
+						.alias("cust_region")
+						.from("cust_nation")
+						.on("n_regionkey", "r_regionkey"))
+				// lineitem → part (the ordered part). Star: defaults to base.
+				.leftJoin(j -> j.table(DSL.table("part")).alias("part").on("l_partkey", "p_partkey"))
+				// lineitem → supplier (the fulfilling supplier). Star: defaults to base.
+				.leftJoin(j -> j.table(DSL.table("supplier")).alias("supplier").on("l_suppkey", "s_suppkey"));
 	}
 
-	public CubeWrapperBuilder makeCube(AdhocSchema schema,
+	public CubeWrapperBuilder makeCube(IDSLSupplier dslSupplier,
+			AdhocSchema schema,
 			TpchSchema tpchSchema,
 			ITableWrapper table,
 			IMeasureForest forest) {
+		MapTableAliaser aliaser =
+				MapTableAliaser.builder().aliasToOriginals(snowflakeBuilder(dslSupplier).getAliasToOriginal()).build();
+
 		return schema.openCubeWrapperBuilder()
 				.name(tpchSchema.getName())
 				.forest(forest)
 				.table(table)
-				.columnsManager(ColumnsManager.builder()
-						.aliaser(MapTableAliaser.builder()
-								.aliasToOriginals(snowflakeBuilder().getAliasToOriginal())
-								.build())
-						.build());
+				.columnsManager(ColumnsManager.builder().aliaser(aliaser).build());
 	}
 }

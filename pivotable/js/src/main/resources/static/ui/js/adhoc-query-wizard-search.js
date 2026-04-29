@@ -1,5 +1,6 @@
-// Used for debouncing on search
-import _ from "lodashEs";
+// Used for debouncing on search. Per-function import (rather than the lodash root) so the browser
+// only fetches debounce.js + its small transitive deps.
+import debounce from "lodashEs/debounce.js";
 
 import wizardHelper from "./adhoc-query-wizard-helper.js";
 
@@ -21,7 +22,7 @@ export default {
 		// Debouncing `text` as the UI may before unresponsive while typing
 		// UI shows `text_debounced`, which waits for some delay before updating the actual `text`
 		// https://lodash.com/docs/4.17.15#debounce
-		const onSearchedText = _.debounce(() => {
+		const onSearchedText = debounce(() => {
 			console.log("Debounded searchedText", props.searchOptions.text);
 			props.searchOptions.text = props.searchOptions.text_debounced;
 		}, 300);

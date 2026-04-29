@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.jooq.Condition;
 import org.jooq.Name;
@@ -36,6 +38,7 @@ import org.jooq.impl.DSL;
 
 import com.google.common.collect.ImmutableSet;
 
+import eu.solven.adhoc.table.sql.IDSLSupplier;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
@@ -43,7 +46,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Opt-in variant of {@link JooqSnowflakeSchemaBuilder} that records each {@code leftJoin} declaration lazily — without
+ * Opt-in variant of {@link JooqTableSupplierBuilder} that records each {@code leftJoin} declaration lazily — without
  * eagerly folding them into {@code snowflakeTable}. Paired with {@link PrunedJoinsJooqTableSupplier}, which implements
  * the per-query pruning algorithm.
  * <p>
@@ -63,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
  * Usage:
  *
  * <pre>
- * PrunedJoinsJooqSnowflakeSchemaBuilder schema = PrunedJoinsJooqSnowflakeSchemaBuilder.prunedBuilder()
+ * PrunedJoinsJooqTableSupplierBuilder schema = PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
  * 		.baseTable(DSL.table("fact"))
  * 		.baseTableAlias("fact")
  * 		.build();
@@ -86,7 +89,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Benoit Lacelle
  */
 @Slf4j
-public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBuilder {
+public class PrunedJoinsJooqTableSupplierBuilder extends JooqTableSupplierBuilder {
 
 	/**
 	 * Declaration order matters: when materialising, joins are folded onto the base in the order they were declared.
@@ -94,8 +97,26 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 	@Getter
 	private final List<JoinNode> joinNodes = new ArrayList<>();
 
-	/** Memoised full-joins table (all joins included). Invalidated whenever a new {@code leftJoin} is declared. */
-	private Table<Record> fullTableCache;
+	/**
+	 * Optional explicit list of columns the BASE table provides — escape hatch mirroring per-join
+	 * {@code providedColumns}. Honoured by {@link PrunedJoinsJooqTableSupplier#resolveBaseColumns()}: when non-empty,
+	 * the supplier uses this set verbatim and skips the resolver. Useful when the resolver cannot discover the base
+	 * table's fields (typical with {@code DSL.table(name)} that carries no declared fields and no DB probe).
+	 * <p>
+	 * Empty default — falls back to the configured {@code columnsResolver}.
+	 */
+	@Getter
+	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+	private Set<String> baseProvidedColumns = Set.of();
+
+	/**
+	 * Declare the columns the base table provides. Subsequent {@code build()} / re-probes will see them. Calling this
+	 * after queries have flowed requires {@link PrunedJoinsJooqTableSupplier#invalidateAll()} to drop the stale index.
+	 */
+	public PrunedJoinsJooqTableSupplierBuilder baseProvidedColumns(Set<String> columns) {
+		this.baseProvidedColumns = ImmutableSet.copyOf(columns);
+		return this;
+	}
 
 	/**
 	 * A declaration of a LEFT JOIN to be composed into the {@code FROM} clause on demand.
@@ -115,7 +136,7 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 		/** The un-aliased {@code joinedTable} as declared by the caller. */
 		Table<?> joinedTable;
 
-		/** ON-clause conditions, already parsed by {@link JooqSnowflakeSchemaBuilder#parseOnName}. */
+		/** ON-clause conditions, already parsed by {@link JooqTableSupplierBuilder#parseOnName}. */
 		List<Condition> onConditions;
 
 		/** {@code true} if this join may be pruned when no column it provides is referenced. */
@@ -129,9 +150,11 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 		Set<String> columnsOverride = null;
 	}
 
-	@Builder(builderMethodName = "prunedBuilder", builderClassName = "PrunedJoinsJooqSnowflakeSchemaBuilderBuilder")
-	public PrunedJoinsJooqSnowflakeSchemaBuilder(Table<Record> baseTable, String baseTableAlias) {
-		super(baseTable, baseTableAlias);
+	@Builder(builderMethodName = "prunedBuilder", builderClassName = "PrunedJoinsJooqTableSupplierBuilderBuilder")
+	public PrunedJoinsJooqTableSupplierBuilder(IDSLSupplier dslSupplier,
+			Table<Record> baseTable,
+			String baseTableAlias) {
+		super(dslSupplier, baseTable, baseTableAlias);
 	}
 
 	/**
@@ -144,9 +167,47 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 
 	// ── Recording joins (override the high-level path only) ─────────────────
 
+	/**
+	 * Honours {@link JooqJoinBuilder#providedColumns(Set)} — when the consumer sets it, the recorded {@link JoinNode}
+	 * carries that explicit override (used for prunability decisions).
+	 */
+	@Override
+	public PrunedJoinsJooqTableSupplierBuilder leftJoin(Consumer<JooqJoinBuilder> consumer) {
+		JooqJoinBuilder joinBuilder = new JooqJoinBuilder();
+		consumer.accept(joinBuilder);
+		// Empty-consumer fast path — same rationale as JooqTableSupplierBuilder: the JOIN is silently
+		// dropped, the joinNodes list is left untouched.
+		if (joinBuilder.isEmpty()) {
+			return this;
+		}
+		joinBuilder.validate();
+		// See JooqTableSupplierBuilder#leftJoin(Consumer) for the rationale: default to the BASE table, not
+		// the most-recent join. Star pattern is dominant; snowflake legs opt-in via `.from(prevJoin)`.
+		String fromAlias = Optional.ofNullable(joinBuilder.getFrom()).orElse(baseTableAlias);
+		Set<String> provided = joinBuilder.getProvidedColumns();
+		if (provided != null) {
+			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn(), provided);
+		} else {
+			leftJoin(fromAlias, joinBuilder.getTable(), joinBuilder.getAlias(), joinBuilder.getOn());
+		}
+		// Honour an explicit `prunable(false)` opt-out by patching the just-appended JoinNode. Same post-patch
+		// pattern as `providedColumns` on the deprecated 5-arg overload: the underlying leftJoin(...) machinery
+		// always records prunable=true, then we flip the flag here when the consumer requested otherwise.
+		Boolean explicitPrunable = joinBuilder.getPrunable();
+		if (explicitPrunable != null && !explicitPrunable) {
+			int lastIdx = joinNodes.size() - 1;
+			JoinNode last = joinNodes.get(lastIdx);
+			joinNodes.set(lastIdx, last.toBuilder().prunable(false).build());
+		}
+		if (!joinBuilder.getColumnAliases().isEmpty()) {
+			withAliases(joinBuilder.getColumnAliases());
+		}
+		return this;
+	}
+
 	@SuppressWarnings("CPD-START")
 	@Override
-	public PrunedJoinsJooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
+	public PrunedJoinsJooqTableSupplierBuilder leftJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on) {
@@ -169,7 +230,6 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 				.prunable(true)
 				.build());
 
-		invalidateCaches();
 		return this;
 	}
 
@@ -177,8 +237,11 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 	 * Variant of {@link #leftJoin(String, Table, String, List)} that carries an explicit list of columns the joined
 	 * table provides. Use this when the configured {@code columnsResolver} cannot discover the joined table's fields
 	 * (e.g. a {@code DSL.table(name)} with no declared fields), or when you want to override the derived set.
+	 *
+	 * @deprecated Prefer {@link #leftJoin(Consumer)} with {@link JooqJoinBuilder#providedColumns(Set)}.
 	 */
-	public PrunedJoinsJooqSnowflakeSchemaBuilder leftJoin(String leftTableAlias,
+	@Deprecated(since = "Prefer leftJoin(Consumer) + providedColumns(...)")
+	public PrunedJoinsJooqTableSupplierBuilder leftJoin(String leftTableAlias,
 			Table<?> joinedTable,
 			String joinName,
 			List<Map.Entry<String, String>> on,
@@ -188,12 +251,20 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 		int lastIdx = joinNodes.size() - 1;
 		JoinNode last = joinNodes.get(lastIdx);
 		joinNodes.set(lastIdx, last.toBuilder().columnsOverride(ImmutableSet.copyOf(providedColumns)).build());
-		invalidateCaches();
 		return this;
 	}
 
+	/**
+	 * @return a {@link PrunedJoinsJooqTableSupplier} bound to this schema. Use as
+	 *         {@code JooqTableWrapperParameters.builder().tableSupplier(schema.build())}.
+	 */
 	@Override
-	public JooqSnowflakeSchemaBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
+	public PrunedJoinsJooqTableSupplier build() {
+		return PrunedJoinsJooqTableSupplier.builder().schema(this).build();
+	}
+
+	@Override
+	public JooqTableSupplierBuilder leftJoinConditions(Table<?> joinedTable, List<Condition> on) {
 		// Direct low-level registration: the supplier lacks the alias/column semantics, so treat this join as
 		// non-prunable (always included) and attach it under the most recent prunable parent (or the base table).
 		String alias = joinedTable.getName();
@@ -204,17 +275,7 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 				.onConditions(on)
 				.prunable(false)
 				.build());
-		invalidateCaches();
 		return this;
-	}
-
-	/**
-	 * Drops the memoised full-joins table. Called on each {@link #leftJoin} so the next {@link #getSnowflakeTable()}
-	 * includes the newly-registered node.
-	 */
-	@SuppressWarnings("PMD.NullAssignment")
-	protected void invalidateCaches() {
-		fullTableCache = null;
 	}
 
 	// ── Materialisation ─────────────────────────────────────────────────────
@@ -225,10 +286,7 @@ public class PrunedJoinsJooqSnowflakeSchemaBuilder extends JooqSnowflakeSchemaBu
 	 */
 	@Override
 	public Table<Record> getSnowflakeTable() {
-		if (fullTableCache == null) {
-			fullTableCache = materialise(allAliases());
-		}
-		return fullTableCache;
+		return materialise(allAliases());
 	}
 
 	/**

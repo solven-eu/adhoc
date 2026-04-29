@@ -22,7 +22,6 @@
  */
 package eu.solven.adhoc.table.duckdb;
 
-import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.Assertions;
@@ -44,16 +43,17 @@ import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.sql.IJooqColumnsResolver;
+import eu.solven.adhoc.table.sql.IJooqTableSupplier;
 import eu.solven.adhoc.table.sql.JooqColumnsHelpers;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
-import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqSnowflakeSchemaBuilder;
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplier;
+import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import eu.solven.pepper.collection.MapWithNulls;
 
 /**
- * End-to-end test of {@link PrunedJoinsJooqSnowflakeSchemaBuilder} against an in-memory DuckDB backend.
+ * End-to-end test of {@link PrunedJoinsJooqTableSupplierBuilder} against an in-memory DuckDB backend.
  * <p>
  * The schema is a 3-level snowflake:
  *
@@ -78,18 +78,19 @@ public class TestTableQuery_DuckDb_withPrunedJoins extends ADuckDbJooqTest imple
 	 * Single columns-resolver instance shared between {@link JooqTableWrapper} (via parameters) and
 	 * {@link PrunedJoinsJooqTableSupplier}. Any customisation propagates to both paths.
 	 */
-	IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe(dslSupplier);
+	IJooqColumnsResolver columnsResolver = JooqColumnsHelpers.dbProbe();
 
 	/** Schema side: records the join tree. */
-	PrunedJoinsJooqSnowflakeSchemaBuilder snowflakeBuilder = PrunedJoinsJooqSnowflakeSchemaBuilder.prunedBuilder()
+	PrunedJoinsJooqTableSupplierBuilder snowflakeBuilder = PrunedJoinsJooqTableSupplierBuilder.prunedBuilder()
 			.baseTable(DSL.table(DSL.name(factTable)))
 			.baseTableAlias("f")
+			.dslSupplier(dslSupplier)
 			.build()
 			// fact → product: non-key columns `productName` + `countryId` (countryId is used for the next snowflake
-			// leg).
-			.leftJoin("f", DSL.table(DSL.name(productTable)), "p", List.of(Map.entry("productId", "productId")))
-			// product → country (snowflake chain): non-key column `countryName`.
-			.leftJoin("p", DSL.table(DSL.name(countryTable)), "c", List.of(Map.entry("countryId", "countryId")));
+			// leg). Star: defaults to base `f`.
+			.leftJoin(j -> j.table(DSL.table(DSL.name(productTable))).alias("p").onSame("productId"))
+			// product → country (snowflake chain): non-key column `countryName`. `.from("p")` switches the parent.
+			.leftJoin(j -> j.table(DSL.table(DSL.name(countryTable))).alias("c").from("p").onSame("countryId"));
 
 	/**
 	 * Pruning side: per-query {@link IJooqTableSupplier}. {@code DSL.table(Name)} carries no declared fields, so we
@@ -102,9 +103,8 @@ public class TestTableQuery_DuckDb_withPrunedJoins extends ADuckDbJooqTest imple
 	@Override
 	public ITableWrapper makeTable() {
 		JooqTableWrapperParameters params = DuckDBHelper.parametersBuilder(dslSupplier)
-				// The all-joins table is used for schema introspection (`getColumns`, `getResultForFields`).
-				.table(snowflakeBuilder.getSnowflakeTable())
-				// The per-query supplier is used by `streamSlices` and prunes unreachable joins.
+				// `tableSupplier(...)` wires both the per-query pruning supplier and (via `getSchemaTable()`) the
+				// all-joins table used by `getColumns` / `getResultForFields`.
 				.tableSupplier(tableSupplier)
 				// Shared probe — `getColumns()` uses it; the supplier already uses the same instance.
 				.columnsResolver(columnsResolver)

@@ -26,6 +26,6 @@ export default {
 			</span>
 			<span v-else>Unclear login status but not loading. Should not happen</span>
 		</span>
-		<span v-else> This should not happen (login-ref.js) </span>
+		<span v-else> This should not happen (login-chip.js) </span>
 	`,
 };

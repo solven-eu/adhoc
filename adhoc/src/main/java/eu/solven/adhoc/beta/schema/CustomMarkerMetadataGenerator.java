@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.Value;
 
 /**
@@ -39,13 +40,16 @@ import lombok.Value;
 public class CustomMarkerMetadataGenerator {
 	// jsonPath to the data-point
 	// For instance `$.myProject.ccy`
+	@NonNull
 	String path;
 
 	// String type;
 
+	@NonNull
 	Supplier<Set<String>> possibleValues;
 
 	// Helps indicating the default value when none is provided
+	@NonNull
 	Supplier<Optional<String>> defaultValue;
 
 	public CustomMarkerMetadata snapshot(String name) {

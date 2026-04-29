@@ -25,7 +25,6 @@ package eu.solven.adhoc.cuboid.tabular;
 import java.util.NavigableSet;
 import java.util.Set;
 
-import eu.solven.adhoc.cuboid.slice.IHasSlice;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.cube.IHasGroupBy;
 
@@ -34,7 +33,7 @@ import eu.solven.adhoc.query.cube.IHasGroupBy;
  * 
  * @author Benoit Lacelle
  */
-public interface ITabularGroupByRecord extends IHasSlice, IHasGroupBy, ITabularGroupBySlice {
+public interface ITabularGroupByRecord extends IHasGroupBy, ITabularGroupBySlice {
 	/**
 	 * Column names may not be sufficient, especially given ICalculatedColumn.
 	 * 

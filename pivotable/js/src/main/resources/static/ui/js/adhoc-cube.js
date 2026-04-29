@@ -6,7 +6,7 @@ import { useAdhocStore } from "./store-adhoc.js";
 import AdhocEndpointHeader from "./adhoc-endpoint-header.js";
 import AdhocCubeHeader from "./adhoc-cube-header.js";
 
-import AdhocQueryRef from "./adhoc-query-ref.js";
+import AdhocQueryChip from "./adhoc-query-chip.js";
 
 import AdhocLoading from "./adhoc-loading.js";
 
@@ -15,7 +15,7 @@ export default {
 	components: {
 		AdhocEndpointHeader,
 		AdhocCubeHeader,
-		AdhocQueryRef,
+		AdhocQueryChip,
 		AdhocLoading,
 	},
 	// https://vuejs.org/guide/components/props.html
@@ -67,7 +67,7 @@ export default {
 			<AdhocCubeHeader :endpointId="endpointId" :cubeId="cubeId" />
 
 			<ul>
-				<li><AdhocQueryRef :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
+				<li><AdhocQueryChip :cubeId="cubeId" :endpointId="endpointId" :withDescription="false" v-if="showEndpoint" /></li>
 			</ul>
 		</div>
 	`,
