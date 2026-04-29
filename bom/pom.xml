@@ -58,6 +58,11 @@
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
+				<groupId>eu.solven.adhoc</groupId>
+				<artifactId>adhoc-table</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
 				<!-- Core query engine -->
 				<groupId>eu.solven.adhoc</groupId>
 				<artifactId>adhoc</artifactId>

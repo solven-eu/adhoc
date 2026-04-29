@@ -41,6 +41,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
 			<!-- Resource -->
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
