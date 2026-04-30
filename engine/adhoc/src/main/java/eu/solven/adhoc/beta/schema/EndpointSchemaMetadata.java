@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.NavigableMap;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import lombok.Builder;
 import lombok.NonNull;

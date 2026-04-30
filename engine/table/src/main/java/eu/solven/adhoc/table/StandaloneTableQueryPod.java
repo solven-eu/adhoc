@@ -32,6 +32,9 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
+import eu.solven.adhoc.engine.cache.EmptyQueryStepCache;
+import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
 import eu.solven.adhoc.measure.model.IMeasure;
@@ -78,6 +81,10 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 	@NonNull
 	@Default
 	IColumnsManager columnsManager = ColumnsManager.builder().build();
+	
+	@NonNull
+	@Default
+	IQueryStepCache queryStepCache = new EmptyQueryStepCache();
 
 	@Override
 	public AdhocQueryId getQueryId() {
@@ -125,7 +132,7 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 	}
 
 	@Override
-	public Object getQuery() {
+	public IWhereGroupByQuery getQuery() {
 		throw new NotYetImplementedException("Needed?");
 	}
 

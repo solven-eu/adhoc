@@ -24,13 +24,30 @@
 	</properties>
 
 	<dependencies>
-		<!-- each dependency has to be added explicitely -->
+		<!--
+			`jacoco:report-aggregate` only walks DIRECT <dependency> entries (not transitive). Every source module
+			whose coverage should appear in the merged report must be listed below. Build the report with:
+
+				mvn jacoco:report-aggregate -pl :adhoc-aggregate -am
+
+			The `-am` is required so each dependency module joins the current reactor — without it, JaCoCo cannot
+			locate the per-module `target/jacoco.exec` files and the report comes out empty.
+		-->
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-fsst</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-encoding</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-cell</artifactId>
@@ -53,6 +70,11 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc</artifactId>
 			<version>${project.version}</version>
 		</dependency>
@@ -64,7 +86,37 @@
 
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-model</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-infra</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-server-oauth2</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-server-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-server-webflux</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>pivotable-server</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>pivotable-mcp</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

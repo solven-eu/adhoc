@@ -24,8 +24,8 @@ package eu.solven.adhoc.engine.context;
 
 import java.util.Set;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 
 /**
  * Enables adding automatically some options (e.g. `EXPLAIN` or `CONCURRENT`).

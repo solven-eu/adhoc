@@ -26,10 +26,12 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.IHasParentQueryId;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

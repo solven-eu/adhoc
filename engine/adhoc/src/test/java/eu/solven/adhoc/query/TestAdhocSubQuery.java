@@ -25,10 +25,10 @@ package eu.solven.adhoc.query;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.query.cube.AdhocSubQuery;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class TestAdhocSubQuery {

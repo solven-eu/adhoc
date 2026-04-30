@@ -1,0 +1,221 @@
+/**
+ * The MIT License
+ * Copyright (c) 2024 Benoit Chatain Lacelle - SOLVEN
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package eu.solven.adhoc.engine.tabular;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import eu.solven.adhoc.ATestDagInMemory;
+import eu.solven.adhoc.IAdhocTestConstants;
+import eu.solven.adhoc.cuboid.ICuboid;
+import eu.solven.adhoc.cuboid.slice.ISlice;
+import eu.solven.adhoc.cuboid.slice.SliceHelpers;
+import eu.solven.adhoc.dataframe.column.Cuboid;
+import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
+import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
+import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.step.TableQueryStep;
+import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
+import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
+import eu.solven.adhoc.engine.tabular.optimizer.SplitTableQueries;
+import eu.solven.adhoc.measure.model.Partitionor;
+import eu.solven.adhoc.measure.sum.SumCombination;
+import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
+import eu.solven.adhoc.query.InternalQueryOptions;
+import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.groupby.GroupByColumns;
+
+public class TestDagTableQueryEngine_induced extends ATestDagInMemory implements IAdhocTestConstants {
+
+	TableQueryEngineFactory engine = (TableQueryEngineFactory) engine().getTableQueryEngine();
+	ITableQueryInducer inducer = engine.inducerFactory.makeInducer(engine.getFactories());
+	ITableQueryFactory optimizer = engine.queryFactoryFactory.makeQueryFactory(engine().getFactories(),
+			() -> Set.of(InternalQueryOptions.INDUCE_BY_ADHOC));
+
+	@Override
+	public void feedTable() {
+		// no need for data
+	}
+
+	@Test
+	public void test_sum_ByCcyAndGrandTotal() {
+		forest.addMeasure(Partitionor.builder()
+				.name("byCcy")
+				.underlyings(Arrays.asList(k1Sum.getName()))
+				.combinationKey(SumCombination.KEY)
+				.groupBy(GroupByColumns.named("ccy"))
+				.build());
+
+		forest.addMeasure(k1Sum);
+
+		CubeQuery cubeQuery = CubeQuery.builder().measure("byCcy", k1Sum.getName()).build();
+		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
+
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
+		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
+		Assertions.assertThat(output).hasSize(2);
+
+		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
+
+		Assertions.assertThat(split.getInducers())
+				.contains(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build())
+				.hasSize(1);
+
+		Assertions.assertThat(split.getInduceds())
+				.contains(TableQueryStep.edit(cubeQuery).aggregator(k1Sum).build())
+				.hasSize(1);
+
+		{
+			IMultitypeColumnFastGet<ISlice> columnFromTable = MultitypeHashColumn.<ISlice>builder().build();
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR"))).onLong(123);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD"))).onLong(234);
+
+			ICuboid valuesFromTable = Cuboid.builder().values(columnFromTable).column("ccy").build();
+			ConcurrentMap<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
+			fromTable.put(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build(),
+					valuesFromTable);
+			bootstrapped.walkUpInducedDag(fromTable, split);
+
+			Assertions.assertThat(fromTable)
+					// inducer
+					.containsEntry(
+							TableQueryStep.edit(cubeQuery)
+									.groupBy(GroupByColumns.named("ccy"))
+									.aggregator(k1Sum)
+									.build(),
+							valuesFromTable)
+					// induced
+					.hasEntrySatisfying(
+							TableQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).aggregator(k1Sum).build(),
+							t -> {
+								Assertions.assertThat(t.size()).isEqualTo(1);
+								Assertions
+										.assertThat(
+												IValueProviderTestHelpers.getLong(t.onValue(SliceHelpers.grandTotal())))
+										.isEqualTo(0L + 123 + 234);
+							})
+					.hasSize(2);
+		}
+	}
+
+	@Test
+	public void test_sum_ByCcyCountryAndByCcyAndGrandTotal() {
+		forest.addMeasure(Partitionor.builder()
+				.name("byCcyCountry")
+				.underlyings(Arrays.asList(k1Sum.getName()))
+				.combinationKey(SumCombination.KEY)
+				.groupBy(GroupByColumns.named("ccy", "country"))
+				.build());
+
+		forest.addMeasure(Partitionor.builder()
+				.name("byCcy")
+				.underlyings(Arrays.asList(k1Sum.getName()))
+				.combinationKey(SumCombination.KEY)
+				.groupBy(GroupByColumns.named("ccy"))
+				.build());
+
+		forest.addMeasure(k1Sum);
+
+		CubeQuery cubeQuery =
+				CubeQuery.builder().measure("byCcyCountry", "byCcy", k1Sum.getName()).explain(true).build();
+		QueryPod queryPod = QueryPod.builder().query(cubeQuery).forest(forest).table(table()).build();
+
+		TableQueryEngine bootstrapped = (TableQueryEngine) engine.bootstrap(queryPod, optimizer, inducer);
+		Set<TableQueryStep> output = bootstrapped.prepareForTable(engine().makeQueryStepsDag(queryPod));
+		Assertions.assertThat(output).hasSize(3);
+
+		SplitTableQueries split = optimizer.splitInduced(queryPod, output);
+
+		Assertions.assertThat(split.getInducers())
+				.contains(TableQueryStep.edit(cubeQuery)
+						.groupBy(GroupByColumns.named("ccy", "country"))
+						.aggregator(k1Sum)
+						.build())
+				.hasSize(1);
+
+		Assertions.assertThat(split.getInduceds())
+				.contains(TableQueryStep.edit(cubeQuery).aggregator(k1Sum).build())
+				.contains(TableQueryStep.edit(cubeQuery).groupBy(GroupByColumns.named("ccy")).aggregator(k1Sum).build())
+				.hasSize(2);
+
+		{
+			IMultitypeColumnFastGet<ISlice> columnFromTable = MultitypeHashColumn.<ISlice>builder().build();
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR", "country", "France"))).onLong(123);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "EUR", "country", "Germany"))).onLong(234);
+			columnFromTable.append(SliceHelpers.asSlice(Map.of("ccy", "USD", "country", "USA"))).onLong(345);
+
+			ICuboid valuesFromTable =
+					Cuboid.builder().values(columnFromTable).columns(Set.of("ccy", "country")).build();
+			ConcurrentMap<TableQueryStep, ICuboid> fromTable = new ConcurrentHashMap<>();
+			fromTable.put(TableQueryStep.edit(cubeQuery)
+					.groupBy(GroupByColumns.named("ccy", "country"))
+					.aggregator(k1Sum)
+					.build(), valuesFromTable);
+			bootstrapped.walkUpInducedDag(fromTable, split);
+
+			Assertions.assertThat(fromTable)
+					// inducer
+					.containsEntry(
+							TableQueryStep.edit(cubeQuery)
+									.groupBy(GroupByColumns.named("ccy", "country"))
+									.aggregator(k1Sum)
+									.build(),
+							valuesFromTable)
+					// induced by ccy
+					.hasEntrySatisfying(
+							TableQueryStep.edit(cubeQuery)
+									.groupBy(GroupByColumns.named("ccy"))
+									.aggregator(k1Sum)
+									.build(),
+							t -> {
+								Assertions.assertThat(t.size()).isEqualTo(2);
+								Assertions
+										.assertThat(IValueProviderTestHelpers
+												.getLong(t.onValue(SliceHelpers.asSlice(Map.of("ccy", "EUR")))))
+										.isEqualTo(0L + 123 + 234);
+								Assertions
+										.assertThat(IValueProviderTestHelpers
+												.getLong(t.onValue(SliceHelpers.asSlice(Map.of("ccy", "USD")))))
+										.isEqualTo(0L + 345);
+							})
+					// induced grandTotal
+					.hasEntrySatisfying(
+							TableQueryStep.edit(cubeQuery).groupBy(IGroupBy.GRAND_TOTAL).aggregator(k1Sum).build(),
+							t -> {
+								Assertions.assertThat(t.size()).isEqualTo(1);
+								Assertions
+										.assertThat(
+												IValueProviderTestHelpers.getLong(t.onValue(SliceHelpers.grandTotal())))
+										.isEqualTo(0L + 123 + 234 + 345);
+							})
+					.hasSize(3);
+		}
+	}
+}

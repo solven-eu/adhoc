@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import eu.solven.adhoc.engine.step.CubeQueryStep;
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.eventbus.AdhocLogEvent;

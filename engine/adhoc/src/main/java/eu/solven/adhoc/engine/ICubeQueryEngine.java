@@ -28,8 +28,8 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
 /**

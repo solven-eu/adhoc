@@ -1,5 +1,5 @@
 /**
- * Query helpers used at the table layer.
+ * Cube query helpers shared with the engine.
  *
  * <p>
  * All types in this package are null-marked: parameters, return types and fields are non-null by default; explicit

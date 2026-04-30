@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.observability;
 
 import java.util.concurrent.TimeUnit;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.eventbus.AdhocEventsFromGuavaEventBusToSfl4j;
 import eu.solven.adhoc.eventbus.AdhocLogEvent.AdhocLogEventBuilder;

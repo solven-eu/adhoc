@@ -35,11 +35,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.InternalQueryOptions;
 import eu.solven.adhoc.query.cube.CubeQuery;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;

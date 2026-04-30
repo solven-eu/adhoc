@@ -61,6 +61,17 @@ jobs:
     #    name: pivotable-server
     #    path: server/target/*-exec.jar
 
+    - name: Aggregate JaCoCo coverage
+      # Merges per-module `target/jacoco.exec` files (produced by the unit-tests step above) into a
+      # single cross-module HTML/XML report at `aggregate/target/site/jacoco-aggregate/`. Sonar reads this
+      # consolidated report (see `sonar-project.properties` → `sonar.coverage.jacoco.xmlReportPaths`) so that
+      # cross-module test → class coverage is preserved (e.g. a test in `adhoc-table` exercising classes from
+      # `adhoc-cell` still counts toward `adhoc-cell`'s coverage). `-am` is required so each dependency module
+      # rejoins the reactor — without it, jacoco:report-aggregate cannot locate the per-module .exec files.
+      # `jacoco:report-aggregate` is a goal-only invocation, so it does NOT re-run any tests.
+      if: matrix.java-version == '25' && matrix.os == 'ubuntu-latest'
+      run: mvn jacoco:report-aggregate -pl :adhoc-aggregate -am --batch-mode
+
     - name: Report low-coverage classes
       # Informational only — highlights production classes below 20% instruction coverage.
       # Full list: https://sonarcloud.io/component_measures?metric=uncovered_lines&view=list&id=adhoc

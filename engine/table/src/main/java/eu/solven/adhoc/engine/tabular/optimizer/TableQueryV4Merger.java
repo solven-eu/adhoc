@@ -35,6 +35,7 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
+import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.EmptyAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.cube.IGroupBy;

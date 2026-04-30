@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 
-import eu.solven.adhoc.ADagTest;
+import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.query.cube.CubeQuery;
@@ -49,7 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CubeQueryStepDefs {
 
-	ADagTest aDagTest = new ADagTest() {
+	ATestDagInMemory aDagTest = new ATestDagInMemory() {
 
 		@Override
 		public void feedTable() {

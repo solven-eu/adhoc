@@ -25,9 +25,9 @@ package eu.solven.adhoc.table.composite;
 import java.util.Set;
 
 import eu.solven.adhoc.cube.ICubeWrapper;
+import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
-import eu.solven.adhoc.query.cube.ICubeQuery;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.UtilityClass;
