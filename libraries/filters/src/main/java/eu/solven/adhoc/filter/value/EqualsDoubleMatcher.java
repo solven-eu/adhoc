@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
@@ -61,11 +65,12 @@ public final class EqualsDoubleMatcher extends EqualsMatcher {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		if (!AdhocPrimitiveHelpers.isDoubleLike(value)) {
 			return false;
 		}
-		return operand == AdhocPrimitiveHelpers.asDouble(value);
+		// `isDoubleLike` returns false on null — past this point `value` is a Number.
+		return operand == AdhocPrimitiveHelpers.asDouble(Objects.requireNonNull(value));
 	}
 
 	@SuppressWarnings("PMD.UselessOverridingMethod")

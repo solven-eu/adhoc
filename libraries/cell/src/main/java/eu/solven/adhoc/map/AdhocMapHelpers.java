@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
@@ -72,7 +74,7 @@ public class AdhocMapHelpers {
 				rightSorted.values().iterator());
 	}
 
-	public static <K, V> Map<K, V> aggregateMaps(Map<?, ?> lAsMap, Map<?, ?> rAsMap) {
+	public static <K, V> @Nullable Map<K, V> aggregateMaps(@Nullable Map<?, ?> lAsMap, @Nullable Map<?, ?> rAsMap) {
 		if (lAsMap == null || lAsMap.isEmpty()) {
 			return (Map<K, V>) rAsMap;
 		} else if (rAsMap == null || rAsMap.isEmpty()) {

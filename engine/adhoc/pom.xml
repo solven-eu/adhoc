@@ -23,6 +23,12 @@
 
 	<dependencies>
 		<dependency>
+			<!-- @NullMarked / @Nullable / @NonNull (annotation-only, retained at compile time) -->
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-model</artifactId>
 			<version>${project.version}</version>
@@ -199,6 +205,14 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<!-- StandaloneTableQueryPod -->
+			<groupId>eu.solven.adhoc</groupId>
+			<artifactId>adhoc-table</artifactId>
+			<version>${project.version}</version>
+			<classifier>tests</classifier>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<!-- IValueProviderTestHelpers -->
 			<groupId>eu.solven.adhoc</groupId>

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -191,7 +192,9 @@ public class ManyToMany1DDecomposition implements IDecomposition {
 
 		ISliceFilter filter = slice.getQueryStep().getFilter();
 
-		return manyToManyDefinition.getMatchingGroups(group -> doFilterGroup(filter, groupColumn, group));
+		return manyToManyDefinition.getMatchingGroups(group -> doFilterGroup(filter,
+				groupColumn,
+				Objects.requireNonNull(group, "group candidate must not be null")));
 	}
 
 	protected boolean doFilterGroup(ISliceFilter filter, String groupColumn, Object groupCandidate) {

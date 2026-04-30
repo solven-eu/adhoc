@@ -13,14 +13,22 @@
 	<description>Table-side stack: ITableWrapper, JOOQ-backed table impls, in-memory table, query/table types. Depends only on adhoc-cell and below; does not depend on the cube/engine layer.</description>
 
 	<properties>
-		<jacoco.branch.ratio>0.70</jacoco.branch.ratio>
-		<jacoco.instruction.ratio>0.78</jacoco.instruction.ratio>
+		<!-- Lowered after the v19 split: many tests still live in the engine/adhoc module above. Restore once
+		     tests covering the table-only logic have moved here. -->
+		<jacoco.branch.ratio>0.50</jacoco.branch.ratio>
+		<jacoco.instruction.ratio>0.55</jacoco.instruction.ratio>
 
 		<testJarPhase>package</testJarPhase>
 		<automatic.module.name>eu.solven.adhoc.table</automatic.module.name>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<!-- @NullMarked / @Nullable / @NonNull (annotation-only, retained at compile time) -->
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>eu.solven.adhoc</groupId>
 			<artifactId>adhoc-model</artifactId>

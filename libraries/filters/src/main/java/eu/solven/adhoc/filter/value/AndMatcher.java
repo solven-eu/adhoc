@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.MoreObjects;
@@ -109,7 +111,7 @@ public final class AndMatcher implements IValueMatcher, IHasOperands<IValueMatch
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		return ands.stream().allMatch(operand -> operand.match(value));
 	}
 

@@ -24,6 +24,7 @@ package eu.solven.adhoc.beta.schema;
 
 import java.time.LocalDate;
 import java.util.NavigableMap;
+import java.util.Objects;
 
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.EqualsMatcher;
@@ -62,13 +63,15 @@ public class CubeWrapperTypeTranscoder implements ICustomTypeManagerSimple {
 	}
 
 	@Override
-	public Object toTable(String column, Object coordinate) {
+	public @org.jspecify.annotations.Nullable Object toTable(String column,
+			@org.jspecify.annotations.Nullable Object coordinate) {
 		if (coordinate == null) {
 			// TODO Some cube would probably like transcoding null to `NULL`
 			// To be clarified as `toTable` is called mainly on `EqualsMatcher` which does not accept `null`.
 			return null;
 		} else {
-			Class<?> cubeColumnClass = columnToTypes.get(column);
+			Class<?> cubeColumnClass =
+					Objects.requireNonNull(columnToTypes.get(column), () -> "Unknown column=" + column);
 
 			if (coordinate instanceof String coordinateAsString) {
 				if (CharSequence.class.isAssignableFrom(cubeColumnClass)) {

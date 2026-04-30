@@ -35,12 +35,13 @@ import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
 import eu.solven.adhoc.encoding.string.FsstFreezingWithContext;
 
 /**
- * Fallback {@link IFreezingWithContext} that normalises {@link AdhocUtf8} values to {@link String}.
+ * Fallback {@link IFreezingWithContext} that normalizes {@link Utf8ByteSlice} values to {@link String}.
  *
  * <p>
- * {@link FsstFreezingWithContext} consumes columns whose values are exclusively {@link AdhocUtf8} or {@link String}.
- * When the column is mixed (e.g. {@link AdhocUtf8} alongside numeric types), FSST declines and this freezer converts
- * each {@link AdhocUtf8} to a {@link String} so that downstream code never observes raw {@link AdhocUtf8} instances.
+ * {@link FsstFreezingWithContext} consumes columns whose values are exclusively {@link Utf8ByteSlice} or
+ * {@link String}. When the column is mixed (e.g. {@link AdhocUtf8} alongside numeric types), FSST declines and this
+ * freezer converts each {@link AdhocUtf8} to a {@link String} so that downstream code never observes raw
+ * {@link Utf8ByteSlice} instances.
  *
  * <p>
  * This freezer should be registered <em>after</em> {@link FsstFreezingWithContext} in the freezer chain so that the

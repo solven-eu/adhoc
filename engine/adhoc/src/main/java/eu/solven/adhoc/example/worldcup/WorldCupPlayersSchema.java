@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -255,7 +256,8 @@ public class WorldCupPlayersSchema {
 	@SuppressFBWarnings("SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE")
 	private void loadParquetToTable(Connection connection, ClassPathResource resource)
 			throws IOException, SQLException {
-		String fileName = resource.getFilename();
+		String fileName =
+				Objects.requireNonNull(resource.getFilename(), () -> "ClassPathResource has no filename: " + resource);
 		String simpleName = fileName.substring(0, fileName.lastIndexOf('.'));
 
 		Path tmpPath = Files.createTempDirectory("adhoc-" + this.getClass().getSimpleName());

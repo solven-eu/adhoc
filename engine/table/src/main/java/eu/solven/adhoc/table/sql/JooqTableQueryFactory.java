@@ -48,6 +48,7 @@ import org.jooq.SortField;
 import org.jooq.TableLike;
 import org.jooq.True;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -98,7 +99,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @SuperBuilder
 @Slf4j
-@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects" })
+// Lombok @SuperBuilder synthesises a generic JooqTableQueryFactoryBuilder<C, B>; its fields are populated via
+// chained setters and NullAway can't see that init pattern.
+@SuppressWarnings({ "PMD.GodClass", "PMD.CouplingBetweenObjects", "NullAway.Init" })
 public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 
 	@NonNull
@@ -642,7 +645,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		}).toList();
 	}
 
-	protected SelectFieldOrAsterisk toSqlAggregatedColumn(ISliceToJooqCondition toCondition,
+	protected @Nullable SelectFieldOrAsterisk toSqlAggregatedColumn(ISliceToJooqCondition toCondition,
 			FilteredAggregator filteredAggregator) {
 		Aggregator a = filteredAggregator.getAggregator();
 

@@ -169,12 +169,13 @@ public class TestInMemoryTable {
 
 		table.add(Map.of("k", "v"));
 
-		ITabularRecordStream output = table.streamSlices(TableQueryV2.builder()
-				.aggregator(FilteredAggregator.builder()
-						.aggregator(Aggregator.countAsterisk())
-						.filter(ColumnFilter.matchEq("unknownColumn", "someValue"))
-						.build())
-				.build());
+		ITabularRecordStream output = table.streamSlices(StandaloneTableQueryPod.forTable(table),
+				TableQueryV2.builder()
+						.aggregator(FilteredAggregator.builder()
+								.aggregator(Aggregator.countAsterisk())
+								.filter(ColumnFilter.matchEq("unknownColumn", "someValue"))
+								.build())
+						.build());
 
 		Assertions.assertThat(output.toList()).contains(Map.of());
 		Assertions.assertThat(table.getUnknownColumns()).containsExactly("unknownColumn");
@@ -189,10 +190,11 @@ public class TestInMemoryTable {
 		table.add(Map.of("c", "c1", "v", 10));
 		table.add(Map.of("c", "c2", "v", 20));
 
-		ITabularRecordStream output = table.streamSlices(TableQueryV2.builder()
-				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("v")).build())
-				.aggregator(FilteredAggregator.builder().aggregator(Aggregator.empty()).build())
-				.build());
+		ITabularRecordStream output = table.streamSlices(StandaloneTableQueryPod.forTable(table),
+				TableQueryV2.builder()
+						.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("v")).build())
+						.aggregator(FilteredAggregator.builder().aggregator(Aggregator.empty()).build())
+						.build());
 
 		// Per-row branch: one record per source row. Each record carries `v` with its actual value AND the
 		// empty aggregator's alias mapped to `null`.

@@ -23,6 +23,7 @@
 package eu.solven.adhoc.table.sql;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.jooq.Field;
@@ -102,7 +103,11 @@ public class JooqTabularRecordFactory {
 					ImmutableSet.builderWithExpectedSize(tabularRecordFactory.getOptionalColumns().size());
 
 			tabularRecordFactory.getOptionalColumns().forEach(optionalColumn -> {
-				Field<?> groupingField = r.field(JooqTableQueryFactory.groupingAlias(optionalColumn));
+				// `r.field(name)` may return null if the column is absent; the optional-columns set should always
+				// match a field on the projected record — guard the deref for NullAway and for failure observability.
+				Field<?> groupingField =
+						Objects.requireNonNull(r.field(JooqTableQueryFactory.groupingAlias(optionalColumn)),
+								() -> "missing grouping field for column=" + optionalColumn);
 
 				if (!Integer.valueOf(0).equals(groupingField.getValue(r))) {
 					absentColumns.add(optionalColumn);

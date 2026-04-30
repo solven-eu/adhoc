@@ -24,6 +24,8 @@ package eu.solven.adhoc.encoding.column.freezer;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 
@@ -42,7 +44,7 @@ public class DynamicReadableColumn implements IReadableColumn {
 	}
 
 	@Override
-	public Object readValue(int rowIndex) {
+	public @Nullable Object readValue(int rowIndex) {
 		return ref.get().readValue(rowIndex);
 	}
 

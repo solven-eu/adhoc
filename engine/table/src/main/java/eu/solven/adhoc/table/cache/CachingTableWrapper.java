@@ -33,6 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheStats;
@@ -193,6 +195,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		Map<FilteredAggregator, CachingValue> fromCache = new LinkedHashMap<>();
 		List<FilteredAggregator> notCached = new ArrayList<>();
 
+		@Nullable
 		Object customMarkerForCache;
 		ITableWrapper table = queryPod.getTable();
 		if (table instanceof ICustomMarkerCacheStrategy cacheStrategy) {
@@ -320,7 +323,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	private CachingKey makeCacheKey(TableQueryV2 tableQuery,
-			Object customMarkerForCache,
+			@Nullable Object customMarkerForCache,
 			FilteredAggregator aggregator) {
 		TableQueryV2 queryForCache = tableQuery.toBuilder()
 				.clearAggregators()
@@ -344,7 +347,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	 * @return
 	 */
 	protected Stream<ITabularRecord> mergeAggregates(TableQueryV2 tableQuery,
-			Object customMarkerForCache,
+			@Nullable Object customMarkerForCache,
 			Map<FilteredAggregator, ? extends CachingValue> cached) {
 		// The list of CachingKey for which we're looking for a column
 		List<CachingKey> neededCacheKeys = new ArrayList<>(
@@ -415,6 +418,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 
 		ITableWrapper table = queryPod.getTable();
 		if (table instanceof ICustomMarkerCacheStrategy cacheStrategy) {
+			@Nullable
 			Object customMarkerForCache = cacheStrategy.restrictToCacheImpact(tableQuery.getCustomMarker());
 			queryKeyForCache.customMarker(customMarkerForCache);
 		} else {

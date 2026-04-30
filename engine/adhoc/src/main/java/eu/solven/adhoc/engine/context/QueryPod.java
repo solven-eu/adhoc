@@ -31,25 +31,23 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
-import eu.solven.adhoc.engine.IHasExecutorAndSliceFactory;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
-import eu.solven.adhoc.measure.IHasMeasures;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
-import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.HasOptionsAndExecutorService;
-import eu.solven.adhoc.options.IHasOptionsAndExecutorService;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
@@ -77,7 +75,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IIsCancellable, ITableQueryPod {
+public class QueryPod implements ITableQueryPod {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -115,7 +113,7 @@ public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndS
 	 * Once turned to not-null, can not be nulled again.
 	 */
 	@Getter(AccessLevel.PROTECTED)
-	AtomicReference<OffsetDateTime> refCancellationDate = new AtomicReference<>();
+	AtomicReference<@Nullable OffsetDateTime> refCancellationDate = new AtomicReference<>();
 
 	/**
 	 * On cancellation, all these listeners will be called, triggering the cancellation of any inner queries
@@ -137,7 +135,7 @@ public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndS
 	}
 
 	@Override
-	public OffsetDateTime getCancellationDate() {
+	public @Nullable OffsetDateTime getCancellationDate() {
 		return refCancellationDate.get();
 	}
 
@@ -222,10 +220,11 @@ public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndS
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
-	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings({ "PMD.AvoidFieldNameMatchingMethodName", "NullAway.Init" })
 	public static class QueryPodBuilder {
 		ICubeQuery query;
 		AdhocQueryId queryId;
@@ -305,7 +304,8 @@ public class QueryPod implements IHasOptionsAndExecutorService, IHasExecutorAndS
 
 	// This should be called only once per queryPod, as the queryId id would changed on each call.
 	// Should this be cached?
-	public QueryPod asTableQuery() {
+	@Override
+	public ITableQueryPod asTableQuery() {
 		AdhocQueryId tableQueryId = AdhocQueryId.builder()
 				.cube(getTable().getName())
 				.parentQueryId(getQueryId().getQueryId())

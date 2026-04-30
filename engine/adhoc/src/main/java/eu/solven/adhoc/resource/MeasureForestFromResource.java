@@ -213,7 +213,8 @@ public class MeasureForestFromResource {
 		List<Map<String, ?>> nameToForest = new ArrayList<>();
 
 		forests.forestNames().forEach(forestName -> {
-			IMeasureForest measures = forests.getForest(forestName);
+			IMeasureForest measures =
+					Objects.requireNonNull(forests.getForest(forestName), () -> "Unknown forest=" + forestName);
 
 			List<?> asMaps = measures.getNameToMeasure().values().stream().map(m -> asMap(objectMapper, m)).toList();
 

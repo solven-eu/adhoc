@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
@@ -57,6 +59,8 @@ import lombok.With;
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @EqualsAndHashCode
+// Lombok @Builder synthesises a builder whose fields are populated via chained setters; NullAway can't see init.
+@SuppressWarnings("NullAway.Init")
 public class TabularRecordOverMaps implements ITabularRecord {
 	@NonNull
 	@With
@@ -84,7 +88,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public Object getAggregate(String aggregateName) {
+	public @Nullable Object getAggregate(String aggregateName) {
 		return aggregates.get(aggregateName);
 	}
 
@@ -102,7 +106,7 @@ public class TabularRecordOverMaps implements ITabularRecord {
 	}
 
 	@Override
-	public Object getGroupBy(String columnName) {
+	public @Nullable Object getGroupBy(String columnName) {
 		return groupBy.getGroupBy(columnName);
 	}
 

@@ -23,8 +23,11 @@
 package eu.solven.adhoc.measure.sum;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.data.cell.MultitypeCell;
 import eu.solven.adhoc.data.row.ISlicedRecord;
@@ -85,10 +88,12 @@ public class AggregationCombination implements ICombination {
 		IValueReceiver cellValueConsumer = refMultitype.merge();
 
 		IValueReceiver proxyValueReceiver;
+		@Nullable
 		AtomicBoolean hasNull;
 		if (customIfAnyNullOperand) {
 			hasNull = new AtomicBoolean();
 
+			AtomicBoolean hasNullLocal = hasNull;
 			proxyValueReceiver = new IValueReceiver() {
 
 				@Override
@@ -102,9 +107,9 @@ public class AggregationCombination implements ICombination {
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					if (v == null) {
-						hasNull.set(true);
+						hasNullLocal.set(true);
 					} else {
 						cellValueConsumer.onObject(v);
 					}
@@ -120,7 +125,7 @@ public class AggregationCombination implements ICombination {
 			slicedRecord.read(i, proxyValueReceiver);
 		}
 
-		if (customIfAnyNullOperand && hasNull.get()) {
+		if (customIfAnyNullOperand && Objects.requireNonNull(hasNull).get()) {
 			oneUnderlyingIsNull().acceptReceiver(valueReceiver);
 		} else {
 			refMultitype.reduce().acceptReceiver(valueReceiver);

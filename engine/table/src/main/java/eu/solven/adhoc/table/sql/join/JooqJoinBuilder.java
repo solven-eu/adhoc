@@ -58,7 +58,8 @@ import lombok.Getter;
  * @author Benoit Lacelle
  */
 // Field-named-like-method is the standard fluent-builder pattern: `b.table(t)` writes the `table` field.
-@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+@SuppressWarnings({ "PMD.AvoidFieldNameMatchingMethodName", "NullAway.Init" })
 public class JooqJoinBuilder {
 	@Getter(AccessLevel.PACKAGE)
 	private Table<?> table;

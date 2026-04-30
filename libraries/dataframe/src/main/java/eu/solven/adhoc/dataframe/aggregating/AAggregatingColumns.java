@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.aggregating;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.dataframe.column.IMultitypeColumn;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.navigable.IHasSortedLeg;
@@ -70,11 +72,11 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 	 * frozen — kept only while we may still extend it. Releasing the reference on freeze avoids retaining the slice
 	 * longer than needed.
 	 */
-	protected T lastSortedKey;
+	protected @Nullable T lastSortedKey;
 
 	protected abstract int dictionarize(T key);
 
-	protected abstract IMultitypeColumn<K> getColumn(String aggregator);
+	protected abstract @Nullable IMultitypeColumn<K> getColumn(String aggregator);
 
 	/**
 	 * Subclasses MUST call this exactly once for every newly-inserted slice, <strong>after</strong> the new
@@ -104,7 +106,9 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 			getAggregators().forEach(aggregator -> {
 				IMultitypeColumn<K> column = getColumn(aggregator);
 
-				aggregatorToSortedLength.put(aggregator, getSortedLength(column));
+				if (column != null) {
+					aggregatorToSortedLength.put(aggregator, getSortedLength(column));
+				}
 			});
 		}
 	}
@@ -144,7 +148,7 @@ public abstract class AAggregatingColumns<T extends Comparable<T>, K> implements
 		}
 	}
 
-	protected IMultitypeColumn<K> getColumn(IAliasedAggregator aggregator) {
+	protected @Nullable IMultitypeColumn<K> getColumn(IAliasedAggregator aggregator) {
 		return getColumn(aggregator.getAlias());
 	}
 

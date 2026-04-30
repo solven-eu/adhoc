@@ -47,7 +47,7 @@ public class AdhocPrimitiveHelpers {
 	// Maximum bit length for a BigInteger that fits in a signed long
 	private static final int LONG_MAX_BIT_LENGTH = Long.SIZE - 1;
 
-	public static boolean isLongLike(Object o) {
+	public static boolean isLongLike(@Nullable Object o) {
 		if (Integer.class.isInstance(o) || Long.class.isInstance(o)) {
 			return true;
 		} else if (o instanceof BigInteger) {
@@ -57,11 +57,11 @@ public class AdhocPrimitiveHelpers {
 		}
 	}
 
-	public static long asLong(Object o) {
+	public static long asLong(@Nullable Object o) {
 		if (o instanceof BigInteger bigInteger) {
 			return bigInteger.longValueExact();
 		} else {
-			return ((Number) o).longValue();
+			return ((Number) Objects.requireNonNull(o, "value must be long-like")).longValue();
 		}
 	}
 
@@ -69,12 +69,12 @@ public class AdhocPrimitiveHelpers {
 	 * @param o
 	 * @return if this can be naturally be treated as a double. An int is `doubleLike==true`.
 	 */
-	public static boolean isDoubleLike(Object o) {
+	public static boolean isDoubleLike(@Nullable Object o) {
 		return Number.class.isInstance(o);
 	}
 
-	public static double asDouble(Object o) {
-		return ((Number) o).doubleValue();
+	public static double asDouble(@Nullable Object o) {
+		return ((Number) Objects.requireNonNull(o, "value must be double-like")).doubleValue();
 	}
 
 	/**
@@ -108,7 +108,7 @@ public class AdhocPrimitiveHelpers {
 		}
 	}
 
-	public static IValueProvider normalizeValueAsProvider(Object o) {
+	public static IValueProvider normalizeValueAsProvider(@Nullable Object o) {
 		if (o == null) {
 			return IValueProvider.NULL;
 		}

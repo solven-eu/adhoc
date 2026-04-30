@@ -78,7 +78,11 @@ public class SlicedRecordFromSlices implements ISlicedRecord {
 
 	@Override
 	public List<?> asList() {
-		return Collections.unmodifiableList(Lists.transform(valueProviders, IValueProvider::getValue));
+		// Guava `Lists.transform` types its Function as @NonNull-returning; `IValueProvider::getValue` may legitimately
+		// return null when the underlying value is null. The transformed list exposes the null directly.
+		@SuppressWarnings("NullAway")
+		List<?> transformed = Lists.transform(valueProviders, IValueProvider::getValue);
+		return Collections.unmodifiableList(transformed);
 	}
 
 }

@@ -295,7 +295,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// Wait for sharedNodes execution
 		SplitTableQueries withShared = waitAndMergeSharedNodes(withoutShared, futureSharedGraph);
 
-		ITableQueryPod tableQueryPod = queryPod;
+		ITableQueryPod tableQueryPod = queryPod.asTableQuery();
 
 		// Switch to a ConcurrentMap as `walkUpInducedDag` may be concurrent
 		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);

@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,7 +104,7 @@ public class TableStepsGrouperByAffinity extends TableStepsGrouper {
 					.max(Comparator.comparingInt(e -> e.getValue().size()))
 					.orElseThrow()
 					.getKey();
-			Set<IGroupBy> bestGroupBys = leftNeighbors.get(bestLeft);
+			Set<IGroupBy> bestGroupBys = Objects.requireNonNull(leftNeighbors.get(bestLeft));
 
 			// Expand the biclique: keep only left nodes whose neighbours are a superset of bestGroupBys
 			Set<LeftKey> compatibleLefts = leftNeighbors.entrySet()

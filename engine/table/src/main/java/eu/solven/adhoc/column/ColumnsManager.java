@@ -411,7 +411,8 @@ public class ColumnsManager implements IColumnsManager {
 			}
 
 			@Override
-			public Object transcodeValue(String column, Object value) {
+			public @org.jspecify.annotations.Nullable Object transcodeValue(String column,
+					@org.jspecify.annotations.Nullable Object value) {
 				return customTypeManager.fromTable(column, value);
 			}
 		};

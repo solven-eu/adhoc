@@ -24,6 +24,7 @@
 - [Pivotable] Fetch all column details in a single query
 - [Pivotable] Clarify pivotable when latest execution failed. May offer to go back to previous working query
 - [Feature] Improve CalculatedColumns: remove groupBy from table if calculated, enable filtering, etc.
+- [Feature] `ICalculatedColumn` should have access to the per-step `customMarker` (for custom behavior) and to query options (e.g. a `no_cache` flag) — today the API exposes neither, forcing callers to encode these inputs into the column definition or into a separate side-channel.
 - [Feature] Identifiers case-insensitivity. Especially columns. See `CubeWrapperTypeTranscoder.mayTranscode(String)` when DB refers to `somecolumn` while a User/Measure refer to `someColumn`. [DuckDB](https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers.html)
 - [Feature] Record statistics about used measures in storage, for easier re-use.
 - [Feature] Investigate recursive hierarchy from flat table (e.g. with JooQ and [suggested design](https://blog.jooq.org/how-to-turn-a-list-of-flat-elements-into-a-hierarchy-in-java-sql-or-jooq/)).

@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 
@@ -36,6 +37,7 @@ import org.duckdb.DuckDBConnection;
 import org.jooq.Name;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -126,7 +128,7 @@ public class DuckDBHelper {
 				.querySemaphore(AdhocDuckDBUnsafe.getQuerySemaphore());
 	}
 
-	public static CoordinatesSample getCoordinates(JooqTableWrapper table,
+	public static @Nullable CoordinatesSample getCoordinates(JooqTableWrapper table,
 			String column,
 			IValueMatcher valueMatcher,
 			int limit) {
@@ -179,8 +181,8 @@ public class DuckDBHelper {
 			for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
 				String measuresSuffix = "_" + columnIndex;
 
-				long estimatedCardinality = (long) IValueProvider
-						.getValue(tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix));
+				long estimatedCardinality = (long) Objects.requireNonNull(
+						IValueProvider.getValue(tabularRecord.onAggregate("approx_count_distinct" + measuresSuffix)));
 
 				// TODO Is it important to call `Array.free()`?
 				java.sql.Array array = (java.sql.Array) IValueProvider

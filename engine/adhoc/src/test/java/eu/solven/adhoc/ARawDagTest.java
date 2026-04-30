@@ -24,6 +24,7 @@ package eu.solven.adhoc;
 
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -53,6 +54,7 @@ import eu.solven.adhoc.util.IStopwatchFactory;
  * @author Benoit Lacelle
  *
  */
+@NullMarked
 public abstract class ARawDagTest {
 	public EventBus makeEventBus() {
 		return AdhocTestHelper.eventBus();

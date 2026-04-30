@@ -27,6 +27,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -78,6 +80,7 @@ public class CubeQuery implements ICubeQuery {
 	// This property is transported down to the DatabaseQuery
 	// Not an Optional as JDK consider Optional are good only as return value
 	@Default
+	@Nullable
 	Object customMarker = null;
 
 	@NonNull
@@ -96,9 +99,11 @@ public class CubeQuery implements ICubeQuery {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class CubeQueryBuilder {
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		ImmutableSet<IMeasure> measures = ImmutableSet.of();
@@ -208,7 +213,9 @@ public class CubeQuery implements ICubeQuery {
 			return this;
 		}
 
-		public CubeQueryBuilder customMarker(Object custom) {
+		// Lombok-generated `customMarker$value` field doesn't inherit the @Nullable from the source field.
+		@SuppressWarnings("NullAway")
+		public CubeQueryBuilder customMarker(@Nullable Object custom) {
 			if (custom instanceof Optional<?> optional) {
 				// Custom variable is either a not-Optional or a null
 				// `optCustomMarker` would wrap in an Optional

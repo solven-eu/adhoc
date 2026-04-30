@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.aggregation.collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -55,12 +57,12 @@ public class UnionSetAggregation extends AUnionCollectionAggregation {
 
 	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
 	@Override
-	protected Set<?> onEmpty() {
+	protected @Nullable Set<?> onEmpty() {
 		return null;
 	}
 
 	@Override
-	public Set<?> aggregate(Object l, Object r) {
+	public @Nullable Set<?> aggregate(@Nullable Object l, @Nullable Object r) {
 		Set<?> lAsSet = wrapAsSet(l);
 		Set<?> rAsSet = wrapAsSet(r);
 
@@ -72,7 +74,7 @@ public class UnionSetAggregation extends AUnionCollectionAggregation {
 		return aggregated;
 	}
 
-	protected Set<?> wrapAsSet(Object l) {
+	protected @Nullable Set<?> wrapAsSet(@Nullable Object l) {
 		Set<?> asSet;
 		if (l == null) {
 			asSet = onEmpty();
@@ -87,19 +89,19 @@ public class UnionSetAggregation extends AUnionCollectionAggregation {
 		return asSet;
 	}
 
-	protected Set<?> aggregateSets(Set<?> l, Set<?> r) {
+	protected Set<?> aggregateSets(@Nullable Set<?> l, @Nullable Set<?> r) {
 		return UnionSetAggregation.<Object>unionSet(l, r);
 	}
 
 	/**
 	 * This is useful to be used in {@link Map#}.merge
-	 * 
+	 *
 	 * @param <T>
 	 * @param left
 	 * @param right
 	 * @return
 	 */
-	public static <T> Set<T> unionSet(Set<? extends T> left, Set<? extends T> right) {
+	public static <T> Set<T> unionSet(@Nullable Set<? extends T> left, @Nullable Set<? extends T> right) {
 		if (left == null) {
 			if (right == null) {
 				return ImmutableSet.of();

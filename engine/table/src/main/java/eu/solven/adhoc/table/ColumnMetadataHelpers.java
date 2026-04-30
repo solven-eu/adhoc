@@ -24,7 +24,6 @@ package eu.solven.adhoc.table;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.filter.value.IValueMatcher;
@@ -60,9 +59,12 @@ public class ColumnMetadataHelpers {
 		// Count the number of returned slices
 		long estimatedCardinality = table.streamSlices(tableQuery)
 				.records()
-				.map(r -> r.getGroupBy(column))
+				// `getGroupBy` may return null but we drop those right after; mapping through Optional keeps NullAway
+				// happy without changing the observable filter chain.
+				.map(r -> java.util.Optional.ofNullable(r.getGroupBy(column)))
 				// TODO Should we return the information about null-ness?
-				.filter(Objects::nonNull)
+				.filter(java.util.Optional::isPresent)
+				.map(java.util.Optional::get)
 				// `.distinct()` is relevant for InMemoryTable and other non-aggregating tables
 				.distinct()
 				.filter(valueMatcher::match)

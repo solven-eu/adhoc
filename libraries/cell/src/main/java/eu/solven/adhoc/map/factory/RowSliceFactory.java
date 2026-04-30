@@ -25,6 +25,9 @@ package eu.solven.adhoc.map.factory;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
@@ -72,11 +75,13 @@ public class RowSliceFactory extends ASliceFactory {
 		ImmutableList.Builder<Object> values;
 
 		@Override
-		public MapBuilderPreKeys append(Object value) {
+		public MapBuilderPreKeys append(@Nullable Object value) {
 			if (values == null) {
 				values = ImmutableList.builderWithExpectedSize(keys.size());
 			}
-			Object v = factory.normalizeCoordinate(value);
+			// `normalizeCoordinate` is typed @Nullable but the standard implementation maps null to NULL_HOLDER
+			// so the result is non-null in practice; guard against custom normalisers that return null.
+			Object v = Objects.requireNonNull(factory.normalizeCoordinate(value));
 			values.add(v);
 
 			return this;

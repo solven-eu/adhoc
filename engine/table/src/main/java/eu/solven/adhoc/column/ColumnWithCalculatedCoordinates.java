@@ -59,9 +59,11 @@ public class ColumnWithCalculatedCoordinates implements IAdhocColumn, IHasCalcul
 
 	/**
 	 * Lombok Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class ColumnWithCalculatedCoordinatesBuilder {
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		IAdhocColumn column;

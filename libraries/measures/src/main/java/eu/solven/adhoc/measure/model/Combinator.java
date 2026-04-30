@@ -132,6 +132,8 @@ public class Combinator implements ICombinator {
 	/**
 	 * Lombok @Builder
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class CombinatorBuilder {
 		public CombinatorBuilder lambda(ILambdaCombination lambda) {
 			return combinationKey(LambdaCombination.class.getName()).combinationOption(LambdaCombination.K_LAMBDA,

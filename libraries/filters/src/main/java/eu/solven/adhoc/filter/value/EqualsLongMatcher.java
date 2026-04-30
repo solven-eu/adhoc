@@ -22,6 +22,10 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
@@ -57,12 +61,13 @@ public class EqualsLongMatcher extends EqualsMatcher {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
+		// Both `isLongLike` / `isDoubleLike` return false on null — past either branch `value` is a Number.
 		if (AdhocPrimitiveHelpers.isLongLike(value)) {
 			// TODO Is comparing as `long` relevant, or is it simpler to compare as `double` right away?
-			return operand == AdhocPrimitiveHelpers.asLong(value);
+			return operand == AdhocPrimitiveHelpers.asLong(Objects.requireNonNull(value));
 		} else if (AdhocPrimitiveHelpers.isDoubleLike(value)) {
-			return operand == AdhocPrimitiveHelpers.asDouble(value);
+			return operand == AdhocPrimitiveHelpers.asDouble(Objects.requireNonNull(value));
 		} else {
 			return false;
 		}

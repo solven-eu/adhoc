@@ -343,6 +343,8 @@ public class TableQueryFactory extends ATableQueryFactory {
 	/**
 	 * Lombok @Builder
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class TableQueryFactoryBuilder {
 		public TableQueryFactoryBuilder splitForAdhocInference(IFilterQueryBundle queryBundle) {
 			return this.splitter(InduceByAdhocComplete.makeFactory().make(queryBundle));

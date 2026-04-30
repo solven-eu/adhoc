@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.beta.schema;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cube.ICubeWrapper;
 
 /**
@@ -32,6 +34,7 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 @FunctionalInterface
 public interface ICustomMarkerTranscoder {
 
-	Object transcodeCustomMarker(ICubeWrapper cubeWrapper, Object customMarker);
+	@Nullable
+	Object transcodeCustomMarker(ICubeWrapper cubeWrapper, @Nullable Object customMarker);
 
 }

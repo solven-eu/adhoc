@@ -24,6 +24,8 @@ package eu.solven.adhoc.query.cube;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IQueryOption;
@@ -61,7 +63,7 @@ public final class AdhocSubQuery implements ICubeQuery, IHasParentQueryId {
 	}
 
 	@Override
-	public Object getCustomMarker() {
+	public @Nullable Object getCustomMarker() {
 		return subQuery.getCustomMarker();
 	}
 

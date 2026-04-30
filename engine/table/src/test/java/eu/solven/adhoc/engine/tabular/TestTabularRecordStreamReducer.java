@@ -60,7 +60,8 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		// InMemoryTable will produce a single row with both aggregates
 		tableWrapper.add(Map.of("k1", 123, "k2", 123));
 
-		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
+		ITabularRecordStream stream =
+				tableWrapper.streamSlices(StandaloneTableQueryPod.forTable(tableWrapper), tableQuery);
 
 		TableQueryEngine bootstrapped =
 				(TableQueryEngine) engine.bootstrap(StandaloneTableQueryPod.forTable(tableWrapper), optimizer, inducer);
@@ -81,7 +82,8 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		// InMemoryTable will produce a single row with both aggregates
 		tableWrapper.add(Map.of("k1", 123, "k2", 123));
 
-		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
+		ITabularRecordStream stream =
+				tableWrapper.streamSlices(StandaloneTableQueryPod.forTable(tableWrapper), tableQuery);
 		TableQueryEngine bootstrapped =
 				(TableQueryEngine) engine.bootstrap(StandaloneTableQueryPod.forTable(tableWrapper), optimizer, inducer);
 		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
@@ -100,7 +102,8 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 		tableWrapper.add(Map.of("k1", 123));
 		tableWrapper.add(Map.of("k2", 123));
 
-		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
+		ITabularRecordStream stream =
+				tableWrapper.streamSlices(StandaloneTableQueryPod.forTable(tableWrapper), tableQuery);
 		TableQueryEngine bootstrapped =
 				(TableQueryEngine) engine.bootstrap(StandaloneTableQueryPod.forTable(tableWrapper), optimizer, inducer);
 		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);
@@ -130,7 +133,8 @@ public class TestTabularRecordStreamReducer implements IAdhocTestConstants {
 				.edit(TableQueryV2.builder().aggregator(filteredEmpty).groupBy(GroupByColumns.named("a")).build())
 				.build();
 
-		ITabularRecordStream stream = tableWrapper.streamSlices(tableQuery);
+		ITabularRecordStream stream =
+				tableWrapper.streamSlices(StandaloneTableQueryPod.forTable(tableWrapper), tableQuery);
 		TableQueryEngine bootstrapped =
 				(TableQueryEngine) engine.bootstrap(StandaloneTableQueryPod.forTable(tableWrapper), optimizer, inducer);
 		IMultitypeMergeableGrid<ISlice> merged = bootstrapped.mergeTableAggregates(tableQuery, stream);

@@ -24,6 +24,7 @@ package eu.solven.adhoc.engine.concurrent;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -113,7 +114,7 @@ public class DagCompletableExecutor<T> {
 			wire(step, wiring);
 
 			// After `.wire`, we're guaranteed to have a ready future
-			return stepToFuture.get(step);
+			return Objects.requireNonNull(stepToFuture.get(step), "wire(step) must register the future");
 		} else {
 			// BEWARE Another thread might be preparing the future, but it may not be registered in stepToFuture
 			// It may wired, or being wired in another thread

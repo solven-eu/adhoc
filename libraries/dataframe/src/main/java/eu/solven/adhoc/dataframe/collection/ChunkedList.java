@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.RandomAccess;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.collection.IFreezable;
@@ -72,6 +74,7 @@ import it.unimi.dsi.fastutil.objects.AbstractObjectList;
  */
 // Relates with
 // https://github.com/eclipse-mat/mat/blob/master/plugins/org.eclipse.mat.report/src/org/eclipse/mat/collect/ArrayIntBig.java
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAccess, IFreezable, ICompactable {
 
 	/** Default {@code log2(base)}. Alias of {@link ChunkedArrays#LOG2_BASE_DEFAULT} kept for test access. */
@@ -97,13 +100,13 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	 * when {@code size < base}. {@code null} for a list that has never been written to.
 	 */
 	// non-final: lazily allocated on first write; compact() may replace it with a smaller copy
-	private Object[] head;
+	private @Nullable Object @Nullable [] head;
 
 	/**
 	 * Overflow storage. {@code tail[k]} covers adjusted indices {@code [base·(2ᵏ−1), base·(2ᵏ⁺¹−1))} and has length
 	 * {@code base << k}. Null until the first element beyond {@code base} is added.
 	 */
-	private Object[][] tail;
+	private @Nullable Object @Nullable [] @Nullable [] tail;
 
 	// PMD.AvoidFieldNameMatchingMethodName: `size` is the idiomatic AbstractList field name; renaming would deviate
 	// from the JDK pattern
@@ -166,7 +169,7 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 		// head allocated lazily on first write
 		if (initialCapacity > base) {
 			int tailSlots = ChunkedArrays.tailChunkIndex((initialCapacity - base - 1) >> log2Base) + 1;
-			tail = new Object[tailSlots][];
+			tail = new @Nullable Object[tailSlots][];
 		}
 	}
 
@@ -188,14 +191,16 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	// readAt is @Nullable to match the lazy-init backing arrays, but the List<E> contract here is that callers pass
+	// non-null E values; suppress NullAway so we can keep the AbstractList<E> signature.
+	@SuppressWarnings({ "unchecked", "NullAway" })
 	public E get(int index) {
 		Objects.checkIndex(index, size);
 		return (E) readAt(index);
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "NullAway" })
 	public E set(int index, E element) {
 		checkNotCompacted();
 		Objects.checkIndex(index, size);
@@ -232,7 +237,7 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 
 	/** Removes and returns the element at {@code index}, shifting subsequent elements left. O(n). */
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "NullAway" })
 	public E remove(int index) {
 		checkNotCompacted();
 		Objects.checkIndex(index, size);
@@ -298,8 +303,10 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 			int k = ChunkedArrays.tailChunkIndex(unitIndex);
 			// Compute the offset of the last occupied slot in tail[k]
 			int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
-			if (offset + 1 < tail[k].length) {
-				tail[k] = Arrays.copyOf(tail[k], offset + 1);
+			@Nullable
+			Object[] chunk = Objects.requireNonNull(tail[k]);
+			if (offset + 1 < chunk.length) {
+				tail[k] = Arrays.copyOf(chunk, offset + 1);
 			}
 		}
 		compacted = true;
@@ -320,37 +327,49 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 	// --- internal read/write ---
 
 	/** Reads the element at {@code index} without bounds-checking. */
-	private Object readAt(int index) {
+	private @Nullable Object readAt(int index) {
 		if (index < base) {
-			return head[index];
+			// callers guarantee `index < size`, so head was allocated by a prior write
+			return Objects.requireNonNull(head)[index];
 		}
 		int adjusted = index - base;
 		int unitIndex = adjusted >> log2Base;
 		int k = ChunkedArrays.tailChunkIndex(unitIndex);
 		int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
-		return tail[k][offset];
+		@Nullable
+		Object[] chunk = Objects.requireNonNull(Objects.requireNonNull(tail)[k]);
+		return chunk[offset];
 	}
 
 	/** Writes {@code value} at {@code index} without bounds-checking. */
-	private void writeAt(int index, Object value) {
+	private void writeAt(int index, @Nullable Object value) {
 		if (index < base) {
-			if (head == null) {
-				head = new Object[base];
+			@Nullable
+			Object[] localHead = head;
+			if (localHead == null) {
+				localHead = new @Nullable Object[base];
+				head = localHead;
 			}
-			head[index] = value;
+			localHead[index] = value;
 			return;
 		}
 		int adjusted = index - base;
 		int unitIndex = adjusted >> log2Base;
 		int k = ChunkedArrays.tailChunkIndex(unitIndex);
 		int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
-		tail[k][offset] = value;
+		// callers guarantee `index < size` after ensureTailChunkFor; tail[k] is non-null
+		@Nullable
+		Object[] chunk = Objects.requireNonNull(Objects.requireNonNull(tail)[k]);
+		chunk[offset] = value;
 	}
 
 	/**
 	 * Ensures the tail chunk covering {@code index} exists. Does nothing for indices below {@code base} since the head
 	 * is always present.
 	 */
+	// See block-level `@SuppressWarnings("NullAway")` below: array-of-arrays nullability defeats NullAway's
+	// type-checker around `Arrays.copyOf` and array literals; runtime invariants are preserved by callers.
+	@SuppressWarnings("NullAway")
 	private void ensureTailChunkFor(int index) {
 		if (index < base) {
 			return;
@@ -358,13 +377,19 @@ public class ChunkedList<E> extends AbstractObjectList<E> implements RandomAcces
 		int adjusted = index - base;
 		int unitIndex = adjusted >> log2Base;
 		int k = ChunkedArrays.tailChunkIndex(unitIndex);
-		if (tail == null) {
-			tail = new Object[k + 1][];
-		} else if (k >= tail.length) {
-			tail = Arrays.copyOf(tail, k + 1);
+		// Array-of-arrays nullable types defeat NullAway's type inference for `Arrays.copyOf` and array literals;
+		// the runtime invariants (head/tail allocated lazily, slots null until written) are enforced by the
+		// `index < size` precondition the public API maintains.
+		@SuppressWarnings("NullAway")
+		Object[][] localTail = tail;
+		if (localTail == null) {
+			localTail = new Object[k + 1][];
+		} else if (k >= localTail.length) {
+			localTail = Arrays.copyOf(localTail, k + 1);
 		}
-		if (tail[k] == null) {
-			tail[k] = new Object[base << k];
+		if (localTail[k] == null) {
+			localTail[k] = new Object[base << k];
 		}
+		tail = localTail;
 	}
 }

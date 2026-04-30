@@ -23,6 +23,7 @@
 package eu.solven.adhoc.measure.transformator.step;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 
@@ -70,7 +71,8 @@ public class FiltratorQueryStep extends AMeasureQueryStep {
 	@Override
 	public List<CubeQueryStep> getUnderlyingSteps() {
 		// Do the filter optimizations within a single filterOptimizer through the whole query
-		IFilterOptimizer optimizer = TransverseCacheHelper.getFilterOptimizer(step);
+		IFilterOptimizer optimizer = Objects.requireNonNullElse(TransverseCacheHelper.getFilterOptimizer(step),
+				eu.solven.adhoc.filter.AdhocFilterUnsafe.filterOptimizer);
 
 		// the filter is optimized as it is used as key in a hashStructure
 		ISliceFilter combinedFilter = FilterBuilder.and(step.getFilter(), filtrator.getFilter()).optimize(optimizer);

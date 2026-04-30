@@ -49,6 +49,9 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Builder
+// Lombok @Builder synthesises a StandardDSLSupplierBuilder whose `configuration` field is populated via the
+// chained setter; NullAway can't see the cross-method init.
+@SuppressWarnings("NullAway.Init")
 public class StandardDSLSupplier implements IDSLSupplier {
 	final Configuration configuration;
 

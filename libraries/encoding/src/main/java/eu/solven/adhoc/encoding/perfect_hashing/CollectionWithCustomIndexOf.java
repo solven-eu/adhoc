@@ -53,6 +53,8 @@ public class CollectionWithCustomIndexOf<T> implements IHasIndexOf<T> {
 	/**
 	 * Lombok @Builder
 	 */
+	// Builder fields are populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class CollectionWithCustomIndexOfBuilder<T> {
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		IHasIndexOfFactory<T> factory;

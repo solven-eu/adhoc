@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -140,13 +142,15 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 
 	}
 
-	public static IRankAggregationCarrier of(RankAggregation rankAggregation, Object first) {
+	public static @Nullable IRankAggregationCarrier of(RankAggregation rankAggregation, @Nullable Object first) {
 		if (first instanceof IRankAggregationCarrier carrier) {
 			return carrier;
 		} else if (first instanceof Array array) {
 			return RankedElementsCarrier.empty(rankAggregation).add(array);
 		} else if (first instanceof Iterable iterable) {
 			return RankedElementsCarrier.empty(rankAggregation).add(iterable);
+		} else if (first == null) {
+			return null;
 		} else {
 			return SingletonRankCarrier.builder().rankAggregation(rankAggregation).element(first).build();
 		}
@@ -312,7 +316,7 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 	}
 
 	@Override
-	public IRankAggregationCarrier aggregate(Object l, Object r) {
+	public @Nullable IRankAggregationCarrier aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return aggregateOne(r);
 		} else if (r == null) {
@@ -328,12 +332,12 @@ public class RankAggregation implements IAggregation, IAggregationCarrier.IHasCa
 		}
 	}
 
-	protected IRankAggregationCarrier aggregateOne(Object one) {
+	protected @Nullable IRankAggregationCarrier aggregateOne(@Nullable Object one) {
 		return of(this, one);
 	}
 
 	@Override
-	public IRankAggregationCarrier wrap(Object v) {
+	public @Nullable IRankAggregationCarrier wrap(Object v) {
 		return of(this, v);
 	}
 

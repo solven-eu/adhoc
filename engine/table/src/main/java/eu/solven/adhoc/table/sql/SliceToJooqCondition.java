@@ -25,6 +25,7 @@ package eu.solven.adhoc.table.sql;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -35,6 +36,7 @@ import org.jooq.Field;
 import org.jooq.Name;
 import org.jooq.True;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.filter.AdhocFilterUnsafe;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -330,7 +332,7 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 	 * @return By default, we return null so that this {@link IValueMatcher} is managed as post-filtering by Adhoc, over
 	 *         the {@link ITableWrapper} result.
 	 */
-	protected Condition onCustomCondition(String column, IValueMatcher valueMatcher, boolean hasParentNot) {
+	protected @Nullable Condition onCustomCondition(String column, IValueMatcher valueMatcher, boolean hasParentNot) {
 		// throw new UnsupportedOperationException(
 		// "Not handled: %s matches %s".formatted(column, PepperLogHelper.getObjectAndClass(valueMatcher)));
 		return null;
@@ -347,9 +349,12 @@ public class SliceToJooqCondition implements ISliceToJooqCondition {
 		// BEWARE It will lead to translating twice to SQL
 		Map<Boolean, List<ISliceFilter>> conditionAndFilters =
 				ands.stream().collect(Collectors.partitioningBy(f -> toCondition(f).getLeftover().isMatchAll()));
+		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		List<ISliceFilter> withoutLeftover = Objects.requireNonNull(conditionAndFilters.get(true));
+		List<ISliceFilter> withLeftover = Objects.requireNonNull(conditionAndFilters.get(false));
 
-		ISliceFilter withoutPostFilter = FilterBuilder.and(conditionAndFilters.get(true)).optimize(filterOptimizer);
-		ISliceFilter withPostFilter = FilterBuilder.and(conditionAndFilters.get(false)).optimize(filterOptimizer);
+		ISliceFilter withoutPostFilter = FilterBuilder.and(withoutLeftover).optimize(filterOptimizer);
+		ISliceFilter withPostFilter = FilterBuilder.and(withLeftover).optimize(filterOptimizer);
 
 		if (ISliceFilter.MATCH_ALL.equals(withPostFilter)) {
 			// There is no customCondition: restore the original condition as it may have be changed by the

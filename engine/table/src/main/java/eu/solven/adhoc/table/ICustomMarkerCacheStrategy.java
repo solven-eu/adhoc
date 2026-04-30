@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.cache.CachingTableWrapper;
 
@@ -41,5 +43,6 @@ public interface ICustomMarkerCacheStrategy {
 	 *            some customMarker, typically provided by the user
 	 * @return a potentially simpler customMarker, used in the key of related cache.
 	 */
-	Object restrictToCacheImpact(Object customMarker);
+	@Nullable
+	Object restrictToCacheImpact(@Nullable Object customMarker);
 }

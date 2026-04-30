@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.engine.tabular.grouper;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.filter.ISliceFilter;
@@ -64,7 +66,7 @@ public class TableStepsGrouper implements ITableStepsGrouper {
 	}
 
 	// @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
-	protected Object contextOnly(Object customMarker) {
+	protected @Nullable Object contextOnly(@Nullable Object customMarker) {
 		// In most cases, 2 different customMarker should lead to a single tableQuery, except in very special scenario
 		// (Example: `CCY=EUR` and `CCY=USD` may map to 2 different tables).
 		// TODO UnitTest this scenario

@@ -31,6 +31,8 @@ import org.apache.datasketches.hll.HllSketch;
 import org.apache.datasketches.hll.TgtHllType;
 import org.apache.datasketches.theta.UpdatableThetaSketch;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.encoding.column.IAppendableColumn;
 import eu.solven.adhoc.encoding.column.IReadableColumn;
 import eu.solven.adhoc.encoding.column.ObjectArrayColumn;
@@ -40,10 +42,25 @@ import eu.solven.adhoc.encoding.column.freezer.IFreezingWithContext;
 /**
  * {@link IFreezingWithContext} which will enable dictionarization.
  *
+ * <p>
+ * The freezers configured via {@link #DistinctFreezer(List)} are then applied to the (small) dictionary of distinct
+ * values, so that strategies such as {@code Utf8ToStringFreezer} or {@code FsstFreezingWithContext} can still normalise
+ * / compress the dictionary entries even when this freezer short-circuits the rest of the surrounding chain.
+ *
  * @author Benoit Lacelle
  */
 public final class DistinctFreezer implements IFreezingWithContext {
 	private static final int DISTINCT_FACTOR = 16;
+
+	private final List<IFreezingWithContext> dictionaryFreezers;
+
+	public DistinctFreezer() {
+		this(List.of());
+	}
+
+	public DistinctFreezer(List<IFreezingWithContext> dictionaryFreezers) {
+		this.dictionaryFreezers = ImmutableList.copyOf(dictionaryFreezers);
+	}
 
 	@Override
 	public Optional<IReadableColumn> freeze(IAppendableColumn column, Map<String, Object> freezingContext) {
@@ -54,7 +71,7 @@ public final class DistinctFreezer implements IFreezingWithContext {
 			long countDistinct = countDistinctWithLimit(freezingContext, array, limitForDictionary);
 
 			if (countDistinct <= limitForDictionary) {
-				return Optional.of(DictionarizedObjectColumn.fromArray(array));
+				return Optional.of(DictionarizedObjectColumn.fromArray(array, dictionaryFreezers));
 			} else {
 				return Optional.empty();
 			}

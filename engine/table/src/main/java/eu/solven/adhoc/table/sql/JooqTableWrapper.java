@@ -211,7 +211,8 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 				return List.copyOf(fields);
 			}
 		} catch (DataAccessException e) {
-			if (e.getMessage().contains("IO Error: No files found that match the pattern")) {
+			if (Objects.requireNonNullElse(e.getMessage(), "")
+					.contains("IO Error: No files found that match the pattern")) {
 				if (log.isDebugEnabled()) {
 					log.warn("No column for table=`{}` due to missing files", getName(), e);
 				} else {
@@ -519,7 +520,9 @@ public class JooqTableWrapper implements ITableWrapper, IHasCache, IHasHealthDet
 	@Override
 	public CoordinatesSample getCoordinates(String column, IValueMatcher valueMatcher, int limit) {
 		if (SQLDialect.DUCKDB == tableParameters.getDslSupplier().getDSLContext().dialect()) {
-			return DuckDBHelper.getCoordinates(this, column, valueMatcher, limit);
+			// `DuckDBHelper.getCoordinates` returns null only when its `Map.get(column)` misses, but here we just
+			// queried for the same column, so a sample is guaranteed to be present.
+			return Objects.requireNonNull(DuckDBHelper.getCoordinates(this, column, valueMatcher, limit));
 		} else {
 			return ITableWrapper.super.getCoordinates(column, valueMatcher, limit);
 		}

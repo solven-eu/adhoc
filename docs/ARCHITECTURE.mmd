@@ -92,11 +92,13 @@ classDiagram
         IOperatorFactory operatorFactory
         IJooqTableSupplier tableSupplier
     }
+    class KnownColumnsExpressionExtractor {
+    }
     class MeasureForest {
     }
     class PrunedJoinsJooqTableSupplier {
         IJooqColumnsResolver columnsResolver
-        IDSLSupplier dslSupplier
+        IExpressionColumnExtractor expressionColumnExtractor
         PrunedJoinsJooqTableSupplierBuilder schema
     }
     class PrunedJoinsJooqTableSupplierBuilder {
@@ -164,11 +166,11 @@ classDiagram
     ColumnsManager *-- StandardCustomTypeManager : customTypeManager
     CachingTableWrapper *-- ITableWrapper : decorated
     JooqTableWrapperParameters *-- IDSLSupplier : dslSupplier
-    PrunedJoinsJooqTableSupplier *-- IDSLSupplier : dslSupplier
     CubeWrapper *-- CubeQueryEngine : engine
     CubeQueryEngine *-- IAdhocEventBus : eventBus
     TableQueryEngineFactory *-- IAdhocEventBus : eventBus
     ColumnsManager *-- IAdhocEventBus : eventBus
+    PrunedJoinsJooqTableSupplier *-- KnownColumnsExpressionExtractor : expressionColumnExtractor
     CubeQueryEngine *-- AdhocFactoriesUnsafe : factories
     TableQueryEngineFactory *-- AdhocFactories : factories
     StandardQueryPreparator *-- AdhocFactoriesUnsafe : factories

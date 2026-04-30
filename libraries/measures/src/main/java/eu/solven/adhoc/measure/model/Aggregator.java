@@ -71,9 +71,11 @@ public class Aggregator implements ITableMeasure, IHasAggregationKey, IAliasedAg
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class AggregatorBuilder {
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 		String name;

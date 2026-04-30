@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.collection;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.collection.FrozenException;
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.collection.IFreezable;
@@ -56,8 +58,8 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 	private final int base;
 
 	// non-final: compact() may replace with a trimmed copy
-	private long[] head;
-	private long[][] tail;
+	private long @Nullable [] head;
+	private long @Nullable [] @Nullable [] tail;
 	// PMD.AvoidFieldNameMatchingMethodName: `size` is the idiomatic AbstractList field name; renaming would deviate
 	// from the JDK pattern
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
@@ -161,8 +163,9 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 			int k = ChunkedArrays.tailChunkIndex(unitIndex);
 			int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
 
-			if (offset + 1 < tail[k].length) {
-				tail[k] = Arrays.copyOf(tail[k], offset + 1);
+			long[] chunk = Objects.requireNonNull(tail[k]);
+			if (offset + 1 < chunk.length) {
+				tail[k] = Arrays.copyOf(chunk, offset + 1);
 			}
 		}
 		compacted = true;
@@ -183,28 +186,31 @@ public class ChunkedLongList extends AbstractLongList implements IFreezable, ICo
 
 	private long readAt(int index) {
 		if (index < base) {
-			return head[index];
+			return Objects.requireNonNull(head)[index];
 		}
 		int adjusted = index - base;
 		int unitIndex = adjusted >> log2Base;
 		int k = ChunkedArrays.tailChunkIndex(unitIndex);
 		int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
-		return tail[k][offset];
+		return Objects.requireNonNull(Objects.requireNonNull(tail)[k])[offset];
 	}
 
 	private void writeAt(int index, long value) {
 		if (index < base) {
-			if (head == null) {
-				head = new long[base];
+			long[] localHead = head;
+			if (localHead == null) {
+				localHead = new long[base];
+				head = localHead;
 			}
-			head[index] = value;
+			localHead[index] = value;
 			return;
 		}
 		int adjusted = index - base;
 		int unitIndex = adjusted >> log2Base;
 		int k = ChunkedArrays.tailChunkIndex(unitIndex);
 		int offset = ((unitIndex - (1 << k) + 1) << log2Base) + (adjusted & (base - 1));
-		tail[k][offset] = value;
+		long[] chunk = Objects.requireNonNull(Objects.requireNonNull(tail)[k]);
+		chunk[offset] = value;
 	}
 
 	private void ensureTailChunkFor(int index) {

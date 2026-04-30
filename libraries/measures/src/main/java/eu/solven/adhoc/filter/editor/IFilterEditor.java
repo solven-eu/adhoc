@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.editor;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
@@ -46,11 +48,13 @@ public interface IFilterEditor {
 	 */
 	@Value
 	@Builder
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	class FilterEditorContext implements IHasCustomMarker {
 		@NonNull
 		ISliceFilter filter;
 
-		// May be null
+		@Nullable
 		Object customMarker;
 	}
 

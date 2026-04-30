@@ -24,6 +24,8 @@ package eu.solven.adhoc.engine.context;
 
 import java.time.OffsetDateTime;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Anything which can be cancelled.
  * 
@@ -33,6 +35,7 @@ public interface IIsCancellable {
 
 	boolean isCancelled();
 
+	@Nullable
 	OffsetDateTime getCancellationDate();
 
 	void addCancellationListener(Runnable runnable);

@@ -24,6 +24,8 @@ package eu.solven.adhoc.table;
 
 import java.time.OffsetDateTime;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -92,7 +94,7 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 	}
 
 	@Override
-	public OffsetDateTime getCancellationDate() {
+	public @Nullable OffsetDateTime getCancellationDate() {
 		return null;
 	}
 
@@ -122,6 +124,20 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 		throw new NotYetImplementedException("Needed?");
 	}
 
+	@Override
+	public Object getQuery() {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	@Override
+	public ITableQueryPod asTableQuery() {
+		throw new NotYetImplementedException("Needed?");
+	}
+
+	/**
+	 * Returns a thin standalone {@link ITableQueryPod} bound to {@code table}. Suitable for metadata calls and tests
+	 * that drive an {@link ITableWrapper#streamSlices} without a full cube/engine context.
+	 */
 	public static ITableQueryPod forTable(ITableWrapper tableWrapper) {
 		return StandaloneTableQueryPod.builder().table(tableWrapper).build();
 	}

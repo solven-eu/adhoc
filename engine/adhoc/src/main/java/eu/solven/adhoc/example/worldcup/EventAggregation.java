@@ -28,6 +28,8 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -124,7 +126,7 @@ public class EventAggregation implements IAggregation, IAggregationCarrier.IHasC
 	}
 
 	@Override
-	public Object aggregate(Object left, Object right) {
+	public @Nullable Object aggregate(@Nullable Object left, @Nullable Object right) {
 		if (left == null) {
 			return right;
 		} else if (right == null) {

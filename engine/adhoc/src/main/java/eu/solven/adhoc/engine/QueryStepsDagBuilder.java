@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -194,7 +196,9 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 			}
 		});
 
-		IFilterOptimizer filterOptimizer = TransverseCacheHelper.getFilterOptimizer(this);
+		// Use the global default if no transverse-cache optimizer was registered for this DAG.
+		IFilterOptimizer filterOptimizer = Objects.requireNonNullElse(TransverseCacheHelper.getFilterOptimizer(this),
+				eu.solven.adhoc.filter.AdhocFilterUnsafe.filterOptimizer);
 
 		return Lists.cartesianProduct(indexToGroupBys).stream().map(columns -> {
 			IGroupBy groupBy = GroupByColumns.of(columns.stream().map(Map.Entry::getKey).toList());
@@ -257,7 +261,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 		return !pending.isEmpty();
 	}
 
-	protected CubeQueryStep pollLeftover() {
+	protected @Nullable CubeQueryStep pollLeftover() {
 		// Equivalent with `Deque.poll()`
 		if (pending.isEmpty()) {
 			return null;
@@ -362,7 +366,8 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 	protected void registerDescendants() {
 		// Add implicitly requested steps
 		while (hasLeftovers()) {
-			CubeQueryStep queryStep = pollLeftover();
+			CubeQueryStep queryStep =
+					Objects.requireNonNull(pollLeftover(), "hasLeftovers() guarantees a non-null queryStep");
 
 			IMeasure measure = measureResolver.resolveIfRef(queryStep.getMeasure());
 

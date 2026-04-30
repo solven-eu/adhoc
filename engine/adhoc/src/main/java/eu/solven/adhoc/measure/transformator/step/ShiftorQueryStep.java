@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MultimapBuilder;
@@ -108,7 +110,7 @@ public class ShiftorQueryStep implements IMeasureQueryStep {
 		return Arrays.asList(whereToReadShifted, whereToReadForWrite);
 	}
 
-	protected ISliceFilter shift(ISliceFilter filter, Object customMarker) {
+	protected ISliceFilter shift(ISliceFilter filter, @Nullable Object customMarker) {
 		FilterEditorContext filterEditorContext =
 				IFilterEditor.FilterEditorContext.builder().filter(filter).customMarker(customMarker).build();
 		return filterEditorSupplier.get().editFilter(filterEditorContext);

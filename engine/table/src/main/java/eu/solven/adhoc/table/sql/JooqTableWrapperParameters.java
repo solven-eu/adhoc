@@ -105,9 +105,11 @@ public class JooqTableWrapperParameters {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class JooqTableWrapperParametersBuilder {
 		public JooqTableWrapperParametersBuilder tableName(String tableName) {
 			this.tableName(DSL.quotedName(tableName));

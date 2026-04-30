@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.measure.aggregation.carrier;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
@@ -61,6 +63,7 @@ public interface IAggregationCarrier extends IValueProvider {
 		 * @return an {@link IAggregationCarrier}
 		 */
 		@Deprecated(since = "Prefer `IValueReceiver wrap(IValueReceiver sink)`")
+		@Nullable
 		IAggregationCarrier wrap(Object v);
 
 		/**

@@ -50,7 +50,7 @@ public class MeasureForests {
 		return forests.size();
 	}
 
-	public IMeasureForest getForest(String name) {
+	public @org.jspecify.annotations.Nullable IMeasureForest getForest(String name) {
 		return getNameToForest().get(name);
 	}
 

@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.pepper.mappath.MapPath;
@@ -40,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class ACustomMarkerCombination implements ICombination {
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		Object customMarker = slice.getQueryStep().getCustomMarker();
 
 		Object defaultValue = getDefault();
@@ -67,7 +69,7 @@ public abstract class ACustomMarkerCombination implements ICombination {
 	 * @return the default value for given customMarker.
 	 */
 	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
-	protected Object getDefault() {
+	protected @Nullable Object getDefault() {
 		return null;
 	}
 

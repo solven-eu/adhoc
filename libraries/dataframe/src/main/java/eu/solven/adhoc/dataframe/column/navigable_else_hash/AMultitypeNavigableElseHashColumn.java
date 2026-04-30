@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.IColumnScanner;
 import eu.solven.adhoc.cuboid.IColumnValueConverter;
@@ -154,7 +156,7 @@ public abstract class AMultitypeNavigableElseHashColumn<T extends Comparable<T>>
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					if (v == null) {
 						// No value from navigable: let's try from hash
 						getHash().onValue(key).acceptReceiver(valueReceiver);

@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -116,10 +117,13 @@ public class InduceByAdhocCompleteInner {
 
 			Set<ISliceFilter> validInducedFilters =
 					inducerFilterToStricterInducedFilters.getOrDefault(inducerFilter, ImmutableSet.of());
-			List<IGroupBy> validInducedGroupBys = inducerGroupByToInducedGroupBys.get(inducer.getGroupBy());
+			List<IGroupBy> validInducedGroupBys =
+					Objects.requireNonNull(inducerGroupByToInducedGroupBys.get(inducer.getGroupBy()),
+							"every distinct inducer groupBy is indexed by makeInducerGroupByToInducedGroupBys");
 
-			// Fetched once per inducer — reused for all induced candidates below
-			IFilterStripper inducerStripper = filterToStripper.get(inducerFilter);
+			// Fetched once per inducer — reused for all induced candidates below; non-null because we filtered out
+			// MATCH_NONE inducers above and `filterToStripper` covers every non-MATCH_NONE distinct filter.
+			IFilterStripper inducerStripper = Objects.requireNonNull(filterToStripper.get(inducerFilter));
 			// Column-name set is also invariant across the inner loop
 			ImmutableSet<String> inducerColumnNames = inducer.getGroupBy()
 					.getColumns()
@@ -217,7 +221,8 @@ public class InduceByAdhocCompleteInner {
 				// MATCH_NONE steps are independent: no inducer can serve them
 				continue;
 			}
-			IFilterStripper inducedStripper = filterToStripper.get(fInduced);
+			// Non-null because we filtered out MATCH_NONE above; `filterToStripper` covers every non-MATCH_NONE filter.
+			IFilterStripper inducedStripper = Objects.requireNonNull(filterToStripper.get(fInduced));
 			for (ISliceFilter fInducer : distinctFilters) {
 				if (inducedStripper.isStricterThan(fInducer)) {
 					// fInducer is laxer than fInduced → fInducer can serve fInduced

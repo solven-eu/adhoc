@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.encoding.bytes.Utf8ByteSlice;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.value.ComparingMatcher;
@@ -282,14 +283,23 @@ public abstract class ATestTableQuery_DB extends AJooqTest implements IAdhocTest
 		List<Map<String, ?>> tableStream =
 				table().streamSlices(TableQuery.edit(qK1).groupBy(GroupByColumns.named("a")).build()).toList();
 
-		Assertions.assertThat(tableStream)
-				.hasSize(3)
-				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a1", "k1", 0L + 123)))
+		Assertions.assertThat(tableStream).hasSize(3).anySatisfy(m -> {
+			Assertions.assertThat(m).hasEntrySatisfying("a", v -> {
+				Assertions.assertThat(v).isIn("a1", Utf8ByteSlice.fromString("a1"));
+			}).hasEntrySatisfying("k1", v -> {
+				Assertions.assertThat(v).isEqualTo(0L + 123);
+			}).hasSize(2);
+		}).anySatisfy(m -> {
+			Assertions.assertThat(m).hasEntrySatisfying("a", v -> {
+				Assertions.assertThat(v).isIn("a2", Utf8ByteSlice.fromString("a2"));
+			}).hasEntrySatisfying("k1", v -> {
+				Assertions.assertThat(v).isEqualTo(0L + 345);
+			}).hasSize(2);
+		})
 				.anySatisfy(m -> Assertions.assertThat((Map) m)
 						.hasSize(2)
 						.containsEntry("a", null)
-						.containsEntry("k1", 0L + 234))
-				.anySatisfy(m -> Assertions.assertThat(m).isEqualTo(Map.of("a", "a2", "k1", 0L + 345)));
+						.containsEntry("k1", 0L + 234));
 	}
 
 	@Test

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.primitive.IValueReceiver;
 
@@ -41,7 +43,8 @@ public interface ICoordinateNormalizer {
 	 * @param rawCoordinate
 	 * @return
 	 */
-	Object normalizeCoordinate(Object rawCoordinate);
+	@Nullable
+	Object normalizeCoordinate(@Nullable Object rawCoordinate);
 
 	default IValueProvider normalizeCoordinate(IValueProvider raw) {
 		if (raw == null) {
@@ -51,7 +54,7 @@ public interface ICoordinateNormalizer {
 			raw.acceptReceiver(new IValueReceiver() {
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					Object normalized = normalizeCoordinate(v);
 
 					if (normalized instanceof Long l) {

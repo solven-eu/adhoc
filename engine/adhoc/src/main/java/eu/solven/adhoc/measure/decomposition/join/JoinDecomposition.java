@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -89,7 +91,7 @@ public class JoinDecomposition implements IDecomposition {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static ImmutableSet<String> toStringList(Object raw, String optionName) {
+	private static ImmutableSet<String> toStringList(@Nullable Object raw, String optionName) {
 		if (raw instanceof Collection<?> coll) {
 			return coll.stream().map(Object::toString).collect(ImmutableSet.toImmutableSet());
 		}

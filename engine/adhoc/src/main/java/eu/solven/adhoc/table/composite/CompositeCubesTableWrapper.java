@@ -336,7 +336,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 		Set<String> crossCubeCalculated = computeCrossCubeCalculatedColumns();
 
 		return cubeToView.entrySet().stream().flatMap(e -> {
-			ICubeWrapper subCube = nameToCube.get(e.getKey());
+			ICubeWrapper subCube =
+					Objects.requireNonNull(nameToCube.get(e.getKey()), () -> "Unknown cube=" + e.getKey());
 			Set<String> subColumns = subCube.getColumnsAsMap().keySet();
 
 			// Columns which are requested (hence present in the composite Cube/ one of the subCube) but missing
@@ -516,7 +517,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				// Sequential path: run every sub-query on the calling thread
 				Map<String, ITabularView> result = new LinkedHashMap<>();
 				cubeToQuery.forEach((cubeName, query) -> {
-					ICubeWrapper subCube = nameToCube.get(cubeName);
+					ICubeWrapper subCube =
+							Objects.requireNonNull(nameToCube.get(cubeName), () -> "Unknown cube=" + cubeName);
 					try {
 						result.put(cubeName, executeSubQuery(subCube, query));
 					} catch (RuntimeException e) {
@@ -529,7 +531,8 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 				ListeningExecutorService cpuPool = queryPod.getExecutorService();
 				Map<String, CompletableFuture<ITabularView>> futures = new LinkedHashMap<>();
 				cubeToQuery.forEach((cubeName, query) -> {
-					ICubeWrapper subCube = nameToCube.get(cubeName);
+					ICubeWrapper subCube =
+							Objects.requireNonNull(nameToCube.get(cubeName), () -> "Unknown cube=" + cubeName);
 					futures.put(cubeName, CompletableFuture.supplyAsync(() -> {
 						try {
 							return executeSubQuery(subCube, query);

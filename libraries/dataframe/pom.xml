@@ -19,6 +19,12 @@
 
 	<dependencies>
 		<dependency>
+			<!-- @NullMarked / @Nullable / @NonNull (annotation-only, retained at compile time) -->
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>

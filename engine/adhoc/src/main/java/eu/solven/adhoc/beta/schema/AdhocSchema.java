@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -348,7 +349,8 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 				.build();
 	}
 
-	protected Object transcodeCustomMarker(ICubeWrapper cubeWrapper, Object customMarker) {
+	protected @org.jspecify.annotations.Nullable Object transcodeCustomMarker(ICubeWrapper cubeWrapper,
+			@org.jspecify.annotations.Nullable Object customMarker) {
 		return customMarkerCleaner.transcodeCustomMarker(cubeWrapper, customMarker);
 	}
 
@@ -415,15 +417,20 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	@Override
 	public CoordinatesSample getCoordinates(ColumnIdentifier columnId, IValueMatcher valueMatcher, int limit) {
 		if (columnId.isCubeElseTable()) {
-			return nameToCube.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
+			return Objects
+					.requireNonNull(nameToCube.get(columnId.getHolder()), () -> "Unknown cube=" + columnId.getHolder())
+					.getCoordinates(columnId.getColumn(), valueMatcher, limit);
 		} else {
-			return nameToTable.get(columnId.getHolder()).getCoordinates(columnId.getColumn(), valueMatcher, limit);
+			return Objects
+					.requireNonNull(nameToTable.get(columnId.getHolder()),
+							() -> "Unknown table=" + columnId.getHolder())
+					.getCoordinates(columnId.getColumn(), valueMatcher, limit);
 
 		}
 	}
 
 	public Map<String, ColumnMetadata> getCubeColumns(String cube) {
-		return nameToCube.get(cube).getColumnsAsMap();
+		return Objects.requireNonNull(nameToCube.get(cube), () -> "Unknown cube=" + cube).getColumnsAsMap();
 	}
 
 	@Override

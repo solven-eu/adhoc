@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.aggregation.comparable;
 
 import java.util.Comparator;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.collection.ComparableElseClassComparator;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
@@ -44,7 +46,7 @@ public class MaxAggregation implements IAggregation, IDoubleAggregation, ILongAg
 	final Comparator<Object> comparator = new ComparableElseClassComparator();
 
 	@Override
-	public Object aggregate(Object l, Object r) {
+	public @Nullable Object aggregate(@Nullable Object l, @Nullable Object r) {
 		if (l == null) {
 			return r;
 		} else if (r == null) {

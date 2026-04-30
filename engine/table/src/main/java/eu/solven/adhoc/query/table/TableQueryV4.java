@@ -32,6 +32,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
@@ -87,6 +89,7 @@ public class TableQueryV4 implements ITableQuery {
 	ImmutableSetMultimap<IGroupBy, FilteredAggregator> groupByToAggregators;
 
 	@Default
+	@Nullable
 	Object customMarker = null;
 
 	@Default
@@ -98,7 +101,7 @@ public class TableQueryV4 implements ITableQuery {
 
 	protected TableQueryV4(ISliceFilter filter,
 			Multimap<IGroupBy, FilteredAggregator> groupByToAggregators,
-			Object customMarker,
+			@Nullable Object customMarker,
 			AdhocTopClause topClause,
 			ImmutableSet<IQueryOption> options) {
 		this.filter = filter;
@@ -209,6 +212,8 @@ public class TableQueryV4 implements ITableQuery {
 	/**
 	 * Lombok @Builder
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class TableQueryV4Builder {
 
 		@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")

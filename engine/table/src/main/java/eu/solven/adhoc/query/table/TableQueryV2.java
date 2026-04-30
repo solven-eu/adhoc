@@ -25,6 +25,8 @@ package eu.solven.adhoc.query.table;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
@@ -71,6 +73,7 @@ public class TableQueryV2 implements IWhereGroupByQuery, ITableQuery {
 
 	// This property is transported down to the TableQuery
 	@Default
+	@Nullable
 	Object customMarker = null;
 
 	@Default

@@ -40,6 +40,7 @@ import org.jgrapht.alg.interfaces.ShortestPathAlgorithm;
 import org.jgrapht.alg.shortestpath.JohnsonShortestPaths;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
@@ -767,7 +768,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					}
 
 					@Override
-					public void onObject(Object v) {
+					public void onObject(@Nullable Object v) {
 						sliceFeeder.onObject(null);
 					}
 				};
@@ -793,7 +794,7 @@ public class CubeQueryEngine implements ICubeQueryEngine, IHasOperatorFactory {
 					}
 
 					@Override
-					public void onObject(Object v) {
+					public void onObject(@Nullable Object v) {
 						if (v instanceof IValueProvider valueProvider) {
 							// Transfer the carried value
 							valueProvider.acceptReceiver(sliceFeeder);

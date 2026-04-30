@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.errorprone.annotations.ThreadSafe;
@@ -179,7 +181,7 @@ public final class PerfectHashMap<V> implements Map<String, V>, IImmutable {
 	}
 
 	@Override
-	public V get(Object key) {
+	public @Nullable V get(Object key) {
 		if (!(key instanceof String stringKey)) {
 			return null;
 		}
@@ -348,7 +350,7 @@ public final class PerfectHashMap<V> implements Map<String, V>, IImmutable {
 				int index;
 
 				@Override
-				protected String computeNext() {
+				protected @Nullable String computeNext() {
 					int total = values.size();
 					while (index < total) {
 						Object value = values.get(index);
@@ -382,7 +384,7 @@ public final class PerfectHashMap<V> implements Map<String, V>, IImmutable {
 				int index;
 
 				@Override
-				protected V computeNext() {
+				protected @Nullable V computeNext() {
 					int total = values.size();
 					while (index < total) {
 						Object value = values.get(index);
@@ -410,7 +412,7 @@ public final class PerfectHashMap<V> implements Map<String, V>, IImmutable {
 				int index;
 
 				@Override
-				protected Map.Entry<String, V> computeNext() {
+				protected Map.@Nullable Entry<String, V> computeNext() {
 					int total = values.size();
 					while (index < total) {
 						Object value = values.get(index);
@@ -447,7 +449,7 @@ public final class PerfectHashMap<V> implements Map<String, V>, IImmutable {
 			this.values = ImmutableList.builderWithExpectedSize(keys.size());
 		}
 
-		public Builder<V> append(Object value) {
+		public Builder<V> append(@Nullable Object value) {
 			if (value == null) {
 				values.add(ABSENT);
 				nbAbsent.incrementAndGet();

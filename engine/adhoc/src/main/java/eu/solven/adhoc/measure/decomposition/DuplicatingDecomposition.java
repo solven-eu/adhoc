@@ -27,8 +27,11 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -76,7 +79,8 @@ public class DuplicatingDecomposition implements IDecomposition {
 		Map<String, Class<?>> columnToType = new LinkedHashMap<>();
 
 		getDuplicatedColumns().forEach(column -> {
-			Class<?> columnClass = getColumnClass(column, getDefaultCoordinates(column));
+			Class<?> columnClass = getColumnClass(column,
+					Objects.requireNonNull(getDefaultCoordinates(column), () -> "Unknown duplicated column=" + column));
 			columnToType.put(column, columnClass);
 		});
 
@@ -93,7 +97,7 @@ public class DuplicatingDecomposition implements IDecomposition {
 		return columnToCoordinates.keySet();
 	}
 
-	protected Collection<?> getDefaultCoordinates(String column) {
+	protected @Nullable Collection<?> getDefaultCoordinates(String column) {
 		return columnToCoordinates.get(column);
 	}
 
@@ -106,7 +110,8 @@ public class DuplicatingDecomposition implements IDecomposition {
 	 * @return the coordinates along which given value has to be duplicated.
 	 */
 	protected ImmutableList<?> getCoordinatesAlongColumn(String relevantColumn, Object value) {
-		return ImmutableList.copyOf(columnToCoordinates.get(relevantColumn));
+		return ImmutableList.copyOf(Objects.requireNonNull(columnToCoordinates.get(relevantColumn),
+				() -> "Unknown column=" + relevantColumn));
 	}
 
 	protected Class<?> getColumnClass(String column, Collection<?> coordinates) {

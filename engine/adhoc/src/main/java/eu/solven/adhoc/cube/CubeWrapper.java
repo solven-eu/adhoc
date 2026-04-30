@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -242,9 +243,11 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class CubeWrapperBuilder {
 		public CubeWrapperBuilder eventBus(IAdhocEventBus eventBus) {
 			// BEWARE Is this the proper way the ensure the eventBus is written in proper places?
@@ -271,10 +274,12 @@ public class CubeWrapper implements ICubeWrapper, IHasHealthDetails {
 
 		// Given columns are defined by a measure, not by the table
 		for (String generatedColumn : generatedColumns) {
-			IValueMatcher valueMatcher = columnToValueMatcher.get(generatedColumn);
-			CoordinatesSample coordinates =
-					ColumnGeneratorHelpers.getCoordinates(columnGenerators, generatedColumn, valueMatcher, limit);
-			columnToSample.put(generatedColumn, coordinates);
+			if (columnToValueMatcher.containsKey(generatedColumn)) {
+				IValueMatcher valueMatcher = Objects.requireNonNull(columnToValueMatcher.get(generatedColumn));
+				CoordinatesSample coordinates =
+						ColumnGeneratorHelpers.getCoordinates(columnGenerators, generatedColumn, valueMatcher, limit);
+				columnToSample.put(generatedColumn, coordinates);
+			}
 		}
 
 		// TODO What if a column is both from table and generated? Trying to get coordinates from an

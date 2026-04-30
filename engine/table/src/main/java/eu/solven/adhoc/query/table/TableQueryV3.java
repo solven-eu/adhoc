@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.column.IAdhocColumn;
@@ -79,6 +81,7 @@ public class TableQueryV3 implements ITableQuery {
 
 	// This property is transported down to the TableQuery
 	@Default
+	@Nullable
 	Object customMarker = null;
 
 	@Default

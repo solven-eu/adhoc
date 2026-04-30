@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.stream.IConsumingStream;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,7 +56,7 @@ class ShardingDispatcher<T> {
 	private final Consumer<T> consumer;
 	private final Executor executor;
 
-	private final AtomicReference<Throwable> firstError = new AtomicReference<>();
+	private final AtomicReference<@Nullable Throwable> firstError = new AtomicReference<>();
 	private final CountDownLatch latch;
 	private final BlockingDeque<List<Object>>[] queues;
 

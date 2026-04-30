@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.measure.aggregation.IAggregation;
@@ -55,12 +57,12 @@ public class UnionListAggregation extends AUnionCollectionAggregation {
 
 	@Override
 	@SuppressWarnings("PMD.ReturnEmptyCollectionRatherThanNull")
-	protected List<?> onEmpty() {
+	protected @Nullable List<?> onEmpty() {
 		return null;
 	}
 
 	@Override
-	public List<?> aggregate(Object l, Object r) {
+	public @Nullable List<?> aggregate(@Nullable Object l, @Nullable Object r) {
 		List<?> lAsList = wrapAsList(l);
 		List<?> rAsList = wrapAsList(r);
 
@@ -72,7 +74,7 @@ public class UnionListAggregation extends AUnionCollectionAggregation {
 		return aggregated;
 	}
 
-	protected List<?> wrapAsList(Object l) {
+	protected List<?> wrapAsList(@Nullable Object l) {
 		if (l == null) {
 			return ImmutableList.of();
 		} else if (unnest && l instanceof List<?> list) {
@@ -97,9 +99,14 @@ public class UnionListAggregation extends AUnionCollectionAggregation {
 	 * @param right
 	 * @return
 	 */
-	private static <K> List<? extends K> unionList(List<? extends K> left, List<? extends K> right) {
+	private static <K> List<? extends K> unionList(@Nullable List<? extends K> left,
+			@Nullable List<? extends K> right) {
 		if (left == null || left.isEmpty()) {
-			return right;
+			if (right == null) {
+				return ImmutableList.of();
+			} else {
+				return right;
+			}
 		} else if (right == null || right.isEmpty()) {
 			return left;
 		} else {

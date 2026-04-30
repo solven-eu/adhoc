@@ -6,6 +6,7 @@ flowchart LR
     adhoc_cell["adhoc-cell"]
     adhoc_dataframe["adhoc-dataframe"]
     adhoc_encoding["adhoc-encoding"]
+    adhoc_engine["adhoc-engine"]
     adhoc_experimental["adhoc-experimental"]
     adhoc_filters["adhoc-filters"]
     adhoc_fsst["adhoc-fsst"]
@@ -14,6 +15,7 @@ flowchart LR
     adhoc_model["adhoc-model"]
     adhoc_public["adhoc-public"]
     adhoc_spring["adhoc-spring"]
+    adhoc_table["adhoc-table"]
     pivotable["pivotable"]
     pivotable_authorization["pivotable-authorization"]
     pivotable_bom["pivotable-bom"]
@@ -36,6 +38,7 @@ flowchart LR
     adhoc --> adhoc_dataframe
     adhoc --> adhoc_encoding
     adhoc --> adhoc_model
+    adhoc --> adhoc_table
     adhoc_atoti --> adhoc
     adhoc_calcite --> adhoc
     adhoc_cell --> adhoc_encoding
@@ -50,6 +53,12 @@ flowchart LR
     adhoc_filters --> adhoc_model
     adhoc_measures --> adhoc_cell
     adhoc_spring --> adhoc
+    adhoc_table --> adhoc_cell
+    adhoc_table --> adhoc_dataframe
+    adhoc_table --> adhoc_encoding
+    adhoc_table --> adhoc_filters
+    adhoc_table --> adhoc_measures
+    adhoc_table --> adhoc_model
     pivotable_authorization --> pivotable_public
     pivotable_authorization --> pivotable_tools
     pivotable_mcp --> pivotable_server_core

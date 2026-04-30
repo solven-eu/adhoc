@@ -24,6 +24,8 @@ package eu.solven.adhoc.dataframe.column.navigable_else_hash;
 
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cuboid.StreamStrategy;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.IMultitypeIntColumnFastGet;
@@ -96,7 +98,7 @@ public class MultitypeNavigableElseHashIntColumn extends AMultitypeNavigableElse
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					if (v == null) {
 						// No value from navigable: let's try from hash
 						getHash().onValue(key).acceptReceiver(valueReceiver);

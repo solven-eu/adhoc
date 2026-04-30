@@ -40,6 +40,7 @@ import org.jooq.Record;
 import org.jooq.Table;
 import org.jooq.TableLike;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
@@ -136,7 +137,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 
 	/** Lazily built column→owning-join index. {@code null} means "not yet computed". Memoised across queries. */
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	private Map<String, String> columnToAlias;
+	private @Nullable Map<String, String> columnToAlias;
 
 	/**
 	 * Per-alias cache of the resolved column set, to avoid calling {@link #columnsResolver} repeatedly (especially when
@@ -154,7 +155,7 @@ public class PrunedJoinsJooqTableSupplier implements IJooqTableSupplier, IHasCac
 			CacheBuilder.newBuilder().maximumSize(MAX_CACHE_ENTRY).build();
 
 	/** Memoised full-joins table (all joins included). Invalidated whenever a new {@code leftJoin} is declared. */
-	private Table<Record> fullTableCache;
+	private @Nullable Table<Record> fullTableCache;
 
 	// ── IJooqTableSupplier ──────────────────────────────────────────────────
 

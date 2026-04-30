@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.page;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents a row in a table.
  * 
@@ -37,7 +39,7 @@ public interface ITableRowWrite {
 	 * @param value
 	 * @return the index written, compatible with read by index from {@link ITableRowRead}.
 	 */
-	int add(String key, Object value);
+	int add(String key, @Nullable Object value);
 
 	/**
 	 * Mark this as read-only.

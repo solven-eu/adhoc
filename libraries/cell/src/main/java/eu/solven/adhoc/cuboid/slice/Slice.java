@@ -27,6 +27,8 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -75,7 +77,7 @@ public final class Slice implements ISlice {
 	}
 
 	@Override
-	public Object getGroupBy(String column) {
+	public @Nullable Object getGroupBy(String column) {
 		if (asAdhocMap().containsKey(column)) {
 			return explicitNull(asAdhocMap().get(column));
 		} else {
@@ -91,10 +93,16 @@ public final class Slice implements ISlice {
 
 	@Override
 	public Map<String, ?> getCoordinates() {
-		return Maps.transformValues(asMap, this::explicitNull);
+		// `Maps.transformValues` types its Function as @NonNull-returning; `explicitNull` may legitimately return
+		// null when a coordinate is the NULL_HOLDER sentinel. The transformed map exposes that null to callers,
+		// matching the prior behaviour.
+		@SuppressWarnings("NullAway")
+		Map<String, Object> transformed = Maps.transformValues(asMap, this::explicitNull);
+		return transformed;
 	}
 
-	Object explicitNull(Object v) {
+	@Nullable
+	Object explicitNull(@Nullable Object v) {
 		return NullMatcher.unwrapNull(v);
 	}
 

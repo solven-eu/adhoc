@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -90,8 +91,10 @@ public class TableQueryInducer implements ITableQueryInducer {
 			TableQueryStep induced) {
 		List<TableQueryStep> inducers = inducerAndInduced.getInducers(induced);
 
-		Map<TableQueryStep, ICuboid> inducerToCuboid =
-				inducers.stream().collect(ImmutableMap.toImmutableMap(Function.identity(), stepToValues::get));
+		Map<TableQueryStep, ICuboid> inducerToCuboid = inducers.stream()
+				.collect(ImmutableMap.toImmutableMap(Function.identity(),
+						step -> Objects.requireNonNull(stepToValues.get(step),
+								"every inducer must have a computed cuboid")));
 
 		// Rely on the inducer with the smaller number of rows, as it's a good heuristic of being the most processed one
 		// for our own cuboic.

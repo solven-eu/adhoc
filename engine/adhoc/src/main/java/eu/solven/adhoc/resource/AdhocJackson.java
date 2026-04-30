@@ -23,6 +23,7 @@
 package eu.solven.adhoc.resource;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -66,7 +67,9 @@ public class AdhocJackson {
 					throw new IllegalStateException("Can not find method %s.%s".formatted(yamlObjectMapperFactoryClass,
 							yamlObjectMapperMethodName));
 				}
-				objectMapper = (ObjectMapper) ReflectionUtils.invokeMethod(yamlObjectMapper, null);
+				objectMapper =
+						(ObjectMapper) Objects.requireNonNull(ReflectionUtils.invokeMethod(yamlObjectMapper, null),
+								() -> "yamlObjectMapper() must return a non-null ObjectMapper");
 			} catch (ClassNotFoundException e) {
 				// This should have been caught preventively
 				throw new RuntimeException(e);
