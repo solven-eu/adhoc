@@ -776,6 +776,8 @@
 							</includes>
 							<excludes>
 								<exclude>**/node_modules/**</exclude>
+								<!-- exclude `target/site/jacoco/jacoco-resources/*.js` -->
+								<exclude>**/target/**</exclude>
 							</excludes>
 
 							<!-- https://biomejs.dev/ -->

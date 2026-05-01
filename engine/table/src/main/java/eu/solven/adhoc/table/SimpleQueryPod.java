@@ -52,10 +52,10 @@ import lombok.NonNull;
 import lombok.Singular;
 
 /**
- * A thin standalone {@link IQueryPod} suitable for tests, edge-cases and metadata calls (column sampling,
- * cardinality estimation) that need to drive an {@link ITableWrapper#streamSlices} without a full cube/engine
- * {@code QueryPod}. Defaults: empty options, direct executor, {@link RowSliceFactory}, never cancelled, queryId derived
- * from {@code table.getName()}.
+ * A thin standalone {@link IQueryPod} suitable for tests, edge-cases and metadata calls (column sampling, cardinality
+ * estimation) that need to drive an {@link ITableWrapper#streamSlices} without a full cube/engine {@code QueryPod}.
+ * Defaults: empty options, direct executor, {@link RowSliceFactory}, never cancelled, queryId derived from
+ * {@code table.getName()}.
  *
  * @author Benoit Lacelle
  * @see IQueryPod#forTable(ITableWrapper)
@@ -159,8 +159,8 @@ public class SimpleQueryPod implements IQueryPod {
 	}
 
 	/**
-	 * Returns a thin standalone {@link IQueryPod} bound to {@code table}. Suitable for metadata calls and tests
-	 * that drive an {@link ITableWrapper#streamSlices} without a full cube/engine context.
+	 * Returns a thin standalone {@link IQueryPod} bound to {@code table}. Suitable for metadata calls and tests that
+	 * drive an {@link ITableWrapper#streamSlices} without a full cube/engine context.
 	 */
 	public static IQueryPod forTable(ITableWrapper tableWrapper) {
 		return SimpleQueryPod.builder().table(tableWrapper).build();
