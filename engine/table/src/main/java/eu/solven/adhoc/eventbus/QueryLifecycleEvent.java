@@ -24,7 +24,7 @@ package eu.solven.adhoc.eventbus;
 
 import com.google.common.collect.ImmutableSet;
 
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Singular;
@@ -39,7 +39,7 @@ import lombok.With;
 @Value
 @Builder
 public class QueryLifecycleEvent implements IAdhocEvent {
-	ITableQueryPod query;
+	IQueryPod query;
 
 	// Useful for event filtering
 	@NonNull

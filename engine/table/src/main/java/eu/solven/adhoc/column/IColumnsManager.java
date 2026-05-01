@@ -32,7 +32,7 @@ import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
 import eu.solven.adhoc.table.transcoder.value.ICustomTypeManager;
@@ -48,7 +48,7 @@ import eu.solven.adhoc.util.IHasName;
  */
 public interface IColumnsManager extends IHasColumnTypes {
 
-	ITabularRecordStream openSlicesStream(ITableQueryPod queryPod, TableQueryV4 tableQuery);
+	ITabularRecordStream openSlicesStream(IQueryPod queryPod, TableQueryV4 tableQuery);
 
 	/**
 	 * Same transcoding/post-filter behaviour as {@link #openSlicesStream(QueryPod, TableQueryV4)}, but routes the
@@ -57,7 +57,7 @@ public interface IColumnsManager extends IHasColumnTypes {
 	 * {@link eu.solven.adhoc.options.StandardQueryOptions#DRILLTHROUGH} path. Takes a {@link TableQueryV3} because the
 	 * DRILLTHROUGH execution does not benefit from V4's per-step (groupBy × aggregators) partitioning.
 	 */
-	default ITabularRecordStream openRowsStream(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
+	default ITabularRecordStream openRowsStream(IQueryPod queryPod, TableQueryV3 tableQuery) {
 		return openSlicesStream(queryPod, tableQuery.toV4());
 	}
 

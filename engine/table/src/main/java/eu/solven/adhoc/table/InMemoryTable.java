@@ -121,7 +121,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV4 tableQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
@@ -132,7 +132,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	 * else absent.
 	 */
 	@Override
-	public ITabularRecordStream streamRows(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
+	public ITabularRecordStream streamRows(IQueryPod queryPod, TableQueryV3 tableQuery) {
 		// Reuse the per-row mapping path of streamSlices: makeStream emits one ITabularRecord per row when
 		// `isEmptyAggregation` is false. We achieve the no-collapse contract by going through the existing
 		// pipeline with `distinctSlices = false` (the default), so multiple rows sharing a slice surface as
@@ -141,7 +141,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV2 tableQuery) {
 		if (!this.equals(queryPod.getTable())) {
 			throw new IllegalStateException("Inconsistent tables: %s vs %s".formatted(queryPod.getTable(), this));
 		}
@@ -200,7 +200,7 @@ public class InMemoryTable implements ITableWrapper, IHasHealthDetails {
 		});
 	}
 
-	protected Stream<ITabularRecord> makeStream(ITableQueryPod queryPod,
+	protected Stream<ITabularRecord> makeStream(IQueryPod queryPod,
 			TableQueryV2 tableQuery,
 			Set<String> aggregateColumns,
 			boolean isEmptyAggregation,

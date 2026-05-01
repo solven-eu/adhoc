@@ -69,7 +69,7 @@ import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
 import eu.solven.adhoc.query.MeasurelessQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.pepper.core.PepperLogHelper;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -415,7 +415,7 @@ public class QueryStepsDagBuilder implements IQueryStepsDagBuilder, IHasTransver
 		return resolved;
 	}
 
-	public static IQueryStepsDagBuilder make(IAdhocFactories factories, ITableQueryPod queryPod) {
+	public static IQueryStepsDagBuilder make(IAdhocFactories factories, IQueryPod queryPod) {
 		return new QueryStepsDagBuilder(factories,
 				queryPod.getTable().getName(),
 				queryPod::resolveIfRef,

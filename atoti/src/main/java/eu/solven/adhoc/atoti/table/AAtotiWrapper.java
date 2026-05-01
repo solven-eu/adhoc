@@ -52,7 +52,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.table.transcoder.ITableAliaser;
@@ -74,12 +74,12 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 	final ITableAliaser aliaser = AtotiAliaser.builder().build();
 
 	@Override
-	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV4 tableQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ITableQueryPod executingQueryContext, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod executingQueryContext, TableQueryV2 tableQuery) {
 		IQueryable ap = inferQueryable();
 
 		IQuery<ICellSet> gaq = makeCellSetQuery(ap);

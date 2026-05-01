@@ -38,7 +38,7 @@ import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.map.factory.IMapBuilderPreKeys;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.stream.IConsumingStream;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
 import eu.solven.adhoc.util.NotYetImplementedException;
@@ -70,7 +70,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected IConsumingStream toMapStream(ITableQueryPod queryPod,
+	protected IConsumingStream toMapStream(IQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
 		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
@@ -136,7 +136,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 		// }
 	}
 
-	protected TabularRecordOverMaps toTabularRecord(ITableQueryPod queryPod,
+	protected TabularRecordOverMaps toTabularRecord(IQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery,
 			List<Field> row) {

@@ -42,9 +42,9 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQueryIds;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.InMemoryTable;
-import eu.solven.adhoc.table.StandaloneTableQueryPod;
+import eu.solven.adhoc.table.SimpleQueryPod;
 
 public class TestDagExplainer implements IAdhocTestConstants {
 	EventBus eventBus = new EventBus();
@@ -88,7 +88,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 	public void testExplain_singleNode() {
 		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
 
-		ITableQueryPod queryPod = StandaloneTableQueryPod.builder()
+		IQueryPod queryPod = SimpleQueryPod.builder()
 				.table(InMemoryTable.builder().build())
 				.query(CubeQuery.builder().build())
 				.build();
@@ -115,7 +115,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		IMeasure sumK1K2 = ObservabilityCombinator.sum(k1.getName(), k2.getName());
 		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
 
-		ITableQueryPod queryPod = StandaloneTableQueryPod.builder()
+		IQueryPod queryPod = SimpleQueryPod.builder()
 				.table(InMemoryTable.builder().build())
 				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
@@ -143,7 +143,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 		IMeasure sumK1K2 = ObservabilityCombinator.sum(k1.getName(), k2.getName());
 		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
 
-		ITableQueryPod queryPod = StandaloneTableQueryPod.builder()
+		IQueryPod queryPod = SimpleQueryPod.builder()
 				.table(InMemoryTable.builder().build())
 				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())

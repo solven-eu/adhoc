@@ -45,7 +45,7 @@ import eu.solven.adhoc.query.cube.IHasMeasures;
  *
  * @author Benoit Lacelle
  */
-public interface ITableQueryPod extends IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IIsCancellable,
+public interface IQueryPod extends IHasOptionsAndExecutorService, IHasExecutorAndSliceFactory, IIsCancellable,
 		IMeasureResolver, IHasMeasures {
 
 	/**
@@ -67,15 +67,15 @@ public interface ITableQueryPod extends IHasOptionsAndExecutorService, IHasExecu
 	 *
 	 * @param table
 	 *            the table to bind the new pod to.
-	 * @return a fresh {@link ITableQueryPod} bound to {@code table}.
+	 * @return a fresh {@link IQueryPod} bound to {@code table}.
 	 */
-	ITableQueryPod withTable(ITableWrapper table);
+	IQueryPod withTable(ITableWrapper table);
 
 	IColumnsManager getColumnsManager();
 
 	IWhereGroupByQuery getQuery();
 
-	ITableQueryPod asTableQuery();
+	IQueryPod asTableQuery();
 
 	IQueryStepCache getQueryStepCache();
 

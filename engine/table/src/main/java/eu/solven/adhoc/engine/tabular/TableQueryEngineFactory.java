@@ -39,7 +39,7 @@ import eu.solven.adhoc.engine.tabular.optimizer.TableQueryFactoryFactory;
 import eu.solven.adhoc.eventbus.IAdhocEventBus;
 import eu.solven.adhoc.eventbus.UnsafeAdhocEventBusHelpers;
 import eu.solven.adhoc.filter.optimizer.IFilterOptimizer;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -82,17 +82,17 @@ public class TableQueryEngineFactory implements ITableQueryEngineFactory {
 	final ITableQueryInducerFactory inducerFactory = new TableQueryInducerFactory();
 
 	@Override
-	public Map<TableQueryStep, ICuboid> executeTableQueries(ITableQueryPod queryPod, QueryStepsDag queryStepsDag) {
+	public Map<TableQueryStep, ICuboid> executeTableQueries(IQueryPod queryPod, QueryStepsDag queryStepsDag) {
 		return bootstrap(queryPod).executeTableQueries(queryStepsDag);
 	}
 
 	@Override
-	public ITabularView executeDrillthrough(ITableQueryPod queryPod, QueryStepsDag queryStepsDag) {
+	public ITabularView executeDrillthrough(IQueryPod queryPod, QueryStepsDag queryStepsDag) {
 		ITableQueryEngine engine = bootstrap(queryPod);
 		return engine.executeDrillthrough(queryStepsDag);
 	}
 
-	protected ITableQueryEngine bootstrap(ITableQueryPod queryPod) {
+	protected ITableQueryEngine bootstrap(IQueryPod queryPod) {
 		// WithCache as this optimize will be used for a single query
 		IFilterOptimizer filterOptimizer = makeFilterOptimizer(factories);
 
@@ -111,7 +111,7 @@ public class TableQueryEngineFactory implements ITableQueryEngineFactory {
 		return factories.getFilterOptimizerFactory().makeOptimizerWithCache();
 	}
 
-	protected ITableQueryEngine bootstrap(ITableQueryPod queryPod,
+	protected ITableQueryEngine bootstrap(IQueryPod queryPod,
 			ITableQueryFactory optimizer,
 			ITableQueryInducer inducer) {
 		return new TableQueryEngine(factories, eventBus, queryPod, optimizer, inducer);

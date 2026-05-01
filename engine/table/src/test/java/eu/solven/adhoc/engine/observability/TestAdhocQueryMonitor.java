@@ -27,11 +27,11 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.table.InMemoryTable;
-import eu.solven.adhoc.table.StandaloneTableQueryPod;
+import eu.solven.adhoc.table.SimpleQueryPod;
 
 public class TestAdhocQueryMonitor {
 
-	private QueryLifecycleEvent startEvent(StandaloneTableQueryPod pod) {
+	private QueryLifecycleEvent startEvent(SimpleQueryPod pod) {
 		return QueryLifecycleEvent.builder()
 				.query(pod)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
@@ -39,7 +39,7 @@ public class TestAdhocQueryMonitor {
 				.build();
 	}
 
-	private QueryLifecycleEvent doneEvent(StandaloneTableQueryPod pod) {
+	private QueryLifecycleEvent doneEvent(SimpleQueryPod pod) {
 		return QueryLifecycleEvent.builder()
 				.query(pod)
 				.tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE)
@@ -47,14 +47,14 @@ public class TestAdhocQueryMonitor {
 				.build();
 	}
 
-	private StandaloneTableQueryPod pod() {
-		return StandaloneTableQueryPod.builder().table(InMemoryTable.builder().build()).build();
+	private SimpleQueryPod pod() {
+		return SimpleQueryPod.builder().table(InMemoryTable.builder().build()).build();
 	}
 
 	@Test
 	public void testStart_recordsActiveQuery() {
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor();
-		StandaloneTableQueryPod pod = pod();
+		SimpleQueryPod pod = pod();
 
 		monitor.onQueryLifecycleEvent(startEvent(pod));
 
@@ -67,7 +67,7 @@ public class TestAdhocQueryMonitor {
 		// A complete lifecycle: start → done. The pod leaves the active set and lands in the slow-queries queue
 		// with its measured duration.
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor();
-		StandaloneTableQueryPod pod = pod();
+		SimpleQueryPod pod = pod();
 
 		monitor.onQueryLifecycleEvent(startEvent(pod));
 		monitor.onQueryLifecycleEvent(doneEvent(pod));
@@ -80,7 +80,7 @@ public class TestAdhocQueryMonitor {
 	public void testDone_withoutStart_doesNotCrash() {
 		// Lone done event (lost start, or duplicate done): logged as a warning but must not blow up the monitor.
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor();
-		StandaloneTableQueryPod pod = pod();
+		SimpleQueryPod pod = pod();
 
 		Assertions.assertThatCode(() -> monitor.onQueryLifecycleEvent(doneEvent(pod))).doesNotThrowAnyException();
 		Assertions.assertThat(monitor.queryToStart).isEmpty();
@@ -92,7 +92,7 @@ public class TestAdhocQueryMonitor {
 		// Duplicate start on the same pod: the helper logs a warning but the second start replaces the first
 		// (so duration timing remains coherent vs the latest start). queryToStart still contains the pod once.
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor();
-		StandaloneTableQueryPod pod = pod();
+		SimpleQueryPod pod = pod();
 
 		monitor.onQueryLifecycleEvent(startEvent(pod));
 
@@ -104,7 +104,7 @@ public class TestAdhocQueryMonitor {
 	public void testEvent_neitherStartNorDone_isIgnored() {
 		// Event tagged with only QUERY_LIFECYCLE — no specific start/done semantic. Monitor must remain inert.
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor();
-		StandaloneTableQueryPod pod = pod();
+		SimpleQueryPod pod = pod();
 
 		QueryLifecycleEvent unrelated =
 				QueryLifecycleEvent.builder().query(pod).tag(AdhocQueryMonitor.TAG_QUERY_LIFECYCLE).build();
@@ -122,7 +122,7 @@ public class TestAdhocQueryMonitor {
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor(2);
 
 		for (int i = 0; i < 3; i++) {
-			StandaloneTableQueryPod pod = pod();
+			SimpleQueryPod pod = pod();
 			monitor.onQueryLifecycleEvent(startEvent(pod));
 			monitor.onQueryLifecycleEvent(doneEvent(pod));
 		}
@@ -134,8 +134,8 @@ public class TestAdhocQueryMonitor {
 	@Test
 	public void testMultipleConcurrentQueries_independentlyTracked() {
 		AdhocQueryMonitor monitor = new AdhocQueryMonitor();
-		StandaloneTableQueryPod podA = pod();
-		StandaloneTableQueryPod podB = pod();
+		SimpleQueryPod podA = pod();
+		SimpleQueryPod podB = pod();
 
 		monitor.onQueryLifecycleEvent(startEvent(podA));
 		monitor.onQueryLifecycleEvent(startEvent(podB));

@@ -34,7 +34,7 @@ import org.springframework.jmx.export.annotation.ManagedResource;
 
 import eu.solven.adhoc.engine.observability.AdhocQueryMonitor;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 
 /**
  * Extends {@link AdhocQueryMonitor} for Pivotable custom needs (like receiving GreenBot events and providing JMX).
@@ -59,13 +59,13 @@ public class PivotableQueryMonitor extends AdhocQueryMonitor {
 	public Map<String, Duration> getActiveToDuration() {
 		Map<String, Duration> queryToStartForJmx = new LinkedHashMap<>();
 
-		Comparator<Map.Entry<ITableQueryPod, OffsetDateTime>> comparingByValue = Map.Entry.comparingByValue();
-		Comparator<Map.Entry<ITableQueryPod, OffsetDateTime>> comparingByValueR = comparingByValue.reversed();
+		Comparator<Map.Entry<IQueryPod, OffsetDateTime>> comparingByValue = Map.Entry.comparingByValue();
+		Comparator<Map.Entry<IQueryPod, OffsetDateTime>> comparingByValueR = comparingByValue.reversed();
 
 		OffsetDateTime now = now();
 
 		this.queryToStart.entrySet().stream().sorted(comparingByValueR).forEach(entry -> {
-			ITableQueryPod query = entry.getKey();
+			IQueryPod query = entry.getKey();
 			OffsetDateTime start = entry.getValue();
 
 			queryToStartForJmx.put(query.getQueryId().getQueryId() + " - " + query.getQuery().toString(),

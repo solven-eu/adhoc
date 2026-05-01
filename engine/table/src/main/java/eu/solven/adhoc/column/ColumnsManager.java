@@ -72,7 +72,7 @@ import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.transcoder.AliasingContext;
 import eu.solven.adhoc.table.transcoder.IHasAliasedColumns;
@@ -134,12 +134,12 @@ public class ColumnsManager implements IColumnsManager {
 	final IColumnGenerator columnGenerator = EmptyColumnGenerator.empty();
 
 	@Override
-	public ITabularRecordStream openSlicesStream(ITableQueryPod queryPod, TableQueryV4 query) {
+	public ITabularRecordStream openSlicesStream(IQueryPod queryPod, TableQueryV4 query) {
 		return openStreamInternal(queryPod, query, false);
 	}
 
 	@Override
-	public ITabularRecordStream openRowsStream(ITableQueryPod queryPod, TableQueryV3 query) {
+	public ITabularRecordStream openRowsStream(IQueryPod queryPod, TableQueryV3 query) {
 		// Reuse the V4 transcoding pipeline (filter rewrite, missing-column handling, post-filter) by going
 		// through V3.toV4() then converting back to V3 right before calling table.streamRows. Lossless because
 		// the merger emits a V3-shaped query (single groupBy, single aggregator set) and `transcodeQuery`
@@ -147,7 +147,7 @@ public class ColumnsManager implements IColumnsManager {
 		return openStreamInternal(queryPod, query.toV4(), true);
 	}
 
-	protected ITabularRecordStream openStreamInternal(ITableQueryPod queryPod, TableQueryV4 query, boolean isDT) {
+	protected ITabularRecordStream openStreamInternal(IQueryPod queryPod, TableQueryV4 query, boolean isDT) {
 		AliasingContext transcodingContext = openTranscodingContext();
 
 		ISliceFilter transcodedFilter;

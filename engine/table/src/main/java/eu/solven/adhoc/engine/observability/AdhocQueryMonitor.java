@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -48,11 +48,11 @@ public class AdhocQueryMonitor {
 	private static final int DEFAULT_MAX_SLOW_QUERIES = 100;
 
 	// TODO Is it a leak to reference the whole context?
-	protected final Map<ITableQueryPod, OffsetDateTime> queryToStart = new ConcurrentHashMap<>();
+	protected final Map<IQueryPod, OffsetDateTime> queryToStart = new ConcurrentHashMap<>();
 
 	protected final int slowestQueriedMax;
 	// TODO Is it a leak to reference the whole context?
-	protected final BlockingQueue<Map.Entry<ITableQueryPod, Duration>> slowestQueried;
+	protected final BlockingQueue<Map.Entry<IQueryPod, Duration>> slowestQueried;
 
 	public AdhocQueryMonitor() {
 		this(DEFAULT_MAX_SLOW_QUERIES);
@@ -66,7 +66,7 @@ public class AdhocQueryMonitor {
 
 	@SuppressWarnings("PMD.AvoidSynchronizedStatement")
 	public void onQueryLifecycleEvent(QueryLifecycleEvent lifecycleEvent) {
-		ITableQueryPod query = lifecycleEvent.getQuery();
+		IQueryPod query = lifecycleEvent.getQuery();
 
 		int nbActive;
 		synchronized (query) {
@@ -88,7 +88,7 @@ public class AdhocQueryMonitor {
 					slowestQueried.add(Map.entry(query, duration));
 
 					if (slowestQueried.size() > slowestQueriedMax) {
-						Map.Entry<ITableQueryPod, Duration> slowestRemoved = slowestQueried.remove();
+						Map.Entry<IQueryPod, Duration> slowestRemoved = slowestQueried.remove();
 						log.debug("Not amongst slowest anymore: {}", slowestRemoved);
 					}
 				}
@@ -104,7 +104,7 @@ public class AdhocQueryMonitor {
 		}
 	}
 
-	private Comparator<Map.Entry<ITableQueryPod, Duration>> comparatorForSlowest() {
+	private Comparator<Map.Entry<IQueryPod, Duration>> comparatorForSlowest() {
 		// We want first entry with large duration
 		return Map.Entry.comparingByValue();
 	}

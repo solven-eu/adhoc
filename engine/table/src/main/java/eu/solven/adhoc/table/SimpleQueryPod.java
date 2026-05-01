@@ -52,17 +52,17 @@ import lombok.NonNull;
 import lombok.Singular;
 
 /**
- * A thin standalone {@link ITableQueryPod} suitable for tests, edge-cases and metadata calls (column sampling,
+ * A thin standalone {@link IQueryPod} suitable for tests, edge-cases and metadata calls (column sampling,
  * cardinality estimation) that need to drive an {@link ITableWrapper#streamSlices} without a full cube/engine
  * {@code QueryPod}. Defaults: empty options, direct executor, {@link RowSliceFactory}, never cancelled, queryId derived
  * from {@code table.getName()}.
  *
  * @author Benoit Lacelle
- * @see ITableQueryPod#forTable(ITableWrapper)
+ * @see IQueryPod#forTable(ITableWrapper)
  */
 @Builder(toBuilder = true)
 @Getter
-public class StandaloneTableQueryPod implements ITableQueryPod {
+public class SimpleQueryPod implements IQueryPod {
 	// The query requested to the queryEngine
 	@Nullable
 	IWhereGroupByQuery query;
@@ -129,8 +129,8 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 	}
 
 	@Override
-	public ITableQueryPod withTable(ITableWrapper newTable) {
-		return StandaloneTableQueryPod.builder()
+	public IQueryPod withTable(ITableWrapper newTable) {
+		return SimpleQueryPod.builder()
 				.table(newTable)
 				.queryId(queryId)
 				.options(options)
@@ -154,15 +154,15 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 	}
 
 	@Override
-	public ITableQueryPod asTableQuery() {
+	public IQueryPod asTableQuery() {
 		throw new NotYetImplementedException("Needed?");
 	}
 
 	/**
-	 * Returns a thin standalone {@link ITableQueryPod} bound to {@code table}. Suitable for metadata calls and tests
+	 * Returns a thin standalone {@link IQueryPod} bound to {@code table}. Suitable for metadata calls and tests
 	 * that drive an {@link ITableWrapper#streamSlices} without a full cube/engine context.
 	 */
-	public static ITableQueryPod forTable(ITableWrapper tableWrapper) {
-		return StandaloneTableQueryPod.builder().table(tableWrapper).build();
+	public static IQueryPod forTable(ITableWrapper tableWrapper) {
+		return SimpleQueryPod.builder().table(tableWrapper).build();
 	}
 }

@@ -47,7 +47,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.table.ITableWrapper;
-import eu.solven.adhoc.table.StandaloneTableQueryPod;
+import eu.solven.adhoc.table.SimpleQueryPod;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,7 +63,7 @@ public class TestTableQueryEngine_Concurrent {
 
 		ListeningExecutorService executorService = AdhocUnsafe.adhocMixedPool;
 
-		StandaloneTableQueryPod queryPod = StandaloneTableQueryPod.builder()
+		SimpleQueryPod queryPod = SimpleQueryPod.builder()
 				.table(tableWrapper)
 				.option(StandardQueryOptions.CONCURRENT)
 				.executorService(executorService)

@@ -37,7 +37,7 @@ import eu.solven.adhoc.engine.cancel.CancelledQueryException;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
 import eu.solven.adhoc.table.sql.JooqTableWrapperParameters;
 import eu.solven.adhoc.table.sql.QueryWithLeftover;
@@ -64,7 +64,7 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected IConsumingStream<ITabularRecord> streamTabularRecords(ITableQueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> streamTabularRecords(IQueryPod queryPod,
 			IGroupBy mergedGroupBy,
 			QueryWithLeftover sqlQuery) {
 		return IConsumingStream.concat(sqlQuery.getQueries().stream().map(oneQuery -> {
@@ -74,7 +74,7 @@ public abstract class AArrowJooqTableWrapper extends JooqTableWrapper {
 		}).toList());
 	}
 
-	protected IConsumingStream<ITabularRecord> toArrowStream(ITableQueryPod queryPod,
+	protected IConsumingStream<ITabularRecord> toArrowStream(IQueryPod queryPod,
 			ResultQuery<Record> sqlQuery,
 			ITabularRecordFactory tabularRecordFactory) {
 		if (queryPod.isCancelled()) {

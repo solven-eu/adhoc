@@ -169,7 +169,7 @@ public class TestInMemoryTable {
 
 		table.add(Map.of("k", "v"));
 
-		ITabularRecordStream output = table.streamSlices(StandaloneTableQueryPod.forTable(table),
+		ITabularRecordStream output = table.streamSlices(SimpleQueryPod.forTable(table),
 				TableQueryV2.builder()
 						.aggregator(FilteredAggregator.builder()
 								.aggregator(Aggregator.countAsterisk())
@@ -190,7 +190,7 @@ public class TestInMemoryTable {
 		table.add(Map.of("c", "c1", "v", 10));
 		table.add(Map.of("c", "c2", "v", 20));
 
-		ITabularRecordStream output = table.streamSlices(StandaloneTableQueryPod.forTable(table),
+		ITabularRecordStream output = table.streamSlices(SimpleQueryPod.forTable(table),
 				TableQueryV2.builder()
 						.aggregator(FilteredAggregator.builder().aggregator(Aggregator.sum("v")).build())
 						.aggregator(FilteredAggregator.builder().aggregator(Aggregator.empty()).build())

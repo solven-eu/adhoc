@@ -39,7 +39,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class TableWrapperHelpers {
 
-	public static ITabularRecordStream v4ToV3(ITableQueryPod queryPod,
+	public static ITabularRecordStream v4ToV3(IQueryPod queryPod,
 			Stream<TableQueryV4> tableQuery,
 			ITableWrapper tableWrapper) {
 		List<ITabularRecordStream> underlyings =
@@ -48,7 +48,7 @@ public class TableWrapperHelpers {
 		return CompositeTabularRecordStream.builder().underlyings(underlyings).build();
 	}
 
-	public static ITabularRecordStream v3TovV2(ITableQueryPod queryPod,
+	public static ITabularRecordStream v3TovV2(IQueryPod queryPod,
 			Stream<TableQueryV3> tableQuery,
 			ITableWrapper tableWrapper) {
 		List<ITabularRecordStream> underlyings =

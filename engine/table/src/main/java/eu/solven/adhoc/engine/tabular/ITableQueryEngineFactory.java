@@ -30,7 +30,7 @@ import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.table.TableQuery;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 
 /**
  * Part if {@link ICubeQueryEngine} dedicated to {@link TableQuery}.
@@ -40,7 +40,7 @@ import eu.solven.adhoc.table.ITableQueryPod;
 @FunctionalInterface
 public interface ITableQueryEngineFactory {
 
-	Map<TableQueryStep, ICuboid> executeTableQueries(ITableQueryPod queryPod, QueryStepsDag queryStepsDag);
+	Map<TableQueryStep, ICuboid> executeTableQueries(IQueryPod queryPod, QueryStepsDag queryStepsDag);
 
 	/**
 	 * Execute the {@code queryStepsDag} as a {@link StandardQueryOptions#DRILLTHROUGH} query: every database row is
@@ -53,7 +53,7 @@ public interface ITableQueryEngineFactory {
 	 *
 	 * @return the raw rows assembled into a {@link ITabularView}.
 	 */
-	default ITabularView executeDrillthrough(ITableQueryPod queryPod, QueryStepsDag queryStepsDag) {
+	default ITabularView executeDrillthrough(IQueryPod queryPod, QueryStepsDag queryStepsDag) {
 		throw new UnsupportedOperationException(
 				"DRILLTHROUGH is not supported by %s".formatted(this.getClass().getName()));
 	}

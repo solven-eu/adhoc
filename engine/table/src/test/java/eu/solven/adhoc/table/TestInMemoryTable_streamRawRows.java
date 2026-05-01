@@ -49,7 +49,7 @@ public class TestInMemoryTable_streamRawRows implements IAdhocTestConstants {
 	}
 
 	private List<ITabularRecord> drainRecords(InMemoryTable table, TableQueryV3 query) {
-		try (ITabularRecordStream stream = table.streamRows(StandaloneTableQueryPod.forTable(table), query)) {
+		try (ITabularRecordStream stream = table.streamRows(SimpleQueryPod.forTable(table), query)) {
 			return stream.records().toList();
 		}
 	}

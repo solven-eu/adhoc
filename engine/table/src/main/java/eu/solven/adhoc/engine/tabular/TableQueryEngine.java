@@ -110,7 +110,7 @@ import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.query.table.TableQueryV3;
 import eu.solven.adhoc.query.table.TableQueryV4;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocBlackHole;
 import eu.solven.adhoc.util.IStopwatch;
@@ -146,7 +146,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	final IAdhocEventBus eventBus = UnsafeAdhocEventBusHelpers.safeWrapper(AdhocBlackHole.getInstance());
 
 	@NonNull
-	final ITableQueryPod queryPod;
+	final IQueryPod queryPod;
 
 	@NonNull
 	@Getter(AccessLevel.PRIVATE)
@@ -295,7 +295,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		// Wait for sharedNodes execution
 		SplitTableQueries withShared = waitAndMergeSharedNodes(withoutShared, futureSharedGraph);
 
-		ITableQueryPod tableQueryPod = queryPod.asTableQuery();
+		IQueryPod tableQueryPod = queryPod.asTableQuery();
 
 		// Switch to a ConcurrentMap as `walkUpInducedDag` may be concurrent
 		ConcurrentMap<TableQueryStep, ICuboid> stepToValues = new ConcurrentHashMap<>(stepToValuesFromtableWrapper);
@@ -347,7 +347,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return DagExplainer.builder().eventBus(eventBus).build();
 	}
 
-	protected void explainDagSteps(ITableQueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
+	protected void explainDagSteps(IQueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
 		makeDagExplainer().explain(tableQueryPod.getQueryId(), queryStepsDag);
 	}
 
@@ -355,7 +355,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 		return DagExplainerForPerfs.builder().eventBus(eventBus).build();
 	}
 
-	protected void explainDagPerfs(ITableQueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
+	protected void explainDagPerfs(IQueryPod tableQueryPod, IHasDagFromInducedToInducer<?> queryStepsDag) {
 		makeDagExplainerForPerfs().explain(tableQueryPod.getQueryId(), queryStepsDag);
 	}
 

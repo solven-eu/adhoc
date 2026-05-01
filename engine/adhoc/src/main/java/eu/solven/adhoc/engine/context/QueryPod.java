@@ -54,7 +54,7 @@ import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.AdhocQueryIds;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
 import eu.solven.adhoc.util.AdhocTime;
@@ -75,7 +75,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder(toBuilder = true)
 @Value
 @Slf4j
-public class QueryPod implements ITableQueryPod {
+public class QueryPod implements IQueryPod {
 	// The query requested to the queryEngine
 	@NonNull
 	ICubeQuery query;
@@ -305,7 +305,7 @@ public class QueryPod implements ITableQueryPod {
 	// This should be called only once per queryPod, as the queryId id would changed on each call.
 	// Should this be cached?
 	@Override
-	public ITableQueryPod asTableQuery() {
+	public IQueryPod asTableQuery() {
 		AdhocQueryId tableQueryId = AdhocQueryId.builder()
 				.cube(getTable().getName())
 				.parentQueryId(getQueryId().getQueryId())
@@ -338,7 +338,7 @@ public class QueryPod implements ITableQueryPod {
 	}
 
 	/**
-	 * {@link ITableQueryPod} contract: a sibling pod with the wrapped table swapped. Implemented via the existing
+	 * {@link IQueryPod} contract: a sibling pod with the wrapped table swapped. Implemented via the existing
 	 * Lombok-generated {@code toBuilder()} so the rest of the cube/engine context (forest, measures, options, …) is
 	 * preserved.
 	 */

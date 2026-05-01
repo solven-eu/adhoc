@@ -54,7 +54,7 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return a {@link ITabularRecordStream} matching the input dpQuery
 	 */
-	ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery);
+	ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV4 tableQuery);
 
 	/**
 	 * Stream every database row matching {@code tableQuery.getFilter()} without any GROUP BY or aggregate function:
@@ -76,11 +76,11 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 *            {@link FilteredAggregator} list describes which aggregator columns to surface per row.
 	 * @return a {@link ITabularRecordStream} carrying one record per matched row.
 	 */
-	default ITabularRecordStream streamRows(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
+	default ITabularRecordStream streamRows(IQueryPod queryPod, TableQueryV3 tableQuery) {
 		return streamSlices(queryPod, tableQuery);
 	}
 
-	default ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV3 tableQuery) {
+	default ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV3 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV4());
 	}
 
@@ -91,17 +91,17 @@ public interface ITableWrapper extends IHasColumns, IHasName {
 	 * @param tableQuery
 	 * @return
 	 */
-	default ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
+	default ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV2 tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV3());
 	}
 
-	default ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQuery tableQuery) {
+	default ITabularRecordStream streamSlices(IQueryPod queryPod, TableQuery tableQuery) {
 		return streamSlices(queryPod, tableQuery.toV2());
 	}
 
 	@Deprecated(since = "Used for tests, or edge-cases")
 	default ITabularRecordStream streamSlices(TableQuery tableQuery) {
-		return streamSlices(StandaloneTableQueryPod.forTable(this), tableQuery);
+		return streamSlices(SimpleQueryPod.forTable(this), tableQuery);
 	}
 
 	/**

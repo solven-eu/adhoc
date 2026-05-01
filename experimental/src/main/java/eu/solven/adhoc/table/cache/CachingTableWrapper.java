@@ -56,7 +56,7 @@ import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.ConsumingStream;
 import eu.solven.adhoc.stream.IConsumingStream;
 import eu.solven.adhoc.table.ICustomMarkerCacheStrategy;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.TableWrapperHelpers;
 import eu.solven.adhoc.util.IHasCache;
@@ -181,13 +181,13 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 	}
 
 	@Override
-	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV4 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV4 tableQuery) {
 		return TableWrapperHelpers.v3TovV2(queryPod, tableQuery.streamV3(), this);
 	}
 
 	@SuppressWarnings({ "PMD.NullAssignment", "PMD.CloseResource", "checkstyle:MethodLength" })
 	@Override
-	public ITabularRecordStream streamSlices(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
+	public ITabularRecordStream streamSlices(IQueryPod queryPod, TableQueryV2 tableQuery) {
 		if (StandardQueryOptions.NO_CACHE.isActive(queryPod.getOptions())) {
 			return streamDecorated(queryPod, tableQuery);
 		}
@@ -413,7 +413,7 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return tableQuery.toBuilder().clearAggregators().aggregators(notCached).build();
 	}
 
-	protected CachingKey makeCacheKey(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
+	protected CachingKey makeCacheKey(IQueryPod queryPod, TableQueryV2 tableQuery) {
 		TableQueryV2Builder queryKeyForCache = tableQuery.toBuilder();
 
 		ITableWrapper table = queryPod.getTable();
@@ -430,8 +430,8 @@ public class CachingTableWrapper implements ITableWrapper, IHasCache {
 		return CachingKey.builder().tableQuery(queryKeyForCache.build()).build();
 	}
 
-	protected ITabularRecordStream streamDecorated(ITableQueryPod queryPod, TableQueryV2 tableQuery) {
-		ITableQueryPod decoratedContext = queryPod.withTable(decorated);
+	protected ITabularRecordStream streamDecorated(IQueryPod queryPod, TableQueryV2 tableQuery) {
+		IQueryPod decoratedContext = queryPod.withTable(decorated);
 		return decorated.streamSlices(decoratedContext, tableQuery);
 	}
 

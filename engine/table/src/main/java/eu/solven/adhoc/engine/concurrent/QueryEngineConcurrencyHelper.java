@@ -39,7 +39,7 @@ import eu.solven.adhoc.engine.dag.IAdhocDag;
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.tabular.optimizer.IHasDagFromInducedToInducer;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -60,7 +60,7 @@ public class QueryEngineConcurrencyHelper {
 	 * @param queryStepToValues
 	 * @param queryStepConsumer
 	 */
-	public static <T extends ICubeQueryStep> void walkUpDag(ITableQueryPod queryPod,
+	public static <T extends ICubeQueryStep> void walkUpDag(IQueryPod queryPod,
 			IHasDagFromInducedToInducer<T> queryStepsDag,
 			Map<T, ICuboid> queryStepToValues,
 			Consumer<? super T> queryStepConsumer) {
@@ -102,7 +102,7 @@ public class QueryEngineConcurrencyHelper {
 		queryPod.removeCancellationListener(cancellationListener);
 	}
 
-	private static <T extends ICubeQueryStep> void invokeDagFromRoots(ITableQueryPod queryPod,
+	private static <T extends ICubeQueryStep> void invokeDagFromRoots(IQueryPod queryPod,
 			Set<T> queryStepsDone,
 			Consumer<? super T> onReadyStep,
 			IAdhocDag<T> dag) {

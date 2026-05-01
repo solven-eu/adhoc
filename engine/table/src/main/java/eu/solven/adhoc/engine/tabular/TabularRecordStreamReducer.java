@@ -64,7 +64,7 @@ import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV4;
 import eu.solven.adhoc.stream.IConsumingStream;
-import eu.solven.adhoc.table.ITableQueryPod;
+import eu.solven.adhoc.table.IQueryPod;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import eu.solven.pepper.core.PepperStreamHelper;
 import lombok.Builder;
@@ -89,7 +89,7 @@ public class TabularRecordStreamReducer implements ITabularRecordStreamReducer {
 	ISliceFactory sliceFactory;
 
 	@NonNull
-	ITableQueryPod queryPod;
+	IQueryPod queryPod;
 	@NonNull
 	TableQueryV4 tableQuery;
 
