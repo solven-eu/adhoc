@@ -70,9 +70,7 @@ public class RedshiftTableWrapper extends JooqTableWrapper {
 	}
 
 	@Override
-	protected IConsumingStream toMapStream(IQueryPod queryPod,
-			IGroupBy mergedGroupBy,
-			QueryWithLeftover sqlQuery) {
+	protected IConsumingStream toMapStream(IQueryPod queryPod, IGroupBy mergedGroupBy, QueryWithLeftover sqlQuery) {
 		// TODO Would it be relevant to pop `NAMED` SQL and rely on `SqlParameter`?
 		String sqlStatement = sqlQuery.getQuery().getSQL(ParamType.INLINED);
 

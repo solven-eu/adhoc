@@ -24,6 +24,7 @@ package eu.solven.adhoc.encoding.dictionary;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
@@ -106,7 +107,8 @@ public class ListDictionarizerFactory implements IListDictionarizerFactory {
 		return index -> {
 			int indexedValue = indexTo.readInt(index);
 
-			IDictionarizer dictionary = columnToDictionary.get(columns.getKey(index));
+			// `getOrMakeDictionary` was called above for every column, so the entry is guaranteed present.
+			IDictionarizer dictionary = Objects.requireNonNull(columnToDictionary.get(columns.getKey(index)));
 
 			return dictionary.fromInt(indexedValue);
 		};
