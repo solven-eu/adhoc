@@ -33,14 +33,15 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.ThrowingCombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 
-public class TestDagTransformator_Partitionor_ExceptionAsMeasure extends ATestDagInMemory implements IAdhocTestConstants {
+public class TestDagTransformator_Partitionor_ExceptionAsMeasure extends ATestDagInMemory
+		implements IAdhocTestConstants {
 	@Override
 	@BeforeEach
 	public void feedTable() {

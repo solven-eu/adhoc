@@ -42,6 +42,7 @@ import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
@@ -50,7 +51,6 @@ import eu.solven.adhoc.measure.model.Dispatchor;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.measure.sum.SumAggregation;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.composite.CompositeCubesTableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestDagDuckDb;
@@ -63,8 +63,8 @@ import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;
  * scenario hierarchy ({@code count(*)}) and that same hierarchy surfaced on the composite cube.
  *
  * The reference scenarios on a single (non-composite) cube are covered by
- * {@code TestTableQuery_DuckDb_VaR#testFilterScenarioIndex_countAsterisk_standardCube} and
- * {@code TestTableQuery_DuckDb_VaR#testGroupByScenarioIndex_countAsterisk}: the filter on {@code scenarioIndex} is
+ * {@code TestDagTableQuery_DuckDb_VaR#testFilterScenarioIndex_countAsterisk_standardCube} and
+ * {@code TestDagTableQuery_DuckDb_VaR#testGroupByScenarioIndex_countAsterisk}: the filter on {@code scenarioIndex} is
  * suppressed (count ignores the hierarchy) and a groupBy on {@code scenarioIndex} collapses the count onto the
  * {@link IColumnGenerator#COORDINATE_GENERATED} coordinate. This test class verifies that the composite cube preserves
  * the same semantics when two sub-cubes expose the calculated hierarchy AND a third sub-cube does not know the
@@ -97,7 +97,7 @@ public class TestDagTableQuery_DuckDb_VaR_CompositeCube extends ATestDagDuckDb
 
 	/**
 	 * Builds a `JooqTableWrapper` which PIVOTs the FLOAT[] column into one column per scenario index, matching the
-	 * schema used by {@code TestTableQuery_DuckDb_VaR}.
+	 * schema used by {@code TestDagTableQuery_DuckDb_VaR}.
 	 */
 	private JooqTableWrapper makeVarTable(String tableName) {
 		return new JooqTableWrapper(tableName, DuckDBHelper.parametersBuilder(dslSupplier).table(DSL.table("""
@@ -152,7 +152,7 @@ public class TestDagTableQuery_DuckDb_VaR_CompositeCube extends ATestDagDuckDb
 	}
 
 	/**
-	 * Builds a fresh measure forest mirroring {@code TestTableQuery_DuckDb_VaR#registerMeasures}: per-index SUM
+	 * Builds a fresh measure forest mirroring {@code TestDagTableQuery_DuckDb_VaR#registerMeasures}: per-index SUM
 	 * aggregators, a Combinator packing them into an int[], the {@link ExampleVaRDecomposition} Dispatchor exposing the
 	 * scenario hierarchy, and the VaR quantile Combinator. {@code countAsterisk} is registered too so the sub-cubes can
 	 * answer it.
@@ -298,7 +298,7 @@ public class TestDagTableQuery_DuckDb_VaR_CompositeCube extends ATestDagDuckDb
 	/**
 	 * {@code count(*)} is an aggregator that does not participate in the scenario hierarchy. On the standard cube a
 	 * filter on {@code scenarioIndex} is suppressed (see
-	 * {@code TestTableQuery_DuckDb_VaR#testFilterScenarioIndex_countAsterisk_standardCube}). The composite cube
+	 * {@code TestDagTableQuery_DuckDb_VaR#testFilterScenarioIndex_countAsterisk_standardCube}). The composite cube
 	 * preserves the same semantics for every sub-cube: the VaR sub-cubes suppress the filter internally (the column
 	 * exists but is orthogonal to {@code count(*)}), and the simple sub-cube — which does not declare the column — has
 	 * the filter auto-suppressed too because {@code scenarioIndex} is a cross-cube calculated column (declared as such
@@ -322,7 +322,7 @@ public class TestDagTableQuery_DuckDb_VaR_CompositeCube extends ATestDagDuckDb
 	/**
 	 * {@code count(*)} grouped by {@code scenarioIndex}. On the standard cube this returns a single row at
 	 * {@link IColumnGenerator#COORDINATE_GENERATED} (see
-	 * {@code TestTableQuery_DuckDb_VaR#testGroupByScenarioIndex_countAsterisk}). The composite cube emits the same
+	 * {@code TestDagTableQuery_DuckDb_VaR#testGroupByScenarioIndex_countAsterisk}). The composite cube emits the same
 	 * single row: the VaR sub-cubes collapse to {@code scenarioIndex=generated} because {@code count(*)} is orthogonal
 	 * to the scenario hierarchy, and the simple sub-cube — which does not declare the column — collapses to the same
 	 * coordinate because {@code scenarioIndex} is a cross-cube calculated column.

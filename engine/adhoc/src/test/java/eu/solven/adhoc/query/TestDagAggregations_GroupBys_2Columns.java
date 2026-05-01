@@ -33,9 +33,9 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.pepper.collection.MapWithNulls;
 
 public class TestDagAggregations_GroupBys_2Columns extends ATestDagInMemory implements IAdhocTestConstants {

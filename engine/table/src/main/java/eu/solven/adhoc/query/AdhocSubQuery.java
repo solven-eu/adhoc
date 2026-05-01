@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.query;
 
 import java.util.Set;
 
@@ -30,8 +30,7 @@ import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.AdhocQueryId;
-import eu.solven.adhoc.query.IHasParentQueryId;
+import eu.solven.adhoc.query.cube.IGroupBy;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;

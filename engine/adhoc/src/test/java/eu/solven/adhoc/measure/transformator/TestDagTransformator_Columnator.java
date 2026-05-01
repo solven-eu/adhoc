@@ -34,13 +34,13 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Columnator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagTransformator_Columnator extends ATestDagInMemory implements IAdhocTestConstants {
 	Columnator requireC = Columnator.builder()

@@ -28,8 +28,8 @@ import org.mockito.Mockito;
 
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.forest.MeasureForest;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import nl.jqno.equalsverifier.EqualsVerifier;

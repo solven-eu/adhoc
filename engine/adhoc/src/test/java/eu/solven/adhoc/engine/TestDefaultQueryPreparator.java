@@ -29,6 +29,7 @@ import org.mockito.Mockito;
 import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.context.QueryPod;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.measure.ReferencedMeasure;
@@ -36,8 +37,7 @@ import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.query.AdhocQueryIds;
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.query.AdhocSubQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 
 public class TestDefaultQueryPreparator {

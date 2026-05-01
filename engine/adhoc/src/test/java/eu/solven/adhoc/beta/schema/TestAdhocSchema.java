@@ -41,6 +41,7 @@ import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.ICubeQueryEngine;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.filter.value.IValueMatcher;
 import eu.solven.adhoc.measure.combination.ICombination;
@@ -50,7 +51,6 @@ import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 
 public class TestAdhocSchema {

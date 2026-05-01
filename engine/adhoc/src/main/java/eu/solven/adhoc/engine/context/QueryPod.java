@@ -41,6 +41,7 @@ import eu.solven.adhoc.column.IColumnsManager;
 import eu.solven.adhoc.engine.CubeQueryEngine;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
@@ -53,7 +54,6 @@ import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.query.AdhocQueryIds;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableQueryPod;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.util.AdhocFactoriesUnsafe;
@@ -126,7 +126,7 @@ public class QueryPod implements ITableQueryPod {
 			throw new IllegalArgumentException("Null input");
 		}
 
-		if (StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.isActive(query.getOptions())) {
+		if (StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.isActive(getOptions())) {
 			return this.forest.resolveIfRefOpt(measure)
 					.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
 		} else {

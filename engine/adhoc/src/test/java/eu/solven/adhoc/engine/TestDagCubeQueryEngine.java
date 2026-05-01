@@ -42,6 +42,7 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.engine.cache.GuavaQueryStepCache;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
 import eu.solven.adhoc.engine.measure.IMeasureQueryStepFactory.IMeasureQueryStepOwnFactory;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.tabular.TableQueryEngineFactory;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactoryFactory;
@@ -55,7 +56,6 @@ import eu.solven.adhoc.measure.forest.MeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.transformator.step.IMeasureQueryStep;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.InMemoryTable;
 import eu.solven.adhoc.util.AdhocUnsafe;
 

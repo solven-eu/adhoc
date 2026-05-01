@@ -23,6 +23,7 @@
 package eu.solven.adhoc.column;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -80,15 +81,27 @@ public class ColumnMetadata implements IHasName, IHasTags {
 		}
 
 		// https://stackoverflow.com/questions/9797212/finding-the-nearest-common-superclass-or-superinterface-of-a-collection-of-cla
-		Optional<? extends Class<?>> commonType =
-				columns.stream().<Class<?>>map(ColumnMetadata::getType).reduce(ClassUtils::determineCommonAncestor);
+		// Spring's `determineCommonAncestor` returns `null` when the only shared ancestor is `Object` (it explicitly
+		// filters Object out as too trivial — see ClassUtils.determineCommonAncestor). Streaming that operator into
+		// `reduce` would crash with NPE the moment the accumulator becomes null (Stream.reduce wraps results in
+		// Optional.of, which forbids null). Wrap the operator so a null result is normalised to `Object.class` —
+		// callers depend on `merge` returning a non-null type, and Object is the correct upper bound for unrelated
+		// classes.
+		Optional<? extends Class<?>> commonType = columns.stream()
+				.<Class<?>>map(ColumnMetadata::getType)
+				.reduce((c1, c2) -> Objects.requireNonNullElse(ClassUtils.determineCommonAncestor(c1, c2),
+						Object.class));
 
 		// Keep as alias only if all definition holds given alias
 		// This is better for composite cubes, as an alias valid for only a subCube should not be consider an alias in
-		// the composite
+		// the composite.
+		// `reduce` MUST seed with the first element's aliases (NOT `ImmutableSet.of()`): seeding with empty makes
+		// `Sets.intersection(empty, anything) == empty` short-circuit on the first iteration, so the result was
+		// always empty regardless of input.
 		Set<String> intersectionAliases = columns.stream()
 				.<Set<String>>map(ColumnMetadata::getAliases)
-				.reduce(ImmutableSet.of(), Sets::intersection);
+				.reduce(Sets::intersection)
+				.orElse(ImmutableSet.of());
 
 		// In a composite cube, it seems legitimate to consider the union of tags. This would not be true of composite
 		// tags like `composite-full`.

@@ -36,8 +36,8 @@ import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.context.IQueryPreparator;
 import eu.solven.adhoc.engine.context.StandardQueryPreparator;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagCubeQuery_QueryStepCache extends ATestDagInMemory implements IAdhocTestConstants {
 

@@ -43,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
  * {@link ApplicationContext}.
  * 
  * @author Benoit Lacelle
- * @see TestTableQuery_DuckDb_WorldCup
+ * @see TestDagTableQuery_DuckDb_WorldCup
  */
 @Slf4j
 public class InjectWorldCupExampleCubesConfig {

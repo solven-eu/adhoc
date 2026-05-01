@@ -24,5 +24,5 @@ package eu.solven.adhoc.cube.training.c_medium;
 
 public class HelloMeasureArrayAggregation_VaR_ES_CVA {
 	// TODO
-	// For now, you can see TestTableQuery_DuckDb_VaR
+	// For now, you can see TestDagTableQuery_DuckDb_VaR
 }

@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package eu.solven.adhoc.query.cube;
+package eu.solven.adhoc.engine.query;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -43,12 +43,13 @@ import eu.solven.adhoc.filter.FilterBuilder;
 import eu.solven.adhoc.filter.IColumnFilter;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.measure.ReferencedMeasure;
-import eu.solven.adhoc.measure.forest.IMeasureForest;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IHasQueryOptions;
 import eu.solven.adhoc.options.IQueryOption;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.AdhocQueryId;
+import eu.solven.adhoc.query.cube.IGroupBy;
+import eu.solven.adhoc.query.cube.IHasCustomMarker;
+import eu.solven.adhoc.query.cube.IHasMeasures;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;

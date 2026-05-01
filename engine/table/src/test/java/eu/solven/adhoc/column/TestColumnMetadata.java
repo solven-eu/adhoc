@@ -86,22 +86,37 @@ public class TestColumnMetadata {
 	}
 
 	@Test
-	public void testMerge_disjointTypes_fallsBackToCommonAncestor() {
-		// String and Long share Object as common ancestor (via Comparable/CharSequence ambiguity → Object).
-		ColumnMetadata a = ColumnMetadata.builder().name("c").type(String.class).build();
-		ColumnMetadata b = ColumnMetadata.builder().name("c").type(Long.class).build();
+	public void testMerge_relatedTypes_fallsBackToCommonAncestor() {
+		// Long and Double share Number as a non-trivial common ancestor — Spring's `determineCommonAncestor`
+		// only picks ancestors above Object, so it returns Number here.
+		ColumnMetadata a = ColumnMetadata.builder().name("c").type(Long.class).build();
+		ColumnMetadata b = ColumnMetadata.builder().name("c").type(Double.class).build();
 
 		ColumnMetadata merged = ColumnMetadata.merge(List.of(a, b));
 
-		// Don't pin the exact ancestor (Spring's `determineCommonAncestor` returns Object for unrelated types) —
-		// the contract is that the result is assignable from both.
-		Assertions.assertThat(merged.getType()).isAssignableFrom(String.class).isAssignableFrom(Long.class);
+		Assertions.assertThat(merged.getType())
+				.isEqualTo(Number.class)
+				.isAssignableFrom(Long.class)
+				.isAssignableFrom(Double.class);
+	}
+
+	@Test
+	public void testMerge_unrelatedTypes_fallsBackToObject() {
+		ColumnMetadata a = ColumnMetadata.builder().name("c").type(String.class).build();
+		ColumnMetadata b = ColumnMetadata.builder().name("c").type(Double.class).build();
+
+		ColumnMetadata merged = ColumnMetadata.merge(List.of(a, b));
+
+		Assertions.assertThat(merged.getType()).isEqualTo(Object.class);
 	}
 
 	@Test
 	public void testMerge_aliases_keepIntersectionOnly() {
 		// Composite-cube semantic: an alias declared by every sub-cube survives; an alias declared by only one is
 		// dropped (so the composite doesn't claim aliases that are not universally valid).
+		// Regression: `reduce` was seeded with `ImmutableSet.of()` which made `Sets.intersection(empty, anything)`
+		// short-circuit to empty on every iteration — so a "shared" alias used to be silently dropped. Asserting
+		// `containsExactly("shared")` here ensures the seed comes from the first element, not an empty set.
 		ColumnMetadata a = ColumnMetadata.builder().name("c").alias("shared").alias("only-a").build();
 		ColumnMetadata b = ColumnMetadata.builder().name("c").alias("shared").alias("only-b").build();
 

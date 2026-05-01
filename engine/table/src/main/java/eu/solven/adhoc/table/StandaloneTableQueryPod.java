@@ -37,8 +37,12 @@ import eu.solven.adhoc.engine.cache.IQueryStepCache;
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
 import eu.solven.adhoc.map.factory.ISliceFactory;
 import eu.solven.adhoc.map.factory.RowSliceFactory;
+import eu.solven.adhoc.measure.forest.IMeasureForest;
+import eu.solven.adhoc.measure.forest.MeasureForest;
+import eu.solven.adhoc.measure.model.EmptyMeasure;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.options.IQueryOption;
+import eu.solven.adhoc.options.StandardQueryOptions;
 import eu.solven.adhoc.query.AdhocQueryId;
 import eu.solven.adhoc.util.NotYetImplementedException;
 import lombok.Builder;
@@ -56,9 +60,18 @@ import lombok.Singular;
  * @author Benoit Lacelle
  * @see ITableQueryPod#forTable(ITableWrapper)
  */
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class StandaloneTableQueryPod implements ITableQueryPod {
+	// The query requested to the queryEngine
+	@Nullable
+	IWhereGroupByQuery query;
+
+	// an IAdhocQuery is executed relatively to a measureBag as requested measure depends (implicitly) on underlying
+	// measures
+	@NonNull
+	@Default
+	IMeasureForest forest = MeasureForest.builder().name("unnamed").build();
 
 	@NonNull
 	ITableWrapper table;
@@ -81,7 +94,7 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 	@NonNull
 	@Default
 	IColumnsManager columnsManager = ColumnsManager.builder().build();
-	
+
 	@NonNull
 	@Default
 	IQueryStepCache queryStepCache = new EmptyQueryStepCache();
@@ -128,12 +141,16 @@ public class StandaloneTableQueryPod implements ITableQueryPod {
 
 	@Override
 	public IMeasure resolveIfRef(IMeasure measure) {
-		throw new NotYetImplementedException("Needed?");
-	}
+		if (measure == null) {
+			throw new IllegalArgumentException("Null input");
+		}
 
-	@Override
-	public IWhereGroupByQuery getQuery() {
-		throw new NotYetImplementedException("Needed?");
+		if (StandardQueryOptions.UNKNOWN_MEASURES_ARE_EMPTY.isActive(getOptions())) {
+			return this.forest.resolveIfRefOpt(measure)
+					.orElseGet(() -> EmptyMeasure.builder().name(measure.getName()).build());
+		} else {
+			return this.forest.resolveIfRef(measure);
+		}
 	}
 
 	@Override

@@ -33,12 +33,12 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularView.TabularEntry;
 import eu.solven.adhoc.dataframe.tabular.ListMapEntryBasedTabularViewDrillThrough;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.lambda.LambdaEditor;
 import eu.solven.adhoc.measure.lambda.LambdaEditor.ILambdaFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 /**
  * End-to-end tests of the {@link StandardQueryOptions#DRILLTHROUGH} execution path. The cube engine emits one

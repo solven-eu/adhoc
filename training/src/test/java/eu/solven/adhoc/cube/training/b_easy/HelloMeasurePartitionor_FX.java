@@ -24,5 +24,5 @@ package eu.solven.adhoc.cube.training.b_easy;
 
 public class HelloMeasurePartitionor_FX {
 	// TODO
-	// For now, you can see TestCubeQueryFx
+	// For now, you can see TestDagCubeQueryFx
 }

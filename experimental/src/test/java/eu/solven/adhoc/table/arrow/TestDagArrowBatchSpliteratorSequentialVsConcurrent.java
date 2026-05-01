@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestDagDuckDb;
 import eu.solven.adhoc.table.sql.duckdb.DuckDBHelper;

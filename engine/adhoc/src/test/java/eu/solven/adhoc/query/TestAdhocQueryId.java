@@ -25,8 +25,7 @@ package eu.solven.adhoc.query;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import eu.solven.adhoc.query.cube.AdhocSubQuery;
-import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.engine.query.CubeQuery;
 
 public class TestAdhocQueryId {
 	@Test

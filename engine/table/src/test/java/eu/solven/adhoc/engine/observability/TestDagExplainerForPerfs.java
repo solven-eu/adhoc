@@ -36,10 +36,10 @@ import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.QueryStepsDag;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
 import eu.solven.adhoc.engine.cache.IQueryStepCache;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.ReferencedMeasure;
 import eu.solven.adhoc.measure.forest.IMeasureResolver;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQueryIds;
@@ -62,20 +62,37 @@ public class TestDagExplainerForPerfs {
 			}
 		};
 
-		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder()
-				.build(), "someCube", canResolve, "someQueryObject", IQueryStepCache.noCache());
+		QueryStepsDagBuilder queryStepsDagBuilder = new QueryStepsDagBuilder(AdhocFactories.builder().build(),
+				"someCube",
+				canResolve,
+				CubeQuery.builder().measure("someMeasure").build(),
+				IQueryStepCache.noCache());
 
-		Combinator root = Combinator.builder().name("root").underlying("underlying1").underlying("underlying2").build();
+		ObservabilityCombinator root = ObservabilityCombinator.builder()
+				.name("root")
+				.underlying("underlying1")
+				.underlying("underlying2")
+				.build();
 
-		Combinator underlying1 =
-				Combinator.builder().name("underlying1").underlying("underlying11").underlying("underlying12").build();
-		Combinator underlying2 =
-				Combinator.builder().name("underlying2").underlying("underlying21").underlying("underlying22").build();
+		ObservabilityCombinator underlying1 = ObservabilityCombinator.builder()
+				.name("underlying1")
+				.underlying("underlying11")
+				.underlying("underlying12")
+				.build();
+		ObservabilityCombinator underlying2 = ObservabilityCombinator.builder()
+				.name("underlying2")
+				.underlying("underlying21")
+				.underlying("underlying22")
+				.build();
 
-		Combinator underlying11 = Combinator.builder().name("underlying11").underlying("a").build();
-		Combinator underlying12 = Combinator.builder().name("underlying12").underlying("a").build();
-		Combinator underlying21 = Combinator.builder().name("underlying21").underlying("a").build();
-		Combinator underlying22 = Combinator.builder().name("underlying22").underlying("a").build();
+		ObservabilityCombinator underlying11 =
+				ObservabilityCombinator.builder().name("underlying11").underlying("a").build();
+		ObservabilityCombinator underlying12 =
+				ObservabilityCombinator.builder().name("underlying12").underlying("a").build();
+		ObservabilityCombinator underlying21 =
+				ObservabilityCombinator.builder().name("underlying21").underlying("a").build();
+		ObservabilityCombinator underlying22 =
+				ObservabilityCombinator.builder().name("underlying22").underlying("a").build();
 
 		Aggregator aggregator111 = Aggregator.sum("a");
 
@@ -96,23 +113,23 @@ public class TestDagExplainerForPerfs {
 		Assertions.assertThat(String.join("\n", messages)).isEqualToNormalizingNewlines("""
 				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
 				|      No cost info
-				\\-- #1 m=root(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				\\-- #1 m=root(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |  No cost info
-				    |\\- #2 m=underlying1(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				    |\\- #2 m=underlying1(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |   |  No cost info
-				    |   |\\- #3 m=underlying11(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				    |   |\\- #3 m=underlying11(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |   |   |  No cost info
 				    |   |   \\-- #4 m=a(SUM) filter=matchAll groupBy=grandTotal
 				    |   |       \\  No cost info
-				    |   \\-- #5 m=underlying12(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				    |   \\-- #5 m=underlying12(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |       |  No cost info
 				    |       \\-- !4
-				    \\-- #6 m=underlying2(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				    \\-- #6 m=underlying2(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				        |  No cost info
-				        |\\- #7 m=underlying21(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				        |\\- #7 m=underlying21(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				        |   |  No cost info
 				        |   \\-- !4
-				        \\-- #8 m=underlying22(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				        \\-- #8 m=underlying22(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				            |  No cost info
 				            \\-- !4""");
 	}

@@ -37,6 +37,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.FilterHelpers;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
@@ -47,7 +48,6 @@ import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.table.ITableWrapper;
 import eu.solven.adhoc.table.duckdb.ATestDagDuckDb;
 import eu.solven.adhoc.table.sql.JooqTableWrapper;
@@ -67,7 +67,9 @@ public class TestDagTransformator_Shiftor_Perf extends ATestDagDuckDb implements
 
 	@BeforeAll
 	public static void setLimits() {
-		log.info("{} is evaluated on cardinality={}", TestDagTransformator_Shiftor_Perf.class.getName(), maxCardinality);
+		log.info("{} is evaluated on cardinality={}",
+				TestDagTransformator_Shiftor_Perf.class.getName(),
+				maxCardinality);
 		AdhocColumnUnsafe.setLimitColumnSize(maxCardinality * nbDays + 10);
 	}
 

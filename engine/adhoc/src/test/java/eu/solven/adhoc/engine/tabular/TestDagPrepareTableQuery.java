@@ -34,6 +34,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.engine.MapQueryStepCache;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
@@ -41,7 +42,6 @@ import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.options.IHasQueryOptions;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagPrepareTableQuery extends ATestDagInMemory implements IAdhocTestConstants {
 

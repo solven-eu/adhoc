@@ -39,7 +39,7 @@ import eu.solven.adhoc.query.groupby.GroupByColumns;
  *
  * Focus: the regression fix that protects {@link eu.solven.adhoc.column.ICalculatedColumn}s from being wrongly
  * collapsed to the {@link eu.solven.adhoc.column.generated_column.IColumnGenerator} fallback. See
- * {@code TestTableQuery_DuckDb_VaR#testGroupByScenarioIndex_withStar_countAsterisk}.
+ * {@code TestDagTableQuery_DuckDb_VaR#testGroupByScenarioIndex_withStar_countAsterisk}.
  */
 public class TestTableQueryEngine_GeneratedColumnsToSuppressFromGroupBy {
 

@@ -49,9 +49,9 @@ import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.TabularRecordOverMaps;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ICubeQuery;
 import eu.solven.adhoc.options.IQueryOption;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 

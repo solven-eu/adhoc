@@ -37,13 +37,13 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.filter.value.ComparingMatcher;
 import eu.solven.adhoc.measure.decomposition.CumulatingDecomposition;
 import eu.solven.adhoc.measure.decomposition.DuplicatingDecomposition;
 import eu.solven.adhoc.measure.model.Dispatchor;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagCubeQuery_CumulatingDecomposition extends ATestDagInMemory implements IAdhocTestConstants {
 

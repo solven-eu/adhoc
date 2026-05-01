@@ -43,6 +43,7 @@ import eu.solven.adhoc.beta.schema.ColumnStatistics;
 import eu.solven.adhoc.beta.schema.TargetedCubeQuery;
 import eu.solven.adhoc.dataframe.tabular.IReadableTabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.pivotable.endpoint.AdhocColumnSearch;
 import eu.solven.adhoc.pivotable.endpoint.AdhocEndpointSearch;
 import eu.solven.adhoc.pivotable.endpoint.PivotableAdhocEndpointMetadata;
@@ -50,7 +51,6 @@ import eu.solven.adhoc.pivotable.webflux.app.PivotableServerWebfluxApplication;
 import eu.solven.adhoc.pivotable.webflux.client.IPivotableReactiveServer;
 import eu.solven.adhoc.pivotable.webflux.client.PivotableWebclientServer;
 import eu.solven.adhoc.pivotable.webmvc.client.PivotableWebclientServerProperties;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 

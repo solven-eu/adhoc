@@ -27,6 +27,8 @@ import java.util.Optional;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.engine.step.ICubeQuery;
+
 /**
  * Holds the logic mapping from the columns names in {@link ICubeQuery} and columnNames in {@link ITableWrapper}.
  * <p>

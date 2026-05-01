@@ -39,13 +39,13 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
 import eu.solven.adhoc.engine.AdhocFactories;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.operator.IOperatorFactory;
 import eu.solven.adhoc.measure.operator.StandardOperatorFactory;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumElseSetAggregation;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import lombok.NonNull;
 
@@ -281,7 +281,7 @@ public class TestDagCubeQueryFx extends ATestDagInMemory implements IAdhocTestCo
 								    |  size=2 duration=7ms
 								    \\-- #2 m=k1(SUM) filter=color==red groupBy=(letter, ccyFrom) customMarker=JPY
 								        \\  size=2 duration=15ms
-								Executed status=OK duration=28ms on table=inMemory forest=TestCubeQueryFx-filtered query=CubeQuery(filter=color==red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""")
+								Executed status=OK duration=28ms on table=inMemory forest=TestDagCubeQueryFx-filtered query=CubeQuery(filter=color==red, groupBy=(letter), measures=[ReferencedMeasure(ref=k1.CCY)], customMarker=JPY, options=[EXPLAIN])""")
 				.hasLineCount(4 + 4 + 6 + 1);
 	}
 

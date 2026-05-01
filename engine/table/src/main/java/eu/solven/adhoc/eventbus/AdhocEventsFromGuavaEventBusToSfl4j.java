@@ -73,7 +73,7 @@ public class AdhocEventsFromGuavaEventBusToSfl4j implements IAdhocEventsListener
 	}
 
 	/**
-	 * An {@link eu.solven.adhoc.query.cube.CubeQuery} is resolved through a DAG of
+	 * An {@link eu.solven.adhoc.engine.query.CubeQuery} is resolved through a DAG of
 	 * {@link eu.solven.adhoc.engine.step.CubeQueryStep}. This will log when an
 	 * {@link eu.solven.adhoc.engine.step.CubeQueryStep} is completed.
 	 * 

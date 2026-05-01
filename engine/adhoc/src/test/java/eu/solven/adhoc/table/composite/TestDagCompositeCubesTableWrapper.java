@@ -42,6 +42,7 @@ import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.tabular.optimizer.CubeWrapperEditor;
 import eu.solven.adhoc.filter.AndFilter;
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -60,7 +61,6 @@ import eu.solven.adhoc.measure.model.MeasureHelpers;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumAggregation;
 import eu.solven.adhoc.options.StandardQueryOptions;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.table.FilteredAggregator;
 import eu.solven.adhoc.query.table.TableQueryV2;
 import eu.solven.adhoc.table.ITableWrapper;
@@ -835,7 +835,15 @@ public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IA
 
 			Assertions.assertThat(compositeCube.getColumnsAsMap())
 					.containsEntry("a",
-							ColumnMetadata.builder().name("a").tag("composite-full").type(String.class).build())
+							ColumnMetadata.builder()
+									.name("a")
+									.tag("composite-partial")
+									.tag("composite-unknown:" + cube1.getName())
+									.tag("composite-known:" + cube2.getName())
+									.type(String.class)
+									.alias("a")
+									.alias("_a")
+									.build())
 					.containsEntry("_a",
 							ColumnMetadata.builder()
 									.name("_a")
@@ -843,6 +851,7 @@ public class TestDagCompositeCubesTableWrapper extends ATestDagRaw implements IA
 									.tag("composite-unknown:" + cube1.getName())
 									.tag("composite-known:" + cube2.getName())
 									.type(String.class)
+									.alias("a")
 									.build())
 					.containsEntry("k1",
 							ColumnMetadata.builder().name("k1").tag("composite-full").type(Integer.class).build())

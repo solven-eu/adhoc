@@ -35,8 +35,8 @@ import com.google.common.collect.ImmutableSetMultimap;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.FilteredAggregator;
@@ -63,8 +63,8 @@ import eu.solven.pepper.collection.MapWithNulls;
  * </pre>
  *
  * Each query is routed through {@code JooqTableWrapper} with the builder's {@link PrunedJoinsJooqTableSupplier} wired
- * into {@code JooqTableWrapperParameters.tableSupplier}. Behaviour mirrors {@code TestTableQuery_DuckDb_withJoin}, but
- * the {@code FROM} clause is pruned per query — a claim we verify by rendering the per-query table directly.
+ * into {@code JooqTableWrapperParameters.tableSupplier}. Behaviour mirrors {@code TestDagTableQuery_DuckDb_withJoin},
+ * but the {@code FROM} clause is pruned per query — a claim we verify by rendering the per-query table directly.
  *
  * @author Benoit Lacelle
  */

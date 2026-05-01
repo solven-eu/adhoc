@@ -356,7 +356,7 @@ public class JooqTableQueryFactory implements IJooqTableQueryFactory {
 		// this lets the DB share one scan across branches and can be faster on columnar engines.
 		//
 		// The right choice depends on the DB engine, the scale factor, and the degree of aggregator-set
-		// overlap. Benchmark with TestTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
+		// overlap. Benchmark with TestDagTableQuery_DuckDb_Tpch.testGroupingSets_vs_UnionAll_* to decide.
 		ResultQuery<Record> beforeOrder = switch (mode) {
 		case SLICES -> selectFromWhere.groupBy(makeGroupingFields(tableQuery, conditionAndLeftover.getLeftover()));
 		case ROWS -> selectFromWhere;

@@ -22,6 +22,7 @@
  */
 package eu.solven.adhoc.engine.tabular.grouper;
 
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.query.table.TableQueryV3;

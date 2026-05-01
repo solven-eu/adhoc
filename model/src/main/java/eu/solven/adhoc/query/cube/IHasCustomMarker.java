@@ -26,6 +26,8 @@ import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 
+import eu.solven.adhoc.measure.model.IMeasure;
+
 /**
  * Some Database may enable custom behavior, through additional flags. This flag would be evaluated along the DAG of
  * {@link eu.solven.adhoc.engine.step.CubeQueryStep}.

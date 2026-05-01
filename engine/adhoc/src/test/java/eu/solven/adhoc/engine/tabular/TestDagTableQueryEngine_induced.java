@@ -40,6 +40,7 @@ import eu.solven.adhoc.dataframe.column.Cuboid;
 import eu.solven.adhoc.dataframe.column.IMultitypeColumnFastGet;
 import eu.solven.adhoc.dataframe.column.hash.MultitypeHashColumn;
 import eu.solven.adhoc.engine.context.QueryPod;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.TableQueryStep;
 import eu.solven.adhoc.engine.tabular.inducer.ITableQueryInducer;
 import eu.solven.adhoc.engine.tabular.optimizer.ITableQueryFactory;
@@ -48,7 +49,6 @@ import eu.solven.adhoc.measure.model.Partitionor;
 import eu.solven.adhoc.measure.sum.SumCombination;
 import eu.solven.adhoc.primitive.IValueProviderTestHelpers;
 import eu.solven.adhoc.query.InternalQueryOptions;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import eu.solven.adhoc.query.cube.IGroupBy;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 

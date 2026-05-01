@@ -35,10 +35,10 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.engine.AdhocFactories;
 import eu.solven.adhoc.engine.IQueryStepsDagBuilder;
 import eu.solven.adhoc.engine.QueryStepsDagBuilder;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.CubeQueryStep;
 import eu.solven.adhoc.measure.forest.UnsafeMeasureForest;
 import eu.solven.adhoc.measure.model.Aggregator;
-import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.IMeasure;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.query.AdhocQueryIds;
@@ -88,7 +88,10 @@ public class TestDagExplainer implements IAdhocTestConstants {
 	public void testExplain_singleNode() {
 		DagExplainer dagExplainer = DagExplainer.builder().eventBus(eventBus::post).build();
 
-		ITableQueryPod queryPod = StandaloneTableQueryPod.forTable(InMemoryTable.builder().build());
+		ITableQueryPod queryPod = StandaloneTableQueryPod.builder()
+				.table(InMemoryTable.builder().build())
+				.query(CubeQuery.builder().build())
+				.build();
 		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
 
 		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(Aggregator.sum("k")).build();
@@ -99,7 +102,7 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				builder.getQueryDag());
 
 		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
-				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
+				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
 				\\-- #1 m=k(SUM) filter=matchAll groupBy=grandTotal""");
 	}
 
@@ -109,11 +112,12 @@ public class TestDagExplainer implements IAdhocTestConstants {
 
 		Aggregator k1 = Aggregator.sum("k1");
 		Aggregator k2 = Aggregator.sum("k2");
-		IMeasure sumK1K2 = Combinator.sum(k1.getName(), k2.getName());
+		IMeasure sumK1K2 = ObservabilityCombinator.sum(k1.getName(), k2.getName());
 		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
 
-		QueryPod queryPod = QueryPod.forTable(InMemoryTable.builder().build())
-				.toBuilder()
+		ITableQueryPod queryPod = StandaloneTableQueryPod.builder()
+				.table(InMemoryTable.builder().build())
+				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
 				.build();
 		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
@@ -124,8 +128,8 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				builder.getQueryDag());
 
 		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
-				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
-				\\-- #1 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
+				\\-- #1 m=observability(k1,k2)(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				    |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 				    \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal""");
 	}
@@ -136,11 +140,12 @@ public class TestDagExplainer implements IAdhocTestConstants {
 
 		Aggregator k1 = Aggregator.sum("k1");
 		Aggregator k2 = Aggregator.sum("k2");
-		IMeasure sumK1K2 = Combinator.sum(k1.getName(), k2.getName());
+		IMeasure sumK1K2 = ObservabilityCombinator.sum(k1.getName(), k2.getName());
 		Set<IMeasure> measures = ImmutableSet.<IMeasure>builder().add(k1, k2, sumK1K2).build();
 
-		QueryPod queryPod = QueryPod.forTable(InMemoryTable.builder().build())
-				.toBuilder()
+		ITableQueryPod queryPod = StandaloneTableQueryPod.builder()
+				.table(InMemoryTable.builder().build())
+				.query(CubeQuery.builder().build())
 				.forest(UnsafeMeasureForest.fromMeasures(this.getClass().getSimpleName(), measures).build())
 				.build();
 		IQueryStepsDagBuilder builder = QueryStepsDagBuilder.make(AdhocFactories.builder().build(), queryPod);
@@ -151,8 +156,8 @@ public class TestDagExplainer implements IAdhocTestConstants {
 				builder.getQueryDag());
 
 		Assertions.assertThat(String.join("\n", messagesExplain)).isEqualTo("""
-				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000001
-				|\\- #1 m=sum(k1,k2)(Combinator[SUM]) filter=matchAll groupBy=grandTotal
+				/-- #0 c=someCube id=00000000-0000-0000-0000-000000000000
+				|\\- #1 m=observability(k1,k2)(ObservabilityCombinator[SUM]) filter=matchAll groupBy=grandTotal
 				|   |\\- #2 m=k1(SUM) filter=matchAll groupBy=grandTotal
 				|   \\-- #3 m=k2(SUM) filter=matchAll groupBy=grandTotal
 				|\\- !2

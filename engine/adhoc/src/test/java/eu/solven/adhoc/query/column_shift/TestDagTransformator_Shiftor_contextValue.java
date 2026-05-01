@@ -33,18 +33,19 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Shiftor;
-import eu.solven.adhoc.query.cube.CubeQuery;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * This is useful to check advanced behaviors around customMarker. A legitimate case for customMarker is to force a
  * customMarker for a given measure, while other measure may be dynamic.
  *
- * This mostly duplicates {@link TestDagCubeQuery_Shiftor}, but requiring the shift to EUR to be provided as customMarker.
+ * This mostly duplicates {@link TestDagCubeQuery_Shiftor}, but requiring the shift to EUR to be provided as
+ * customMarker.
  */
 @Slf4j
 public class TestDagTransformator_Shiftor_contextValue extends ATestDagInMemory implements IAdhocTestConstants {

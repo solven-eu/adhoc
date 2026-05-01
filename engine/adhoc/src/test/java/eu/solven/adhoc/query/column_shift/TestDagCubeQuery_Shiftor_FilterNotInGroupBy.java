@@ -33,13 +33,13 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.filter.ISliceFilter;
 import eu.solven.adhoc.filter.editor.IFilterEditor;
 import eu.solven.adhoc.filter.editor.SimpleFilterEditor;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.model.Shiftor;
 import eu.solven.adhoc.measure.sum.SubstractionCombination;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 /**
  * Reproducer for the regression introduced by
@@ -48,8 +48,8 @@ import eu.solven.adhoc.query.cube.CubeQuery;
  * the shifted measure ends up null, breaking day-over-day style measures.
  *
  * <p>
- * Shape of the bug, mirroring {@code TestTransformator_Shiftor_Perf#testGroupByRow_Today} but with InMemoryTable so we
- * can iterate on the fix without a benchmark/DuckDB harness:
+ * Shape of the bug, mirroring {@code TestDagTransformator_Shiftor_Perf#testGroupByRow_Today} but with InMemoryTable so
+ * we can iterate on the fix without a benchmark/DuckDB harness:
  * <ul>
  * <li>{@code k1Sum} aggregates {@code k1}.</li>
  * <li>{@code prev} is a Shiftor reading {@code k1Sum} with FILTER edited from {@code d=today} to

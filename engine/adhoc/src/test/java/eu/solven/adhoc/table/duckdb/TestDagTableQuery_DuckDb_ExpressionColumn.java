@@ -34,7 +34,7 @@ import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.column.TableExpressionColumn;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
-import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.query.groupby.GroupByColumns;
 import eu.solven.adhoc.query.table.TableQuery;
 import eu.solven.adhoc.table.ITableWrapper;

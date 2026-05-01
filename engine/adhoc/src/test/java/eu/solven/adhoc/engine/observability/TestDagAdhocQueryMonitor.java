@@ -37,12 +37,12 @@ import com.google.common.eventbus.Subscribe;
 
 import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.eventbus.QueryLifecycleEvent;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.model.Aggregator;
 import eu.solven.adhoc.measure.model.Combinator;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagAdhocQueryMonitor extends ATestDagInMemory {
 	public static class AdhocQueryMonitorGuava extends AdhocQueryMonitor {

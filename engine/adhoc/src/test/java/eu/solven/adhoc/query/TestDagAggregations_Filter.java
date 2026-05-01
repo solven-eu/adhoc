@@ -35,10 +35,10 @@ import eu.solven.adhoc.ATestDagInMemory;
 import eu.solven.adhoc.IAdhocTestConstants;
 import eu.solven.adhoc.dataframe.tabular.ITabularView;
 import eu.solven.adhoc.dataframe.tabular.MapBasedTabularView;
+import eu.solven.adhoc.engine.query.CubeQuery;
 import eu.solven.adhoc.measure.model.Combinator;
 import eu.solven.adhoc.measure.ratio.AdhocExplainerTestHelper;
 import eu.solven.adhoc.measure.sum.SumCombination;
-import eu.solven.adhoc.query.cube.CubeQuery;
 
 public class TestDagAggregations_Filter extends ATestDagInMemory implements IAdhocTestConstants {
 	@Override
@@ -143,9 +143,9 @@ public class TestDagAggregations_Filter extends ATestDagInMemory implements IAdh
 		Assertions.assertThat(String.join("\n", messages))
 				.isEqualTo(
 						"""
-								Executing on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
+								Executing on table=inMemory forest=TestDagAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])
 								\\------ time=20ms for tableQuery on SELECT k1:SUM(k1) WHERE a==a1 GROUP BY grandTotal
-								Executed status=OK duration=21ms on table=inMemory forest=TestAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""")
+								Executed status=OK duration=21ms on table=inMemory forest=TestDagAggregations_Filter-filtered query=CubeQuery(filter=a==a1, groupBy=grandTotal, measures=[ReferencedMeasure(ref=k1)], customMarker=null, options=[])""")
 				.hasLineCount(3);
 	}
 }

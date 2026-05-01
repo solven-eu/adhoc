@@ -802,7 +802,7 @@ public class TableQueryEngine implements ITableQueryEngine {
 	 * `*` coordinate for a grandTotal); collapsing it to the {@link IColumnGenerator} fallback
 	 * (`COORDINATE_GENERATED="generated"`) would silently overwrite that value — and, when the same query also groups
 	 * by the same column as a plain {@code ReferencedColumn}, produce two steps that emit the same slice key and crash
-	 * at merge time. See {@code TestTableQuery_DuckDb_VaR#testGroupByScenarioIndex_withStar_countAsterisk}.
+	 * at merge time. See {@code TestDagTableQuery_DuckDb_VaR#testGroupByScenarioIndex_withStar_countAsterisk}.
 	 *
 	 * @param originalGroupby
 	 *            the {@link IGroupBy} of the current {@link TableQueryStep}.

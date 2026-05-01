@@ -269,7 +269,7 @@ public class TestCubeWrapper {
 				.table(table)
 				.build();
 
-		eu.solven.adhoc.query.cube.CubeQuery blockingQuery = eu.solven.adhoc.query.cube.CubeQuery.builder()
+		eu.solven.adhoc.engine.query.CubeQuery blockingQuery = eu.solven.adhoc.engine.query.CubeQuery.builder()
 				.option(eu.solven.adhoc.options.StandardQueryOptions.BLOCKING)
 				.build();
 
