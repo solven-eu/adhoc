@@ -53,7 +53,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.solven.adhoc.query.cube.CubeQuery;
+import eu.solven.adhoc.engine.query.CubeQuery;
 
 /**
  * Relational expression representing a scan of a table in a Mongo data source.

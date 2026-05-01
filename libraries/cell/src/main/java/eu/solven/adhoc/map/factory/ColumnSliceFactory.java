@@ -23,8 +23,11 @@
 package eu.solven.adhoc.map.factory;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import com.google.common.base.Suppliers;
 
@@ -81,6 +84,9 @@ public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 	 *
 	 * @author Benoit Lacelle
 	 */
+	// Lombok @Builder synthesises a MapBuilderPreKeysBuilder with one field per @NonNull field; those fields
+	// are populated through chained setters before .build() is called — NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	@Builder
 	public static class MapBuilderPreKeys implements IMapBuilderPreKeys {
 		@NonNull
@@ -93,9 +99,9 @@ public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 		@NonNull
 		protected final IAppendableTable pageFactory;
 
-		protected ITableRowWrite row;
+		protected @Nullable ITableRowWrite row;
 
-		protected String peekNextKey() {
+		protected @Nullable String peekNextKey() {
 			int currentSize;
 			if (row == null) {
 				currentSize = 0;
@@ -112,7 +118,7 @@ public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 		}
 
 		@Override
-		public MapBuilderPreKeys append(Object value) {
+		public MapBuilderPreKeys append(@Nullable Object value) {
 			if (row == null) {
 				row = pageFactory.nextRow(keysLikeList);
 			}
@@ -122,8 +128,9 @@ public class ColumnSliceFactory extends ASliceFactory implements IScopeBinder {
 				throw new IllegalStateException("Can not append v=%s as already filled size=%s keys=%s"
 						.formatted(value, currentSize, keysLikeList));
 			}
-			Object normalizedValue = factory.normalizeCoordinate(value);
-			row.add(peekNextKey(), normalizedValue);
+			// `peekNextKey` only returns null when the row is already full — guarded by the size check above.
+			String key = Objects.requireNonNull(peekNextKey(), "row already full");
+			row.add(key, factory.normalizeCoordinate(value));
 
 			return this;
 		}

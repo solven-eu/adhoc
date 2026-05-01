@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.aggregation.collection;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
@@ -50,7 +52,7 @@ public abstract class AUnionCollectionAggregation implements IAggregation {
 	 * @return we generally prefer returning null than an empty data structure
 	 */
 	@SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
-	protected Object onEmpty() {
+	protected @Nullable Object onEmpty() {
 		return null;
 	}
 

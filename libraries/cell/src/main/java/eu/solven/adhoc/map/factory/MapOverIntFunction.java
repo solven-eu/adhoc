@@ -26,6 +26,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntSupplier;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.encoding.page.IInt2ObjectReader;
 import eu.solven.adhoc.map.AbstractAdhocMap;
@@ -69,7 +71,9 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 
 	@Override
 	protected Object getSequencedValueRaw(int index) {
-		return sequencedValues.read(index);
+		// `IInt2ObjectReader#read` is @Nullable, but `getSequencedValueRaw` contract is @NonNull —
+		// raw values use NULL_HOLDER as the null sentinel rather than a real null reference.
+		return Objects.requireNonNull(sequencedValues.read(index), "raw value must not be null; use NULL_HOLDER");
 	}
 
 	@Override
@@ -82,7 +86,7 @@ public class MapOverIntFunction extends AbstractAdhocMap {
 		final int[] sequencedIndexes;
 
 		@Override
-		public Object read(int index) {
+		public @Nullable Object read(int index) {
 			return sequencedValues.read(sequencedIndexes[index]);
 		}
 

@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.sum;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.combination.ICombination;
 import eu.solven.adhoc.measure.combination.IHasTwoOperands;
@@ -56,12 +58,14 @@ public class DivideCombination implements ICombination, IHasTwoOperands {
 	}
 
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		if (underlyingValues.size() != 2) {
 			throw new IllegalArgumentException("Expected 2 underlyings. Got %s".formatted(underlyingValues.size()));
 		}
 
+		@Nullable
 		Object rawNumerator = underlyingValues.get(0);
+		@Nullable
 		Object rawDenominator = underlyingValues.get(1);
 
 		if (rawNumerator == null && rawDenominator == null) {

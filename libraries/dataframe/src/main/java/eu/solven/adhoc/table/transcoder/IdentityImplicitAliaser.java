@@ -24,6 +24,8 @@ package eu.solven.adhoc.table.transcoder;
 
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.Suppliers;
 
 /**
@@ -39,7 +41,7 @@ public class IdentityImplicitAliaser implements ITableAliaser {
 	static final Supplier<IdentityImplicitAliaser> IDENTITY = Suppliers.memoize(() -> new IdentityImplicitAliaser());
 
 	@Override
-	public String underlying(String queried) {
+	public @Nullable String underlying(String queried) {
 		return null;
 	}
 }

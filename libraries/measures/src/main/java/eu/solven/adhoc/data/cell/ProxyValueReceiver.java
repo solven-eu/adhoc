@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.data.cell;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 import eu.solven.adhoc.primitive.IValueProvider;
@@ -58,7 +60,7 @@ public class ProxyValueReceiver implements IValueReceiver {
 	}
 
 	@Override
-	public void onObject(Object v) {
+	public void onObject(@Nullable Object v) {
 		proxied.onObject(v);
 		recorder.merge().onObject(v);
 	}

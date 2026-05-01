@@ -101,6 +101,9 @@ public final class CubeQueryStep extends ACubeQueryStep {
 	 * Lombok @Builder — extends with a {@code measure(String)} convenience overload. Both setter variants must be
 	 * declared here because Lombok skips generating any setter whose name is already present in the custom class.
 	 */
+	// Builder fields (auto-generated + manual `measure`) are populated via chained setters before .build();
+	// NullAway can't see the cross-method init, so suppress at the class level.
+	@SuppressWarnings("NullAway.Init")
 	public static class CubeQueryStepBuilder {
 		@SuppressWarnings({ "PMD.AvoidFieldNameMatchingMethodName", "PMD.UnusedPrivateField" })
 		private IMeasure measure;

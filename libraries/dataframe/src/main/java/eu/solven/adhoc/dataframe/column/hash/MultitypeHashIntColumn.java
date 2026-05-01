@@ -25,6 +25,8 @@ package eu.solven.adhoc.dataframe.column.hash;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.Functions;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
@@ -185,7 +187,7 @@ public class MultitypeHashIntColumn implements IMultitypeIntColumnFastGet, IComp
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				if (AdhocPrimitiveHelpers.isLongLike(v)) {
 					long vAsPrimitive = AdhocPrimitiveHelpers.asLong(v);
 					onLong(vAsPrimitive);
@@ -366,7 +368,7 @@ public class MultitypeHashIntColumn implements IMultitypeIntColumnFastGet, IComp
 					}
 
 					@Override
-					public void onObject(Object object) {
+					public void onObject(@Nullable Object object) {
 						if (object instanceof IAggregationCarrier aggregationCarrier) {
 							throw new IllegalArgumentException(
 									"Illegal purge from %s to %s".formatted(aggregationCarrier, object));

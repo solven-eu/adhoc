@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.combination;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.engine.step.ISliceWithStep;
 import eu.solven.adhoc.measure.sum.CoalesceAggregation;
 
@@ -38,7 +40,7 @@ public class CoalesceCombination implements ICombination {
 	public static final String KEY = CoalesceAggregation.KEY;
 
 	@Override
-	public Object combine(ISliceWithStep slice, List<?> underlyingValues) {
+	public @Nullable Object combine(ISliceWithStep slice, List<?> underlyingValues) {
 		return underlyingValues.stream().filter(Objects::nonNull).findFirst().orElse(null);
 	}
 

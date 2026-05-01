@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.dictionary;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Enable a mapping from an Object to an int. It is generally bijective for compression purposes. But it may not be
  * bijective in some edge-case (e.g. high-cardinality dictionary where we would map each object encounter to its own
@@ -31,6 +33,7 @@ package eu.solven.adhoc.encoding.dictionary;
  */
 public interface IDictionarizer {
 
+	@Nullable
 	Object fromInt(int indexedValue);
 
 	int toInt(Object object);

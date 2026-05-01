@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -230,24 +231,23 @@ public class ColumnPacker {
 		@SuppressWarnings("PMD.LinguisticNaming")
 		Map<Boolean, List<ISliceFilter>> isColumnToFilters =
 				filters.stream().collect(Collectors.partitioningBy(f -> f instanceof IColumnFilter));
+		// `Collectors.partitioningBy` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		List<ISliceFilter> columnFilterList = Objects.requireNonNull(isColumnToFilters.get(true));
+		List<ISliceFilter> nonColumnFilterList = Objects.requireNonNull(isColumnToFilters.get(false));
 
-		if (isColumnToFilters.get(true).isEmpty()) {
+		if (columnFilterList.isEmpty()) {
 			// Not a single columnFilter
 			return filters;
 		} else {
 			// isMatchNone is cross column as a single column not matching anything reject the whole filter
 			AtomicBoolean isMatchNone = new AtomicBoolean();
 
-			List<ISliceFilter> notManaged = new ArrayList<>();
-			if (isColumnToFilters.containsKey(false)) {
-				notManaged.addAll(isColumnToFilters.get(false));
-			}
+			List<ISliceFilter> notManaged = new ArrayList<>(nonColumnFilterList);
 
 			// TODO This breaks ordering by pushing implicit filters to the end
 			// A solution is not trivial: iterate through filters, adding in the output if implicit, else scanning the
 			// rest for same column
-			Map<String, List<IColumnFilter>> columnToFilters = isColumnToFilters.get(true)
-					.stream()
+			Map<String, List<IColumnFilter>> columnToFilters = columnFilterList.stream()
 					.map(f -> (IColumnFilter) f)
 					// https://stackoverflow.com/questions/44675454/how-to-get-ordered-type-of-map-from-method-collectors-groupingby
 					// LinkedHashMap to maintain as much as possible the initial order

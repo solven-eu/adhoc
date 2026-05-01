@@ -27,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.encoding.column.freezer.IFreezingStrategy;
 import eu.solven.adhoc.util.AdhocUnsafe;
 import lombok.Builder;
@@ -46,7 +48,7 @@ public class ObjectArrayColumn implements IAppendableColumn {
 	final List<Object> asArray = new ArrayList<>();
 
 	@Override
-	public void append(Object normalizedValue) {
+	public void append(@Nullable Object normalizedValue) {
 		asArray.add(normalizedValue);
 	}
 

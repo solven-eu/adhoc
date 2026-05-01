@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.resource;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.util.IHasWrapped;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.SerializationContext;
@@ -39,7 +41,7 @@ public class HasWrappedSerializer extends StdSerializer<IHasWrapped> {
 		this(null);
 	}
 
-	public HasWrappedSerializer(Class<IHasWrapped> t) {
+	public HasWrappedSerializer(@Nullable Class<IHasWrapped> t) {
 		super(t);
 	}
 

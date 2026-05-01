@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.sum;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.measure.aggregation.IDoubleAggregation;
 import eu.solven.adhoc.measure.aggregation.ILongAggregation;
@@ -61,7 +63,7 @@ public class EmptyAggregation implements IAggregation, ILongAggregation, IDouble
 	public static final String KEY = "EMPTY";
 
 	@Override
-	public Object aggregate(Object left, Object right) {
+	public @Nullable Object aggregate(@Nullable Object left, @Nullable Object right) {
 		// BEWARE SHould we throw?
 		return null;
 	}

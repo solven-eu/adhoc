@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.filter.value;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ColumnFilter;
 import eu.solven.adhoc.resource.HasWrappedSerializer;
 import lombok.Builder;
@@ -53,7 +55,7 @@ public class EqualsObjectMatcher extends EqualsMatcher {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		if (operand.equals(value)) {
 			return true;
 		}

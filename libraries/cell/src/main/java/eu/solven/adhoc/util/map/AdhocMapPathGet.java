@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import eu.solven.pepper.mappath.MapPathGet;
@@ -100,7 +101,7 @@ public class AdhocMapPathGet {
 	protected static <T> T onIllegalGet(Map<String, ?> map, String key, IllegalArgumentException e) {
 		if (map.isEmpty()) {
 			throw new IllegalArgumentException("input map is empty while looking for %s".formatted(key));
-		} else if (e.getMessage().contains("(key not present)")) {
+		} else if (Objects.requireNonNullElse(e.getMessage(), "").contains("(key not present)")) {
 			String minimizingDistance = minimizingDistance(map.keySet(), key);
 
 			if (SmileEditDistance.levenshtein(minimizingDistance, key) <= 2) {

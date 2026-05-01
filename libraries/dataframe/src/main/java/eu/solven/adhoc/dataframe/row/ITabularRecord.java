@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.primitive.IValueProvider;
 import eu.solven.adhoc.table.transcoder.ITableReverseAliaser;
@@ -42,7 +44,7 @@ public interface ITabularRecord extends ITabularGroupByRecord {
 	IValueProvider onAggregate(String aggregateName);
 
 	@Deprecated(since = "Prefer `IValueProvider onAggregate(String aggregateName)`")
-	default Object getAggregate(String aggregateName) {
+	default @Nullable Object getAggregate(String aggregateName) {
 		return IValueProvider.getValue(onAggregate(aggregateName));
 	}
 

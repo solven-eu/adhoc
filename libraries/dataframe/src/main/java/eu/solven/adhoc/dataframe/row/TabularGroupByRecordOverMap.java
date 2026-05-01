@@ -29,6 +29,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.map.IAdhocMap;
@@ -65,7 +67,7 @@ public class TabularGroupByRecordOverMap implements ITabularGroupByRecord {
 	}
 
 	@Override
-	public Object getGroupBy(String column) {
+	public @Nullable Object getGroupBy(String column) {
 		IAdhocMap asMap = slice.asAdhocMap();
 
 		Object value = asMap.get(column);

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.query;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableSet;
 
 import eu.solven.adhoc.engine.step.IWhereGroupByQuery;
@@ -44,6 +46,8 @@ import lombok.Value;
  */
 @Value
 @Builder
+// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+@SuppressWarnings("NullAway.Init")
 public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, IHasQueryOptions {
 
 	@NonNull
@@ -52,6 +56,7 @@ public class MeasurelessQuery implements IWhereGroupByQuery, IHasCustomMarker, I
 	@NonNull
 	IGroupBy groupBy;
 
+	@Nullable
 	Object customMarker;
 
 	@NonNull

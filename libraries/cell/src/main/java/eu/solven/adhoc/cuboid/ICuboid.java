@@ -27,6 +27,8 @@ import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.slice.Slice;
@@ -99,7 +101,7 @@ public interface ICuboid extends ICompactable {
 	 * @param slice
 	 * @return the value as {@link Object} on given slice
 	 */
-	static Object getValue(ICuboid storage, ISlice slice) {
+	static @Nullable Object getValue(ICuboid storage, ISlice slice) {
 		return IValueProvider.getValue(storage.onValue(slice));
 	}
 

@@ -26,6 +26,8 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
@@ -88,7 +90,7 @@ public class MultitypeColumnHelpers {
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					keyToObject.add(new AbstractObject2ObjectMap.BasicEntry<>(sm.getSlice(), v));
 				}
 			});

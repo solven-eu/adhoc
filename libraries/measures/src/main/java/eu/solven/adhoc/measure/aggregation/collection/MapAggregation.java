@@ -24,6 +24,8 @@ package eu.solven.adhoc.measure.aggregation.collection;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.map.AdhocMapHelpers;
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 
@@ -38,19 +40,19 @@ public class MapAggregation<K, V> implements IAggregation {
 
 	public static final String KEY = "UNION_MAP";
 
-	public boolean acceptAggregate(Object o) {
+	public boolean acceptAggregate(@Nullable Object o) {
 		return o instanceof Map || o == null;
 	}
 
 	@Override
-	public Map<K, V> aggregate(Object l, Object r) {
+	public @Nullable Map<K, V> aggregate(@Nullable Object l, @Nullable Object r) {
 		Map<?, ?> lAsMap = asMap(l);
 		Map<?, ?> rAsMap = asMap(r);
 
 		return AdhocMapHelpers.aggregateMaps(lAsMap, rAsMap);
 	}
 
-	protected Map<?, ?> asMap(Object o) {
+	protected @Nullable Map<?, ?> asMap(@Nullable Object o) {
 		return (Map<?, ?>) o;
 	}
 }

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.dataframe.column.hash;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.primitive.AdhocPrimitiveHelpers;
 import eu.solven.adhoc.primitive.IValueReceiver;
 import lombok.AccessLevel;
@@ -63,7 +65,7 @@ public final class CleaningValueReceiver implements IValueReceiver {
 	}
 
 	@Override
-	public void onObject(Object v) {
+	public void onObject(@Nullable Object v) {
 		if (v == null) {
 			if (cleanIfNull) {
 				// BEWARE We may want to remove the key

@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.table.transcoder.value;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.value.IValueMatcher;
 
 /**
@@ -37,7 +39,8 @@ public interface ICustomTypeManagerSimple {
 	 *            some coordinate, typically queried by a cube/measure/user
 	 * @return the equivalent object compatible with the underlying table
 	 */
-	Object toTable(String column, Object coordinate);
+	@Nullable
+	Object toTable(String column, @Nullable Object coordinate);
 
 	/**
 	 * This is especially useful to skip column with {@link eu.solven.adhoc.filter.value.IValueMatcher} which may not be

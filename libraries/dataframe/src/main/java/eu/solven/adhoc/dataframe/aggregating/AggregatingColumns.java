@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.roaringbitmap.RoaringBitmap;
 
 import com.google.common.base.MoreObjects;
@@ -101,7 +102,7 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 	// given the aggregation. It is typically useful to turn `BigDecimal` from DuckDb into `double`. Another
 	// SumAggregation may stick to BigDecimal
 	@Override
-	protected IMultitypeMergeableIntColumn getColumn(String aggregator) {
+	protected @Nullable IMultitypeMergeableIntColumn getColumn(String aggregator) {
 		return aggregatorToAggregates.get(aggregator);
 	}
 
@@ -226,11 +227,15 @@ public class AggregatingColumns<T extends Comparable<T>> extends AAggregatingCol
 
 		sliceToIndex.object2IntEntrySet().stream().limit(AdhocUnsafe.getLimitOrdinalToString()).forEach(entry -> {
 			int sliceIndex = entry.getIntValue();
-			Map<String, String> aggregates = aggregatorToAggregates.keySet()
-					.stream()
-					.collect(PepperStreamHelper.toLinkedMap(Function.identity(),
-							a -> String.valueOf(
-									IValueProvider.getValue(aggregatorToAggregates.get(a).onValue(sliceIndex)))));
+			Map<String, String> aggregates =
+					aggregatorToAggregates.keySet()
+							.stream()
+							.collect(
+									PepperStreamHelper
+											.toLinkedMap(Function.identity(),
+													a -> String.valueOf(IValueProvider.getValue(java.util.Objects
+															.requireNonNull(aggregatorToAggregates.get(a))
+															.onValue(sliceIndex)))));
 
 			sh.add(String.valueOf(entry.getKey()), aggregates);
 		});

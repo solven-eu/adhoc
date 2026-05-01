@@ -24,9 +24,12 @@ package eu.solven.adhoc.encoding.page;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.encoding.bytes.IByteSlice;
 import eu.solven.adhoc.encoding.column.AdhocColumnUnsafe;
@@ -77,8 +80,9 @@ public class AppendableTablePage implements IAppendableTablePage {
 	final List<String> columnNames = new ArrayList<>();
 
 	// AtomicReference to be turned into null when freezing
-	final AtomicReference<List<IAppendableColumn>> columnsWrite = new AtomicReference<>(new ArrayList<>());
-	final AtomicReference<List<? extends IReadableColumn>> columnsRead = new AtomicReference<>(columnsWrite.get());
+	final AtomicReference<@Nullable List<IAppendableColumn>> columnsWrite = new AtomicReference<>(new ArrayList<>());
+	final AtomicReference<List<? extends IReadableColumn>> columnsRead =
+			new AtomicReference<>(Objects.requireNonNull(columnsWrite.get()));
 
 	/**
 	 * If true, the last row has been polled and may or may not be frozen
@@ -109,13 +113,16 @@ public class AppendableTablePage implements IAppendableTablePage {
 		}
 
 		@Override
-		public int add(String key, Object normalizedValue) {
+		public int add(String key, @Nullable Object normalizedValue) {
+			// `columnsWrite` is nulled only during freezing, never during the write phase that calls add().
+			List<IAppendableColumn> writeColumns =
+					Objects.requireNonNull(columnsWrite.get(), "add called after freeze");
 			int currentColumnIndex = columnIndex.getAndIncrement();
 
 			if (currentColumnIndex >= columnNames.size()) {
 				// Register a new additional column
 				columnNames.add(key);
-				columnsWrite.get().add(makeColumn(key));
+				writeColumns.add(makeColumn(key));
 			} else {
 				String expectedColumnName = columnNames.get(currentColumnIndex);
 				if (!key.equals(expectedColumnName)) {
@@ -128,13 +135,13 @@ public class AppendableTablePage implements IAppendableTablePage {
 						if (currentColumnIndex < 0) {
 							currentColumnIndex = columnNames.size();
 							columnNames.add(key);
-							columnsWrite.get().add(makeColumn(key));
+							writeColumns.add(makeColumn(key));
 						}
 					}
 				}
 			}
 
-			columnsWrite.get().get(currentColumnIndex).append(normalizedValue);
+			writeColumns.get(currentColumnIndex).append(normalizedValue);
 
 			return currentColumnIndex;
 		}
@@ -149,8 +156,9 @@ public class AppendableTablePage implements IAppendableTablePage {
 			if (isLastRowPolled.get()) {
 				final List<IReadableColumn> columnsReadLocal = new ArrayList<>();
 
-				// Convert from IAppendableColumns to IReadableColumns
-				AppendableTablePage.this.columnsWrite.get()
+				// Convert from IAppendableColumns to IReadableColumns; freeze() is only called once,
+				// before the matching set(null) below, so columnsWrite is non-null here.
+				Objects.requireNonNull(AppendableTablePage.this.columnsWrite.get())
 						.stream()
 						.map(c -> c.freeze(freezer))
 						.forEach(columnsReadLocal::add);
@@ -192,7 +200,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 		}
 
 		@Override
-		public Object readValue(int columnIndex) {
+		public @Nullable Object readValue(int columnIndex) {
 			IReadableColumn column = columnsRead.get().get(columnIndex);
 			Object value = column.readValue(rowIndex);
 			// columnsWrite is nullified when the page is fully frozen (last row written + freezer chain ran).
@@ -243,7 +251,7 @@ public class AppendableTablePage implements IAppendableTablePage {
 	}
 
 	@Override
-	public ITableRowWrite pollNextRow() {
+	public @Nullable ITableRowWrite pollNextRow() {
 		int rowIndex = pollNextRowIndex();
 		if (rowIndex < 0) {
 			return null;

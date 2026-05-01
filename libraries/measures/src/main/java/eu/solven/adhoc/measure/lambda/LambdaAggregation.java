@@ -25,6 +25,8 @@ package eu.solven.adhoc.measure.lambda;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.measure.aggregation.IAggregation;
 import eu.solven.adhoc.util.map.AdhocMapPathGet;
 
@@ -51,7 +53,7 @@ public class LambdaAggregation implements IAggregation {
 	}
 
 	@Override
-	public Object aggregate(Object left, Object right) {
+	public @Nullable Object aggregate(@Nullable Object left, @Nullable Object right) {
 		return lambda.apply(left, right);
 	}
 }

@@ -60,11 +60,15 @@ public class ReferencedColumn implements IAdhocColumn, IHasWrapped {
 	 */
 	public static class ReferencedColumnBuilder {
 
+		// Lombok @Builder fills `name` via the chained setter `.name(...)`; NullAway can't see the cross-method init.
+		@SuppressWarnings("NullAway.Init")
 		public ReferencedColumnBuilder() {
 			// Lombok @Builder
 		}
 
 		// Enable Jackson deserialization given a plain String
+		// NullAway can't see that `.name(...)` initializes the underlying `name` field through the chained setter.
+		@SuppressWarnings("NullAway.Init")
 		public ReferencedColumnBuilder(String column) {
 			this.name(column);
 		}

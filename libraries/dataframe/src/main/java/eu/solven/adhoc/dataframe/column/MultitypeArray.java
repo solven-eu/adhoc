@@ -23,7 +23,10 @@
 package eu.solven.adhoc.dataframe.column;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.collection.ICompactable;
 import eu.solven.adhoc.dataframe.IAdhocCapacityConstants;
@@ -151,7 +154,7 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				ensureObject();
 
 				checkSizeBeforeAdd(IMultitypeConstants.MASK_OBJECT);
@@ -213,7 +216,7 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 			}
 
 			@Override
-			public void onObject(Object v) {
+			public void onObject(@Nullable Object v) {
 				ensureObject();
 				valuesO.set(index, v);
 			}
@@ -336,7 +339,9 @@ public class MultitypeArray implements IMultitypeArray, ICompactable {
 		for (int i = 0; i < valuesO.size(); i++) {
 			Object value = valuesOPurged.get(i);
 			if (value instanceof IValueProvider valueProvider) {
-				valuesOPurged.set(i, IValueProvider.getValue(valueProvider));
+				// `IValueProvider.getValue` may return null but ChunkedList rejects nulls; preserve the original
+				// (which never had null elements) by requiring non-null at the unwrap site.
+				valuesOPurged.set(i, Objects.requireNonNull(IValueProvider.getValue(valueProvider)));
 			}
 		}
 

@@ -25,6 +25,7 @@ package eu.solven.adhoc.query.cube;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.NoSuchElementException;
 import java.util.SequencedSet;
 import java.util.Set;
 
@@ -92,8 +93,19 @@ public interface IGroupBy {
 	@JsonIgnore
 	NavigableMap<String, IAdhocColumn> getSortedNameToColumn();
 
+	/**
+	 * @param column
+	 *            the column name
+	 * @return the {@link IAdhocColumn} bound to {@code column}
+	 * @throws NoSuchElementException
+	 *             if no column with this name is part of this groupBy
+	 */
 	default IAdhocColumn getColumn(String column) {
-		return getSortedNameToColumn().get(column);
+		IAdhocColumn definition = getSortedNameToColumn().get(column);
+		if (definition == null) {
+			throw new NoSuchElementException("No column named '" + column + "' in groupBy=" + this);
+		}
+		return definition;
 	}
 
 	IGroupBy retainAll(Set<String> columns);

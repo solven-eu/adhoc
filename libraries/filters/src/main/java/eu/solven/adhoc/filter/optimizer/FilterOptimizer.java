@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -373,9 +374,9 @@ public class FilterOptimizer implements IFilterOptimizer, IHasFilterStripperFact
 	protected ImmutableSet<ISliceFilter> removeLaxerOrStricter(Set<? extends ISliceFilter> operands,
 			boolean removeLaxerElseStricter) {
 		Map<Boolean, ImmutableSet<ISliceFilter>> ignorableToOperands = partitionByPotentialInteraction(operands);
-
-		ImmutableSet<ISliceFilter> toIgnore = ignorableToOperands.get(true);
-		ImmutableSet<ISliceFilter> toProcess = ignorableToOperands.get(false);
+		// `partitionByPotentialInteraction` always populates both keys; narrow @Nullable Map.get into non-null locals.
+		ImmutableSet<ISliceFilter> toIgnore = Objects.requireNonNull(ignorableToOperands.get(true));
+		ImmutableSet<ISliceFilter> toProcess = Objects.requireNonNull(ignorableToOperands.get(false));
 
 		// Remove the operands which are induced by 1 other operand
 		ImmutableSet<ISliceFilter> strippedAgainst1 = removeLaxerOrStricterGivenOne(removeLaxerElseStricter, toProcess);

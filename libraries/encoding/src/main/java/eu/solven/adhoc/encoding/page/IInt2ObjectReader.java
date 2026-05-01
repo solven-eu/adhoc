@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.encoding.page;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Minimal {@code int -> Object} reader. Project-local equivalent of {@link java.util.function.IntFunction} without the
  * {@code java.util.function} dependency in hot paths, so that domain types can directly implement this interface and be
@@ -38,5 +40,6 @@ public interface IInt2ObjectReader {
 	 *            the position to read
 	 * @return the value at {@code index}
 	 */
+	@Nullable
 	Object read(int index);
 }

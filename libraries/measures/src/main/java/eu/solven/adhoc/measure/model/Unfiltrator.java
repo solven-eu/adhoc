@@ -110,9 +110,11 @@ public class Unfiltrator implements IMeasure, IHasUnderlyingMeasures {
 
 	/**
 	 * Lombok @Builder
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Builder fields populated via chained setters before .build(); NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class UnfiltratorBuilder {
 		/**
 		 * Use this if you want only given columns to be filtered, while others are turned into `matchAll`.

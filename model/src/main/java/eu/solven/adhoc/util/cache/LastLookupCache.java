@@ -28,6 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.util.HotPath;
 
 /**
@@ -102,12 +104,15 @@ public class LastLookupCache<V> {
 	 * @return the cached value, or {@code null} on miss
 	 */
 	@HotPath("optimistic lookup is often used in tight-loop")
-	public V getByRef(Object... refKeys) {
+	public @Nullable V getByRef(Object... refKeys) {
 		assert refKeys.length == keyLength : "Expected " + keyLength + " key parts, got " + refKeys.length;
 
 		CacheEntry<Object[], V> entry = lastEntry.get();
 
-		if (referenceKeysMatch(entry.key, refKeys)) {
+		// `entry.key` is typed @Nullable on CacheEntry, but for this cache the constructor seeds a non-null
+		// sentinel array — the null-check is defensive and lets NullAway narrow the type.
+		Object[] cachedKey = entry.key;
+		if (cachedKey != null && referenceKeysMatch(cachedKey, refKeys)) {
 			return entry.value;
 		}
 

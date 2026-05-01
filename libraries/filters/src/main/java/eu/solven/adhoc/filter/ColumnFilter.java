@@ -26,6 +26,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -91,8 +93,8 @@ public class ColumnFilter implements IColumnFilter {
 	 */
 	@JsonProperty("nullIfAbsent")
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	protected Boolean jsonNullIfAbsent() {
-		if (valueMatcher != null && valueMatcher.match(null)) {
+	protected @Nullable Boolean jsonNullIfAbsent() {
+		if (valueMatcher.match(null)) {
 			return nullIfAbsent;
 		}
 		return null;
@@ -135,9 +137,11 @@ public class ColumnFilter implements IColumnFilter {
 
 	/**
 	 * Lombok Builder.
-	 * 
+	 *
 	 * @author Benoit Lacelle
 	 */
+	// Lombok @Builder fields (`column`, `valueMatcher`) are populated via chained setters; NullAway can't see init.
+	@SuppressWarnings("NullAway.Init")
 	public static class ColumnFilterBuilder {
 		// By default, we treat the absence of a column as a null (e.g. like in most Map implementations)
 		boolean nullIfAbsent = true;

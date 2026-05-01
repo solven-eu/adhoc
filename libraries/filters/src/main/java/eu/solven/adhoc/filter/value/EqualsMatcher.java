@@ -25,6 +25,8 @@ package eu.solven.adhoc.filter.value;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 import eu.solven.adhoc.filter.ColumnFilter;
@@ -63,7 +65,7 @@ public abstract class EqualsMatcher implements IValueMatcher, IHasWrapped, IColu
 	}
 
 	@JsonCreator
-	public static IValueMatcher createWrapped(Object o) {
+	public static IValueMatcher createWrapped(@Nullable Object o) {
 		if (o instanceof Map<?, ?> map) {
 			// Workaround some Jackson issue/limitations
 			return matchEq(map.get("operand"));
@@ -78,7 +80,7 @@ public abstract class EqualsMatcher implements IValueMatcher, IHasWrapped, IColu
 	 *            typically a value for which `.equals` is relevant. `null` and `IValueMatcher` are special cases.
 	 * @return
 	 */
-	public static IValueMatcher matchEq(Object operand) {
+	public static IValueMatcher matchEq(@Nullable Object operand) {
 		if (operand == null) {
 			return NullMatcher.matchNull();
 		} else if (operand instanceof IValueMatcher valueMatcher) {

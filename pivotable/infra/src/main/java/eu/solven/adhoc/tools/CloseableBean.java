@@ -22,6 +22,8 @@
  */
 package eu.solven.adhoc.tools;
 
+import java.io.Closeable;
+
 import org.springframework.beans.factory.DisposableBean;
 
 import lombok.AllArgsConstructor;

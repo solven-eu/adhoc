@@ -24,6 +24,8 @@ package eu.solven.adhoc.filter.value;
 
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 import eu.solven.adhoc.filter.ColumnFilter;
 import lombok.Builder;
 import lombok.Value;
@@ -68,7 +70,7 @@ public class LikeMatcher implements IValueMatcher, IColumnToString {
 	}
 
 	@Override
-	public boolean match(Object value) {
+	public boolean match(@Nullable Object value) {
 		// Are we fine turning `null` into `"null"`?
 		CharSequence asCharSequence;
 		if (value instanceof CharSequence cs) {

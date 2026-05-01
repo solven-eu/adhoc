@@ -45,6 +45,9 @@ import lombok.With;
  *
  */
 @Value
+// Lombok @Builder synthesises an AdhocLogEventBuilder with one field per @Value field; those fields are
+// populated through chained setters before .build() is called — NullAway can't see the cross-method init.
+@SuppressWarnings("NullAway.Init")
 @Builder
 public class AdhocLogEvent implements IAdhocEvent, IIsExplainable, IIsDebugable {
 	@Default

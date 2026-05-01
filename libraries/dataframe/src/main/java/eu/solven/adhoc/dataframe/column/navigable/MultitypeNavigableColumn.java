@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import com.google.common.base.MoreObjects;
 import com.google.common.base.MoreObjects.ToStringHelper;
 import com.google.common.primitives.Ints;
@@ -81,7 +83,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 	private static final IValueReceiver INSERTION_REJECTED = new IValueReceiver() {
 
 		@Override
-		public void onObject(Object v) {
+		public void onObject(@Nullable Object v) {
 			throw new UnsupportedOperationException("This is a placeholder");
 		}
 	};
@@ -297,7 +299,7 @@ public class MultitypeNavigableColumn<T extends Comparable<T>>
 				}
 
 				@Override
-				public void onObject(Object v) {
+				public void onObject(@Nullable Object v) {
 					valueConsumer.onObject(v);
 				}
 			});

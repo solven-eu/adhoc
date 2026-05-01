@@ -24,7 +24,10 @@ package eu.solven.adhoc.encoding.dictionary;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.jspecify.annotations.Nullable;
 
 import eu.solven.adhoc.map.IAdhocMap;
 import eu.solven.adhoc.map.factory.ASliceFactory;
@@ -78,6 +81,8 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 	 * @author Benoit Lacelle
 	 */
 	@Builder
+	// Builder fields populated via chained setters; NullAway can't see the cross-method init.
+	@SuppressWarnings("NullAway.Init")
 	public static class MapBuilderPreKeys implements IMapBuilderPreKeys {
 		@NonNull
 		protected final DictionarizedSliceFactory factory;
@@ -95,11 +100,15 @@ public class DictionarizedSliceFactory extends ASliceFactory {
 		}
 
 		@Override
-		public MapBuilderPreKeys append(Object value) {
+		public MapBuilderPreKeys append(@Nullable Object value) {
 			if (values == null) {
 				values = new IntArrayList(keysLikeList.size());
 			}
-			Object normalizedValue = factory.normalizeCoordinate(value);
+			// `normalizeCoordinate` may return null (e.g. unrecognised raw); MapDictionarizer.toInt is backed by a
+			// ConcurrentHashMap which rejects null keys with NPE — narrow with `requireNonNull` so the failure surfaces
+			// at the appendsite rather than deep inside the dictionarizer.
+			Object normalizedValue = Objects.requireNonNull(factory.normalizeCoordinate(value),
+					"Dictionarizer cannot accept null value");
 			int dictionarizedValue = dictionaryFactory.makeDictionarizer(peekNextKey()).toInt(normalizedValue);
 			values.add(dictionarizedValue);
 

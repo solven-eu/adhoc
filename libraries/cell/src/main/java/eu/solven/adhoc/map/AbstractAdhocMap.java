@@ -113,7 +113,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	 */
 	// Similar to HashMap
 	@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
-	transient Set<Map.Entry<String, Object>> entrySet;
+	transient @org.jspecify.annotations.Nullable Set<Map.Entry<String, Object>> entrySet;
 
 	// Thread-local reference-equality fast path + ConcurrentHashMap slow path.
 	// Key parts for reference equality: (retainedColumns, sequencedKeysList).
@@ -138,18 +138,18 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	@org.jspecify.annotations.NonNull
 	protected abstract Object getSequencedValueRaw(int index);
 
-	protected Object getSequencedValue(int index) {
+	protected @org.jspecify.annotations.Nullable Object getSequencedValue(int index) {
 		return NullMatcher.unwrapNull(getSequencedValueRaw(index));
 	}
 
 	/**
-	 * 
+	 *
 	 * @param index
 	 * @return the value at given index, considering keys being sorted.
 	 */
 	protected abstract Object getSortedValueRaw(int index);
 
-	protected Object getSortedValue(int index) {
+	protected @org.jspecify.annotations.Nullable Object getSortedValue(int index) {
 		return NullMatcher.unwrapNull(getSortedValueRaw(index));
 	}
 
@@ -195,7 +195,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 			}
 
 			@Override
-			public Object get(int index) {
+			public @org.jspecify.annotations.Nullable Object get(int index) {
 				return getSequencedValue(index);
 			}
 		};
@@ -210,7 +210,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 	}
 
 	@Override
-	public Object get(Object key) {
+	public @org.jspecify.annotations.Nullable Object get(Object key) {
 		int index = sequencedKeys.indexOf(key);
 		if (index < 0) {
 			// key is unknown: return null as default value
@@ -388,7 +388,7 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 				int index = 0;
 
 				@Override
-				protected Map.Entry<String, Object> computeNext() {
+				protected Map.@org.jspecify.annotations.Nullable Entry<String, Object> computeNext() {
 					if (index < size()) {
 						Map.Entry<String, Object> entry = entry(index);
 						index++;
@@ -436,7 +436,11 @@ public abstract class AbstractAdhocMap implements IAdhocMap {
 		protected Map.Entry<String, Object> entry(int index) {
 			String key = sequencedKeys.getKey(index);
 			Object value = getSequencedValue(index);
-			return Maps.immutableEntry(key, value);
+			// `Map<String, Object>` allows null values per the Map contract. Guava's Maps.immutableEntry accepts
+			// null too (it's @CheckForNull) but NullAway doesn't recognise the Guava annotation here.
+			@SuppressWarnings("NullAway")
+			Map.Entry<String, Object> entry = Maps.immutableEntry(key, value);
+			return entry;
 		}
 	}
 
