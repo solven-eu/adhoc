@@ -43,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AtomicLongMap;
 
@@ -128,7 +129,7 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 
 		String[] measures = request.getParameterValues("measure");
 		if (measures != null) {
-			queryBuilder.measureNames(List.of(measures));
+			queryBuilder.measureNames(ImmutableList.copyOf(measures));
 		}
 		String[] groupBys = request.getParameterValues("group_by");
 		if (groupBys != null) {
@@ -151,8 +152,11 @@ public class PivotableQueryController implements IPivotableRouteConstants {
 			filteredColumns.forEach(filteredColumn -> {
 				String[] rawFilters = request.getParameterValues("column_" + filteredColumn);
 
-				List<IValueMatcher> filters =
-						List.of(rawFilters).stream().distinct().<IValueMatcher>map(EqualsMatcher::matchEq).toList();
+				List<IValueMatcher> filters = ImmutableList.copyOf(rawFilters)
+						.stream()
+						.distinct()
+						.<IValueMatcher>map(EqualsMatcher::matchEq)
+						.collect(ImmutableList.toImmutableList());
 
 				ColumnFilter columnFilter =
 						ColumnFilter.builder().column(filteredColumn).valueMatcher(OrMatcher.copyOf(filters)).build();

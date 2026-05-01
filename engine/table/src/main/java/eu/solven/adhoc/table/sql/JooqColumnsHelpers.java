@@ -28,6 +28,8 @@ import java.util.function.Function;
 import org.jooq.Field;
 import org.jooq.TableLike;
 
+import com.google.common.collect.ImmutableList;
+
 import eu.solven.adhoc.table.sql.join.PrunedJoinsJooqTableSupplierBuilder;
 import eu.solven.adhoc.util.Blocking;
 import eu.solven.pepper.core.PepperLogHelper;
@@ -92,7 +94,7 @@ public final class JooqColumnsHelpers {
 
 		@Override
 		public List<Field<?>> columnsOf(IDSLSupplier dslSupplier, TableLike<?> table) {
-			return List.of(table.asTable().fields());
+			return ImmutableList.copyOf(table.asTable().fields());
 		}
 	}
 
@@ -112,7 +114,7 @@ public final class JooqColumnsHelpers {
 			log.info("Fetching fields via SELECT * LIMIT 0 of table={}",
 					PepperLogHelper
 							.lazyToString(() -> table.toString().replaceAll("\r", "\\r").replaceAll("\n", "\\n")));
-			return List.of(dslSupplier.getDSLContext().select().from(table).limit(0).fetch().fields());
+			return ImmutableList.copyOf(dslSupplier.getDSLContext().select().from(table).limit(0).fetch().fields());
 		}
 	}
 

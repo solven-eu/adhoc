@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -666,11 +665,13 @@ public class MeasureForestConcealer {
 						.build();
 			}
 			if (filter instanceof IAndFilter af) {
-				List<ISliceFilter> mapped = af.getOperands().stream().map(this::mapFilter).collect(Collectors.toList());
+				List<ISliceFilter> mapped =
+						af.getOperands().stream().map(this::mapFilter).collect(ImmutableList.toImmutableList());
 				return AndFilter.copyOf(mapped);
 			}
 			if (filter instanceof IOrFilter of) {
-				List<ISliceFilter> mapped = of.getOperands().stream().map(this::mapFilter).collect(Collectors.toList());
+				List<ISliceFilter> mapped =
+						of.getOperands().stream().map(this::mapFilter).collect(ImmutableList.toImmutableList());
 				return OrFilter.copyOf(mapped);
 			}
 			if (filter instanceof INotFilter nf) {

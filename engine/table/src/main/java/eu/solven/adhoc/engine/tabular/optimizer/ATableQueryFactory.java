@@ -23,18 +23,17 @@
 package eu.solven.adhoc.engine.tabular.optimizer;
 
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimaps;
 
 import eu.solven.adhoc.engine.step.ICubeQueryStep;
 import eu.solven.adhoc.engine.step.TableQueryStep;
@@ -88,30 +87,31 @@ public abstract class ATableQueryFactory implements ITableQueryFactory, IHasFilt
 		IFilterStripper stripper = filterBundle.getFilterStripperFactory().makeFilterStripper(commonFilter);
 
 		// Group steps by their IGroupBy
-		Map<IGroupBy, List<TableQueryStep>> byGroupBy = steps.stream()
-				.collect(Collectors.groupingBy(ICubeQueryStep::getGroupBy, LinkedHashMap::new, Collectors.toList()));
+		ImmutableListMultimap<IGroupBy, TableQueryStep> byGroupBy = steps.stream()
+				.collect(ImmutableListMultimap.toImmutableListMultimap(ICubeQueryStep::getGroupBy, s -> s));
 
 		ImmutableSetMultimap.Builder<IGroupBy, FilteredAggregator> multimapBuilder = ImmutableSetMultimap.builder();
-		byGroupBy.forEach((groupBy, groupBySteps) -> {
+		byGroupBy.asMap().forEach((groupBy, groupBySteps) -> {
 			// Strip the WHERE from each individual FILTER — each step is guaranteed to carry an Aggregator
 			Set<FilteredAggregator> strippedAggregators = groupBySteps.stream().map(step -> {
 				ISliceFilter strippedFromWhere = stripper.strip(step.getFilter());
 				return FilteredAggregator.builder().aggregator(step.getMeasure()).filter(strippedFromWhere).build();
 			}).collect(ImmutableSet.toImmutableSet());
 
-			Map<String, List<FilteredAggregator>> aliasToAggregators = strippedAggregators.stream()
-					.collect(Collectors
-							.groupingBy(FilteredAggregator::getAlias, LinkedHashMap::new, Collectors.toList()));
+			ImmutableListMultimap<String, FilteredAggregator> aliasToAggregators = strippedAggregators.stream()
+					.collect(ImmutableListMultimap.toImmutableListMultimap(FilteredAggregator::getAlias, s -> s));
 
-			List<FilteredAggregator> aliasedAggregators = aliasToAggregators.entrySet().stream().flatMap(e -> {
-				List<FilteredAggregator> aggregators = e.getValue();
-				if (aggregators.size() == 1) {
-					return Stream.of(aggregators.getFirst());
-				} else {
-					AtomicInteger aliasIndex = new AtomicInteger();
-					return aggregators.stream().map(a -> a.toBuilder().index(aliasIndex.getAndIncrement()).build());
-				}
-			}).toList();
+			List<FilteredAggregator> aliasedAggregators =
+					Multimaps.asMap(aliasToAggregators).entrySet().stream().flatMap(e -> {
+						List<FilteredAggregator> aggregators = e.getValue();
+						if (aggregators.size() == 1) {
+							return Stream.of(aggregators.getFirst());
+						} else {
+							AtomicInteger aliasIndex = new AtomicInteger();
+							return aggregators.stream()
+									.map(a -> a.toBuilder().index(aliasIndex.getAndIncrement()).build());
+						}
+					}).toList();
 
 			multimapBuilder.putAll(groupBy, aliasedAggregators);
 		});

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 
@@ -159,7 +158,9 @@ public class JoinDecomposition implements IDecomposition {
 		}
 		Set<Object> allValues = joinDefinition.allOutputValues(column);
 		return CoordinatesSample.builder()
-				.coordinates(allValues.stream().limit(limit < 0 ? Long.MAX_VALUE : limit).collect(Collectors.toList()))
+				.coordinates(allValues.stream()
+						.limit(limit < 0 ? Long.MAX_VALUE : limit)
+						.collect(ImmutableList.toImmutableList()))
 				.estimatedCardinality(allValues.size())
 				.build();
 	}
