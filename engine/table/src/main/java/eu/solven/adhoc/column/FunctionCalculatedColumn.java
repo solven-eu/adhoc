@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cuboid.slice.Slice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;

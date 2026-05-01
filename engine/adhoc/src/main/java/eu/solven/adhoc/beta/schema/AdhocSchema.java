@@ -47,7 +47,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.CubeWrapper.CubeWrapperBuilder;
 import eu.solven.adhoc.cube.ICubeWrapper;
@@ -149,7 +148,7 @@ public class AdhocSchema implements IAdhocSchema, IAdhocSchemaRegistrer {
 	}
 
 	protected ColumnMetadata enrichColumn(ColumnIdentifier columnIdTemplate, ColumnMetadata column) {
-		ColumnMetadataBuilder builder = column.toBuilder();
+		ColumnMetadata.ColumnMetadataBuilder builder = column.toBuilder();
 
 		Set<String> additionalTags = columnToTags.get(columnIdTemplate.toBuilder().column(column.getName()).build());
 		if (additionalTags != null) {

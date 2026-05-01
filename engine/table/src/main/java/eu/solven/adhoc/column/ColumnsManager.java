@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.column.generated_column.ColumnGeneratorHelpers;
 import eu.solven.adhoc.column.generated_column.EmptyColumnGenerator;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;

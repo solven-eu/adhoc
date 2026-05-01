@@ -25,7 +25,7 @@ package eu.solven.adhoc.engine.tabular.optimizer;
 import java.util.Objects;
 
 import eu.solven.adhoc.column.ColumnsManager;
-import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cube.CubeWrapper;
 import eu.solven.adhoc.cube.ICubeWrapper;
 import eu.solven.adhoc.engine.CubeQueryEngine;

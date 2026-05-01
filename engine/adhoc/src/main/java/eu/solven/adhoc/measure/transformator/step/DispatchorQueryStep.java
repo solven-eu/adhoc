@@ -32,7 +32,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;
 import eu.solven.adhoc.cuboid.tabular.ITabularGroupByRecord;

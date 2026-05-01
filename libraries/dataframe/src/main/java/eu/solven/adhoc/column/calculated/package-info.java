@@ -6,6 +6,6 @@
  * {@link org.jspecify.annotations.Nullable @Nullable} marks the opt-outs.
  */
 @NullMarked
-package eu.solven.adhoc.column;
+package eu.solven.adhoc.column.calculated;
 
 import org.jspecify.annotations.NullMarked;

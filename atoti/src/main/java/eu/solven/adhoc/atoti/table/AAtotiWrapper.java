@@ -42,7 +42,6 @@ import com.quartetfs.fwk.query.IQueryable;
 import com.quartetfs.fwk.query.QueryException;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.cuboid.slice.SliceHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordStream;
@@ -179,7 +178,7 @@ public abstract class AAtotiWrapper implements ITableWrapper {
 		inferPivotId().getDimensions().forEach(d -> {
 			d.getHierarchies().forEach(h -> {
 				h.getLevels().forEach(l -> {
-					ColumnMetadataBuilder columnBuilder =
+					ColumnMetadata.ColumnMetadataBuilder columnBuilder =
 							ColumnMetadata.builder().name("%s@%s@%s".formatted(l.getName(), h.getName(), d.getName()));
 
 					columnBuilder.tag("d=" + d.getName());

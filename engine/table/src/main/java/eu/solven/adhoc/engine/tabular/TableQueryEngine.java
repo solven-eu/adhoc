@@ -53,7 +53,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.collection.AdhocCollectionHelpers;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.column.generated_column.IColumnGenerator;
 import eu.solven.adhoc.cuboid.ICuboid;
 import eu.solven.adhoc.cuboid.slice.ISlice;

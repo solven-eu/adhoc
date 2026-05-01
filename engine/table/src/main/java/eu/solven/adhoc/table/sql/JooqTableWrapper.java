@@ -57,7 +57,7 @@ import com.google.common.collect.ImmutableMap;
 import eu.solven.adhoc.beta.schema.CoordinatesSample;
 import eu.solven.adhoc.column.ColumnMetadata;
 import eu.solven.adhoc.column.IAdhocColumn;
-import eu.solven.adhoc.column.ICalculatedColumn;
+import eu.solven.adhoc.column.calculated.ICalculatedColumn;
 import eu.solven.adhoc.dataframe.filter.MoreFilterHelpers;
 import eu.solven.adhoc.dataframe.row.ITabularRecord;
 import eu.solven.adhoc.dataframe.row.ITabularRecordFactory;

@@ -47,7 +47,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import eu.solven.adhoc.column.ColumnMetadata;
-import eu.solven.adhoc.column.ColumnMetadata.ColumnMetadataBuilder;
 import eu.solven.adhoc.column.ColumnsManager;
 import eu.solven.adhoc.column.IAdhocColumn;
 import eu.solven.adhoc.column.IColumnsManager;
@@ -182,7 +181,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	}
 
 	protected ColumnMetadata toMeta(SetMultimap<String, String> columnToCubes, ColumnMetadata c) {
-		ColumnMetadataBuilder builder = c.toBuilder();
+		ColumnMetadata.ColumnMetadataBuilder builder = c.toBuilder();
 		Set<String> cubesWithColumn = columnToCubes.get(c.getName());
 		if (optCubeSlicer.isPresent() && optCubeSlicer.get().equals(c.getName())
 				|| cubesWithColumn.size() == cubes.size()) {
@@ -508,8 +507,7 @@ public class CompositeCubesTableWrapper implements ITableWrapper, IHasHealthDeta
 	 * exhausting platform threads.
 	 */
 	@SuppressWarnings("PMD.ExceptionAsFlowControl")
-	protected Map<String, ITabularView> executeSubQueries(IQueryPod queryPod,
-			Map<String, ICubeQuery> cubeToQuery) {
+	protected Map<String, ITabularView> executeSubQueries(IQueryPod queryPod, Map<String, ICubeQuery> cubeToQuery) {
 		Map<String, ICubeWrapper> nameToCube = getNameToCube();
 
 		try {
